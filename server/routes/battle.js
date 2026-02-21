@@ -2,9 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Вспомогательная функция для расчёта итоговых характеристик героя
+// Расчёт характеристик (как было)
 function calculateStats(user, inventory) {
-  // База от очков характеристик
   let stats = {
     hp: 10 + (user.hp_points || 0) * 2,
     atk: (user.atk_points || 0) + 5,
@@ -17,7 +16,6 @@ function calculateStats(user, inventory) {
     acc: (user.acc_points || 0) + 100,
   };
 
-  // Добавляем бонусы от экипировки
   inventory.forEach(item => {
     stats.hp += item.hp_bonus || 0;
     stats.atk += item.atk_bonus || 0;
@@ -30,14 +28,12 @@ function calculateStats(user, inventory) {
     stats.acc += item.acc_bonus || 0;
   });
 
-  // Применяем особенности класса
   if (user.class === 'warrior') {
     stats.def = Math.min(80, stats.def * 1.5);
   } else if (user.class === 'assassin') {
     stats.crit = Math.min(75, stats.crit * 1.25);
-  } // для мага пока без особенности (можно добавить позже)
+  }
 
-  // Ограничиваем проценты
   stats.def = Math.min(80, stats.def);
   stats.res = Math.min(80, stats.res);
   stats.crit = Math.min(75, stats.crit);
@@ -47,82 +43,87 @@ function calculateStats(user, inventory) {
   return stats;
 }
 
-// Симуляция одного удара (автоатака)
+// Симуляция одного удара (возвращает урон и сообщение)
 function performAttack(attackerStats, defenderStats) {
-  // Проверка на уворот
   const hitChance = Math.min(100, Math.max(5, attackerStats.acc - defenderStats.dodge));
   if (Math.random() * 100 > hitChance) {
-    return { hit: false, damage: 0, isCrit: false, log: 'промах' };
+    return { damage: 0, log: 'промах' };
   }
-
   let damage = attackerStats.atk;
   const isCrit = Math.random() * 100 < attackerStats.crit;
   if (isCrit) {
     damage *= attackerStats.critDmg;
   }
-
-  // Применяем защиту (физический урон)
   damage = damage * (1 - defenderStats.def / 100);
   damage = Math.max(1, Math.floor(damage));
-
-  return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}` };
+  return { damage, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}` };
 }
 
-// Симуляция боя
+// Симуляция боя с пошаговым логом
 function simulateBattle(playerStats, enemyStats) {
   let playerHp = playerStats.hp;
   let enemyHp = enemyStats.hp;
-  const log = [];
+  const steps = [];
   let turn = playerStats.spd >= enemyStats.spd ? 'player' : 'enemy';
-  let maxTurns = 100;
-  let turns = 0;
 
-  while (playerHp > 0 && enemyHp > 0 && turns < maxTurns) {
-    turns++;
+  while (playerHp > 0 && enemyHp > 0) {
     if (turn === 'player') {
       const result = performAttack(playerStats, enemyStats);
-      if (result.hit) enemyHp -= result.damage;
-      log.push(`Игрок ${result.log}`);
+      if (result.damage > 0) {
+        enemyHp = Math.max(0, enemyHp - result.damage);
+      }
+      steps.push({
+        attacker: 'player',
+        damage: result.damage,
+        playerHp: playerHp,
+        enemyHp: enemyHp,
+        message: `Игрок ${result.log}`
+      });
       turn = 'enemy';
     } else {
       const result = performAttack(enemyStats, playerStats);
-      if (result.hit) playerHp -= result.damage;
-      log.push(`Противник ${result.log}`);
+      if (result.damage > 0) {
+        playerHp = Math.max(0, playerHp - result.damage);
+      }
+      steps.push({
+        attacker: 'enemy',
+        damage: result.damage,
+        playerHp: playerHp,
+        enemyHp: enemyHp,
+        message: `Противник ${result.log}`
+      });
       turn = 'player';
     }
   }
 
+  // Определяем победителя
   let winner = null;
   if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
   else if (playerHp <= 0) winner = 'enemy';
   else if (enemyHp <= 0) winner = 'player';
 
   return {
+    steps,
     winner,
-    playerHpRemain: Math.max(0, playerHp),
-    enemyHpRemain: Math.max(0, enemyHp),
-    log
+    playerFinalHp: playerHp,
+    enemyFinalHp: enemyHp,
+    playerMaxHp: playerStats.hp,
+    enemyMaxHp: enemyStats.hp
   };
 }
 
-// Генерация бота
+// Генерация бота (как было)
 function generateBot(playerLevel) {
-  // Список всех комбинаций классов и подклассов (9 вариантов)
   const botTemplates = [
-    // Воины
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
-    // Ассасины
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
-    // Маги
     { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' },
-    // Можно добавить ещё две группы: Изумрудный защитник и Защитник королевства — тоже по 9.
-    // Для разнообразия сделаем их тоже, но с другими именами и чуть сильнее.
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'guardian' },
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'berserker' },
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'knight' },
@@ -142,12 +143,9 @@ function generateBot(playerLevel) {
     { name: 'Защитник королевства', class: 'mage', subclass: 'cryomancer' },
     { name: 'Защитник королевства', class: 'mage', subclass: 'illusionist' }
   ];
-
   const template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
-  // Уровень бота: примерно как у игрока, но может немного отличаться
   const level = Math.max(1, playerLevel - 2 + Math.floor(Math.random() * 5));
 
-  // Базовые характеристики от уровня
   const baseHP = 10 + level * 2;
   const baseATK = 5 + level;
   const baseDEF = Math.min(40, level * 2);
@@ -156,7 +154,6 @@ function generateBot(playerLevel) {
   const baseCRIT = Math.min(30, level * 1.5);
   const baseDODGE = Math.min(30, level * 1.5);
 
-  // Корректировка под класс
   let hp = baseHP, atk = baseATK, def = baseDEF, res = baseRES, spd = baseSPD, crit = baseCRIT, dodge = baseDODGE;
   if (template.class === 'warrior') {
     hp = Math.floor(baseHP * 1.5);
@@ -190,7 +187,6 @@ function generateBot(playerLevel) {
   };
 }
 
-// Эндпоинт начала боя
 router.post('/start', async (req, res) => {
   const { tg_id } = req.body;
   const client = await pool.connect();
@@ -203,7 +199,6 @@ router.post('/start', async (req, res) => {
 
     if (playerData.energy < 1) throw new Error('Not enough energy');
 
-    // Получаем надетые предметы
     const inv = await client.query(
       `SELECT i.* FROM inventory inv 
        JOIN items i ON inv.item_id = i.id 
@@ -243,10 +238,12 @@ router.post('/start', async (req, res) => {
         level: bot.level
       },
       result: {
+        steps: battleResult.steps,
         winner: battleResult.winner,
-        playerHpRemain: battleResult.playerHpRemain,
-        enemyHpRemain: battleResult.enemyHpRemain,
-        log: battleResult.log
+        playerFinalHp: battleResult.playerFinalHp,
+        enemyFinalHp: battleResult.enemyFinalHp,
+        playerMaxHp: battleResult.playerMaxHp,
+        enemyMaxHp: battleResult.enemyMaxHp
       },
       ratingChange: ratingChange
     });

@@ -4,6 +4,7 @@ tg.expand();
 let userData = null;
 let inventory = [];
 let currentScreen = 'main';
+let battleInProgress = false; // флаг, что бой идёт
 
 // Инициализация
 async function init() {
@@ -29,8 +30,9 @@ function updateTopBar() {
     document.getElementById('energy').innerText = userData.energy;
 }
 
-// Показ экранов
+// Показ экранов (с проверкой на бой)
 function showScreen(screen) {
+    if (battleInProgress && screen !== 'battle') return; // нельзя переключаться во время боя
     currentScreen = screen;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
@@ -47,7 +49,7 @@ function showScreen(screen) {
         case 'market': renderMarket(); break;
         case 'tasks': renderTasks(); break;
         case 'profile': renderProfile(); break;
-        case 'battle': /* уже обработано в startBattle */ break;
+        case 'battle': /* ничего не делаем, бой уже отрисован */ break;
     }
 }
 
@@ -399,6 +401,7 @@ function renderProfile() {
 
 // ==================== БОЙ ====================
 async function startBattle() {
+    if (battleInProgress) return;
     const res = await fetch('/battle/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -409,6 +412,10 @@ async function startBattle() {
         alert(data.error);
         return;
     }
+    // Скрываем нижнее меню (делаем его неактивным)
+    document.querySelector('.bottom-menu').style.pointerEvents = 'none';
+    document.querySelector('.bottom-menu').style.opacity = '0.5';
+    battleInProgress = true;
     showBattleScreen(data);
 }
 
@@ -424,43 +431,168 @@ function showBattleScreen(battleData) {
             <div class="battle-arena">
                 <div class="hero-card">
                     <div class="hero-avatar"><i class="fas fa-user"></i></div>
-                    <div class="hp-bar"><div class="hp-fill" id="heroHp" style="width:100%"></div></div>
-                    <div id="heroHpText">${battleData.result.playerHpRemain}</div>
+                    <div class="hp-bar">
+                        <div class="hp-fill" id="heroHpFill" style="width:100%"></div>
+                    </div>
+                    <div id="heroHpText">${battleData.result.playerMaxHp}/${battleData.result.playerMaxHp}</div>
                 </div>
                 <div>VS</div>
                 <div class="enemy-card">
                     <div class="enemy-avatar"><i class="fas fa-user"></i></div>
-                    <div class="hp-bar"><div class="hp-fill" id="enemyHp" style="width:100%"></div></div>
-                    <div id="enemyHpText">${battleData.result.enemyHpRemain}</div>
+                    <div class="hp-bar">
+                        <div class="hp-fill" id="enemyHpFill" style="width:100%"></div>
+                    </div>
+                    <div id="enemyHpText">${battleData.result.enemyMaxHp}/${battleData.result.enemyMaxHp}</div>
                 </div>
             </div>
-            <div class="battle-log" id="battleLog">
-                ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
-            </div>
+            <div class="battle-log" id="battleLog"></div>
             <div class="battle-controls">
                 <button class="speed-btn active" data-speed="1">x1</button>
                 <button class="speed-btn" data-speed="2">x2</button>
             </div>
         </div>
+        <div id="battleResultOverlay" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #232833; padding: 20px; border-radius: 12px; border: 2px solid #00aaff; text-align: center; z-index: 1000;">
+            <h2 id="resultTitle"></h2>
+            <p id="resultDetails"></p>
+            <button class="btn" id="rematchBtn">В бой</button>
+            <button class="btn" id="backToMainBtn">Назад</button>
+        </div>
     `;
 
-    let timeLeft = 45;
-    const timer = setInterval(() => {
-        timeLeft--;
-        document.getElementById('battleTimer').innerText = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            // Здесь можно добавить логику завершения боя по истечении времени
+    const steps = battleData.result.steps;
+    const playerMaxHp = battleData.result.playerMaxHp;
+    const enemyMaxHp = battleData.result.enemyMaxHp;
+    let currentPlayerHp = playerMaxHp;
+    let currentEnemyHp = enemyMaxHp;
+    let stepIndex = 0;
+    let speed = 1000; // мс между шагами
+    let timerSeconds = 45;
+    const timerElement = document.getElementById('battleTimer');
+    const logElement = document.getElementById('battleLog');
+    const heroHpFill = document.getElementById('heroHpFill');
+    const enemyHpFill = document.getElementById('enemyHpFill');
+    const heroHpText = document.getElementById('heroHpText');
+    const enemyHpText = document.getElementById('enemyHpText');
+
+    // Обновление отображения HP
+    function updateHpDisplay() {
+        const heroPercent = (currentPlayerHp / playerMaxHp) * 100;
+        const enemyPercent = (currentEnemyHp / enemyMaxHp) * 100;
+        heroHpFill.style.width = heroPercent + '%';
+        enemyHpFill.style.width = enemyPercent + '%';
+        heroHpText.innerText = `${currentPlayerHp}/${playerMaxHp}`;
+        enemyHpText.innerText = `${currentEnemyHp}/${enemyMaxHp}`;
+    }
+
+    // Добавление записи в лог
+    function addLog(message) {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = message;
+        logElement.appendChild(entry);
+        logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    // Функция выполнения следующего шага
+    function nextStep() {
+        if (stepIndex >= steps.length) {
+            // Бой завершён, показываем результат
+            finishBattle(battleData.result.winner);
+            return true; // завершено
+        }
+        const step = steps[stepIndex];
+        if (step.attacker === 'player') {
+            currentEnemyHp = step.enemyHp;
+        } else {
+            currentPlayerHp = step.playerHp;
+        }
+        updateHpDisplay();
+        addLog(step.message);
+        stepIndex++;
+        return false;
+    }
+
+    // Таймер обратного отсчёта
+    const timerInterval = setInterval(() => {
+        timerSeconds--;
+        timerElement.innerText = timerSeconds;
+        if (timerSeconds <= 0) {
+            clearInterval(timerInterval);
+            // Определяем победителя по проценту HP
+            const playerPercent = (currentPlayerHp / playerMaxHp) * 100;
+            const enemyPercent = (currentEnemyHp / enemyMaxHp) * 100;
+            let winner;
+            if (playerPercent > enemyPercent) winner = 'player';
+            else if (enemyPercent > playerPercent) winner = 'enemy';
+            else winner = 'draw';
+            finishBattle(winner, true);
         }
     }, 1000);
 
+    // Запуск пошагового выполнения
+    let battleInterval = setInterval(() => {
+        const finished = nextStep();
+        if (finished) {
+            clearInterval(battleInterval);
+            clearInterval(timerInterval);
+        }
+    }, speed);
+
+    // Обработка кнопок скорости
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // Управление скоростью пока не реализовано
+            speed = btn.dataset.speed === '1' ? 1000 : 500;
+            // Перезапускаем интервал с новой скоростью
+            clearInterval(battleInterval);
+            battleInterval = setInterval(() => {
+                const finished = nextStep();
+                if (finished) {
+                    clearInterval(battleInterval);
+                    clearInterval(timerInterval);
+                }
+            }, speed);
         });
     });
+
+    // Функция завершения боя
+    function finishBattle(winner, timeExpired = false) {
+        clearInterval(battleInterval);
+        clearInterval(timerInterval);
+        battleInProgress = false;
+        document.querySelector('.bottom-menu').style.pointerEvents = 'auto';
+        document.querySelector('.bottom-menu').style.opacity = '1';
+
+        const overlay = document.getElementById('battleResultOverlay');
+        const title = document.getElementById('resultTitle');
+        const details = document.getElementById('resultDetails');
+
+        let resultText = '';
+        if (winner === 'player') {
+            resultText = 'Победа!';
+        } else if (winner === 'enemy') {
+            resultText = 'Поражение';
+        } else {
+            resultText = 'Ничья';
+        }
+        title.innerText = resultText;
+        if (timeExpired) {
+            details.innerText = 'Время вышло. Результат по проценту HP.';
+        } else {
+            details.innerText = '';
+        }
+        overlay.style.display = 'block';
+
+        document.getElementById('rematchBtn').onclick = () => {
+            overlay.style.display = 'none';
+            startBattle();
+        };
+        document.getElementById('backToMainBtn').onclick = () => {
+            overlay.style.display = 'none';
+            showScreen('main');
+        };
+    }
 }
 
 async function refreshData() {

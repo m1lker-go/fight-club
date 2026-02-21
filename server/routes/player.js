@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// В начале файла добавить функцию rechargeEnergy (можно вынести в общий модуль, но пока продублируем)
+// Функция восстановления энергии (для использования в других маршрутах)
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
     if (user.rows.length === 0) return;
@@ -18,7 +18,7 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-// Получить данные игрока (включая текущий класс)
+// Получить данные игрока
 router.get('/:tg_id', async (req, res) => {
   const { tg_id } = req.params;
   const client = await pool.connect();
@@ -26,7 +26,9 @@ router.get('/:tg_id', async (req, res) => {
     const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
     if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     
-    // Получаем инвентарь
+    // Восстанавливаем энергию перед отправкой (чтобы клиент видел актуальное значение)
+    await rechargeEnergy(client, user.rows[0].id);
+
     const inventory = await client.query(
       `SELECT i.*, inv.equipped, inv.for_sale, inv.price 
        FROM inventory inv 
@@ -35,7 +37,6 @@ router.get('/:tg_id', async (req, res) => {
       [user.rows[0].id]
     );
 
-    // Получаем данные по классам
     const classes = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1',
       [user.rows[0].id]
@@ -69,9 +70,9 @@ router.get('/class/:tg_id/:class', async (req, res) => {
   }
 });
 
-// Улучшить характеристику
+// Улучшить характеристику (исправлено)
 router.post('/upgrade', async (req, res) => {
-  const { tg_id, class: className, stat, points } = req.body; // stat - поле типа hp_points
+  const { tg_id, class: className, stat, points } = req.body; // stat - имя колонки, например 'hp_points'
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -86,8 +87,9 @@ router.post('/upgrade', async (req, res) => {
     if (classData.rows.length === 0) throw new Error('Class not found');
     if (classData.rows[0].skill_points < points) throw new Error('Not enough skill points');
 
+    // ВАЖНО: stat уже содержит полное имя колонки, например 'hp_points', поэтому в запросе используем ${stat}
     await client.query(
-      `UPDATE user_classes SET ${stat}_points = ${stat}_points + $1, skill_points = skill_points - $1 WHERE user_id = $2 AND class = $3`,
+      `UPDATE user_classes SET ${stat} = ${stat} + $1, skill_points = skill_points - $1 WHERE user_id = $2 AND class = $3`,
       [points, userId, className]
     );
     await client.query('COMMIT');
@@ -111,7 +113,7 @@ router.post('/class', async (req, res) => {
   }
 });
 
-// Сменить подкласс (пока просто сохраняем в users, но потом можно и в classData)
+// Сменить подкласс
 router.post('/subclass', async (req, res) => {
   const { tg_id, subclass } = req.body;
   try {
@@ -122,7 +124,7 @@ router.post('/subclass', async (req, res) => {
   }
 });
 
-// Распределить очки навыков (старый метод, оставлен для совместимости)
+// Старый метод (не используется, оставлен для совместимости)
 router.post('/upgrade_old', async (req, res) => {
   const { tg_id, stat, points } = req.body;
   const client = await pool.connect();

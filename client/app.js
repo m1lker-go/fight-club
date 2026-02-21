@@ -88,6 +88,13 @@ function showScreen(screen) {
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 function renderMain() {
+    const classData = getCurrentClassData();
+    const currentClass = userData.current_class;
+    const level = classData.level;
+    const exp = classData.exp;
+    const nextExp = Math.floor(80 * Math.pow(level, 1.5));
+    const expPercent = (exp / nextExp) * 100;
+
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
@@ -95,28 +102,40 @@ function renderMain() {
                 <i class="fas fa-shield-alt"></i>
             </div>
             <h2>${userData.username}</h2>
-            <div style="margin: 10px 0;">
-                <label>Класс: 
-                    <select id="classSelect">
-                        <option value="warrior" ${userData.current_class === 'warrior' ? 'selected' : ''}>Воин</option>
-                        <option value="assassin" ${userData.current_class === 'assassin' ? 'selected' : ''}>Ассасин</option>
-                        <option value="mage" ${userData.current_class === 'mage' ? 'selected' : ''}>Маг</option>
-                    </select>
-                </label>
+            
+            <!-- Полоска опыта -->
+            <div style="margin: 15px 0; text-align: left;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                    <span>Уровень ${level}</span>
+                    <span>${exp}/${nextExp} опыта</span>
+                </div>
+                <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
+                    <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
+                </div>
             </div>
-            <div style="margin: 10px 0;">
-                <label>Подкласс: 
-                    <select id="subclassSelect">
+            
+            <!-- Выбор класса (кнопки) -->
+            <div style="margin: 20px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
+                    <div class="class-selector" style="flex: 1; margin-left: 10px;">
+                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
+                    <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
                         <!-- заполняется динамически -->
                     </select>
-                </label>
+                </div>
             </div>
-            <p>Уровень ${getCurrentClassLevel()} | Очков навыков: ${getCurrentClassSkillPoints()}</p>
-            <button class="btn" id="fightBtn">Начать бой</button>
+            
+            <button class="btn" id="fightBtn" style="margin-top: 20px;">Начать бой</button>
         </div>
     `;
 
-    const classSelect = document.getElementById('classSelect');
     const subclassSelect = document.getElementById('subclassSelect');
 
     function updateSubclasses(className) {
@@ -133,29 +152,34 @@ function renderMain() {
         }).join('');
     }
 
-    updateSubclasses(userData.current_class);
+    updateSubclasses(currentClass);
 
-    classSelect.addEventListener('change', async (e) => {
-        const newClass = e.target.value;
-        await fetch('/player/class', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+    // Обработчики для кнопок класса
+    document.querySelectorAll('.class-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const newClass = e.target.dataset.class;
+            if (newClass === currentClass) return;
+            await fetch('/player/class', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+            });
+            userData.current_class = newClass;
+            // При смене класса сбрасываем подкласс на первый подходящий
+            const firstSubclass = {
+                warrior: 'guardian',
+                assassin: 'assassin',
+                mage: 'pyromancer'
+            }[newClass];
+            userData.subclass = firstSubclass;
+            await fetch('/player/subclass', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
+            });
+            // Обновляем экран
+            renderMain();
         });
-        userData.current_class = newClass;
-        const firstSubclass = {
-            warrior: 'guardian',
-            assassin: 'assassin',
-            mage: 'pyromancer'
-        }[newClass];
-        userData.subclass = firstSubclass;
-        await fetch('/player/subclass', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
-        });
-        updateSubclasses(newClass);
-        document.querySelector('p').innerHTML = `Уровень ${getCurrentClassLevel()} | Очков навыков: ${getCurrentClassSkillPoints()}`;
     });
 
     subclassSelect.addEventListener('change', async (e) => {
@@ -169,23 +193,6 @@ function renderMain() {
     });
 
     document.getElementById('fightBtn').addEventListener('click', () => startBattle());
-}
-
-function getCurrentClassData() {
-    return userClasses.find(c => c.class === userData.current_class) || { 
-        level: 1, skill_points: 0, 
-        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
-        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
-        dodge_points: 0, acc_points: 0, mana_points: 0 
-    };
-}
-
-function getCurrentClassLevel() {
-    return getCurrentClassData().level;
-}
-
-function getCurrentClassSkillPoints() {
-    return getCurrentClassData().skill_points;
 }
 
 // ==================== ЭКИПИРОВКА ====================

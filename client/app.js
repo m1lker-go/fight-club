@@ -19,7 +19,7 @@ const subclassNames = {
     illusionist: 'Иллюзионист'
 };
 
-// Описания навыков с подробностями
+// Описания навыков
 const skillDescriptions = {
     hp_points: 'Увеличивает максимальное здоровье на 2',
     atk_points: 'Увеличивает базовую атаку на 1',
@@ -35,27 +35,32 @@ const skillDescriptions = {
 
 // Стартовые значения для каждого класса (на 1 уровне)
 const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, critDmg: 0, dodge: 1, acc: 0, mana: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, critDmg: 0, dodge: 5, acc: 0, mana: 0 },
-    mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, critDmg: 0, dodge: 0, acc: 0, mana: 0 }
+    warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, dodge: 1, acc: 0, mana: 0 },
+    assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, dodge: 5, acc: 0, mana: 0 },
+    mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, dodge: 0, acc: 0, mana: 0 }
 };
 
 // Инициализация
 async function init() {
-    const response = await fetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData: tg.initData })
-    });
-    const data = await response.json();
-    if (data.user) {
-        userData = data.user;
-        userClasses = data.classes || [];
-        inventory = data.inventory || [];
-        updateTopBar();
-        showScreen('main');
-    } else {
-        alert('Ошибка авторизации');
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: tg.initData })
+        });
+        const data = await response.json();
+        if (data.user) {
+            userData = data.user;
+            userClasses = data.classes || [];
+            inventory = data.inventory || [];
+            updateTopBar();
+            showScreen('main');
+        } else {
+            alert('Ошибка авторизации');
+        }
+    } catch (e) {
+        console.error('Init error:', e);
+        alert('Ошибка соединения с сервером');
     }
 }
 
@@ -83,6 +88,7 @@ function showScreen(screen) {
         case 'tasks': renderTasks(); break;
         case 'profile': renderProfile(); break;
         case 'skills': renderSkills(); break;
+        default: renderMain();
     }
 }
 
@@ -93,7 +99,7 @@ function renderMain() {
     const level = classData.level;
     const exp = classData.exp;
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
-    const expPercent = (exp / nextExp) * 100;
+    const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -101,7 +107,7 @@ function renderMain() {
             <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
                 <i class="fas fa-shield-alt"></i>
             </div>
-            <h2>${userData.username}</h2>
+            <h2>${userData.username || 'Игрок'}</h2>
             
             <!-- Полоска опыта -->
             <div style="margin: 15px 0; text-align: left;">
@@ -159,40 +165,64 @@ function renderMain() {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            await fetch('/player/class', {
+            const res = await fetch('/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
             });
-            userData.current_class = newClass;
-            // При смене класса сбрасываем подкласс на первый подходящий
-            const firstSubclass = {
-                warrior: 'guardian',
-                assassin: 'assassin',
-                mage: 'pyromancer'
-            }[newClass];
-            userData.subclass = firstSubclass;
-            await fetch('/player/subclass', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
-            });
-            // Обновляем экран
-            renderMain();
+            if (res.ok) {
+                userData.current_class = newClass;
+                // При смене класса сбрасываем подкласс на первый подходящий
+                const firstSubclass = {
+                    warrior: 'guardian',
+                    assassin: 'assassin',
+                    mage: 'pyromancer'
+                }[newClass];
+                userData.subclass = firstSubclass;
+                await fetch('/player/subclass', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
+                });
+                // Обновляем экран
+                renderMain();
+            }
         });
     });
 
     subclassSelect.addEventListener('change', async (e) => {
         const newSubclass = e.target.value;
-        await fetch('/player/subclass', {
+        const res = await fetch('/player/subclass', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id, subclass: newSubclass })
         });
-        userData.subclass = newSubclass;
+        if (res.ok) {
+            userData.subclass = newSubclass;
+        }
     });
 
     document.getElementById('fightBtn').addEventListener('click', () => startBattle());
+}
+
+function getCurrentClassData() {
+    if (!userData || !userData.current_class) {
+        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
+    }
+    return userClasses.find(c => c.class === userData.current_class) || { 
+        level: 1, skill_points: 0, 
+        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
+        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
+        dodge_points: 0, acc_points: 0, mana_points: 0 
+    };
+}
+
+function getCurrentClassLevel() {
+    return getCurrentClassData().level;
+}
+
+function getCurrentClassSkillPoints() {
+    return getCurrentClassData().skill_points;
 }
 
 // ==================== ЭКИПИРОВКА ====================
@@ -437,7 +467,7 @@ function renderTasks() {
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const classData = getCurrentClassData();
-    const base = baseStats[userData.current_class] || { hp:0, atk:0, def:0, res:0, spd:0, crit:0, critDmg:0, dodge:0, acc:0, mana:0 };
+    const base = baseStats[userData.current_class] || baseStats.warrior;
     const content = document.getElementById('content');
     content.innerHTML = `
         <h3>Профиль</h3>
@@ -460,12 +490,12 @@ function renderProfile() {
     `;
 }
 
-// ==================== НАВЫКИ (обновлённая версия) ====================
+// ==================== НАВЫКИ ====================
 function renderSkills() {
     const classData = getCurrentClassData();
     const skillPoints = classData.skill_points;
     const currentClass = userData.current_class;
-    const base = baseStats[currentClass] || { hp:0, atk:0, def:0, res:0, spd:0, crit:0, critDmg:0, dodge:0, acc:0, mana:0 };
+    const base = baseStats[currentClass] || baseStats.warrior;
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -491,7 +521,6 @@ function renderSkills() {
         </div>
     `;
 
-    // Обработчики для кнопок выбора класса
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -506,7 +535,6 @@ function renderSkills() {
         });
     });
 
-    // Обработчики для кнопок "+"
     document.querySelectorAll('.skill-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = e.target.dataset.stat;
@@ -714,10 +742,12 @@ async function refreshData() {
     showScreen(currentScreen);
 }
 
+// Обработчики меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         showScreen(item.dataset.screen);
     });
 });
 
+// Запуск
 init();

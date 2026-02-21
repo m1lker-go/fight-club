@@ -2,18 +2,20 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Расчёт характеристик (как было)
-function calculateStats(user, inventory) {
+// Вспомогательная функция для расчёта итоговых характеристик героя (из класса + экипировка)
+function calculateStats(classData, inventory) {
   let stats = {
-    hp: 10 + (user.hp_points || 0) * 2,
-    atk: (user.atk_points || 0) + 5,
-    def: (user.def_points || 0),
-    res: (user.res_points || 0),
-    spd: (user.spd_points || 0) + 10,
-    crit: (user.crit_points || 0),
-    critDmg: 2.0 + ((user.crit_dmg_points || 0) / 100),
-    dodge: (user.dodge_points || 0),
-    acc: (user.acc_points || 0) + 100,
+    hp: 10 + (classData.hp_points || 0) * 2,
+    atk: (classData.atk_points || 0) + 5,
+    def: (classData.def_points || 0),
+    res: (classData.res_points || 0),
+    spd: (classData.spd_points || 0) + 10,
+    crit: (classData.crit_points || 0),
+    critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
+    dodge: (classData.dodge_points || 0),
+    acc: (classData.acc_points || 0) + 100,
+    manaMax: 100,
+    manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 25) // воин, ассасин, маг
   };
 
   inventory.forEach(item => {
@@ -28,9 +30,10 @@ function calculateStats(user, inventory) {
     stats.acc += item.acc_bonus || 0;
   });
 
-  if (user.class === 'warrior') {
+  // Применяем особенности класса
+  if (classData.class === 'warrior') {
     stats.def = Math.min(80, stats.def * 1.5);
-  } else if (user.class === 'assassin') {
+  } else if (classData.class === 'assassin') {
     stats.crit = Math.min(75, stats.crit * 1.25);
   }
 
@@ -43,87 +46,100 @@ function calculateStats(user, inventory) {
   return stats;
 }
 
-// Симуляция одного удара (возвращает урон и сообщение)
+// Симуляция одного удара (автоатака)
 function performAttack(attackerStats, defenderStats) {
   const hitChance = Math.min(100, Math.max(5, attackerStats.acc - defenderStats.dodge));
   if (Math.random() * 100 > hitChance) {
-    return { damage: 0, log: 'промах' };
+    return { hit: false, damage: 0, isCrit: false, log: 'промах' };
   }
+
   let damage = attackerStats.atk;
   const isCrit = Math.random() * 100 < attackerStats.crit;
   if (isCrit) {
     damage *= attackerStats.critDmg;
   }
+
   damage = damage * (1 - defenderStats.def / 100);
   damage = Math.max(1, Math.floor(damage));
-  return { damage, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}` };
+
+  return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}` };
 }
 
-// Симуляция боя с пошаговым логом
+// Симуляция боя с учётом маны (пока только накопление, без использования)
 function simulateBattle(playerStats, enemyStats) {
   let playerHp = playerStats.hp;
   let enemyHp = enemyStats.hp;
-  const steps = [];
-  let turn = playerStats.spd >= enemyStats.spd ? 'player' : 'enemy';
+  let playerMana = 0;
+  let enemyMana = 0;
+  const log = [];
+  const turns = [];
 
-  while (playerHp > 0 && enemyHp > 0) {
+  let turn = playerStats.spd >= enemyStats.spd ? 'player' : 'enemy';
+  let maxTurns = 100;
+  let t = 0;
+
+  while (playerHp > 0 && enemyHp > 0 && t < maxTurns) {
+    t++;
+    const turnState = {
+      turn,
+      playerHp,
+      enemyHp,
+      playerMana,
+      enemyMana,
+      action: null
+    };
+
     if (turn === 'player') {
+      // Восстановление маны в начале хода
+      playerMana = Math.min(100, playerMana + playerStats.manaRegen);
       const result = performAttack(playerStats, enemyStats);
-      if (result.damage > 0) {
-        enemyHp = Math.max(0, enemyHp - result.damage);
-      }
-      steps.push({
-        attacker: 'player',
-        damage: result.damage,
-        playerHp: playerHp,
-        enemyHp: enemyHp,
-        message: `Игрок ${result.log}`
-      });
+      if (result.hit) enemyHp -= result.damage;
+      log.push(`Игрок ${result.log}`);
+      turnState.action = `Игрок ${result.log}`;
       turn = 'enemy';
     } else {
+      enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
       const result = performAttack(enemyStats, playerStats);
-      if (result.damage > 0) {
-        playerHp = Math.max(0, playerHp - result.damage);
-      }
-      steps.push({
-        attacker: 'enemy',
-        damage: result.damage,
-        playerHp: playerHp,
-        enemyHp: enemyHp,
-        message: `Противник ${result.log}`
-      });
+      if (result.hit) playerHp -= result.damage;
+      log.push(`Противник ${result.log}`);
+      turnState.action = `Противник ${result.log}`;
       turn = 'player';
     }
+    turns.push(turnState);
   }
 
-  // Определяем победителя
   let winner = null;
   if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
   else if (playerHp <= 0) winner = 'enemy';
   else if (enemyHp <= 0) winner = 'player';
 
   return {
-    steps,
     winner,
-    playerFinalHp: playerHp,
-    enemyFinalHp: enemyHp,
+    playerHpRemain: Math.max(0, playerHp),
+    enemyHpRemain: Math.max(0, enemyHp),
+    log,
+    turns,
     playerMaxHp: playerStats.hp,
     enemyMaxHp: enemyStats.hp
   };
 }
 
-// Генерация бота (как было)
+// Генерация бота (полная линейка имён)
 function generateBot(playerLevel) {
-  const botTemplates = [
+  const names = [
+    // Деревянный манекен (воины)
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
+    // Серебряный защитник (ассасины)
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
+    // Золотой защитник (маги)
     { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' },
+    // Изумрудный защитник (все классы)
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'guardian' },
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'berserker' },
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'knight' },
@@ -133,6 +149,7 @@ function generateBot(playerLevel) {
     { name: 'Изумрудный защитник', class: 'mage', subclass: 'pyromancer' },
     { name: 'Изумрудный защитник', class: 'mage', subclass: 'cryomancer' },
     { name: 'Изумрудный защитник', class: 'mage', subclass: 'illusionist' },
+    // Защитник королевства (все классы)
     { name: 'Защитник королевства', class: 'warrior', subclass: 'guardian' },
     { name: 'Защитник королевства', class: 'warrior', subclass: 'berserker' },
     { name: 'Защитник королевства', class: 'warrior', subclass: 'knight' },
@@ -143,7 +160,8 @@ function generateBot(playerLevel) {
     { name: 'Защитник королевства', class: 'mage', subclass: 'cryomancer' },
     { name: 'Защитник королевства', class: 'mage', subclass: 'illusionist' }
   ];
-  const template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
+
+  const template = names[Math.floor(Math.random() * names.length)];
   const level = Math.max(1, playerLevel - 2 + Math.floor(Math.random() * 5));
 
   const baseHP = 10 + level * 2;
@@ -182,9 +200,50 @@ function generateBot(playerLevel) {
       crit: crit,
       critDmg: 2.0,
       dodge: dodge,
-      acc: 100
+      acc: 100,
+      manaMax: 100,
+      manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 25)
     }
   };
+}
+
+// Расчёт требуемого опыта для уровня
+function expNeeded(level) {
+  return Math.floor(80 * Math.pow(level, 1.5));
+}
+
+// Начисление опыта и проверка повышения уровня
+async function addExp(client, userId, className, expGain) {
+  const classRes = await client.query(
+    'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+    [userId, className]
+  );
+  let { level, exp } = classRes.rows[0];
+  exp += expGain;
+  let leveledUp = false;
+  while (exp >= expNeeded(level)) {
+    exp -= expNeeded(level);
+    level++;
+    leveledUp = true;
+    // Добавляем очки навыков (например, 3 за уровень)
+    await client.query(
+      'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
+      [userId, className]
+    );
+  }
+  await client.query(
+    'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
+    [level, exp, userId, className]
+  );
+  return leveledUp;
+}
+
+// Награда за победу в зависимости от серии
+function getCoinReward(streak) {
+  if (streak >= 25) return 20;
+  if (streak >= 10) return 10;
+  if (streak >= 5) return 7;
+  return 5;
 }
 
 router.post('/start', async (req, res) => {
@@ -193,40 +252,62 @@ router.post('/start', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    const player = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
-    if (player.rows.length === 0) throw new Error('User not found');
-    const playerData = player.rows[0];
+    // Получаем пользователя
+    const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
+    if (user.rows.length === 0) throw new Error('User not found');
+    const userData = user.rows[0];
 
-    if (playerData.energy < 1) throw new Error('Not enough energy');
+    if (userData.energy < 1) throw new Error('Not enough energy');
 
+    // Получаем данные текущего класса
+    const classData = await client.query(
+      'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
+      [userData.id, userData.current_class]
+    );
+    if (classData.rows.length === 0) throw new Error('Class data not found');
+
+    // Получаем экипировку
     const inv = await client.query(
       `SELECT i.* FROM inventory inv 
        JOIN items i ON inv.item_id = i.id 
        WHERE inv.user_id = $1 AND inv.equipped = true`,
-      [playerData.id]
+      [userData.id]
     );
     const playerInventory = inv.rows;
 
-    const playerStats = calculateStats(playerData, playerInventory);
-    const bot = generateBot(playerData.level);
+    const playerStats = calculateStats(classData.rows[0], playerInventory);
+    const bot = generateBot(classData.rows[0].level);
 
     const battleResult = simulateBattle(playerStats, bot.stats);
 
-    let winnerId = null;
-    let ratingChange = 0;
-    if (battleResult.winner === 'player') {
-      winnerId = playerData.id;
-      ratingChange = 15;
-    } else if (battleResult.winner === 'enemy') {
-      winnerId = null;
-      ratingChange = -15;
+    // Определяем результат для игрока
+    let isVictory = false;
+    if (battleResult.winner === 'player') isVictory = true;
+    else if (battleResult.winner === 'enemy') isVictory = false;
+    else { // ничья – считаем поражением?
+      isVictory = false; // или можно особый случай
     }
 
-    if (winnerId === playerData.id || battleResult.winner === 'enemy') {
-      await client.query('UPDATE users SET rating = rating + $1 WHERE id = $2', [ratingChange, playerData.id]);
+    // Начисление опыта и монет
+    let expGain = isVictory ? 10 : 3;
+    let coinReward = 0;
+    let newStreak = userData.win_streak || 0;
+
+    if (isVictory) {
+      newStreak++;
+      coinReward = getCoinReward(newStreak);
+      await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
+    } else {
+      newStreak = 0;
     }
 
-    await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [playerData.id]);
+    await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
+
+    // Добавляем опыт классу
+    const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
+
+    // Тратим энергию
+    await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
 
     await client.query('COMMIT');
 
@@ -238,14 +319,20 @@ router.post('/start', async (req, res) => {
         level: bot.level
       },
       result: {
-        steps: battleResult.steps,
         winner: battleResult.winner,
-        playerFinalHp: battleResult.playerFinalHp,
-        enemyFinalHp: battleResult.enemyFinalHp,
+        playerHpRemain: battleResult.playerHpRemain,
+        enemyHpRemain: battleResult.enemyHpRemain,
         playerMaxHp: battleResult.playerMaxHp,
-        enemyMaxHp: battleResult.enemyMaxHp
+        enemyMaxHp: battleResult.enemyMaxHp,
+        log: battleResult.log,
+        turns: battleResult.turns
       },
-      ratingChange: ratingChange
+      reward: {
+        exp: expGain,
+        coins: coinReward,
+        leveledUp
+      },
+      ratingChange: isVictory ? 15 : -15
     });
 
   } catch (e) {

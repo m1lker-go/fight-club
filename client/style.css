@@ -386,3 +386,108 @@ body {
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
 }
+
+/* Переключатель классов */
+.class-selector {
+    display: flex;
+    justify-content: space-around;
+    background-color: #232833;
+    border-radius: 30px;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+.class-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: #2f3542;
+    color: #aaa;
+}
+.class-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+.class-btn:not(.active):hover {
+    background-color: #3a4050;
+}
+
+/* Список навыков */
+.skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+.skill-item {
+    background-color: #232833;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid #00aaff;
+}
+.skill-info {
+    flex: 1;
+}
+.skill-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+.skill-desc {
+    font-size: 12px;
+    color: #aaa;
+}
+.skill-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00aaff;
+    min-width: 40px;
+    text-align: center;
+}
+.skill-btn {
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.skill-btn:disabled {
+    background-color: #444;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.skill-btn:not(:disabled):hover {
+    opacity: 0.8;
+}
+
+/* Полоска опыта */
+.hp-bar, .mana-bar {
+    width: 100px;
+    height: 10px;
+    background-color: #444;
+    border-radius: 5px;
+    margin: 5px auto;
+    overflow: hidden;
+}
+.hp-fill {
+    height: 100%;
+    background-color: #e74c3c;
+    width: 100%;
+}
+.mana-bar {
+    height: 4px;
+}
+.mana-fill {
+    height: 100%;
+    background-color: #00aaff;
+    width: 0%;
+}

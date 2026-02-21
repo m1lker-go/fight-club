@@ -52,11 +52,26 @@ router.post('/upgrade', async (req, res) => {
   }
 });
 
+// Сменить класс
+router.post('/class', async (req, res) => {
+  const { tg_id, class: newClass } = req.body;
+  try {
+    await pool.query('UPDATE users SET class = $1 WHERE tg_id = $2', [newClass, tg_id]);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Сменить подкласс
 router.post('/subclass', async (req, res) => {
   const { tg_id, subclass } = req.body;
-  await pool.query('UPDATE users SET subclass = $1 WHERE tg_id = $2', [subclass, tg_id]);
-  res.json({ success: true });
+  try {
+    await pool.query('UPDATE users SET subclass = $1 WHERE tg_id = $2', [subclass, tg_id]);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;

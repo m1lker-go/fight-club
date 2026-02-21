@@ -52,13 +52,12 @@ router.post('/login', async (req, res) => {
       const classes = ['warrior', 'assassin', 'mage'];
       for (let cls of classes) {
         await client.query(
-          `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT (user_id, class) DO NOTHING`,
           [userId, cls]
         );
       }
     }
 
-    // Возвращаем пользователя и его классы
     const userData = userRes.rows[0];
     const classes = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1',

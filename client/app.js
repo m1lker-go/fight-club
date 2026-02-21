@@ -1,4 +1,3 @@
-// Полный app.js (содержит все функции, включая обновлённый renderSkills)
 let tg = window.Telegram.WebApp;
 tg.expand();
 
@@ -7,6 +6,7 @@ let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
 
+// Словарь для перевода подклассов
 const subclassNames = {
     guardian: 'Страж',
     berserker: 'Берсерк',
@@ -19,19 +19,28 @@ const subclassNames = {
     illusionist: 'Иллюзионист'
 };
 
+// Описания навыков с подробностями
 const skillDescriptions = {
-    hp_points: '+2 HP за очко (с учётом класса)',
-    atk_points: '+1 ATK за очко (с учётом класса)',
-    def_points: '+1% к защите (макс. 80%)',
-    res_points: '+1% к сопротивлению (макс. 80%)',
-    spd_points: '+1 к скорости (влияет на очерёдность)',
-    crit_points: '+1% к шансу крита (макс. 75%)',
-    crit_dmg_points: '+1% к множителю крита (база ×2.0)',
-    dodge_points: '+1% к увороту (макс. 70%)',
-    acc_points: '+1% к меткости (компенсирует уворот)',
-    mana_points: '+1% к эффективности активного навыка'
+    hp_points: 'Увеличивает максимальное здоровье на 2',
+    atk_points: 'Увеличивает базовую атаку на 1',
+    def_points: 'Снижает получаемый физический урон на 1%',
+    res_points: 'Снижает получаемый магический урон на 1%',
+    spd_points: 'Увеличивает скорость (очередность хода) на 1',
+    crit_points: 'Увеличивает шанс критического удара на 1%',
+    crit_dmg_points: 'Увеличивает множитель критического урона на 1% (база x2.0)',
+    dodge_points: 'Увеличивает шанс уворота на 1%',
+    acc_points: 'Увеличивает меткость на 1%',
+    mana_points: 'Увеличивает эффективность активного навыка на 1%'
 };
 
+// Стартовые значения для каждого класса (на 1 уровне)
+const baseStats = {
+    warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, critDmg: 0, dodge: 1, acc: 0, mana: 0 },
+    assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, critDmg: 0, dodge: 5, acc: 0, mana: 0 },
+    mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, critDmg: 0, dodge: 0, acc: 0, mana: 0 }
+};
+
+// Инициализация
 async function init() {
     const response = await fetch('/auth/login', {
         method: 'POST',
@@ -77,6 +86,7 @@ function showScreen(screen) {
     }
 }
 
+// ==================== ГЛАВНЫЙ ЭКРАН ====================
 function renderMain() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -162,7 +172,12 @@ function renderMain() {
 }
 
 function getCurrentClassData() {
-    return userClasses.find(c => c.class === userData.current_class) || { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
+    return userClasses.find(c => c.class === userData.current_class) || { 
+        level: 1, skill_points: 0, 
+        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
+        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
+        dodge_points: 0, acc_points: 0, mana_points: 0 
+    };
 }
 
 function getCurrentClassLevel() {
@@ -173,6 +188,7 @@ function getCurrentClassSkillPoints() {
     return getCurrentClassData().skill_points;
 }
 
+// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     const equipped = inventory.filter(item => item.equipped);
     const unequipped = inventory.filter(item => !item.equipped && !item.for_sale);
@@ -249,6 +265,7 @@ function renderEquip() {
     });
 }
 
+// ==================== МАГАЗИН СУНДУКОВ ====================
 function renderShop() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -302,6 +319,7 @@ function renderShop() {
     });
 }
 
+// ==================== МАРКЕТ ====================
 function renderMarket() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -369,6 +387,7 @@ async function loadMarketItems() {
     });
 }
 
+// ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -408,8 +427,10 @@ function renderTasks() {
     });
 }
 
+// ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const classData = getCurrentClassData();
+    const base = baseStats[userData.current_class] || { hp:0, atk:0, def:0, res:0, spd:0, crit:0, critDmg:0, dodge:0, acc:0, mana:0 };
     const content = document.getElementById('content');
     content.innerHTML = `
         <h3>Профиль</h3>
@@ -419,15 +440,15 @@ function renderProfile() {
         <div>Подкласс: ${subclassNames[userData.subclass] || userData.subclass}</div>
         <div>Очки навыков: ${classData.skill_points}</div>
         <h4>Характеристики</h4>
-        <div>HP: ${(classData.hp_points || 0) * 2}</div>
-        <div>ATK: ${(classData.atk_points || 0) + 5}</div>
-        <div>DEF: ${(classData.def_points || 0)}%</div>
-        <div>RES: ${(classData.res_points || 0)}%</div>
-        <div>SPD: ${(classData.spd_points || 0) + 10}</div>
-        <div>CRIT: ${(classData.crit_points || 0)}%</div>
-        <div>CRIT DMG: ${2.0 + ((classData.crit_dmg_points || 0) / 100)}x</div>
-        <div>DODGE: ${(classData.dodge_points || 0)}%</div>
-        <div>ACC: ${(classData.acc_points || 0) + 100}%</div>
+        <div>HP: ${base.hp + (classData.hp_points || 0) * 2}</div>
+        <div>ATK: ${base.atk + (classData.atk_points || 0)}</div>
+        <div>DEF: ${base.def + (classData.def_points || 0)}%</div>
+        <div>RES: ${base.res + (classData.res_points || 0)}%</div>
+        <div>SPD: ${base.spd + (classData.spd_points || 0)}</div>
+        <div>CRIT: ${base.crit + (classData.crit_points || 0)}%</div>
+        <div>CRIT DMG: ${(2.0 + (classData.crit_dmg_points || 0)/100).toFixed(2)}x</div>
+        <div>DODGE: ${base.dodge + (classData.dodge_points || 0)}%</div>
+        <div>ACC: ${base.acc + (classData.acc_points || 0) + 100}%</div>
         <div>MANA: ${(classData.mana_points || 0)}% усиление</div>
     `;
 }
@@ -437,43 +458,7 @@ function renderSkills() {
     const classData = getCurrentClassData();
     const skillPoints = classData.skill_points;
     const currentClass = userData.current_class;
-
-    // Функция для расчёта итоговых характеристик (без экипировки)
-    function getBaseStats() {
-        const base = {
-            hp: 10 + (classData.hp_points || 0) * 2,
-            atk: (classData.atk_points || 0) + 5,
-            def: (classData.def_points || 0),
-            res: (classData.res_points || 0),
-            spd: (classData.spd_points || 0) + 10,
-            crit: (classData.crit_points || 0),
-            critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
-            dodge: (classData.dodge_points || 0),
-            acc: (classData.acc_points || 0) + 100,
-            manaRegen: currentClass === 'warrior' ? 15 : (currentClass === 'assassin' ? 18 : 25)
-        };
-
-        // Применяем классовые множители
-        if (currentClass === 'warrior') {
-            base.hp = Math.floor(base.hp * 1.5);
-            base.def = Math.min(80, base.def * 1.5);
-        } else if (currentClass === 'assassin') {
-            base.atk = Math.floor(base.atk * 1.2);
-            base.crit = Math.min(75, base.crit * 1.25);
-        } else if (currentClass === 'mage') {
-            base.atk = Math.floor(base.atk * 1.2);
-        }
-
-        base.def = Math.min(80, base.def);
-        base.res = Math.min(80, base.res);
-        base.crit = Math.min(75, base.crit);
-        base.dodge = Math.min(70, base.dodge);
-        base.acc = Math.min(100, base.acc);
-
-        return base;
-    }
-
-    const stats = getBaseStats();
+    const base = baseStats[currentClass] || { hp:0, atk:0, def:0, res:0, spd:0, crit:0, critDmg:0, dodge:0, acc:0, mana:0 };
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -486,19 +471,20 @@ function renderSkills() {
             Доступно очков навыков: <strong>${skillPoints}</strong>
         </div>
         <div class="skills-list">
-            ${renderSkillItem('hp_points', 'Здоровье', `+2 HP за очко (с учётом класса)`, stats.hp, classData.hp_points, skillPoints)}
-            ${renderSkillItem('atk_points', 'Атака', `+1 ATK за очко (с учётом класса)`, stats.atk, classData.atk_points, skillPoints)}
-            ${renderSkillItem('def_points', 'Защита', `+1% к защите (макс. 80%)`, stats.def, classData.def_points, skillPoints)}
-            ${renderSkillItem('res_points', 'Сопротивление', `+1% к сопротивлению (макс. 80%)`, stats.res, classData.res_points, skillPoints)}
-            ${renderSkillItem('spd_points', 'Скорость', `+1 к скорости (влияет на очерёдность)`, stats.spd, classData.spd_points, skillPoints)}
-            ${renderSkillItem('crit_points', 'Шанс крита', `+1% к шансу крита (макс. 75%)`, stats.crit, classData.crit_points, skillPoints)}
-            ${renderSkillItem('crit_dmg_points', 'Крит. урон', `+1% к множителю крита (база ×2.0)`, (stats.critDmg * 100).toFixed(0) + '%', classData.crit_dmg_points, skillPoints)}
-            ${renderSkillItem('dodge_points', 'Уворот', `+1% к увороту (макс. 70%)`, stats.dodge, classData.dodge_points, skillPoints)}
-            ${renderSkillItem('acc_points', 'Меткость', `+1% к меткости (компенсирует уворот)`, stats.acc, classData.acc_points, skillPoints)}
-            ${renderSkillItem('mana_points', 'Мана (усиление)', `+1% к эффективности активного навыка`, classData.mana_points || 0, classData.mana_points, skillPoints)}
+            ${renderSkillItem('hp_points', 'Здоровье', skillDescriptions.hp_points, base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
+            ${renderSkillItem('atk_points', 'Атака', skillDescriptions.atk_points, base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
+            ${renderSkillItem('def_points', 'Защита', skillDescriptions.def_points, base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
+            ${renderSkillItem('res_points', 'Сопротивление', skillDescriptions.res_points, base.res + (classData.res_points || 0), classData.res_points || 0, skillPoints)}
+            ${renderSkillItem('spd_points', 'Скорость', skillDescriptions.spd_points, base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
+            ${renderSkillItem('crit_points', 'Шанс крита', skillDescriptions.crit_points, base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
+            ${renderSkillItem('crit_dmg_points', 'Крит. урон', skillDescriptions.crit_dmg_points, (2.0 + (classData.crit_dmg_points || 0)/100).toFixed(2), classData.crit_dmg_points || 0, skillPoints)}
+            ${renderSkillItem('dodge_points', 'Уворот', skillDescriptions.dodge_points, base.dodge + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
+            ${renderSkillItem('acc_points', 'Меткость', skillDescriptions.acc_points, base.acc + (classData.acc_points || 0) + 100, classData.acc_points || 0, skillPoints)}
+            ${renderSkillItem('mana_points', 'Мана', skillDescriptions.mana_points, (classData.mana_points || 0) + '%', classData.mana_points || 0, skillPoints)}
         </div>
     `;
 
+    // Обработчики для кнопок выбора класса
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -513,6 +499,7 @@ function renderSkills() {
         });
     });
 
+    // Обработчики для кнопок "+"
     document.querySelectorAll('.skill-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = e.target.dataset.stat;
@@ -536,7 +523,7 @@ function renderSkills() {
     });
 }
 
-function renderSkillItem(statName, displayName, description, currentValue, points, skillPoints) {
+function renderSkillItem(statName, displayName, description, currentValue, level, skillPoints) {
     return `
         <div class="skill-item">
             <div class="skill-info">
@@ -544,7 +531,6 @@ function renderSkillItem(statName, displayName, description, currentValue, point
                 <div class="skill-desc">${description}</div>
             </div>
             <div class="skill-value">${currentValue}</div>
-            <div style="min-width: 30px; text-align: center;">(${points})</div>
             <button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}>+</button>
         </div>
     `;

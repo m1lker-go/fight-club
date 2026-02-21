@@ -6,34 +6,56 @@ let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
 
-// Словарь для перевода подклассов
-const subclassNames = {
-    guardian: 'Страж',
-    berserker: 'Берсерк',
-    knight: 'Рыцарь',
-    assassin: 'Убийца',
-    venom_blade: 'Ядовитый клинок',
-    blood_hunter: 'Кровавый охотник',
-    pyromancer: 'Пиромант',
-    cryomancer: 'Криомант',
-    illusionist: 'Иллюзионист'
+// Словарь для перевода подклассов и их описания
+const roleDescriptions = {
+    guardian: {
+        name: 'Страж',
+        passive: 'Живой щит – снижает весь входящий урон на 10%, 20% шанс полностью заблокировать атаку.',
+        active: 'Несокрушимость – восстанавливает 20% + MANA% от максимального HP, снимает отрицательные эффекты.'
+    },
+    berserker: {
+        name: 'Берсерк',
+        passive: 'Кровавая ярость – чем меньше HP, тем выше урон (до +30% при 10% HP).',
+        active: 'Кровопускание – наносит чистый урон, равный 15% + MANA% от текущего HP врага, жертвуя 10% своего HP.'
+    },
+    knight: {
+        name: 'Рыцарь',
+        passive: 'Зеркальный щит – отражает 20% полученного физического урона обратно атакующему.',
+        active: 'Щит правосудия – на 2 хода увеличивает отражение урона на 30% + MANA% и даёт 50% сопротивления контролю.'
+    },
+    assassin: {
+        name: 'Убийца',
+        passive: 'Смертельное касание – критический урон ×2.5 вместо ×2.0.',
+        active: 'Смертельный удар – наносит 300% + MANA% урона от ATK, гарантированный крит.'
+    },
+    venom_blade: {
+        name: 'Ядовитый клинок',
+        passive: 'Кумулятивный яд – каждая атака накладывает яд (урон +2 за попадание, макс. 30), яд тикает в конце хода.',
+        active: 'Ядовитая волна – наносит урон ядом, равный текущий яд ×5 + MANA%, и мгновенно срабатывает яд.'
+    },
+    blood_hunter: {
+        name: 'Кровавый охотник',
+        passive: 'Вампиризм – восстанавливает 20% от нанесённого урона (лечение может превысить HP до 2×).',
+        active: 'Кровавая жатва – на 2 хода усиливает вампиризм до 50% + MANA% и наносит 150% урона.'
+    },
+    pyromancer: {
+        name: 'Пиромант',
+        passive: 'Горящие души – активные навыки поджигают цель: урон в конце хода 10% от урона навыка (до 3 стаков).',
+        active: 'Огненный шторм – наносит магический урон 400% + MANA% от ATK, поджигает с силой 50% от урона.'
+    },
+    cryomancer: {
+        name: 'Криомант',
+        passive: 'Ледяная кровь – 10% шанс заморозить атакующего на 1 ход при получении урона.',
+        active: 'Вечная зима – замораживает врага на 1 ход и наносит 200% + MANA% урона от ATK (удваивается, если враг уже заморожен).'
+    },
+    illusionist: {
+        name: 'Иллюзионист',
+        passive: 'Мираж – 20% шанс создать иллюзию и полностью избежать урона (срабатывает после уворота).',
+        active: 'Зазеркалье – на 1 ход враг атакует сам себя, нанося себе 100% + MANA% от своей ATK.'
+    }
 };
 
-// Описания навыков
-const skillDescriptions = {
-    hp_points: 'Увеличивает максимальное здоровье на 2',
-    atk_points: 'Увеличивает базовую атаку на 1',
-    def_points: 'Снижает получаемый физический урон на 1%',
-    res_points: 'Снижает получаемый магический урон на 1%',
-    spd_points: 'Увеличивает скорость (очередность хода) на 1',
-    crit_points: 'Увеличивает шанс критического удара на 1%',
-    crit_dmg_points: 'Увеличивает множитель критического урона на 1% (база x2.0)',
-    dodge_points: 'Увеличивает шанс уворота на 1%',
-    acc_points: 'Увеличивает меткость на 1%',
-    mana_points: 'Увеличивает эффективность активного навыка на 1%'
-};
-
-// Стартовые значения для каждого класса (на 1 уровне)
+// Базовые характеристики классов
 const baseStats = {
     warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, dodge: 1, acc: 0, mana: 0 },
     assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, dodge: 5, acc: 0, mana: 0 },
@@ -109,7 +131,6 @@ function renderMain() {
             </div>
             <h2>${userData.username || 'Игрок'}</h2>
             
-            <!-- Полоска опыта -->
             <div style="margin: 15px 0; text-align: left;">
                 <div style="display: flex; justify-content: space-between; font-size: 14px;">
                     <span>Уровень ${level}</span>
@@ -120,7 +141,6 @@ function renderMain() {
                 </div>
             </div>
             
-            <!-- Выбор класса (кнопки) -->
             <div style="margin: 20px 0;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px;">
                     <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
@@ -135,6 +155,7 @@ function renderMain() {
                     <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
                         <!-- заполняется динамически -->
                     </select>
+                    <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
                 </div>
             </div>
             
@@ -153,14 +174,13 @@ function renderMain() {
         const options = subclasses[className] || [];
         subclassSelect.innerHTML = options.map(sc => {
             const selected = (userData.subclass === sc) ? 'selected' : '';
-            const displayName = subclassNames[sc] || sc;
+            const displayName = roleDescriptions[sc]?.name || sc;
             return `<option value="${sc}" ${selected}>${displayName}</option>`;
         }).join('');
     }
 
     updateSubclasses(currentClass);
 
-    // Обработчики для кнопок класса
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -172,7 +192,6 @@ function renderMain() {
             });
             if (res.ok) {
                 userData.current_class = newClass;
-                // При смене класса сбрасываем подкласс на первый подходящий
                 const firstSubclass = {
                     warrior: 'guardian',
                     assassin: 'assassin',
@@ -184,7 +203,6 @@ function renderMain() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
                 });
-                // Обновляем экран
                 renderMain();
             }
         });
@@ -203,6 +221,50 @@ function renderMain() {
     });
 
     document.getElementById('fightBtn').addEventListener('click', () => startBattle());
+    document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(currentClass));
+}
+
+function showRoleInfoModal(className) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
+    modalTitle.innerText = `Роли класса ${classNameRu}`;
+    
+    const subclasses = {
+        warrior: ['guardian', 'berserker', 'knight'],
+        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+        mage: ['pyromancer', 'cryomancer', 'illusionist']
+    }[className] || [];
+    
+    let html = '';
+    subclasses.forEach(sc => {
+        const desc = roleDescriptions[sc];
+        if (desc) {
+            html += `
+                <div class="role-card">
+                    <h3>${desc.name}</h3>
+                    <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
+                    <p><span class="active">Активный:</span> ${desc.active}</p>
+                </div>
+            `;
+        }
+    });
+    modalBody.innerHTML = html;
+    
+    modal.style.display = 'block';
+    
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    };
+    
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
 }
 
 function getCurrentClassData() {
@@ -215,14 +277,6 @@ function getCurrentClassData() {
         spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
         dodge_points: 0, acc_points: 0, mana_points: 0 
     };
-}
-
-function getCurrentClassLevel() {
-    return getCurrentClassData().level;
-}
-
-function getCurrentClassSkillPoints() {
-    return getCurrentClassData().skill_points;
 }
 
 // ==================== ЭКИПИРОВКА ====================
@@ -474,7 +528,7 @@ function renderProfile() {
         <div>Уровень: ${classData.level}</div>
         <div>Опыт: ${classData.exp}</div>
         <div>Текущий класс: ${userData.current_class === 'warrior' ? 'Воин' : userData.current_class === 'assassin' ? 'Ассасин' : 'Маг'}</div>
-        <div>Подкласс: ${subclassNames[userData.subclass] || userData.subclass}</div>
+        <div>Подкласс: ${roleDescriptions[userData.subclass]?.name || userData.subclass}</div>
         <div>Очки навыков: ${classData.skill_points}</div>
         <h4>Характеристики</h4>
         <div>HP: ${base.hp + (classData.hp_points || 0) * 2}</div>
@@ -508,16 +562,16 @@ function renderSkills() {
             Доступно очков навыков: <strong>${skillPoints}</strong>
         </div>
         <div class="skills-list">
-            ${renderSkillItem('hp_points', 'Здоровье', skillDescriptions.hp_points, base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
-            ${renderSkillItem('atk_points', 'Атака', skillDescriptions.atk_points, base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
-            ${renderSkillItem('def_points', 'Защита', skillDescriptions.def_points, base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
-            ${renderSkillItem('res_points', 'Сопротивление', skillDescriptions.res_points, base.res + (classData.res_points || 0), classData.res_points || 0, skillPoints)}
-            ${renderSkillItem('spd_points', 'Скорость', skillDescriptions.spd_points, base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
-            ${renderSkillItem('crit_points', 'Шанс крита', skillDescriptions.crit_points, base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
-            ${renderSkillItem('crit_dmg_points', 'Крит. урон', skillDescriptions.crit_dmg_points, (2.0 + (classData.crit_dmg_points || 0)/100).toFixed(2), classData.crit_dmg_points || 0, skillPoints)}
-            ${renderSkillItem('dodge_points', 'Уворот', skillDescriptions.dodge_points, base.dodge + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
-            ${renderSkillItem('acc_points', 'Меткость', skillDescriptions.acc_points, base.acc + (classData.acc_points || 0) + 100, classData.acc_points || 0, skillPoints)}
-            ${renderSkillItem('mana_points', 'Мана', skillDescriptions.mana_points, (classData.mana_points || 0) + '%', classData.mana_points || 0, skillPoints)}
+            ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 2', base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
+            ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
+            ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1%', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
+            ${renderSkillItem('res_points', 'Сопротивление', 'Снижает получаемый магический урон на 1%', base.res + (classData.res_points || 0), classData.res_points || 0, skillPoints)}
+            ${renderSkillItem('spd_points', 'Скорость', 'Увеличивает скорость (очередность хода) на 1', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
+            ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1%', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
+            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Увеличивает множитель критического урона на 1% (база x2.0)', (2.0 + (classData.crit_dmg_points || 0)/100).toFixed(2), classData.crit_dmg_points || 0, skillPoints)}
+            ${renderSkillItem('dodge_points', 'Уворот', 'Увеличивает шанс уворота на 1%', base.dodge + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
+            ${renderSkillItem('acc_points', 'Меткость', 'Увеличивает меткость на 1%', base.acc + (classData.acc_points || 0) + 100, classData.acc_points || 0, skillPoints)}
+            ${renderSkillItem('mana_points', 'Мана', 'Увеличивает эффективность активного навыка на 1%', (classData.mana_points || 0) + '%', classData.mana_points || 0, skillPoints)}
         </div>
     `;
 

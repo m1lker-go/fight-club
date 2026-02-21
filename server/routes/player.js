@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+// В начале файла добавить функцию rechargeEnergy (можно вынести в общий модуль, но пока продублируем)
+async function rechargeEnergy(client, userId) {
+    const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
+    if (user.rows.length === 0) return;
+    const last = new Date(user.rows[0].last_energy);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - last) / (1000 * 60));
+    if (diffMinutes > 0) {
+        const newEnergy = Math.min(20, user.rows[0].energy + diffMinutes);
+        await client.query(
+            'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
+            [newEnergy, now, userId]
+        );
+    }
+}
+
 // Получить данные игрока (включая текущий класс)
 router.get('/:tg_id', async (req, res) => {
   const { tg_id } = req.params;

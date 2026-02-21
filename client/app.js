@@ -1,10 +1,11 @@
 let tg = window.Telegram.WebApp;
 tg.expand();
 
-let userData = null;
+let userData = null;          // данные из таблицы users
+let classesData = [];         // данные по каждому классу (warrior, assassin, mage)
 let inventory = [];
 let currentScreen = 'main';
-let battleInProgress = false; // флаг, что бой идёт
+let battleInProgress = false; // блокировка меню во время боя
 
 // Инициализация
 async function init() {
@@ -16,6 +17,7 @@ async function init() {
     const data = await response.json();
     if (data.user) {
         userData = data.user;
+        classesData = data.classes || [];
         inventory = data.inventory || [];
         updateTopBar();
         showScreen('main');
@@ -30,9 +32,12 @@ function updateTopBar() {
     document.getElementById('energy').innerText = userData.energy;
 }
 
-// Показ экранов (с проверкой на бой)
+// Показ экранов (с проверкой боя)
 function showScreen(screen) {
-    if (battleInProgress && screen !== 'battle') return; // нельзя переключаться во время боя
+    if (battleInProgress && screen !== 'battle') {
+        // Во время боя нельзя переключаться
+        return;
+    }
     currentScreen = screen;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
@@ -45,94 +50,30 @@ function showScreen(screen) {
     switch (screen) {
         case 'main': renderMain(); break;
         case 'equip': renderEquip(); break;
+        case 'skills': renderSkills(); break;          // новый экран навыков
         case 'shop': renderShop(); break;
         case 'market': renderMarket(); break;
         case 'tasks': renderTasks(); break;
         case 'profile': renderProfile(); break;
-        case 'battle': /* ничего не делаем, бой уже отрисован */ break;
+        case 'battle': /* рендерится через startBattle */ break;
     }
 }
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 function renderMain() {
     const content = document.getElementById('content');
+    const currentClass = classesData.find(c => c.class === userData.current_class) || classesData[0];
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
             <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
                 <i class="fas fa-shield-alt"></i>
             </div>
             <h2>${userData.username}</h2>
-            <div style="margin: 10px 0;">
-                <label>Класс: 
-                    <select id="classSelect">
-                        <option value="warrior" ${userData.class === 'warrior' ? 'selected' : ''}>Воин</option>
-                        <option value="assassin" ${userData.class === 'assassin' ? 'selected' : ''}>Ассасин</option>
-                        <option value="mage" ${userData.class === 'mage' ? 'selected' : ''}>Маг</option>
-                    </select>
-                </label>
-            </div>
-            <div style="margin: 10px 0;">
-                <label>Подкласс: 
-                    <select id="subclassSelect">
-                        <!-- заполняется динамически -->
-                    </select>
-                </label>
-            </div>
-            <p>Уровень ${userData.level} | Очков навыков: ${userData.skill_points}</p>
+            <p>Текущий класс: ${userData.current_class} / ${userData.subclass}</p>
+            <p>Уровень ${currentClass?.level || 1} | Очков навыков: ${currentClass?.skill_points || 0}</p>
             <button class="btn" id="fightBtn">Начать бой</button>
         </div>
     `;
-
-    const classSelect = document.getElementById('classSelect');
-    const subclassSelect = document.getElementById('subclassSelect');
-
-    function updateSubclasses(className) {
-        const subclasses = {
-            warrior: ['guardian', 'berserker', 'knight'],
-            assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-            mage: ['pyromancer', 'cryomancer', 'illusionist']
-        };
-        const options = subclasses[className] || [];
-        subclassSelect.innerHTML = options.map(sc => {
-            const selected = (userData.subclass === sc) ? 'selected' : '';
-            return `<option value="${sc}" ${selected}>${sc.replace('_', ' ').toUpperCase()}</option>`;
-        }).join('');
-    }
-
-    updateSubclasses(userData.class);
-
-    classSelect.addEventListener('change', async (e) => {
-        const newClass = e.target.value;
-        await fetch('/player/class', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
-        });
-        userData.class = newClass;
-        const firstSubclass = {
-            warrior: 'guardian',
-            assassin: 'assassin',
-            mage: 'pyromancer'
-        }[newClass];
-        userData.subclass = firstSubclass;
-        await fetch('/player/subclass', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
-        });
-        updateSubclasses(newClass);
-    });
-
-    subclassSelect.addEventListener('change', async (e) => {
-        const newSubclass = e.target.value;
-        await fetch('/player/subclass', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, subclass: newSubclass })
-        });
-        userData.subclass = newSubclass;
-    });
-
     document.getElementById('fightBtn').addEventListener('click', () => startBattle());
 }
 
@@ -213,7 +154,108 @@ function renderEquip() {
     });
 }
 
-// ==================== МАГАЗИН СУНДУКОВ ====================
+// ==================== ЭКРАН НАВЫКОВ (ПРОКАЧКА) ====================
+function renderSkills() {
+    const content = document.getElementById('content');
+    // Кнопки выбора класса
+    const classTabs = ['warrior', 'assassin', 'mage'].map(cls => {
+        const active = (cls === userData.current_class) ? 'active' : '';
+        return `<button class="class-tab ${active}" data-class="${cls}">${cls}</button>`;
+    }).join('');
+
+    // Данные текущего класса
+    const currentClass = classesData.find(c => c.class === userData.current_class) || classesData[0];
+    if (!currentClass) return;
+
+    const statFields = [
+        { label: 'Здоровье (+2 HP)', key: 'hp_points', value: currentClass.hp_points || 0 },
+        { label: 'Атака (+1 ATK)', key: 'atk_points', value: currentClass.atk_points || 0 },
+        { label: 'Защита (+1% DEF)', key: 'def_points', value: currentClass.def_points || 0 },
+        { label: 'Сопротивление (+1% RES)', key: 'res_points', value: currentClass.res_points || 0 },
+        { label: 'Скорость (+1 SPD)', key: 'spd_points', value: currentClass.spd_points || 0 },
+        { label: 'Шанс крита (+1% CRIT)', key: 'crit_points', value: currentClass.crit_points || 0 },
+        { label: 'Крит. урон (+1% DMG)', key: 'crit_dmg_points', value: currentClass.crit_dmg_points || 0 },
+        { label: 'Уворот (+1% DODGE)', key: 'dodge_points', value: currentClass.dodge_points || 0 },
+        { label: 'Меткость (+1% ACC)', key: 'acc_points', value: currentClass.acc_points || 0 },
+        { label: 'Мана (+1% усиление)', key: 'mana_points', value: currentClass.mana_points || 0 }
+    ];
+
+    let statsHtml = '';
+    statFields.forEach(stat => {
+        statsHtml += `
+            <div class="stat-row">
+                <span>${stat.label}: ${stat.value}</span>
+                <button class="upgrade-btn" data-stat="${stat.key}">+</button>
+            </div>
+        `;
+    });
+
+    content.innerHTML = `
+        <h3>Навыки</h3>
+        <div class="class-tabs">${classTabs}</div>
+        <p>Доступно очков навыков: ${currentClass.skill_points || 0}</p>
+        <div class="stats-list">
+            ${statsHtml}
+        </div>
+    `;
+
+    // Обработчики вкладок классов
+    document.querySelectorAll('.class-tab').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const newClass = e.target.dataset.class;
+            if (newClass === userData.current_class) return;
+            // Сначала обновляем на сервере текущий класс
+            await fetch('/player/class', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+            });
+            userData.current_class = newClass;
+            // Загружаем свежие данные по этому классу
+            const res = await fetch(`/player/class/${userData.tg_id}/${newClass}`);
+            const classInfo = await res.json();
+            // Обновляем classesData
+            const index = classesData.findIndex(c => c.class === newClass);
+            if (index !== -1) classesData[index] = classInfo;
+            else classesData.push(classInfo);
+            renderSkills(); // перерисовываем
+        });
+    });
+
+    // Обработчики улучшения
+    document.querySelectorAll('.upgrade-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const stat = e.target.dataset.stat;
+            const currentClass = userData.current_class;
+            const classObj = classesData.find(c => c.class === currentClass);
+            if (!classObj || classObj.skill_points < 1) {
+                alert('Недостаточно очков навыков');
+                return;
+            }
+            const res = await fetch('/player/upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tg_id: userData.tg_id,
+                    class: currentClass,
+                    stat: stat,
+                    points: 1
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Обновляем локально
+                classObj[stat] = (classObj[stat] || 0) + 1;
+                classObj.skill_points -= 1;
+                renderSkills();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        });
+    });
+}
+
+// ==================== МАГАЗИН ====================
 function renderShop() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -378,30 +420,35 @@ function renderTasks() {
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const content = document.getElementById('content');
+    const currentClass = classesData.find(c => c.class === userData.current_class) || classesData[0];
     content.innerHTML = `
         <h3>Профиль</h3>
-        <div>Уровень: ${userData.level}</div>
-        <div>Опыт: ${userData.exp}</div>
-        <div>Класс: ${userData.class}</div>
+        <div>Текущий класс: ${userData.current_class}</div>
         <div>Подкласс: ${userData.subclass}</div>
-        <div>Очки навыков: ${userData.skill_points}</div>
-        <h4>Характеристики</h4>
-        <div>HP: ${(userData.hp_points || 0) * 2}</div>
-        <div>ATK: ${(userData.atk_points || 0)}</div>
-        <div>DEF: ${(userData.def_points || 0)}%</div>
-        <div>RES: ${(userData.res_points || 0)}%</div>
-        <div>SPD: ${(userData.spd_points || 0) + 10}</div>
-        <div>CRIT: ${(userData.crit_points || 0)}%</div>
-        <div>CRIT DMG: ${2.0 + ((userData.crit_dmg_points || 0) / 100)}x</div>
-        <div>DODGE: ${(userData.dodge_points || 0)}%</div>
-        <div>ACC: ${(userData.acc_points || 0) + 100}%</div>
-        <div>MANA: ${(userData.mana_points || 0)}% усиление</div>
+        <div>Уровень (текущий класс): ${currentClass?.level || 1}</div>
+        <div>Опыт: ${currentClass?.exp || 0}</div>
+        <div>Очки навыков: ${currentClass?.skill_points || 0}</div>
+        <h4>Характеристики (база)</h4>
+        <div>HP: ${(currentClass?.hp_points || 0) * 2}</div>
+        <div>ATK: ${(currentClass?.atk_points || 0)}</div>
+        <div>DEF: ${(currentClass?.def_points || 0)}%</div>
+        <div>RES: ${(currentClass?.res_points || 0)}%</div>
+        <div>SPD: ${(currentClass?.spd_points || 0) + 10}</div>
+        <div>CRIT: ${(currentClass?.crit_points || 0)}%</div>
+        <div>CRIT DMG: ${2.0 + ((currentClass?.crit_dmg_points || 0) / 100)}x</div>
+        <div>DODGE: ${(currentClass?.dodge_points || 0)}%</div>
+        <div>ACC: ${(currentClass?.acc_points || 0) + 100}%</div>
+        <div>MANA: ${(currentClass?.mana_points || 0)}% усиление</div>
     `;
 }
 
 // ==================== БОЙ ====================
 async function startBattle() {
-    if (battleInProgress) return;
+    if (userData.energy < 1) {
+        alert('Недостаточно энергии');
+        return;
+    }
+    battleInProgress = true;
     const res = await fetch('/battle/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -410,12 +457,9 @@ async function startBattle() {
     const data = await res.json();
     if (data.error) {
         alert(data.error);
+        battleInProgress = false;
         return;
     }
-    // Скрываем нижнее меню (делаем его неактивным)
-    document.querySelector('.bottom-menu').style.pointerEvents = 'none';
-    document.querySelector('.bottom-menu').style.opacity = '0.5';
-    battleInProgress = true;
     showBattleScreen(data);
 }
 
@@ -424,7 +468,7 @@ function showBattleScreen(battleData) {
     content.innerHTML = `
         <div class="battle-screen">
             <div class="battle-header">
-                <div>${userData.username} (${userData.class})</div>
+                <div>${userData.username} (${userData.current_class})</div>
                 <div class="battle-timer" id="battleTimer">45</div>
                 <div>${battleData.opponent.username} (${battleData.opponent.class})</div>
             </div>
@@ -434,7 +478,10 @@ function showBattleScreen(battleData) {
                     <div class="hp-bar">
                         <div class="hp-fill" id="heroHpFill" style="width:100%"></div>
                     </div>
-                    <div id="heroHpText">${battleData.result.playerMaxHp}/${battleData.result.playerMaxHp}</div>
+                    <div class="mana-bar">
+                        <div class="mana-fill" id="heroManaFill" style="width:0%"></div>
+                    </div>
+                    <div id="heroHpText">${battleData.result.playerHpRemain}/${battleData.result.playerMaxHp}</div>
                 </div>
                 <div>VS</div>
                 <div class="enemy-card">
@@ -442,156 +489,132 @@ function showBattleScreen(battleData) {
                     <div class="hp-bar">
                         <div class="hp-fill" id="enemyHpFill" style="width:100%"></div>
                     </div>
-                    <div id="enemyHpText">${battleData.result.enemyMaxHp}/${battleData.result.enemyMaxHp}</div>
+                    <div class="mana-bar">
+                        <div class="mana-fill" id="enemyManaFill" style="width:0%"></div>
+                    </div>
+                    <div id="enemyHpText">${battleData.result.enemyHpRemain}/${battleData.result.enemyMaxHp}</div>
                 </div>
             </div>
-            <div class="battle-log" id="battleLog"></div>
+            <div class="battle-log" id="battleLog">
+                <!-- Лог будет обновляться -->
+            </div>
             <div class="battle-controls">
                 <button class="speed-btn active" data-speed="1">x1</button>
                 <button class="speed-btn" data-speed="2">x2</button>
             </div>
         </div>
-        <div id="battleResultOverlay" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #232833; padding: 20px; border-radius: 12px; border: 2px solid #00aaff; text-align: center; z-index: 1000;">
-            <h2 id="resultTitle"></h2>
-            <p id="resultDetails"></p>
-            <button class="btn" id="rematchBtn">В бой</button>
-            <button class="btn" id="backToMainBtn">Назад</button>
-        </div>
     `;
 
-    const steps = battleData.result.steps;
-    const playerMaxHp = battleData.result.playerMaxHp;
-    const enemyMaxHp = battleData.result.enemyMaxHp;
-    let currentPlayerHp = playerMaxHp;
-    let currentEnemyHp = enemyMaxHp;
-    let stepIndex = 0;
-    let speed = 1000; // мс между шагами
-    let timerSeconds = 45;
-    const timerElement = document.getElementById('battleTimer');
-    const logElement = document.getElementById('battleLog');
-    const heroHpFill = document.getElementById('heroHpFill');
-    const enemyHpFill = document.getElementById('enemyHpFill');
-    const heroHpText = document.getElementById('heroHpText');
-    const enemyHpText = document.getElementById('enemyHpText');
+    // Данные боя
+    const turns = battleData.result.turns || [];
+    const logDiv = document.getElementById('battleLog');
+    let turnIndex = 0;
+    let timeLeft = 45;
+    let speed = 1;
+    let interval = setInterval(updateTurn, 1000 / speed);
 
-    // Обновление отображения HP
-    function updateHpDisplay() {
-        const heroPercent = (currentPlayerHp / playerMaxHp) * 100;
-        const enemyPercent = (currentEnemyHp / enemyMaxHp) * 100;
-        heroHpFill.style.width = heroPercent + '%';
-        enemyHpFill.style.width = enemyPercent + '%';
-        heroHpText.innerText = `${currentPlayerHp}/${playerMaxHp}`;
-        enemyHpText.innerText = `${currentEnemyHp}/${enemyMaxHp}`;
-    }
+    function updateTurn() {
+        if (turnIndex < turns.length) {
+            const turn = turns[turnIndex];
+            // Обновляем полоски HP
+            const heroHpPercent = (turn.playerHp / battleData.result.playerMaxHp) * 100;
+            const enemyHpPercent = (turn.enemyHp / battleData.result.enemyMaxHp) * 100;
+            document.getElementById('heroHpFill').style.width = heroHpPercent + '%';
+            document.getElementById('enemyHpFill').style.width = enemyHpPercent + '%';
+            document.getElementById('heroHpText').innerText = `${turn.playerHp}/${battleData.result.playerMaxHp}`;
+            document.getElementById('enemyHpText').innerText = `${turn.enemyHp}/${battleData.result.enemyMaxHp}`;
 
-    // Добавление записи в лог
-    function addLog(message) {
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        entry.innerText = message;
-        logElement.appendChild(entry);
-        logElement.scrollTop = logElement.scrollHeight;
-    }
+            // Обновляем ману (условно)
+            const heroManaPercent = (turn.playerMana / 100) * 100;
+            const enemyManaPercent = (turn.enemyMana / 100) * 100;
+            document.getElementById('heroManaFill').style.width = heroManaPercent + '%';
+            document.getElementById('enemyManaFill').style.width = enemyManaPercent + '%';
 
-    // Функция выполнения следующего шага
-    function nextStep() {
-        if (stepIndex >= steps.length) {
-            // Бой завершён, показываем результат
-            finishBattle(battleData.result.winner);
-            return true; // завершено
-        }
-        const step = steps[stepIndex];
-        if (step.attacker === 'player') {
-            currentEnemyHp = step.enemyHp;
+            // Добавляем лог
+            if (turn.action) {
+                logDiv.innerHTML += `<div class="log-entry">${turn.action}</div>`;
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+
+            turnIndex++;
         } else {
-            currentPlayerHp = step.playerHp;
+            // Бой завершён
+            clearInterval(interval);
+            finishBattle(battleData);
         }
-        updateHpDisplay();
-        addLog(step.message);
-        stepIndex++;
-        return false;
     }
 
-    // Таймер обратного отсчёта
+    // Таймер
+    const timerEl = document.getElementById('battleTimer');
     const timerInterval = setInterval(() => {
-        timerSeconds--;
-        timerElement.innerText = timerSeconds;
-        if (timerSeconds <= 0) {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            // Определяем победителя по проценту HP
-            const playerPercent = (currentPlayerHp / playerMaxHp) * 100;
-            const enemyPercent = (currentEnemyHp / enemyMaxHp) * 100;
-            let winner;
-            if (playerPercent > enemyPercent) winner = 'player';
-            else if (enemyPercent > playerPercent) winner = 'enemy';
-            else winner = 'draw';
-            finishBattle(winner, true);
+            clearInterval(interval);
+            finishBattle(battleData, true); // принудительное завершение по таймеру
         }
     }, 1000);
 
-    // Запуск пошагового выполнения
-    let battleInterval = setInterval(() => {
-        const finished = nextStep();
-        if (finished) {
-            clearInterval(battleInterval);
-            clearInterval(timerInterval);
-        }
-    }, speed);
-
-    // Обработка кнопок скорости
+    // Управление скоростью
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            speed = btn.dataset.speed === '1' ? 1000 : 500;
-            // Перезапускаем интервал с новой скоростью
-            clearInterval(battleInterval);
-            battleInterval = setInterval(() => {
-                const finished = nextStep();
-                if (finished) {
-                    clearInterval(battleInterval);
-                    clearInterval(timerInterval);
-                }
-            }, speed);
+            speed = parseInt(btn.dataset.speed);
+            clearInterval(interval);
+            interval = setInterval(updateTurn, 1000 / speed);
         });
     });
 
-    // Функция завершения боя
-    function finishBattle(winner, timeExpired = false) {
-        clearInterval(battleInterval);
+    function finishBattle(battleData, timeout = false) {
         clearInterval(timerInterval);
+        clearInterval(interval);
         battleInProgress = false;
-        document.querySelector('.bottom-menu').style.pointerEvents = 'auto';
-        document.querySelector('.bottom-menu').style.opacity = '1';
 
-        const overlay = document.getElementById('battleResultOverlay');
-        const title = document.getElementById('resultTitle');
-        const details = document.getElementById('resultDetails');
-
-        let resultText = '';
-        if (winner === 'player') {
-            resultText = 'Победа!';
-        } else if (winner === 'enemy') {
-            resultText = 'Поражение';
+        let resultMessage = '';
+        if (timeout) {
+            // Определяем победителя по % HP
+            const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
+            const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
+            if (playerPercent > enemyPercent) {
+                resultMessage = 'Победа (по истечении времени)';
+            } else if (enemyPercent > playerPercent) {
+                resultMessage = 'Поражение (по истечении времени)';
+            } else {
+                resultMessage = 'Ничья';
+            }
         } else {
-            resultText = 'Ничья';
+            if (battleData.result.winner === 'player') resultMessage = 'Победа!';
+            else if (battleData.result.winner === 'enemy') resultMessage = 'Поражение...';
+            else resultMessage = 'Ничья';
         }
-        title.innerText = resultText;
-        if (timeExpired) {
-            details.innerText = 'Время вышло. Результат по проценту HP.';
-        } else {
-            details.innerText = '';
-        }
-        overlay.style.display = 'block';
 
-        document.getElementById('rematchBtn').onclick = () => {
-            overlay.style.display = 'none';
+        // Отображаем результат и награды
+        content.innerHTML += `
+            <div class="battle-result-overlay">
+                <div class="battle-result-card">
+                    <h2>${resultMessage}</h2>
+                    <p>Получено опыта: ${battleData.reward.exp}</p>
+                    <p>Получено монет: ${battleData.reward.coins}</p>
+                    ${battleData.reward.leveledUp ? '<p>Уровень повышен!</p>' : ''}
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn" id="againBtn">В бой</button>
+                        <button class="btn btn-outline" id="backBtn">Назад</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('againBtn').addEventListener('click', () => {
+            refreshData(); // обновляем данные (энергия, опыт и т.д.)
             startBattle();
-        };
-        document.getElementById('backToMainBtn').onclick = () => {
-            overlay.style.display = 'none';
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            refreshData();
             showScreen('main');
-        };
+        });
     }
 }
 
@@ -599,7 +622,8 @@ async function refreshData() {
     const res = await fetch(`/player/${userData.tg_id}`);
     const data = await res.json();
     userData = data.user;
-    inventory = data.inventory;
+    classesData = data.classes || [];
+    inventory = data.inventory || [];
     updateTopBar();
     showScreen(currentScreen);
 }
@@ -607,6 +631,7 @@ async function refreshData() {
 // Обработчики меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
+        if (battleInProgress && item.dataset.screen !== 'battle') return;
         showScreen(item.dataset.screen);
     });
 });

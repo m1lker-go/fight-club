@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Вспомогательная функция для расчёта итоговых характеристик героя (из класса + экипировка)
+// Вспомогательная функция для расчёта итоговых характеристик героя
 function calculateStats(classData, inventory) {
+  // База от очков характеристик
   let stats = {
     hp: 10 + (classData.hp_points || 0) * 2,
     atk: (classData.atk_points || 0) + 5,
@@ -15,9 +16,10 @@ function calculateStats(classData, inventory) {
     dodge: (classData.dodge_points || 0),
     acc: (classData.acc_points || 0) + 100,
     manaMax: 100,
-    manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 25) // воин, ассасин, маг
+    manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 25)
   };
 
+  // Добавляем бонусы от экипировки
   inventory.forEach(item => {
     stats.hp += item.hp_bonus || 0;
     stats.atk += item.atk_bonus || 0;
@@ -32,11 +34,17 @@ function calculateStats(classData, inventory) {
 
   // Применяем особенности класса
   if (classData.class === 'warrior') {
-    stats.def = Math.min(80, stats.def * 1.5);
+    stats.hp = Math.floor(stats.hp * 1.5);      // +50% здоровья
+    stats.def = Math.min(80, stats.def * 1.5); // +50% защиты
   } else if (classData.class === 'assassin') {
-    stats.crit = Math.min(75, stats.crit * 1.25);
+    stats.atk = Math.floor(stats.atk * 1.2);    // +20% атаки
+    stats.crit = Math.min(75, stats.crit * 1.25); // +25% шанса крита
+  } else if (classData.class === 'mage') {
+    stats.atk = Math.floor(stats.atk * 1.2);    // +20% атаки (магической, но пока так)
+    // позже можно добавить бонус к регенерации маны или сопротивлению
   }
 
+  // Ограничиваем проценты
   stats.def = Math.min(80, stats.def);
   stats.res = Math.min(80, stats.res);
   stats.crit = Math.min(75, stats.crit);
@@ -65,7 +73,7 @@ function performAttack(attackerStats, defenderStats) {
   return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}` };
 }
 
-// Симуляция боя с учётом маны (пока только накопление, без использования)
+// Симуляция боя с учётом маны
 function simulateBattle(playerStats, enemyStats) {
   let playerHp = playerStats.hp;
   let enemyHp = enemyStats.hp;
@@ -90,7 +98,6 @@ function simulateBattle(playerStats, enemyStats) {
     };
 
     if (turn === 'player') {
-      // Восстановление маны в начале хода
       playerMana = Math.min(100, playerMana + playerStats.manaRegen);
       const result = performAttack(playerStats, enemyStats);
       if (result.hit) enemyHp -= result.damage;
@@ -124,22 +131,18 @@ function simulateBattle(playerStats, enemyStats) {
   };
 }
 
-// Генерация бота (полная линейка имён)
+// Генерация бота
 function generateBot(playerLevel) {
   const names = [
-    // Деревянный манекен (воины)
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
-    // Серебряный защитник (ассасины)
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
     { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
-    // Золотой защитник (маги)
     { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' },
-    // Изумрудный защитник (все классы)
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'guardian' },
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'berserker' },
     { name: 'Изумрудный защитник', class: 'warrior', subclass: 'knight' },
@@ -149,7 +152,6 @@ function generateBot(playerLevel) {
     { name: 'Изумрудный защитник', class: 'mage', subclass: 'pyromancer' },
     { name: 'Изумрудный защитник', class: 'mage', subclass: 'cryomancer' },
     { name: 'Изумрудный защитник', class: 'mage', subclass: 'illusionist' },
-    // Защитник королевства (все классы)
     { name: 'Защитник королевства', class: 'warrior', subclass: 'guardian' },
     { name: 'Защитник королевства', class: 'warrior', subclass: 'berserker' },
     { name: 'Защитник королевства', class: 'warrior', subclass: 'knight' },
@@ -225,7 +227,6 @@ async function addExp(client, userId, className, expGain) {
     exp -= expNeeded(level);
     level++;
     leveledUp = true;
-    // Добавляем очки навыков (например, 3 за уровень)
     await client.query(
       'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
       [userId, className]
@@ -252,21 +253,18 @@ router.post('/start', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Получаем пользователя
     const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
     if (user.rows.length === 0) throw new Error('User not found');
     const userData = user.rows[0];
 
     if (userData.energy < 1) throw new Error('Not enough energy');
 
-    // Получаем данные текущего класса
     const classData = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
       [userData.id, userData.current_class]
     );
     if (classData.rows.length === 0) throw new Error('Class data not found');
 
-    // Получаем экипировку
     const inv = await client.query(
       `SELECT i.* FROM inventory inv 
        JOIN items i ON inv.item_id = i.id 
@@ -280,15 +278,11 @@ router.post('/start', async (req, res) => {
 
     const battleResult = simulateBattle(playerStats, bot.stats);
 
-    // Определяем результат для игрока
     let isVictory = false;
     if (battleResult.winner === 'player') isVictory = true;
     else if (battleResult.winner === 'enemy') isVictory = false;
-    else { // ничья – считаем поражением?
-      isVictory = false; // или можно особый случай
-    }
+    else isVictory = false;
 
-    // Начисление опыта и монет
     let expGain = isVictory ? 10 : 3;
     let coinReward = 0;
     let newStreak = userData.win_streak || 0;
@@ -303,10 +297,8 @@ router.post('/start', async (req, res) => {
 
     await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
 
-    // Добавляем опыт классу
     const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
 
-    // Тратим энергию
     await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
 
     await client.query('COMMIT');

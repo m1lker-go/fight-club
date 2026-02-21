@@ -4,7 +4,7 @@ const { pool } = require('../db');
 
 // Вспомогательная функция для расчёта итоговых характеристик героя
 function calculateStats(classData, inventory) {
-  // База от очков характеристик
+  // База от очков характеристик (которые игрок вложил)
   let stats = {
     hp: 10 + (classData.hp_points || 0) * 2,
     atk: (classData.atk_points || 0) + 5,
@@ -32,16 +32,18 @@ function calculateStats(classData, inventory) {
     stats.acc += item.acc_bonus || 0;
   });
 
-  // Применяем особенности класса
+  // Применяем классовые бонусы (взяты из ранее согласованной таблицы)
   if (classData.class === 'warrior') {
     stats.hp = Math.floor(stats.hp * 1.5);      // +50% здоровья
     stats.def = Math.min(80, stats.def * 1.5); // +50% защиты
   } else if (classData.class === 'assassin') {
     stats.atk = Math.floor(stats.atk * 1.2);    // +20% атаки
     stats.crit = Math.min(75, stats.crit * 1.25); // +25% шанса крита
+    stats.dodge = Math.min(70, stats.dodge * 1.1); // небольшой бонус к увороту
   } else if (classData.class === 'mage') {
-    stats.atk = Math.floor(stats.atk * 1.2);    // +20% атаки (магической, но пока так)
-    // позже можно добавить бонус к регенерации маны или сопротивлению
+    stats.atk = Math.floor(stats.atk * 1.2);    // +20% магической атаки
+    stats.res = Math.min(80, stats.res * 1.2);  // +20% сопротивления
+    stats.manaRegen = 25;                        // мана реген высокая
   }
 
   // Ограничиваем проценты
@@ -131,7 +133,7 @@ function simulateBattle(playerStats, enemyStats) {
   };
 }
 
-// Генерация бота
+// Генерация бота (таблица с именами)
 function generateBot(playerLevel) {
   const names = [
     { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },

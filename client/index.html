@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Telegram Game</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Верхняя панель -->
+        <div class="top-bar">
+            <div class="coins"><i class="fas fa-coins"></i> <span id="coinCount">0</span></div>
+            <div class="rating"><i class="fas fa-trophy"></i> <span id="rating">1000</span></div>
+            <div class="energy"><i class="fas fa-bolt"></i> <span id="energy">20</span></div>
+        </div>
+
+        <!-- Основной контент (меняется динамически) -->
+        <div id="content" class="content">
+            <!-- Здесь будет рендериться активный экран -->
+        </div>
+
+        <!-- Нижнее меню -->
+        <div class="bottom-menu">
+            <div class="menu-item active" data-screen="main"><i class="fas fa-home"></i></div>
+            <div class="menu-item" data-screen="equip"><i class="fas fa-tshirt"></i></div>
+            <div class="menu-item" data-screen="shop"><i class="fas fa-store"></i></div>
+            <div class="menu-item" data-screen="market"><i class="fas fa-chart-line"></i></div>
+            <div class="menu-item" data-screen="tasks"><i class="fas fa-tasks"></i></div>
+            <div class="menu-item" data-screen="profile"><i class="fas fa-user"></i></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

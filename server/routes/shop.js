@@ -5,7 +5,7 @@ const { pool } = require('../db');
 const prices = { rare: 100, epic: 500, legendary: 2000 };
 
 function getLowerRarity(rarity) {
-    const map = { rare: 'common', epic: 'rare', legendary: 'epic' };
+    const map = { legendary: 'epic', epic: 'rare', rare: 'uncommon', uncommon: 'common' };
     return map[rarity] || 'common';
 }
 

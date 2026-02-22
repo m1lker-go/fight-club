@@ -310,11 +310,11 @@ function renderEquip() {
 
         let html = `
             <div class="equip-layout">
-                <div class="class-tabs">
-                    <button class="class-tab ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                    <button class="class-tab ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                    <button class="class-tab ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-                </div>
+               <div class="class-selector">
+    <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+    <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+    <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+</div>
 
                 <div class="equip-main">
                     <!-- Левая колонка -->

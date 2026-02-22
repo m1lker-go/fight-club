@@ -1,4 +1,4 @@
-let tg = window.Telegram.WebApp;
+llet tg = window.Telegram.WebApp;
 tg.expand();
 
 let userData = null;
@@ -369,11 +369,11 @@ function getCurrentClassData() {
         dodge_points: 0, acc_points: 0, mana_points: 0 
     };
 }
+
 // Функция для расчёта итоговых характеристик класса с учётом экипировки
 function calculateClassStats(className, classData, inventory) {
     const base = baseStats[className] || baseStats.warrior;
 
-    // Базовые характеристики (класс + очки навыков)
     let baseStatsWithSkills = {
         hp: base.hp + (classData.hp_points || 0) * 2,
         atk: base.atk + (classData.atk_points || 0),
@@ -384,21 +384,11 @@ function calculateClassStats(className, classData, inventory) {
         critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
         dodge: base.dodge + (classData.dodge_points || 0),
         acc: base.acc + (classData.acc_points || 0) + 100,
-        mana: (classData.mana_points || 0) // % усиление
+        mana: (classData.mana_points || 0)
     };
 
-    // Суммируем бонусы от надетой экипировки
     let gearBonuses = {
-        hp: 0,
-        atk: 0,
-        def: 0,
-        res: 0,
-        spd: 0,
-        crit: 0,
-        critDmg: 0,
-        dodge: 0,
-        acc: 0,
-        mana: 0
+        hp: 0, atk: 0, def: 0, res: 0, spd: 0, crit: 0, critDmg: 0, dodge: 0, acc: 0, mana: 0
     };
 
     const equippedItems = inventory.filter(item => item.equipped);
@@ -415,7 +405,6 @@ function calculateClassStats(className, classData, inventory) {
         gearBonuses.mana += item.mana_bonus || 0;
     });
 
-    // Применяем классовые бонусы (как в battle.js)
     let final = {
         hp: baseStatsWithSkills.hp + gearBonuses.hp,
         atk: baseStatsWithSkills.atk + gearBonuses.atk,
@@ -429,7 +418,6 @@ function calculateClassStats(className, classData, inventory) {
         mana: baseStatsWithSkills.mana + gearBonuses.mana
     };
 
-    // Классовые множители
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.5);
         final.def = Math.min(80, final.def * 1.5);
@@ -440,21 +428,15 @@ function calculateClassStats(className, classData, inventory) {
     } else if (className === 'mage') {
         final.atk = Math.floor(final.atk * 1.2);
         final.res = Math.min(80, final.res * 1.2);
-        // mana не меняем
     }
 
-    // Ограничения процентов (как в battle.js)
     final.def = Math.min(80, final.def);
     final.res = Math.min(80, final.res);
     final.crit = Math.min(75, final.crit);
     final.dodge = Math.min(70, final.dodge);
     final.acc = Math.min(100, final.acc);
 
-    return {
-        base: baseStatsWithSkills,
-        gear: gearBonuses,
-        final: final
-    };
+    return { base: baseStatsWithSkills, gear: gearBonuses, final: final };
 }
 
 // ==================== ЭКИПИРОВКА ====================
@@ -465,7 +447,6 @@ function renderEquip() {
     }
 
     function renderInventoryForClass(className) {
-        // Фильтруем предметы по классу владельца (owner_class) и по ограничению класса
         const classItems = inventory.filter(item => 
             item.owner_class === className && 
             (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
@@ -493,7 +474,6 @@ function renderEquip() {
                     <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
                     <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
                 </div>
-
                 <div class="equip-main">
                     <div class="equip-column">
         `;
@@ -529,19 +509,13 @@ function renderEquip() {
 
         html += `</div>
                 </div>
-
                 <h3>Рюкзак</h3>
                 <div class="inventory-container">
                     <div class="inventory-grid">
         `;
 
         const iconMap = {
-            weapon: '⚔️',
-            armor: '🛡️',
-            helmet: '⛑️',
-            gloves: '🧤',
-            boots: '👢',
-            accessory: '💍'
+            weapon: '⚔️', armor: '🛡️', helmet: '⛑️', gloves: '🧤', boots: '👢', accessory: '💍'
         };
 
         unequipped.forEach(item => {
@@ -619,7 +593,6 @@ function renderEquip() {
                 const forSale = itemDiv.dataset.forSale === 'true';
                 const actionsDiv = itemDiv.querySelector('.item-actions');
 
-                // Скрываем все другие открытые меню
                 document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
                     if (div !== actionsDiv) div.style.display = 'none';
                 });
@@ -673,120 +646,6 @@ function renderEquip() {
                                 alert('Ошибка: ' + err.error);
                             }
                         });
-                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const price = prompt('Введите цену продажи в монетах:');
-                            if (price && !isNaN(price) && parseInt(price) > 0) {
-                                const res = await fetch('/inventory/sell', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, price: parseInt(price) })
-                                });
-                                const data = await res.json();
-                                if (data.success) {
-                                    alert('Предмет выставлен на маркет');
-                                    refreshData();
-                                } else {
-                                    alert('Ошибка: ' + data.error);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-        });
-    }
-
-    renderInventoryForClass(selectedClass);
-}
-
-        // Обработчики слотов (снять предмет)
-        document.querySelectorAll('.equip-slot').forEach(slot => {
-            slot.addEventListener('click', async (e) => {
-                const itemId = slot.dataset.itemId;
-                if (!itemId) return;
-                if (confirm('Снять этот предмет?')) {
-                    try {
-                        const res = await fetch('/inventory/unequip', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                        });
-                        if (res.ok) {
-                            refreshData();
-                        } else {
-                            alert('Ошибка при снятии');
-                        }
-                    } catch (e) {
-                        alert('Сеть недоступна');
-                    }
-                }
-            });
-        });
-
-        // Обработчики для предметов в рюкзаке
-        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
-            itemDiv.addEventListener('click', (e) => {
-                if (e.target.classList.contains('action-btn')) return;
-
-                const itemId = itemDiv.dataset.itemId;
-                const forSale = itemDiv.dataset.forSale === 'true';
-                const actionsDiv = itemDiv.querySelector('.item-actions');
-
-                // Скрываем все другие открытые меню
-                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
-                    if (div !== actionsDiv) div.style.display = 'none';
-                });
-
-                if (actionsDiv.style.display === 'flex') {
-                    actionsDiv.style.display = 'none';
-                } else {
-                    if (forSale) {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
-                        `;
-                    } else {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
-                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
-                        `;
-                    }
-                    actionsDiv.style.display = 'flex';
-
-                    if (forSale) {
-                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const res = await fetch('/inventory/unsell', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                            });
-                            if (res.ok) {
-                                refreshData();
-                            } else {
-                                alert('Ошибка при снятии с продажи');
-                            }
-                        });
-                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            actionsDiv.style.display = 'none';
-                        });
-                    } else {
-                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const res = await fetch('/inventory/equip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-    });
-    if (res.ok) {
-        refreshData(); // обязательно обновляем экран
-    } else {
-        const err = await res.json();
-        alert('Ошибка: ' + err.error);
-    }
-});
                         actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const price = prompt('Введите цену продажи в монетах:');
@@ -960,12 +819,7 @@ async function loadMarketItems() {
     container.innerHTML = '';
 
     const iconMap = {
-        weapon: '⚔️',
-        armor: '🛡️',
-        helmet: '⛑️',
-        gloves: '🧤',
-        boots: '👢',
-        accessory: '💍'
+        weapon: '⚔️', armor: '🛡️', helmet: '⛑️', gloves: '🧤', boots: '👢', accessory: '💍'
     };
 
     items.forEach(item => {
@@ -998,7 +852,6 @@ async function loadMarketItems() {
         `;
     });
 
-    // Обработчики клика на предметы в маркете
     document.querySelectorAll('.market-item').forEach(itemDiv => {
         itemDiv.addEventListener('click', (e) => {
             if (e.target.classList.contains('buy-btn')) return;
@@ -1006,7 +859,6 @@ async function loadMarketItems() {
             const itemId = itemDiv.dataset.itemId;
             const actionsDiv = itemDiv.querySelector('.item-actions');
 
-            // Скрываем все другие открытые меню
             document.querySelectorAll('.market-item .item-actions').forEach(div => {
                 if (div !== actionsDiv) div.style.display = 'none';
             });
@@ -1014,9 +866,7 @@ async function loadMarketItems() {
             if (actionsDiv.style.display === 'flex') {
                 actionsDiv.style.display = 'none';
             } else {
-                actionsDiv.innerHTML = `
-                    <button class="buy-btn" data-item-id="${itemId}">Купить</button>
-                `;
+                actionsDiv.innerHTML = `<button class="buy-btn" data-item-id="${itemId}">Купить</button>`;
                 actionsDiv.style.display = 'flex';
 
                 actionsDiv.querySelector('.buy-btn').addEventListener('click', async (e) => {
@@ -1083,7 +933,7 @@ function renderTasks() {
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const currentClass = userData.current_class;
-    const classData = getCurrentClassData(); // данные текущего класса (уровень, очки навыков)
+    const classData = getCurrentClassData();
     const stats = calculateClassStats(currentClass, classData, inventory);
 
     const content = document.getElementById('content');
@@ -1093,13 +943,11 @@ function renderProfile() {
             <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
             <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
         </div>
-
         <div style="margin-top: 15px;">
             <div><strong>Уровень:</strong> ${classData.level}</div>
             <div><strong>Опыт:</strong> ${classData.exp}</div>
             <div><strong>Очки навыков:</strong> ${classData.skill_points}</div>
         </div>
-
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
             <tr>
@@ -1121,7 +969,6 @@ function renderProfile() {
         </table>
     `;
 
-    // Обработчики для переключения классов
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -1138,7 +985,6 @@ function renderProfile() {
 }
 
 function renderStatRow(label, baseValue, gearValue, finalValue, key) {
-    // gearValue может быть числом или строкой с процентом, но для отображения скобок используем число
     const gearNum = parseFloat(gearValue) || 0;
     const gearSign = gearNum >= 0 ? '+' : '';
     const gearDisplay = gearNum !== 0 ? `<span style="color:#00aaff;">(${gearSign}${gearValue})</span>` : '';
@@ -1404,12 +1250,10 @@ async function refreshData() {
     showScreen(currentScreen);
 }
 
-// Обработчики меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         showScreen(item.dataset.screen);
     });
 });
 
-// Запуск
 init();

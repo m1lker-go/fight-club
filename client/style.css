@@ -711,3 +711,15 @@ body {
     width: 100%;
     margin-top: 5px;
 }
+table {
+    font-size: 13px;
+}
+th {
+    color: #00aaff;
+    font-weight: bold;
+    padding-bottom: 8px;
+}
+td {
+    padding: 4px 0;
+    border-bottom: 1px solid #2f3542;
+}

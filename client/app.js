@@ -370,7 +370,7 @@ function getCurrentClassData() {
     };
 }
 
-// Функция для расчёта итоговых характеристик класса с учётом экипировки
+// Функция для расчёта итоговых характеристик класса с учётом экипировки (только текущего класса)
 function calculateClassStats(className, classData, inventory) {
     const base = baseStats[className] || baseStats.warrior;
 
@@ -431,11 +431,17 @@ function calculateClassStats(className, classData, inventory) {
         final.res = Math.min(80, final.res * 1.2);
     }
 
-    final.def = Math.min(80, final.def);
-    final.res = Math.min(80, final.res);
-    final.crit = Math.min(75, final.crit);
-    final.dodge = Math.min(70, final.dodge);
-    final.acc = Math.min(100, final.acc);
+    // Округление до целых
+    final.def = Math.round(Math.min(80, final.def));
+    final.res = Math.round(Math.min(80, final.res));
+    final.crit = Math.round(Math.min(75, final.crit));
+    final.dodge = Math.round(Math.min(70, final.dodge));
+    final.acc = Math.round(Math.min(100, final.acc));
+    final.hp = Math.round(final.hp);
+    final.atk = Math.round(final.atk);
+    final.spd = Math.round(final.spd);
+    final.mana = Math.round(final.mana);
+    final.critDmg = Math.round(final.critDmg * 100) / 100; // оставляем с двумя знаками для отображения в процентах
 
     return { base: baseStatsWithSkills, gear: gearBonuses, final: final };
 }
@@ -448,9 +454,8 @@ function renderEquip() {
     }
 
     function renderInventoryForClass(className) {
-        // Защита от отсутствия поля owner_class
         const classItems = inventory.filter(item => 
-            (!item.owner_class || item.owner_class === className) && 
+            item.owner_class === className && 
             (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
         );
         const equipped = classItems.filter(item => item.equipped);

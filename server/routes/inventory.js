@@ -23,30 +23,16 @@ router.post('/equip', async (req, res) => {
         const itemClass = item.rows[0].class_restriction;
         const ownerClass = item.rows[0].owner_class;
 
-        // Проверяем, что предмет принадлежит текущему классу
-        if (ownerClass !== userClass) {
-            throw new Error('Предмет принадлежит другому классу');
-        }
-
-        // Проверяем, подходит ли предмет по ограничению класса
+        // Проверяем, что предмет подходит по ограничению класса (если есть)
         if (itemClass && itemClass !== 'any' && itemClass !== userClass) {
             throw new Error('Предмет не подходит для вашего класса');
         }
 
-        // Снимаем все предметы того же типа и того же класса (если класс не универсальный)
-        if (!itemClass || itemClass === 'any') {
-            // Универсальный предмет – снимаем все того же типа (любого класса, принадлежащие текущему классу)
-            await client.query(
-                'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3',
-                [userId, type, userClass]
-            );
-        } else {
-            // Предмет для конкретного класса – снимаем только предметы того же типа и класса
-            await client.query(
-                'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND class_restriction = $3 AND owner_class = $4',
-                [userId, type, itemClass, userClass]
-            );
-        }
+        // Снимаем все предметы того же типа, принадлежащие текущему классу
+        await client.query(
+            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3',
+            [userId, type, userClass]
+        );
 
         // Одеваем выбранный
         const updateRes = await client.query(

@@ -214,7 +214,7 @@ body {
     color: white;
 }
 
-/* Переключатель классов (общий) */
+/* Переключатель классов (главный экран и навыки) */
 .class-selector {
     display: flex;
     justify-content: space-around;

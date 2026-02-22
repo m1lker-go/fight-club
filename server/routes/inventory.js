@@ -47,6 +47,29 @@ router.post('/sell', async (req, res) => {
     await client.query('BEGIN');
     const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
     const userId = user.rows[0].id;
+// Снять предмет
+router.post('/unequip', async (req, res) => {
+  const { tg_id, item_id } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+    if (user.rows.length === 0) throw new Error('User not found');
+    const userId = user.rows[0].id;
+
+    await client.query(
+      'UPDATE inventory SET equipped = false WHERE user_id = $1 AND item_id = $2',
+      [userId, item_id]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    res.status(400).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
     
     // Проверяем, что предмет в инвентаре и не надет
     const inv = await client.query(

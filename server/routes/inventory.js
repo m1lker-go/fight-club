@@ -39,14 +39,6 @@ router.post('/equip', async (req, res) => {
   }
 });
 
-// Продать предмет (выставить на маркет)
-router.post('/sell', async (req, res) => {
-  const { tg_id, item_id, price } = req.body;
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-    const userId = user.rows[0].id;
 // Снять предмет
 router.post('/unequip', async (req, res) => {
   const { tg_id, item_id } = req.body;
@@ -70,6 +62,15 @@ router.post('/unequip', async (req, res) => {
     client.release();
   }
 });
+
+// Продать предмет (выставить на маркет)
+router.post('/sell', async (req, res) => {
+  const { tg_id, item_id, price } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+    const userId = user.rows[0].id;
     
     // Проверяем, что предмет в инвентаре и не надет
     const inv = await client.query(
@@ -84,7 +85,10 @@ router.post('/unequip', async (req, res) => {
       [userId, item_id, price]
     );
     
-    // Удаляем из инвентаря (или помечаем for_sale)
+    // Помечаем предмет как for_sale или удаляем из инвентаря? В зависимости от логики.
+    // В текущей версии мы удаляем из инвентаря и добавляем в market.
+    // Если хотим оставить видимость в рюкзаке с пометкой, нужно обновить поле for_sale.
+    // Пока оставим как есть: удаляем из инвентаря.
     await client.query('DELETE FROM inventory WHERE user_id = $1 AND item_id = $2', [userId, item_id]);
     
     await client.query('COMMIT');

@@ -622,11 +622,10 @@ function renderShop() {
                     <div class="chest-name">Редкий сундук</div>
                     <div class="chest-desc">Шанс получения редкого снаряжения 70%</div>
                 </div>
-                <div class="chest-price">
-                    <span>100</span>
-                    <i class="fas fa-coins" style="color: gold;"></i>
-                </div>
-                <button class="chest-btn" data-chest="rare">Купить</button>
+                <button class="chest-btn" data-chest="rare">
+                    <span class="chest-price">100</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
             </div>
             <div class="chest-card">
                 <div class="chest-icon">
@@ -636,11 +635,10 @@ function renderShop() {
                     <div class="chest-name">Эпический сундук</div>
                     <div class="chest-desc">Шанс получения эпического снаряжения 70%</div>
                 </div>
-                <div class="chest-price">
-                    <span>500</span>
-                    <i class="fas fa-coins" style="color: gold;"></i>
-                </div>
-                <button class="chest-btn" data-chest="epic">Купить</button>
+                <button class="chest-btn" data-chest="epic">
+                    <span class="chest-price">500</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
             </div>
             <div class="chest-card">
                 <div class="chest-icon">
@@ -650,11 +648,10 @@ function renderShop() {
                     <div class="chest-name">Легендарный сундук</div>
                     <div class="chest-desc">Шанс получения легендарного снаряжения 70%</div>
                 </div>
-                <div class="chest-price">
-                    <span>2000</span>
-                    <i class="fas fa-coins" style="color: gold;"></i>
-                </div>
-                <button class="chest-btn" data-chest="legendary">Купить</button>
+                <button class="chest-btn" data-chest="legendary">
+                    <span class="chest-price">2000</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
             </div>
         </div>
     `;

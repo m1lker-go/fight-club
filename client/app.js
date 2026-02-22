@@ -660,14 +660,19 @@ function renderEquip() {
                         });
                     } else {
                         actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            await fetch('/inventory/equip', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                            });
-                            refreshData();
-                        });
+    e.stopPropagation();
+    const res = await fetch('/inventory/equip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+    });
+    if (res.ok) {
+        refreshData(); // обязательно обновляем экран
+    } else {
+        const err = await res.json();
+        alert('Ошибка: ' + err.error);
+    }
+});
                         actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const price = prompt('Введите цену продажи в монетах:');

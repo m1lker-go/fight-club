@@ -59,14 +59,26 @@ router.post('/login', async (req, res) => {
     }
 
     const userData = userRes.rows[0];
+
+    // Получаем классы пользователя
     const classes = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1',
       [userData.id]
     );
 
+    // Получаем инвентарь пользователя
+    const inventory = await client.query(
+      `SELECT i.*, inv.equipped, inv.for_sale, inv.price 
+       FROM inventory inv 
+       JOIN items i ON inv.item_id = i.id 
+       WHERE inv.user_id = $1`,
+      [userData.id]
+    );
+
     res.json({
       user: userData,
-      classes: classes.rows
+      classes: classes.rows,
+      inventory: inventory.rows
     });
   } catch (err) {
     console.error(err);
@@ -74,21 +86,6 @@ router.post('/login', async (req, res) => {
   } finally {
     client.release();
   }
-});
-
-// после создания пользователя или для существующего
-const inventory = await client.query(
-  `SELECT i.*, inv.equipped, inv.for_sale, inv.price 
-   FROM inventory inv 
-   JOIN items i ON inv.item_id = i.id 
-   WHERE inv.user_id = $1`,
-  [userData.id]
-);
-
-res.json({
-  user: userData,
-  classes: classes.rows,
-  inventory: inventory.rows
 });
 
 module.exports = router;

@@ -5,7 +5,7 @@ let userData = null;
 let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
-
+А
 // Словарь для перевода подклассов и их описания
 const roleDescriptions = {
     guardian: {
@@ -281,7 +281,6 @@ function getCurrentClassData() {
     };
 }
 
-// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
@@ -295,52 +294,76 @@ function renderEquip() {
         const equipped = classItems.filter(item => item.equipped);
         const unequipped = classItems.filter(item => !item.equipped && !item.for_sale);
 
-        const slotIcons = {
-            weapon: '⚔️',
-            armor: '🛡️',
-            helmet: '⛑️',
-            gloves: '🧤',
-            boots: '👢',
-            accessory: '💍'
-        };
-        const slotNames = {
-            weapon: 'Оружие',
-            armor: 'Броня',
-            helmet: 'Шлем',
-            gloves: 'Перчатки',
-            boots: 'Сапоги',
-            accessory: 'Аксессуар'
+        // Соответствие слотов и иконок
+        const slotConfig = {
+            // левая колонка
+            left: [
+                { type: 'helmet', icon: '/assets/helmet.png' },
+                { type: 'armor', icon: '/assets/armor.png' },
+                { type: 'gloves', icon: '/assets/arm.png' }
+            ],
+            // правая колонка
+            right: [
+                { type: 'weapon', icon: '/assets/weapon.png' },
+                { type: 'boots', icon: '/assets/leg.png' },
+                { type: 'accessory', icon: '/assets/ring.png' }
+            ]
         };
 
         let html = `
-            <div class="equip-screen">
+            <div class="equip-layout">
                 <div class="class-tabs">
                     <button class="class-tab ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
                     <button class="class-tab ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
                     <button class="class-tab ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
                 </div>
 
-                <div style="text-align: center; margin: 10px 0;">
-                    <div class="hero-avatar" style="width: 80px; height: 80px; margin: 0 auto;">
-                        <i class="fas fa-user"></i>
-                    </div>
-                </div>
-
-                <div class="equipped-slots">
+                <div class="equip-main">
+                    <!-- Левая колонка -->
+                    <div class="equip-column">
         `;
 
-        for (let slot in slotIcons) {
-            const item = equipped.find(i => i.type === slot);
+        // Левая колонка
+        slotConfig.left.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? '' : slot.icon; // если предмет надет, иконку типа не показываем (позже заменим на иконку предмета)
             html += `
-                <div class="equip-slot" data-slot="${slot}" data-item-id="${item ? item.id : ''}">
-                    <div class="slot-icon">${slotIcons[slot]}</div>
-                    <div class="slot-name">${slotNames[slot]}</div>
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
                     ${item ? `<div class="item-name">${item.name}</div>` : ''}
                 </div>
             `;
-        }
+        });
 
-        html += `</div><h3>Рюкзак</h3><div class="inventory-grid">`;
+        html += `</div> <!-- левая колонка -->
+
+                    <!-- Центр (персонаж) -->
+                    <div class="hero-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+
+                    <!-- Правая колонка -->
+                    <div class="equip-column">
+        `;
+
+        // Правая колонка
+        slotConfig.right.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? '' : slot.icon;
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                    ${item ? `<div class="item-name">${item.name}</div>` : ''}
+                </div>
+            `;
+        });
+
+        html += `</div> <!-- правая колонка -->
+                </div> <!-- equip-main -->
+
+                <h3>Рюкзак</h3>
+                <div class="inventory-grid">
+        `;
 
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
@@ -372,6 +395,7 @@ function renderEquip() {
         html += `</div></div>`;
         document.getElementById('content').innerHTML = html;
 
+        // Обработчики вкладок
         document.querySelectorAll('.class-tab').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -380,21 +404,23 @@ function renderEquip() {
             });
         });
 
+        // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
                 if (!itemId) return;
                 if (confirm('Снять этот предмет?')) {
-                    await fetch('/inventory/unequip', {
+                    const res = await fetch('/inventory/unequip', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                     });
-                    refreshData();
+                    if (res.ok) refreshData();
                 }
             });
         });
 
+        // Обработчики кнопок "Надеть"
         document.querySelectorAll('.equip-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -408,6 +434,7 @@ function renderEquip() {
             });
         });
 
+        // Обработчики кнопок "Продать"
         document.querySelectorAll('.sell-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();

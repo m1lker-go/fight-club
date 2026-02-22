@@ -4,6 +4,7 @@ const { pool } = require('../db');
 
 // Надеть предмет
 router.post('/equip', async (req, res) => {
+    console.log('Equip request:', req.body);
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
@@ -15,32 +16,34 @@ router.post('/equip', async (req, res) => {
         const userId = user.rows[0].id;
         const userClass = user.rows[0].current_class;
 
-        // Получаем предмет, чтобы узнать его тип и класс
+        // Получаем предмет
         const item = await client.query('SELECT type, class_restriction FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
         const itemClass = item.rows[0].class_restriction;
 
         // Проверяем, подходит ли предмет классу персонажа
-        if (itemClass !== 'any' && itemClass !== userClass) {
+        // NULL или 'any' означает, что предмет подходит любому классу
+        if (itemClass && itemClass !== 'any' && itemClass !== userClass) {
             throw new Error('Предмет не подходит для вашего класса');
         }
 
-        // Снимаем все предметы того же типа и того же класса (или 'any', если предмет 'any' – тогда снимаем все)
-        let unequipQuery;
-        let unequipParams;
-        if (itemClass === 'any') {
-            // Если предмет универсальный, снимаем все того же типа (любого класса)
-            unequipQuery = 'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2';
-            unequipParams = [userId, type];
+        // Снимаем все предметы того же типа и того же класса (если класс не универсальный)
+        if (!itemClass || itemClass === 'any') {
+            // Универсальный предмет – снимаем все того же типа (любого класса)
+            await client.query(
+                'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2',
+                [userId, type]
+            );
         } else {
-            // Иначе снимаем только предметы того же класса
-            unequipQuery = 'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND class_restriction = $3';
-            unequipParams = [userId, type, itemClass];
+            // Предмет для конкретного класса – снимаем только предметы того же типа и класса
+            await client.query(
+                'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND class_restriction = $3',
+                [userId, type, itemClass]
+            );
         }
-        await client.query(unequipQuery, unequipParams);
 
-        // Одеваем выбранный предмет
+        // Одеваем выбранный
         const updateRes = await client.query(
             'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
             [item_id, userId]
@@ -48,6 +51,7 @@ router.post('/equip', async (req, res) => {
         if (updateRes.rowCount === 0) throw new Error('Failed to equip item');
 
         await client.query('COMMIT');
+        console.log('Equip success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -60,6 +64,7 @@ router.post('/equip', async (req, res) => {
 
 // Снять предмет
 router.post('/unequip', async (req, res) => {
+    console.log('Unequip request:', req.body);
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
@@ -72,6 +77,7 @@ router.post('/unequip', async (req, res) => {
             [item_id, userId]
         );
         if (result.rowCount === 0) throw new Error('Item not found or not yours');
+        console.log('Unequip success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         console.error('Unequip error:', e);
@@ -83,6 +89,7 @@ router.post('/unequip', async (req, res) => {
 
 // Продать (выставить на продажу)
 router.post('/sell', async (req, res) => {
+    console.log('Sell request:', req.body);
     const { tg_id, item_id, price } = req.body;
     const client = await pool.connect();
     try {
@@ -103,6 +110,7 @@ router.post('/sell', async (req, res) => {
         );
 
         await client.query('COMMIT');
+        console.log('Sell success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -115,6 +123,7 @@ router.post('/sell', async (req, res) => {
 
 // Снять с продажи
 router.post('/unsell', async (req, res) => {
+    console.log('Unsell request:', req.body);
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
@@ -135,6 +144,7 @@ router.post('/unsell', async (req, res) => {
         );
 
         await client.query('COMMIT');
+        console.log('Unsell success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');

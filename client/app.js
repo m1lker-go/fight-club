@@ -369,6 +369,93 @@ function getCurrentClassData() {
         dodge_points: 0, acc_points: 0, mana_points: 0 
     };
 }
+// Функция для расчёта итоговых характеристик класса с учётом экипировки
+function calculateClassStats(className, classData, inventory) {
+    const base = baseStats[className] || baseStats.warrior;
+
+    // Базовые характеристики (класс + очки навыков)
+    let baseStatsWithSkills = {
+        hp: base.hp + (classData.hp_points || 0) * 2,
+        atk: base.atk + (classData.atk_points || 0),
+        def: base.def + (classData.def_points || 0),
+        res: base.res + (classData.res_points || 0),
+        spd: base.spd + (classData.spd_points || 0),
+        crit: base.crit + (classData.crit_points || 0),
+        critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
+        dodge: base.dodge + (classData.dodge_points || 0),
+        acc: base.acc + (classData.acc_points || 0) + 100,
+        mana: (classData.mana_points || 0) // % усиление
+    };
+
+    // Суммируем бонусы от надетой экипировки
+    let gearBonuses = {
+        hp: 0,
+        atk: 0,
+        def: 0,
+        res: 0,
+        spd: 0,
+        crit: 0,
+        critDmg: 0,
+        dodge: 0,
+        acc: 0,
+        mana: 0
+    };
+
+    const equippedItems = inventory.filter(item => item.equipped);
+    equippedItems.forEach(item => {
+        gearBonuses.hp += item.hp_bonus || 0;
+        gearBonuses.atk += item.atk_bonus || 0;
+        gearBonuses.def += item.def_bonus || 0;
+        gearBonuses.res += item.res_bonus || 0;
+        gearBonuses.spd += item.spd_bonus || 0;
+        gearBonuses.crit += item.crit_bonus || 0;
+        gearBonuses.critDmg += (item.crit_dmg_bonus || 0) / 100;
+        gearBonuses.dodge += item.dodge_bonus || 0;
+        gearBonuses.acc += item.acc_bonus || 0;
+        gearBonuses.mana += item.mana_bonus || 0;
+    });
+
+    // Применяем классовые бонусы (как в battle.js)
+    let final = {
+        hp: baseStatsWithSkills.hp + gearBonuses.hp,
+        atk: baseStatsWithSkills.atk + gearBonuses.atk,
+        def: baseStatsWithSkills.def + gearBonuses.def,
+        res: baseStatsWithSkills.res + gearBonuses.res,
+        spd: baseStatsWithSkills.spd + gearBonuses.spd,
+        crit: baseStatsWithSkills.crit + gearBonuses.crit,
+        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg,
+        dodge: baseStatsWithSkills.dodge + gearBonuses.dodge,
+        acc: baseStatsWithSkills.acc + gearBonuses.acc,
+        mana: baseStatsWithSkills.mana + gearBonuses.mana
+    };
+
+    // Классовые множители
+    if (className === 'warrior') {
+        final.hp = Math.floor(final.hp * 1.5);
+        final.def = Math.min(80, final.def * 1.5);
+    } else if (className === 'assassin') {
+        final.atk = Math.floor(final.atk * 1.2);
+        final.crit = Math.min(75, final.crit * 1.25);
+        final.dodge = Math.min(70, final.dodge * 1.1);
+    } else if (className === 'mage') {
+        final.atk = Math.floor(final.atk * 1.2);
+        final.res = Math.min(80, final.res * 1.2);
+        // mana не меняем
+    }
+
+    // Ограничения процентов (как в battle.js)
+    final.def = Math.min(80, final.def);
+    final.res = Math.min(80, final.res);
+    final.crit = Math.min(75, final.crit);
+    final.dodge = Math.min(70, final.dodge);
+    final.acc = Math.min(100, final.acc);
+
+    return {
+        base: baseStatsWithSkills,
+        gear: gearBonuses,
+        final: final
+    };
+}
 
 // ==================== ЭКИПИРОВКА ====================
 function renderEquip() {

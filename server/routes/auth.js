@@ -76,4 +76,19 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// после создания пользователя или для существующего
+const inventory = await client.query(
+  `SELECT i.*, inv.equipped, inv.for_sale, inv.price 
+   FROM inventory inv 
+   JOIN items i ON inv.item_id = i.id 
+   WHERE inv.user_id = $1`,
+  [userData.id]
+);
+
+res.json({
+  user: userData,
+  classes: classes.rows,
+  inventory: inventory.rows
+});
+
 module.exports = router;

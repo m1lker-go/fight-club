@@ -723,3 +723,17 @@ td {
     padding: 4px 0;
     border-bottom: 1px solid #2f3542;
 }
+/* Сила героя */
+.power {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.power i {
+    color: #00aaff;
+    margin-right: 5px;
+}
+.power span {
+    font-weight: bold;
+    color: white;
+}

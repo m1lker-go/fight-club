@@ -48,7 +48,6 @@ router.post('/login', async (req, res) => {
       );
       userRes = newUser;
       const userId = newUser.rows[0].id;
-      // Создаём записи для всех трёх классов
       const classes = ['warrior', 'assassin', 'mage'];
       for (let cls of classes) {
         await client.query(
@@ -59,8 +58,6 @@ router.post('/login', async (req, res) => {
     }
 
     const userData = userRes.rows[0];
-
-    // Получаем классы пользователя
     const classes = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1',
       [userData.id]

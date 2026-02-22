@@ -301,7 +301,8 @@ function renderMain() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
                 });
-                renderMain();
+                // После смены класса обновляем все данные
+                await refreshData();
             }
         });
     });
@@ -315,6 +316,8 @@ function renderMain() {
         });
         if (res.ok) {
             userData.subclass = newSubclass;
+            // Подкласс не влияет на силу, но можно обновить
+            await refreshData();
         }
     });
 
@@ -643,7 +646,7 @@ function renderEquip() {
                             body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                         });
                         if (res.ok) {
-                            refreshData();
+                            await refreshData();
                         } else {
                             alert('Ошибка при снятии');
                         }
@@ -692,7 +695,7 @@ function renderEquip() {
                                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                             });
                             if (res.ok) {
-                                refreshData();
+                                await refreshData();
                             } else {
                                 alert('Ошибка при снятии с продажи');
                             }
@@ -710,7 +713,7 @@ function renderEquip() {
                                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                             });
                             if (res.ok) {
-                                refreshData();
+                                await refreshData();
                             } else {
                                 const err = await res.json();
                                 alert('Ошибка: ' + err.error);
@@ -728,7 +731,7 @@ function renderEquip() {
                                 const data = await res.json();
                                 if (data.success) {
                                     alert('Предмет выставлен на маркет');
-                                    refreshData();
+                                    await refreshData();
                                 } else {
                                     alert('Ошибка: ' + data.error);
                                 }
@@ -802,7 +805,7 @@ function renderShop() {
             const data = await res.json();
             if (data.item) {
                 showChestResult(data.item);
-                refreshData();
+                await refreshData();
             } else {
                 alert('Ошибка: ' + data.error);
             }
@@ -950,7 +953,7 @@ async function loadMarketItems() {
                     const data = await res.json();
                     if (data.success) {
                         alert('Покупка успешна!');
-                        refreshData();
+                        await refreshData();
                     } else {
                         alert('Ошибка: ' + data.error);
                     }
@@ -989,7 +992,7 @@ function renderTasks() {
         const data = await res.json();
         if (data.streak !== undefined) {
             alert(`Получено ${data.rewardCoins} монет! Серия: ${data.streak}`);
-            refreshData();
+            await refreshData();
         } else {
             alert('Ошибка: ' + data.error);
         }
@@ -1043,13 +1046,16 @@ function renderProfile() {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            await fetch('/player/class', {
+            const res = await fetch('/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
             });
-            userData.current_class = newClass;
-            renderProfile();
+            if (res.ok) {
+                userData.current_class = newClass;
+                // Обновляем данные после смены класса
+                await refreshData();
+            }
         });
     });
 }
@@ -1128,7 +1134,7 @@ function renderSkills() {
             });
             const data = await res.json();
             if (data.success) {
-                refreshData();
+                await refreshData();
             } else {
                 alert('Ошибка: ' + data.error);
             }
@@ -1293,19 +1299,19 @@ function showBattleResult(battleData, timeOut = false) {
         </div>
     `;
 
-    document.getElementById('rematchBtn').addEventListener('click', () => {
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.pointerEvents = 'auto';
-            item.style.opacity = '1';
-        });
+    document.getElementById('rematchBtn').addEventListener('click', async () => {
+        // Сначала обновляем данные (энергия, монеты, опыт)
+        await refreshData();
+        // Затем запускаем новый бой
         startBattle();
     });
 
-    document.getElementById('backBtn').addEventListener('click', () => {
+    document.getElementById('backBtn').addEventListener('click', async () => {
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';
         });
+        await refreshData();
         showScreen('main');
     });
 }
@@ -1323,7 +1329,6 @@ async function refreshData() {
     updateTopBar();
     showScreen(currentScreen);
 }
-
 
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {

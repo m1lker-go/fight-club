@@ -281,7 +281,6 @@ function getCurrentClassData() {
     };
 }
 
-// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
@@ -293,9 +292,9 @@ function renderEquip() {
             item.class_restriction === className || item.class_restriction === 'any'
         );
         const equipped = classItems.filter(item => item.equipped);
-        const unequipped = classItems.filter(item => !item.equipped && !item.for_sale);
+        // Предметы в рюкзаке: не надетые (могут быть for_sale = true/false)
+        const unequipped = classItems.filter(item => !item.equipped);
 
-        // Соответствие слотов и иконок
         const slotConfig = {
             left: [
                 { type: 'helmet', icon: '/assets/helmet.png' },
@@ -324,7 +323,7 @@ function renderEquip() {
 
         slotConfig.left.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? '' : slot.icon; // если предмет надет, иконку не показываем (позже заменим на иконку предмета)
+            const icon = item ? '' : slot.icon; // если предмет надет, иконку слота не показываем (позже будет иконка предмета)
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
@@ -376,14 +375,16 @@ function renderEquip() {
             if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
             if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
 
+            const saleTag = item.for_sale ? '<span style="color:#e74c3c; font-size:10px; display:block;">(На продаже)</span>' : '';
+
             html += `
-                <div class="inventory-item ${rarityClass}" data-item-id="${item.id}">
+                <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}">
                     <div class="item-name">${item.name}</div>
                     <div class="item-stats">${stats.join(' • ')}</div>
                     <div class="item-rarity ${rarityClass}">${item.rarity}</div>
-                    <div class="item-actions">
-                        <button class="action-btn equip-btn" data-item-id="${item.id}">Надеть</button>
-                        <button class="action-btn sell-btn" data-item-id="${item.id}">Продать</button>
+                    ${saleTag}
+                    <div class="item-actions" style="display: none;">
+                        <!-- кнопки будут добавляться динамически при клике -->
                     </div>
                 </div>
             `;
@@ -401,59 +402,111 @@ function renderEquip() {
             });
         });
 
-        // Обработчики слотов (снять предмет) – временно отключено до добавления маршрута unequip
+        // Обработчики слотов (снять предмет) – если предмет надет, показываем подтверждение
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
-                if (!itemId) return;
+                if (!itemId) return; // пустой слот
                 if (confirm('Снять этот предмет?')) {
-                    // Пока заглушка, чтобы не было ошибки
-                    alert('Функция снятия временно отключена. Добавьте маршрут /inventory/unequip на сервере.');
-                    // После добавления маршрута раскомментируйте:
-                    /*
-                    const res = await fetch('/inventory/unequip', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    if (res.ok) refreshData();
-                    */
+                    try {
+                        const res = await fetch('/inventory/unequip', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        });
+                        if (res.ok) {
+                            refreshData();
+                        } else {
+                            alert('Ошибка при снятии');
+                        }
+                    } catch (e) {
+                        alert('Сеть недоступна');
+                    }
                 }
             });
         });
 
-        // Обработчики кнопок "Надеть"
-        document.querySelectorAll('.equip-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const itemId = btn.dataset.itemId;
-                await fetch('/inventory/equip', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                });
-                refreshData();
-            });
-        });
+        // Обработчики для предметов в рюкзаке
+        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+            itemDiv.addEventListener('click', (e) => {
+                // Если клик по уже открытым кнопкам – не обрабатываем
+                if (e.target.classList.contains('action-btn')) return;
 
-        // Обработчики кнопок "Продать"
-        document.querySelectorAll('.sell-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const itemId = btn.dataset.itemId;
-                const price = prompt('Введите цену продажи в монетах:');
-                if (price && !isNaN(price) && parseInt(price) > 0) {
-                    const res = await fetch('/inventory/sell', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, price: parseInt(price) })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert('Предмет выставлен на маркет');
-                        refreshData();
+                const itemId = itemDiv.dataset.itemId;
+                const forSale = itemDiv.dataset.forSale === 'true';
+                const actionsDiv = itemDiv.querySelector('.item-actions');
+
+                // Скрываем все другие открытые меню
+                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+                    if (div !== actionsDiv) div.style.display = 'none';
+                });
+
+                // Показываем/скрываем текущее меню
+                if (actionsDiv.style.display === 'flex') {
+                    actionsDiv.style.display = 'none';
+                } else {
+                    // Формируем кнопки в зависимости от статуса
+                    if (forSale) {
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                            <button class="action-btn cancel-btn">Отмена</button>
+                        `;
                     } else {
-                        alert('Ошибка: ' + data.error);
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
+                        `;
+                    }
+                    actionsDiv.style.display = 'flex';
+
+                    // Обработчики новых кнопок
+                    if (forSale) {
+                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            // Вызов API для снятия с продажи
+                            const res = await fetch('/inventory/unsell', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                            });
+                            if (res.ok) {
+                                refreshData();
+                            } else {
+                                alert('Ошибка при снятии с продажи');
+                            }
+                        });
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else {
+                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            await fetch('/inventory/equip', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                            });
+                            refreshData();
+                        });
+                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const price = prompt('Введите цену продажи в монетах:');
+                            if (price && !isNaN(price) && parseInt(price) > 0) {
+                                const res = await fetch('/inventory/sell', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, price: parseInt(price) })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('Предмет выставлен на маркет');
+                                    refreshData();
+                                } else {
+                                    alert('Ошибка: ' + data.error);
+                                }
+                            }
+                        });
                     }
                 }
             });

@@ -12,7 +12,6 @@ router.post('/equip', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
-        // Получаем тип предмета
         const item = await client.query('SELECT type FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
@@ -24,16 +23,17 @@ router.post('/equip', async (req, res) => {
         );
 
         // Одеваем выбранный
-        await client.query(
-            'UPDATE inventory SET equipped = true WHERE id = $1',
-            [item_id]
+        const updateRes = await client.query(
+            'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
+            [item_id, userId]
         );
+        if (updateRes.rowCount === 0) throw new Error('Failed to equip item');
 
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('Equip error:', e);
         res.status(500).json({ error: e.message });
     } finally {
         client.release();
@@ -56,6 +56,7 @@ router.post('/unequip', async (req, res) => {
         if (result.rowCount === 0) throw new Error('Item not found or not yours');
         res.json({ success: true });
     } catch (e) {
+        console.error('Unequip error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
@@ -87,6 +88,7 @@ router.post('/sell', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
+        console.error('Sell error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
@@ -118,6 +120,7 @@ router.post('/unsell', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
+        console.error('Unsell error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

@@ -734,6 +734,16 @@ async function loadMarketItems() {
     const items = await res.json();
     const container = document.getElementById('marketItems');
     container.innerHTML = '';
+
+    const iconMap = {
+        weapon: '⚔️',
+        armor: '🛡️',
+        helmet: '⛑️',
+        gloves: '🧤',
+        boots: '👢',
+        accessory: '💍'
+    };
+
     items.forEach(item => {
         const stats = [];
         if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
@@ -751,31 +761,58 @@ async function loadMarketItems() {
 
         container.innerHTML += `
             <div class="market-item ${rarityClass}" data-item-id="${item.id}">
-                <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
-                <div class="item-stats">${stats.join(' • ')}</div>
-                <div class="item-rarity ${rarityClass}">${rarityTranslations[item.rarity] || item.rarity}</div>
-                <div class="item-seller">Продавец: ${item.seller_name}</div>
-                <div class="item-price">${item.price} <i class="fas fa-coins" style="color: gold;"></i></div>
-                <button class="btn buy-btn" data-item-id="${item.id}">Купить</button>
+                <div class="item-icon">${iconMap[item.type] || '📦'}</div>
+                <div class="item-content">
+                    <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                    <div class="item-stats">${stats.join(' • ')}</div>
+                    <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                    <div class="item-seller">Продавец: ${item.seller_name}</div>
+                    <div class="item-price">${item.price} <i class="fas fa-coins" style="color: gold;"></i></div>
+                    <div class="item-actions" style="display: none;"></div>
+                </div>
             </div>
         `;
     });
-    document.querySelectorAll('.buy-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const itemId = btn.dataset.itemId;
-            if (!confirm('Подтвердите покупку')) return;
-            const res = await fetch('/market/buy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+
+    // Обработчики клика на предметы в маркете
+    document.querySelectorAll('.market-item').forEach(itemDiv => {
+        itemDiv.addEventListener('click', (e) => {
+            // Если клик по уже открытым кнопкам – не обрабатываем
+            if (e.target.classList.contains('buy-btn')) return;
+
+            const itemId = itemDiv.dataset.itemId;
+            const actionsDiv = itemDiv.querySelector('.item-actions');
+
+            // Скрываем все другие открытые меню
+            document.querySelectorAll('.market-item .item-actions').forEach(div => {
+                if (div !== actionsDiv) div.style.display = 'none';
             });
-            const data = await res.json();
-            if (data.success) {
-                alert('Покупка успешна!');
-                refreshData();
+
+            // Показываем/скрываем текущее меню
+            if (actionsDiv.style.display === 'flex') {
+                actionsDiv.style.display = 'none';
             } else {
-                alert('Ошибка: ' + data.error);
+                actionsDiv.innerHTML = `
+                    <button class="buy-btn" data-item-id="${itemId}">Купить</button>
+                `;
+                actionsDiv.style.display = 'flex';
+
+                actionsDiv.querySelector('.buy-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (!confirm('Подтвердите покупку')) return;
+                    const res = await fetch('/market/buy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('Покупка успешна!');
+                        refreshData();
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                });
             }
         });
     });

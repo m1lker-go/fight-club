@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+// Надеть предмет
 router.post('/equip', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
@@ -11,20 +12,22 @@ router.post('/equip', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
+        // Получаем тип предмета
         const item = await client.query('SELECT type FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
 
+        // Снимаем все предметы того же типа
         await client.query(
             'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2',
             [userId, type]
         );
 
-        const result = await client.query(
-            'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
-            [item_id, userId]
+        // Одеваем выбранный
+        await client.query(
+            'UPDATE inventory SET equipped = true WHERE id = $1',
+            [item_id]
         );
-        if (result.rowCount === 0) throw new Error('Failed to equip');
 
         await client.query('COMMIT');
         res.json({ success: true });
@@ -37,6 +40,7 @@ router.post('/equip', async (req, res) => {
     }
 });
 
+// Снять предмет
 router.post('/unequip', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
@@ -58,6 +62,7 @@ router.post('/unequip', async (req, res) => {
     }
 });
 
+// Продать (выставить на продажу)
 router.post('/sell', async (req, res) => {
     const { tg_id, item_id, price } = req.body;
     const client = await pool.connect();
@@ -88,6 +93,7 @@ router.post('/sell', async (req, res) => {
     }
 });
 
+// Снять с продажи
 router.post('/unsell', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();

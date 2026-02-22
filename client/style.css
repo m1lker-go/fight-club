@@ -6,7 +6,7 @@
 }
 
 body {
-    background-color: #1a1f2b; /* графитовый */
+    background-color: #1a1f2b;
     color: white;
     height: 100vh;
     display: flex;
@@ -106,55 +106,6 @@ body {
     color: #00aaff;
 }
 
-/* Карточки предметов (общие) */
-.item-card {
-    background-color: #232833;
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-left: 4px solid #00aaff;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.item-icon {
-    width: 50px;
-    height: 50px;
-    background-color: #2f3542;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: #00aaff;
-}
-
-.item-details {
-    flex: 1;
-}
-
-.item-name {
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-.item-stats {
-    font-size: 12px;
-    color: #aaa;
-}
-
-.item-rarity {
-    font-size: 12px;
-    text-transform: uppercase;
-    font-weight: bold;
-}
-
-/* Цвета редкости (общие) */
-.rarity-rare { color: #2ecc71; }
-.rarity-epic { color: #9b59b6; }
-.rarity-legendary { color: #f1c40f; }
-
 /* Экран боя */
 .battle-screen {
     display: flex;
@@ -209,13 +160,11 @@ body {
     margin: 5px auto;
     overflow: hidden;
 }
-
 .hp-fill {
     height: 100%;
     background-color: #e74c3c;
     width: 100%;
 }
-
 .mana-bar {
     width: 100px;
     height: 5px;
@@ -224,30 +173,10 @@ body {
     margin: 2px auto;
     overflow: hidden;
 }
-
 .mana-fill {
     height: 100%;
     background-color: #00aaff;
     width: 0%;
-}
-
-/* Окно результата боя */
-.battle-result-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-}
-
-.battle-result-card {
-    background: #232833;
-    padding: 30px;
-    border-radius: 20px;
-    text-align: center;
-    border: 2px solid #00aaff;
 }
 
 .battle-log {
@@ -285,7 +214,7 @@ body {
     color: white;
 }
 
-/* Переключатель классов (главный экран и навыки) */
+/* Переключатель классов (общий) */
 .class-selector {
     display: flex;
     justify-content: space-around;
@@ -294,7 +223,6 @@ body {
     padding: 5px;
     margin-bottom: 20px;
 }
-
 .class-btn {
     flex: 1;
     padding: 10px;
@@ -306,12 +234,10 @@ body {
     background-color: #2f3542;
     color: #aaa;
 }
-
 .class-btn.active {
     background-color: #00aaff;
     color: white;
 }
-
 .class-btn:not(.active):hover {
     background-color: #3a4050;
 }
@@ -323,7 +249,6 @@ body {
     gap: 12px;
     margin-top: 15px;
 }
-
 .skill-item {
     background-color: #232833;
     border-radius: 12px;
@@ -333,21 +258,17 @@ body {
     gap: 10px;
     border-left: 4px solid #00aaff;
 }
-
 .skill-info {
     flex: 1;
 }
-
 .skill-name {
     font-weight: bold;
     margin-bottom: 4px;
 }
-
 .skill-desc {
     font-size: 12px;
     color: #aaa;
 }
-
 .skill-value {
     font-size: 18px;
     font-weight: bold;
@@ -355,7 +276,6 @@ body {
     min-width: 40px;
     text-align: center;
 }
-
 .skill-btn {
     background-color: #00aaff;
     color: white;
@@ -367,18 +287,16 @@ body {
     cursor: pointer;
     transition: opacity 0.2s;
 }
-
 .skill-btn:disabled {
     background-color: #444;
     cursor: not-allowed;
     opacity: 0.5;
 }
-
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
 }
 
-/* Модальное окно для ролей */
+/* Модальное окно (общее) */
 .modal {
     display: none;
     position: fixed;
@@ -391,7 +309,6 @@ body {
     background-color: rgba(0,0,0,0.7);
     backdrop-filter: blur(5px);
 }
-
 .modal-content {
     background-color: #1a1f2b;
     margin: 10% auto;
@@ -403,7 +320,6 @@ body {
     color: white;
     box-shadow: 0 5px 15px rgba(0,170,255,0.3);
 }
-
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -412,25 +328,23 @@ body {
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
-
 .modal-header h2 {
     margin: 0;
     color: #00aaff;
 }
-
 .close {
     color: #aaa;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
 }
-
 .close:hover,
 .close:focus {
     color: #00aaff;
     text-decoration: none;
 }
 
+/* Карточка роли (для модалки ролей) */
 .role-card {
     background-color: #232833;
     border-radius: 10px;
@@ -438,61 +352,29 @@ body {
     margin-bottom: 15px;
     border-left: 4px solid #00aaff;
 }
-
 .role-card h3 {
     margin-top: 0;
     color: #00aaff;
 }
-
 .role-card p {
     margin: 5px 0;
     font-size: 14px;
     color: #ddd;
 }
-
 .role-card .passive {
     color: #2ecc71;
 }
-
 .role-card .active {
     color: #e74c3c;
 }
 
-/* Вкладки классов (в экипировке) */
-.class-tabs {
-    display: flex;
-    gap: 5px;
-    margin: 10px 0;
-    justify-content: center;
-}
-
-.class-tab {
-    background: #2f3542;
-    border: 1px solid #00aaff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.class-tab.active {
-    background: #00aaff;
-    color: white;
-}
-
-.class-tab:hover {
-    background: #00aaff77;
-}
-
-/* Экран экипировки с иконками */
+/* Экран экипировки */
 .equip-layout {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 15px;
 }
-
 .equip-main {
     display: flex;
     justify-content: center;
@@ -501,14 +383,12 @@ body {
     width: 100%;
     margin-bottom: 20px;
 }
-
 .equip-column {
     display: flex;
     flex-direction: column;
     gap: 10px;
     width: 80px;
 }
-
 .equip-slot {
     position: relative;
     width: 80px;
@@ -522,11 +402,9 @@ body {
     cursor: pointer;
     transition: transform 0.2s;
 }
-
 .equip-slot:hover {
     transform: scale(1.05);
 }
-
 .slot-icon {
     width: 60px;
     height: 60px;
@@ -535,7 +413,6 @@ body {
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
-
 .hero-center {
     width: 120px;
     height: 120px;
@@ -548,8 +425,6 @@ body {
     font-size: 40px;
     color: #00aaff;
 }
-
-/* Рюкзак (сетка 5 колонок) */
 .inventory-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -557,7 +432,6 @@ body {
     width: 100%;
     margin-top: 15px;
 }
-
 .inventory-item {
     background-color: #232833;
     border-radius: 12px;
@@ -567,11 +441,9 @@ body {
     transition: transform 0.2s;
     text-align: center;
 }
-
 .inventory-item:hover {
     transform: translateY(-2px);
 }
-
 .inventory-item .item-name {
     font-size: 12px;
     font-weight: bold;
@@ -580,32 +452,21 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 .inventory-item .item-stats {
     font-size: 10px;
     color: #aaa;
     margin-bottom: 6px;
 }
-
 .inventory-item .item-rarity {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: bold;
 }
-
-/* Цвета редкости для предметов (переопределение) */
-.rarity-common { border-left-color: #aaa; color: #aaa; }
-.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
-.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
-.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
-
-/* Кнопки действий над предметом */
-.item-actions {
+.inventory-item .item-actions {
     display: flex;
     gap: 4px;
     margin-top: 6px;
 }
-
 .action-btn {
     flex: 1;
     padding: 4px;
@@ -614,52 +475,17 @@ body {
     font-size: 10px;
     font-weight: bold;
     cursor: pointer;
-    transition: opacity 0.2s;
 }
-
-.action-btn:active {
-    opacity: 0.7;
-}
-
 .equip-btn { background-color: #00aaff; color: white; }
 .sell-btn { background-color: #e74c3c; color: white; }
 .unequip-btn { background-color: #f39c12; color: white; }
 
-/* Детальное описание предмета (модальное) */
-.item-detail-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #1a1f2b;
-    padding: 20px;
-    border-radius: 15px;
-    border: 2px solid #00aaff;
-    z-index: 1000;
-    width: 80%;
-    max-width: 300px;
-    color: white;
-}
+/* Цвета редкости */
+.rarity-common { border-left-color: #aaa; color: #aaa; }
+.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
+.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
+.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
 
-.detail-name {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.detail-stats {
-    margin: 10px 0;
-    font-size: 14px;
-}
-
-.detail-rarity {
-    margin-bottom: 15px;
-}
-
-.detail-actions {
-    display: flex;
-    gap: 10px;
-}
 /* Магазин сундуков */
 .chest-list {
     display: flex;

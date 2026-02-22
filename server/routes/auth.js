@@ -63,9 +63,9 @@ router.post('/login', async (req, res) => {
       [userData.id]
     );
 
-    // Возвращаем инвентарь
+    // Получаем инвентарь пользователя с добавленным полем owner_class
     const inventory = await client.query(
-      `SELECT id, name, type, rarity, class_restriction,
+      `SELECT id, name, type, rarity, class_restriction, owner_class,
               atk_bonus, def_bonus, hp_bonus, spd_bonus,
               crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus,
               equipped, for_sale, price

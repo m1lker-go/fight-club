@@ -5,6 +5,7 @@ let userData = null;
 let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
+let currentPower = 0; // для отображения силы героя
 
 // Словарь для перевода подклассов
 const roleDescriptions = {
@@ -181,6 +182,7 @@ function updateTopBar() {
     document.getElementById('coinCount').innerText = userData.coins;
     document.getElementById('rating').innerText = userData.rating;
     document.getElementById('energy').innerText = userData.energy;
+    document.getElementById('power').innerText = currentPower;
 }
 
 function showScreen(screen) {
@@ -213,6 +215,11 @@ function renderMain() {
     const exp = classData.exp;
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
     const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
+
+    // Рассчитываем силу героя
+    const stats = calculateClassStats(currentClass, classData, inventory);
+    currentPower = calculatePower(currentClass, stats.final);
+    updateTopBar();
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -444,6 +451,62 @@ function calculateClassStats(className, classData, inventory) {
     final.critDmg = Math.round(final.critDmg * 100) / 100; // оставляем с двумя знаками для отображения в процентах
 
     return { base: baseStatsWithSkills, gear: gearBonuses, final: final };
+}
+
+// Функция для расчёта силы героя
+function calculatePower(className, finalStats) {
+    // коэффициенты важности для каждой характеристики (множители)
+    const importance = {
+        warrior: {
+            hp: 2.0,
+            atk: 2.0,
+            def: 2.0,
+            res: 1.5,
+            spd: 1.0,
+            crit: 1.5,
+            critDmg: 1.5,
+            dodge: 1.0,
+            acc: 1.0,
+            mana: 1.0
+        },
+        assassin: {
+            hp: 1.5,
+            atk: 2.0,
+            def: 1.0,
+            res: 1.0,
+            spd: 1.5,
+            crit: 2.0,
+            critDmg: 1.5,
+            dodge: 2.0,
+            acc: 1.0,
+            mana: 1.0
+        },
+        mage: {
+            hp: 1.5,
+            atk: 2.0,
+            def: 1.0,
+            res: 2.0,
+            spd: 1.0,
+            crit: 1.5,
+            critDmg: 1.5,
+            dodge: 1.0,
+            acc: 1.0,
+            mana: 2.0
+        }
+    };
+    const coeff = importance[className] || importance.warrior;
+    let power = 0;
+    power += finalStats.hp * coeff.hp;
+    power += finalStats.atk * coeff.atk * 2; // дополнительный вес атаки
+    power += finalStats.def * coeff.def * 2;
+    power += finalStats.res * coeff.res * 2;
+    power += finalStats.spd * coeff.spd * 2;
+    power += finalStats.crit * coeff.crit * 3; // шанс крита
+    power += (finalStats.critDmg - 2.0) * 100 * coeff.critDmg; // крит.урон сверх 200%
+    power += finalStats.dodge * coeff.dodge * 3;
+    power += (finalStats.acc - 100) * coeff.acc * 2; // меткость сверх 100%
+    power += finalStats.mana * coeff.mana * 1;
+    return Math.round(power);
 }
 
 // ==================== ЭКИПИРОВКА ====================
@@ -1200,7 +1263,7 @@ function showBattleScreen(battleData) {
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
             let winner;
             if (playerPercent > enemyPercent) winner = 'player';
-            else if (enemyPercent > enemyPercent) winner = 'enemy';
+            else if (enemyPercent > playerPercent) winner = 'enemy';
             else winner = 'draw';
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
@@ -1253,6 +1316,10 @@ async function refreshData() {
     userData = data.user;
     userClasses = data.classes || [];
     inventory = data.inventory || [];
+    // пересчитать силу для текущего класса
+    const classData = getCurrentClassData();
+    const stats = calculateClassStats(userData.current_class, classData, inventory);
+    currentPower = calculatePower(userData.current_class, stats.final);
     updateTopBar();
     showScreen(currentScreen);
 }

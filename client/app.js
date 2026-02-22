@@ -1324,6 +1324,7 @@ async function refreshData() {
     showScreen(currentScreen);
 }
 
+
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         showScreen(item.dataset.screen);

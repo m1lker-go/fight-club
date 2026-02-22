@@ -35,8 +35,10 @@ function generateStats(template) {
     const shuffled = [...statFields].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 2);
     selected.forEach(field => {
-        const min = template[`min_${field}`] || 0;
-        const max = template[`max_${field}`] || 0;
+        // Избавляемся от суффикса _bonus, чтобы получить имя базовой характеристики
+        const baseField = field.replace('_bonus', ''); // 'atk_bonus' -> 'atk'
+        const min = template[`min_${baseField}`] || 0;
+        const max = template[`max_${baseField}`] || 0;
         stats[field] = randomInRange(min, max);
     });
     return stats;

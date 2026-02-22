@@ -963,27 +963,73 @@ function renderTasks() {
 
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
-    const classData = getCurrentClassData();
-    const base = baseStats[userData.current_class] || baseStats.warrior;
+    const currentClass = userData.current_class;
+    const classData = getCurrentClassData(); // данные текущего класса (уровень, очки навыков)
+    const stats = calculateClassStats(currentClass, classData, inventory);
+
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3>Профиль</h3>
-        <div>Уровень: ${classData.level}</div>
-        <div>Опыт: ${classData.exp}</div>
-        <div>Текущий класс: ${userData.current_class === 'warrior' ? 'Воин' : userData.current_class === 'assassin' ? 'Ассасин' : 'Маг'}</div>
-        <div>Подкласс: ${roleDescriptions[userData.subclass]?.name || userData.subclass}</div>
-        <div>Очки навыков: ${classData.skill_points}</div>
-        <h4>Характеристики</h4>
-        <div>HP: ${base.hp + (classData.hp_points || 0) * 2}</div>
-        <div>ATK: ${base.atk + (classData.atk_points || 0)}</div>
-        <div>DEF: ${base.def + (classData.def_points || 0)}%</div>
-        <div>RES: ${base.res + (classData.res_points || 0)}%</div>
-        <div>SPD: ${base.spd + (classData.spd_points || 0)}</div>
-        <div>CRIT: ${base.crit + (classData.crit_points || 0)}%</div>
-        <div>CRIT DMG: ${(2.0 + (classData.crit_dmg_points || 0)/100).toFixed(2)}x</div>
-        <div>DODGE: ${base.dodge + (classData.dodge_points || 0)}%</div>
-        <div>ACC: ${base.acc + (classData.acc_points || 0) + 100}%</div>
-        <div>MANA: ${(classData.mana_points || 0)}% усиление</div>
+        <div class="class-selector">
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <div><strong>Уровень:</strong> ${classData.level}</div>
+            <div><strong>Опыт:</strong> ${classData.exp}</div>
+            <div><strong>Очки навыков:</strong> ${classData.skill_points}</div>
+        </div>
+
+        <h4 style="margin: 15px 0 5px;">Характеристики</h4>
+        <table style="width:100%; border-collapse: collapse;">
+            <tr>
+                <th style="text-align:left;">Параметр</th>
+                <th style="text-align:center;">База</th>
+                <th style="text-align:center;">+Снаряжение</th>
+                <th style="text-align:center;">Итого</th>
+            </tr>
+            ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.final.hp, 'hp')}
+            ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.final.atk, 'atk')}
+            ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.final.def + '%', 'def')}
+            ${renderStatRow('Сопротивление (RES)', stats.base.res + '%', stats.gear.res + '%', stats.final.res + '%', 'res')}
+            ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.final.spd, 'spd')}
+            ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.final.crit + '%', 'crit')}
+            ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(0) + '%', (stats.gear.critDmg*100).toFixed(0) + '%', (stats.final.critDmg*100).toFixed(0) + '%', 'critDmg')}
+            ${renderStatRow('Уворот (DODGE)', stats.base.dodge + '%', stats.gear.dodge + '%', stats.final.dodge + '%', 'dodge')}
+            ${renderStatRow('Меткость (ACC)', stats.base.acc + '%', stats.gear.acc + '%', stats.final.acc + '%', 'acc')}
+            ${renderStatRow('Усиление маны (MANA)', stats.base.mana + '%', stats.gear.mana + '%', stats.final.mana + '%', 'mana')}
+        </table>
+    `;
+
+    // Обработчики для переключения классов
+    document.querySelectorAll('.class-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const newClass = e.target.dataset.class;
+            if (newClass === currentClass) return;
+            await fetch('/player/class', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+            });
+            userData.current_class = newClass;
+            renderProfile();
+        });
+    });
+}
+
+function renderStatRow(label, baseValue, gearValue, finalValue, key) {
+    // gearValue может быть числом или строкой с процентом, но для отображения скобок используем число
+    const gearNum = parseFloat(gearValue) || 0;
+    const gearSign = gearNum >= 0 ? '+' : '';
+    const gearDisplay = gearNum !== 0 ? `<span style="color:#00aaff;">(${gearSign}${gearValue})</span>` : '';
+    return `
+        <tr>
+            <td style="padding: 5px 0;">${label}</td>
+            <td style="text-align:center;">${baseValue}</td>
+            <td style="text-align:center;">${gearDisplay}</td>
+            <td style="text-align:center; font-weight:bold;">${finalValue}</td>
+        </tr>
     `;
 }
 

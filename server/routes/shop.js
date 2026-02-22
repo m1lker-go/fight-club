@@ -125,6 +125,16 @@ router.post('/buychest', async (req, res) => {
 
         const stats = generateStats(targetRarity);
 
+        // Определяем класс-владелец предмета:
+        // если предмет имеет ограничение класса (не 'any'), то он принадлежит этому классу,
+        // иначе – текущему классу игрока
+        let ownerClass;
+        if (template.class_restriction && template.class_restriction !== 'any') {
+            ownerClass = template.class_restriction;
+        } else {
+            ownerClass = userClass;
+        }
+
         // Вставляем предмет с указанием класса владельца
         const insertRes = await client.query(
             `INSERT INTO inventory 
@@ -134,7 +144,7 @@ router.post('/buychest', async (req, res) => {
               equipped, for_sale)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, false, false)
              RETURNING id`,
-            [userId, userClass, template.name, template.type, targetRarity, template.class_restriction,
+            [userId, ownerClass, template.name, template.type, targetRarity, template.class_restriction,
              stats.atk_bonus, stats.def_bonus, stats.hp_bonus, stats.spd_bonus,
              stats.crit_bonus, stats.crit_dmg_bonus, stats.dodge_bonus,
              stats.acc_bonus, stats.res_bonus, stats.mana_bonus]
@@ -151,7 +161,7 @@ router.post('/buychest', async (req, res) => {
                 type: template.type,
                 rarity: targetRarity,
                 class_restriction: template.class_restriction,
-                owner_class: userClass,
+                owner_class: ownerClass,
                 ...stats
             }
         });

@@ -107,8 +107,11 @@ router.post('/buychest', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id, coins FROM users WHERE tg_id = $1', [tg_id]);
+        // Получаем пользователя и его текущий класс
+        const user = await client.query('SELECT id, current_class, coins FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
+        const userId = user.rows[0].id;
+        const userClass = user.rows[0].current_class;
         if (user.rows[0].coins < price) throw new Error('Not enough coins');
 
         const targetRarity = Math.random() < 0.7 ? chestType : getLowerRarity(chestType);
@@ -122,15 +125,16 @@ router.post('/buychest', async (req, res) => {
 
         const stats = generateStats(targetRarity);
 
+        // Вставляем предмет с указанием класса владельца
         const insertRes = await client.query(
             `INSERT INTO inventory 
-             (user_id, name, type, rarity, class_restriction,
+             (user_id, owner_class, name, type, rarity, class_restriction,
               atk_bonus, def_bonus, hp_bonus, spd_bonus,
               crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus,
               equipped, for_sale)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, false, false)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, false, false)
              RETURNING id`,
-            [user.rows[0].id, template.name, template.type, targetRarity, template.class_restriction,
+            [userId, userClass, template.name, template.type, targetRarity, template.class_restriction,
              stats.atk_bonus, stats.def_bonus, stats.hp_bonus, stats.spd_bonus,
              stats.crit_bonus, stats.crit_dmg_bonus, stats.dodge_bonus,
              stats.acc_bonus, stats.res_bonus, stats.mana_bonus]
@@ -147,6 +151,7 @@ router.post('/buychest', async (req, res) => {
                 type: template.type,
                 rarity: targetRarity,
                 class_restriction: template.class_restriction,
+                owner_class: userClass,
                 ...stats
             }
         });

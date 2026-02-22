@@ -63,12 +63,14 @@ router.post('/login', async (req, res) => {
       [userData.id]
     );
 
-    // Получаем инвентарь пользователя
+    // Возвращаем инвентарь
     const inventory = await client.query(
-      `SELECT i.*, inv.equipped, inv.for_sale, inv.price 
-       FROM inventory inv 
-       JOIN items i ON inv.item_id = i.id 
-       WHERE inv.user_id = $1`,
+      `SELECT id, name, type, rarity, class_restriction,
+              atk_bonus, def_bonus, hp_bonus, spd_bonus,
+              crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus,
+              equipped, for_sale, price
+       FROM inventory
+       WHERE user_id = $1`,
       [userData.id]
     );
 

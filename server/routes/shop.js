@@ -4,22 +4,81 @@ const { pool } = require('../db');
 
 const prices = { rare: 100, epic: 500, legendary: 2000 };
 
-function getLowerRarity(rarity) {
-    const map = { legendary: 'epic', epic: 'rare', rare: 'uncommon', uncommon: 'common' };
-    return map[rarity] || 'common';
-}
+// Фиксированные значения бонусов по редкости
+const fixedStats = {
+    common: {
+        atk_bonus: 2,
+        def_bonus: 2,
+        hp_bonus: 3,
+        spd_bonus: 1,
+        crit_bonus: 1,
+        crit_dmg_bonus: 5,
+        dodge_bonus: 1,
+        acc_bonus: 1,
+        res_bonus: 1,
+        mana_bonus: 1
+    },
+    uncommon: {
+        atk_bonus: 4,
+        def_bonus: 4,
+        hp_bonus: 6,
+        spd_bonus: 2,
+        crit_bonus: 2,
+        crit_dmg_bonus: 10,
+        dodge_bonus: 2,
+        acc_bonus: 2,
+        res_bonus: 2,
+        mana_bonus: 2
+    },
+    rare: {
+        atk_bonus: 7,
+        def_bonus: 7,
+        hp_bonus: 12,
+        spd_bonus: 3,
+        crit_bonus: 4,
+        crit_dmg_bonus: 20,
+        dodge_bonus: 3,
+        acc_bonus: 3,
+        res_bonus: 4,
+        mana_bonus: 4
+    },
+    epic: {
+        atk_bonus: 12,
+        def_bonus: 12,
+        hp_bonus: 20,
+        spd_bonus: 5,
+        crit_bonus: 7,
+        crit_dmg_bonus: 30,
+        dodge_bonus: 5,
+        acc_bonus: 5,
+        res_bonus: 7,
+        mana_bonus: 7
+    },
+    legendary: {
+        atk_bonus: 18,
+        def_bonus: 18,
+        hp_bonus: 35,
+        spd_bonus: 8,
+        crit_bonus: 12,
+        crit_dmg_bonus: 45,
+        dodge_bonus: 8,
+        acc_bonus: 8,
+        res_bonus: 12,
+        mana_bonus: 12
+    }
+};
 
 const statFields = [
     'atk_bonus', 'def_bonus', 'hp_bonus', 'spd_bonus',
     'crit_bonus', 'crit_dmg_bonus', 'dodge_bonus', 'acc_bonus', 'res_bonus', 'mana_bonus'
 ];
 
-function randomInRange(min, max) {
-    if (min >= max) return min;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+function getLowerRarity(rarity) {
+    const map = { legendary: 'epic', epic: 'rare', rare: 'uncommon', uncommon: 'common' };
+    return map[rarity] || 'common';
 }
 
-function generateStats(template) {
+function generateStats(rarity) {
     const stats = {
         atk_bonus: 0,
         def_bonus: 0,
@@ -32,21 +91,10 @@ function generateStats(template) {
         res_bonus: 0,
         mana_bonus: 0
     };
-    // Определяем характеристики, которые имеют ненулевой максимум в шаблоне
-    const possibleFields = statFields.filter(field => {
-        const baseField = field.replace('_bonus', '');
-        const max = template[`max_${baseField}`] || 0;
-        return max > 0;
-    });
-    // Если возможных меньше двух (на всякий случай), используем все поля
-    const fieldsToPick = possibleFields.length >= 2 ? possibleFields : statFields;
-    const shuffled = [...fieldsToPick].sort(() => Math.random() - 0.5);
+    const shuffled = [...statFields].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 2);
     selected.forEach(field => {
-        const baseField = field.replace('_bonus', '');
-        const min = template[`min_${baseField}`] || 0;
-        const max = template[`max_${baseField}`] || 0;
-        stats[field] = randomInRange(min, max);
+        stats[field] = fixedStats[rarity][field];
     });
     return stats;
 }
@@ -72,7 +120,7 @@ router.post('/buychest', async (req, res) => {
         if (templates.rows.length === 0) throw new Error('No templates for this rarity');
         const template = templates.rows[0];
 
-        const stats = generateStats(template);
+        const stats = generateStats(targetRarity);
 
         const insertRes = await client.query(
             `INSERT INTO inventory 

@@ -562,6 +562,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 .chest-icon img {
     width: 100%;
@@ -570,26 +571,23 @@ body {
 }
 .chest-info {
     flex: 1;
+    min-width: 0; /* важно для переноса текста */
 }
 .chest-name {
     font-weight: bold;
     font-size: 16px;
     margin-bottom: 4px;
     color: #00aaff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .chest-desc {
     font-size: 12px;
     color: #aaa;
-}
-.chest-price {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: bold;
-    color: white;
-}
-.chest-price i {
-    font-size: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .chest-btn {
     background-color: #00aaff;
@@ -601,6 +599,10 @@ body {
     font-size: 14px;
     cursor: pointer;
     transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
 }
 .chest-btn:hover {
     opacity: 0.8;
@@ -608,7 +610,13 @@ body {
 .chest-btn:active {
     opacity: 0.6;
 }
-
+.chest-price {
+    font-weight: bold;
+    color: white;
+}
+.chest-btn i {
+    font-size: 16px;
+}
 /* Маркет */
 .market-container {
     max-height: 400px;

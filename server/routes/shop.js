@@ -20,7 +20,19 @@ function randomInRange(min, max) {
 }
 
 function generateStats(template) {
-    const stats = {};
+    // Создаём объект со всеми полями, изначально 0
+    const stats = {
+        atk_bonus: 0,
+        def_bonus: 0,
+        hp_bonus: 0,
+        spd_bonus: 0,
+        crit_bonus: 0,
+        crit_dmg_bonus: 0,
+        dodge_bonus: 0,
+        acc_bonus: 0,
+        res_bonus: 0,
+        mana_bonus: 0
+    };
     const shuffled = [...statFields].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 2);
     selected.forEach(field => {
@@ -63,9 +75,9 @@ router.post('/buychest', async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, false, false)
              RETURNING id`,
             [user.rows[0].id, template.name, template.type, targetRarity, template.class_restriction,
-             stats.atk_bonus || 0, stats.def_bonus || 0, stats.hp_bonus || 0, stats.spd_bonus || 0,
-             stats.crit_bonus || 0, stats.crit_dmg_bonus || 0, stats.dodge_bonus || 0,
-             stats.acc_bonus || 0, stats.res_bonus || 0, stats.mana_bonus || 0]
+             stats.atk_bonus, stats.def_bonus, stats.hp_bonus, stats.spd_bonus,
+             stats.crit_bonus, stats.crit_dmg_bonus, stats.dodge_bonus,
+             stats.acc_bonus, stats.res_bonus, stats.mana_bonus]
         );
 
         await client.query('UPDATE users SET coins = coins - $1 WHERE tg_id = $2', [price, tg_id]);

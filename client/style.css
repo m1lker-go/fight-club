@@ -425,13 +425,6 @@ body {
     font-size: 40px;
     color: #00aaff;
 }
-.inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    width: 100%;
-    margin-top: 15px;
-}
 .inventory-item {
     background-color: #232833;
     border-radius: 12px;
@@ -559,12 +552,7 @@ body {
     opacity: 0.6;
 }
 /* Маркет */
-.market-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
-    margin-top: 15px;
-}
+
 .market-item {
     background-color: #232833;
     border-radius: 12px;
@@ -646,3 +634,207 @@ body {
 .sell-btn { background-color: #e74c3c; color: white; }
 .unsell-btn { background-color: #f39c12; color: white; }
 .cancel-btn { background-color: #7f8c8d; color: white; }
+
+/* Контейнер рюкзака с прокруткой */
+.inventory-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-top: 15px;
+    width: 100%;
+}
+
+/* Сетка для предметов в рюкзаке (2 колонки) */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+}
+
+/* Карточка предмета */
+.inventory-item {
+    background-color: #232833;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.inventory-item:hover {
+    transform: translateY(-2px);
+}
+
+.item-icon {
+    width: 50px;
+    height: 50px;
+    background-color: #2f3542;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #00aaff;
+    flex-shrink: 0;
+}
+
+.item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-name {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-stats {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.item-rarity {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* Специальная метка для предметов на продаже */
+.sale-tag {
+    color: #e74c3c;
+    font-size: 10px;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Кнопки действий */
+.item-actions {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 8px;
+}
+.action-btn {
+    flex: 1;
+    padding: 4px 0;
+    border: none;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.equip-btn { background-color: #00aaff; color: white; }
+.sell-btn { background-color: #e74c3c; color: white; }
+.unsell-btn { background-color: #f39c12; color: white; }
+.cancel-btn { background-color: #7f8c8d; color: white; }
+
+/* Цвета редкости (расширенные) */
+.rarity-common { border-left-color: #aaa; color: #aaa; }
+.rarity-uncommon { border-left-color: #2ecc71; color: #2ecc71; }
+.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
+.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
+.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
+
+/* Маркет */
+.market-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-top: 15px;
+    width: 100%;
+}
+
+.market-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.market-item {
+    background-color: #232833;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid;
+    cursor: default;
+    transition: transform 0.2s;
+}
+.market-item:hover {
+    transform: translateY(-2px);
+}
+
+.market-item .item-icon {
+    width: 50px;
+    height: 50px;
+    background-color: #2f3542;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #00aaff;
+    flex-shrink: 0;
+}
+
+.market-item .item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.market-item .item-name {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.market-item .item-stats {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 2px;
+}
+
+.market-item .item-rarity {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.market-item .item-seller {
+    font-size: 10px;
+    color: #00aaff;
+    margin: 2px 0;
+}
+
+.market-item .item-price {
+    font-size: 13px;
+    font-weight: bold;
+    color: gold;
+    margin-bottom: 5px;
+}
+
+/* Кнопка покупки в маркете */
+.buy-btn {
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 5px;
+}

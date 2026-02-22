@@ -5,7 +5,7 @@ let userData = null;
 let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
-А
+
 // Словарь для перевода подклассов и их описания
 const roleDescriptions = {
     guardian: {
@@ -281,6 +281,7 @@ function getCurrentClassData() {
     };
 }
 
+// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
@@ -296,13 +297,11 @@ function renderEquip() {
 
         // Соответствие слотов и иконок
         const slotConfig = {
-            // левая колонка
             left: [
                 { type: 'helmet', icon: '/assets/helmet.png' },
                 { type: 'armor', icon: '/assets/armor.png' },
                 { type: 'gloves', icon: '/assets/arm.png' }
             ],
-            // правая колонка
             right: [
                 { type: 'weapon', icon: '/assets/weapon.png' },
                 { type: 'boots', icon: '/assets/leg.png' },
@@ -323,10 +322,9 @@ function renderEquip() {
                     <div class="equip-column">
         `;
 
-        // Левая колонка
         slotConfig.left.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? '' : slot.icon; // если предмет надет, иконку типа не показываем (позже заменим на иконку предмета)
+            const icon = item ? '' : slot.icon; // если предмет надет, иконку не показываем (позже заменим на иконку предмета)
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
@@ -346,7 +344,6 @@ function renderEquip() {
                     <div class="equip-column">
         `;
 
-        // Правая колонка
         slotConfig.right.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
             const icon = item ? '' : slot.icon;
@@ -404,18 +401,23 @@ function renderEquip() {
             });
         });
 
-        // Обработчики слотов (снять предмет)
+        // Обработчики слотов (снять предмет) – временно отключено до добавления маршрута unequip
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
                 if (!itemId) return;
                 if (confirm('Снять этот предмет?')) {
+                    // Пока заглушка, чтобы не было ошибки
+                    alert('Функция снятия временно отключена. Добавьте маршрут /inventory/unequip на сервере.');
+                    // После добавления маршрута раскомментируйте:
+                    /*
                     const res = await fetch('/inventory/unequip', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                     });
                     if (res.ok) refreshData();
+                    */
                 }
             });
         });

@@ -30,15 +30,15 @@ router.get('/:tg_id', async (req, res) => {
         await rechargeEnergy(client, user.rows[0].id);
 
         // Получаем инвентарь напрямую из таблицы inventory
-        const inventory = await client.query(
-            `SELECT id, name, type, rarity, class_restriction,
-                    atk_bonus, def_bonus, hp_bonus, spd_bonus,
-                    crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus,
-                    equipped, for_sale, price
-             FROM inventory
-             WHERE user_id = $1`,
-            [user.rows[0].id]
-        );
+       const inventory = await client.query(
+  `SELECT id, name, type, rarity, class_restriction,
+          atk_bonus, def_bonus, hp_bonus, spd_bonus,
+          crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus,
+          equipped, for_sale, price
+   FROM inventory
+   WHERE user_id = $1`,
+  [userData.id]
+);
 
         const classes = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1',

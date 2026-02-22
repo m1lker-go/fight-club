@@ -46,6 +46,21 @@
             <!-- сюда будет вставлен контент -->
         </div>
     </div>
+</div> 
+<!-- Модальное окно для результата покупки сундука -->
+<div id="chestResultModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Поздравляем!</h2>
+            <span class="close" onclick="document.getElementById('chestResultModal').style.display='none'">&times;</span>
+        </div>
+        <div class="modal-body" id="chestResultBody">
+            <!-- сюда будет вставлен контент -->
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn" onclick="document.getElementById('chestResultModal').style.display='none'">ОК</button>
+        </div>
+    </div>
 </div>
 </body>
 </html>

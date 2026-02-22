@@ -281,6 +281,7 @@ function getCurrentClassData() {
     };
 }
 
+// ==================== ЭКИПИРОВКА (исправленная) ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
@@ -292,7 +293,6 @@ function renderEquip() {
             item.class_restriction === className || item.class_restriction === 'any'
         );
         const equipped = classItems.filter(item => item.equipped);
-        // Предметы в рюкзаке: не надетые (могут быть for_sale = true/false)
         const unequipped = classItems.filter(item => !item.equipped);
 
         const slotConfig = {
@@ -310,11 +310,12 @@ function renderEquip() {
 
         let html = `
             <div class="equip-layout">
-               <div class="class-selector">
-    <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-    <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-    <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-</div>
+                <!-- Единые кнопки выбора класса -->
+                <div class="class-selector">
+                    <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                    <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                    <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                </div>
 
                 <div class="equip-main">
                     <!-- Левая колонка -->
@@ -323,7 +324,7 @@ function renderEquip() {
 
         slotConfig.left.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? '' : slot.icon; // если предмет надет, иконку слота не показываем (позже будет иконка предмета)
+            const icon = item ? '' : slot.icon;
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
@@ -383,9 +384,7 @@ function renderEquip() {
                     <div class="item-stats">${stats.join(' • ')}</div>
                     <div class="item-rarity ${rarityClass}">${item.rarity}</div>
                     ${saleTag}
-                    <div class="item-actions" style="display: none;">
-                        <!-- кнопки будут добавляться динамически при клике -->
-                    </div>
+                    <div class="item-actions" style="display: none;"></div>
                 </div>
             `;
         });
@@ -393,8 +392,8 @@ function renderEquip() {
         html += `</div></div>`;
         document.getElementById('content').innerHTML = html;
 
-        // Обработчики вкладок
-        document.querySelectorAll('.class-tab').forEach(btn => {
+        // Обработчики для кнопок выбора класса
+        document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
                 localStorage.setItem('equipSelectedClass', newClass);
@@ -402,11 +401,11 @@ function renderEquip() {
             });
         });
 
-        // Обработчики слотов (снять предмет) – если предмет надет, показываем подтверждение
+        // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
-                if (!itemId) return; // пустой слот
+                if (!itemId) return;
                 if (confirm('Снять этот предмет?')) {
                     try {
                         const res = await fetch('/inventory/unequip', {
@@ -429,7 +428,6 @@ function renderEquip() {
         // Обработчики для предметов в рюкзаке
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {
             itemDiv.addEventListener('click', (e) => {
-                // Если клик по уже открытым кнопкам – не обрабатываем
                 if (e.target.classList.contains('action-btn')) return;
 
                 const itemId = itemDiv.dataset.itemId;
@@ -441,11 +439,9 @@ function renderEquip() {
                     if (div !== actionsDiv) div.style.display = 'none';
                 });
 
-                // Показываем/скрываем текущее меню
                 if (actionsDiv.style.display === 'flex') {
                     actionsDiv.style.display = 'none';
                 } else {
-                    // Формируем кнопки в зависимости от статуса
                     if (forSale) {
                         actionsDiv.innerHTML = `
                             <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
@@ -459,11 +455,9 @@ function renderEquip() {
                     }
                     actionsDiv.style.display = 'flex';
 
-                    // Обработчики новых кнопок
                     if (forSale) {
                         actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
-                            // Вызов API для снятия с продажи
                             const res = await fetch('/inventory/unsell', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -586,12 +580,10 @@ function renderShop() {
     });
 }
 
-// Функция отображения результата покупки сундука
 function showChestResult(item) {
     const modal = document.getElementById('chestResultModal');
     const body = document.getElementById('chestResultBody');
     
-    // Собираем характеристики предмета
     const stats = [];
     if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
     if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
@@ -604,7 +596,6 @@ function showChestResult(item) {
     if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
     if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
 
-    // Определяем иконку предмета (пока заглушка)
     const iconMap = {
         weapon: '⚔️',
         armor: '🛡️',
@@ -626,6 +617,7 @@ function showChestResult(item) {
     
     modal.style.display = 'block';
 }
+
 // ==================== МАРКЕТ ====================
 function renderMarket() {
     const content = document.getElementById('content');

@@ -622,7 +622,7 @@ function showChestResult(item) {
 function renderMarket() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3>Маркет</h3>
+        <h3 style="text-align: center; margin-bottom: 15px;">Маркет</h3>
         <div class="filters">
             <select id="classFilter">
                 <option value="any">Любой класс</option>
@@ -638,7 +638,7 @@ function renderMarket() {
             </select>
             <button class="btn" id="applyFilters">Применить</button>
         </div>
-        <div id="marketItems"></div>
+        <div id="marketItems" class="market-grid"></div>
     `;
     loadMarketItems();
 
@@ -654,31 +654,46 @@ async function loadMarketItems() {
     const container = document.getElementById('marketItems');
     container.innerHTML = '';
     items.forEach(item => {
+        // Собираем характеристики
+        const stats = [];
+        if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+        if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+        if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+        if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+        if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+        if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+        if (item.dodge_bonus) stats.push(`УВОР+${item.dodge_bonus}%`);
+        if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
+        if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
+        if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
+
+        const rarityClass = `rarity-${item.rarity}`;
+
         container.innerHTML += `
-            <div class="item-card">
-                <div class="item-icon"><i class="fas fa-box"></i></div>
-                <div class="item-details">
-                    <div class="item-name">${item.name}</div>
-                    <div>Продавец: ${item.seller_name}</div>
-                    <div>Цена: ${item.price} монет</div>
-                </div>
-                <button class="btn buy-btn" data-market-id="${item.id}">Купить</button>
+            <div class="market-item ${rarityClass}" data-item-id="${item.id}">
+                <div class="item-name">${item.name}</div>
+                <div class="item-stats">${stats.join(' • ')}</div>
+                <div class="item-rarity ${rarityClass}">${item.rarity}</div>
+                <div class="item-seller">Продавец: ${item.seller_name}</div>
+                <div class="item-price">${item.price} <i class="fas fa-coins" style="color: gold;"></i></div>
+                <button class="btn buy-btn" data-item-id="${item.id}">Купить</button>
             </div>
         `;
     });
     document.querySelectorAll('.buy-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const marketId = btn.dataset.marketId;
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = btn.dataset.itemId;
+            if (!confirm('Подтвердите покупку')) return;
             const res = await fetch('/market/buy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, market_id: marketId })
+                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
             });
             const data = await res.json();
             if (data.success) {
                 alert('Покупка успешна!');
-                refreshData();
-                loadMarketItems();
+                refreshData(); // обновит данные и перейдёт на текущий экран
             } else {
                 alert('Ошибка: ' + data.error);
             }

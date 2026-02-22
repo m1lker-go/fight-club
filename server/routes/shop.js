@@ -9,25 +9,20 @@ function getLowerRarity(rarity) {
     return map[rarity] || 'common';
 }
 
-// Список всех возможных характеристик
 const statFields = [
     'atk_bonus', 'def_bonus', 'hp_bonus', 'spd_bonus',
     'crit_bonus', 'crit_dmg_bonus', 'dodge_bonus', 'acc_bonus', 'res_bonus', 'mana_bonus'
 ];
 
-// Генерация случайного числа в диапазоне
 function randomInRange(min, max) {
     if (min >= max) return min;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Выбор двух случайных характеристик и генерация их значений
 function generateStats(template) {
     const stats = {};
-    // Перемешиваем массив и берём первые два
     const shuffled = [...statFields].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 2);
-    
     selected.forEach(field => {
         const min = template[`min_${field}`] || 0;
         const max = template[`max_${field}`] || 0;
@@ -48,10 +43,8 @@ router.post('/buychest', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         if (user.rows[0].coins < price) throw new Error('Not enough coins');
 
-        // Редкость: 70% основная, 30% предыдущая
         const targetRarity = Math.random() < 0.7 ? chestType : getLowerRarity(chestType);
 
-        // Выбираем случайный шаблон нужной редкости
         const templates = await client.query(
             'SELECT * FROM item_templates WHERE base_rarity = $1 ORDER BY RANDOM() LIMIT 1',
             [targetRarity]
@@ -59,10 +52,8 @@ router.post('/buychest', async (req, res) => {
         if (templates.rows.length === 0) throw new Error('No templates for this rarity');
         const template = templates.rows[0];
 
-        // Генерируем две случайные характеристики
         const stats = generateStats(template);
 
-        // Вставляем предмет в инвентарь
         const insertRes = await client.query(
             `INSERT INTO inventory 
              (user_id, name, type, rarity, class_restriction,
@@ -91,10 +82,9 @@ router.post('/buychest', async (req, res) => {
                 ...stats
             }
         });
-
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('Buy chest error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

@@ -8,19 +8,39 @@ router.post('/equip', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+
+        // Получаем пользователя и его текущий класс
+        const user = await client.query('SELECT id, current_class FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
+        const userClass = user.rows[0].current_class;
 
-        const item = await client.query('SELECT type FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
+        // Получаем предмет, чтобы узнать его тип и класс
+        const item = await client.query('SELECT type, class_restriction FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
+        const itemClass = item.rows[0].class_restriction;
 
-        await client.query(
-            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2',
-            [userId, type]
-        );
+        // Проверяем, подходит ли предмет классу персонажа
+        if (itemClass !== 'any' && itemClass !== userClass) {
+            throw new Error('Предмет не подходит для вашего класса');
+        }
 
+        // Снимаем все предметы того же типа и того же класса (или 'any', если предмет 'any' – тогда снимаем все)
+        let unequipQuery;
+        let unequipParams;
+        if (itemClass === 'any') {
+            // Если предмет универсальный, снимаем все того же типа (любого класса)
+            unequipQuery = 'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2';
+            unequipParams = [userId, type];
+        } else {
+            // Иначе снимаем только предметы того же класса
+            unequipQuery = 'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND class_restriction = $3';
+            unequipParams = [userId, type, itemClass];
+        }
+        await client.query(unequipQuery, unequipParams);
+
+        // Одеваем выбранный предмет
         const updateRes = await client.query(
             'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
             [item_id, userId]

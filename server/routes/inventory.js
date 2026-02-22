@@ -16,17 +16,11 @@ router.post('/equip', async (req, res) => {
         const userId = user.rows[0].id;
         const userClass = user.rows[0].current_class;
 
-        // Получаем предмет
-        const item = await client.query('SELECT type, class_restriction, owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
+        // Получаем предмет (только тип и owner_class)
+        const item = await client.query('SELECT type, owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
-        const itemClass = item.rows[0].class_restriction;
         const ownerClass = item.rows[0].owner_class;
-
-        // Проверяем, что предмет подходит по ограничению класса (если есть)
-        if (itemClass && itemClass !== 'any' && itemClass !== userClass) {
-            throw new Error('Предмет не подходит для вашего класса');
-        }
 
         // Снимаем все предметы того же типа, принадлежащие текущему классу
         await client.query(

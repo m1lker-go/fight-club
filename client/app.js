@@ -131,287 +131,6 @@ function renderMain() {
             </div>
             <h2>${userData.username || 'Игрок'}</h2>
             
-            <div style="margin: 15px 0; text-align: left;">
-                <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                    <span>Уровень ${level}</span>
-                    <span>${exp}/${nextExp} опыта</span>
-                </div>
-                <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
-                    <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
-                </div>
-            </div>
-            
-            <div style="margin: 20px 0;">
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
-                    <div class="class-selector" style="flex: 1; margin-left: 10px;">
-                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
-                    <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
-                        <!-- заполняется динамически -->
-                    </select>
-                    <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
-                </div>
-            </div>
-            
-            <button class="btn" id="fightBtn" style="margin-top: 20px;">Начать бой</button>
-        </div>
-    `;
-
-    const subclassSelect = document.getElementById('subclassSelect');
-
-    function updateSubclasses(className) {
-        const subclasses = {
-            warrior: ['guardian', 'berserker', 'knight'],
-            assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-            mage: ['pyromancer', 'cryomancer', 'illusionist']
-        };
-        const options = subclasses[className] || [];
-        subclassSelect.innerHTML = options.map(sc => {
-            const selected = (userData.subclass === sc) ? 'selected' : '';
-            const displayName = roleDescriptions[sc]?.name || sc;
-            return `<option value="${sc}" ${selected}>${displayName}</option>`;
-        }).join('');
-    }
-
-    updateSubclasses(currentClass);
-
-    document.querySelectorAll('.class-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const newClass = e.target.dataset.class;
-            if (newClass === currentClass) return;
-            const res = await fetch('/player/class', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
-            });
-            if (res.ok) {
-                userData.current_class = newClass;
-                const firstSubclass = {
-                    warrior: 'guardian',
-                    assassin: 'assassin',
-                    mage: 'pyromancer'
-                }[newClass];
-                userData.subclass = firstSubclass;
-                await fetch('/player/subclass', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
-                });
-                renderMain();
-            }
-        });
-    });
-
-    subclassSelect.addEventListener('change', async (e) => {
-        const newSubclass = e.target.value;
-        const res = await fetch('/player/subclass', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, subclass: newSubclass })
-        });
-        if (res.ok) {
-            userData.subclass = newSubclass;
-        }
-    });
-
-    document.getElementById('fightBtn').addEventListener('click', () => startBattle());
-    document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(currentClass));
-}
-
-function showRoleInfoModal(className) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-    const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
-    modalTitle.innerText = `Роли класса ${classNameRu}`;
-    
-    const subclasses = {
-        warrior: ['guardian', 'berserker', 'knight'],
-        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-        mage: ['pyromancer', 'cryomancer', 'illusionist']
-    }[className] || [];
-    
-    let html = '';
-    subclasses.forEach(sc => {
-        const desc = roleDescriptions[sc];
-        if (desc) {
-            html += `
-                <div class="role-card">
-                    <h3>${desc.name}</h3>
-                    <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
-                    <p><span class="active">Активный:</span> ${desc.active}</p>
-                </div>
-            `;
-        }
-    });
-    modalBody.innerHTML = html;
-    
-    modal.style.display = 'block';
-    
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
-    };
-    
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-}
-
-function getCurrentClassData() {
-    if (!userData || !userData.current_class) {
-        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
-    }
-    return userClasses.find(c => c.class === userData.current_class) || { 
-        level: 1, skill_points: 0, 
-        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
-        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
-        dodge_points: 0, acc_points: 0, mana_points: 0 
-    };
-}
-
-let tg = window.Telegram.WebApp;
-tg.expand();
-
-let userData = null;
-let userClasses = [];
-let inventory = [];
-let currentScreen = 'main';
-
-// Словарь для перевода подклассов и их описания
-const roleDescriptions = {
-    guardian: {
-        name: 'Страж',
-        passive: 'Живой щит – снижает весь входящий урон на 10%, 20% шанс полностью заблокировать атаку.',
-        active: 'Несокрушимость – восстанавливает 20% + MANA% от максимального HP, снимает отрицательные эффекты.'
-    },
-    berserker: {
-        name: 'Берсерк',
-        passive: 'Кровавая ярость – чем меньше HP, тем выше урон (до +30% при 10% HP).',
-        active: 'Кровопускание – наносит чистый урон, равный 15% + MANA% от текущего HP врага, жертвуя 10% своего HP.'
-    },
-    knight: {
-        name: 'Рыцарь',
-        passive: 'Зеркальный щит – отражает 20% полученного физического урона обратно атакующему.',
-        active: 'Щит правосудия – на 2 хода увеличивает отражение урона на 30% + MANA% и даёт 50% сопротивления контролю.'
-    },
-    assassin: {
-        name: 'Убийца',
-        passive: 'Смертельное касание – критический урон ×2.5 вместо ×2.0.',
-        active: 'Смертельный удар – наносит 300% + MANA% урона от ATK, гарантированный крит.'
-    },
-    venom_blade: {
-        name: 'Ядовитый клинок',
-        passive: 'Кумулятивный яд – каждая атака накладывает яд (урон +2 за попадание, макс. 30), яд тикает в конце хода.',
-        active: 'Ядовитая волна – наносит урон ядом, равный текущий яд ×5 + MANA%, и мгновенно срабатывает яд.'
-    },
-    blood_hunter: {
-        name: 'Кровавый охотник',
-        passive: 'Вампиризм – восстанавливает 20% от нанесённого урона (лечение может превысить HP до 2×).',
-        active: 'Кровавая жатва – на 2 хода усиливает вампиризм до 50% + MANA% и наносит 150% урона.'
-    },
-    pyromancer: {
-        name: 'Пиромант',
-        passive: 'Горящие души – активные навыки поджигают цель: урон в конце хода 10% от урона навыка (до 3 стаков).',
-        active: 'Огненный шторм – наносит магический урон 400% + MANA% от ATK, поджигает с силой 50% от урона.'
-    },
-    cryomancer: {
-        name: 'Криомант',
-        passive: 'Ледяная кровь – 10% шанс заморозить атакующего на 1 ход при получении урона.',
-        active: 'Вечная зима – замораживает врага на 1 ход и наносит 200% + MANA% урона от ATK (удваивается, если враг уже заморожен).'
-    },
-    illusionist: {
-        name: 'Иллюзионист',
-        passive: 'Мираж – 20% шанс создать иллюзию и полностью избежать урона (срабатывает после уворота).',
-        active: 'Зазеркалье – на 1 ход враг атакует сам себя, нанося себе 100% + MANA% от своей ATK.'
-    }
-};
-
-// Базовые характеристики классов
-const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, dodge: 1, acc: 0, mana: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, dodge: 5, acc: 0, mana: 0 },
-    mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, dodge: 0, acc: 0, mana: 0 }
-};
-
-// Инициализация
-async function init() {
-    try {
-        const response = await fetch('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: tg.initData })
-        });
-        const data = await response.json();
-        if (data.user) {
-            userData = data.user;
-            userClasses = data.classes || [];
-            inventory = data.inventory || [];
-            updateTopBar();
-            showScreen('main');
-        } else {
-            alert('Ошибка авторизации');
-        }
-    } catch (e) {
-        console.error('Init error:', e);
-        alert('Ошибка соединения с сервером');
-    }
-}
-
-function updateTopBar() {
-    document.getElementById('coinCount').innerText = userData.coins;
-    document.getElementById('rating').innerText = userData.rating;
-    document.getElementById('energy').innerText = userData.energy;
-}
-
-function showScreen(screen) {
-    currentScreen = screen;
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.dataset.screen === screen) item.classList.add('active');
-    });
-
-    const content = document.getElementById('content');
-    content.innerHTML = '';
-
-    switch (screen) {
-        case 'main': renderMain(); break;
-        case 'equip': renderEquip(); break;
-        case 'shop': renderShop(); break;
-        case 'market': renderMarket(); break;
-        case 'tasks': renderTasks(); break;
-        case 'profile': renderProfile(); break;
-        case 'skills': renderSkills(); break;
-        default: renderMain();
-    }
-}
-
-// ==================== ГЛАВНЫЙ ЭКРАН ====================
-function renderMain() {
-    const classData = getCurrentClassData();
-    const currentClass = userData.current_class;
-    const level = classData.level;
-    const exp = classData.exp;
-    const nextExp = Math.floor(80 * Math.pow(level, 1.5));
-    const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
-
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-            <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
-                <i class="fas fa-shield-alt"></i>
-            </div>
-            <h2>${userData.username || 'Игрок'}</h2>
-            
             <!-- Полоска опыта -->
             <div style="margin: 15px 0; text-align: left;">
                 <div style="display: flex; justify-content: space-between; font-size: 14px;">
@@ -562,21 +281,14 @@ function getCurrentClassData() {
     };
 }
 
-// ==================== НОВЫЙ ЭКРАН ЭКИПИРОВКИ ====================
+// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
-    // Определяем текущий выбранный класс для отображения инвентаря
-    let selectedClass = 'warrior'; // по умолчанию
-    // Попробуем получить сохранённое значение из localStorage или использовать текущий класс персонажа
-    const savedClass = localStorage.getItem('equipSelectedClass');
-    if (savedClass && ['warrior', 'assassin', 'mage'].includes(savedClass)) {
-        selectedClass = savedClass;
-    } else {
+    let selectedClass = localStorage.getItem('equipSelectedClass');
+    if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
         selectedClass = userData.current_class;
     }
 
-    // Функция для отрисовки экрана с учётом выбранного класса
     function renderInventoryForClass(className) {
-        // Фильтруем предметы по классу (class_restriction = className или 'any')
         const classItems = inventory.filter(item => 
             item.class_restriction === className || item.class_restriction === 'any'
         );
@@ -614,7 +326,6 @@ function renderEquip() {
                     </div>
                 </div>
 
-                <!-- Экипированные слоты -->
                 <div class="equipped-slots">
         `;
 
@@ -661,7 +372,6 @@ function renderEquip() {
         html += `</div></div>`;
         document.getElementById('content').innerHTML = html;
 
-        // Обработчики для вкладок
         document.querySelectorAll('.class-tab').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -670,11 +380,10 @@ function renderEquip() {
             });
         });
 
-        // Обработчики для экипированных слотов (при клике – снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
-                if (!itemId) return; // пустой слот
+                if (!itemId) return;
                 if (confirm('Снять этот предмет?')) {
                     await fetch('/inventory/unequip', {
                         method: 'POST',
@@ -686,7 +395,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики для кнопок "Надеть" в рюкзаке
         document.querySelectorAll('.equip-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -700,7 +408,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики для кнопок "Продать"
         document.querySelectorAll('.sell-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -726,34 +433,6 @@ function renderEquip() {
 
     renderInventoryForClass(selectedClass);
 }
-
-// ==================== ОСТАЛЬНЫЕ ФУНКЦИИ (shop, market, tasks, profile, skills, battle) ====================
-// Они остаются без изменений, как в предыдущей версии app.js.
-// Для краткости я их не копирую сюда, но они должны присутствовать.
-// В вашем текущем файле они уже есть, поэтому оставляем их как есть.
-// Ниже приведены заглушки, чтобы файл был синтаксически полным.
-// В реальности вы должны оставить свои реализации этих функций.
-
-function renderShop() { /* ... */ }
-function renderMarket() { /* ... */ }
-function renderTasks() { /* ... */ }
-function renderProfile() { /* ... */ }
-function renderSkills() { /* ... */ }
-async function startBattle() { /* ... */ }
-function showBattleScreen() { /* ... */ }
-function showBattleResult() { /* ... */ }
-async function refreshData() { /* ... */ }
-
-// Заглушки для функций, которые уже есть – не удаляйте свои реализации.
-// В реальном проекте они уже определены выше (в предыдущих частях кода).
-// Я не буду их здесь повторять, чтобы не загромождать ответ.
-// Вы должны взять свой текущий app.js и заменить в нём только функцию renderEquip,
-// а также добавить новые стили. Либо вы можете заменить весь файл, но тогда убедитесь,
-// что все остальные функции (shop, market, tasks, profile, skills, battle) скопированы из старой версии.
-
-// Важно: в вашем текущем app.js все эти функции уже есть. Поэтому просто вставьте новую функцию renderEquip
-// вместо старой и добавьте новые обработчики. Я приведу полный файл с изменениями в следующем сообщении,
-// чтобы вы могли просто скопировать всё целиком.
 
 // ==================== МАГАЗИН СУНДУКОВ ====================
 function renderShop() {
@@ -1201,7 +880,6 @@ document.querySelectorAll('.menu-item').forEach(item => {
         showScreen(item.dataset.screen);
     });
 });
-
 
 // Запуск
 init();

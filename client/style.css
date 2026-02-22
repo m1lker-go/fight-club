@@ -719,3 +719,128 @@ body {
     display: flex;
     gap: 10px;
 }
+
+/* Экран экипировки с иконками */
+.equip-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+}
+
+.equip-main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.equip-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 80px;
+}
+
+.equip-slot {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    background-image: url('/assets/slot.png');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.equip-slot:hover {
+    transform: scale(1.05);
+}
+
+.slot-icon {
+    width: 60px;
+    height: 60px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.hero-center {
+    width: 120px;
+    height: 120px;
+    background-color: #2f3542;
+    border-radius: 50%;
+    border: 3px solid #00aaff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #00aaff;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.inventory-item {
+    background-color: #232833;
+    border-radius: 12px;
+    padding: 8px;
+    border-left: 4px solid;
+    cursor: pointer;
+    transition: transform 0.2s;
+    text-align: center;
+}
+.inventory-item:hover {
+    transform: translateY(-2px);
+}
+.item-name {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.item-stats {
+    font-size: 10px;
+    color: #aaa;
+    margin-bottom: 6px;
+}
+.item-rarity {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.item-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+}
+.action-btn {
+    flex: 1;
+    padding: 4px;
+    border: none;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.equip-btn { background-color: #00aaff; color: white; }
+.sell-btn { background-color: #e74c3c; color: white; }
+.unequip-btn { background-color: #f39c12; color: white; }
+
+/* Цвета редкости */
+.rarity-common { border-left-color: #aaa; color: #aaa; }
+.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
+.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
+.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }

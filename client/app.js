@@ -465,11 +465,11 @@ function renderEquip() {
     }
 
     function renderInventoryForClass(className) {
-       const classItems = inventory.filter(item => 
-    !item.class_restriction || 
-    item.class_restriction === 'any' || 
-    item.class_restriction === className
-);
+        // Фильтруем предметы по классу владельца (owner_class) и по ограничению класса
+        const classItems = inventory.filter(item => 
+            item.owner_class === className && 
+            (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
+        );
         const equipped = classItems.filter(item => item.equipped);
         const unequipped = classItems.filter(item => !item.equipped);
 
@@ -585,6 +585,120 @@ function renderEquip() {
                 renderInventoryForClass(newClass);
             });
         });
+
+        // Обработчики слотов (снять предмет)
+        document.querySelectorAll('.equip-slot').forEach(slot => {
+            slot.addEventListener('click', async (e) => {
+                const itemId = slot.dataset.itemId;
+                if (!itemId) return;
+                if (confirm('Снять этот предмет?')) {
+                    try {
+                        const res = await fetch('/inventory/unequip', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        });
+                        if (res.ok) {
+                            refreshData();
+                        } else {
+                            alert('Ошибка при снятии');
+                        }
+                    } catch (e) {
+                        alert('Сеть недоступна');
+                    }
+                }
+            });
+        });
+
+        // Обработчики для предметов в рюкзаке
+        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('action-btn')) return;
+
+                const itemId = itemDiv.dataset.itemId;
+                const forSale = itemDiv.dataset.forSale === 'true';
+                const actionsDiv = itemDiv.querySelector('.item-actions');
+
+                // Скрываем все другие открытые меню
+                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+                    if (div !== actionsDiv) div.style.display = 'none';
+                });
+
+                if (actionsDiv.style.display === 'flex') {
+                    actionsDiv.style.display = 'none';
+                } else {
+                    if (forSale) {
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                            <button class="action-btn cancel-btn">Отмена</button>
+                        `;
+                    } else {
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
+                        `;
+                    }
+                    actionsDiv.style.display = 'flex';
+
+                    if (forSale) {
+                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('/inventory/unsell', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                            });
+                            if (res.ok) {
+                                refreshData();
+                            } else {
+                                alert('Ошибка при снятии с продажи');
+                            }
+                        });
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else {
+                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('/inventory/equip', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                            });
+                            if (res.ok) {
+                                refreshData();
+                            } else {
+                                const err = await res.json();
+                                alert('Ошибка: ' + err.error);
+                            }
+                        });
+                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const price = prompt('Введите цену продажи в монетах:');
+                            if (price && !isNaN(price) && parseInt(price) > 0) {
+                                const res = await fetch('/inventory/sell', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, price: parseInt(price) })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('Предмет выставлен на маркет');
+                                    refreshData();
+                                } else {
+                                    alert('Ошибка: ' + data.error);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    }
+
+    renderInventoryForClass(selectedClass);
+}
 
         // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {

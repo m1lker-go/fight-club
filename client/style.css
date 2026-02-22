@@ -558,3 +558,26 @@ body {
 .chest-btn:active {
     opacity: 0.6;
 }
+.class-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+.class-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: #2f3542;
+    color: #aaa;
+}
+.class-tab.active {
+    background-color: #00aaff;
+    color: white;
+}
+.class-tab:hover {
+    background-color: #3a4050;
+}

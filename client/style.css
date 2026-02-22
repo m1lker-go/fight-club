@@ -439,14 +439,15 @@ body {
 .inventory-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px; /* немного уменьшили для лучшего размещения */
+    gap: 8px;
     width: 100%;
 }
+
 /* Карточка предмета */
 .inventory-item {
     background-color: #232833;
     border-radius: 12px;
-    padding: 8px; /* уменьшили отступы */
+    padding: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -460,7 +461,7 @@ body {
 }
 
 .item-icon {
-    width: 40px; /* чуть уменьшили */
+    width: 40px;
     height: 40px;
     background-color: #2f3542;
     border-radius: 8px;
@@ -474,7 +475,7 @@ body {
 
 .item-content {
     flex: 1;
-    min-width: 0; /* важно для переноса текста */
+    min-width: 0;
 }
 
 .item-name {
@@ -690,7 +691,6 @@ body {
     color: gold;
     margin-bottom: 4px;
 }
-
 /* Кнопка покупки в маркете */
 .buy-btn {
     background-color: #00aaff;

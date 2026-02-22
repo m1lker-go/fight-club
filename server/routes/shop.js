@@ -32,11 +32,18 @@ function generateStats(template) {
         res_bonus: 0,
         mana_bonus: 0
     };
-    const shuffled = [...statFields].sort(() => Math.random() - 0.5);
+    // Определяем характеристики, которые имеют ненулевой максимум в шаблоне
+    const possibleFields = statFields.filter(field => {
+        const baseField = field.replace('_bonus', '');
+        const max = template[`max_${baseField}`] || 0;
+        return max > 0;
+    });
+    // Если возможных меньше двух (на всякий случай), используем все поля
+    const fieldsToPick = possibleFields.length >= 2 ? possibleFields : statFields;
+    const shuffled = [...fieldsToPick].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 2);
     selected.forEach(field => {
-        // Избавляемся от суффикса _bonus, чтобы получить имя базовой характеристики
-        const baseField = field.replace('_bonus', ''); // 'atk_bonus' -> 'atk'
+        const baseField = field.replace('_bonus', '');
         const min = template[`min_${baseField}`] || 0;
         const max = template[`max_${baseField}`] || 0;
         stats[field] = randomInRange(min, max);

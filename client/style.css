@@ -106,7 +106,7 @@ body {
     color: #00aaff;
 }
 
-/* Карточки предметов */
+/* Карточки предметов (общие) */
 .item-card {
     background-color: #232833;
     border-radius: 12px;
@@ -150,6 +150,7 @@ body {
     font-weight: bold;
 }
 
+/* Цвета редкости (общие) */
 .rarity-rare { color: #2ecc71; }
 .rarity-epic { color: #9b59b6; }
 .rarity-legendary { color: #f1c40f; }
@@ -208,7 +209,13 @@ body {
     margin: 5px auto;
     overflow: hidden;
 }
-/* Полоска маны */
+
+.hp-fill {
+    height: 100%;
+    background-color: #e74c3c;
+    width: 100%;
+}
+
 .mana-bar {
     width: 100px;
     height: 5px;
@@ -217,34 +224,11 @@ body {
     margin: 2px auto;
     overflow: hidden;
 }
+
 .mana-fill {
     height: 100%;
     background-color: #00aaff;
     width: 0%;
-}
-
-/* Вкладки классов */
-.class-tabs {
-    display: flex;
-    gap: 5px;
-    margin: 10px 0;
-    justify-content: center;
-}
-.class-tab {
-    background: #2f3542;
-    border: 1px solid #00aaff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.class-tab.active {
-    background: #00aaff;
-    color: white;
-}
-.class-tab:hover {
-    background: #00aaff77;
 }
 
 /* Окно результата боя */
@@ -257,17 +241,13 @@ body {
     align-items: center;
     z-index: 10;
 }
+
 .battle-result-card {
     background: #232833;
     padding: 30px;
     border-radius: 20px;
     text-align: center;
     border: 2px solid #00aaff;
-}
-.hp-fill {
-    height: 100%;
-    background-color: #e74c3c;
-    width: 100%;
 }
 
 .battle-log {
@@ -305,7 +285,7 @@ body {
     color: white;
 }
 
-/* Переключатель классов */
+/* Переключатель классов (главный экран и навыки) */
 .class-selector {
     display: flex;
     justify-content: space-around;
@@ -314,6 +294,7 @@ body {
     padding: 5px;
     margin-bottom: 20px;
 }
+
 .class-btn {
     flex: 1;
     padding: 10px;
@@ -325,10 +306,12 @@ body {
     background-color: #2f3542;
     color: #aaa;
 }
+
 .class-btn.active {
     background-color: #00aaff;
     color: white;
 }
+
 .class-btn:not(.active):hover {
     background-color: #3a4050;
 }
@@ -340,6 +323,7 @@ body {
     gap: 12px;
     margin-top: 15px;
 }
+
 .skill-item {
     background-color: #232833;
     border-radius: 12px;
@@ -349,17 +333,21 @@ body {
     gap: 10px;
     border-left: 4px solid #00aaff;
 }
+
 .skill-info {
     flex: 1;
 }
+
 .skill-name {
     font-weight: bold;
     margin-bottom: 4px;
 }
+
 .skill-desc {
     font-size: 12px;
     color: #aaa;
 }
+
 .skill-value {
     font-size: 18px;
     font-weight: bold;
@@ -367,6 +355,7 @@ body {
     min-width: 40px;
     text-align: center;
 }
+
 .skill-btn {
     background-color: #00aaff;
     color: white;
@@ -378,120 +367,18 @@ body {
     cursor: pointer;
     transition: opacity 0.2s;
 }
+
 .skill-btn:disabled {
     background-color: #444;
     cursor: not-allowed;
     opacity: 0.5;
 }
+
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
 }
 
-/* Переключатель классов */
-.class-selector {
-    display: flex;
-    justify-content: space-around;
-    background-color: #232833;
-    border-radius: 30px;
-    padding: 5px;
-    margin-bottom: 20px;
-}
-.class-btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 25px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    background-color: #2f3542;
-    color: #aaa;
-}
-.class-btn.active {
-    background-color: #00aaff;
-    color: white;
-}
-.class-btn:not(.active):hover {
-    background-color: #3a4050;
-}
-
-/* Список навыков */
-.skills-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 15px;
-}
-.skill-item {
-    background-color: #232833;
-    border-radius: 12px;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border-left: 4px solid #00aaff;
-}
-.skill-info {
-    flex: 1;
-}
-.skill-name {
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-.skill-desc {
-    font-size: 12px;
-    color: #aaa;
-}
-.skill-value {
-    font-size: 18px;
-    font-weight: bold;
-    color: #00aaff;
-    min-width: 40px;
-    text-align: center;
-}
-.skill-btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 20px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-.skill-btn:disabled {
-    background-color: #444;
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-.skill-btn:not(:disabled):hover {
-    opacity: 0.8;
-}
-
-/* Полоска опыта */
-.hp-bar, .mana-bar {
-    width: 100px;
-    height: 10px;
-    background-color: #444;
-    border-radius: 5px;
-    margin: 5px auto;
-    overflow: hidden;
-}
-.hp-fill {
-    height: 100%;
-    background-color: #e74c3c;
-    width: 100%;
-}
-.mana-bar {
-    height: 4px;
-}
-.mana-fill {
-    height: 100%;
-    background-color: #00aaff;
-    width: 0%;
-}
-/* Модальное окно */
+/* Модальное окно для ролей */
 .modal {
     display: none;
     position: fixed;
@@ -504,6 +391,7 @@ body {
     background-color: rgba(0,0,0,0.7);
     backdrop-filter: blur(5px);
 }
+
 .modal-content {
     background-color: #1a1f2b;
     margin: 10% auto;
@@ -515,6 +403,7 @@ body {
     color: white;
     box-shadow: 0 5px 15px rgba(0,170,255,0.3);
 }
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -523,21 +412,25 @@ body {
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
+
 .modal-header h2 {
     margin: 0;
     color: #00aaff;
 }
+
 .close {
     color: #aaa;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
 }
+
 .close:hover,
 .close:focus {
     color: #00aaff;
     text-decoration: none;
 }
+
 .role-card {
     background-color: #232833;
     border-radius: 10px;
@@ -545,166 +438,51 @@ body {
     margin-bottom: 15px;
     border-left: 4px solid #00aaff;
 }
+
 .role-card h3 {
     margin-top: 0;
     color: #00aaff;
 }
+
 .role-card p {
     margin: 5px 0;
     font-size: 14px;
     color: #ddd;
 }
+
 .role-card .passive {
     color: #2ecc71;
 }
+
 .role-card .active {
     color: #e74c3c;
 }
 
-/* Экран экипировки */
-.equip-screen {
-    padding: 15px;
-}
-
-/* Вкладки классов */
+/* Вкладки классов (в экипировке) */
 .class-tabs {
     display: flex;
     gap: 5px;
-    margin-bottom: 20px;
-}
-.class-tab {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    background-color: #2f3542;
-    color: #aaa;
-}
-.class-tab.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-/* Экипированные слоты */
-.equipped-slots {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin: 20px 0;
-}
-.equip-slot {
-    width: 80px;
-    text-align: center;
-}
-.equip-slot .slot-name {
-    font-size: 12px;
-    margin-top: 5px;
-    color: #aaa;
-}
-.equip-slot .item-name {
-    font-size: 11px;
-    font-weight: bold;
-    margin-top: 3px;
-    color: white;
-}
-
-/* Рюкзак */
-.inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-}
-.inventory-item {
-    background-color: #232833;
-    border-radius: 12px;
-    padding: 10px;
-    border-left: 4px solid;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-.inventory-item:hover {
-    transform: translateY(-2px);
-}
-.inventory-item.equipped-item {
-    border-left-color: #00aaff;
-}
-.item-name {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.item-stats {
-    font-size: 11px;
-    color: #aaa;
-    margin: 5px 0;
-}
-.item-rarity {
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: bold;
-}
-
-/* Цвета редкости */
-.rarity-common { border-left-color: #aaa; color: #aaa; }
-.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
-.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
-.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
-
-/* Кнопки действий над предметом */
-.item-actions {
-    display: flex;
-    gap: 5px;
-    margin-top: 8px;
-}
-.action-btn {
-    flex: 1;
-    padding: 5px;
-    border: none;
-    border-radius: 15px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-.equip-btn { background-color: #00aaff; color: white; }
-.sell-btn { background-color: #e74c3c; color: white; }
-.unequip-btn { background-color: #f39c12; color: white; }
-.action-btn:active { opacity: 0.7; }
-
-/* Детальное описание предмета */
-.item-detail-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #1a1f2b;
-    padding: 20px;
-    border-radius: 15px;
-    border: 2px solid #00aaff;
-    z-index: 1000;
-    width: 80%;
-    max-width: 300px;
-    color: white;
-}
-.detail-name {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-.detail-stats {
     margin: 10px 0;
-    font-size: 14px;
+    justify-content: center;
 }
-.detail-rarity {
-    margin-bottom: 15px;
+
+.class-tab {
+    background: #2f3542;
+    border: 1px solid #00aaff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.2s;
 }
-.detail-actions {
-    display: flex;
-    gap: 10px;
+
+.class-tab.active {
+    background: #00aaff;
+    color: white;
+}
+
+.class-tab:hover {
+    background: #00aaff77;
 }
 
 /* Экран экипировки с иконками */
@@ -744,6 +522,7 @@ body {
     cursor: pointer;
     transition: transform 0.2s;
 }
+
 .equip-slot:hover {
     transform: scale(1.05);
 }
@@ -770,6 +549,7 @@ body {
     color: #00aaff;
 }
 
+/* Рюкзак (сетка 5 колонок) */
 .inventory-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -787,10 +567,12 @@ body {
     transition: transform 0.2s;
     text-align: center;
 }
+
 .inventory-item:hover {
     transform: translateY(-2px);
 }
-.item-name {
+
+.inventory-item .item-name {
     font-size: 12px;
     font-weight: bold;
     margin-bottom: 4px;
@@ -798,21 +580,32 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.item-stats {
+
+.inventory-item .item-stats {
     font-size: 10px;
     color: #aaa;
     margin-bottom: 6px;
 }
-.item-rarity {
+
+.inventory-item .item-rarity {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: bold;
 }
+
+/* Цвета редкости для предметов (переопределение) */
+.rarity-common { border-left-color: #aaa; color: #aaa; }
+.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
+.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
+.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
+
+/* Кнопки действий над предметом */
 .item-actions {
     display: flex;
     gap: 4px;
     margin-top: 6px;
 }
+
 .action-btn {
     flex: 1;
     padding: 4px;
@@ -821,13 +614,49 @@ body {
     font-size: 10px;
     font-weight: bold;
     cursor: pointer;
+    transition: opacity 0.2s;
 }
+
+.action-btn:active {
+    opacity: 0.7;
+}
+
 .equip-btn { background-color: #00aaff; color: white; }
 .sell-btn { background-color: #e74c3c; color: white; }
 .unequip-btn { background-color: #f39c12; color: white; }
 
-/* Цвета редкости */
-.rarity-common { border-left-color: #aaa; color: #aaa; }
-.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
-.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
-.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
+/* Детальное описание предмета (модальное) */
+.item-detail-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1a1f2b;
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid #00aaff;
+    z-index: 1000;
+    width: 80%;
+    max-width: 300px;
+    color: white;
+}
+
+.detail-name {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.detail-stats {
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.detail-rarity {
+    margin-bottom: 15px;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 10px;
+}

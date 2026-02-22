@@ -1,4 +1,4 @@
-llet tg = window.Telegram.WebApp;
+let tg = window.Telegram.WebApp;
 tg.expand();
 
 let userData = null;
@@ -447,8 +447,9 @@ function renderEquip() {
     }
 
     function renderInventoryForClass(className) {
+        // Защита от отсутствия поля owner_class
         const classItems = inventory.filter(item => 
-            item.owner_class === className && 
+            (!item.owner_class || item.owner_class === className) && 
             (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
         );
         const equipped = classItems.filter(item => item.equipped);
@@ -1193,7 +1194,7 @@ function showBattleScreen(battleData) {
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
             let winner;
             if (playerPercent > enemyPercent) winner = 'player';
-            else if (enemyPercent > playerPercent) winner = 'enemy';
+            else if (enemyPercent > enemyPercent) winner = 'enemy';
             else winner = 'draw';
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }

@@ -425,215 +425,6 @@ body {
     font-size: 40px;
     color: #00aaff;
 }
-.inventory-item {
-    background-color: #232833;
-    border-radius: 12px;
-    padding: 8px;
-    border-left: 4px solid;
-    cursor: pointer;
-    transition: transform 0.2s;
-    text-align: center;
-}
-.inventory-item:hover {
-    transform: translateY(-2px);
-}
-.inventory-item .item-name {
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.inventory-item .item-stats {
-    font-size: 10px;
-    color: #aaa;
-    margin-bottom: 6px;
-}
-.inventory-item .item-rarity {
-    font-size: 9px;
-    text-transform: uppercase;
-    font-weight: bold;
-}
-.inventory-item .item-actions {
-    display: flex;
-    gap: 4px;
-    margin-top: 6px;
-}
-.action-btn {
-    flex: 1;
-    padding: 4px;
-    border: none;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: bold;
-    cursor: pointer;
-}
-.equip-btn { background-color: #00aaff; color: white; }
-.sell-btn { background-color: #e74c3c; color: white; }
-.unequip-btn { background-color: #f39c12; color: white; }
-
-/* Цвета редкости */
-.rarity-common { border-left-color: #aaa; color: #aaa; }
-.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
-.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
-.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
-
-/* Магазин сундуков */
-.chest-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 20px;
-}
-.chest-card {
-    background-color: #232833;
-    border-radius: 16px;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    border: 1px solid #00aaff;
-    box-shadow: 0 4px 8px rgba(0,170,255,0.2);
-}
-.chest-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    overflow: hidden;
-    background-color: #2f3542;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.chest-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.chest-info {
-    flex: 1;
-}
-.chest-name {
-    font-weight: bold;
-    font-size: 16px;
-    margin-bottom: 4px;
-    color: #00aaff;
-}
-.chest-desc {
-    font-size: 12px;
-    color: #aaa;
-}
-.chest-price {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: bold;
-    color: white;
-}
-.chest-price i {
-    font-size: 18px;
-}
-.chest-btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 30px;
-    font-weight: bold;
-    font-size: 14px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-.chest-btn:hover {
-    opacity: 0.8;
-}
-.chest-btn:active {
-    opacity: 0.6;
-}
-/* Маркет */
-
-.market-item {
-    background-color: #232833;
-    border-radius: 12px;
-    padding: 10px;
-    border-left: 4px solid;
-    cursor: default;
-    transition: transform 0.2s;
-    text-align: center;
-}
-.market-item .item-name {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.market-item .item-stats {
-    font-size: 11px;
-    color: #aaa;
-    margin-bottom: 5px;
-}
-.market-item .item-rarity {
-    font-size: 10px;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.market-item .item-seller {
-    font-size: 11px;
-    color: #00aaff;
-    margin-bottom: 5px;
-}
-.market-item .item-price {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: gold;
-}
-.market-item .buy-btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-/* Кнопка покупки в маркете */
-.buy-btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 5px;
-}
-
-/* Контейнер для действий (скрыт по умолчанию) */
-.item-actions {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 8px;
-}
-
-/* Кнопки в инвентаре (уже есть, но убедимся) */
-.action-btn {
-    flex: 1;
-    padding: 4px 0;
-    border: none;
-    border-radius: 15px;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-}
-.equip-btn { background-color: #00aaff; color: white; }
-.sell-btn { background-color: #e74c3c; color: white; }
-.unsell-btn { background-color: #f39c12; color: white; }
-.cancel-btn { background-color: #7f8c8d; color: white; }
 
 /* Контейнер рюкзака с прокруткой */
 .inventory-container {
@@ -647,7 +438,7 @@ body {
 /* Сетка для предметов в рюкзаке (2 колонки) */
 .inventory-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
     width: 100%;
 }
@@ -744,6 +535,79 @@ body {
 .rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
 .rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
 
+/* Магазин сундуков */
+.chest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+.chest-card {
+    background-color: #232833;
+    border-radius: 16px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid #00aaff;
+    box-shadow: 0 4px 8px rgba(0,170,255,0.2);
+}
+.chest-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #2f3542;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chest-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.chest-info {
+    flex: 1;
+}
+.chest-name {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: #00aaff;
+}
+.chest-desc {
+    font-size: 12px;
+    color: #aaa;
+}
+.chest-price {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: bold;
+    color: white;
+}
+.chest-price i {
+    font-size: 18px;
+}
+.chest-btn {
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.chest-btn:hover {
+    opacity: 0.8;
+}
+.chest-btn:active {
+    opacity: 0.6;
+}
+
 /* Маркет */
 .market-container {
     max-height: 400px;
@@ -755,7 +619,7 @@ body {
 
 .market-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
 

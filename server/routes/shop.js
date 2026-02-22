@@ -20,7 +20,6 @@ function randomInRange(min, max) {
 }
 
 function generateStats(template) {
-    // Создаём объект со всеми полями, изначально 0
     const stats = {
         atk_bonus: 0,
         def_bonus: 0,

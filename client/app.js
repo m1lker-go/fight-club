@@ -520,38 +520,54 @@ function renderEquip() {
 function renderShop() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3>Магазин сундуков</h3>
+        <h3 style="text-align: center; margin-bottom: 20px;">МАГАЗИН</h3>
         <div class="chest-list">
-            <div class="item-card">
-                <div class="item-icon"><i class="fas fa-box"></i></div>
-                <div class="item-details">
-                    <div class="item-name">Редкий сундук</div>
-                    <div>Шанс: редкие предметы</div>
-                    <div>Цена: 100 монет</div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/rare-chess.png" alt="Редкий сундук">
                 </div>
-                <button class="btn" data-chest="rare">Купить</button>
+                <div class="chest-info">
+                    <div class="chest-name">Редкий сундук</div>
+                    <div class="chest-desc">Шанс получения редкого снаряжения 70%</div>
+                </div>
+                <div class="chest-price">
+                    <span>100</span>
+                    <i class="fas fa-coins" style="color: gold;"></i>
+                </div>
+                <button class="chest-btn" data-chest="rare">Купить</button>
             </div>
-            <div class="item-card">
-                <div class="item-icon"><i class="fas fa-box-open"></i></div>
-                <div class="item-details">
-                    <div class="item-name">Эпический сундук</div>
-                    <div>Шанс: эпические предметы</div>
-                    <div>Цена: 500 монет</div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/epic-chess.png" alt="Эпический сундук">
                 </div>
-                <button class="btn" data-chest="epic">Купить</button>
+                <div class="chest-info">
+                    <div class="chest-name">Эпический сундук</div>
+                    <div class="chest-desc">Шанс получения эпического снаряжения 70%</div>
+                </div>
+                <div class="chest-price">
+                    <span>500</span>
+                    <i class="fas fa-coins" style="color: gold;"></i>
+                </div>
+                <button class="chest-btn" data-chest="epic">Купить</button>
             </div>
-            <div class="item-card">
-                <div class="item-icon"><i class="fas fa-crown"></i></div>
-                <div class="item-details">
-                    <div class="item-name">Легендарный сундук</div>
-                    <div>Гарантия легендарки</div>
-                    <div>Цена: 2000 монет</div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
                 </div>
-                <button class="btn" data-chest="legendary">Купить</button>
+                <div class="chest-info">
+                    <div class="chest-name">Легендарный сундук</div>
+                    <div class="chest-desc">Шанс получения легендарного снаряжения 70%</div>
+                </div>
+                <div class="chest-price">
+                    <span>2000</span>
+                    <i class="fas fa-coins" style="color: gold;"></i>
+                </div>
+                <button class="chest-btn" data-chest="legendary">Купить</button>
             </div>
         </div>
     `;
-    document.querySelectorAll('[data-chest]').forEach(btn => {
+
+    document.querySelectorAll('.chest-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const chest = btn.dataset.chest;
             const res = await fetch('/shop/buychest', {
@@ -561,7 +577,7 @@ function renderShop() {
             });
             const data = await res.json();
             if (data.item) {
-                alert(`Вы получили: ${data.item.name}`);
+                showChestResult(data.item);
                 refreshData();
             } else {
                 alert('Ошибка: ' + data.error);
@@ -570,6 +586,46 @@ function renderShop() {
     });
 }
 
+// Функция отображения результата покупки сундука
+function showChestResult(item) {
+    const modal = document.getElementById('chestResultModal');
+    const body = document.getElementById('chestResultBody');
+    
+    // Собираем характеристики предмета
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.dodge_bonus) stats.push(`УВОР+${item.dodge_bonus}%`);
+    if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
+    if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
+    if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
+
+    // Определяем иконку предмета (пока заглушка)
+    const iconMap = {
+        weapon: '⚔️',
+        armor: '🛡️',
+        helmet: '⛑️',
+        gloves: '🧤',
+        boots: '👢',
+        accessory: '💍'
+    };
+    const icon = iconMap[item.type] || '📦';
+
+    body.innerHTML = `
+        <div style="text-align: center;">
+            <div style="font-size: 64px; margin-bottom: 10px;">${icon}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${item.name}</div>
+            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 10px;">${item.rarity}</div>
+            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+}
 // ==================== МАРКЕТ ====================
 function renderMarket() {
     const content = document.getElementById('content');

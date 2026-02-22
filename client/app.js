@@ -6,7 +6,7 @@ let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
 
-// Словарь для перевода подклассов и их описания
+// Словарь для перевода подклассов
 const roleDescriptions = {
     guardian: {
         name: 'Страж',
@@ -62,7 +62,7 @@ const baseStats = {
     mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, dodge: 0, acc: 0, mana: 0 }
 };
 
-// Словарь перевода названий предметов
+// Словарь перевода названий предметов (английский -> русский)
 const itemNameTranslations = {
     // Common
     'Rusty Sword': 'Ржавый меч',
@@ -442,8 +442,18 @@ function renderEquip() {
                 </div>
 
                 <h3>Рюкзак</h3>
-                <div class="inventory-grid">
+                <div class="inventory-container">
+                    <div class="inventory-grid">
         `;
+
+        const iconMap = {
+            weapon: '⚔️',
+            armor: '🛡️',
+            helmet: '⛑️',
+            gloves: '🧤',
+            boots: '👢',
+            accessory: '💍'
+        };
 
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
@@ -459,22 +469,26 @@ function renderEquip() {
             if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
             if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
 
-            const saleTag = item.for_sale ? '<span style="color:#e74c3c; font-size:10px; display:block;">(На продаже)</span>' : '';
+            const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
 
             html += `
                 <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}">
-                    <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
-                    <div class="item-stats">${stats.join(' • ')}</div>
-                    <div class="item-rarity ${rarityClass}">${rarityTranslations[item.rarity] || item.rarity}</div>
-                    ${saleTag}
-                    <div class="item-actions" style="display: none;"></div>
+                    <div class="item-icon">${iconMap[item.type] || '📦'}</div>
+                    <div class="item-content">
+                        <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                        <div class="item-stats">${stats.join(' • ')}</div>
+                        <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                        ${saleTag}
+                        <div class="item-actions" style="display: none;"></div>
+                    </div>
                 </div>
             `;
         });
 
-        html += `</div></div>`;
+        html += `</div></div></div>`;
         document.getElementById('content').innerHTML = html;
 
+        // Обработчики для кнопок выбора класса
         document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -483,6 +497,7 @@ function renderEquip() {
             });
         });
 
+        // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
@@ -506,6 +521,7 @@ function renderEquip() {
             });
         });
 
+        // Обработчики для предметов в рюкзаке
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('action-btn')) return;
@@ -514,6 +530,7 @@ function renderEquip() {
                 const forSale = itemDiv.dataset.forSale === 'true';
                 const actionsDiv = itemDiv.querySelector('.item-actions');
 
+                // Скрываем все другие открытые меню
                 document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
                     if (div !== actionsDiv) div.style.display = 'none';
                 });
@@ -719,7 +736,9 @@ function renderMarket() {
             </select>
             <button class="btn" id="applyFilters">Применить</button>
         </div>
-        <div id="marketItems" class="market-grid"></div>
+        <div class="market-container">
+            <div id="marketItems" class="market-grid"></div>
+        </div>
     `;
     loadMarketItems();
 
@@ -777,7 +796,6 @@ async function loadMarketItems() {
     // Обработчики клика на предметы в маркете
     document.querySelectorAll('.market-item').forEach(itemDiv => {
         itemDiv.addEventListener('click', (e) => {
-            // Если клик по уже открытым кнопкам – не обрабатываем
             if (e.target.classList.contains('buy-btn')) return;
 
             const itemId = itemDiv.dataset.itemId;
@@ -788,7 +806,6 @@ async function loadMarketItems() {
                 if (div !== actionsDiv) div.style.display = 'none';
             });
 
-            // Показываем/скрываем текущее меню
             if (actionsDiv.style.display === 'flex') {
                 actionsDiv.style.display = 'none';
             } else {

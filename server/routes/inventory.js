@@ -16,13 +16,11 @@ router.post('/equip', async (req, res) => {
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
 
-        // Снимаем все предметы того же типа
         await client.query(
             'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2',
             [userId, type]
         );
 
-        // Одеваем выбранный
         const updateRes = await client.query(
             'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
             [item_id, userId]

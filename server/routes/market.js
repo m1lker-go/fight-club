@@ -2,77 +2,94 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Получить список предметов на маркете с фильтрами
-router.get('/', async (req, res) => {
-  const { class: className, rarity, minPrice, maxPrice } = req.query;
-  let query = `
-    SELECT m.*, i.name, i.type, i.rarity, i.class_restriction, 
-           i.atk_bonus, i.def_bonus, i.hp_bonus, i.image,
-           u.username as seller_name
-    FROM market m
-    JOIN items i ON m.item_id = i.id
-    JOIN users u ON m.seller_id = u.id
-    WHERE 1=1
-  `;
-  const params = [];
-  if (className && className !== 'any') {
-    params.push(className);
-    query += ` AND (i.class_restriction = $${params.length} OR i.class_restriction = 'any')`;
-  }
-  if (rarity && rarity !== 'any') {
-    params.push(rarity);
-    query += ` AND i.rarity = $${params.length}`;
-  }
-  if (minPrice) {
-    params.push(minPrice);
-    query += ` AND m.price >= $${params.length}`;
-  }
-  if (maxPrice) {
-    params.push(maxPrice);
-    query += ` AND m.price <= $${params.length}`;
-  }
-  query += ' ORDER BY m.price';
-  
-  const result = await pool.query(query, params);
-  res.json(result.rows);
-});
+// Маппинг редкостей: common, rare, epic, legendary
+const rarityLevel = {
+    common: 1,
+    rare: 2,
+    epic: 3,
+    legendary: 4
+};
 
-// Купить предмет
-router.post('/buy', async (req, res) => {
-  const { tg_id, market_id } = req.body;
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    // Получаем запись маркета
-    const market = await client.query('SELECT * FROM market WHERE id = $1', [market_id]);
-    if (market.rows.length === 0) throw new Error('Item not found');
-    const { seller_id, item_id, price } = market.rows[0];
-    
-    // Получаем покупателя
-    const buyer = await client.query('SELECT id, coins FROM users WHERE tg_id = $1', [tg_id]);
-    if (buyer.rows[0].coins < price) throw new Error('Not enough coins');
-    
-    // Переводим монеты продавцу
-    await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [price, seller_id]);
-    await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, buyer.rows[0].id]);
-    
-    // Перемещаем предмет в инвентарь покупателя
-    await client.query(
-      'INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)',
-      [buyer.rows[0].id, item_id]
-    );
-    
-    // Удаляем из маркета
-    await client.query('DELETE FROM market WHERE id = $1', [market_id]);
-    
-    await client.query('COMMIT');
-    res.json({ success: true });
-  } catch (e) {
-    await client.query('ROLLBACK');
-    res.status(400).json({ error: e.message });
-  } finally {
-    client.release();
-  }
+// Функция для получения редкости на уровень ниже
+function getLowerRarity(rarity) {
+    const level = rarityLevel[rarity];
+    if (level <= 1) return 'common';
+    const lower = Object.keys(rarityLevel).find(key => rarityLevel[key] === level - 1);
+    return lower || 'common';
+}
+
+// Покупка сундука
+router.post('/buychest', async (req, res) => {
+    const { tg_id, chestType } = req.body; // chestType: 'rare', 'epic', 'legendary'
+    const prices = { rare: 100, epic: 500, legendary: 2000 };
+    const price = prices[chestType];
+    if (!price) return res.status(400).json({ error: 'Invalid chest type' });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const user = await client.query('SELECT id, coins FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) throw new Error('User not found');
+        if (user.rows[0].coins < price) throw new Error('Not enough coins');
+
+        // Определяем редкость выпавшего предмета: 70% на основную, 30% на предыдущую
+        let targetRarity;
+        const rand = Math.random();
+        if (rand < 0.7) {
+            targetRarity = chestType; // основная редкость
+        } else {
+            targetRarity = getLowerRarity(chestType); // на уровень ниже
+        }
+
+        // Выбираем случайный предмет указанной редкости (без ограничения по классу)
+        const items = await client.query(
+            'SELECT * FROM items WHERE rarity = $1 ORDER BY RANDOM() LIMIT 1',
+            [targetRarity]
+        );
+        if (items.rows.length === 0) throw new Error('No items of this rarity');
+
+        const item = items.rows[0];
+        
+        // Уменьшаем монеты
+        await client.query('UPDATE users SET coins = coins - $1 WHERE tg_id = $2', [price, tg_id]);
+
+        // Добавляем предмет в инвентарь
+        await client.query(
+            'INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)',
+            [user.rows[0].id, item.id]
+        );
+
+        await client.query('COMMIT');
+
+        // Возвращаем информацию о полученном предмете
+        res.json({
+            success: true,
+            item: {
+                id: item.id,
+                name: item.name,
+                type: item.type,
+                rarity: item.rarity,
+                class_restriction: item.class_restriction,
+                atk_bonus: item.atk_bonus,
+                def_bonus: item.def_bonus,
+                hp_bonus: item.hp_bonus,
+                spd_bonus: item.spd_bonus,
+                crit_bonus: item.crit_bonus,
+                crit_dmg_bonus: item.crit_dmg_bonus,
+                dodge_bonus: item.dodge_bonus,
+                acc_bonus: item.acc_bonus,
+                res_bonus: item.res_bonus,
+                mana_bonus: item.mana_bonus
+            }
+        });
+
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
 });
 
 module.exports = router;

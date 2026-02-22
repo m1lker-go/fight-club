@@ -391,7 +391,8 @@ function calculateClassStats(className, classData, inventory) {
         hp: 0, atk: 0, def: 0, res: 0, spd: 0, crit: 0, critDmg: 0, dodge: 0, acc: 0, mana: 0
     };
 
-    const equippedItems = inventory.filter(item => item.equipped);
+    // Учитываем только предметы, принадлежащие текущему классу
+    const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
     equippedItems.forEach(item => {
         gearBonuses.hp += item.hp_bonus || 0;
         gearBonuses.atk += item.atk_bonus || 0;

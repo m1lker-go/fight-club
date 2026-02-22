@@ -130,6 +130,14 @@ const itemNameTranslations = {
     'Invisibility Cloak': 'Плащ невидимости',
     'Omnipotence Robe': 'Мантия всевластия'
 };
+// Словарь перевода редкостей
+const rarityTranslations = {
+    'common': 'Обычное',
+    'uncommon': 'Необычное',
+    'rare': 'Редкое',
+    'epic': 'Эпическое',
+    'legendary': 'Легендарное'
+};
 // Базовые характеристики классов
 const baseStats = {
     warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, dodge: 1, acc: 0, mana: 0 },

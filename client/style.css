@@ -214,7 +214,7 @@ body {
     color: white;
 }
 
-/* Переключатель классов (главный экран и навыки) */
+/* Переключатель классов (единый стиль) */
 .class-selector {
     display: flex;
     justify-content: space-around;
@@ -241,7 +241,6 @@ body {
 .class-btn:not(.active):hover {
     background-color: #3a4050;
 }
-
 
 /* Список навыков */
 .skills-list {
@@ -558,50 +557,4 @@ body {
 }
 .chest-btn:active {
     opacity: 0.6;
-}
-.class-tabs {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 20px;
-}
-.class-tab {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    background-color: #2f3542;
-    color: #aaa;
-}
-.class-tab.active {
-    background-color: #00aaff;
-    color: white;
-}
-.class-tab:hover {
-    background-color: #3a4050;
-}
-/* Вкладки классов (единый стиль) */
-.class-tabs {
-    display: flex;
-    gap: 5px;
-    margin: 10px 0;
-    justify-content: center;
-}
-.class-tab {
-    background: #2f3542;
-    border: 1px solid #00aaff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.class-tab.active {
-    background: #00aaff;
-    color: white;
-}
-.class-tab:hover {
-    background: #00aaff77;
 }

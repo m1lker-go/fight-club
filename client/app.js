@@ -378,9 +378,11 @@ function renderEquip() {
     }
 
     function renderInventoryForClass(className) {
-        const classItems = inventory.filter(item => 
-            item.class_restriction === className || item.class_restriction === 'any'
-        );
+       const classItems = inventory.filter(item => 
+    !item.class_restriction || 
+    item.class_restriction === 'any' || 
+    item.class_restriction === className
+);
         const equipped = classItems.filter(item => item.equipped);
         const unequipped = classItems.filter(item => !item.equipped);
 

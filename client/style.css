@@ -139,13 +139,27 @@ body {
     text-align: center;
 }
 
-/* Единый стиль для всех аватаров: изображение заполняет контейнер по высоте, обрезается по бокам */
+/* Контейнеры аватаров в бою */
+.hero-avatar, .enemy-avatar {
+    width: 80px;
+    height: 120px; /* можно изменить на нужную высоту */
+    border-radius: 10px;
+    border: 2px solid #00aaff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* Единый стиль для изображений внутри аватаров */
 .hero-avatar img, .hero-center img, .enemy-avatar img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     display: block;
 }
+
 .hp-bar {
     width: 100px;
     height: 10px;
@@ -406,6 +420,7 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
 
 /* Контейнер рюкзака с прокруткой */
 .inventory-container {
@@ -518,7 +533,6 @@ body {
 .rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
 
 /* Магазин сундуков */
-/* Магазин сундуков */
 .chest-list {
     display: flex;
     flex-direction: column;
@@ -553,7 +567,7 @@ body {
 }
 .chest-info {
     flex: 1;
-    min-width: 0; /* важно для переноса текста */
+    min-width: 0;
 }
 .chest-name {
     font-weight: bold;
@@ -719,16 +733,4 @@ td {
 .power span {
     font-weight: bold;
     color: white;
-}
-/* Контейнеры аватаров в бою */
-.hero-avatar, .enemy-avatar {
-    width: 80px;
-    height: 120px; /* или 180px, если хотите такой же, как на главной */
-    border-radius: 10px;
-    border: 2px solid #00aaff;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
 }

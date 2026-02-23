@@ -217,10 +217,9 @@ function renderMain() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
-         <div class="hero-avatar" style="width: 120px; height: 180px; margin: 20px auto;">
-    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
-</div>
-</div>
+            <div class="hero-avatar" style="width: 120px; height: 180px; margin: 20px auto;">
+                <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
+            </div>
             <h2>${userData.username || 'Игрок'}</h2>
             
             <div style="margin: 15px 0; text-align: left;">
@@ -527,9 +526,9 @@ function renderEquip() {
 
         html += `</div>
                 <div class="hero-center">
-    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
-</div>
-                    <div class="equip-column">
+                    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
+                </div>
+                <div class="equip-column">
         `;
 
         slotConfig.right.forEach(slot => {
@@ -1174,67 +1173,6 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // ... остальной код (переменные, playTurn и т.д.) остаётся без изменений
-    let turnIndex = 0;
-    const turns = battleData.result.turns || [];
-    const logContainer = document.getElementById('battleLog');
-    let speed = 1;
-    let interval;
-
-    function playTurn() {
-        if (turnIndex >= turns.length) {
-            clearInterval(interval);
-            showBattleResult(battleData);
-            return;
-        }
-        const turn = turns[turnIndex];
-        document.getElementById('heroHp').style.width = (turn.playerHp / battleData.result.playerMaxHp) * 100 + '%';
-        document.getElementById('heroHpText').innerText = turn.playerHp + '/' + battleData.result.playerMaxHp;
-        document.getElementById('enemyHp').style.width = (turn.enemyHp / battleData.result.enemyMaxHp) * 100 + '%';
-        document.getElementById('enemyHpText').innerText = turn.enemyHp + '/' + battleData.result.enemyMaxHp;
-        document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
-        document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
-
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerText = turn.action;
-        logContainer.appendChild(logEntry);
-        logContainer.scrollTop = logContainer.scrollHeight;
-
-        turnIndex++;
-    }
-
-    playTurn();
-    interval = setInterval(playTurn, 1000 / speed);
-
-    document.querySelectorAll('.speed-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            speed = parseInt(btn.dataset.speed);
-            clearInterval(interval);
-            interval = setInterval(playTurn, 1000 / speed);
-        });
-    });
-
-    let timeLeft = 45;
-    const timerEl = document.getElementById('battleTimer');
-    const timer = setInterval(() => {
-        timeLeft--;
-        timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            clearInterval(interval);
-            const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
-            const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
-            let winner;
-            if (playerPercent > enemyPercent) winner = 'player';
-            else if (enemyPercent > playerPercent) winner = 'enemy';
-            else winner = 'draw';
-            showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
-        }
-    }, 1000);
-}
     let turnIndex = 0;
     const turns = battleData.result.turns || [];
     const logContainer = document.getElementById('battleLog');

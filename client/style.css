@@ -139,10 +139,10 @@ body {
     text-align: center;
 }
 
-.hero-avatar img, .hero-center img, .enemy-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+.hero-avatar img, .enemy-avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
     display: block;
 }
 

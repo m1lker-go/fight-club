@@ -816,21 +816,48 @@ function showChestResult(item) {
     if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
     if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
 
-    const iconMap = {
-        weapon: '⚔️',
-        armor: '🛡️',
-        helmet: '⛑️',
-        gloves: '🧤',
-        boots: '👢',
-        accessory: '💍'
+    // Маппинг класса в папку
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
     };
-    const icon = iconMap[item.type] || '📦';
+    // Маппинг типа в имя файла
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
+    
+    // Формируем путь к картинке предмета
+    let iconPath = '';
+    if (item.owner_class && item.type) {
+        const folder = classFolderMap[item.owner_class];
+        const fileType = typeFileMap[item.type];
+        if (folder && fileType) {
+            iconPath = `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
+        }
+    }
+    // Заглушка, если картинка не найдена
+    const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
+
+    // Определяем отображаемый класс
+    let classDisplay = '';
+    if (item.class_restriction && item.class_restriction !== 'any') {
+        classDisplay = item.class_restriction === 'warrior' ? 'Воин' : (item.class_restriction === 'assassin' ? 'Ассасин' : 'Маг');
+    } else {
+        classDisplay = 'Универсальный';
+    }
 
     body.innerHTML = `
         <div style="text-align: center;">
-            <div style="font-size: 64px; margin-bottom: 10px;">${icon}</div>
+            <div style="margin-bottom: 10px;">${iconHtml}</div>
             <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${itemNameTranslations[item.name] || item.name}</div>
-            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 10px;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
             <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
         </div>
     `;

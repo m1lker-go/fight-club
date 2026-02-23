@@ -475,10 +475,34 @@ function calculatePower(className, finalStats) {
 }
 
 // ==================== ЭКИПИРОВКА ====================
+// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
         selectedClass = userData.current_class;
+    }
+
+    // Словари для формирования путей к картинкам
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
+
+    function getItemIconPath(item) {
+        if (!item) return '';
+        const folder = classFolderMap[item.owner_class];
+        const fileType = typeFileMap[item.type];
+        if (!folder || !fileType) return '';
+        return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
     }
 
     function renderInventoryForClass(className) {
@@ -515,7 +539,7 @@ function renderEquip() {
 
         slotConfig.left.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? '' : slot.icon;
+            const icon = item ? getItemIconPath(item) : slot.icon;
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
@@ -533,7 +557,7 @@ function renderEquip() {
 
         slotConfig.right.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? '' : slot.icon;
+            const icon = item ? getItemIconPath(item) : slot.icon;
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
@@ -586,6 +610,7 @@ function renderEquip() {
         html += `</div></div></div>`;
         document.getElementById('content').innerHTML = html;
 
+        // Обработчики для кнопок выбора класса
         document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -594,6 +619,7 @@ function renderEquip() {
             });
         });
 
+        // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
@@ -617,6 +643,7 @@ function renderEquip() {
             });
         });
 
+        // Обработчики для предметов в рюкзаке
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('action-btn')) return;

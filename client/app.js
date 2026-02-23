@@ -881,29 +881,84 @@ function renderMarket() {
             </select>
             <button class="btn" id="applyFilters">Применить</button>
         </div>
+        <div class="filter-stats" id="statFilters">
+            <button class="stat-filter-btn" data-stat="any">Любой</button>
+            <button class="stat-filter-btn" data-stat="atk_bonus">АТК</button>
+            <button class="stat-filter-btn" data-stat="def_bonus">ЗАЩ</button>
+            <button class="stat-filter-btn" data-stat="hp_bonus">ЗДОР</button>
+            <button class="stat-filter-btn" data-stat="spd_bonus">СКОР</button>
+            <button class="stat-filter-btn" data-stat="crit_bonus">КРИТ</button>
+            <button class="stat-filter-btn" data-stat="crit_dmg_bonus">КР.УРОН</button>
+            <button class="stat-filter-btn" data-stat="dodge_bonus">УВОР</button>
+            <button class="stat-filter-btn" data-stat="acc_bonus">МЕТК</button>
+            <button class="stat-filter-btn" data-stat="res_bonus">СОПР</button>
+            <button class="stat-filter-btn" data-stat="mana_bonus">МАНА</button>
+        </div>
         <div class="market-container">
             <div id="marketItems" class="market-grid"></div>
         </div>
     `;
-    loadMarketItems();
 
-    document.getElementById('applyFilters').addEventListener('click', loadMarketItems);
+    // Переменная для хранения активного фильтра по характеристике
+    let activeStat = 'any';
+
+    document.querySelectorAll('.stat-filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.stat-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeStat = btn.dataset.stat;
+            loadMarketItems(activeStat);
+        });
+    });
+
+    document.getElementById('applyFilters').addEventListener('click', () => {
+        loadMarketItems(activeStat);
+    });
+
+    loadMarketItems(activeStat);
 }
 
-async function loadMarketItems() {
+async function loadMarketItems(statFilter = 'any') {
     const classFilter = document.getElementById('classFilter').value;
     const rarityFilter = document.getElementById('rarityFilter').value;
     const params = new URLSearchParams({ class: classFilter, rarity: rarityFilter });
     const res = await fetch('/market?' + params);
     const items = await res.json();
+    let filteredItems = items;
+
+    // Фильтр по характеристике (хотя бы одна совпадает)
+    if (statFilter !== 'any') {
+        filteredItems = items.filter(item => {
+            return item[statFilter] > 0;
+        });
+    }
+
     const container = document.getElementById('marketItems');
     container.innerHTML = '';
 
-    const iconMap = {
-        weapon: '⚔️', armor: '🛡️', helmet: '⛑️', gloves: '🧤', boots: '👢', accessory: '💍'
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
     };
 
-    items.forEach(item => {
+    function getItemIconPath(item) {
+        if (!item) return '';
+        const folder = classFolderMap[item.owner_class];
+        const fileType = typeFileMap[item.type];
+        if (!folder || !fileType) return '';
+        return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
+    }
+
+    filteredItems.forEach(item => {
         const stats = [];
         if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
         if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
@@ -917,55 +972,38 @@ async function loadMarketItems() {
         if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
 
         const rarityClass = `rarity-${item.rarity}`;
+        const iconPath = getItemIconPath(item);
 
         container.innerHTML += `
             <div class="market-item ${rarityClass}" data-item-id="${item.id}">
-                <div class="item-icon">${iconMap[item.type] || '📦'}</div>
+                <div class="item-icon" style="background-image: url('${iconPath}');"></div>
                 <div class="item-content">
                     <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
                     <div class="item-stats">${stats.join(' • ')}</div>
                     <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
-                    <div class="item-seller">Продавец: ${item.seller_name}</div>
                     <div class="item-price">${item.price} <i class="fas fa-coins" style="color: gold;"></i></div>
-                    <div class="item-actions" style="display: none;"></div>
+                    <button class="buy-btn" data-item-id="${item.id}">Купить</button>
                 </div>
             </div>
         `;
     });
 
-    document.querySelectorAll('.market-item').forEach(itemDiv => {
-        itemDiv.addEventListener('click', (e) => {
-            if (e.target.classList.contains('buy-btn')) return;
-
-            const itemId = itemDiv.dataset.itemId;
-            const actionsDiv = itemDiv.querySelector('.item-actions');
-
-            document.querySelectorAll('.market-item .item-actions').forEach(div => {
-                if (div !== actionsDiv) div.style.display = 'none';
+    document.querySelectorAll('.buy-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = btn.dataset.itemId;
+            if (!confirm('Подтвердите покупку')) return;
+            const res = await fetch('/market/buy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
             });
-
-            if (actionsDiv.style.display === 'flex') {
-                actionsDiv.style.display = 'none';
+            const data = await res.json();
+            if (data.success) {
+                alert('Покупка успешна!');
+                await refreshData();
             } else {
-                actionsDiv.innerHTML = `<button class="buy-btn" data-item-id="${itemId}">Купить</button>`;
-                actionsDiv.style.display = 'flex';
-
-                actionsDiv.querySelector('.buy-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if (!confirm('Подтвердите покупку')) return;
-                    const res = await fetch('/market/buy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert('Покупка успешна!');
-                        await refreshData();
-                    } else {
-                        alert('Ошибка: ' + data.error);
-                    }
-                });
+                alert('Ошибка: ' + data.error);
             }
         });
     });

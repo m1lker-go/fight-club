@@ -626,40 +626,59 @@ body {
     gap: 8px;
 }
 
+/* Фильтр по характеристикам */
+.filter-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+}
+.stat-filter-btn {
+    background-color: #2f3542;
+    color: #aaa;
+    border: 1px solid #00aaff;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.stat-filter-btn.active {
+    background-color: #00aaff;
+    color: white;
+    border-color: #00aaff;
+}
+
+/* Карточка предмета в маркете (квадратная с картинкой сверху) */
 .market-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-color: #232833;
     border-radius: 12px;
     padding: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
     border-left: 4px solid;
     cursor: default;
     transition: transform 0.2s;
     width: 100%;
+    box-sizing: border-box;
 }
 .market-item:hover {
     transform: translateY(-2px);
 }
-
 .market-item .item-icon {
-    width: 40px;
-    height: 40px;
+    width: 80px;
+    height: 80px;
     background-color: #2f3542;
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #00aaff;
-    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 8px;
 }
-
 .market-item .item-content {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
+    text-align: center;
 }
-
 .market-item .item-name {
     font-size: 13px;
     font-weight: bold;
@@ -668,30 +687,22 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 .market-item .item-stats {
     font-size: 10px;
     color: #aaa;
     margin-bottom: 2px;
+    line-height: 1.2;
 }
-
 .market-item .item-rarity {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: bold;
 }
-
-.market-item .item-seller {
-    font-size: 9px;
-    color: #00aaff;
-    margin: 2px 0;
-}
-
 .market-item .item-price {
     font-size: 12px;
     font-weight: bold;
     color: gold;
-    margin-bottom: 4px;
+    margin: 4px 0;
 }
 /* Кнопка покупки в маркете */
 .buy-btn {

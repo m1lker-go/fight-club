@@ -218,7 +218,7 @@ function renderMain() {
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
             <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
-   <img src="/assets/cat_heroweb.png" alt="hero">
+   <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;">
 </div>
             <h2>${userData.username || 'Игрок'}</h2>
             
@@ -526,7 +526,7 @@ function renderEquip() {
 
         html += `</div>
                   <div class="hero-center">
-    <img src="/assets/cat_heroweb.png" alt="hero">
+    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: contain;">
 </div>
                     <div class="equip-column">
         `;

@@ -4,67 +4,67 @@ const { pool } = require('../db');
 
 const prices = { rare: 100, epic: 500, legendary: 2000 };
 
-// Фиксированные значения бонусов по редкости
+// Уменьшенные фиксированные значения бонусов по редкости
 const fixedStats = {
     common: {
+        atk_bonus: 1,
+        def_bonus: 1,
+        hp_bonus: 2,
+        spd_bonus: 0,
+        crit_bonus: 1,
+        crit_dmg_bonus: 3,
+        dodge_bonus: 0,
+        acc_bonus: 0,
+        res_bonus: 0,
+        mana_bonus: 0
+    },
+    uncommon: {
         atk_bonus: 2,
         def_bonus: 2,
-        hp_bonus: 3,
+        hp_bonus: 4,
         spd_bonus: 1,
-        crit_bonus: 1,
+        crit_bonus: 2,
         crit_dmg_bonus: 5,
         dodge_bonus: 1,
         acc_bonus: 1,
         res_bonus: 1,
         mana_bonus: 1
     },
-    uncommon: {
-        atk_bonus: 4,
-        def_bonus: 4,
+    rare: {
+        atk_bonus: 3,
+        def_bonus: 3,
         hp_bonus: 6,
         spd_bonus: 2,
-        crit_bonus: 2,
-        crit_dmg_bonus: 10,
+        crit_bonus: 3,
+        crit_dmg_bonus: 8,
         dodge_bonus: 2,
         acc_bonus: 2,
         res_bonus: 2,
         mana_bonus: 2
     },
-    rare: {
-        atk_bonus: 7,
-        def_bonus: 7,
-        hp_bonus: 12,
+    epic: {
+        atk_bonus: 5,
+        def_bonus: 5,
+        hp_bonus: 10,
         spd_bonus: 3,
-        crit_bonus: 4,
-        crit_dmg_bonus: 20,
+        crit_bonus: 5,
+        crit_dmg_bonus: 12,
         dodge_bonus: 3,
         acc_bonus: 3,
         res_bonus: 4,
         mana_bonus: 4
     },
-    epic: {
-        atk_bonus: 12,
-        def_bonus: 12,
-        hp_bonus: 20,
-        spd_bonus: 5,
-        crit_bonus: 7,
-        crit_dmg_bonus: 30,
-        dodge_bonus: 5,
-        acc_bonus: 5,
-        res_bonus: 7,
-        mana_bonus: 7
-    },
     legendary: {
-        atk_bonus: 18,
-        def_bonus: 18,
-        hp_bonus: 35,
-        spd_bonus: 8,
-        crit_bonus: 12,
-        crit_dmg_bonus: 45,
-        dodge_bonus: 8,
-        acc_bonus: 8,
-        res_bonus: 12,
-        mana_bonus: 12
+        atk_bonus: 7,
+        def_bonus: 7,
+        hp_bonus: 15,
+        spd_bonus: 4,
+        crit_bonus: 7,
+        crit_dmg_bonus: 18,
+        dodge_bonus: 4,
+        acc_bonus: 4,
+        res_bonus: 5,
+        mana_bonus: 5
     }
 };
 

@@ -526,8 +526,8 @@ function renderEquip() {
 
         html += `</div>
                     <div class="hero-center">
-                        <img src="/assets/cat_heroweb.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Hero">
-                    </div>
+    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+</div>
                     <div class="equip-column">
         `;
 
@@ -1144,9 +1144,7 @@ function showBattleScreen(battleData) {
             </div>
             <div class="battle-arena">
                 <div class="hero-card">
-                    <div class="hero-avatar">
-                        <img src="/assets/cat_heroweb.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Hero">
-                    </div>
+                    <div class="hero-avatar"><img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;"></div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>
@@ -1157,9 +1155,7 @@ function showBattleScreen(battleData) {
                 </div>
                 <div>VS</div>
                 <div class="enemy-card">
-                    <div class="enemy-avatar">
-                        <i class="fas fa-user"></i> <!-- пока иконка, позже можно заменить -->
-                    </div>
+                  <div class="enemy-avatar"><img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;"></div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                     </div>

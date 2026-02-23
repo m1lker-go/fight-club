@@ -772,6 +772,7 @@ function renderShop() {
     });
 }
 
+
 function showChestResult(item) {
     const modal = document.getElementById('chestResultModal');
     const body = document.getElementById('chestResultBody');

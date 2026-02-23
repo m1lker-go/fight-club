@@ -24,10 +24,10 @@ function calculateStats(classData, inventory) {
         dodge: base.dodge + (classData.dodge_points || 0),
         acc: base.acc + (classData.acc_points || 0) + 100,
         manaMax: 100,
-        // Новая регенерация: воин 15, ассасин 18, маг 30
         manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 30)
     };
 
+    // Добавляем бонусы от надетой экипировки
     inventory.forEach(item => {
         stats.hp += item.hp_bonus || 0;
         stats.atk += item.atk_bonus || 0;
@@ -40,6 +40,7 @@ function calculateStats(classData, inventory) {
         stats.acc += item.acc_bonus || 0;
     });
 
+    // Применяем классовые бонусы
     if (classData.class === 'warrior') {
         stats.hp = Math.floor(stats.hp * 1.5);
         stats.def = Math.min(80, stats.def * 1.5);
@@ -50,9 +51,9 @@ function calculateStats(classData, inventory) {
     } else if (classData.class === 'mage') {
         stats.atk = Math.floor(stats.atk * 1.2);
         stats.res = Math.min(80, stats.res * 1.2);
-        // мана реген уже задана выше
     }
 
+    // Ограничиваем проценты
     stats.def = Math.min(80, stats.def);
     stats.res = Math.min(80, stats.res);
     stats.crit = Math.min(75, stats.crit);
@@ -89,23 +90,21 @@ function performUltimate(attackerStats, defenderStats, className) {
 
     switch (className) {
         case 'warrior':
-            heal = Math.floor(attackerStats.hp * 0.3); // лечение 30% от макс HP
+            heal = Math.floor(attackerStats.hp * 0.3);
             log = `использует Несокрушимость, восстанавливая ${heal} HP`;
             break;
         case 'assassin':
-            damage = Math.floor(attackerStats.atk * 3); // 300% урона
-            heal = Math.floor(damage * 0.5); // вампиризм 50% от урона
+            damage = Math.floor(attackerStats.atk * 3);
+            heal = Math.floor(damage * 0.5);
             log = `использует Танец смерти, нанося ${damage} урона и восстанавливая ${heal} HP`;
             break;
         case 'mage':
-            damage = Math.floor(attackerStats.atk * 4); // 400% магического урона (игнорирует защиту)
-            // Упрощённо: магический урон игнорирует защиту, но может учитывать сопротивление (пока пропустим)
+            damage = Math.floor(attackerStats.atk * 4);
             log = `использует Чистую энергию, нанося ${damage} магического урона`;
             break;
         default:
             return { damage: 0, heal: 0, log: 'ничего не произошло' };
     }
-
     return { damage, heal, log };
 }
 
@@ -134,20 +133,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
         };
 
         if (turn === 'player') {
-            // Восстанавливаем ману
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
             let actionLog = '';
             if (playerMana >= 100) {
-                // Используем ульту
                 const ult = performUltimate(playerStats, enemyStats, playerClass);
-                if (ult.damage > 0) {
-                    enemyHp -= ult.damage;
-                }
-                if (ult.heal > 0) {
-                    playerHp = Math.min(playerStats.hp, playerHp + ult.heal);
-                }
+                if (ult.damage > 0) enemyHp -= ult.damage;
+                if (ult.heal > 0) playerHp = Math.min(playerStats.hp, playerHp + ult.heal);
                 actionLog = `Игрок ${ult.log}`;
-                playerMana -= 100; // тратим 100 маны, остаток сохраняется
+                playerMana -= 100; // тратим ровно 100 маны
             } else {
                 const result = performAttack(playerStats, enemyStats);
                 if (result.hit) enemyHp -= result.damage;
@@ -161,12 +154,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
             let actionLog = '';
             if (enemyMana >= 100) {
                 const ult = performUltimate(enemyStats, playerStats, enemyClass);
-                if (ult.damage > 0) {
-                    playerHp -= ult.damage;
-                }
-                if (ult.heal > 0) {
-                    enemyHp = Math.min(enemyStats.hp, enemyHp + ult.heal);
-                }
+                if (ult.damage > 0) playerHp -= ult.damage;
+                if (ult.heal > 0) enemyHp = Math.min(enemyStats.hp, enemyHp + ult.heal);
                 actionLog = `Противник ${ult.log}`;
                 enemyMana -= 100;
             } else {
@@ -197,7 +186,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
     };
 }
 
-// Генерация бота (таблица с именами) с правильной регенерацией маны
+// Генерация бота (без изменений, но с добавленным полем manaRegen)
 function generateBot(playerLevel) {
     const names = [
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
@@ -275,12 +264,11 @@ function generateBot(playerLevel) {
     };
 }
 
-// Расчёт требуемого опыта для уровня
+// Остальные функции (expNeeded, addExp, getCoinReward, rechargeEnergy) без изменений
 function expNeeded(level) {
     return Math.floor(80 * Math.pow(level, 1.5));
 }
 
-// Начисление опыта и проверка повышения уровня
 async function addExp(client, userId, className, expGain) {
     const classRes = await client.query(
         'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
@@ -305,7 +293,6 @@ async function addExp(client, userId, className, expGain) {
     return leveledUp;
 }
 
-// Награда за победу в зависимости от серии
 function getCoinReward(streak) {
     if (streak >= 25) return 20;
     if (streak >= 10) return 10;
@@ -313,7 +300,6 @@ function getCoinReward(streak) {
     return 5;
 }
 
-// Функция восстановления энергии (1 энергия за 15 минут)
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
     if (user.rows.length === 0) return;
@@ -329,7 +315,6 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-// Эндпоинт начала боя
 router.post('/start', async (req, res) => {
     const { tg_id } = req.body;
     const client = await pool.connect();
@@ -350,10 +335,13 @@ router.post('/start', async (req, res) => {
         );
         if (classData.rows.length === 0) throw new Error('Class data not found');
 
+        // Исправленный запрос – берём надетые предметы напрямую из inventory
         const inv = await client.query(
-            `SELECT i.* FROM inventory inv 
-             JOIN items i ON inv.item_id = i.id 
-             WHERE inv.user_id = $1 AND inv.equipped = true`,
+            `SELECT id, name, type, rarity, class_restriction, owner_class,
+                    atk_bonus, def_bonus, hp_bonus, spd_bonus,
+                    crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus
+             FROM inventory
+             WHERE user_id = $1 AND equipped = true`,
             [userData.id]
         );
         const playerInventory = inv.rows;
@@ -361,7 +349,6 @@ router.post('/start', async (req, res) => {
         const playerStats = calculateStats(classData.rows[0], playerInventory);
         const bot = generateBot(classData.rows[0].level);
 
-        // Передаём классы в симуляцию
         const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class);
 
         let isVictory = false;

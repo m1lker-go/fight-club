@@ -474,7 +474,7 @@ function calculatePower(className, finalStats) {
     return Math.round(power);
 }
 
-// ==================== ЭКИПИРОВКА ====================
+
 // ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
@@ -482,7 +482,6 @@ function renderEquip() {
         selectedClass = userData.current_class;
     }
 
-    // Словари для формирования путей к картинкам
     const classFolderMap = {
         warrior: 'tank',
         assassin: 'assassin',
@@ -543,7 +542,6 @@ function renderEquip() {
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
-                    ${item ? `<div class="item-name">${itemNameTranslations[item.name] || item.name}</div>` : ''}
                 </div>
             `;
         });
@@ -561,7 +559,6 @@ function renderEquip() {
             html += `
                 <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
                     <div class="slot-icon" style="background-image: url('${icon}');"></div>
-                    ${item ? `<div class="item-name">${itemNameTranslations[item.name] || item.name}</div>` : ''}
                 </div>
             `;
         });
@@ -572,10 +569,6 @@ function renderEquip() {
                 <div class="inventory-container">
                     <div class="inventory-grid">
         `;
-
-        const iconMap = {
-            weapon: '⚔️', armor: '🛡️', helmet: '⛑️', gloves: '🧤', boots: '👢', accessory: '💍'
-        };
 
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
@@ -592,10 +585,11 @@ function renderEquip() {
             if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
 
             const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
+            const itemIcon = getItemIconPath(item) || '';
 
             html += `
                 <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}">
-                    <div class="item-icon">${iconMap[item.type] || '📦'}</div>
+                    <div class="item-icon" style="background-image: url('${itemIcon}'); background-size: cover; background-position: center;"></div>
                     <div class="item-content">
                         <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
                         <div class="item-stats">${stats.join(' • ')}</div>

@@ -406,13 +406,6 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-}
-.hero-card .hero-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 10px; /* немного меньше скругление для маленького размера */
-    border: 2px solid #00aaff;
-}
 
 /* Контейнер рюкзака с прокруткой */
 .inventory-container {
@@ -724,4 +717,16 @@ td {
 .power span {
     font-weight: bold;
     color: white;
+}
+/* Контейнеры аватаров в бою */
+.hero-avatar, .enemy-avatar {
+    width: 80px;
+    height: 120px; /* или 180px, если хотите такой же, как на главной */
+    border-radius: 10px;
+    border: 2px solid #00aaff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
 }

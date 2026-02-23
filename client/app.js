@@ -218,7 +218,7 @@ function renderMain() {
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
             <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
-   <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
 </div>
             <h2>${userData.username || 'Игрок'}</h2>
             
@@ -525,8 +525,8 @@ function renderEquip() {
         });
 
         html += `</div>
-                  <div class="hero-center">
-    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: contain;">
+                <div class="hero-center">
+    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
 </div>
                     <div class="equip-column">
         `;
@@ -1144,7 +1144,8 @@ function showBattleScreen(battleData) {
             </div>
             <div class="battle-arena">
                 <div class="hero-card">
-    <div class="hero-avatar"><img src="/assets/cat_heroweb.png" alt="hero"></div>
+    <div class="hero-avatar"><img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;"></div>
+<div class="enemy-avatar"><img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;"></div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>

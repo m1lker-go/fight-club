@@ -217,8 +217,9 @@ function renderMain() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
-            <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
+         <div class="hero-avatar" style="width: 120px; height: 180px; margin: 20px auto;">
     <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
+</div>
 </div>
             <h2>${userData.username || 'Игрок'}</h2>
             

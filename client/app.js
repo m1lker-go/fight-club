@@ -5,7 +5,7 @@ let userData = null;
 let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
-let currentPower = 0; // для отображения силы героя
+let currentPower = 0;
 
 // Словарь для перевода подклассов
 const roleDescriptions = {
@@ -63,9 +63,8 @@ const baseStats = {
     mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, dodge: 0, acc: 0, mana: 0 }
 };
 
-// Словарь перевода названий предметов (английский -> русский)
+// Словарь перевода названий предметов
 const itemNameTranslations = {
-    // Common
     'Rusty Sword': 'Ржавый меч',
     'Wooden Shield': 'Деревянный щит',
     'Leather Helmet': 'Кожаный шлем',
@@ -84,7 +83,6 @@ const itemNameTranslations = {
     'Rag Mitts': 'Тряпичные рукавицы',
     'Holey Shoes': 'Дырявые башмаки',
     'Novice Ring': 'Кольцо начинающего',
-    // Uncommon
     'Quality Sword': 'Качественный меч',
     'Reinforced Shield': 'Укреплённый щит',
     'Visor Helmet': 'Шлем с забралом',
@@ -103,7 +101,6 @@ const itemNameTranslations = {
     'Spellcaster Gloves': 'Перчатки заклинателя',
     'Wanderer Boots': 'Сапоги странника',
     'Wisdom Ring': 'Кольцо мудрости',
-    // Rare
     'Knights Shield': 'Щит рыцаря',
     'Warrior Sword': 'Меч воина',
     'Heavy Sword': 'Тяжелый меч',
@@ -129,14 +126,12 @@ const itemNameTranslations = {
     'Mage Boots': 'Сапоги мага',
     'Mana Ring': 'Кольцо маны',
     'Resistance Amulet': 'Амулет сопротивления',
-    // Epic
     'Legendary Sword': 'Легендарный меч',
     'Blade of Darkness': 'Клинок тьмы',
     'Elemental Staff': 'Посох стихий',
     'Titan Cuirass': 'Кираса титана',
     'Ghost Cloak': 'Плащ призрака',
     'Archmage Robe': 'Роба архимага',
-    // Legendary
     'Excalibur': 'Экскалибур',
     'Dagger of Fate': 'Кинжал судьбы',
     'Staff of Gods': 'Посох богов',
@@ -145,7 +140,6 @@ const itemNameTranslations = {
     'Omnipotence Robe': 'Мантия всевластия'
 };
 
-// Словарь перевода редкостей
 const rarityTranslations = {
     'common': 'Обычное',
     'uncommon': 'Необычное',
@@ -216,7 +210,6 @@ function renderMain() {
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
     const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
 
-    // Рассчитываем силу героя
     const stats = calculateClassStats(currentClass, classData, inventory);
     currentPower = calculatePower(currentClass, stats.final);
     updateTopBar();
@@ -225,7 +218,7 @@ function renderMain() {
     content.innerHTML = `
         <div style="text-align: center; padding: 20px;">
             <div class="hero-avatar" style="width: 120px; height: 120px; margin: 20px auto;">
-                <i class="fas fa-shield-alt"></i>
+                <img src="/assets/cat_heroweb.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Hero">
             </div>
             <h2>${userData.username || 'Игрок'}</h2>
             
@@ -301,7 +294,6 @@ function renderMain() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
                 });
-                // После смены класса обновляем все данные
                 await refreshData();
             }
         });
@@ -316,7 +308,6 @@ function renderMain() {
         });
         if (res.ok) {
             userData.subclass = newSubclass;
-            // Подкласс не влияет на силу, но можно обновить
             await refreshData();
         }
     });
@@ -380,7 +371,6 @@ function getCurrentClassData() {
     };
 }
 
-// Функция для расчёта итоговых характеристик класса с учётом экипировки (только текущего класса)
 function calculateClassStats(className, classData, inventory) {
     const base = baseStats[className] || baseStats.warrior;
 
@@ -401,7 +391,6 @@ function calculateClassStats(className, classData, inventory) {
         hp: 0, atk: 0, def: 0, res: 0, spd: 0, crit: 0, critDmg: 0, dodge: 0, acc: 0, mana: 0
     };
 
-    // Учитываем только предметы, принадлежащие текущему классу
     const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
     equippedItems.forEach(item => {
         gearBonuses.hp += item.hp_bonus || 0;
@@ -441,7 +430,6 @@ function calculateClassStats(className, classData, inventory) {
         final.res = Math.min(80, final.res * 1.2);
     }
 
-    // Округление до целых
     final.def = Math.round(Math.min(80, final.def));
     final.res = Math.round(Math.min(80, final.res));
     final.crit = Math.round(Math.min(75, final.crit));
@@ -451,63 +439,37 @@ function calculateClassStats(className, classData, inventory) {
     final.atk = Math.round(final.atk);
     final.spd = Math.round(final.spd);
     final.mana = Math.round(final.mana);
-    final.critDmg = Math.round(final.critDmg * 100) / 100; // оставляем с двумя знаками для отображения в процентах
+    final.critDmg = Math.round(final.critDmg * 100) / 100;
 
     return { base: baseStatsWithSkills, gear: gearBonuses, final: final };
 }
 
-// Функция для расчёта силы героя
 function calculatePower(className, finalStats) {
-    // коэффициенты важности для каждой характеристики (множители)
     const importance = {
         warrior: {
-            hp: 2.0,
-            atk: 2.0,
-            def: 2.0,
-            res: 1.5,
-            spd: 1.0,
-            crit: 1.5,
-            critDmg: 1.5,
-            dodge: 1.0,
-            acc: 1.0,
-            mana: 1.0
+            hp: 2.0, atk: 2.0, def: 2.0, res: 1.5, spd: 1.0,
+            crit: 1.5, critDmg: 1.5, dodge: 1.0, acc: 1.0, mana: 1.0
         },
         assassin: {
-            hp: 1.5,
-            atk: 2.0,
-            def: 1.0,
-            res: 1.0,
-            spd: 1.5,
-            crit: 2.0,
-            critDmg: 1.5,
-            dodge: 2.0,
-            acc: 1.0,
-            mana: 1.0
+            hp: 1.5, atk: 2.0, def: 1.0, res: 1.0, spd: 1.5,
+            crit: 2.0, critDmg: 1.5, dodge: 2.0, acc: 1.0, mana: 1.0
         },
         mage: {
-            hp: 1.5,
-            atk: 2.0,
-            def: 1.0,
-            res: 2.0,
-            spd: 1.0,
-            crit: 1.5,
-            critDmg: 1.5,
-            dodge: 1.0,
-            acc: 1.0,
-            mana: 2.0
+            hp: 1.5, atk: 2.0, def: 1.0, res: 2.0, spd: 1.0,
+            crit: 1.5, critDmg: 1.5, dodge: 1.0, acc: 1.0, mana: 2.0
         }
     };
     const coeff = importance[className] || importance.warrior;
     let power = 0;
     power += finalStats.hp * coeff.hp;
-    power += finalStats.atk * coeff.atk * 2; // дополнительный вес атаки
+    power += finalStats.atk * coeff.atk * 2;
     power += finalStats.def * coeff.def * 2;
     power += finalStats.res * coeff.res * 2;
     power += finalStats.spd * coeff.spd * 2;
-    power += finalStats.crit * coeff.crit * 3; // шанс крита
-    power += (finalStats.critDmg - 2.0) * 100 * coeff.critDmg; // крит.урон сверх 200%
+    power += finalStats.crit * coeff.crit * 3;
+    power += (finalStats.critDmg - 2.0) * 100 * coeff.critDmg;
     power += finalStats.dodge * coeff.dodge * 3;
-    power += (finalStats.acc - 100) * coeff.acc * 2; // меткость сверх 100%
+    power += (finalStats.acc - 100) * coeff.acc * 2;
     power += finalStats.mana * coeff.mana * 1;
     return Math.round(power);
 }
@@ -564,7 +526,7 @@ function renderEquip() {
 
         html += `</div>
                     <div class="hero-center">
-                        <i class="fas fa-user"></i>
+                        <img src="/assets/cat_heroweb.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Hero">
                     </div>
                     <div class="equip-column">
         `;
@@ -624,7 +586,6 @@ function renderEquip() {
         html += `</div></div></div>`;
         document.getElementById('content').innerHTML = html;
 
-        // Обработчики для кнопок выбора класса
         document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -633,7 +594,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
@@ -657,7 +617,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики для предметов в рюкзаке
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('action-btn')) return;
@@ -1053,7 +1012,6 @@ function renderProfile() {
             });
             if (res.ok) {
                 userData.current_class = newClass;
-                // Обновляем данные после смены класса
                 await refreshData();
             }
         });
@@ -1186,7 +1144,9 @@ function showBattleScreen(battleData) {
             </div>
             <div class="battle-arena">
                 <div class="hero-card">
-                    <div class="hero-avatar"><i class="fas fa-user"></i></div>
+                    <div class="hero-avatar">
+                        <img src="/assets/cat_heroweb.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Hero">
+                    </div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>
@@ -1197,7 +1157,9 @@ function showBattleScreen(battleData) {
                 </div>
                 <div>VS</div>
                 <div class="enemy-card">
-                    <div class="enemy-avatar"><i class="fas fa-user"></i></div>
+                    <div class="enemy-avatar">
+                        <i class="fas fa-user"></i> <!-- пока иконка, позже можно заменить -->
+                    </div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                     </div>
@@ -1300,9 +1262,7 @@ function showBattleResult(battleData, timeOut = false) {
     `;
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
-        // Сначала обновляем данные (энергия, монеты, опыт)
         await refreshData();
-        // Затем запускаем новый бой
         startBattle();
     });
 
@@ -1322,7 +1282,6 @@ async function refreshData() {
     userData = data.user;
     userClasses = data.classes || [];
     inventory = data.inventory || [];
-    // пересчитать силу для текущего класса
     const classData = getCurrentClassData();
     const stats = calculateClassStats(userData.current_class, classData, inventory);
     currentPower = calculatePower(userData.current_class, stats.final);

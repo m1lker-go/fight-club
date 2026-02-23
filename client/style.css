@@ -518,6 +518,7 @@ body {
 .rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
 
 /* Магазин сундуков */
+/* Магазин сундуков */
 .chest-list {
     display: flex;
     flex-direction: column;

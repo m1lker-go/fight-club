@@ -1084,10 +1084,11 @@ function renderTasks() {
 }
 
 // ==================== ПРОФИЛЬ ====================
+
 function renderProfile() {
     const currentClass = userData.current_class;
     const classData = getCurrentClassData();
-    const stats = calculateClassStats(currentClass, classData, inventory);
+    const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -1107,22 +1108,19 @@ function renderProfile() {
                 <th style="text-align:left;">Параметр</th>
                 <th style="text-align:center;">База</th>
                 <th style="text-align:center;">+Снаряжение</th>
+                <th style="text-align:center;">+Роль</th>
                 <th style="text-align:center;">Итого</th>
             </tr>
-            ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.final.hp, 'hp')}
-            ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.final.atk, 'atk')}
-            ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.final.def + '%', 'def')}
-            ${renderStatRow('Сопротивление (RES)', stats.base.res + '%', stats.gear.res + '%', stats.final.res + '%', 'res')}
-            ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.final.spd, 'spd')}
-            ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.final.crit + '%', 'crit')}
-            ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(0) + '%', (stats.gear.critDmg*100).toFixed(0) + '%', (stats.final.critDmg*100).toFixed(0) + '%', 'critDmg')}
-            ${renderStatRow('Уворот (DODGE)', stats.base.dodge + '%', stats.gear.dodge + '%', stats.final.dodge + '%', 'dodge')}
-            ${renderStatRow('Меткость (ACC)', stats.base.acc + '%', stats.gear.acc + '%', stats.final.acc + '%', 'acc')}
-            ${renderStatRow('Усиление маны (MANA)', stats.base.mana + '%', stats.gear.mana + '%', stats.final.mana + '%', 'mana')}
-       ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.final.agi + '%', 'agi')}
-${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.final.int + '%', 'int')}
-${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.final.vamp + '%', 'vamp')}
-${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.final.reflect + '%', 'reflect')}
+            ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.role.hp, stats.final.hp)}
+            ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.role.atk, stats.final.atk)}
+            ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.role.def + '%', stats.final.def + '%')}
+            ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.role.agi + '%', stats.final.agi + '%')}
+            ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.role.int + '%', stats.final.int + '%')}
+            ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.role.spd, stats.final.spd)}
+            ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.role.crit + '%', stats.final.crit + '%')}
+            ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', (stats.role.critDmg*100).toFixed(1) + '%', (stats.final.critDmg*100).toFixed(1) + '%')}
+            ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.role.vamp + '%', stats.final.vamp + '%')}
+            ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.role.reflect + '%', stats.final.reflect + '%')}
         </table>
     `;
 
@@ -1143,15 +1141,17 @@ ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.
     });
 }
 
-function renderStatRow(label, baseValue, gearValue, finalValue, key) {
+function renderStatRow(label, baseValue, gearValue, roleValue, finalValue) {
     const gearNum = parseFloat(gearValue) || 0;
-    const gearSign = gearNum >= 0 ? '+' : '';
-    const gearDisplay = gearNum !== 0 ? `<span style="color:#00aaff;">(${gearSign}${gearValue})</span>` : '';
+    const roleNum = parseFloat(roleValue) || 0;
+    const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
+    const roleDisplay = roleNum !== 0 ? `<span style="color:#00aaff;">+${roleValue}</span>` : '';
     return `
         <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
+            <td style="text-align:center;">${roleDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
         </tr>
     `;

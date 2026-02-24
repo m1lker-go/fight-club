@@ -1347,63 +1347,86 @@ function showBattleResult(battleData, timeOut = false) {
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
 
-    // Собираем статистику из лога (приблизительно)
-    let playerHits = 0, enemyHits = 0;
-    let playerCrits = 0, enemyCrits = 0;
-    let playerDodges = 0, enemyDodges = 0;
-    let playerTotalDamage = 0, enemyTotalDamage = 0;
-    let playerHeal = 0, enemyHeal = 0;
-    let playerReflect = 0, enemyReflect = 0;
+    // Сбор статистики из turns
+    let playerStats = {
+        hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
+    };
+    let enemyStats = {
+        hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
+    };
 
-    battleData.result.log.forEach(line => {
-        if (line.includes('Игрок наносит') || line.includes('Игрок использует')) {
-            // Примерный парсинг – можно улучшить
-            const damageMatch = line.match(/наносит (\d+)/);
-            if (damageMatch) playerTotalDamage += parseInt(damageMatch[1]);
-            if (line.includes('крит')) playerCrits++;
-            playerHits++;
-        } else if (line.includes('Противник наносит')) {
-            const damageMatch = line.match(/наносит (\d+)/);
-            if (damageMatch) enemyTotalDamage += parseInt(damageMatch[1]);
-            if (line.includes('крит')) enemyCrits++;
-            enemyHits++;
-        }
-        if (line.includes('уклоняется')) {
-            if (line.startsWith('Игрок')) playerDodges++;
-            else enemyDodges++;
-        }
-        if (line.includes('восстанавливает')) {
-            const healMatch = line.match(/восстанавливает (\d+)/);
-            if (healMatch) {
-                if (line.startsWith('Игрок')) playerHeal += parseInt(healMatch[1]);
-                else enemyHeal += parseInt(healMatch[1]);
+    if (battleData.result.turns) {
+        battleData.result.turns.forEach(turn => {
+            const action = turn.action;
+            const isPlayerTurn = turn.turn === 'player';
+            const targetStats = isPlayerTurn ? playerStats : enemyStats;
+            const otherStats = isPlayerTurn ? enemyStats : playerStats;
+
+            // Удар
+            if (action.includes('наносит')) {
+                targetStats.hits++;
+                const dmgMatch = action.match(/наносит <span[^>]*>(\d+)<\/span>/);
+                if (dmgMatch) {
+                    targetStats.totalDamage += parseInt(dmgMatch[1]);
+                }
+                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита')) {
+                    targetStats.crits++;
+                }
             }
-        }
-        if (line.includes('отражает')) {
-            const reflectMatch = line.match(/отражает (\d+)/);
-            if (reflectMatch) {
-                if (line.startsWith('Игрок')) playerReflect += parseInt(reflectMatch[1]);
-                else enemyReflect += parseInt(reflectMatch[1]);
+            // Уклонение
+            if (action.includes('уклоняется') || action.includes('уворачивается')) {
+                if (action.startsWith('Игрок')) {
+                    playerStats.dodges++;
+                } else if (action.startsWith('Противник')) {
+                    enemyStats.dodges++;
+                }
             }
-        }
-    });
+            // Вампиризм
+            if (action.includes('восстанавливает')) {
+                const healMatch = action.match(/восстанавливает (\d+) очков здоровья/);
+                if (healMatch) {
+                    if (action.startsWith('Игрок')) {
+                        playerStats.heal += parseInt(healMatch[1]);
+                    } else if (action.startsWith('Противник')) {
+                        enemyStats.heal += parseInt(healMatch[1]);
+                    }
+                }
+            }
+            // Отражение
+            if (action.includes('отражает')) {
+                const reflectMatch = action.match(/отражает (\d+) урона/);
+                if (reflectMatch) {
+                    if (action.startsWith('Игрок')) {
+                        playerStats.reflect += parseInt(reflectMatch[1]);
+                    } else if (action.startsWith('Противник')) {
+                        enemyStats.reflect += parseInt(reflectMatch[1]);
+                    }
+                }
+            }
+        });
+    }
 
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
+            
+            <!-- Кнопки "В бой" и "Назад" сверху -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn" id="rematchBtn">В бой</button>
+                <button class="btn" id="backBtn">Назад</button>
+            </div>
+            
+            <!-- Переключатели вкладок -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <button class="btn result-tab active" id="tabLog">Лог боя</button>
                 <button class="btn result-tab" id="tabStats">Статистика</button>
             </div>
+            
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
                 <!-- Здесь будет лог или статистика -->
                 ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn" id="rematchBtn">В бой</button>
-                <button class="btn" id="backBtn">Назад</button>
             </div>
         </div>
     `;
@@ -1422,18 +1445,30 @@ function showBattleResult(battleData, timeOut = false) {
         tabLog.classList.remove('active');
         tabStats.classList.add('active');
         resultDiv.innerHTML = `
-            <h4 style="color:#00aaff;">Игрок (${userData.username})</h4>
-            <table style="width:100%; font-size:13px;">
-                <tr><td>Ударов:</td><td>${playerHits}</td><td>Критов:</td><td>${playerCrits}</td></tr>
-                <tr><td>Уклонений:</td><td>${playerDodges}</td><td>Всего урона:</td><td>${playerTotalDamage}</td></tr>
-                <tr><td>Исцелено:</td><td>${playerHeal}</td><td>Отражено:</td><td>${playerReflect}</td></tr>
-            </table>
-            <h4 style="color:#e74c3c;">Противник (${battleData.opponent.username})</h4>
-            <table style="width:100%; font-size:13px;">
-                <tr><td>Ударов:</td><td>${enemyHits}</td><td>Критов:</td><td>${enemyCrits}</td></tr>
-                <tr><td>Уклонений:</td><td>${enemyDodges}</td><td>Всего урона:</td><td>${enemyTotalDamage}</td></tr>
-                <tr><td>Исцелено:</td><td>${enemyHeal}</td><td>Отражено:</td><td>${enemyReflect}</td></tr>
-            </table>
+            <div style="display: flex; justify-content: space-around; text-align: center;">
+                <div style="flex: 1;">
+                    <h3 style="color:#00aaff;">Игрок</h3>
+                    <table style="width:100%; font-size:14px; margin:0 auto;">
+                        <tr><td>${playerStats.hits}</td><td>Ударов</td></tr>
+                        <tr><td>${playerStats.crits}</td><td>Критов</td></tr>
+                        <tr><td>${playerStats.dodges}</td><td>Уклонений</td></tr>
+                        <tr><td>${playerStats.totalDamage}</td><td>Урона</td></tr>
+                        <tr><td>${playerStats.heal}</td><td>Исцелено</td></tr>
+                        <tr><td>${playerStats.reflect}</td><td>Отражено</td></tr>
+                    </table>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="color:#e74c3c;">Соперник</h3>
+                    <table style="width:100%; font-size:14px; margin:0 auto;">
+                        <tr><td>${enemyStats.hits}</td><td>Ударов</td></tr>
+                        <tr><td>${enemyStats.crits}</td><td>Критов</td></tr>
+                        <tr><td>${enemyStats.dodges}</td><td>Уклонений</td></tr>
+                        <tr><td>${enemyStats.totalDamage}</td><td>Урона</td></tr>
+                        <tr><td>${enemyStats.heal}</td><td>Исцелено</td></tr>
+                        <tr><td>${enemyStats.reflect}</td><td>Отражено</td></tr>
+                    </table>
+                </div>
+            </div>
         `;
     });
 
@@ -1450,19 +1485,6 @@ function showBattleResult(battleData, timeOut = false) {
         await refreshData();
         showScreen('main');
     });
-}
-
-async function refreshData() {
-    const res = await fetch(`/player/${userData.tg_id}`);
-    const data = await res.json();
-    userData = data.user;
-    userClasses = data.classes || [];
-    inventory = data.inventory || [];
-    const classData = getCurrentClassData();
-    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
-    currentPower = calculatePower(userData.current_class, stats.final);
-    updateTopBar();
-    showScreen(currentScreen);
 }
 
 document.querySelectorAll('.menu-item').forEach(item => {

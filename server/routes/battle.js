@@ -4,25 +4,11 @@ const { pool } = require('../db');
 
 // Базовые характеристики для каждого класса (на 1 уровне)
 const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, agi: 1, int: 0, spd: 10, crit: 2, critDmg: 2.0, vamp: 0, reflect: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 2.0, vamp: 0, reflect: 0 },
-    mage: { hp: 10, atk: 5, def: 0, agi: 0, int: 3, spd: 12, crit: 3, critDmg: 2.0, vamp: 0, reflect: 0 }
+    warrior: { hp: 28, atk: 3, def: 4, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 20, atk: 5, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// Пассивные бонусы подклассов
-const rolePassives = {
-    guardian: { }, // страж: снижение урона на 10% и шанс блока – реализуем отдельно в функции
-    berserker: { }, // берсерк: увеличение урона при низком HP
-    knight: { reflect: 20 }, // рыцарь даёт +20% отражения
-    assassin: { vamp: 20 },  // убийца даёт +20% вампиризма
-    venom_blade: { }, // ядовитый клинок – яд
-    blood_hunter: { vamp: 20 }, // кровохот тоже даёт вампиризм
-    pyromancer: { }, // пиромант – поджог
-    cryomancer: { }, // ледяной маг – заморозка
-    illusionist: { } // иллюзионист – уклонение
-};
-
-// Вспомогательная функция для расчёта итоговых характеристик героя
 function calculateStats(classData, inventory, subclass) {
     const base = baseStats[classData.class] || baseStats.warrior;
 
@@ -34,14 +20,14 @@ function calculateStats(classData, inventory, subclass) {
         int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
-        critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
+        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,
         manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 30)
     };
 
-    // Добавляем бонусы от надетой экипировки
+    // Бонусы от экипировки
     inventory.forEach(item => {
         stats.hp += item.hp_bonus || 0;
         stats.atk += item.atk_bonus || 0;
@@ -55,36 +41,26 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // Добавляем пассивные бонусы подкласса
+    // Пассивные бонусы подкласса (только вампиризм/отражение)
+    const rolePassives = {
+        knight: { reflect: 20 },
+        assassin: { vamp: 20 },
+        blood_hunter: { vamp: 20 }
+    };
     const roleBonus = rolePassives[subclass] || {};
-    if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
-    if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
+    stats.vamp += roleBonus.vamp || 0;
+    stats.reflect += roleBonus.reflect || 0;
 
-    // Применяем классовые бонусы
-    if (classData.class === 'warrior') {
-        stats.hp = Math.floor(stats.hp * 1.5);
-        stats.def = Math.min(70, stats.def * 1.5);
-    } else if (classData.class === 'assassin') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = Math.min(100, stats.crit * 1.25);
-        stats.agi = Math.min(100, stats.agi * 1.1);
-    } else if (classData.class === 'mage') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.int = stats.int * 1.2; // интеллект не ограничен
-    }
-
-    // Ограничения
-    stats.def = Math.min(70, stats.def);
+    // Ограничения процентов
+    stats.def = Math.min(100, stats.def);
+    stats.agi = Math.min(100, stats.agi);
     stats.crit = Math.min(100, stats.crit);
-    stats.agi = Math.min(100, stats.agi); // ловкость ограничена 100% (уворот)
-    // Остальные не ограничены
 
     return stats;
 }
 
-// Автоатака с учётом вампиризма и отражения
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect) {
-    const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi)); // меткость = 100% - уворот цели
+    const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
     if (Math.random() * 100 > hitChance) {
         return { hit: false, damage: 0, isCrit: false, log: 'промах', reflectDamage: 0, vampHeal: 0 };
     }
@@ -111,7 +87,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}`, reflectDamage, vampHeal };
 }
 
-// Активный навык (ультимейт) – пока оставим без изменений
 function performUltimate(attackerStats, defenderStats, className) {
     let damage = 0;
     let heal = 0;
@@ -137,7 +112,6 @@ function performUltimate(attackerStats, defenderStats, className) {
     return { damage, heal, log };
 }
 
-// Симуляция боя
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
@@ -164,8 +138,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (turn === 'player') {
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
             let actionLog = '';
-            let reflectDamage = 0, vampHeal = 0;
-
             if (playerMana >= 100) {
                 const ult = performUltimate(playerStats, enemyStats, playerClass);
                 if (ult.damage > 0) enemyHp -= ult.damage;
@@ -177,12 +149,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.hit) {
                     enemyHp -= attackResult.damage;
                     playerHp = Math.min(playerStats.hp, playerHp + attackResult.vampHeal);
-                    playerHp -= attackResult.reflectDamage; // урон от отражения
-                    if (attackResult.reflectDamage > 0) {
-                        actionLog = `Игрок ${attackResult.log}, восстанавливает ${attackResult.vampHeal} HP (вампиризм), получает ${attackResult.reflectDamage} отражённого урона`;
-                    } else {
-                        actionLog = `Игрок ${attackResult.log}`;
-                    }
+                    playerHp -= attackResult.reflectDamage;
+                    actionLog = `Игрок ${attackResult.log}`;
                 } else {
                     actionLog = `Игрок промахнулся`;
                 }
@@ -205,11 +173,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     playerHp -= attackResult.damage;
                     enemyHp = Math.min(enemyStats.hp, enemyHp + attackResult.vampHeal);
                     enemyHp -= attackResult.reflectDamage;
-                    if (attackResult.reflectDamage > 0) {
-                        actionLog = `Противник ${attackResult.log}, восстанавливает ${attackResult.vampHeal} HP (вампиризм), получает ${attackResult.reflectDamage} отражённого урона`;
-                    } else {
-                        actionLog = `Противник ${attackResult.log}`;
-                    }
+                    actionLog = `Противник ${attackResult.log}`;
                 } else {
                     actionLog = `Противник промахнулся`;
                 }
@@ -237,7 +201,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     };
 }
 
-// Генерация бота (без изменений, но с новыми полями)
 function generateBot(playerLevel) {
     const names = [
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
@@ -309,7 +272,7 @@ function generateBot(playerLevel) {
             int: int,
             spd: spd,
             crit: crit,
-            critDmg: 2.0,
+            critDmg: 1.5,
             vamp: vamp,
             reflect: reflect,
             manaMax: 100,
@@ -318,7 +281,6 @@ function generateBot(playerLevel) {
     };
 }
 
-// Остальные функции (expNeeded, addExp, getCoinReward, rechargeEnergy) без изменений
 function expNeeded(level) {
     return Math.floor(80 * Math.pow(level, 1.5));
 }

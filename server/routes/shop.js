@@ -4,7 +4,7 @@ const { pool } = require('../db');
 
 const prices = { rare: 100, epic: 500, legendary: 2000 };
 
-// Фиксированные значения бонусов по редкости (10 характеристик)
+// Фиксированные значения бонусов по редкости
 const fixedStats = {
     common: {
         atk_bonus: 1,
@@ -68,7 +68,7 @@ const fixedStats = {
     }
 };
 
-const statFields = [
+const allStatFields = [
     'atk_bonus', 'def_bonus', 'hp_bonus', 'agi_bonus', 'int_bonus',
     'spd_bonus', 'crit_bonus', 'crit_dmg_bonus', 'vamp_bonus', 'reflect_bonus'
 ];
@@ -79,6 +79,12 @@ function getLowerRarity(rarity) {
 }
 
 function generateStats(rarity) {
+    // Только те поля, которые дают ненулевой бонус для этой редкости
+    const availableFields = allStatFields.filter(field => fixedStats[rarity][field] > 0);
+    const fieldsToPick = availableFields.length >= 2 ? availableFields : allStatFields;
+    const shuffled = [...fieldsToPick].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, 2);
+    
     const stats = {
         atk_bonus: 0,
         def_bonus: 0,
@@ -91,11 +97,11 @@ function generateStats(rarity) {
         vamp_bonus: 0,
         reflect_bonus: 0
     };
-    const shuffled = [...statFields].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 2);
+    
     selected.forEach(field => {
         stats[field] = fixedStats[rarity][field];
     });
+    
     return stats;
 }
 

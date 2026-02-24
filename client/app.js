@@ -210,7 +210,6 @@ function renderMain() {
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
     const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
 
-    // Передаём subclass
     const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
     currentPower = calculatePower(currentClass, stats.final);
     updateTopBar();
@@ -375,7 +374,6 @@ function getCurrentClassData() {
 function calculateClassStats(className, classData, inventory, subclass) {
     const base = baseStats[className] || baseStats.warrior;
 
-    // База + очки навыков
     let baseStatsWithSkills = {
         hp: base.hp + (classData.hp_points || 0) * 2,
         atk: base.atk + (classData.atk_points || 0),
@@ -396,7 +394,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
         hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
     };
 
-    // Бонусы от надетой экипировки
     const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
     equippedItems.forEach(item => {
         gearBonuses.hp += item.hp_bonus || 0;
@@ -411,7 +408,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
         gearBonuses.reflect += item.reflect_bonus || 0;
     });
 
-    // Пассивные бонусы от подкласса
     const rolePassives = {
         knight: { reflect: 20 },
         assassin: { vamp: 20 },
@@ -421,7 +417,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
     if (roleBonus.vamp) roleBonuses.vamp += roleBonus.vamp;
     if (roleBonus.reflect) roleBonuses.reflect += roleBonus.reflect;
 
-    // Итоговые значения (сумма)
     let final = {
         hp: baseStatsWithSkills.hp + gearBonuses.hp + roleBonuses.hp,
         atk: baseStatsWithSkills.atk + gearBonuses.atk + roleBonuses.atk,
@@ -435,7 +430,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
         reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
     };
 
-    // Применяем классовые множители
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.5);
         final.def = Math.min(70, final.def * 1.5);
@@ -445,15 +439,13 @@ function calculateClassStats(className, classData, inventory, subclass) {
         final.agi = Math.min(100, final.agi * 1.1);
     } else if (className === 'mage') {
         final.atk = Math.floor(final.atk * 1.2);
-        final.int = final.int * 1.2; // интеллект не ограничен
+        final.int = final.int * 1.2;
     }
 
-    // Ограничения
     final.def = Math.min(70, final.def);
     final.crit = Math.min(100, final.crit);
     final.agi = Math.min(100, final.agi);
 
-    // Округление до одного знака после запятой для процентных характеристик
     final.hp = Math.round(final.hp);
     final.atk = Math.round(final.atk);
     final.spd = Math.round(final.spd);
@@ -599,7 +591,6 @@ function renderEquip() {
 
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
-            // Убраны старые поля, оставлены только новые
             const stats = [];
             if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
             if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
@@ -632,7 +623,6 @@ function renderEquip() {
         html += `</div></div></div>`;
         document.getElementById('content').innerHTML = html;
 
-        // Обработчики для кнопок выбора класса
         document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -641,7 +631,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики слотов (снять предмет)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
@@ -665,7 +654,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики для предметов в рюкзаке
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('action-btn')) return;
@@ -1287,19 +1275,61 @@ function showBattleScreen(battleData) {
     let speed = 1;
     let interval;
 
-   function generateStats(rarity) {
-    const stats = {
-        atk_bonus: 0, def_bonus: 0, hp_bonus: 0, agi_bonus: 0, int_bonus: 0,
-        spd_bonus: 0, crit_bonus: 0, crit_dmg_bonus: 0, vamp_bonus: 0, reflect_bonus: 0
-    };
-    // Оставляем только те поля, которые имеют ненулевое значение для данной редкости
-    const possibleFields = statFields.filter(field => fixedStats[rarity][field] > 0);
-    const shuffled = [...possibleFields].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 2);
-    selected.forEach(field => {
-        stats[field] = fixedStats[rarity][field];
+    function playTurn() {
+        if (turnIndex >= turns.length) {
+            clearInterval(interval);
+            // очищаем также таймер, если он ещё работает
+            if (timer) clearInterval(timer);
+            showBattleResult(battleData);
+            return;
+        }
+        const turn = turns[turnIndex];
+        document.getElementById('heroHp').style.width = (turn.playerHp / battleData.result.playerMaxHp) * 100 + '%';
+        document.getElementById('heroHpText').innerText = turn.playerHp + '/' + battleData.result.playerMaxHp;
+        document.getElementById('enemyHp').style.width = (turn.enemyHp / battleData.result.enemyMaxHp) * 100 + '%';
+        document.getElementById('enemyHpText').innerText = turn.enemyHp + '/' + battleData.result.enemyMaxHp;
+        document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
+        document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
+
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.innerText = turn.action;
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight;
+
+        turnIndex++;
+    }
+
+    playTurn();
+    interval = setInterval(playTurn, 1000 / speed);
+
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            speed = parseInt(btn.dataset.speed);
+            clearInterval(interval);
+            interval = setInterval(playTurn, 1000 / speed);
+        });
     });
-    return stats;
+
+    let timeLeft = 45;
+    const timerEl = document.getElementById('battleTimer');
+    const timer = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            clearInterval(interval);
+            const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
+            const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
+            let winner;
+            if (playerPercent > enemyPercent) winner = 'player';
+            else if (enemyPercent > playerPercent) winner = 'enemy';
+            else winner = 'draw';
+            showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
+        }
+    }, 1000);
 }
 
 function showBattleResult(battleData, timeOut = false) {

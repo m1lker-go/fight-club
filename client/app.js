@@ -58,9 +58,9 @@ const roleDescriptions = {
 
 // Базовые характеристики классов
 const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, agi: 1, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-    mage: { hp: 10, atk: 5, def: 0, agi: 0, int: 3, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+    warrior: { hp: 28, atk: 3, def: 4, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 20, atk: 5, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
 // Словарь перевода названий предметов

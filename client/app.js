@@ -1177,21 +1177,18 @@ function renderSkills() {
         <div class="skills-list">
             ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 2', base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
             ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
-            ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1%', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
-            ${renderSkillItem('res_points', 'Сопротивление', 'Снижает получаемый магический урон на 1%', base.res + (classData.res_points || 0), classData.res_points || 0, skillPoints)}
+            ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
+            ${renderSkillItem('agi_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.agi_points || 0), classData.agi_points || 0, skillPoints)}
+            ${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
             ${renderSkillItem('spd_points', 'Скорость', 'Увеличивает скорость (очередность хода) на 1', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
-            ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1%', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
-            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Увеличивает множитель критического урона на 1% (база x2.0)', (2.0 + (classData.crit_dmg_points || 0)/100).toFixed(2), classData.crit_dmg_points || 0, skillPoints)}
-            ${renderSkillItem('dodge_points', 'Уворот', 'Увеличивает шанс уворота на 1%', base.dodge + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
-            ${renderSkillItem('acc_points', 'Меткость', 'Увеличивает меткость на 1%', base.acc + (classData.acc_points || 0) + 100, classData.acc_points || 0, skillPoints)}
-            ${renderSkillItem('mana_points', 'Мана', 'Увеличивает эффективность активного навыка на 1%', (classData.mana_points || 0) + '%', classData.mana_points || 0, skillPoints)}
-       ${renderSkillItem('agi_points', 'Ловкость', 'Увеличивает шанс уворота на 1%', base.agi + (classData.agi_points || 0), classData.agi_points || 0, skillPoints)}
-${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
-${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает HP от урона на 1%', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
-${renderSkillItem('reflect_points', 'Отражение', 'Возвращает урон атакующему на 1%', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
+            ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1% (макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
+            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Увеличивает множитель критического урона на 1% (база ×1.5)', (1.5 + (classData.crit_dmg_points || 0)/100).toFixed(2) + 'x', classData.crit_dmg_points || 0, skillPoints)}
+            ${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает % от нанесённого урона', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
+            ${renderSkillItem('reflect_points', 'Отражение', 'Возвращает % полученного урона атакующему', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
         </div>
     `;
 
+    // Обработчики остаются без изменений
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;

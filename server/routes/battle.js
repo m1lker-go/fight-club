@@ -4,25 +4,39 @@ const { pool } = require('../db');
 
 // Базовые характеристики для каждого класса (на 1 уровне)
 const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, dodge: 1, acc: 0, mana: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, dodge: 5, acc: 0, mana: 0 },
-    mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, dodge: 0, acc: 0, mana: 0 }
+    warrior: { hp: 20, atk: 5, def: 2, agi: 1, int: 0, spd: 10, crit: 2, critDmg: 2.0, vamp: 0, reflect: 0 },
+    assassin: { hp: 13, atk: 7, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 2.0, vamp: 0, reflect: 0 },
+    mage: { hp: 10, atk: 5, def: 0, agi: 0, int: 3, spd: 12, crit: 3, critDmg: 2.0, vamp: 0, reflect: 0 }
+};
+
+// Пассивные бонусы подклассов
+const rolePassives = {
+    guardian: { }, // страж: снижение урона на 10% и шанс блока – реализуем отдельно в функции
+    berserker: { }, // берсерк: увеличение урона при низком HP
+    knight: { reflect: 20 }, // рыцарь даёт +20% отражения
+    assassin: { vamp: 20 },  // убийца даёт +20% вампиризма
+    venom_blade: { }, // ядовитый клинок – яд
+    blood_hunter: { vamp: 20 }, // кровохот тоже даёт вампиризм
+    pyromancer: { }, // пиромант – поджог
+    cryomancer: { }, // ледяной маг – заморозка
+    illusionist: { } // иллюзионист – уклонение
 };
 
 // Вспомогательная функция для расчёта итоговых характеристик героя
-function calculateStats(classData, inventory) {
+function calculateStats(classData, inventory, subclass) {
     const base = baseStats[classData.class] || baseStats.warrior;
 
     let stats = {
         hp: base.hp + (classData.hp_points || 0) * 2,
         atk: base.atk + (classData.atk_points || 0),
         def: base.def + (classData.def_points || 0),
-        res: base.res + (classData.res_points || 0),
+        agi: base.agi + (classData.agi_points || 0),
+        int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
         critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
-        dodge: base.dodge + (classData.dodge_points || 0),
-        acc: base.acc + (classData.acc_points || 0) + 100,
+        vamp: base.vamp + (classData.vamp_points || 0),
+        reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,
         manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 30)
     };
@@ -32,42 +46,47 @@ function calculateStats(classData, inventory) {
         stats.hp += item.hp_bonus || 0;
         stats.atk += item.atk_bonus || 0;
         stats.def += item.def_bonus || 0;
-        stats.res += item.res_bonus || 0;
+        stats.agi += item.agi_bonus || 0;
+        stats.int += item.int_bonus || 0;
         stats.spd += item.spd_bonus || 0;
         stats.crit += item.crit_bonus || 0;
         stats.critDmg += (item.crit_dmg_bonus || 0) / 100;
-        stats.dodge += item.dodge_bonus || 0;
-        stats.acc += item.acc_bonus || 0;
+        stats.vamp += item.vamp_bonus || 0;
+        stats.reflect += item.reflect_bonus || 0;
     });
+
+    // Добавляем пассивные бонусы подкласса
+    const roleBonus = rolePassives[subclass] || {};
+    if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
+    if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
     // Применяем классовые бонусы
     if (classData.class === 'warrior') {
         stats.hp = Math.floor(stats.hp * 1.5);
-        stats.def = Math.min(80, stats.def * 1.5);
+        stats.def = Math.min(70, stats.def * 1.5);
     } else if (classData.class === 'assassin') {
         stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = Math.min(75, stats.crit * 1.25);
-        stats.dodge = Math.min(70, stats.dodge * 1.1);
+        stats.crit = Math.min(100, stats.crit * 1.25);
+        stats.agi = Math.min(100, stats.agi * 1.1);
     } else if (classData.class === 'mage') {
         stats.atk = Math.floor(stats.atk * 1.2);
-        stats.res = Math.min(80, stats.res * 1.2);
+        stats.int = stats.int * 1.2; // интеллект не ограничен
     }
 
-    // Ограничиваем проценты
-    stats.def = Math.min(80, stats.def);
-    stats.res = Math.min(80, stats.res);
-    stats.crit = Math.min(75, stats.crit);
-    stats.dodge = Math.min(70, stats.dodge);
-    stats.acc = Math.min(100, stats.acc);
+    // Ограничения
+    stats.def = Math.min(70, stats.def);
+    stats.crit = Math.min(100, stats.crit);
+    stats.agi = Math.min(100, stats.agi); // ловкость ограничена 100% (уворот)
+    // Остальные не ограничены
 
     return stats;
 }
 
-// Автоатака
-function performAttack(attackerStats, defenderStats) {
-    const hitChance = Math.min(100, Math.max(5, attackerStats.acc - defenderStats.dodge));
+// Автоатака с учётом вампиризма и отражения
+function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect) {
+    const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi)); // меткость = 100% - уворот цели
     if (Math.random() * 100 > hitChance) {
-        return { hit: false, damage: 0, isCrit: false, log: 'промах' };
+        return { hit: false, damage: 0, isCrit: false, log: 'промах', reflectDamage: 0, vampHeal: 0 };
     }
 
     let damage = attackerStats.atk;
@@ -79,10 +98,20 @@ function performAttack(attackerStats, defenderStats) {
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
-    return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}` };
+    let vampHeal = 0;
+    if (attackerVamp > 0) {
+        vampHeal = Math.floor(damage * attackerVamp / 100);
+    }
+
+    let reflectDamage = 0;
+    if (defenderReflect > 0) {
+        reflectDamage = Math.floor(damage * defenderReflect / 100);
+    }
+
+    return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}`, reflectDamage, vampHeal };
 }
 
-// Активный навык (ультимейт)
+// Активный навык (ультимейт) – пока оставим без изменений
 function performUltimate(attackerStats, defenderStats, className) {
     let damage = 0;
     let heal = 0;
@@ -108,8 +137,8 @@ function performUltimate(attackerStats, defenderStats, className) {
     return { damage, heal, log };
 }
 
-// Симуляция боя с учётом маны и ульт
-function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
+// Симуляция боя
+function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
     let playerMana = 0;
@@ -135,16 +164,28 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
         if (turn === 'player') {
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
             let actionLog = '';
+            let reflectDamage = 0, vampHeal = 0;
+
             if (playerMana >= 100) {
                 const ult = performUltimate(playerStats, enemyStats, playerClass);
                 if (ult.damage > 0) enemyHp -= ult.damage;
                 if (ult.heal > 0) playerHp = Math.min(playerStats.hp, playerHp + ult.heal);
                 actionLog = `Игрок ${ult.log}`;
-                playerMana -= 100; // тратим ровно 100 маны
+                playerMana -= 100;
             } else {
-                const result = performAttack(playerStats, enemyStats);
-                if (result.hit) enemyHp -= result.damage;
-                actionLog = `Игрок ${result.log}`;
+                const attackResult = performAttack(playerStats, enemyStats, playerStats.vamp, enemyStats.reflect);
+                if (attackResult.hit) {
+                    enemyHp -= attackResult.damage;
+                    playerHp = Math.min(playerStats.hp, playerHp + attackResult.vampHeal);
+                    playerHp -= attackResult.reflectDamage; // урон от отражения
+                    if (attackResult.reflectDamage > 0) {
+                        actionLog = `Игрок ${attackResult.log}, восстанавливает ${attackResult.vampHeal} HP (вампиризм), получает ${attackResult.reflectDamage} отражённого урона`;
+                    } else {
+                        actionLog = `Игрок ${attackResult.log}`;
+                    }
+                } else {
+                    actionLog = `Игрок промахнулся`;
+                }
             }
             log.push(actionLog);
             turnState.action = actionLog;
@@ -159,9 +200,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
                 actionLog = `Противник ${ult.log}`;
                 enemyMana -= 100;
             } else {
-                const result = performAttack(enemyStats, playerStats);
-                if (result.hit) playerHp -= result.damage;
-                actionLog = `Противник ${result.log}`;
+                const attackResult = performAttack(enemyStats, playerStats, enemyStats.vamp, playerStats.reflect);
+                if (attackResult.hit) {
+                    playerHp -= attackResult.damage;
+                    enemyHp = Math.min(enemyStats.hp, enemyHp + attackResult.vampHeal);
+                    enemyHp -= attackResult.reflectDamage;
+                    if (attackResult.reflectDamage > 0) {
+                        actionLog = `Противник ${attackResult.log}, восстанавливает ${attackResult.vampHeal} HP (вампиризм), получает ${attackResult.reflectDamage} отражённого урона`;
+                    } else {
+                        actionLog = `Противник ${attackResult.log}`;
+                    }
+                } else {
+                    actionLog = `Противник промахнулся`;
+                }
             }
             log.push(actionLog);
             turnState.action = actionLog;
@@ -186,7 +237,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass) {
     };
 }
 
-// Генерация бота (без изменений, но с добавленным полем manaRegen)
+// Генерация бота (без изменений, но с новыми полями)
 function generateBot(playerLevel) {
     const names = [
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
@@ -224,22 +275,24 @@ function generateBot(playerLevel) {
     const baseHP = 10 + level * 2;
     const baseATK = 5 + level;
     const baseDEF = Math.min(40, level * 2);
-    const baseRES = Math.min(40, level * 2);
+    const baseAGI = Math.min(30, level * 1.5);
+    const baseINT = level;
     const baseSPD = 10 + level;
     const baseCRIT = Math.min(30, level * 1.5);
-    const baseDODGE = Math.min(30, level * 1.5);
+    const baseVAMP = Math.floor(level / 3);
+    const baseREFLECT = Math.floor(level / 3);
 
-    let hp = baseHP, atk = baseATK, def = baseDEF, res = baseRES, spd = baseSPD, crit = baseCRIT, dodge = baseDODGE;
+    let hp = baseHP, atk = baseATK, def = baseDEF, agi = baseAGI, int = baseINT, spd = baseSPD, crit = baseCRIT, vamp = baseVAMP, reflect = baseREFLECT;
     if (template.class === 'warrior') {
         hp = Math.floor(baseHP * 1.5);
         def = Math.floor(baseDEF * 1.2);
     } else if (template.class === 'assassin') {
         atk = Math.floor(baseATK * 1.2);
         crit = Math.floor(baseCRIT * 1.5);
-        dodge = Math.floor(baseDODGE * 1.3);
+        agi = Math.floor(baseAGI * 1.3);
     } else if (template.class === 'mage') {
         atk = Math.floor(baseATK * 1.3);
-        res = Math.floor(baseRES * 1.3);
+        int = Math.floor(baseINT * 1.5);
     }
 
     return {
@@ -252,12 +305,13 @@ function generateBot(playerLevel) {
             hp: hp,
             atk: atk,
             def: def,
-            res: res,
+            agi: agi,
+            int: int,
             spd: spd,
             crit: crit,
             critDmg: 2.0,
-            dodge: dodge,
-            acc: 100,
+            vamp: vamp,
+            reflect: reflect,
             manaMax: 100,
             manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
         }
@@ -335,21 +389,20 @@ router.post('/start', async (req, res) => {
         );
         if (classData.rows.length === 0) throw new Error('Class data not found');
 
-        // Исправленный запрос – берём надетые предметы напрямую из inventory
         const inv = await client.query(
             `SELECT id, name, type, rarity, class_restriction, owner_class,
-                    atk_bonus, def_bonus, hp_bonus, spd_bonus,
-                    crit_bonus, crit_dmg_bonus, dodge_bonus, acc_bonus, res_bonus, mana_bonus
+                    atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
+                    crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus
              FROM inventory
              WHERE user_id = $1 AND equipped = true`,
             [userData.id]
         );
         const playerInventory = inv.rows;
 
-        const playerStats = calculateStats(classData.rows[0], playerInventory);
+        const playerStats = calculateStats(classData.rows[0], playerInventory, userData.subclass);
         const bot = generateBot(classData.rows[0].level);
 
-        const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class);
+        const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class, userData.subclass, bot.subclass);
 
         let isVictory = false;
         if (battleResult.winner === 'player') isVictory = true;

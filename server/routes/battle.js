@@ -283,7 +283,113 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     };
 }
 
+// Фиксированные значения бонусов по редкости (копия из shop.js)
+const fixedStats = {
+    common: {
+        atk_bonus: 1,
+        def_bonus: 1,
+        hp_bonus: 2,
+        agi_bonus: 0,
+        int_bonus: 0,
+        spd_bonus: 0,
+        crit_bonus: 1,
+        crit_dmg_bonus: 3,
+        vamp_bonus: 0,
+        reflect_bonus: 0
+    },
+    uncommon: {
+        atk_bonus: 2,
+        def_bonus: 2,
+        hp_bonus: 4,
+        agi_bonus: 1,
+        int_bonus: 1,
+        spd_bonus: 1,
+        crit_bonus: 2,
+        crit_dmg_bonus: 5,
+        vamp_bonus: 1,
+        reflect_bonus: 1
+    },
+    rare: {
+        atk_bonus: 3,
+        def_bonus: 3,
+        hp_bonus: 6,
+        agi_bonus: 2,
+        int_bonus: 2,
+        spd_bonus: 2,
+        crit_bonus: 3,
+        crit_dmg_bonus: 8,
+        vamp_bonus: 2,
+        reflect_bonus: 2
+    },
+    epic: {
+        atk_bonus: 5,
+        def_bonus: 5,
+        hp_bonus: 10,
+        agi_bonus: 3,
+        int_bonus: 3,
+        spd_bonus: 3,
+        crit_bonus: 5,
+        crit_dmg_bonus: 12,
+        vamp_bonus: 3,
+        reflect_bonus: 3
+    },
+    legendary: {
+        atk_bonus: 7,
+        def_bonus: 7,
+        hp_bonus: 15,
+        agi_bonus: 4,
+        int_bonus: 4,
+        spd_bonus: 4,
+        crit_bonus: 7,
+        crit_dmg_bonus: 18,
+        vamp_bonus: 4,
+        reflect_bonus: 4
+    }
+};
+
+// Типы предметов и соответствующие им поля бонусов
+const itemTypes = [
+    { type: 'weapon', stat: 'atk_bonus' },
+    { type: 'armor', stat: 'def_bonus' },
+    { type: 'helmet', stat: 'hp_bonus' },
+    { type: 'gloves', stat: 'agi_bonus' },
+    { type: 'boots', stat: 'spd_bonus' },
+    { type: 'accessory', stat: 'crit_bonus' }
+];
+
+// Диапазоны уровней и вероятности выпадения редкостей
+const rarityChances = [
+    { minLevel: 1, maxLevel: 5,   common: 0.6, uncommon: 0.3, rare: 0.1, epic: 0, legendary: 0 },
+    { minLevel: 6, maxLevel: 10,  common: 0.4, uncommon: 0.4, rare: 0.15, epic: 0.05, legendary: 0 },
+    { minLevel: 11, maxLevel: 15, common: 0.2, uncommon: 0.4, rare: 0.3, epic: 0.1, legendary: 0 },
+    { minLevel: 16, maxLevel: 20, common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 },
+    { minLevel: 21, maxLevel: 25, common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 },
+    { minLevel: 26, maxLevel: 30, common: 0, uncommon: 0.1, rare: 0.3, epic: 0.4, legendary: 0.2 },
+    { minLevel: 31, maxLevel: 35, common: 0, uncommon: 0.05, rare: 0.25, epic: 0.4, legendary: 0.3 },
+    { minLevel: 36, maxLevel: 40, common: 0, uncommon: 0, rare: 0.2, epic: 0.4, legendary: 0.4 },
+    { minLevel: 41, maxLevel: 45, common: 0, uncommon: 0, rare: 0.15, epic: 0.35, legendary: 0.5 },
+    { minLevel: 46, maxLevel: 50, common: 0, uncommon: 0, rare: 0.1, epic: 0.3, legendary: 0.6 },
+    { minLevel: 51, maxLevel: 55, common: 0, uncommon: 0, rare: 0.05, epic: 0.25, legendary: 0.7 },
+    { minLevel: 56, maxLevel: 60, common: 0, uncommon: 0, rare: 0, epic: 0.2, legendary: 0.8 }
+];
+
+// Функция для получения случайной редкости на основе уровня
+function getRandomRarity(level) {
+    const range = rarityChances.find(r => level >= r.minLevel && level <= r.maxLevel);
+    if (!range) return 'common'; // на всякий случай
+    const rand = Math.random();
+    if (rand < range.common) return 'common';
+    if (rand < range.common + range.uncommon) return 'uncommon';
+    if (rand < range.common + range.uncommon + range.rare) return 'rare';
+    if (rand < range.common + range.uncommon + range.rare + range.epic) return 'epic';
+    return 'legendary';
+}
+
 function generateBot(playerLevel) {
+    // Уровень бота: от playerLevel-2 до playerLevel+2, но не меньше 1 и не больше 60
+    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
+
+    // Выбираем случайный шаблон имени (как раньше)
     const names = [
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
@@ -313,32 +419,88 @@ function generateBot(playerLevel) {
         { name: 'Защитник королевства', class: 'mage', subclass: 'cryomancer' },
         { name: 'Защитник королевства', class: 'mage', subclass: 'illusionist' }
     ];
-
     const template = names[Math.floor(Math.random() * names.length)];
-    const level = Math.max(1, playerLevel - 2 + Math.floor(Math.random() * 5));
 
-    const baseHP = 10 + level * 2;
-    const baseATK = 5 + level;
-    const baseDEF = Math.min(40, level * 2);
-    const baseAGI = Math.min(30, level * 1.5);
-    const baseINT = level;
-    const baseSPD = 10 + level;
-    const baseCRIT = Math.min(30, level * 1.5);
-    const baseVAMP = Math.floor(level / 3);
-    const baseREFLECT = Math.floor(level / 3);
+    // Базовые характеристики бота (как у игрока, без учёта предметов)
+    const base = baseStats[template.class] || baseStats.warrior;
+    let stats = {
+        hp: base.hp,
+        atk: base.atk,
+        def: base.def,
+        agi: base.agi,
+        int: base.int,
+        spd: base.spd,
+        crit: base.crit,
+        critDmg: 1.5,
+        vamp: 0,
+        reflect: 0,
+        manaMax: 100,
+        manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
+    };
 
-    let hp = baseHP, atk = baseATK, def = baseDEF, agi = baseAGI, int = baseINT, spd = baseSPD, crit = baseCRIT, vamp = baseVAMP, reflect = baseREFLECT;
-    if (template.class === 'warrior') {
-        hp = Math.floor(baseHP * 1.5);
-        def = Math.floor(baseDEF * 1.2);
-    } else if (template.class === 'assassin') {
-        atk = Math.floor(baseATK * 1.2);
-        crit = Math.floor(baseCRIT * 1.5);
-        agi = Math.floor(baseAGI * 1.3);
-    } else if (template.class === 'mage') {
-        atk = Math.floor(baseATK * 1.3);
-        int = Math.floor(baseINT * 1.5);
+    // Добавляем бонусы от уровня (как очки навыков у игроков)
+    // Каждый уровень даёт 3 очка навыков, которые распределены случайно
+    const totalSkillPoints = (level - 1) * 3;
+    const skillDist = [0,0,0,0,0,0,0,0,0,0]; // для 10 характеристик
+    for (let i = 0; i < totalSkillPoints; i++) {
+        skillDist[Math.floor(Math.random() * 10)]++;
     }
+    stats.hp += skillDist[0] * 2;
+    stats.atk += skillDist[1];
+    stats.def += skillDist[2];
+    stats.agi += skillDist[3];
+    stats.int += skillDist[4];
+    stats.spd += skillDist[5];
+    stats.crit += skillDist[6];
+    stats.critDmg += skillDist[7] / 100;
+    stats.vamp += skillDist[8];
+    stats.reflect += skillDist[9];
+
+    // Генерируем случайные предметы (от 3 до 6 штук)
+    const itemCount = 3 + Math.floor(Math.random() * 4); // 3-6
+    const usedTypes = new Set();
+    for (let i = 0; i < itemCount; i++) {
+        // Выбираем случайный тип, который ещё не использовали
+        const availableTypes = itemTypes.filter(t => !usedTypes.has(t.type));
+        if (availableTypes.length === 0) break; // все типы использованы
+        const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+        usedTypes.add(type.type);
+        const rarity = getRandomRarity(level);
+        const bonuses = fixedStats[rarity];
+        // Применяем два случайных бонуса из этого предмета (как у игроков)
+        const allFields = Object.keys(bonuses);
+        const shuffled = allFields.sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 2);
+        selected.forEach(field => {
+            if (field === 'atk_bonus') stats.atk += bonuses[field];
+            else if (field === 'def_bonus') stats.def += bonuses[field];
+            else if (field === 'hp_bonus') stats.hp += bonuses[field];
+            else if (field === 'agi_bonus') stats.agi += bonuses[field];
+            else if (field === 'int_bonus') stats.int += bonuses[field];
+            else if (field === 'spd_bonus') stats.spd += bonuses[field];
+            else if (field === 'crit_bonus') stats.crit += bonuses[field];
+            else if (field === 'crit_dmg_bonus') stats.critDmg += bonuses[field] / 100;
+            else if (field === 'vamp_bonus') stats.vamp += bonuses[field];
+            else if (field === 'reflect_bonus') stats.reflect += bonuses[field];
+        });
+    }
+
+    // Применяем классовые множители (как у игроков)
+    if (template.class === 'warrior') {
+        stats.def = Math.min(70, stats.def * 1.5);
+    } else if (template.class === 'assassin') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.crit = Math.min(100, stats.crit * 1.25);
+        stats.agi = Math.min(100, stats.agi * 1.1);
+    } else if (template.class === 'mage') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.int = stats.int * 1.2;
+    }
+
+    // Ограничения
+    stats.def = Math.min(70, stats.def);
+    stats.crit = Math.min(100, stats.crit);
+    stats.agi = Math.min(100, stats.agi);
 
     return {
         id: `bot_${Date.now()}_${Math.random()}`,
@@ -346,20 +508,7 @@ function generateBot(playerLevel) {
         class: template.class,
         subclass: template.subclass,
         level: level,
-        stats: {
-            hp: hp,
-            atk: atk,
-            def: def,
-            agi: agi,
-            int: int,
-            spd: spd,
-            crit: crit,
-            critDmg: 1.5,
-            vamp: vamp,
-            reflect: reflect,
-            manaMax: 100,
-            manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
-        }
+        stats: stats
     };
 }
 

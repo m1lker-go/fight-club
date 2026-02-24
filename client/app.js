@@ -582,16 +582,16 @@ function renderEquip() {
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
             const stats = [];
-            if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-            if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-            if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-            if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-            if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-            if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-            if (item.dodge_bonus) stats.push(`УВОР+${item.dodge_bonus}%`);
-            if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
-            if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
-            if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
+           if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
 
             const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
             const itemIcon = getItemIconPath(item) || '';

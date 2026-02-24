@@ -382,7 +382,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
         int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
-        critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
+        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0)
     };
@@ -390,7 +390,11 @@ function calculateClassStats(className, classData, inventory, subclass) {
     let gearBonuses = {
         hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
     };
+    let roleBonuses = {
+        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
+    };
 
+    // Бонусы от надетой экипировки
     const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
     equippedItems.forEach(item => {
         gearBonuses.hp += item.hp_bonus || 0;
@@ -405,54 +409,46 @@ function calculateClassStats(className, classData, inventory, subclass) {
         gearBonuses.reflect += item.reflect_bonus || 0;
     });
 
-    // Пассивки подклассов
+    // Пассивные бонусы от подкласса
     const rolePassives = {
         knight: { reflect: 20 },
         assassin: { vamp: 20 },
         blood_hunter: { vamp: 20 }
     };
     const roleBonus = rolePassives[subclass] || {};
-    gearBonuses.vamp += roleBonus.vamp || 0;
-    gearBonuses.reflect += roleBonus.reflect || 0;
+    if (roleBonus.vamp) roleBonuses.vamp += roleBonus.vamp;
+    if (roleBonus.reflect) roleBonuses.reflect += roleBonus.reflect;
+
+    // Суммируем все бонусы для итога
+    let totalBonuses = {
+        hp: gearBonuses.hp,
+        atk: gearBonuses.atk,
+        def: gearBonuses.def,
+        agi: gearBonuses.agi,
+        int: gearBonuses.int,
+        spd: gearBonuses.spd,
+        crit: gearBonuses.crit,
+        critDmg: gearBonuses.critDmg,
+        vamp: gearBonuses.vamp + roleBonuses.vamp,
+        reflect: gearBonuses.reflect + roleBonuses.reflect
+    };
 
     let final = {
-        hp: baseStatsWithSkills.hp + gearBonuses.hp,
-        atk: baseStatsWithSkills.atk + gearBonuses.atk,
-        def: baseStatsWithSkills.def + gearBonuses.def,
-        agi: baseStatsWithSkills.agi + gearBonuses.agi,
-        int: baseStatsWithSkills.int + gearBonuses.int,
-        spd: baseStatsWithSkills.spd + gearBonuses.spd,
-        crit: baseStatsWithSkills.crit + gearBonuses.crit,
-        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg,
-        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
-        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
+        hp: baseStatsWithSkills.hp + totalBonuses.hp,
+        atk: baseStatsWithSkills.atk + totalBonuses.atk,
+        def: baseStatsWithSkills.def + totalBonuses.def,
+        agi: baseStatsWithSkills.agi + totalBonuses.agi,
+        int: baseStatsWithSkills.int + totalBonuses.int,
+        spd: baseStatsWithSkills.spd + totalBonuses.spd,
+        crit: baseStatsWithSkills.crit + totalBonuses.crit,
+        critDmg: baseStatsWithSkills.critDmg + totalBonuses.critDmg,
+        vamp: baseStatsWithSkills.vamp + totalBonuses.vamp,
+        reflect: baseStatsWithSkills.reflect + totalBonuses.reflect
     };
 
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.5);
-        final.def = Math.min(70, final.def * 1.5);
-    } else if (className === 'assassin') {
-        final.atk = Math.floor(final.atk * 1.2);
-        final.crit = Math.min(100, final.crit * 1.25);
-        final.agi = Math.min(100, final.agi * 1.1);
-    } else if (className === 'mage') {
-        final.atk = Math.floor(final.atk * 1.2);
-        final.int = final.int * 1.2;
-    }
-
-    final.def = Math.min(70, final.def);
-    final.crit = Math.min(100, final.crit);
-    final.agi = Math.min(100, final.agi);
-    final.hp = Math.round(final.hp);
-    final.atk = Math.round(final.atk);
-    final.spd = Math.round(final.spd);
-    final.vamp = Math.round(final.vamp);
-    final.reflect = Math.round(final.reflect);
-    final.critDmg = Math.round(final.critDmg * 100) / 100;
-
-    return { base: baseStatsWithSkills, gear: gearBonuses, final: final };
-}
-
+        final.def = Math.min(70, final
 function calculatePower(className, finalStats) {
     const importance = {
         warrior: {

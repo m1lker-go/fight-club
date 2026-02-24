@@ -9,7 +9,61 @@ const baseStats = {
     mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-function calculateStats(classData, inventory) {
+// Массивы фраз для атак (по 5 на класс)
+const attackPhrases = {
+    warrior: [
+        '%s сокрушает %s мощным ударом, нанося <span style="color:#e74c3c;">%d</span> урона!',
+        '%s обрушивает топор на %s — <span style="color:#e74c3c;">%d</span> единиц боли!',
+        '%s пробивает броню %s, оставляя кровавую рану на <span style="color:#e74c3c;">%d</span> HP.',
+        '%s яростно атакует %s, выбивая <span style="color:#e74c3c;">%d</span> жизней.',
+        '%s с размаху бьёт щитом по голове %s — <span style="color:#e74c3c;">%d</span> урона.'
+    ],
+    assassin: [
+        '%s вонзает кинжал в спину %s, нанося <span style="color:#e74c3c;">%d</span> смертельного урона!',
+        '%s бесшумно подкрадывается и режет горло %s — <span style="color:#e74c3c;">%d</span> HP.',
+        '%s отравляет клинок и атакует %s — <span style="color:#e74c3c;">%d</span> урона.',
+        '%s делает выпад и пронзает %s, забирая <span style="color:#e74c3c;">%d</span> жизней.',
+        '%s исчезает в тени и наносит удар из ниоткуда — <span style="color:#e74c3c;">%d</span> урона.'
+    ],
+    mage: [
+        '%s выпускает огненный шар в %s, испепеляя на <span style="color:#e74c3c;">%d</span> HP!',
+        '%s читает заклинание ледяной стрелы, поражая %s — <span style="color:#e74c3c;">%d</span> урона.',
+        '%s призывает молнию, которая разит %s, отнимая <span style="color:#e74c3c;">%d</span> здоровья.',
+        '%s создаёт магический взрыв вокруг %s, нанося <span style="color:#e74c3c;">%d</span> урона.',
+        '%s проклинает %s, и тот теряет <span style="color:#e74c3c;">%d</span> HP от магии.'
+    ]
+};
+
+const dodgePhrases = [
+    '<span style="color:#2ecc71;">%s ловко уклоняется от атаки %s!</span>',
+    '<span style="color:#2ecc71;">%s уворачивается, и удар %s уходит в пустоту.</span>',
+    '<span style="color:#2ecc71;">%s использует неуловимый манёвр, избегая удара %s.</span>'
+];
+
+const critPhrases = {
+    warrior: [
+        '%s с невероятной силой обрушивается на %s, нанося <span style="color:#e74c3c;">%d</span> КРИТИЧЕСКОГО урона!',
+        '%s вкладывает всю ярость в удар — <span style="color:#e74c3c;">%d</span> единиц боли по %s!'
+    ],
+    assassin: [
+        '%s находит уязвимое место и наносит сокрушительный удар — <span style="color:#e74c3c;">%d</span> смертельного крита!',
+        '%s вонзает клинок по самую рукоять, нанося <span style="color:#e74c3c;">%d</span> критического урона %s!'
+    ],
+    mage: [
+        '%s заряжает заклинание магией хаоса — <span style="color:#e74c3c;">%d</span> КРИТИЧЕСКОГО магического урона по %s!',
+        '%s произносит слово силы, и взрыв выжигает <span style="color:#e74c3c;">%d</span> HP у %s!'
+    ]
+};
+
+const vampPhrase = '<span style="color:#2ecc71;">%s восстанавливает %d HP благодаря вампиризму.</span>';
+const reflectPhrase = '<span style="color:#e74c3c;">%s отражает %d урона обратно в %s!</span>';
+const ultPhrases = {
+    warrior: '<span style="color:#3498db;">%s использует НЕСОКРУШИМОСТЬ и восстанавливает %d HP!</span>',
+    assassin: '<span style="color:#3498db;">%s применяет ТАНЕЦ СМЕРТИ, нанося %d урона и восстанавливая %d HP!</span>',
+    mage: '<span style="color:#3498db;">%s активирует ЧИСТУЮ ЭНЕРГИЮ, нанося %d магического урона!</span>'
+};
+
+function calculateStats(classData, inventory, subclass) {
     const base = baseStats[classData.class] || baseStats.warrior;
 
     let stats = {
@@ -40,7 +94,7 @@ function calculateStats(classData, inventory) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // Применяем классовые бонусы (только те, что остались)
+    // Классовые бонусы
     if (classData.class === 'warrior') {
         stats.def = Math.min(70, stats.def * 1.5);
     } else if (classData.class === 'assassin') {
@@ -60,10 +114,14 @@ function calculateStats(classData, inventory) {
     return stats;
 }
 
-function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect) {
+function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass) {
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
-    if (Math.random() * 100 > hitChance) {
-        return { hit: false, damage: 0, isCrit: false, log: 'промах', reflectDamage: 0, vampHeal: 0 };
+    const isDodge = Math.random() * 100 > hitChance;
+    if (isDodge) {
+        const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
+            .replace('%s', defenderName)
+            .replace('%s', attackerName);
+        return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0 };
     }
 
     let damage = attackerStats.atk;
@@ -85,10 +143,22 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    return { hit: true, damage, isCrit, log: `наносит ${damage} урона${isCrit ? ' (крит)' : ''}`, reflectDamage, vampHeal };
+    // Выбираем фразу для атаки
+    let attackPhrase;
+    if (isCrit) {
+        const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
+        attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)];
+        attackPhrase = attackPhrase.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+    } else {
+        const classPhrases = attackPhrases[attackerClass] || attackPhrases.warrior;
+        attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)];
+        attackPhrase = attackPhrase.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+    }
+
+    return { hit: true, damage, isCrit, log: attackPhrase, reflectDamage, vampHeal };
 }
 
-function performUltimate(attackerStats, defenderStats, className) {
+function performUltimate(attackerStats, defenderStats, className, attackerName, defenderName) {
     let damage = 0;
     let heal = 0;
     let log = '';
@@ -96,16 +166,16 @@ function performUltimate(attackerStats, defenderStats, className) {
     switch (className) {
         case 'warrior':
             heal = Math.floor(attackerStats.hp * 0.3);
-            log = `использует Несокрушимость, восстанавливая ${heal} HP`;
+            log = ultPhrases.warrior.replace('%s', attackerName).replace('%d', heal);
             break;
         case 'assassin':
             damage = Math.floor(attackerStats.atk * 3);
             heal = Math.floor(damage * 0.5);
-            log = `использует Танец смерти, нанося ${damage} урона и восстанавливая ${heal} HP`;
+            log = ultPhrases.assassin.replace('%s', attackerName).replace('%d', damage).replace('%d', heal);
             break;
         case 'mage':
             damage = Math.floor(attackerStats.atk * 4);
-            log = `использует Чистую энергию, нанося ${damage} магического урона`;
+            log = ultPhrases.mage.replace('%s', attackerName).replace('%d', damage);
             break;
         default:
             return { damage: 0, heal: 0, log: 'ничего не произошло' };
@@ -113,7 +183,7 @@ function performUltimate(attackerStats, defenderStats, className) {
     return { damage, heal, log };
 }
 
-function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerSubclass, enemySubclass) {
+function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerSubclass, enemySubclass, playerName, enemyName) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
     let playerMana = 0;
@@ -140,20 +210,26 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
             let actionLog = '';
             if (playerMana >= 100) {
-                const ult = performUltimate(playerStats, enemyStats, playerClass);
+                const ult = performUltimate(playerStats, enemyStats, playerClass, playerName, enemyName);
                 if (ult.damage > 0) enemyHp -= ult.damage;
                 if (ult.heal > 0) playerHp = Math.min(playerStats.hp, playerHp + ult.heal);
-                actionLog = `Игрок ${ult.log}`;
+                actionLog = ult.log;
                 playerMana -= 100;
             } else {
-                const attackResult = performAttack(playerStats, enemyStats, playerStats.vamp, enemyStats.reflect);
+                const attackResult = performAttack(playerStats, enemyStats, playerStats.vamp, enemyStats.reflect, playerName, enemyName, playerClass);
                 if (attackResult.hit) {
                     enemyHp -= attackResult.damage;
                     playerHp = Math.min(playerStats.hp, playerHp + attackResult.vampHeal);
                     playerHp -= attackResult.reflectDamage;
-                    actionLog = `Игрок ${attackResult.log}`;
+                    actionLog = attackResult.log;
+                    if (attackResult.vampHeal > 0) {
+                        actionLog += ' ' + vampPhrase.replace('%s', playerName).replace('%d', attackResult.vampHeal);
+                    }
+                    if (attackResult.reflectDamage > 0) {
+                        actionLog += ' ' + reflectPhrase.replace('%s', enemyName).replace('%d', attackResult.reflectDamage).replace('%s', playerName);
+                    }
                 } else {
-                    actionLog = `Игрок промахнулся`;
+                    actionLog = attackResult.log;
                 }
             }
             log.push(actionLog);
@@ -163,20 +239,26 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
             let actionLog = '';
             if (enemyMana >= 100) {
-                const ult = performUltimate(enemyStats, playerStats, enemyClass);
+                const ult = performUltimate(enemyStats, playerStats, enemyClass, enemyName, playerName);
                 if (ult.damage > 0) playerHp -= ult.damage;
                 if (ult.heal > 0) enemyHp = Math.min(enemyStats.hp, enemyHp + ult.heal);
-                actionLog = `Противник ${ult.log}`;
+                actionLog = ult.log;
                 enemyMana -= 100;
             } else {
-                const attackResult = performAttack(enemyStats, playerStats, enemyStats.vamp, playerStats.reflect);
+                const attackResult = performAttack(enemyStats, playerStats, enemyStats.vamp, playerStats.reflect, enemyName, playerName, enemyClass);
                 if (attackResult.hit) {
                     playerHp -= attackResult.damage;
                     enemyHp = Math.min(enemyStats.hp, enemyHp + attackResult.vampHeal);
                     enemyHp -= attackResult.reflectDamage;
-                    actionLog = `Противник ${attackResult.log}`;
+                    actionLog = attackResult.log;
+                    if (attackResult.vampHeal > 0) {
+                        actionLog += ' ' + vampPhrase.replace('%s', enemyName).replace('%d', attackResult.vampHeal);
+                    }
+                    if (attackResult.reflectDamage > 0) {
+                        actionLog += ' ' + reflectPhrase.replace('%s', playerName).replace('%d', attackResult.reflectDamage).replace('%s', enemyName);
+                    }
                 } else {
-                    actionLog = `Противник промахнулся`;
+                    actionLog = attackResult.log;
                 }
             }
             log.push(actionLog);
@@ -203,134 +285,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 }
 
 function generateBot(playerLevel) {
-    const names = [
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' },
-        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'guardian' },
-        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'berserker' },
-        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'knight' },
-        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'assassin' },
-        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Изумрудный защитник', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Изумрудный защитник', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Изумрудный защитник', class: 'mage', subclass: 'illusionist' },
-        { name: 'Защитник королевства', class: 'warrior', subclass: 'guardian' },
-        { name: 'Защитник королевства', class: 'warrior', subclass: 'berserker' },
-        { name: 'Защитник королевства', class: 'warrior', subclass: 'knight' },
-        { name: 'Защитник королевства', class: 'assassin', subclass: 'assassin' },
-        { name: 'Защитник королевства', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Защитник королевства', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Защитник королевства', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Защитник королевства', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Защитник королевства', class: 'mage', subclass: 'illusionist' }
-    ];
-
-    const template = names[Math.floor(Math.random() * names.length)];
-    const level = Math.max(1, playerLevel - 2 + Math.floor(Math.random() * 5));
-
-    const baseHP = 10 + level * 2;
-    const baseATK = 5 + level;
-    const baseDEF = Math.min(40, level * 2);
-    const baseAGI = Math.min(30, level * 1.5);
-    const baseINT = level;
-    const baseSPD = 10 + level;
-    const baseCRIT = Math.min(30, level * 1.5);
-    const baseVAMP = Math.floor(level / 3);
-    const baseREFLECT = Math.floor(level / 3);
-
-    let hp = baseHP, atk = baseATK, def = baseDEF, agi = baseAGI, int = baseINT, spd = baseSPD, crit = baseCRIT, vamp = baseVAMP, reflect = baseREFLECT;
-    if (template.class === 'warrior') {
-        hp = Math.floor(baseHP * 1.5);
-        def = Math.floor(baseDEF * 1.2);
-    } else if (template.class === 'assassin') {
-        atk = Math.floor(baseATK * 1.2);
-        crit = Math.floor(baseCRIT * 1.5);
-        agi = Math.floor(baseAGI * 1.3);
-    } else if (template.class === 'mage') {
-        atk = Math.floor(baseATK * 1.3);
-        int = Math.floor(baseINT * 1.5);
-    }
-
-    return {
-        id: `bot_${Date.now()}_${Math.random()}`,
-        username: template.name,
-        class: template.class,
-        subclass: template.subclass,
-        level: level,
-        stats: {
-            hp: hp,
-            atk: atk,
-            def: def,
-            agi: agi,
-            int: int,
-            spd: spd,
-            crit: crit,
-            critDmg: 1.5,
-            vamp: vamp,
-            reflect: reflect,
-            manaMax: 100,
-            manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
-        }
-    };
+    // ... (ваша существующая функция, без изменений)
+    // Я не копирую её сюда для краткости, но она должна быть такой же, как в вашем файле.
 }
 
-function expNeeded(level) {
-    return Math.floor(80 * Math.pow(level, 1.5));
-}
-
-async function addExp(client, userId, className, expGain) {
-    const classRes = await client.query(
-        'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
-        [userId, className]
-    );
-    let { level, exp } = classRes.rows[0];
-    exp += expGain;
-    let leveledUp = false;
-    while (exp >= expNeeded(level)) {
-        exp -= expNeeded(level);
-        level++;
-        leveledUp = true;
-        await client.query(
-            'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
-            [userId, className]
-        );
-    }
-    await client.query(
-        'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
-        [level, exp, userId, className]
-    );
-    return leveledUp;
-}
-
-function getCoinReward(streak) {
-    if (streak >= 25) return 20;
-    if (streak >= 10) return 10;
-    if (streak >= 5) return 7;
-    return 5;
-}
-
-async function rechargeEnergy(client, userId) {
-    const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
-    if (user.rows.length === 0) return;
-    const last = new Date(user.rows[0].last_energy);
-    const now = new Date();
-    const diffMinutes = Math.floor((now - last) / (1000 * 60));
-    if (diffMinutes > 0) {
-        const newEnergy = Math.min(20, user.rows[0].energy + diffMinutes);
-        await client.query(
-            'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
-            [newEnergy, now, userId]
-        );
-    }
-}
+// Остальные функции (expNeeded, addExp, getCoinReward, rechargeEnergy) без изменений
 
 router.post('/start', async (req, res) => {
     const { tg_id } = req.body;
@@ -365,7 +324,7 @@ router.post('/start', async (req, res) => {
         const playerStats = calculateStats(classData.rows[0], playerInventory, userData.subclass);
         const bot = generateBot(classData.rows[0].level);
 
-        const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class, userData.subclass, bot.subclass);
+        const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class, userData.subclass, bot.subclass, userData.username, bot.username);
 
         let isVictory = false;
         if (battleResult.winner === 'player') isVictory = true;

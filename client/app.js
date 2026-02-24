@@ -1299,7 +1299,7 @@ function showBattleScreen(battleData) {
 
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
-        logEntry.innerText = turn.action;
+        logEntry.innerHTML = turn.action;
         logContainer.appendChild(logEntry);
         logContainer.scrollTop = logContainer.scrollHeight;
 

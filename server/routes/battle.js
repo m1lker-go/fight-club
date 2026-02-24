@@ -9,7 +9,7 @@ const baseStats = {
     mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-function calculateStats(classData, inventory, subclass) {
+function calculateStats(classData, inventory) {
     const base = baseStats[classData.class] || baseStats.warrior;
 
     let stats = {
@@ -27,7 +27,6 @@ function calculateStats(classData, inventory, subclass) {
         manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 30)
     };
 
-    // Бонусы от экипировки
     inventory.forEach(item => {
         stats.hp += item.hp_bonus || 0;
         stats.atk += item.atk_bonus || 0;
@@ -41,20 +40,22 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // Пассивные бонусы подкласса (только вампиризм/отражение)
-    const rolePassives = {
-        knight: { reflect: 20 },
-        assassin: { vamp: 20 },
-        blood_hunter: { vamp: 20 }
-    };
-    const roleBonus = rolePassives[subclass] || {};
-    stats.vamp += roleBonus.vamp || 0;
-    stats.reflect += roleBonus.reflect || 0;
+    // Применяем классовые бонусы (только те, что остались)
+    if (classData.class === 'warrior') {
+        stats.def = Math.min(70, stats.def * 1.5);
+    } else if (classData.class === 'assassin') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.crit = Math.min(100, stats.crit * 1.25);
+        stats.agi = Math.min(100, stats.agi * 1.1);
+    } else if (classData.class === 'mage') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.int = stats.int * 1.2;
+    }
 
-    // Ограничения процентов
-    stats.def = Math.min(100, stats.def);
-    stats.agi = Math.min(100, stats.agi);
+    // Ограничения
+    stats.def = Math.min(70, stats.def);
     stats.crit = Math.min(100, stats.crit);
+    stats.agi = Math.min(100, stats.agi);
 
     return stats;
 }

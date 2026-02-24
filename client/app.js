@@ -430,22 +430,12 @@ function calculateClassStats(className, classData, inventory, subclass) {
         reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
     };
 
-    if (className === 'warrior') {
-        final.hp = Math.floor(final.hp * 1.5);
-        final.def = Math.min(70, final.def * 1.5);
-    } else if (className === 'assassin') {
-        final.atk = Math.floor(final.atk * 1.2);
-        final.crit = Math.min(100, final.crit * 1.25);
-        final.agi = Math.min(100, final.agi * 1.1);
-    } else if (className === 'mage') {
-        final.atk = Math.floor(final.atk * 1.2);
-        final.int = final.int * 1.2;
-    }
-
-    final.def = Math.min(70, final.def);
-    final.crit = Math.min(100, final.crit);
+    // Ограничения
+    final.def = Math.min(100, final.def);
     final.agi = Math.min(100, final.agi);
+    final.crit = Math.min(100, final.crit);
 
+    // Округление
     final.hp = Math.round(final.hp);
     final.atk = Math.round(final.atk);
     final.spd = Math.round(final.spd);
@@ -457,12 +447,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
     final.vamp = Math.round(final.vamp * 10) / 10;
     final.reflect = Math.round(final.reflect * 10) / 10;
 
-    return {
-        base: baseStatsWithSkills,
-        gear: gearBonuses,
-        role: roleBonuses,
-        final: final
-    };
+    return { base: baseStatsWithSkills, gear: gearBonuses, role: roleBonuses, final: final };
 }
 function calculatePower(className, finalStats) {
     const importance = {

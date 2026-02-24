@@ -210,7 +210,8 @@ function renderMain() {
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
     const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
 
-    const stats = calculateClassStats(currentClass, classData, inventory);
+    // Передаём subclass
+    const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
     currentPower = calculatePower(currentClass, stats.final);
     updateTopBar();
 
@@ -453,7 +454,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
     final.agi = Math.min(100, final.agi);
 
     // Округление до одного знака после запятой для процентных характеристик
-    // и до целых для HP, ATK, SPD
     final.hp = Math.round(final.hp);
     final.atk = Math.round(final.atk);
     final.spd = Math.round(final.spd);
@@ -461,7 +461,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
     final.agi = Math.round(final.agi * 10) / 10;
     final.int = Math.round(final.int * 10) / 10;
     final.crit = Math.round(final.crit * 10) / 10;
-    final.critDmg = Math.round(final.critDmg * 100) / 100; // оставляем два знака для множителя
+    final.critDmg = Math.round(final.critDmg * 100) / 100;
     final.vamp = Math.round(final.vamp * 10) / 10;
     final.reflect = Math.round(final.reflect * 10) / 10;
 
@@ -496,7 +496,7 @@ function calculatePower(className, finalStats) {
     power += finalStats.int * coeff.int * 2;
     power += finalStats.spd * coeff.spd * 2;
     power += finalStats.crit * coeff.crit * 3;
-    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg; // крит.урон сверх 150%
+    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg;
     power += finalStats.vamp * coeff.vamp * 3;
     power += finalStats.reflect * coeff.reflect * 2;
     return Math.round(power);
@@ -599,18 +599,18 @@ function renderEquip() {
 
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
+            // Убраны старые поля, оставлены только новые
             const stats = [];
-        const stats = [];
-if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+            if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+            if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+            if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+            if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+            if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+            if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+            if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+            if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+            if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+            if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
 
             const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
             const itemIcon = getItemIconPath(item) || '';
@@ -821,7 +821,6 @@ function renderShop() {
     });
 }
 
-
 function showChestResult(item) {
     const modal = document.getElementById('chestResultModal');
     const body = document.getElementById('chestResultBody');
@@ -833,21 +832,16 @@ function showChestResult(item) {
     if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
     if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
     if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.dodge_bonus) stats.push(`УВОР+${item.dodge_bonus}%`);
-    if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
-    if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
-    if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
     if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
     if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
     if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
     if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-    // Маппинг класса в папку
+
     const classFolderMap = {
         warrior: 'tank',
         assassin: 'assassin',
         mage: 'mage'
     };
-    // Маппинг типа в имя файла
     const typeFileMap = {
         armor: 'armor',
         boots: 'boots',
@@ -857,7 +851,6 @@ function showChestResult(item) {
         gloves: 'bracer'
     };
     
-    // Формируем путь к картинке предмета
     let iconPath = '';
     if (item.owner_class && item.type) {
         const folder = classFolderMap[item.owner_class];
@@ -866,10 +859,8 @@ function showChestResult(item) {
             iconPath = `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
         }
     }
-    // Заглушка, если картинка не найдена
     const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
 
-    // Определяем отображаемый класс
     let classDisplay = '';
     if (item.class_restriction && item.class_restriction !== 'any') {
         classDisplay = item.class_restriction === 'warrior' ? 'Воин' : (item.class_restriction === 'assassin' ? 'Ассасин' : 'Маг');
@@ -920,17 +911,16 @@ function renderMarket() {
             <button class="stat-filter-btn" data-stat="spd_bonus">СКОР</button>
             <button class="stat-filter-btn" data-stat="crit_bonus">КРИТ</button>
             <button class="stat-filter-btn" data-stat="crit_dmg_bonus">КР.УРОН</button>
-            <button class="stat-filter-btn" data-stat="dodge_bonus">УВОР</button>
-            <button class="stat-filter-btn" data-stat="acc_bonus">МЕТК</button>
-            <button class="stat-filter-btn" data-stat="res_bonus">СОПР</button>
-            <button class="stat-filter-btn" data-stat="mana_bonus">МАНА</button>
+            <button class="stat-filter-btn" data-stat="agi_bonus">ЛОВ</button>
+            <button class="stat-filter-btn" data-stat="int_bonus">ИНТ</button>
+            <button class="stat-filter-btn" data-stat="vamp_bonus">ВАМП</button>
+            <button class="stat-filter-btn" data-stat="reflect_bonus">ОТР</button>
         </div>
         <div class="market-container">
             <div id="marketItems" class="market-grid"></div>
         </div>
     `;
 
-    // Переменная для хранения активного фильтра по характеристике
     let activeStat = 'any';
 
     document.querySelectorAll('.stat-filter-btn').forEach(btn => {
@@ -957,11 +947,8 @@ async function loadMarketItems(statFilter = 'any') {
     const items = await res.json();
     let filteredItems = items;
 
-    // Фильтр по характеристике (хотя бы одна совпадает)
     if (statFilter !== 'any') {
-        filteredItems = items.filter(item => {
-            return item[statFilter] > 0;
-        });
+        filteredItems = items.filter(item => item[statFilter] > 0);
     }
 
     const container = document.getElementById('marketItems');
@@ -997,20 +984,17 @@ async function loadMarketItems(statFilter = 'any') {
         if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
         if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
         if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-        if (item.dodge_bonus) stats.push(`УВОР+${item.dodge_bonus}%`);
-        if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
-        if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
-        if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
         if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
         if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
         if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
         if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
 
         container.innerHTML += `
             <div class="market-item ${rarityClass}" data-item-id="${item.id}">
-                <div class="item-icon" style="background-image: url('${iconPath}');"></div>
+                <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
                 <div class="item-content">
                     <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
                     <div class="item-stats">${stats.join(' • ')}</div>
@@ -1084,7 +1068,6 @@ function renderTasks() {
 }
 
 // ==================== ПРОФИЛЬ ====================
-
 function renderProfile() {
     const currentClass = userData.current_class;
     const classData = getCurrentClassData();
@@ -1188,7 +1171,6 @@ function renderSkills() {
         </div>
     `;
 
-    // Обработчики остаются без изменений
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -1405,7 +1387,7 @@ async function refreshData() {
     userClasses = data.classes || [];
     inventory = data.inventory || [];
     const classData = getCurrentClassData();
-    const stats = calculateClassStats(userData.current_class, classData, inventory);
+    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
     currentPower = calculatePower(userData.current_class, stats.final);
     updateTopBar();
     showScreen(currentScreen);

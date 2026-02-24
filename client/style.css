@@ -742,3 +742,16 @@ td {
     font-weight: bold;
     color: white;
 }
+.result-tab {
+    background-color: #2f3542;
+    color: #aaa;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.result-tab.active {
+    background-color: #00aaff;
+    color: white;
+}

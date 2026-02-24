@@ -475,16 +475,16 @@ function calculateClassStats(className, classData, inventory, subclass) {
 function calculatePower(className, finalStats) {
     const importance = {
         warrior: {
-            hp: 2.0, atk: 2.0, def: 2.0, res: 1.5, spd: 1.0,
-            crit: 1.5, critDmg: 1.5, dodge: 1.0, acc: 1.0, mana: 1.0
+            hp: 2.0, atk: 2.0, def: 2.0, agi: 1.0, int: 1.0,
+            spd: 1.0, crit: 1.5, critDmg: 1.5, vamp: 0.5, reflect: 1.0
         },
         assassin: {
-            hp: 1.5, atk: 2.0, def: 1.0, res: 1.0, spd: 1.5,
-            crit: 2.0, critDmg: 1.5, dodge: 2.0, acc: 1.0, mana: 1.0
+            hp: 1.5, atk: 2.0, def: 1.0, agi: 2.0, int: 1.0,
+            spd: 1.5, crit: 2.0, critDmg: 1.5, vamp: 1.5, reflect: 1.0
         },
         mage: {
-            hp: 1.5, atk: 2.0, def: 1.0, res: 2.0, spd: 1.0,
-            crit: 1.5, critDmg: 1.5, dodge: 1.0, acc: 1.0, mana: 2.0
+            hp: 1.5, atk: 2.0, def: 1.0, agi: 1.0, int: 2.0,
+            spd: 1.0, crit: 1.5, critDmg: 1.5, vamp: 0.5, reflect: 0.5
         }
     };
     const coeff = importance[className] || importance.warrior;
@@ -492,16 +492,15 @@ function calculatePower(className, finalStats) {
     power += finalStats.hp * coeff.hp;
     power += finalStats.atk * coeff.atk * 2;
     power += finalStats.def * coeff.def * 2;
-    power += finalStats.res * coeff.res * 2;
+    power += finalStats.agi * coeff.agi * 2;
+    power += finalStats.int * coeff.int * 2;
     power += finalStats.spd * coeff.spd * 2;
     power += finalStats.crit * coeff.crit * 3;
-    power += (finalStats.critDmg - 2.0) * 100 * coeff.critDmg;
-    power += finalStats.dodge * coeff.dodge * 3;
-    power += (finalStats.acc - 100) * coeff.acc * 2;
-    power += finalStats.mana * coeff.mana * 1;
+    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg; // крит.урон сверх 150%
+    power += finalStats.vamp * coeff.vamp * 3;
+    power += finalStats.reflect * coeff.reflect * 2;
     return Math.round(power);
 }
-
 
 // ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
@@ -601,16 +600,17 @@ function renderEquip() {
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
             const stats = [];
-           if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+        const stats = [];
+if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
 
             const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
             const itemIcon = getItemIconPath(item) || '';

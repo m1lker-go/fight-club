@@ -62,8 +62,8 @@ const critPhrases = {
     ]
 };
 
-const vampPhrase = '<span style="color:#2ecc71;">%s восстанавливает %d HP благодаря вампиризму.</span>';
-const reflectPhrase = '<span style="color:#e74c3c;">%s отражает %d урона обратно в %s!</span>';
+const vampPhrase = '%s восстанавливает <span style="color:#2ecc71;">%d</span> очков здоровья благодаря вампиризму.';
+const reflectPhrase = '%s отражает <span style="color:#e74c3c;">%d</span> урона обратно в %s!';
 const ultPhrases = {
     warrior: '<span style="color:#3498db;">%s использует НЕСОКРУШИМОСТЬ и восстанавливает %d HP!</span>',
     assassin: '<span style="color:#3498db;">%s применяет ТАНЕЦ СМЕРТИ, нанося %d урона и восстанавливая %d HP!</span>',

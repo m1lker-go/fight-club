@@ -58,9 +58,9 @@ const roleDescriptions = {
 
 // Базовые характеристики классов
 const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, agi: 1, int: 0, spd: 10, crit: 2, critDmg: 2.0, vamp: 0, reflect: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 2.0, vamp: 0, reflect: 0 },
-    mage: { hp: 10, atk: 5, def: 0, agi: 0, int: 3, spd: 12, crit: 3, critDmg: 2.0, vamp: 0, reflect: 0 }
+    warrior: { hp: 20, atk: 5, def: 2, agi: 1, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 13, atk: 7, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 10, atk: 5, def: 0, agi: 0, int: 3, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
 // Словарь перевода названий предметов
@@ -374,6 +374,7 @@ function getCurrentClassData() {
 function calculateClassStats(className, classData, inventory, subclass) {
     const base = baseStats[className] || baseStats.warrior;
 
+    // База + очки навыков
     let baseStatsWithSkills = {
         hp: base.hp + (classData.hp_points || 0) * 2,
         atk: base.atk + (classData.atk_points || 0),
@@ -419,36 +420,58 @@ function calculateClassStats(className, classData, inventory, subclass) {
     if (roleBonus.vamp) roleBonuses.vamp += roleBonus.vamp;
     if (roleBonus.reflect) roleBonuses.reflect += roleBonus.reflect;
 
-    // Суммируем все бонусы для итога
-    let totalBonuses = {
-        hp: gearBonuses.hp,
-        atk: gearBonuses.atk,
-        def: gearBonuses.def,
-        agi: gearBonuses.agi,
-        int: gearBonuses.int,
-        spd: gearBonuses.spd,
-        crit: gearBonuses.crit,
-        critDmg: gearBonuses.critDmg,
-        vamp: gearBonuses.vamp + roleBonuses.vamp,
-        reflect: gearBonuses.reflect + roleBonuses.reflect
-    };
-
+    // Итоговые значения (сумма)
     let final = {
-        hp: baseStatsWithSkills.hp + totalBonuses.hp,
-        atk: baseStatsWithSkills.atk + totalBonuses.atk,
-        def: baseStatsWithSkills.def + totalBonuses.def,
-        agi: baseStatsWithSkills.agi + totalBonuses.agi,
-        int: baseStatsWithSkills.int + totalBonuses.int,
-        spd: baseStatsWithSkills.spd + totalBonuses.spd,
-        crit: baseStatsWithSkills.crit + totalBonuses.crit,
-        critDmg: baseStatsWithSkills.critDmg + totalBonuses.critDmg,
-        vamp: baseStatsWithSkills.vamp + totalBonuses.vamp,
-        reflect: baseStatsWithSkills.reflect + totalBonuses.reflect
+        hp: baseStatsWithSkills.hp + gearBonuses.hp + roleBonuses.hp,
+        atk: baseStatsWithSkills.atk + gearBonuses.atk + roleBonuses.atk,
+        def: baseStatsWithSkills.def + gearBonuses.def + roleBonuses.def,
+        agi: baseStatsWithSkills.agi + gearBonuses.agi + roleBonuses.agi,
+        int: baseStatsWithSkills.int + gearBonuses.int + roleBonuses.int,
+        spd: baseStatsWithSkills.spd + gearBonuses.spd + roleBonuses.spd,
+        crit: baseStatsWithSkills.crit + gearBonuses.crit + roleBonuses.crit,
+        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg + roleBonuses.critDmg,
+        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp + roleBonuses.vamp,
+        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
     };
 
+    // Применяем классовые множители
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.5);
-        final.def = Math.min(70, final
+        final.def = Math.min(70, final.def * 1.5);
+    } else if (className === 'assassin') {
+        final.atk = Math.floor(final.atk * 1.2);
+        final.crit = Math.min(100, final.crit * 1.25);
+        final.agi = Math.min(100, final.agi * 1.1);
+    } else if (className === 'mage') {
+        final.atk = Math.floor(final.atk * 1.2);
+        final.int = final.int * 1.2; // интеллект не ограничен
+    }
+
+    // Ограничения
+    final.def = Math.min(70, final.def);
+    final.crit = Math.min(100, final.crit);
+    final.agi = Math.min(100, final.agi);
+
+    // Округление до одного знака после запятой для процентных характеристик
+    // и до целых для HP, ATK, SPD
+    final.hp = Math.round(final.hp);
+    final.atk = Math.round(final.atk);
+    final.spd = Math.round(final.spd);
+    final.def = Math.round(final.def * 10) / 10;
+    final.agi = Math.round(final.agi * 10) / 10;
+    final.int = Math.round(final.int * 10) / 10;
+    final.crit = Math.round(final.crit * 10) / 10;
+    final.critDmg = Math.round(final.critDmg * 100) / 100; // оставляем два знака для множителя
+    final.vamp = Math.round(final.vamp * 10) / 10;
+    final.reflect = Math.round(final.reflect * 10) / 10;
+
+    return {
+        base: baseStatsWithSkills,
+        gear: gearBonuses,
+        role: roleBonuses,
+        final: final
+    };
+}
 function calculatePower(className, finalStats) {
     const importance = {
         warrior: {

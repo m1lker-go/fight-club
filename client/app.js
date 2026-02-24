@@ -1347,19 +1347,95 @@ function showBattleResult(battleData, timeOut = false) {
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
 
+    // Собираем статистику из лога (приблизительно)
+    let playerHits = 0, enemyHits = 0;
+    let playerCrits = 0, enemyCrits = 0;
+    let playerDodges = 0, enemyDodges = 0;
+    let playerTotalDamage = 0, enemyTotalDamage = 0;
+    let playerHeal = 0, enemyHeal = 0;
+    let playerReflect = 0, enemyReflect = 0;
+
+    battleData.result.log.forEach(line => {
+        if (line.includes('Игрок наносит') || line.includes('Игрок использует')) {
+            // Примерный парсинг – можно улучшить
+            const damageMatch = line.match(/наносит (\d+)/);
+            if (damageMatch) playerTotalDamage += parseInt(damageMatch[1]);
+            if (line.includes('крит')) playerCrits++;
+            playerHits++;
+        } else if (line.includes('Противник наносит')) {
+            const damageMatch = line.match(/наносит (\d+)/);
+            if (damageMatch) enemyTotalDamage += parseInt(damageMatch[1]);
+            if (line.includes('крит')) enemyCrits++;
+            enemyHits++;
+        }
+        if (line.includes('уклоняется')) {
+            if (line.startsWith('Игрок')) playerDodges++;
+            else enemyDodges++;
+        }
+        if (line.includes('восстанавливает')) {
+            const healMatch = line.match(/восстанавливает (\d+)/);
+            if (healMatch) {
+                if (line.startsWith('Игрок')) playerHeal += parseInt(healMatch[1]);
+                else enemyHeal += parseInt(healMatch[1]);
+            }
+        }
+        if (line.includes('отражает')) {
+            const reflectMatch = line.match(/отражает (\d+)/);
+            if (reflectMatch) {
+                if (line.startsWith('Игрок')) playerReflect += parseInt(reflectMatch[1]);
+                else enemyReflect += parseInt(reflectMatch[1]);
+            }
+        }
+    });
+
     const content = document.getElementById('content');
     content.innerHTML = `
-        <div class="battle-result">
-            <h2>${resultText}</h2>
-            <p>Получено опыта: ${expGain}</p>
-            <p>Получено монет: ${coinGain}</p>
-            ${leveledUp ? '<p>🎉 Уровень повышен!</p>' : ''}
+        <div class="battle-result" style="padding: 10px;">
+            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
+            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="btn result-tab" id="tabStats">Статистика</button>
+            </div>
+            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+                <!-- Здесь будет лог или статистика -->
+                ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
+            </div>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn" id="rematchBtn">В бой</button>
                 <button class="btn" id="backBtn">Назад</button>
             </div>
         </div>
     `;
+
+    const resultDiv = document.getElementById('resultContent');
+    const tabLog = document.getElementById('tabLog');
+    const tabStats = document.getElementById('tabStats');
+
+    tabLog.addEventListener('click', () => {
+        tabLog.classList.add('active');
+        tabStats.classList.remove('active');
+        resultDiv.innerHTML = battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('');
+    });
+
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultDiv.innerHTML = `
+            <h4 style="color:#00aaff;">Игрок (${userData.username})</h4>
+            <table style="width:100%; font-size:13px;">
+                <tr><td>Ударов:</td><td>${playerHits}</td><td>Критов:</td><td>${playerCrits}</td></tr>
+                <tr><td>Уклонений:</td><td>${playerDodges}</td><td>Всего урона:</td><td>${playerTotalDamage}</td></tr>
+                <tr><td>Исцелено:</td><td>${playerHeal}</td><td>Отражено:</td><td>${playerReflect}</td></tr>
+            </table>
+            <h4 style="color:#e74c3c;">Противник (${battleData.opponent.username})</h4>
+            <table style="width:100%; font-size:13px;">
+                <tr><td>Ударов:</td><td>${enemyHits}</td><td>Критов:</td><td>${enemyCrits}</td></tr>
+                <tr><td>Уклонений:</td><td>${enemyDodges}</td><td>Всего урона:</td><td>${enemyTotalDamage}</td></tr>
+                <tr><td>Исцелено:</td><td>${enemyHeal}</td><td>Отражено:</td><td>${enemyReflect}</td></tr>
+            </table>
+        `;
+    });
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
         await refreshData();

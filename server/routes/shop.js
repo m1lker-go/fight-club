@@ -68,7 +68,6 @@ const fixedStats = {
     }
 };
 
-// Список всех полей (используем для перебора)
 const allFields = [
     'atk_bonus', 'def_bonus', 'hp_bonus', 'agi_bonus', 'int_bonus',
     'spd_bonus', 'crit_bonus', 'crit_dmg_bonus', 'vamp_bonus', 'reflect_bonus'
@@ -80,7 +79,6 @@ function getLowerRarity(rarity) {
 }
 
 function generateStats(rarity) {
-    // Создаём объект со всеми нулями
     const stats = {
         atk_bonus: 0,
         def_bonus: 0,
@@ -94,17 +92,12 @@ function generateStats(rarity) {
         reflect_bonus: 0
     };
 
-    // Фильтруем только те поля, которые в fixedStats имеют ненулевое значение для данной редкости
     const possibleFields = allFields.filter(field => fixedStats[rarity][field] > 0);
-
-    // Перемешиваем и берём первые два (если possibleFields содержит минимум два элемента)
     const shuffled = [...possibleFields].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 2);
-
     selected.forEach(field => {
         stats[field] = fixedStats[rarity][field];
     });
-
     return stats;
 }
 

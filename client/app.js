@@ -1019,7 +1019,14 @@ function renderTasks() {
             <div>Топ игроков</div>
             <button class="btn" id="ratingBtn">Рейтинг</button>
         </div>
+        <!-- Временная кнопка для тестирования -->
+        <div class="task-card" style="border-left-color: gold;">
+            <div>🧪 Тестовые монеты</div>
+            <div>Нажмите, чтобы получить 500 монет (без ограничений)</div>
+            <button class="btn" id="testCoinsBtn">Получить 500</button>
+        </div>
     `;
+
     document.getElementById('dailyBtn').addEventListener('click', async () => {
         const res = await fetch('/tasks/daily', {
             method: 'POST',
@@ -1038,8 +1045,22 @@ function renderTasks() {
     document.getElementById('ratingBtn').addEventListener('click', () => {
         alert('Рейтинг пока не реализован');
     });
-}
 
+    document.getElementById('testCoinsBtn').addEventListener('click', async () => {
+        const res = await fetch('/tasks/testcoins', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`Получено ${data.added} монет!`);
+            await refreshData();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    });
+}
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const currentClass = userData.current_class;

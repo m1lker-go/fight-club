@@ -1425,7 +1425,6 @@ function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                <!-- Здесь будет лог или статистика -->
                 ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
             </div>
         </div>

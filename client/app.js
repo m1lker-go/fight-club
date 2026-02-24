@@ -58,9 +58,9 @@ const roleDescriptions = {
 
 // Базовые характеристики классов
 const baseStats = {
-    warrior: { hp: 20, atk: 5, def: 2, res: 0, spd: 10, crit: 2, dodge: 1, acc: 0, mana: 0 },
-    assassin: { hp: 13, atk: 7, def: 1, res: 0, spd: 15, crit: 5, dodge: 5, acc: 0, mana: 0 },
-    mage: { hp: 10, atk: 5, def: 0, res: 3, spd: 12, crit: 3, dodge: 0, acc: 0, mana: 0 }
+    warrior: { hp: 20, atk: 5, def: 2, agi: 1, int: 0, spd: 10, crit: 2, critDmg: 2.0, vamp: 0, reflect: 0 },
+    assassin: { hp: 13, atk: 7, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 2.0, vamp: 0, reflect: 0 },
+    mage: { hp: 10, atk: 5, def: 0, agi: 0, int: 3, spd: 12, crit: 3, critDmg: 2.0, vamp: 0, reflect: 0 }
 };
 
 // Словарь перевода названий предметов
@@ -371,24 +371,24 @@ function getCurrentClassData() {
     };
 }
 
-function calculateClassStats(className, classData, inventory) {
+function calculateClassStats(className, classData, inventory, subclass) {
     const base = baseStats[className] || baseStats.warrior;
 
     let baseStatsWithSkills = {
         hp: base.hp + (classData.hp_points || 0) * 2,
         atk: base.atk + (classData.atk_points || 0),
         def: base.def + (classData.def_points || 0),
-        res: base.res + (classData.res_points || 0),
+        agi: base.agi + (classData.agi_points || 0),
+        int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
         critDmg: 2.0 + ((classData.crit_dmg_points || 0) / 100),
-        dodge: base.dodge + (classData.dodge_points || 0),
-        acc: base.acc + (classData.acc_points || 0) + 100,
-        mana: (classData.mana_points || 0)
+        vamp: base.vamp + (classData.vamp_points || 0),
+        reflect: base.reflect + (classData.reflect_points || 0)
     };
 
     let gearBonuses = {
-        hp: 0, atk: 0, def: 0, res: 0, spd: 0, crit: 0, critDmg: 0, dodge: 0, acc: 0, mana: 0
+        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
     };
 
     const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
@@ -396,49 +396,58 @@ function calculateClassStats(className, classData, inventory) {
         gearBonuses.hp += item.hp_bonus || 0;
         gearBonuses.atk += item.atk_bonus || 0;
         gearBonuses.def += item.def_bonus || 0;
-        gearBonuses.res += item.res_bonus || 0;
+        gearBonuses.agi += item.agi_bonus || 0;
+        gearBonuses.int += item.int_bonus || 0;
         gearBonuses.spd += item.spd_bonus || 0;
         gearBonuses.crit += item.crit_bonus || 0;
         gearBonuses.critDmg += (item.crit_dmg_bonus || 0) / 100;
-        gearBonuses.dodge += item.dodge_bonus || 0;
-        gearBonuses.acc += item.acc_bonus || 0;
-        gearBonuses.mana += item.mana_bonus || 0;
+        gearBonuses.vamp += item.vamp_bonus || 0;
+        gearBonuses.reflect += item.reflect_bonus || 0;
     });
+
+    // Пассивки подклассов
+    const rolePassives = {
+        knight: { reflect: 20 },
+        assassin: { vamp: 20 },
+        blood_hunter: { vamp: 20 }
+    };
+    const roleBonus = rolePassives[subclass] || {};
+    gearBonuses.vamp += roleBonus.vamp || 0;
+    gearBonuses.reflect += roleBonus.reflect || 0;
 
     let final = {
         hp: baseStatsWithSkills.hp + gearBonuses.hp,
         atk: baseStatsWithSkills.atk + gearBonuses.atk,
         def: baseStatsWithSkills.def + gearBonuses.def,
-        res: baseStatsWithSkills.res + gearBonuses.res,
+        agi: baseStatsWithSkills.agi + gearBonuses.agi,
+        int: baseStatsWithSkills.int + gearBonuses.int,
         spd: baseStatsWithSkills.spd + gearBonuses.spd,
         crit: baseStatsWithSkills.crit + gearBonuses.crit,
         critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg,
-        dodge: baseStatsWithSkills.dodge + gearBonuses.dodge,
-        acc: baseStatsWithSkills.acc + gearBonuses.acc,
-        mana: baseStatsWithSkills.mana + gearBonuses.mana
+        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
+        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
     };
 
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.5);
-        final.def = Math.min(80, final.def * 1.5);
+        final.def = Math.min(70, final.def * 1.5);
     } else if (className === 'assassin') {
         final.atk = Math.floor(final.atk * 1.2);
-        final.crit = Math.min(75, final.crit * 1.25);
-        final.dodge = Math.min(70, final.dodge * 1.1);
+        final.crit = Math.min(100, final.crit * 1.25);
+        final.agi = Math.min(100, final.agi * 1.1);
     } else if (className === 'mage') {
         final.atk = Math.floor(final.atk * 1.2);
-        final.res = Math.min(80, final.res * 1.2);
+        final.int = final.int * 1.2;
     }
 
-    final.def = Math.round(Math.min(80, final.def));
-    final.res = Math.round(Math.min(80, final.res));
-    final.crit = Math.round(Math.min(75, final.crit));
-    final.dodge = Math.round(Math.min(70, final.dodge));
-    final.acc = Math.round(Math.min(100, final.acc));
+    final.def = Math.min(70, final.def);
+    final.crit = Math.min(100, final.crit);
+    final.agi = Math.min(100, final.agi);
     final.hp = Math.round(final.hp);
     final.atk = Math.round(final.atk);
     final.spd = Math.round(final.spd);
-    final.mana = Math.round(final.mana);
+    final.vamp = Math.round(final.vamp);
+    final.reflect = Math.round(final.reflect);
     final.critDmg = Math.round(final.critDmg * 100) / 100;
 
     return { base: baseStatsWithSkills, gear: gearBonuses, final: final };
@@ -809,7 +818,10 @@ function showChestResult(item) {
     if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
     if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
     if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
-
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
     // Маппинг класса в папку
     const classFolderMap = {
         warrior: 'tank',
@@ -970,7 +982,10 @@ async function loadMarketItems(statFilter = 'any') {
         if (item.acc_bonus) stats.push(`МЕТК+${item.acc_bonus}%`);
         if (item.res_bonus) stats.push(`СОПР+${item.res_bonus}%`);
         if (item.mana_bonus) stats.push(`МАНА+${item.mana_bonus}%`);
-
+        if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+        if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+        if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+        if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
 
@@ -1085,6 +1100,10 @@ function renderProfile() {
             ${renderStatRow('Уворот (DODGE)', stats.base.dodge + '%', stats.gear.dodge + '%', stats.final.dodge + '%', 'dodge')}
             ${renderStatRow('Меткость (ACC)', stats.base.acc + '%', stats.gear.acc + '%', stats.final.acc + '%', 'acc')}
             ${renderStatRow('Усиление маны (MANA)', stats.base.mana + '%', stats.gear.mana + '%', stats.final.mana + '%', 'mana')}
+       ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.final.agi + '%', 'agi')}
+${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.final.int + '%', 'int')}
+${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.final.vamp + '%', 'vamp')}
+${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.final.reflect + '%', 'reflect')}
         </table>
     `;
 
@@ -1147,6 +1166,10 @@ function renderSkills() {
             ${renderSkillItem('dodge_points', 'Уворот', 'Увеличивает шанс уворота на 1%', base.dodge + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
             ${renderSkillItem('acc_points', 'Меткость', 'Увеличивает меткость на 1%', base.acc + (classData.acc_points || 0) + 100, classData.acc_points || 0, skillPoints)}
             ${renderSkillItem('mana_points', 'Мана', 'Увеличивает эффективность активного навыка на 1%', (classData.mana_points || 0) + '%', classData.mana_points || 0, skillPoints)}
+       ${renderSkillItem('agi_points', 'Ловкость', 'Увеличивает шанс уворота на 1%', base.agi + (classData.agi_points || 0), classData.agi_points || 0, skillPoints)}
+${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
+${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает HP от урона на 1%', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
+${renderSkillItem('reflect_points', 'Отражение', 'Возвращает урон атакующему на 1%', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
         </div>
     `;
 

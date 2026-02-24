@@ -1307,7 +1307,7 @@ function showBattleScreen(battleData) {
     }
 
     playTurn();
-    interval = setInterval(playTurn, 1000 / speed);
+    interval = setInterval(playTurn, 1500 / speed);
 
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {

@@ -72,6 +72,8 @@ const ultPhrases = {
 
 function calculateStats(classData, inventory, subclass) {
     const base = baseStats[classData.class] || baseStats.warrior;
+    // Фильтруем только предметы, принадлежащие текущему классу
+    const classInventory = inventory.filter(item => item.owner_class === classData.class);
 
     let stats = {
         hp: base.hp + (classData.hp_points || 0) * 2,
@@ -88,7 +90,7 @@ function calculateStats(classData, inventory, subclass) {
         manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 30)
     };
 
-    inventory.forEach(item => {
+    classInventory.forEach(item => {
         stats.hp += item.hp_bonus || 0;
         stats.atk += item.atk_bonus || 0;
         stats.def += item.def_bonus || 0;
@@ -385,7 +387,6 @@ const rarityChances = [
     { minLevel: 56, maxLevel: 60, common: 0, uncommon: 0, rare: 0, epic: 0.2, legendary: 0.8 }
 ];
 
-// Функция для получения случайной редкости на основе уровня
 function getRandomRarity(level) {
     const range = rarityChances.find(r => level >= r.minLevel && level <= r.maxLevel);
     if (!range) return 'common';
@@ -399,7 +400,6 @@ function getRandomRarity(level) {
 
 function generateBot(playerLevel) {
     const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
-
     const names = [
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
         { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
@@ -489,7 +489,6 @@ function generateBot(playerLevel) {
         });
     }
 
-    // Пассивки подкласса для бота
     const roleBonus = rolePassives[template.subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;

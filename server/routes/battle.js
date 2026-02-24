@@ -63,7 +63,7 @@ const ultPhrases = {
     mage: '<span style="color:#3498db;">%s активирует ЧИСТУЮ ЭНЕРГИЮ, нанося %d магического урона!</span>'
 };
 
-function calculateStats(classData, inventory, subclass) {
+function calculateStats(classData, inventory) {
     const base = baseStats[classData.class] || baseStats.warrior;
 
     let stats = {
@@ -143,7 +143,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    // Выбираем фразу для атаки
     let attackPhrase;
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
@@ -183,7 +182,7 @@ function performUltimate(attackerStats, defenderStats, className, attackerName, 
     return { damage, heal, log };
 }
 
-function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerSubclass, enemySubclass, playerName, enemyName) {
+function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
     let playerMana = 0;
@@ -285,11 +284,134 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 }
 
 function generateBot(playerLevel) {
-    // ... (ваша существующая функция, без изменений)
-    // Я не копирую её сюда для краткости, но она должна быть такой же, как в вашем файле.
+    const names = [
+        { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
+        { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
+        { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
+        { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
+        { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
+        { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
+        { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
+        { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
+        { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' },
+        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'guardian' },
+        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'berserker' },
+        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'knight' },
+        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'assassin' },
+        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'venom_blade' },
+        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'blood_hunter' },
+        { name: 'Изумрудный защитник', class: 'mage', subclass: 'pyromancer' },
+        { name: 'Изумрудный защитник', class: 'mage', subclass: 'cryomancer' },
+        { name: 'Изумрудный защитник', class: 'mage', subclass: 'illusionist' },
+        { name: 'Защитник королевства', class: 'warrior', subclass: 'guardian' },
+        { name: 'Защитник королевства', class: 'warrior', subclass: 'berserker' },
+        { name: 'Защитник королевства', class: 'warrior', subclass: 'knight' },
+        { name: 'Защитник королевства', class: 'assassin', subclass: 'assassin' },
+        { name: 'Защитник королевства', class: 'assassin', subclass: 'venom_blade' },
+        { name: 'Защитник королевства', class: 'assassin', subclass: 'blood_hunter' },
+        { name: 'Защитник королевства', class: 'mage', subclass: 'pyromancer' },
+        { name: 'Защитник королевства', class: 'mage', subclass: 'cryomancer' },
+        { name: 'Защитник королевства', class: 'mage', subclass: 'illusionist' }
+    ];
+
+    const template = names[Math.floor(Math.random() * names.length)];
+    const level = Math.max(1, playerLevel - 2 + Math.floor(Math.random() * 5));
+
+    const baseHP = 10 + level * 2;
+    const baseATK = 5 + level;
+    const baseDEF = Math.min(40, level * 2);
+    const baseAGI = Math.min(30, level * 1.5);
+    const baseINT = level;
+    const baseSPD = 10 + level;
+    const baseCRIT = Math.min(30, level * 1.5);
+    const baseVAMP = Math.floor(level / 3);
+    const baseREFLECT = Math.floor(level / 3);
+
+    let hp = baseHP, atk = baseATK, def = baseDEF, agi = baseAGI, int = baseINT, spd = baseSPD, crit = baseCRIT, vamp = baseVAMP, reflect = baseREFLECT;
+    if (template.class === 'warrior') {
+        hp = Math.floor(baseHP * 1.5);
+        def = Math.floor(baseDEF * 1.2);
+    } else if (template.class === 'assassin') {
+        atk = Math.floor(baseATK * 1.2);
+        crit = Math.floor(baseCRIT * 1.5);
+        agi = Math.floor(baseAGI * 1.3);
+    } else if (template.class === 'mage') {
+        atk = Math.floor(baseATK * 1.3);
+        int = Math.floor(baseINT * 1.5);
+    }
+
+    return {
+        id: `bot_${Date.now()}_${Math.random()}`,
+        username: template.name,
+        class: template.class,
+        subclass: template.subclass,
+        level: level,
+        stats: {
+            hp: hp,
+            atk: atk,
+            def: def,
+            agi: agi,
+            int: int,
+            spd: spd,
+            crit: crit,
+            critDmg: 1.5,
+            vamp: vamp,
+            reflect: reflect,
+            manaMax: 100,
+            manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
+        }
+    };
 }
 
-// Остальные функции (expNeeded, addExp, getCoinReward, rechargeEnergy) без изменений
+function expNeeded(level) {
+    return Math.floor(80 * Math.pow(level, 1.5));
+}
+
+async function addExp(client, userId, className, expGain) {
+    const classRes = await client.query(
+        'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+        [userId, className]
+    );
+    let { level, exp } = classRes.rows[0];
+    exp += expGain;
+    let leveledUp = false;
+    while (exp >= expNeeded(level)) {
+        exp -= expNeeded(level);
+        level++;
+        leveledUp = true;
+        await client.query(
+            'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
+            [userId, className]
+        );
+    }
+    await client.query(
+        'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
+        [level, exp, userId, className]
+    );
+    return leveledUp;
+}
+
+function getCoinReward(streak) {
+    if (streak >= 25) return 20;
+    if (streak >= 10) return 10;
+    if (streak >= 5) return 7;
+    return 5;
+}
+
+async function rechargeEnergy(client, userId) {
+    const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
+    if (user.rows.length === 0) return;
+    const last = new Date(user.rows[0].last_energy);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - last) / (1000 * 60));
+    if (diffMinutes > 0) {
+        const newEnergy = Math.min(20, user.rows[0].energy + diffMinutes);
+        await client.query(
+            'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
+            [newEnergy, now, userId]
+        );
+    }
+}
 
 router.post('/start', async (req, res) => {
     const { tg_id } = req.body;
@@ -321,10 +443,10 @@ router.post('/start', async (req, res) => {
         );
         const playerInventory = inv.rows;
 
-        const playerStats = calculateStats(classData.rows[0], playerInventory, userData.subclass);
+        const playerStats = calculateStats(classData.rows[0], playerInventory);
         const bot = generateBot(classData.rows[0].level);
 
-        const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class, userData.subclass, bot.subclass, userData.username, bot.username);
+        const battleResult = simulateBattle(playerStats, bot.stats, userData.current_class, bot.class, userData.username, bot.username);
 
         let isVictory = false;
         if (battleResult.winner === 'player') isVictory = true;

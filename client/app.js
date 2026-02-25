@@ -1532,40 +1532,44 @@ function showBattleScreen(battleData) {
         }, 1000);
     }
 
-    function getAnimationForAction(action, isPlayerTurn) {
+       function getAnimationForAction(action, isPlayerTurn) {
         action = action.toLowerCase();
+        // По умолчанию: анимация на враге (если атакует игрок) или на герое (если атакует враг)
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
 
-        if (action.includes('критического') || action.includes('крита') || action.includes('крит')) {
-            anim = 'crit.gif';
-        } else if (action.includes('восстанавливает')) {
+        // Активные навыки (ультимейты)
+        if (action.includes('несокрушимость')) {
             anim = 'hill.gif';
-            target = isPlayerTurn ? 'hero' : 'enemy';
-        } else if (action.includes('несокрушимость')) {
-            anim = 'hill.gif';
-            target = isPlayerTurn ? 'hero' : 'enemy';
+            target = isPlayerTurn ? 'hero' : 'enemy'; // положительный эффект на себя
         } else if (action.includes('кровопускание')) {
-            anim = 'crit.gif';
+            anim = 'crit.gif'; // активный навык берсерка (на врага)
         } else if (action.includes('щит правосудия')) {
             anim = 'shield.gif';
-            target = isPlayerTurn ? 'hero' : 'enemy';
+            target = isPlayerTurn ? 'hero' : 'enemy'; // бафф на себя
         } else if (action.includes('смертельный удар')) {
-            anim = 'ultimate.gif';
+            anim = 'ultimate.gif'; // активный навык убийцы
         } else if (action.includes('ядовитая волна')) {
-            anim = 'poison.gif';
+            anim = 'poison.gif'; // активный навык ядовитого клинка
         } else if (action.includes('кровавая жатва')) {
-            anim = 'crit.gif';
+            anim = 'crit.gif'; // активный навык кровавого охотника
         } else if (action.includes('огненный шторм')) {
-            anim = 'fire.gif';
+            anim = 'fire.gif'; // активный навык поджигателя
         } else if (action.includes('вечная зима')) {
-            anim = 'ice.gif';
+            anim = 'ice.gif'; // активный навык ледяного мага
         } else if (action.includes('зазеркалье')) {
-            anim = 'chara.gif';
-        } else if (action.includes('яд разъедает') || action.includes('отравление')) {
+            anim = 'chara.gif'; // активный навык иллюзиониста
+        }
+        // Эффекты яда и огня
+        else if (action.includes('яд разъедает') || action.includes('отравление')) {
             anim = 'poison.gif';
         } else if (action.includes('пламя пожирает') || action.includes('огонь обжигает') || action.includes('горящие души')) {
             anim = 'fire.gif';
+        }
+        // Восстанавливает здоровье (активный навык стража или вампиризм)
+        else if (action.includes('восстанавливает')) {
+            anim = 'hill.gif';
+            target = isPlayerTurn ? 'hero' : 'enemy'; // лечение на себе
         }
 
         return { target, anim };

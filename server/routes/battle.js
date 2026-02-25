@@ -745,9 +745,12 @@ router.post('/start', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userData = user.rows[0];
 
-        await rechargeEnergy(client, userData.id);
+               await rechargeEnergy(client, userData.id);
 
-        if (userData.energy < 1) throw new Error('Not enough energy');
+        // Получаем актуальное значение энергии после восполнения
+        const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
+        const currentEnergy = energyRes.rows[0].energy;
+        if (currentEnergy < 1) throw new Error('Недостаточно энергии');
 
         const classData = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',

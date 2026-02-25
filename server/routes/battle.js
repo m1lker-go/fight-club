@@ -790,7 +790,7 @@ router.post('/start', async (req, res) => {
 
         const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
 
-        await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
+       await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
 
         await client.query('COMMIT');
 

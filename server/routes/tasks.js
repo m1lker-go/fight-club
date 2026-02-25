@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Вспомогательная функция генерации предмета по редкости (аналог из shop.js)
+// Вспомогательная функция генерации предмета по редкости
 function generateItemByRarity(rarity, ownerClass = null) {
     const itemNames = {
         common: ['Ржавый меч', 'Деревянный щит', 'Кожаный шлем', 'Тряпичные перчатки', 'Старые сапоги', 'Медное кольцо'],
@@ -15,7 +15,7 @@ function generateItemByRarity(rarity, ownerClass = null) {
     const type = types[Math.floor(Math.random() * types.length)];
     const name = itemNames[rarity][Math.floor(Math.random() * itemNames[rarity].length)];
     
-    // Базовые бонусы (можно расширить)
+    // Базовые бонусы
     const bonuses = {
         common: { atk: 1, def: 1, hp: 2 },
         uncommon: { atk: 2, def: 2, hp: 4 },
@@ -39,37 +39,24 @@ function generateItemByRarity(rarity, ownerClass = null) {
 
 // Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
-    // Прогрессия монет/опыта
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
-    
-    // Особые дни с предметами
     if (day === 7) return { type: 'item', rarity: 'common' };
     if (day === 15) return { type: 'item', rarity: 'rare' };
     if (day === 22) return { type: 'item', rarity: 'epic' };
     if (day === 30) return { type: 'item', rarity: 'legendary' };
-    if (daysInMonth === 31 && day === 31) return { type: 'item', rarity: 'legendary' }; // 31-й день тоже легендарка
-    
-    // Обычные дни: нечётные – монеты, чётные – опыт
+    if (daysInMonth === 31 && day === 31) return { type: 'item', rarity: 'legendary' };
     const index = day - 1;
     if (index < coinExpBase.length) {
-        if (day % 2 === 1) {
-            return { type: 'coins', amount: coinExpBase[index] };
-        } else {
-            return { type: 'exp', amount: coinExpBase[index] };
-        }
+        if (day % 2 === 1) return { type: 'coins', amount: coinExpBase[index] };
+        else return { type: 'exp', amount: coinExpBase[index] };
     } else {
-        // Для дней после 26 (27,28,29) используем увеличенные значения
         const higher = [300, 300, 400, 400, 500, 500];
         let idx = index - coinExpBase.length;
         if (idx < higher.length) {
-            if (day % 2 === 1) {
-                return { type: 'coins', amount: higher[idx] };
-            } else {
-                return { type: 'exp', amount: higher[idx] };
-            }
+            if (day % 2 === 1) return { type: 'coins', amount: higher[idx] };
+            else return { type: 'exp', amount: higher[idx] };
         }
     }
-    // Запасной вариант
     return { type: 'coins', amount: 100 };
 }
 
@@ -86,14 +73,12 @@ router.get('/advent', async (req, res) => {
         let { advent_month, advent_year, advent_mask } = user.rows[0];
         const userId = user.rows[0].id;
         
-        // Текущее московское время
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const currentMonth = mskTime.getMonth() + 1;
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
         
-        // Если месяц/год изменились, сбрасываем маску
         if (advent_month !== currentMonth || advent_year !== currentYear) {
             advent_mask = 0;
             advent_month = currentMonth;
@@ -161,7 +146,6 @@ router.post('/advent/claim', async (req, res) => {
             rewardDescription = `${reward.amount} монет`;
         } else if (reward.type === 'exp') {
             if (!classChoice) throw new Error('Class choice required for exp');
-            // Получаем текущие данные класса
             const classRes = await client.query('SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2', [userId, classChoice]);
             if (classRes.rows.length === 0) throw new Error('Class not found');
             let { level, exp } = classRes.rows[0];
@@ -205,7 +189,7 @@ router.post('/advent/claim', async (req, res) => {
     }
 });
 
-// Ежедневный вход (старый)
+// Ежедневный вход (оставлен для обратной совместимости, но не используется в новом интерфейсе)
 router.post('/daily', async (req, res) => {
     const { tg_id } = req.body;
     const client = await pool.connect();
@@ -216,7 +200,7 @@ router.post('/daily', async (req, res) => {
         
         const today = new Date().toISOString().split('T')[0];
         let streak = 1;
-        let rewardCoins = 50; // базовая награда
+        let rewardCoins = 50;
         
         if (user.rows[0].last_daily) {
             const last = new Date(user.rows[0].last_daily).toISOString().split('T')[0];
@@ -230,7 +214,6 @@ router.post('/daily', async (req, res) => {
             }
         }
         
-        // Увеличиваем награду за streak
         rewardCoins = Math.min(200, 50 + streak * 10);
         
         await client.query('UPDATE users SET coins = coins + $1, daily_streak = $2, last_daily = $3 WHERE id = $4', 

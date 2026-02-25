@@ -10,7 +10,7 @@ const baseStats = {
 };
 
 // Пассивные бонусы подклассов
-const rolePassives = {
+rolePassives = {
     // Воин
     guardian: { damageReduction: 10, blockChance: 20 },
     berserker: { rage: true },
@@ -21,8 +21,8 @@ const rolePassives = {
     blood_hunter: { vamp: 20 },
     // Маг
     pyromancer: { burn: true },
-    cryomancer: { freezeChance: 10 },
-    illusionist: { mirageChance: 20 }
+    cryomancer: { freezeChance: 25, physReduction: 30 }, // увеличено до 25%, добавлено снижение физ.урона
+    illusionist: { mirageGuaranteed: true } // новый флаг для гарантированного миража
 };
 
 // Фразы для атак (по 5 на класс)
@@ -189,7 +189,18 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             .replace('%s', attackerName);
         return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {} };
     }
-
+// Проверка на иллюзию (гарантированное уклонение 1 раз в 4 удара)
+if (defenderSubclass === 'illusionist' && rolePassives.illusionist.mirageGuaranteed) {
+    defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
+    if (defenderState.mirageCounter >= 4) {
+        defenderState.mirageCounter = 0;
+        const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
+            .replace('%s', defenderName)
+            .replace('%s', attackerName);
+        return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 } };
+    }
+}
+// Если иллюзия не сработала, идёт обычная проверка уклонения
     // Расчёт урона
     let damage = attackerStats.atk;
     // Пассивка берсерка: бонус атаки (минимум +1)
@@ -311,9 +322,9 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         case 'illusionist':
-            damage = applyIntBonus(defenderStats.atk * 1, defenderStats.int);
-            log = ultPhrases.illusionist.replace('%s', attackerName).replace('%s', defenderName);
-            break;
+    damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int); // удвоенный урон
+    log = ultPhrases.illusionist.replace('%s', attackerName).replace('%s', defenderName);
+    break;
         default:
             return { damage: 0, heal: 0, log: 'ничего не произошло', selfDamage: 0, stateChanges: {} };
     }
@@ -376,7 +387,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         reflectBonus: 0,
         vampBuff: 0,
         vampBonus: 0,
-        hp: playerHp
+        hp: playerHp,
+        mirageCounter: 0 // для иллюзиониста
     };
     let enemyState = {
         poisonStacks: 0,
@@ -386,7 +398,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         reflectBonus: 0,
         vampBuff: 0,
         vampBonus: 0,
-        hp: enemyHp
+        hp: enemyHp,
+        mirageCounter: 0 // для иллюзиониста
     };
 
     let turn = playerStats.spd >= enemyStats.spd ? 'player' : 'enemy';

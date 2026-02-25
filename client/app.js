@@ -174,7 +174,26 @@ async function init() {
         alert('Ошибка соединения с сервером');
     }
 }
+
 checkAdvent();
+// Функция адвента
+async function checkAdvent() {
+    try {
+        const res = await fetch(`/tasks/advent?tg_id=${userData.tg_id}`);
+        const data = await res.json();
+        const { currentDay, mask } = data;
+        for (let day = 1; day <= currentDay; day++) {
+            if (!(mask & (1 << (day-1)))) {
+                // Есть доступная награда
+                showAdventCalendar();
+                return;
+            }
+        }
+    } catch (e) {
+        console.error('Advent check error', e);
+    }
+}
+
 // Функция для определения награды по дню (копия с сервера)
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];

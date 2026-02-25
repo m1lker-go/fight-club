@@ -635,6 +635,12 @@ function getCoinReward(streak) {
     if (streak >= 5) return 7;
     return 5;
 }
+function getRatingChange(streak) {
+    if (streak >= 20) return 30;
+    if (streak >= 10) return 25;
+    if (streak >= 5) return 20;
+    return 15;
+}
 
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);

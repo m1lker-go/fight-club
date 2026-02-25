@@ -1380,63 +1380,72 @@ function showBattleResult(battleData, timeOut = false) {
         battleData.result.turns.forEach(turn => {
             const action = turn.action;
             const isPlayerTurn = turn.turn === 'player';
+            const targetStats = isPlayerTurn ? playerStats : enemyStats;
+            const opponentStats = isPlayerTurn ? enemyStats : playerStats;
 
-            // Вспомогательная функция для извлечения числа после ключевого слова
-            const extractNumberAfter = (regex) => {
-                const match = action.match(regex);
-                return match ? parseInt(match[1]) : 0;
-            };
+            // Урон от атаки (ищем число внутри span)
+            const dmgMatch = action.match(/наносит\s+<span[^>]*>(\d+)<\/span>/);
+            if (dmgMatch) {
+                targetStats.hits++;
+                targetStats.totalDamage += parseInt(dmgMatch[1]);
+                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                    targetStats.crits++;
+                }
+            } else {
+                // Альтернативный вариант: ищем просто число после слова "наносит"
+                const simpleDmgMatch = action.match(/наносит\s+(\d+)/);
+                if (simpleDmgMatch) {
+                    targetStats.hits++;
+                    targetStats.totalDamage += parseInt(simpleDmgMatch[1]);
+                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                        targetStats.crits++;
+                    }
+                }
+            }
 
             // Уклонение
             if (action.includes('уклоняется') || action.includes('уворачивается')) {
-                if (isPlayerTurn) {
-                    enemyStats.dodges++;
-                } else {
-                    playerStats.dodges++;
+                targetStats.dodges++;
+            }
+
+            // Вампиризм (лечение атакующего)
+            const vampMatch = action.match(/восстанавливает\s+<span[^>]*>(\d+)<\/span>/);
+            if (vampMatch) {
+                targetStats.heal += parseInt(vampMatch[1]);
+            } else {
+                const simpleVampMatch = action.match(/восстанавливает\s+(\d+)/);
+                if (simpleVampMatch) {
+                    targetStats.heal += parseInt(simpleVampMatch[1]);
                 }
             }
 
-            // Отражение (урон, который отражает защитник)
-            const reflectAmount = extractNumberAfter(/отражает[^0-9]*?(\d+)/i);
-            if (reflectAmount > 0) {
+            // Отражение (урон отражается в атакующего)
+            const reflectMatch = action.match(/отражает\s+<span[^>]*>(\d+)<\/span>/);
+            if (reflectMatch) {
+                const reflectAmount = parseInt(reflectMatch[1]);
+                // Отражает защитник (тот, кого атакуют)
                 if (isPlayerTurn) {
-                    // Ходил игрок -> отразил противник
+                    // игрок атакует -> отражает противник
                     enemyStats.reflect += reflectAmount;
                 } else {
-                    // Ходил противник -> отразил игрок
                     playerStats.reflect += reflectAmount;
                 }
-            }
-
-            // Исцеление (вампиризм) – исцеляется атакующий
-            const healAmount = extractNumberAfter(/восстанавливает[^0-9]*?(\d+)/i);
-            if (healAmount > 0) {
-                if (isPlayerTurn) {
-                    playerStats.heal += healAmount;
-                } else {
-                    enemyStats.heal += healAmount;
-                }
-            }
-
-            // Урон (атака, крит, ульта)
-            const damageAmount = extractNumberAfter(/(?:наносит|нанося|выбивая|отнимая|атакует|обрушивает|пробивает|вонзает|выпускает|призывает|создаёт|проклинает|использует|применяет|активирует)[^0-9]*?(\d+)/i);
-            if (damageAmount > 0) {
-                if (isPlayerTurn) {
-                    playerStats.totalDamage += damageAmount;
-                    playerStats.hits++;
-                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                        playerStats.crits++;
-                    }
-                } else {
-                    enemyStats.totalDamage += damageAmount;
-                    enemyStats.hits++;
-                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                        enemyStats.crits++;
+            } else {
+                const simpleReflectMatch = action.match(/отражает\s+(\d+)/);
+                if (simpleReflectMatch) {
+                    const reflectAmount = parseInt(simpleReflectMatch[1]);
+                    if (isPlayerTurn) {
+                        enemyStats.reflect += reflectAmount;
+                    } else {
+                        playerStats.reflect += reflectAmount;
                     }
                 }
             }
         });
     }
+
+    // ... отображение результата (как раньше)
+}
 
     const content = document.getElementById('content');
     content.innerHTML = `

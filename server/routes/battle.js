@@ -286,6 +286,37 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     else if (playerHp <= 0) winner = 'enemy';
     else if (enemyHp <= 0) winner = 'player';
 
+// После определения winner, перед return:
+const victoryPhrases = [
+    'Вы наносите сокрушительный удар. Соперник повержен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'Ваша атака не оставляет шансов. Враг падает. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'С последним ударом противник рушится на землю. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'Вы оказались сильнее. Бой окончен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'Невероятная схватка! Вы выходите победителем. <span style="color:#2ecc71;">ПОБЕДА!</span>'
+];
+const defeatPhrases = [
+    'Соперник наносит решающий удар. Вы повержены. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Ваши силы иссякли... Это поражение. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Удар оказался смертельным. Вы проиграли. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Противник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Бой закончен. Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>'
+];
+const drawPhrases = [
+    'Оба бойца падают одновременно. Ничья!',
+    'Взаимный удар – никто не выжил. Ничья.'
+];
+
+let finalPhrase = '';
+if (winner === 'player') {
+    finalPhrase = victoryPhrases[Math.floor(Math.random() * victoryPhrases.length)];
+} else if (winner === 'enemy') {
+    finalPhrase = defeatPhrases[Math.floor(Math.random() * defeatPhrases.length)];
+} else {
+    finalPhrase = drawPhrases[Math.floor(Math.random() * drawPhrases.length)];
+}
+log.push(finalPhrase);
+turns.push({ turn: 'final', action: finalPhrase }); // можно добавить, но не обязательно
+    
     return {
         winner,
         playerHpRemain: Math.max(0, playerHp),

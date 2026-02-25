@@ -1264,7 +1264,122 @@ function renderSkillItem(statName, displayName, description, currentValue, level
         </div>
     `;
 }
+function showAdventCalendar() {
+    fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
+        .then(res => res.json())
+        .then(data => {
+            renderAdventCalendar(data);
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Ошибка загрузки календаря');
+        });
+}
 
+function renderAdventCalendar(data) {
+    const { currentDay, daysInMonth, mask } = data;
+    const content = document.getElementById('content');
+    let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const claimed = mask & (1 << (day-1));
+        const available = day <= currentDay && !claimed;
+        let className = 'advent-day';
+        if (claimed) className += ' claimed';
+        else if (available) className += ' available';
+        else className += ' locked';
+        
+        // Определяем иконку для награды (упрощённо)
+        const reward = getAdventReward(day, daysInMonth);
+        let iconHtml = '';
+        if (reward.type === 'coins') {
+            iconHtml = '<i class="fas fa-coins" style="color: gold;"></i>';
+        } else if (reward.type === 'exp') {
+            iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
+        } else if (reward.type === 'item') {
+            iconHtml = '<i class="fas fa-tshirt" style="color: white;"></i>'; // или другая иконка
+        }
+        
+        html += `<div class="${className}" data-day="${day}">
+            <div>${day}</div>
+            <div style="font-size: 12px;">${iconHtml}</div>
+        </div>`;
+    }
+    html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
+    content.innerHTML = html;
+    
+    document.querySelectorAll('.advent-day.available').forEach(div => {
+        div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
+    });
+    
+    document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
+}
+
+function claimAdventDay(day, daysInMonth) {
+    const reward = getAdventReward(day, daysInMonth);
+    
+    if (reward.type === 'exp') {
+        showClassChoiceModal(day, reward.amount);
+    } else {
+        fetch('/tasks/advent/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, day })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) alert(data.error);
+            else {
+                alert(`Вы получили: ${data.reward}`);
+                showAdventCalendar();
+                refreshData(); // обновить монеты в топ-баре
+            }
+        })
+        .catch(err => alert('Ошибка: ' + err));
+    }
+}
+
+function showClassChoiceModal(day, expAmount) {
+    const modal = document.getElementById('roleModal'); // используем существующую модалку
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    modalTitle.innerText = 'Выберите класс';
+    modalBody.innerHTML = `
+        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+            <button class="btn class-choice" data-class="warrior">Воин</button>
+            <button class="btn class-choice" data-class="assassin">Ассасин</button>
+            <button class="btn class-choice" data-class="mage">Маг</button>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    const classButtons = modalBody.querySelectorAll('.class-choice');
+    classButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const classChoice = e.target.dataset.class;
+            modal.style.display = 'none';
+            
+            const res = await fetch('/tasks/advent/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, day, classChoice })
+            });
+            const data = await res.json();
+            if (data.error) alert(data.error);
+            else {
+                alert(`Вы получили: ${data.reward}`);
+                showAdventCalendar();
+                refreshData();
+            }
+        });
+    });
+    
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
 // ==================== БОЙ ====================
 async function startBattle() {
     try {

@@ -403,7 +403,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
         hp: base.hp + (classData.hp_points || 0) * 2,
         atk: base.atk + (classData.atk_points || 0),
         def: base.def + (classData.def_points || 0),
-        agi: base.agi + (classData.agi_points || 0),
+        agi: base.agi + (classData.dodge_points || 0),
         int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
@@ -1180,7 +1180,7 @@ function renderSkills() {
             ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 2', base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
             ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
             ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
-            ${renderSkillItem('agi_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.agi_points || 0), classData.agi_points || 0, skillPoints)}
+           ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
             ${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
             ${renderSkillItem('spd_points', 'Скорость', 'Увеличивает скорость (очередность хода) на 1', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
             ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1% (макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}

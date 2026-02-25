@@ -1254,8 +1254,8 @@ async function startBattle() {
             return;
         }
         showBattleScreen(data);
-    } catch (e) {
-        console.error('Battle start error:', e);
+    } catch (error) {
+        console.error('Battle start error:', error);
         alert('Ошибка соединения с сервером');
     }
 }

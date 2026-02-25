@@ -7,7 +7,7 @@ let inventory = [];
 let currentScreen = 'main';
 let currentPower = 0;
 
-// Словарь для перевода подклассов (обновлён согласно вашим описаниям)
+// Словарь для перевода подклассов
 const roleDescriptions = {
     // Воин
     guardian: {
@@ -48,15 +48,15 @@ const roleDescriptions = {
         active: 'Огненный шторм – наносит 400% урона от атаки и поджигает с силой 50% от урона.'
     },
     cryomancer: {
-    name: 'Ледяной маг',
-    passive: 'Ледяная кровь – 25% шанс заморозить атакующего на 1 ход при получении урона. Снижает входящий физический урон на 30% (не действует на ультимейты).',
-    active: 'Вечная зима – замораживает врага на 1 ход и наносит 200% урона от атаки (удваивается, если враг уже заморожен).'
-},
-  illusionist: {
-    name: 'Иллюзионист',
-    passive: 'Мираж – гарантированно избегает каждой 4-й атаки противника.',
-    active: 'Зазеркалье – заставляет врага атаковать самого себя, нанося себе удвоенный урон от своей атаки.'
-}
+        name: 'Ледяной маг',
+        passive: 'Ледяная кровь – 25% шанс заморозить атакующего на 1 ход при получении урона. Снижает входящий физический урон на 30% (не действует на ультимейты).',
+        active: 'Вечная зима – замораживает врага на 1 ход и наносит 200% урона от атаки (удваивается, если враг уже заморожен).'
+    },
+    illusionist: {
+        name: 'Иллюзионист',
+        passive: 'Мираж – гарантированно избегает каждой 4-й атаки противника.',
+        active: 'Зазеркалье – заставляет врага атаковать самого себя, нанося себе удвоенный урон от своей атаки.'
+    }
 };
 
 // Базовые характеристики классов
@@ -455,12 +455,10 @@ function calculateClassStats(className, classData, inventory, subclass) {
         reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
     };
 
-    // Ограничения
     final.def = Math.min(100, final.def);
     final.agi = Math.min(100, final.agi);
     final.crit = Math.min(100, final.crit);
 
-    // Округление
     final.hp = Math.round(final.hp);
     final.atk = Math.round(final.atk);
     final.spd = Math.round(final.spd);
@@ -1180,7 +1178,7 @@ function renderSkills() {
             ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 2', base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
             ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
             ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
-           ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
+            ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
             ${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
             ${renderSkillItem('spd_points', 'Скорость', 'Увеличивает скорость (очередность хода) на 1', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
             ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1% (макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
@@ -1299,7 +1297,10 @@ function showBattleScreen(battleData) {
             </div>
             <div class="battle-arena">
                 <div class="hero-card">
-                    <div class="hero-avatar"><img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;"></div>
+                    <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
+                        <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                    </div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>
@@ -1310,7 +1311,10 @@ function showBattleScreen(battleData) {
                 </div>
                 <div>VS</div>
                 <div class="enemy-card">
-                    <div class="enemy-avatar"><img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;"></div>
+                    <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
+                        <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                    </div>
                     <div class="hp-bar">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                     </div>
@@ -1328,16 +1332,97 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
+    // Добавляем стили для анимаций, если их нет в основном CSS
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .animation-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    `;
+    document.head.appendChild(style);
+
     let turnIndex = 0;
     const turns = battleData.result.turns || [];
     const logContainer = document.getElementById('battleLog');
     let speed = 1;
     let interval;
+    let currentAnimationTimeout = null;
+
+    function hideAnimations() {
+        if (currentAnimationTimeout) {
+            clearTimeout(currentAnimationTimeout);
+            currentAnimationTimeout = null;
+        }
+        const heroAnim = document.getElementById('hero-animation');
+        const enemyAnim = document.getElementById('enemy-animation');
+        heroAnim.style.display = 'none';
+        heroAnim.innerHTML = '';
+        enemyAnim.style.display = 'none';
+        enemyAnim.innerHTML = '';
+    }
+
+    function showAnimation(target, animationFile) {
+        hideAnimations(); // убираем предыдущую анимацию
+        const container = document.getElementById(target + '-animation');
+        const img = document.createElement('img');
+        img.src = `/assets/fight/${animationFile}`;
+        container.appendChild(img);
+        container.style.display = 'flex';
+        // Скрыть анимацию через 1 секунду (или можно оставить до следующего хода)
+        currentAnimationTimeout = setTimeout(() => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+            currentAnimationTimeout = null;
+        }, 1000);
+    }
+
+    function getAnimationForAction(action, isPlayerTurn) {
+        action = action.toLowerCase();
+        // Определяем, на ком анимация: по умолчанию на враге, если это атака; на себе, если лечение/бафф
+        let target = isPlayerTurn ? 'enemy' : 'hero'; // атакует игрок -> анимация на враге
+        let anim = 'shot.gif'; // по умолчанию
+
+        if (action.includes('критического') || action.includes('крита') || action.includes('крит')) {
+            anim = 'crit.gif';
+        } else if (action.includes('восстанавливает')) {
+            anim = 'hill.gif';
+            target = isPlayerTurn ? 'hero' : 'enemy'; // лечение на себе
+        } else if (action.includes('несокрушимость')) {
+            anim = 'hill.gif';
+            target = isPlayerTurn ? 'hero' : 'enemy';
+        } else if (action.includes('кровопускание')) {
+            anim = 'crit.gif';
+        } else if (action.includes('щит правосудия')) {
+            anim = 'shield.gif';
+            target = isPlayerTurn ? 'hero' : 'enemy';
+        } else if (action.includes('смертельный удар')) {
+            anim = 'ultimate.gif';
+        } else if (action.includes('ядовитая волна')) {
+            anim = 'poison.gif';
+        } else if (action.includes('кровавая жатва')) {
+            anim = 'crit.gif';
+        } else if (action.includes('огненный шторм')) {
+            anim = 'fire.gif';
+        } else if (action.includes('вечная зима')) {
+            anim = 'ice.gif';
+        } else if (action.includes('зазеркалье')) {
+            anim = 'chara.gif';
+        } else if (action.includes('яд разъедает') || action.includes('отравление')) {
+            anim = 'poison.gif';
+        } else if (action.includes('пламя пожирает') || action.includes('огонь обжигает') || action.includes('горящие души')) {
+            anim = 'fire.gif';
+        }
+
+        return { target, anim };
+    }
 
     function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
             if (timer) clearInterval(timer);
+            hideAnimations();
             showBattleResult(battleData);
             return;
         }
@@ -1348,6 +1433,11 @@ function showBattleScreen(battleData) {
         document.getElementById('enemyHpText').innerText = turn.enemyHp + '/' + battleData.result.enemyMaxHp;
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
+
+        // Показываем анимацию в соответствии с действием
+        const isPlayerTurn = turn.turn === 'player';
+        const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
+        showAnimation(target, anim);
 
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
@@ -1379,6 +1469,7 @@ function showBattleScreen(battleData) {
         if (timeLeft <= 0) {
             clearInterval(timer);
             clearInterval(interval);
+            hideAnimations();
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
             let winner;
@@ -1409,13 +1500,12 @@ function showBattleResult(battleData, timeOut = false) {
 
     if (battleData.result.turns && Array.isArray(battleData.result.turns)) {
         battleData.result.turns.forEach(turn => {
-            if (turn.turn === 'final') return; // пропускаем финальные фразы
+            if (turn.turn === 'final') return;
             const action = turn.action;
             const isPlayerTurn = turn.turn === 'player';
             const attackerStats = isPlayerTurn ? playerStats : enemyStats;
             const defenderStats = isPlayerTurn ? enemyStats : playerStats;
 
-            // --- Поиск урона от атаки ---
             const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
             if (dmgMatch) {
                 const dmg = parseInt(dmgMatch[1]);
@@ -1426,7 +1516,6 @@ function showBattleResult(battleData, timeOut = false) {
                 }
             }
 
-            // --- Уклонение ---
             const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
             if (dodgeMatch) {
                 const dodgerName = dodgeMatch[1].trim();
@@ -1437,14 +1526,12 @@ function showBattleResult(battleData, timeOut = false) {
                 }
             }
 
-            // --- Вампиризм / лечение ---
             const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
             if (healMatch) {
                 const heal = parseInt(healMatch[1]);
                 attackerStats.heal += heal;
             }
 
-            // --- Отражение ---
             const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
             if (reflectMatch) {
                 const reflect = parseInt(reflectMatch[1]);
@@ -1459,13 +1546,11 @@ function showBattleResult(battleData, timeOut = false) {
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
             
-            <!-- Кнопки "В бой" и "Назад" сверху -->
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn" id="rematchBtn">В бой</button>
                 <button class="btn" id="backBtn">Назад</button>
             </div>
             
-            <!-- Переключатели вкладок -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <button class="btn result-tab active" id="tabLog">Лог боя</button>
                 <button class="btn result-tab" id="tabStats">Статистика</button>

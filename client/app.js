@@ -172,6 +172,28 @@ async function init() {
     }
 }
 
+// Функция обновления данных с сервера
+async function refreshData() {
+    if (!userData || !userData.tg_id) return;
+    try {
+        const response = await fetch('/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id })
+        });
+        const data = await response.json();
+        if (data.user) {
+            userData = data.user;
+            userClasses = data.classes || [];
+            inventory = data.inventory || [];
+            updateTopBar();
+            showScreen(currentScreen);
+        }
+    } catch (e) {
+        console.error('Refresh error:', e);
+    }
+}
+
 function updateTopBar() {
     document.getElementById('coinCount').innerText = userData.coins;
     document.getElementById('rating').innerText = userData.rating;
@@ -1284,7 +1306,6 @@ function showBattleScreen(battleData) {
     function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
-            // очищаем также таймер, если он ещё работает
             if (timer) clearInterval(timer);
             showBattleResult(battleData);
             return;
@@ -1358,14 +1379,11 @@ function showBattleResult(battleData, timeOut = false) {
     if (battleData.result.turns) {
         battleData.result.turns.forEach(turn => {
             const action = turn.action;
-            if (turn.turn === 'final') return; // пропускаем финальную фразу
-
             const isPlayerTurn = turn.turn === 'player';
             const targetStats = isPlayerTurn ? playerStats : enemyStats;
-            const otherStats = isPlayerTurn ? enemyStats : playerStats;
 
-            // Удар – ищем число урона в любом месте строки
-            const dmgMatch = action.match(/(?:наносит|нанося) (\d+)/);
+            // Удар (ищем урон)
+            const dmgMatch = action.match(/наносит <span[^>]*>(\d+)<\/span>/);
             if (dmgMatch) {
                 targetStats.hits++;
                 targetStats.totalDamage += parseInt(dmgMatch[1]);
@@ -1374,29 +1392,27 @@ function showBattleResult(battleData, timeOut = false) {
                 }
             }
             // Уклонение
-            if (action.includes('уклоняется') || action.includes('уворачивается') || action.includes('промах')) {
-                if (action.startsWith('Игрок') || action.includes('Игрок')) {
-                    playerStats.dodges++;
-                } else if (action.startsWith('Противник') || action.includes('Противник')) {
-                    enemyStats.dodges++;
+            if (action.includes('уклоняется') || action.includes('уворачивается')) {
+                targetStats.dodges++;
+            }
+            // Вампиризм (лечение атакующего)
+            if (action.includes('восстанавливает')) {
+                const healMatch = action.match(/восстанавливает (\d+)/);
+                if (healMatch) {
+                    targetStats.heal += parseInt(healMatch[1]);
                 }
             }
-            // Вампиризм (восстановление)
-            const healMatch = action.match(/восстанавливает (\d+)/);
-            if (healMatch) {
-                if (action.startsWith('Игрок') || action.includes('Игрок')) {
-                    playerStats.heal += parseInt(healMatch[1]);
-                } else {
-                    enemyStats.heal += parseInt(healMatch[1]);
-                }
-            }
-            // Отражение
-            const reflectMatch = action.match(/отражает (\d+)/);
-            if (reflectMatch) {
-                if (action.startsWith('Игрок') || action.includes('Игрок')) {
-                    playerStats.reflect += parseInt(reflectMatch[1]);
-                } else {
-                    enemyStats.reflect += parseInt(reflectMatch[1]);
+            // Отражение (урон отражается в атакующего)
+            if (action.includes('отражает')) {
+                const reflectMatch = action.match(/отражает (\d+)/);
+                if (reflectMatch) {
+                    // Отражённый урон наносится атакующему, поэтому записываем в stats противника (тому, кто получает урон)
+                    if (isPlayerTurn) {
+                        // Игрок атаковал, отражение уходит в игрока -> записываем в playerStats
+                        playerStats.reflect += parseInt(reflectMatch[1]);
+                    } else {
+                        enemyStats.reflect += parseInt(reflectMatch[1]);
+                    }
                 }
             }
         });
@@ -1440,30 +1456,28 @@ function showBattleResult(battleData, timeOut = false) {
         tabLog.classList.remove('active');
         tabStats.classList.add('active');
         resultDiv.innerHTML = `
-            <div style="display: flex; justify-content: center; gap: 20px;">
-                <div style="width: 80px; text-align: right;">
-                    <div>${playerStats.hits}</div>
-                    <div>${playerStats.crits}</div>
-                    <div>${playerStats.dodges}</div>
-                    <div>${playerStats.totalDamage}</div>
-                    <div>${playerStats.heal}</div>
-                    <div>${playerStats.reflect}</div>
+            <div style="display: flex; justify-content: space-around; text-align: center;">
+                <div style="flex: 1;">
+                    <h3 style="color:#00aaff;">Игрок</h3>
+                    <table style="width:100%; font-size:14px; margin:0 auto;">
+                        <tr><td>${playerStats.hits}</td><td>Ударов</td></tr>
+                        <tr><td>${playerStats.crits}</td><td>Критов</td></tr>
+                        <tr><td>${playerStats.dodges}</td><td>Уклонений</td></tr>
+                        <tr><td>${playerStats.totalDamage}</td><td>Урона</td></tr>
+                        <tr><td>${playerStats.heal}</td><td>Исцелено</td></tr>
+                        <tr><td>${playerStats.reflect}</td><td>Отражено</td></tr>
+                    </table>
                 </div>
-                <div style="width: 100px; text-align: center;">
-                    <div><strong>Ударов</strong></div>
-                    <div><strong>Критов</strong></div>
-                    <div><strong>Уклонений</strong></div>
-                    <div><strong>Урона</strong></div>
-                    <div><strong>Исцелено</strong></div>
-                    <div><strong>Отражено</strong></div>
-                </div>
-                <div style="width: 80px; text-align: left;">
-                    <div>${enemyStats.hits}</div>
-                    <div>${enemyStats.crits}</div>
-                    <div>${enemyStats.dodges}</div>
-                    <div>${enemyStats.totalDamage}</div>
-                    <div>${enemyStats.heal}</div>
-                    <div>${enemyStats.reflect}</div>
+                <div style="flex: 1;">
+                    <h3 style="color:#e74c3c;">Соперник</h3>
+                    <table style="width:100%; font-size:14px; margin:0 auto;">
+                        <tr><td>${enemyStats.hits}</td><td>Ударов</td></tr>
+                        <tr><td>${enemyStats.crits}</td><td>Критов</td></tr>
+                        <tr><td>${enemyStats.dodges}</td><td>Уклонений</td></tr>
+                        <tr><td>${enemyStats.totalDamage}</td><td>Урона</td></tr>
+                        <tr><td>${enemyStats.heal}</td><td>Исцелено</td></tr>
+                        <tr><td>${enemyStats.reflect}</td><td>Отражено</td></tr>
+                    </table>
                 </div>
             </div>
         `;
@@ -1484,16 +1498,7 @@ function showBattleResult(battleData, timeOut = false) {
     });
 }
 
-    document.getElementById('backBtn').addEventListener('click', async () => {
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.pointerEvents = 'auto';
-            item.style.opacity = '1';
-        });
-        await refreshData();
-        showScreen('main');
-    });
-}
-
+// Инициализация меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         showScreen(item.dataset.screen);

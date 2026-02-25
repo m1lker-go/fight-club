@@ -1055,6 +1055,10 @@ function renderTasks() {
             <button class="btn" id="dailyBtn">Получить награду</button>
         </div>
         <div class="task-card">
+            <div>Адвент-календарь</div>
+            <button class="btn" id="adventBtn">Открыть календарь</button>
+        </div>
+        <div class="task-card">
             <div>Реферальная программа</div>
             <div>Ваш код: ${userData.referral_code}</div>
             <div>Пригласите друга и получите 50 монет</div>
@@ -1085,6 +1089,8 @@ function renderTasks() {
             alert('Ошибка: ' + data.error);
         }
     });
+
+    document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
 
     document.getElementById('ratingBtn').addEventListener('click', () => {
         alert('Рейтинг пока не реализован');

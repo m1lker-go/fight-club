@@ -63,7 +63,6 @@ router.post('/login', async (req, res) => {
       [userData.id]
     );
 
-    // Получаем инвентарь пользователя со всеми полями бонусов
     const inventory = await client.query(
       `SELECT id, name, type, rarity, class_restriction, owner_class,
               atk_bonus, def_bonus, hp_bonus, spd_bonus,
@@ -87,7 +86,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Новый маршрут для обновления данных пользователя
+// Маршрут для обновления данных пользователя
 router.post('/refresh', async (req, res) => {
   const { tg_id } = req.body;
   if (!tg_id) {

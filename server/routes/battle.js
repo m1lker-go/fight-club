@@ -105,6 +105,7 @@ function applyIntBonus(damage, int) {
     return Math.floor(damage * (1 + int / 100));
 }
 
+// Функция для расчёта бонуса атаки берсерка в зависимости от процента HP
 function getBerserkerAtkBonus(currentHp, maxHp, baseAtk) {
     const hpPercent = (currentHp / maxHp) * 100;
     let bonusPercent = 0;
@@ -114,8 +115,11 @@ function getBerserkerAtkBonus(currentHp, maxHp, baseAtk) {
         bonusPercent = 30;
     } else if (hpPercent < 80) {
         bonusPercent = 15;
+    } else {
+        bonusPercent = 5; // минимальный процент
     }
-    return Math.floor(baseAtk * bonusPercent / 100);
+    // Гарантированный минимум +1, даже если процент даёт меньше 1
+    return Math.max(1, Math.floor(baseAtk * bonusPercent / 100));
 }
 
 function calculateStats(classData, inventory, subclass) {
@@ -174,6 +178,7 @@ function calculateStats(classData, inventory, subclass) {
     return stats;
 }
 
+// Функция для выполнения атаки с учётом состояний
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState) {
     // Уклонение
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
@@ -187,6 +192,11 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     // Расчёт урона
     let damage = attackerStats.atk;
+    // Пассивка берсерка: бонус атаки (минимум +1)
+    if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
+        const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);
+        damage += bonus;
+    }
     let isCrit = false;
     let critMultiplier = attackerStats.critDmg;
 
@@ -198,12 +208,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     if (Math.random() * 100 < attackerStats.crit) {
         isCrit = true;
         damage *= critMultiplier;
-    }
-
-    // Бонус атаки берсерка
-    if (attackerSubclass === 'berserker') {
-        const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);
-        damage += bonus;
     }
 
     // Защита
@@ -251,6 +255,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     };
 }
 
+// Активные навыки
 function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass) {
     let damage = 0;
     let selfDamage = 0;
@@ -267,7 +272,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
         case 'berserker':
             selfDamage = Math.floor(attackerStats.hp * 0.3);
-            selfDamage = Math.min(selfDamage, attackerState.hp - 1);
+            selfDamage = Math.min(selfDamage, attackerState.hp - 1); // не убить
             damage = applyIntBonus(attackerStats.atk * 3, attackerStats.int);
             log = ultPhrases.berserker.replace('%s', attackerName).replace('%d', damage).replace('%d', selfDamage);
             break;
@@ -316,6 +321,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     return { damage, heal, log, selfDamage, stateChanges };
 }
 
+// Обработка эффектов в начале хода (яд, огонь, самоповреждение берсерка)
 function applyTurnStartEffects(attackerStats, defenderState, attackerName, defenderName, attackerSubclass, attackerState) {
     let damageToDefender = 0;
     let damageToSelf = 0;
@@ -341,7 +347,7 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
         logEntries.push(phrase);
     }
 
-    // Самоповреждение берсерка
+    // Самоповреждение берсерка (пассивка)
     if (attackerSubclass === 'berserker' && attackerState.hp > 1) {
         const rageDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
         damageToSelf = Math.min(rageDamage, attackerState.hp - 1);
@@ -361,6 +367,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     const log = [];
     const turns = [];
 
+    // Состояния для эффектов
     let playerState = {
         poisonStacks: 0,
         burnStacks: 0,
@@ -459,7 +466,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (playerState.vampBuff > 0) playerState.vampBuff--;
 
             turn = 'enemy';
-        } else {
+        } else { // enemy turn
             playerState.hp = playerHp;
             enemyState.hp = enemyHp;
 
@@ -571,224 +578,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     };
 }
 
-// Фиксированные значения бонусов по редкости (для генерации предметов боту)
-const fixedStats = {
-    common: {
-        atk_bonus: 1,
-        def_bonus: 1,
-        hp_bonus: 2,
-        agi_bonus: 0,
-        int_bonus: 0,
-        spd_bonus: 0,
-        crit_bonus: 1,
-        crit_dmg_bonus: 3,
-        vamp_bonus: 0,
-        reflect_bonus: 0
-    },
-    uncommon: {
-        atk_bonus: 2,
-        def_bonus: 2,
-        hp_bonus: 4,
-        agi_bonus: 1,
-        int_bonus: 1,
-        spd_bonus: 1,
-        crit_bonus: 2,
-        crit_dmg_bonus: 5,
-        vamp_bonus: 1,
-        reflect_bonus: 1
-    },
-    rare: {
-        atk_bonus: 3,
-        def_bonus: 3,
-        hp_bonus: 6,
-        agi_bonus: 2,
-        int_bonus: 2,
-        spd_bonus: 2,
-        crit_bonus: 3,
-        crit_dmg_bonus: 8,
-        vamp_bonus: 2,
-        reflect_bonus: 2
-    },
-    epic: {
-        atk_bonus: 5,
-        def_bonus: 5,
-        hp_bonus: 10,
-        agi_bonus: 3,
-        int_bonus: 3,
-        spd_bonus: 3,
-        crit_bonus: 5,
-        crit_dmg_bonus: 12,
-        vamp_bonus: 3,
-        reflect_bonus: 3
-    },
-    legendary: {
-        atk_bonus: 7,
-        def_bonus: 7,
-        hp_bonus: 15,
-        agi_bonus: 4,
-        int_bonus: 4,
-        spd_bonus: 4,
-        crit_bonus: 7,
-        crit_dmg_bonus: 18,
-        vamp_bonus: 4,
-        reflect_bonus: 4
-    }
-};
-
-const itemTypes = [
-    { type: 'weapon', stat: 'atk_bonus' },
-    { type: 'armor', stat: 'def_bonus' },
-    { type: 'helmet', stat: 'hp_bonus' },
-    { type: 'gloves', stat: 'agi_bonus' },
-    { type: 'boots', stat: 'spd_bonus' },
-    { type: 'accessory', stat: 'crit_bonus' }
-];
-
-const rarityChances = [
-    { minLevel: 1, maxLevel: 5,   common: 0.6, uncommon: 0.3, rare: 0.1, epic: 0, legendary: 0 },
-    { minLevel: 6, maxLevel: 10,  common: 0.4, uncommon: 0.4, rare: 0.15, epic: 0.05, legendary: 0 },
-    { minLevel: 11, maxLevel: 15, common: 0.2, uncommon: 0.4, rare: 0.3, epic: 0.1, legendary: 0 },
-    { minLevel: 16, maxLevel: 20, common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 },
-    { minLevel: 21, maxLevel: 25, common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 },
-    { minLevel: 26, maxLevel: 30, common: 0, uncommon: 0.1, rare: 0.3, epic: 0.4, legendary: 0.2 },
-    { minLevel: 31, maxLevel: 35, common: 0, uncommon: 0.05, rare: 0.25, epic: 0.4, legendary: 0.3 },
-    { minLevel: 36, maxLevel: 40, common: 0, uncommon: 0, rare: 0.2, epic: 0.4, legendary: 0.4 },
-    { minLevel: 41, maxLevel: 45, common: 0, uncommon: 0, rare: 0.15, epic: 0.35, legendary: 0.5 },
-    { minLevel: 46, maxLevel: 50, common: 0, uncommon: 0, rare: 0.1, epic: 0.3, legendary: 0.6 },
-    { minLevel: 51, maxLevel: 55, common: 0, uncommon: 0, rare: 0.05, epic: 0.25, legendary: 0.7 },
-    { minLevel: 56, maxLevel: 60, common: 0, uncommon: 0, rare: 0, epic: 0.2, legendary: 0.8 }
-];
-
-function getRandomRarity(level) {
-    const range = rarityChances.find(r => level >= r.minLevel && level <= r.maxLevel);
-    if (!range) return 'common';
-    const rand = Math.random();
-    if (rand < range.common) return 'common';
-    if (rand < range.common + range.uncommon) return 'uncommon';
-    if (rand < range.common + range.uncommon + range.rare) return 'rare';
-    if (rand < range.common + range.uncommon + range.rare + range.epic) return 'epic';
-    return 'legendary';
-}
-
-function generateBot(playerLevel) {
-    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
-    const names = [
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' },
-        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'guardian' },
-        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'berserker' },
-        { name: 'Изумрудный защитник', class: 'warrior', subclass: 'knight' },
-        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'assassin' },
-        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Изумрудный защитник', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Изумрудный защитник', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Изумрудный защитник', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Изумрудный защитник', class: 'mage', subclass: 'illusionist' },
-        { name: 'Защитник королевства', class: 'warrior', subclass: 'guardian' },
-        { name: 'Защитник королевства', class: 'warrior', subclass: 'berserker' },
-        { name: 'Защитник королевства', class: 'warrior', subclass: 'knight' },
-        { name: 'Защитник королевства', class: 'assassin', subclass: 'assassin' },
-        { name: 'Защитник королевства', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Защитник королевства', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Защитник королевства', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Защитник королевства', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Защитник королевства', class: 'mage', subclass: 'illusionist' }
-    ];
-    const template = names[Math.floor(Math.random() * names.length)];
-
-    const base = baseStats[template.class] || baseStats.warrior;
-    let stats = {
-        hp: base.hp,
-        atk: base.atk,
-        def: base.def,
-        agi: base.agi,
-        int: base.int,
-        spd: base.spd,
-        crit: base.crit,
-        critDmg: 1.5,
-        vamp: 0,
-        reflect: 0,
-        manaMax: 100,
-        manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
-    };
-
-    const totalSkillPoints = (level - 1) * 3;
-    const skillDist = [0,0,0,0,0,0,0,0,0,0];
-    for (let i = 0; i < totalSkillPoints; i++) {
-        skillDist[Math.floor(Math.random() * 10)]++;
-    }
-    stats.hp += skillDist[0] * 2;
-    stats.atk += skillDist[1];
-    stats.def += skillDist[2];
-    stats.agi += skillDist[3];
-    stats.int += skillDist[4];
-    stats.spd += skillDist[5];
-    stats.crit += skillDist[6];
-    stats.critDmg += skillDist[7] / 100;
-    stats.vamp += skillDist[8];
-    stats.reflect += skillDist[9];
-
-    const itemCount = 3 + Math.floor(Math.random() * 4);
-    const usedTypes = new Set();
-    for (let i = 0; i < itemCount; i++) {
-        const availableTypes = itemTypes.filter(t => !usedTypes.has(t.type));
-        if (availableTypes.length === 0) break;
-        const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-        usedTypes.add(type.type);
-        const rarity = getRandomRarity(level);
-        const bonuses = fixedStats[rarity];
-        const allFields = Object.keys(bonuses);
-        const shuffled = allFields.sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, 2);
-        selected.forEach(field => {
-            if (field === 'atk_bonus') stats.atk += bonuses[field];
-            else if (field === 'def_bonus') stats.def += bonuses[field];
-            else if (field === 'hp_bonus') stats.hp += bonuses[field];
-            else if (field === 'agi_bonus') stats.agi += bonuses[field];
-            else if (field === 'int_bonus') stats.int += bonuses[field];
-            else if (field === 'spd_bonus') stats.spd += bonuses[field];
-            else if (field === 'crit_bonus') stats.crit += bonuses[field];
-            else if (field === 'crit_dmg_bonus') stats.critDmg += bonuses[field] / 100;
-            else if (field === 'vamp_bonus') stats.vamp += bonuses[field];
-            else if (field === 'reflect_bonus') stats.reflect += bonuses[field];
-        });
-    }
-
-    const roleBonus = rolePassives[template.subclass] || {};
-    if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
-    if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
-
-    if (template.class === 'warrior') {
-        stats.def = Math.min(70, stats.def * 1.5);
-    } else if (template.class === 'assassin') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = Math.min(100, stats.crit * 1.25);
-        stats.agi = Math.min(100, stats.agi * 1.1);
-    } else if (template.class === 'mage') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.int = stats.int * 1.2;
-    }
-
-    stats.def = Math.min(70, stats.def);
-    stats.crit = Math.min(100, stats.crit);
-    stats.agi = Math.min(100, stats.agi);
-
-    return {
-        id: `bot_${Date.now()}_${Math.random()}`,
-        username: template.name,
-        class: template.class,
-        subclass: template.subclass,
-        level: level,
-        stats: stats
-    };
-}
+// --- Вспомогательные функции для опыта, энергии и генерации бота (добавлены для полноты) ---
 
 function expNeeded(level) {
     return Math.floor(80 * Math.pow(level, 1.5));
@@ -840,6 +630,87 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
+// Генерация бота (упрощённая)
+function generateBot(playerLevel) {
+    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
+    const names = [
+        { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
+        { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
+        { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
+        { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
+        { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
+        { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
+        { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
+        { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
+        { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' }
+    ];
+    const template = names[Math.floor(Math.random() * names.length)];
+
+    const base = baseStats[template.class] || baseStats.warrior;
+    let stats = {
+        hp: base.hp,
+        atk: base.atk,
+        def: base.def,
+        agi: base.agi,
+        int: base.int,
+        spd: base.spd,
+        crit: base.crit,
+        critDmg: 1.5,
+        vamp: 0,
+        reflect: 0,
+        manaMax: 100,
+        manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
+    };
+
+    // Простейшее масштабирование по уровню (можно доработать)
+    const totalSkillPoints = (level - 1) * 3;
+    const skillDist = [0,0,0,0,0,0,0,0,0,0];
+    for (let i = 0; i < totalSkillPoints; i++) {
+        skillDist[Math.floor(Math.random() * 10)]++;
+    }
+    stats.hp += skillDist[0] * 2;
+    stats.atk += skillDist[1];
+    stats.def += skillDist[2];
+    stats.agi += skillDist[3];
+    stats.int += skillDist[4];
+    stats.spd += skillDist[5];
+    stats.crit += skillDist[6];
+    stats.critDmg += skillDist[7] / 100;
+    stats.vamp += skillDist[8];
+    stats.reflect += skillDist[9];
+
+    // Применение пассивок подкласса
+    const roleBonus = rolePassives[template.subclass] || {};
+    if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
+    if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
+
+    // Классовые бонусы
+    if (template.class === 'warrior') {
+        stats.def = Math.min(70, stats.def * 1.5);
+    } else if (template.class === 'assassin') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.crit = Math.min(100, stats.crit * 1.25);
+        stats.agi = Math.min(100, stats.agi * 1.1);
+    } else if (template.class === 'mage') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.int = stats.int * 1.2;
+    }
+
+    stats.def = Math.min(70, stats.def);
+    stats.crit = Math.min(100, stats.crit);
+    stats.agi = Math.min(100, stats.agi);
+
+    return {
+        id: `bot_${Date.now()}_${Math.random()}`,
+        username: template.name,
+        class: template.class,
+        subclass: template.subclass,
+        level: level,
+        stats: stats
+    };
+}
+
+// Основной маршрут начала боя
 router.post('/start', async (req, res) => {
     const { tg_id } = req.body;
     const client = await pool.connect();

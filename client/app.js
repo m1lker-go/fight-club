@@ -174,6 +174,7 @@ async function init() {
         alert('Ошибка соединения с сервером');
     }
 }
+checkAdvent();
 // Функция для определения награды по дню (копия с сервера)
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
@@ -196,6 +197,7 @@ function getAdventReward(day, daysInMonth) {
     }
     return { type: 'coins', amount: 100 };
 }
+
 // Функция обновления данных с сервера
 async function refreshData() {
     if (!userData || !userData.tg_id) return;

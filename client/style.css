@@ -772,3 +772,26 @@ td {
     color: #e74c3c;
     font-weight: bold;
 }
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: 14px;
+}
+.stats-table th {
+    color: #00aaff;
+    font-weight: bold;
+    padding-bottom: 8px;
+}
+.stats-table td {
+    padding: 4px 0;
+    border-bottom: 1px solid #2f3542;
+}
+.stats-table .player-col {
+    color: #00aaff;
+    font-weight: bold;
+}
+.stats-table .enemy-col {
+    color: #e74c3c;
+    font-weight: bold;
+}

@@ -220,10 +220,20 @@ if (defenderSubclass === 'illusionist' && rolePassives.illusionist.mirageGuarant
         isCrit = true;
         damage *= critMultiplier;
     }
+    if (Math.random() * 100 < attackerStats.crit) {
+        isCrit = true;
+        damage *= critMultiplier;
+    }
+
+    // Ледяной маг: снижение получаемого физического урона на 30% (не действует на ультимейты)
+    if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer.physReduction) {
+        damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
+    }
 
     // Защита
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
+    
 
     // Вампиризм
     let vampHeal = 0;

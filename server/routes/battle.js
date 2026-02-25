@@ -779,11 +779,12 @@ router.post('/start', async (req, res) => {
         let coinReward = 0;
         let newStreak = userData.win_streak || 0;
 
-        if (isVictory) {
+                if (isVictory) {
             newStreak++;
             coinReward = getCoinReward(newStreak);
+            const ratingGain = getRatingChange(newStreak);
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
-            await client.query('UPDATE users SET rating = rating + 15 WHERE id = $1', [userData.id]);
+            await client.query('UPDATE users SET rating = rating + $1 WHERE id = $2', [ratingGain, userData.id]);
         } else {
             newStreak = 0;
             await client.query('UPDATE users SET rating = GREATEST(0, rating - 15) WHERE id = $1', [userData.id]);

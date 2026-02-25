@@ -1380,8 +1380,6 @@ function showBattleResult(battleData, timeOut = false) {
         battleData.result.turns.forEach(turn => {
             const action = turn.action;
             const isPlayerTurn = turn.turn === 'player';
-            const targetStats = isPlayerTurn ? playerStats : enemyStats;
-            const opponentStats = isPlayerTurn ? enemyStats : playerStats;
 
             // Урон от атаки (ищем число внутри span или просто после слова "наносит")
             let dmgMatch = action.match(/наносит\s+<span[^>]*>(\d+)<\/span>/);
@@ -1389,16 +1387,41 @@ function showBattleResult(battleData, timeOut = false) {
                 dmgMatch = action.match(/наносит\s+(\d+)/);
             }
             if (dmgMatch) {
-                targetStats.hits++;
-                targetStats.totalDamage += parseInt(dmgMatch[1]);
-                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                    targetStats.crits++;
+                const dmg = parseInt(dmgMatch[1]);
+                if (isPlayerTurn) {
+                    playerStats.hits++;
+                    playerStats.totalDamage += dmg;
+                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                        playerStats.crits++;
+                    }
+                } else {
+                    enemyStats.hits++;
+                    enemyStats.totalDamage += dmg;
+                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                        enemyStats.crits++;
+                    }
                 }
             }
 
             // Уклонение
             if (action.includes('уклоняется') || action.includes('уворачивается')) {
-                targetStats.dodges++;
+                if (isPlayerTurn) {
+                    // игрок уклоняется от атаки противника? Но по логике: уклонение – защитник уклоняется от атакующего
+                    // В battle.js фраза уклонения: "Игрок ловко уклоняется от атаки Противник!"
+                    // Определяем по контексту: если в строке упоминается игрок и уклоняется, значит уклоняется игрок
+                    if (action.includes(userData.username)) {
+                        playerStats.dodges++;
+                    } else {
+                        enemyStats.dodges++;
+                    }
+                } else {
+                    // ход противника – аналогично
+                    if (action.includes(userData.username)) {
+                        playerStats.dodges++;
+                    } else {
+                        enemyStats.dodges++;
+                    }
+                }
             }
 
             // Вампиризм (лечение атакующего)
@@ -1407,7 +1430,12 @@ function showBattleResult(battleData, timeOut = false) {
                 vampMatch = action.match(/восстанавливает\s+(\d+)/);
             }
             if (vampMatch) {
-                targetStats.heal += parseInt(vampMatch[1]);
+                const heal = parseInt(vampMatch[1]);
+                if (isPlayerTurn) {
+                    playerStats.heal += heal;
+                } else {
+                    enemyStats.heal += heal;
+                }
             }
 
             // Отражение (урон отражается в атакующего)
@@ -1419,94 +1447,14 @@ function showBattleResult(battleData, timeOut = false) {
                 const reflectAmount = parseInt(reflectMatch[1]);
                 // Отражает защитник (тот, кого атакуют)
                 if (isPlayerTurn) {
-                    // игрок атакует -> отражает противник
-                    enemyStats.reflect += reflectAmount;
+                    // игрок атакует -> отражает противник, урон идёт игроку
+                    playerStats.reflect += reflectAmount; // игрок получает отражённый урон
                 } else {
-                    playerStats.reflect += reflectAmount;
+                    enemyStats.reflect += reflectAmount; // противник получает отражённый урон
                 }
             }
         });
     }
-
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div class="battle-result" style="padding: 10px;">
-            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
-            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
-            
-            <!-- Кнопки "В бой" и "Назад" сверху -->
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="btn" id="rematchBtn">В бой</button>
-                <button class="btn" id="backBtn">Назад</button>
-            </div>
-            
-            <!-- Переключатели вкладок -->
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button class="btn result-tab active" id="tabLog">Лог боя</button>
-                <button class="btn result-tab" id="tabStats">Статистика</button>
-            </div>
-            
-            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
-            </div>
-        </div>
-    `;
-
-    const resultDiv = document.getElementById('resultContent');
-    const tabLog = document.getElementById('tabLog');
-    const tabStats = document.getElementById('tabStats');
-
-    tabLog.addEventListener('click', () => {
-        tabLog.classList.add('active');
-        tabStats.classList.remove('active');
-        resultDiv.innerHTML = battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('');
-    });
-
-    tabStats.addEventListener('click', () => {
-        tabLog.classList.remove('active');
-        tabStats.classList.add('active');
-        resultDiv.innerHTML = `
-            <div style="display: flex; justify-content: space-around; text-align: center;">
-                <div style="flex: 1;">
-                    <h3 style="color:#00aaff;">Игрок</h3>
-                    <table style="width:100%; font-size:14px; margin:0 auto;">
-                        <tr><td>${playerStats.hits}</td><td>Ударов</td></tr>
-                        <tr><td>${playerStats.crits}</td><td>Критов</td></tr>
-                        <tr><td>${playerStats.dodges}</td><td>Уклонений</td></tr>
-                        <tr><td>${playerStats.totalDamage}</td><td>Урона</td></tr>
-                        <tr><td>${playerStats.heal}</td><td>Исцелено</td></tr>
-                        <tr><td>${playerStats.reflect}</td><td>Отражено</td></tr>
-                    </table>
-                </div>
-                <div style="flex: 1;">
-                    <h3 style="color:#e74c3c;">Соперник</h3>
-                    <table style="width:100%; font-size:14px; margin:0 auto;">
-                        <tr><td>${enemyStats.hits}</td><td>Ударов</td></tr>
-                        <tr><td>${enemyStats.crits}</td><td>Критов</td></tr>
-                        <tr><td>${enemyStats.dodges}</td><td>Уклонений</td></tr>
-                        <tr><td>${enemyStats.totalDamage}</td><td>Урона</td></tr>
-                        <tr><td>${enemyStats.heal}</td><td>Исцелено</td></tr>
-                        <tr><td>${enemyStats.reflect}</td><td>Отражено</td></tr>
-                    </table>
-                </div>
-            </div>
-        `;
-    });
-
-    document.getElementById('rematchBtn').addEventListener('click', async () => {
-        await refreshData();
-        startBattle();
-    });
-
-    document.getElementById('backBtn').addEventListener('click', async () => {
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.pointerEvents = 'auto';
-            item.style.opacity = '1';
-        });
-        await refreshData();
-        showScreen('main');
-    });
-}
 
     const content = document.getElementById('content');
     content.innerHTML = `

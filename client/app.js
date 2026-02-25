@@ -1376,82 +1376,53 @@ function showBattleResult(battleData, timeOut = false) {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
     };
 
-    if (battleData.result.turns) {
+    if (battleData.result.turns && Array.isArray(battleData.result.turns)) {
         battleData.result.turns.forEach(turn => {
+            if (turn.turn === 'final') return; // пропускаем финальные фразы
             const action = turn.action;
             const isPlayerTurn = turn.turn === 'player';
+            const attackerStats = isPlayerTurn ? playerStats : enemyStats;
+            const defenderStats = isPlayerTurn ? enemyStats : playerStats;
 
-            // Урон от атаки (ищем число внутри span или просто после слова "наносит")
-            let dmgMatch = action.match(/наносит\s+<span[^>]*>(\d+)<\/span>/);
-            if (!dmgMatch) {
-                dmgMatch = action.match(/наносит\s+(\d+)/);
-            }
+            // --- Поиск урона от атаки ---
+            // Ищем: "нанося <число>", "забирая <число>", "— <число> HP", "выбивая <число>", "отнимая <число>"
+            const dmgMatch = action.match(/(?:нанося|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
             if (dmgMatch) {
                 const dmg = parseInt(dmgMatch[1]);
-                if (isPlayerTurn) {
-                    playerStats.hits++;
-                    playerStats.totalDamage += dmg;
-                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                        playerStats.crits++;
-                    }
-                } else {
-                    enemyStats.hits++;
-                    enemyStats.totalDamage += dmg;
-                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                        enemyStats.crits++;
-                    }
+                attackerStats.hits++;
+                attackerStats.totalDamage += dmg;
+                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                    attackerStats.crits++;
                 }
             }
 
-            // Уклонение
+            // --- Уклонение ---
             if (action.includes('уклоняется') || action.includes('уворачивается')) {
-                if (isPlayerTurn) {
-                    // игрок уклоняется от атаки противника? Но по логике: уклонение – защитник уклоняется от атакующего
-                    // В battle.js фраза уклонения: "Игрок ловко уклоняется от атаки Противник!"
-                    // Определяем по контексту: если в строке упоминается игрок и уклоняется, значит уклоняется игрок
-                    if (action.includes(userData.username)) {
-                        playerStats.dodges++;
-                    } else {
-                        enemyStats.dodges++;
-                    }
+                // Уклоняется защитник (тот, кого атакуют), но в логе обычно: "Защитник уклоняется от атаки Игрока"
+                // Поэтому проверяем, чьё имя стоит перед "уклоняется"
+                if (action.startsWith(userData.username) || action.includes(userData.username)) {
+                    // Если имя игрока перед уклонением, то игрок уклонился
+                    playerStats.dodges++;
                 } else {
-                    // ход противника – аналогично
-                    if (action.includes(userData.username)) {
-                        playerStats.dodges++;
-                    } else {
-                        enemyStats.dodges++;
-                    }
+                    enemyStats.dodges++;
                 }
             }
 
-            // Вампиризм (лечение атакующего)
-            let vampMatch = action.match(/восстанавливает\s+<span[^>]*>(\d+)<\/span>/);
-            if (!vampMatch) {
-                vampMatch = action.match(/восстанавливает\s+(\d+)/);
-            }
+            // --- Вампиризм (лечение атакующего) ---
+            const vampMatch = action.match(/восстанавливает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
             if (vampMatch) {
                 const heal = parseInt(vampMatch[1]);
-                if (isPlayerTurn) {
-                    playerStats.heal += heal;
-                } else {
-                    enemyStats.heal += heal;
-                }
+                // Лечится атакующий (тот, чей ход)
+                attackerStats.heal += heal;
             }
 
-            // Отражение (урон отражается в атакующего)
-            let reflectMatch = action.match(/отражает\s+<span[^>]*>(\d+)<\/span>/);
-            if (!reflectMatch) {
-                reflectMatch = action.match(/отражает\s+(\d+)/);
-            }
+            // --- Отражение (урон отражается в атакующего) ---
+            const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
             if (reflectMatch) {
-                const reflectAmount = parseInt(reflectMatch[1]);
-                // Отражает защитник (тот, кого атакуют)
-                if (isPlayerTurn) {
-                    // игрок атакует -> отражает противник, урон идёт игроку
-                    playerStats.reflect += reflectAmount; // игрок получает отражённый урон
-                } else {
-                    enemyStats.reflect += reflectAmount; // противник получает отражённый урон
-                }
+                const reflect = parseInt(reflectMatch[1]);
+                // Отражает защитник, поэтому урон идёт атакующему
+                // Мы записываем отражённый урон в stats защитника (как нанесённый им урон)
+                defenderStats.reflect += reflect;
             }
         });
     }
@@ -1493,31 +1464,50 @@ function showBattleResult(battleData, timeOut = false) {
     tabStats.addEventListener('click', () => {
         tabLog.classList.remove('active');
         tabStats.classList.add('active');
+        // Таблица с тремя колонками: Игрок | Параметр | Соперник
         resultDiv.innerHTML = `
-            <div style="display: flex; justify-content: space-around; text-align: center;">
-                <div style="flex: 1;">
-                    <h3 style="color:#00aaff;">Игрок</h3>
-                    <table style="width:100%; font-size:14px; margin:0 auto;">
-                        <tr><td>${playerStats.hits}</td><td>Ударов</td></tr>
-                        <tr><td>${playerStats.crits}</td><td>Критов</td></tr>
-                        <tr><td>${playerStats.dodges}</td><td>Уклонений</td></tr>
-                        <tr><td>${playerStats.totalDamage}</td><td>Урона</td></tr>
-                        <tr><td>${playerStats.heal}</td><td>Исцелено</td></tr>
-                        <tr><td>${playerStats.reflect}</td><td>Отражено</td></tr>
-                    </table>
-                </div>
-                <div style="flex: 1;">
-                    <h3 style="color:#e74c3c;">Соперник</h3>
-                    <table style="width:100%; font-size:14px; margin:0 auto;">
-                        <tr><td>${enemyStats.hits}</td><td>Ударов</td></tr>
-                        <tr><td>${enemyStats.crits}</td><td>Критов</td></tr>
-                        <tr><td>${enemyStats.dodges}</td><td>Уклонений</td></tr>
-                        <tr><td>${enemyStats.totalDamage}</td><td>Урона</td></tr>
-                        <tr><td>${enemyStats.heal}</td><td>Исцелено</td></tr>
-                        <tr><td>${enemyStats.reflect}</td><td>Отражено</td></tr>
-                    </table>
-                </div>
-            </div>
+            <style>
+                .stats-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: center;
+                    font-size: 14px;
+                }
+                .stats-table th {
+                    color: #00aaff;
+                    font-weight: bold;
+                    padding-bottom: 8px;
+                }
+                .stats-table td {
+                    padding: 4px 0;
+                    border-bottom: 1px solid #2f3542;
+                }
+                .stats-table .player-col {
+                    color: #00aaff;
+                    font-weight: bold;
+                }
+                .stats-table .enemy-col {
+                    color: #e74c3c;
+                    font-weight: bold;
+                }
+            </style>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Игрок</th>
+                        <th>Параметр</th>
+                        <th>Соперник</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                </tbody>
+            </table>
         `;
     });
 

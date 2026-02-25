@@ -513,24 +513,27 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 enemyMana -= 100;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
             } else {
-                const attackResult = performAttack(
-                    enemyStats, playerStats,
-                    enemyStats.vamp + (enemyState.vampBuff > 0 ? enemyState.vampBonus : 0),
-                    playerStats.reflect + (playerState.reflectBuff > 0 ? playerState.reflectBonus : 0),
-                    enemyName, playerName,
-                    enemyClass, enemySubclass, playerSubclass,
-                    enemyState, playerState
+                           const attackResult = performAttack(
+                    playerStats, enemyStats,
+                    playerStats.vamp + (playerState.vampBuff > 0 ? playerState.vampBonus : 0),
+                    enemyStats.reflect + (enemyState.reflectBuff > 0 ? enemyState.reflectBonus : 0),
+                    playerName, enemyName,
+                    playerClass, playerSubclass, enemySubclass,
+                    playerState, enemyState
                 );
                 if (attackResult.hit) {
-                    playerHp -= attackResult.damage;
-                    enemyHp = Math.min(enemyStats.hp, enemyHp + attackResult.vampHeal);
-                    enemyHp -= attackResult.reflectDamage;
+                    enemyHp -= attackResult.damage;
+                    playerHp = Math.min(playerStats.hp, playerHp + attackResult.vampHeal);
+                    playerHp -= attackResult.reflectDamage;
                     actionLog = attackResult.log;
+                    if (attackResult.berserkerBonus > 0) {
+                        actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                    }
                     if (attackResult.vampHeal > 0) {
-                        actionLog += ' ' + vampPhrase.replace('%s', enemyName).replace('%d', attackResult.vampHeal);
+                        actionLog += ' ' + vampPhrase.replace('%s', playerName).replace('%d', attackResult.vampHeal);
                     }
                     if (attackResult.reflectDamage > 0) {
-                        actionLog += ' ' + reflectPhrase.replace('%s', playerName).replace('%d', attackResult.reflectDamage).replace('%s', enemyName);
+                        actionLog += ' ' + reflectPhrase.replace('%s', enemyName).replace('%d', attackResult.reflectDamage).replace('%s', playerName);
                     }
                 } else {
                     actionLog = attackResult.log;

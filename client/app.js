@@ -1380,38 +1380,58 @@ function showBattleResult(battleData, timeOut = false) {
         battleData.result.turns.forEach(turn => {
             const action = turn.action;
             const isPlayerTurn = turn.turn === 'player';
-            const targetStats = isPlayerTurn ? playerStats : enemyStats;
 
-            // Удар (ищем урон)
-            const dmgMatch = action.match(/наносит <span[^>]*>(\d+)<\/span>/);
-            if (dmgMatch) {
-                targetStats.hits++;
-                targetStats.totalDamage += parseInt(dmgMatch[1]);
-                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                    targetStats.crits++;
-                }
-            }
+            // Вспомогательная функция для извлечения числа после ключевого слова
+            const extractNumberAfter = (regex) => {
+                const match = action.match(regex);
+                return match ? parseInt(match[1]) : 0;
+            };
+
             // Уклонение
             if (action.includes('уклоняется') || action.includes('уворачивается')) {
-                targetStats.dodges++;
-            }
-            // Вампиризм (лечение атакующего)
-            if (action.includes('восстанавливает')) {
-                const healMatch = action.match(/восстанавливает (\d+)/);
-                if (healMatch) {
-                    targetStats.heal += parseInt(healMatch[1]);
+                if (isPlayerTurn) {
+                    enemyStats.dodges++;
+                } else {
+                    playerStats.dodges++;
                 }
             }
-            // Отражение (урон отражается в атакующего)
-            if (action.includes('отражает')) {
-                const reflectMatch = action.match(/отражает (\d+)/);
-                if (reflectMatch) {
-                    // Отражённый урон наносится атакующему, поэтому записываем в stats противника (тому, кто получает урон)
-                    if (isPlayerTurn) {
-                        // Игрок атаковал, отражение уходит в игрока -> записываем в playerStats
-                        playerStats.reflect += parseInt(reflectMatch[1]);
-                    } else {
-                        enemyStats.reflect += parseInt(reflectMatch[1]);
+
+            // Отражение (урон, который отражает защитник)
+            const reflectAmount = extractNumberAfter(/отражает[^0-9]*?(\d+)/i);
+            if (reflectAmount > 0) {
+                if (isPlayerTurn) {
+                    // Ходил игрок -> отразил противник
+                    enemyStats.reflect += reflectAmount;
+                } else {
+                    // Ходил противник -> отразил игрок
+                    playerStats.reflect += reflectAmount;
+                }
+            }
+
+            // Исцеление (вампиризм) – исцеляется атакующий
+            const healAmount = extractNumberAfter(/восстанавливает[^0-9]*?(\d+)/i);
+            if (healAmount > 0) {
+                if (isPlayerTurn) {
+                    playerStats.heal += healAmount;
+                } else {
+                    enemyStats.heal += healAmount;
+                }
+            }
+
+            // Урон (атака, крит, ульта)
+            const damageAmount = extractNumberAfter(/(?:наносит|нанося|выбивая|отнимая|атакует|обрушивает|пробивает|вонзает|выпускает|призывает|создаёт|проклинает|использует|применяет|активирует)[^0-9]*?(\d+)/i);
+            if (damageAmount > 0) {
+                if (isPlayerTurn) {
+                    playerStats.totalDamage += damageAmount;
+                    playerStats.hits++;
+                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                        playerStats.crits++;
+                    }
+                } else {
+                    enemyStats.totalDamage += damageAmount;
+                    enemyStats.hits++;
+                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                        enemyStats.crits++;
                     }
                 }
             }

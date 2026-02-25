@@ -1281,11 +1281,21 @@ function showAdventCalendar() {
 function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, mask } = data;
     const content = document.getElementById('content');
+    
+    // Находим первый неполученный день
+    let firstUnclaimed = null;
+    for (let d = 1; d <= currentDay; d++) {
+        if (!(mask & (1 << (d-1)))) {
+            firstUnclaimed = d;
+            break;
+        }
+    }
+
     let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
     
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
-        const available = day <= currentDay && !claimed;
+        const available = (day === firstUnclaimed); // только первый неполученный день доступен
         let className = 'advent-day';
         if (claimed) className += ' claimed';
         else if (available) className += ' available';
@@ -1298,7 +1308,6 @@ function renderAdventCalendar(data) {
         } else if (reward.type === 'exp') {
             iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
         } else if (reward.type === 'item') {
-            // Иконка зависит от редкости (можно добавить цвет)
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';
             else if (reward.rarity === 'rare') color = '#2e86de';
@@ -1339,7 +1348,7 @@ function claimAdventDay(day, daysInMonth) {
             else {
                 alert(`Вы получили: ${data.reward}`);
                 showAdventCalendar();
-                refreshData();
+                refreshData(); // обновит монеты и инвентарь
             }
         })
         .catch(err => alert('Ошибка: ' + err));
@@ -1387,7 +1396,6 @@ function showClassChoiceModal(day, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
-
 // ==================== БОЙ ====================
 async function startBattle() {
     try {

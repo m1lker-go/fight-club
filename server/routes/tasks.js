@@ -15,7 +15,6 @@ function generateItemByRarity(rarity, ownerClass = null) {
     const type = types[Math.floor(Math.random() * types.length)];
     const name = itemNames[rarity][Math.floor(Math.random() * itemNames[rarity].length)];
     
-    // Базовые бонусы
     const bonuses = {
         common: { atk: 1, def: 1, hp: 2 },
         uncommon: { atk: 2, def: 2, hp: 4 },
@@ -40,11 +39,13 @@ function generateItemByRarity(rarity, ownerClass = null) {
 // Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
+    // Дни с предметами
     if (day === 7) return { type: 'item', rarity: 'common' };
     if (day === 15) return { type: 'item', rarity: 'rare' };
     if (day === 22) return { type: 'item', rarity: 'epic' };
     if (day === 30) return { type: 'item', rarity: 'legendary' };
     if (daysInMonth === 31 && day === 31) return { type: 'item', rarity: 'legendary' };
+    
     const index = day - 1;
     if (index < coinExpBase.length) {
         if (day % 2 === 1) return { type: 'coins', amount: coinExpBase[index] };
@@ -138,6 +139,18 @@ router.post('/advent/claim', async (req, res) => {
             throw new Error('Reward already claimed');
         }
         
+        // Найти первый незабранный день (начиная с 1)
+        let firstUnclaimed = -1;
+        for (let d = 1; d <= currentDay; d++) {
+            if (!(advent_mask & (1 << (d-1)))) {
+                firstUnclaimed = d;
+                break;
+            }
+        }
+        if (day !== firstUnclaimed) {
+            throw new Error('You can only claim the first unclaimed day');
+        }
+        
         const reward = getAdventReward(day, daysInMonth);
         let rewardDescription = '';
         
@@ -189,7 +202,7 @@ router.post('/advent/claim', async (req, res) => {
     }
 });
 
-// Ежедневный вход (оставлен для обратной совместимости, но не используется в новом интерфейсе)
+// Ежедневный вход (оставлен для обратной совместимости, но не используется)
 router.post('/daily', async (req, res) => {
     const { tg_id } = req.body;
     const client = await pool.connect();

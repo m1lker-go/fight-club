@@ -87,4 +87,47 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Новый маршрут для обновления данных пользователя
+router.post('/refresh', async (req, res) => {
+  const { tg_id } = req.body;
+  if (!tg_id) {
+    return res.status(400).json({ error: 'tg_id is required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    const userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const userData = userRes.rows[0];
+
+    const classes = await client.query(
+      'SELECT * FROM user_classes WHERE user_id = $1',
+      [userData.id]
+    );
+
+    const inventory = await client.query(
+      `SELECT id, name, type, rarity, class_restriction, owner_class,
+              atk_bonus, def_bonus, hp_bonus, spd_bonus,
+              crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus,
+              equipped, for_sale, price
+       FROM inventory
+       WHERE user_id = $1`,
+      [userData.id]
+    );
+
+    res.json({
+      user: userData,
+      classes: classes.rows,
+      inventory: inventory.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = router;

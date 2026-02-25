@@ -755,3 +755,20 @@ td {
     background-color: #00aaff;
     color: white;
 }
+.battle-result table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.battle-result td {
+    padding: 4px 0;
+    border-bottom: 1px solid #2f3542;
+}
+.battle-result .player-col {
+    color: #00aaff;
+    font-weight: bold;
+}
+.battle-result .enemy-col {
+    color: #e74c3c;
+    font-weight: bold;
+}

@@ -819,7 +819,7 @@ router.post('/start', async (req, res) => {
                 coins: coinReward,
                 leveledUp
             },
-            ratingChange: isVictory ? 15 : -15
+                        ratingChange: isVictory ? ratingGain : -15
         });
 
     } catch (e) {

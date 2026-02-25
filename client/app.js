@@ -166,6 +166,8 @@ async function init() {
             inventory = data.inventory || [];
             updateTopBar();
             showScreen('main');
+            // Проверяем адвент-календарь после загрузки
+            checkAdvent();
         } else {
             alert('Ошибка авторизации');
         }
@@ -175,7 +177,6 @@ async function init() {
     }
 }
 
-checkAdvent();
 // Функция адвента
 async function checkAdvent() {
     try {
@@ -1109,6 +1110,7 @@ function renderTasks() {
         }
     });
 }
+
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const currentClass = userData.current_class;
@@ -1262,6 +1264,8 @@ function renderSkillItem(statName, displayName, description, currentValue, level
         </div>
     `;
 }
+
+// ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 function showAdventCalendar() {
     fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
         .then(res => res.json())
@@ -1287,7 +1291,6 @@ function renderAdventCalendar(data) {
         else if (available) className += ' available';
         else className += ' locked';
         
-        // Определяем иконку для награды (упрощённо)
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
@@ -1295,7 +1298,13 @@ function renderAdventCalendar(data) {
         } else if (reward.type === 'exp') {
             iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
         } else if (reward.type === 'item') {
-            iconHtml = '<i class="fas fa-tshirt" style="color: white;"></i>'; // или другая иконка
+            // Иконка зависит от редкости (можно добавить цвет)
+            let color = '#aaa';
+            if (reward.rarity === 'uncommon') color = '#2ecc71';
+            else if (reward.rarity === 'rare') color = '#2e86de';
+            else if (reward.rarity === 'epic') color = '#9b59b6';
+            else if (reward.rarity === 'legendary') color = '#f1c40f';
+            iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
         
         html += `<div class="${className}" data-day="${day}">
@@ -1330,7 +1339,7 @@ function claimAdventDay(day, daysInMonth) {
             else {
                 alert(`Вы получили: ${data.reward}`);
                 showAdventCalendar();
-                refreshData(); // обновить монеты в топ-баре
+                refreshData();
             }
         })
         .catch(err => alert('Ошибка: ' + err));
@@ -1338,7 +1347,7 @@ function claimAdventDay(day, daysInMonth) {
 }
 
 function showClassChoiceModal(day, expAmount) {
-    const modal = document.getElementById('roleModal'); // используем существующую модалку
+    const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     
@@ -1378,6 +1387,7 @@ function showClassChoiceModal(day, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
+
 // ==================== БОЙ ====================
 async function startBattle() {
     try {
@@ -1404,14 +1414,12 @@ function showBattleScreen(battleData) {
         item.style.opacity = '0.5';
     });
 
-    // Функция для получения русского названия класса
     const getClassNameRu = (cls) => {
         if (cls === 'warrior') return 'Воин';
         if (cls === 'assassin') return 'Ассасин';
         return 'Маг';
     };
 
-    // Функция для получения русского названия роли
     const getRoleNameRu = (role) => {
         const roles = {
             guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
@@ -1472,7 +1480,6 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Добавляем стили для анимаций, если их нет в основном CSS
     const style = document.createElement('style');
     style.innerHTML = `
         .animation-container img {
@@ -1504,13 +1511,12 @@ function showBattleScreen(battleData) {
     }
 
     function showAnimation(target, animationFile) {
-        hideAnimations(); // убираем предыдущую анимацию
+        hideAnimations();
         const container = document.getElementById(target + '-animation');
         const img = document.createElement('img');
         img.src = `/assets/fight/${animationFile}`;
         container.appendChild(img);
         container.style.display = 'flex';
-        // Скрыть анимацию через 1 секунду (или можно оставить до следующего хода)
         currentAnimationTimeout = setTimeout(() => {
             container.style.display = 'none';
             container.innerHTML = '';
@@ -1520,15 +1526,14 @@ function showBattleScreen(battleData) {
 
     function getAnimationForAction(action, isPlayerTurn) {
         action = action.toLowerCase();
-        // Определяем, на ком анимация: по умолчанию на враге, если это атака; на себе, если лечение/бафф
-        let target = isPlayerTurn ? 'enemy' : 'hero'; // атакует игрок -> анимация на враге
-        let anim = 'shot.gif'; // по умолчанию
+        let target = isPlayerTurn ? 'enemy' : 'hero';
+        let anim = 'shot.gif';
 
         if (action.includes('критического') || action.includes('крита') || action.includes('крит')) {
             anim = 'crit.gif';
         } else if (action.includes('восстанавливает')) {
             anim = 'hill.gif';
-            target = isPlayerTurn ? 'hero' : 'enemy'; // лечение на себе
+            target = isPlayerTurn ? 'hero' : 'enemy';
         } else if (action.includes('несокрушимость')) {
             anim = 'hill.gif';
             target = isPlayerTurn ? 'hero' : 'enemy';
@@ -1574,7 +1579,6 @@ function showBattleScreen(battleData) {
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
-        // Показываем анимацию в соответствии с действием
         const isPlayerTurn = turn.turn === 'player';
         const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
         showAnimation(target, anim);
@@ -1629,6 +1633,7 @@ function showBattleResult(battleData, timeOut = false) {
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
+    const newStreak = battleData.reward?.newStreak || 0; // серия побед после боя (только при победе)
 
     // Сбор статистики из turns
     let playerStats = {
@@ -1685,6 +1690,7 @@ function showBattleResult(battleData, timeOut = false) {
         <div class="battle-result" style="padding: 10px;">
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
+            ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn" id="rematchBtn">В бой</button>

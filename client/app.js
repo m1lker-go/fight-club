@@ -1383,23 +1383,16 @@ function showBattleResult(battleData, timeOut = false) {
             const targetStats = isPlayerTurn ? playerStats : enemyStats;
             const opponentStats = isPlayerTurn ? enemyStats : playerStats;
 
-            // Урон от атаки (ищем число внутри span)
-            const dmgMatch = action.match(/наносит\s+<span[^>]*>(\d+)<\/span>/);
+            // Урон от атаки (ищем число внутри span или просто после слова "наносит")
+            let dmgMatch = action.match(/наносит\s+<span[^>]*>(\d+)<\/span>/);
+            if (!dmgMatch) {
+                dmgMatch = action.match(/наносит\s+(\d+)/);
+            }
             if (dmgMatch) {
                 targetStats.hits++;
                 targetStats.totalDamage += parseInt(dmgMatch[1]);
                 if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
                     targetStats.crits++;
-                }
-            } else {
-                // Альтернативный вариант: ищем просто число после слова "наносит"
-                const simpleDmgMatch = action.match(/наносит\s+(\d+)/);
-                if (simpleDmgMatch) {
-                    targetStats.hits++;
-                    targetStats.totalDamage += parseInt(simpleDmgMatch[1]);
-                    if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                        targetStats.crits++;
-                    }
                 }
             }
 
@@ -1409,18 +1402,19 @@ function showBattleResult(battleData, timeOut = false) {
             }
 
             // Вампиризм (лечение атакующего)
-            const vampMatch = action.match(/восстанавливает\s+<span[^>]*>(\d+)<\/span>/);
+            let vampMatch = action.match(/восстанавливает\s+<span[^>]*>(\d+)<\/span>/);
+            if (!vampMatch) {
+                vampMatch = action.match(/восстанавливает\s+(\d+)/);
+            }
             if (vampMatch) {
                 targetStats.heal += parseInt(vampMatch[1]);
-            } else {
-                const simpleVampMatch = action.match(/восстанавливает\s+(\d+)/);
-                if (simpleVampMatch) {
-                    targetStats.heal += parseInt(simpleVampMatch[1]);
-                }
             }
 
             // Отражение (урон отражается в атакующего)
-            const reflectMatch = action.match(/отражает\s+<span[^>]*>(\d+)<\/span>/);
+            let reflectMatch = action.match(/отражает\s+<span[^>]*>(\d+)<\/span>/);
+            if (!reflectMatch) {
+                reflectMatch = action.match(/отражает\s+(\d+)/);
+            }
             if (reflectMatch) {
                 const reflectAmount = parseInt(reflectMatch[1]);
                 // Отражает защитник (тот, кого атакуют)
@@ -1430,21 +1424,88 @@ function showBattleResult(battleData, timeOut = false) {
                 } else {
                     playerStats.reflect += reflectAmount;
                 }
-            } else {
-                const simpleReflectMatch = action.match(/отражает\s+(\d+)/);
-                if (simpleReflectMatch) {
-                    const reflectAmount = parseInt(simpleReflectMatch[1]);
-                    if (isPlayerTurn) {
-                        enemyStats.reflect += reflectAmount;
-                    } else {
-                        playerStats.reflect += reflectAmount;
-                    }
-                }
             }
         });
     }
 
-    // ... отображение результата (как раньше)
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="battle-result" style="padding: 10px;">
+            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
+            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
+            
+            <!-- Кнопки "В бой" и "Назад" сверху -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn" id="rematchBtn">В бой</button>
+                <button class="btn" id="backBtn">Назад</button>
+            </div>
+            
+            <!-- Переключатели вкладок -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="btn result-tab" id="tabStats">Статистика</button>
+            </div>
+            
+            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+                ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
+            </div>
+        </div>
+    `;
+
+    const resultDiv = document.getElementById('resultContent');
+    const tabLog = document.getElementById('tabLog');
+    const tabStats = document.getElementById('tabStats');
+
+    tabLog.addEventListener('click', () => {
+        tabLog.classList.add('active');
+        tabStats.classList.remove('active');
+        resultDiv.innerHTML = battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('');
+    });
+
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-around; text-align: center;">
+                <div style="flex: 1;">
+                    <h3 style="color:#00aaff;">Игрок</h3>
+                    <table style="width:100%; font-size:14px; margin:0 auto;">
+                        <tr><td>${playerStats.hits}</td><td>Ударов</td></tr>
+                        <tr><td>${playerStats.crits}</td><td>Критов</td></tr>
+                        <tr><td>${playerStats.dodges}</td><td>Уклонений</td></tr>
+                        <tr><td>${playerStats.totalDamage}</td><td>Урона</td></tr>
+                        <tr><td>${playerStats.heal}</td><td>Исцелено</td></tr>
+                        <tr><td>${playerStats.reflect}</td><td>Отражено</td></tr>
+                    </table>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="color:#e74c3c;">Соперник</h3>
+                    <table style="width:100%; font-size:14px; margin:0 auto;">
+                        <tr><td>${enemyStats.hits}</td><td>Ударов</td></tr>
+                        <tr><td>${enemyStats.crits}</td><td>Критов</td></tr>
+                        <tr><td>${enemyStats.dodges}</td><td>Уклонений</td></tr>
+                        <tr><td>${enemyStats.totalDamage}</td><td>Урона</td></tr>
+                        <tr><td>${enemyStats.heal}</td><td>Исцелено</td></tr>
+                        <tr><td>${enemyStats.reflect}</td><td>Отражено</td></tr>
+                    </table>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('rematchBtn').addEventListener('click', async () => {
+        await refreshData();
+        startBattle();
+    });
+
+    document.getElementById('backBtn').addEventListener('click', async () => {
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
+        await refreshData();
+        showScreen('main');
+    });
 }
 
     const content = document.getElementById('content');

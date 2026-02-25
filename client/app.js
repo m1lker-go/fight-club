@@ -1069,14 +1069,10 @@ async function loadMarketItems(statFilter = 'any') {
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3>Ежедневные задания</h3>
-        <div class="task-card">
-            <div>Ежедневный вход</div>
-            <div>Текущая серия: ${userData.daily_streak || 0} дней</div>
-            <button class="btn" id="dailyBtn">Получить награду</button>
-        </div>
+        <h3>Ежедневные награды</h3>
         <div class="task-card">
             <div>Адвент-календарь</div>
+            <div>Забирайте награды каждый день!</div>
             <button class="btn" id="adventBtn">Открыть календарь</button>
         </div>
         <div class="task-card">
@@ -1096,27 +1092,8 @@ function renderTasks() {
         </div>
     `;
 
-    document.getElementById('dailyBtn').addEventListener('click', async () => {
-        const res = await fetch('/tasks/daily', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id })
-        });
-        const data = await res.json();
-        if (data.streak !== undefined) {
-            alert(`Получено ${data.rewardCoins} монет! Серия: ${data.streak}`);
-            await refreshData();
-        } else {
-            alert('Ошибка: ' + data.error);
-        }
-    });
-
     document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
-
-    document.getElementById('ratingBtn').addEventListener('click', () => {
-        alert('Рейтинг пока не реализован');
-    });
-
+    document.getElementById('ratingBtn').addEventListener('click', () => alert('Рейтинг пока не реализован'));
     document.getElementById('testCoinsBtn').addEventListener('click', async () => {
         const res = await fetch('/tasks/testcoins', {
             method: 'POST',

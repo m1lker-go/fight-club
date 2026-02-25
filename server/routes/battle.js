@@ -816,12 +816,13 @@ router.post('/start', async (req, res) => {
                 log: battleResult.log,
                 turns: battleResult.turns
             },
-            reward: {
+                       reward: {
                 exp: expGain,
                 coins: coinReward,
-                leveledUp
+                leveledUp,
+                newStreak
             },
-                        ratingChange: isVictory ? ratingGain : -15
+            ratingChange: ratingChange
         });
 
     } catch (e) {

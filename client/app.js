@@ -7,7 +7,7 @@ let inventory = [];
 let currentScreen = 'main';
 let currentPower = 0;
 
-// Обновлённые описания ролей (без MANA%, с правильными механиками)
+// Словарь для перевода подклассов (обновлён согласно вашим описаниям)
 const roleDescriptions = {
     // Воин
     guardian: {
@@ -1242,17 +1242,22 @@ function renderSkillItem(statName, displayName, description, currentValue, level
 
 // ==================== БОЙ ====================
 async function startBattle() {
-    const res = await fetch('/battle/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userData.tg_id })
-    });
-    const data = await res.json();
-    if (data.error) {
-        alert(data.error);
-        return;
+    try {
+        const res = await fetch('/battle/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id })
+        });
+        const data = await res.json();
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        showBattleScreen(data);
+    } catch (e) {
+        console.error('Battle start error:', e);
+        alert('Ошибка соединения с сервером');
     }
-    showBattleScreen(data);
 }
 
 function showBattleScreen(battleData) {
@@ -1362,7 +1367,6 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-// Исправленная функция сбора статистики
 function showBattleResult(battleData, timeOut = false) {
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
@@ -1388,8 +1392,7 @@ function showBattleResult(battleData, timeOut = false) {
             const attackerStats = isPlayerTurn ? playerStats : enemyStats;
             const defenderStats = isPlayerTurn ? enemyStats : playerStats;
 
-            // --- Поиск урона от атаки (обычной или ульты) ---
-            // Ищем: "нанося <число>", "забирая <число>", "— <число> HP", "выбивая <число>", "отнимая <число>"
+            // --- Поиск урона от атаки ---
             const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
             if (dmgMatch) {
                 const dmg = parseInt(dmgMatch[1]);
@@ -1400,8 +1403,7 @@ function showBattleResult(battleData, timeOut = false) {
                 }
             }
 
-            // --- Уклонение: определяем, кто именно уклонился ---
-            // Ищем имя перед ключевыми словами: "уклоняется", "уворачивается", "использует неуловимый манёвр"
+            // --- Уклонение ---
             const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
             if (dodgeMatch) {
                 const dodgerName = dodgeMatch[1].trim();
@@ -1412,19 +1414,17 @@ function showBattleResult(battleData, timeOut = false) {
                 }
             }
 
-            // --- Вампиризм / лечение (и "восстанавливает" и "восстанавливая") ---
+            // --- Вампиризм / лечение ---
             const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
             if (healMatch) {
                 const heal = parseInt(healMatch[1]);
-                // Лечение получает атакующий (тот, чей ход)
                 attackerStats.heal += heal;
             }
 
-            // --- Отражение (урон отражается в атакующего) ---
+            // --- Отражение ---
             const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
             if (reflectMatch) {
                 const reflect = parseInt(reflectMatch[1]);
-                // Отражает защитник, поэтому урон идёт атакующему – записываем в stats защитника как нанесённый им урон
                 defenderStats.reflect += reflect;
             }
         });
@@ -1467,7 +1467,6 @@ function showBattleResult(battleData, timeOut = false) {
     tabStats.addEventListener('click', () => {
         tabLog.classList.remove('active');
         tabStats.classList.add('active');
-        // Таблица с тремя колонками: Игрок | Параметр | Соперник
         resultDiv.innerHTML = `
             <style>
                 .stats-table {

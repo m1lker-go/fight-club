@@ -795,3 +795,45 @@ td {
     color: #e74c3c;
     font-weight: bold;
 }
+
+/* Адвент-календарь */
+.advent-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin: 15px 0;
+}
+.advent-day {
+    background-color: #232833;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    padding: 10px 0;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+}
+.advent-day.claimed {
+    background-color: #2ecc71;
+    border-color: #27ae60;
+    cursor: default;
+    opacity: 0.6;
+}
+.advent-day.available {
+    background-color: #00aaff;
+    color: white;
+}
+.advent-day.locked {
+    background-color: #2f3542;
+    border-color: #7f8c8d;
+    color: #7f8c8d;
+    cursor: not-allowed;
+}
+.advent-day i, .advent-day span {
+    font-size: 18px;
+    margin-top: 4px;
+}

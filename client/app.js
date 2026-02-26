@@ -1285,13 +1285,13 @@ function renderProfile() {
     document.querySelectorAll('.profile-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             profileTab = e.target.dataset.tab;
-            renderProfileTab(profileTab);
+            renderProfile(); // перерисовываем весь профиль, чтобы обновить активную кнопку
         });
     });
 
+    // Отрисовываем содержимое текущей вкладки
     renderProfileTab(profileTab);
 }
-
 function renderProfileTab(tab) {
     const profileContent = document.getElementById('profileContent');
     if (tab === 'bonuses') {

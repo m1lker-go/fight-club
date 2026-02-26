@@ -1521,10 +1521,8 @@ function renderSkins(container) {
         sortedAvatars.forEach(avatar => {
             const isActive = avatar.id === activeAvatarId;
             const isOwned = ownedSet.has(avatar.id);
-            // Приводим цены к числам (если приходят как строки или null)
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
-            console.log(`Avatar ${avatar.id}: price_gold=${priceGold}, price_diamonds=${priceDiamonds}`);
 
             let priceHtml = '';
             if (!isOwned) {
@@ -1532,9 +1530,9 @@ function renderSkins(container) {
                 if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
                 if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
                 if (parts.length > 0) {
-                    priceHtml = `<div style="font-size: 10px; color:white;">${parts.join(' + ')}</div>`;
+                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px;">${parts.join(' + ')}</div>`;
                 } else {
-                    priceHtml = `<div style="font-size: 10px; color:white;">Бесплатно</div>`;
+                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px;">Бесплатно</div>`;
                 }
             }
 
@@ -1542,7 +1540,7 @@ function renderSkins(container) {
                 <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
                     ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1;">АКТИВНЫЙ</div>' : ''}
                     <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
-                    ${!isOwned ? priceHtml : ''}
+                    ${priceHtml}
                 </div>
             `;
         });
@@ -1562,105 +1560,6 @@ function renderSkins(container) {
         console.error('Error loading avatars:', err);
         container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
     });
-}
-
-function showSkinModal(avatarId, avatarFilename, owned) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-    fetch('/avatars')
-        .then(res => res.json())
-        .then(avatarsList => {
-            const avatar = avatarsList.find(a => a.id === avatarId);
-            if (!avatar) {
-                alert('Аватар не найден');
-                return;
-            }
-
-            const isActive = avatarId === userData.avatar_id;
-            modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
-            
-            // Приводим цены к числам
-            const priceGold = parseInt(avatar.price_gold, 10) || 0;
-            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
-            console.log(`Modal avatar ${avatarId}: price_gold=${priceGold}, price_diamonds=${priceDiamonds}`);
-
-            let priceHtml = '';
-            if (!owned && !isActive) {
-                let parts = [];
-                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
-                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
-                if (parts.length > 0) {
-                    priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
-                } else {
-                    priceHtml = `<p style="color:white;">Бесплатно</p>`;
-                }
-            }
-
-            modalBody.innerHTML = `
-                <div style="text-align: center;">
-                    <img src="/assets/${avatarFilename}" style="max-width: 100%; max-height: 300px; border-radius: 10px;">
-                    ${priceHtml}
-                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                        ${!owned && !isActive ? '<button class="btn" id="buySkin">Купить</button>' : ''}
-                        ${owned && !isActive ? '<button class="btn" id="activateSkin">Активировать</button>' : ''}
-                        <button class="btn" id="closeSkinModal">Назад</button>
-                    </div>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-            
-            if (!owned && !isActive) {
-                document.getElementById('buySkin').addEventListener('click', async () => {
-                    const res = await fetch('/avatars/buy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        await refreshData();
-                        modal.style.display = 'none';
-                        renderProfileTab('skins');
-                    } else {
-                        alert('Ошибка: ' + data.error);
-                    }
-                });
-            }
-            
-            if (owned && !isActive) {
-                document.getElementById('activateSkin').addEventListener('click', async () => {
-                    const res = await fetch('/player/avatar', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        userData.avatar_id = avatarId;
-                        userData.avatar = avatarFilename;
-                        modal.style.display = 'none';
-                        renderProfileTab('skins');
-                        if (currentScreen === 'main') renderMain();
-                    } else {
-                        alert('Ошибка при смене аватара');
-                    }
-                });
-            }
-            
-            document.getElementById('closeSkinModal').addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-            
-            const closeBtn = modal.querySelector('.close');
-            closeBtn.onclick = () => modal.style.display = 'none';
-        })
-        .catch(err => {
-            console.error('Error loading avatar details:', err);
-            alert('Ошибка загрузки данных аватара');
-        });
 }
 // ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 

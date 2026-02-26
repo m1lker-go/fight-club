@@ -117,6 +117,19 @@ router.post('/subclass', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
-
+// Смена аватара
+router.post('/avatar', async (req, res) => {
+    const { tg_id, avatar_id } = req.body;
+    if (!tg_id || !avatar_id) {
+        return res.status(400).json({ error: 'Missing data' });
+    }
+    try {
+        await pool.query('UPDATE users SET avatar_id = $1 WHERE tg_id = $2', [avatar_id, tg_id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
 
 module.exports = router;

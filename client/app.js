@@ -1067,6 +1067,7 @@ async function loadMarketItems(statFilter = 'any') {
 }
 
 // ==================== ЗАДАНИЯ ====================
+// ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -1079,35 +1080,56 @@ function renderTasks() {
         <div class="task-card">
             <div>Реферальная программа</div>
             <div>Ваш код: ${userData.referral_code}</div>
-            <div>Пригласите друга и получите 50 монет</div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn" id="copyRefLink">Копировать ссылку</button>
+                <button class="btn" id="shareRefLink">Пригласить друга</button>
+            </div>
         </div>
         <div class="task-card">
             <div>Топ игроков</div>
             <button class="btn" id="ratingBtn">Рейтинг</button>
         </div>
-        <!-- Временная кнопка для тестирования -->
-        <div class="task-card" style="border-left-color: gold;">
-            <div>🧪 Тестовые монеты</div>
-            <div>Нажмите, чтобы получить 500 монет (без ограничений)</div>
-            <button class="btn" id="testCoinsBtn">Получить 500</button>
-        </div>
     `;
 
     document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
-    document.getElementById('ratingBtn').addEventListener('click', () => alert('Рейтинг пока не реализован'));
-    document.getElementById('testCoinsBtn').addEventListener('click', async () => {
-        const res = await fetch('/tasks/testcoins', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert(`Получено ${data.added} монет!`);
-            await refreshData();
+    
+    document.getElementById('copyRefLink').addEventListener('click', () => {
+        const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
+        // Копирование в буфер обмена
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Ссылка скопирована в буфер обмена');
+            }).catch(() => {
+                alert('Не удалось скопировать ссылку');
+            });
         } else {
-            alert('Ошибка: ' + data.error);
+            // Fallback для старых браузеров
+            const textarea = document.createElement('textarea');
+            textarea.value = link;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('Ссылка скопирована в буфер обмена');
         }
+    });
+
+    document.getElementById('shareRefLink').addEventListener('click', () => {
+        const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
+        const message = `Присоединяйся и сражайся!meow-meow 🐾\n\n${link}`;
+        
+        // Используем Telegram WebApp API для отправки сообщения
+        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.shareMessage) {
+            Telegram.WebApp.shareMessage(message);
+        } else {
+            // Fallback: открываем стандартный диалог шаринга Telegram
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся и сражайся!meow-meow 🐾')}`;
+            window.open(shareUrl, '_blank');
+        }
+    });
+
+    document.getElementById('ratingBtn').addEventListener('click', () => {
+        alert('Рейтинг пока не реализован');
     });
 }
 

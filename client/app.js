@@ -1511,12 +1511,7 @@ function renderSkins(container) {
     });
 }
 
-function showSkinModal(avatarId, avatarFilename) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-   function showSkinModal(avatarId, avatarFilename, owned) {
+function showSkinModal(avatarId, avatarFilename, owned) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -1600,7 +1595,6 @@ function showSkinModal(avatarId, avatarFilename) {
             closeBtn.onclick = () => modal.style.display = 'none';
         });
 }
-
 // ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 
 function showAdventCalendar() {

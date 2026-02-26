@@ -161,14 +161,15 @@ async function init() {
             body: JSON.stringify({ initData: tg.initData })
         });
         const data = await response.json();
-        if (data.user) {
+               if (data.user) {
             userData = data.user;
             userClasses = data.classes || [];
             inventory = data.inventory || [];
+            BOT_USERNAME = data.bot_username || ''; // ← добавить
             updateTopBar();
             showScreen('main');
-            // Проверяем адвент-календарь после загрузки
             checkAdvent();
+        }
         } else {
             alert('Ошибка авторизации');
         }
@@ -229,10 +230,11 @@ async function refreshData() {
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
         const data = await response.json();
-        if (data.user) {
+                if (data.user) {
             userData = data.user;
             userClasses = data.classes || [];
             inventory = data.inventory || [];
+            BOT_USERNAME = data.bot_username || ''; // ← добавить
             updateTopBar();
             showScreen(currentScreen);
         }
@@ -1068,7 +1070,6 @@ async function loadMarketItems(statFilter = 'any') {
 }
 
 // ==================== ЗАДАНИЯ ====================
-// ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -1095,6 +1096,10 @@ function renderTasks() {
     document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
     
     document.getElementById('copyRefLink').addEventListener('click', () => {
+        if (!BOT_USERNAME) {
+            alert('Имя бота не загружено');
+            return;
+        }
         const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
         // Копирование в буфер обмена
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1116,6 +1121,10 @@ function renderTasks() {
     });
 
     document.getElementById('shareRefLink').addEventListener('click', () => {
+        if (!BOT_USERNAME) {
+            alert('Имя бота не загружено');
+            return;
+        }
         const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
         const message = `Присоединяйся и сражайся!meow-meow 🐾\n\n${link}`;
         

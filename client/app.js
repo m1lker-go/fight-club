@@ -926,7 +926,7 @@ function renderTrade() {
     
     document.getElementById('tradeShopBtn').addEventListener('click', () => {
         tradeTab = 'shop';
-        renderTrade();
+        renderTrade(); // перерисовываем, чтобы обновить стиль кнопок
     });
     
     document.getElementById('tradeMarketBtn').addEventListener('click', () => {
@@ -966,7 +966,6 @@ function renderRating() {
 function renderShop(target = null) {
     const container = target || document.getElementById('content');
     container.innerHTML = `
-        <h3 style="text-align: center; margin-bottom: 20px;">МАГАЗИН</h3>
         <div class="chest-list">
             <div class="chest-card">
                 <div class="chest-icon">
@@ -1032,7 +1031,6 @@ function renderShop(target = null) {
 async function renderMarket(target = null) {
     const container = target || document.getElementById('content');
     container.innerHTML = `
-        <h3 style="text-align: center; margin-bottom: 15px;">Маркет</h3>
         <div class="filters">
             <select id="classFilter">
                 <option value="any">Любой класс</option>

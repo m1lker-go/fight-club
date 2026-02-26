@@ -161,15 +161,14 @@ async function init() {
             body: JSON.stringify({ initData: tg.initData })
         });
         const data = await response.json();
-               if (data.user) {
+                     if (data.user) {
             userData = data.user;
             userClasses = data.classes || [];
             inventory = data.inventory || [];
-            BOT_USERNAME = data.bot_username || ''; // ← добавить
+            BOT_USERNAME = data.bot_username || '';
             updateTopBar();
             showScreen('main');
             checkAdvent();
-        }
         } else {
             alert('Ошибка авторизации');
         }

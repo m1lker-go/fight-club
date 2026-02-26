@@ -254,6 +254,7 @@ async function refreshData() {
 
 function updateTopBar() {
     document.getElementById('coinCount').innerText = userData.coins;
+    document.getElementById('diamondCount').innerText = userData.diamonds || 0; // добавить элемент
     document.getElementById('rating').innerText = userData.rating;
     document.getElementById('energy').innerText = userData.energy;
     document.getElementById('power').innerText = currentPower;

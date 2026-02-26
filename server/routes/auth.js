@@ -51,10 +51,12 @@ router.post('/login', async (req, res) => {
     if (userRes.rows.length === 0) {
       console.log('Creating new user...');
       const referralCode = Math.random().toString(36).substring(2, 10);
+      // Явно указываем все поля, включая diamonds = 0
       const newUser = await client.query(
-        `INSERT INTO users (tg_id, username, referral_code, current_class, avatar_id) 
-         VALUES ($1, $2, $3, 'warrior', 1) RETURNING *`,
-        [tgId, username, referralCode]
+        `INSERT INTO users 
+         (tg_id, username, referral_code, current_class, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [tgId, username, referralCode, 'warrior', 1, 0, 0, 1000, 20, new Date(), 0]
       );
       userRes = newUser;
       const userId = newUser.rows[0].id;

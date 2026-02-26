@@ -62,7 +62,23 @@
             </div>
         </div>
     </div>
-
+<!-- Модальное окно для повышения уровня -->
+<div id="levelUpModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Поздравляем!</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" id="levelUpBody">
+            <!-- контент будет вставлен динамически -->
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <button class="btn" id="levelUpUpgradeBtn">Улучшить</button>
+            <button class="btn" id="levelUpLaterBtn">Потом</button>
+        </div>
+    </div>
+</div>
+    
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 </body>

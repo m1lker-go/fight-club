@@ -512,6 +512,38 @@ function showChestResult(item) {
     modal.style.display = 'block';
 }
 
+function showLevelUpModal(className) {
+    const modal = document.getElementById('levelUpModal');
+    const body = document.getElementById('levelUpBody');
+    const classNameRu = getClassNameRu(className);
+    body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны 3 очка навыков!</p>`;
+    
+    modal.style.display = 'block';
+
+    // Обработчики кнопок (заменяем старые, чтобы избежать дублирования)
+    const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
+    const laterBtn = document.getElementById('levelUpLaterBtn');
+    
+    // Удаляем старые обработчики, заменяя кнопки новыми (простой способ)
+    const newUpgrade = upgradeBtn.cloneNode(true);
+    const newLater = laterBtn.cloneNode(true);
+    upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
+    laterBtn.parentNode.replaceChild(newLater, laterBtn);
+
+    newUpgrade.addEventListener('click', () => {
+        modal.style.display = 'none';
+        showScreen('skills'); // переходим на страницу навыков
+    });
+
+    newLater.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Закрытие по крестику
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 
 function renderMain() {

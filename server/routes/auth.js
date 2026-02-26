@@ -20,14 +20,17 @@ function validateTelegramWebAppData(initData, botToken) {
 }
 
 router.post('/login', async (req, res) => {
+  console.log('=== LOGIN ATTEMPT ===');
   const { initData } = req.body;
   const botToken = process.env.BOT_TOKEN;
 
   if (!botToken) {
+    console.error('BOT_TOKEN not set');
     return res.status(500).json({ error: 'BOT_TOKEN not set' });
   }
 
   if (!validateTelegramWebAppData(initData, botToken)) {
+    console.error('Invalid Telegram data');
     return res.status(401).json({ error: 'Invalid Telegram data' });
   }
 
@@ -36,10 +39,17 @@ router.post('/login', async (req, res) => {
   const tgId = user.id;
   const username = user.username || `user_${tgId}`;
 
+  console.log('Connecting to database...');
   const client = await pool.connect();
+  console.log('Database connected');
+
   try {
+    console.log('Checking existing user...');
     let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
+    console.log('User query executed');
+
     if (userRes.rows.length === 0) {
+      console.log('Creating new user...');
       const referralCode = Math.random().toString(36).substring(2, 10);
       const newUser = await client.query(
         `INSERT INTO users (tg_id, username, referral_code, current_class) 
@@ -55,14 +65,17 @@ router.post('/login', async (req, res) => {
           [userId, cls]
         );
       }
+      console.log('New user created');
     }
 
     const userData = userRes.rows[0];
+    console.log('Fetching classes...');
     const classes = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1',
       [userData.id]
     );
 
+    console.log('Fetching inventory...');
     const inventory = await client.query(
       `SELECT id, name, type, rarity, class_restriction, owner_class,
               atk_bonus, def_bonus, hp_bonus, spd_bonus,
@@ -73,17 +86,21 @@ router.post('/login', async (req, res) => {
       [userData.id]
     );
 
+    console.log('Sending response...');
     res.json({
       user: userData,
       classes: classes.rows,
       inventory: inventory.rows,
-      bot_username: process.env.BOT_USERNAME || '' // ← добавляем имя бота
+      bot_username: process.env.BOT_USERNAME || ''
     });
+    console.log('=== LOGIN SUCCESS ===');
   } catch (err) {
+    console.error('=== LOGIN ERROR ===');
     console.error(err);
     res.status(500).json({ error: 'Database error' });
   } finally {
     client.release();
+    console.log('Database connection released');
   }
 });
 
@@ -121,7 +138,7 @@ router.post('/refresh', async (req, res) => {
       user: userData,
       classes: classes.rows,
       inventory: inventory.rows,
-      bot_username: process.env.BOT_USERNAME || '' // ← добавляем имя бота
+      bot_username: process.env.BOT_USERNAME || ''
     });
   } catch (err) {
     console.error(err);

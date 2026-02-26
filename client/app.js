@@ -1048,40 +1048,37 @@ async function renderMarket(target = null) {
             </select>
             <button class="btn" id="applyFilters">Применить</button>
         </div>
-        <div class="filter-stats" id="statFilters">
-            <button class="stat-filter-btn" data-stat="any">Любой</button>
-            <button class="stat-filter-btn" data-stat="atk_bonus">АТК</button>
-            <button class="stat-filter-btn" data-stat="def_bonus">ЗАЩ</button>
-            <button class="stat-filter-btn" data-stat="hp_bonus">ЗДОР</button>
-            <button class="stat-filter-btn" data-stat="spd_bonus">СКОР</button>
-            <button class="stat-filter-btn" data-stat="crit_bonus">КРИТ</button>
-            <button class="stat-filter-btn" data-stat="crit_dmg_bonus">КР.УРОН</button>
-            <button class="stat-filter-btn" data-stat="agi_bonus">ЛОВ</button>
-            <button class="stat-filter-btn" data-stat="int_bonus">ИНТ</button>
-            <button class="stat-filter-btn" data-stat="vamp_bonus">ВАМП</button>
-            <button class="stat-filter-btn" data-stat="reflect_bonus">ОТР</button>
+        <div style="margin: 10px 0;">
+            <select id="statFilterSelect" style="width:100%; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
+                <option value="any">Любая характеристика</option>
+                <option value="atk_bonus">АТК</option>
+                <option value="def_bonus">ЗАЩ</option>
+                <option value="hp_bonus">ЗДОР</option>
+                <option value="spd_bonus">СКОР</option>
+                <option value="crit_bonus">КРИТ</option>
+                <option value="crit_dmg_bonus">КР.УРОН</option>
+                <option value="agi_bonus">ЛОВ</option>
+                <option value="int_bonus">ИНТ</option>
+                <option value="vamp_bonus">ВАМП</option>
+                <option value="reflect_bonus">ОТР</option>
+            </select>
         </div>
         <div class="market-container">
             <div id="marketItems" class="market-grid"></div>
         </div>
     `;
 
-    let activeStat = 'any';
+    const statSelect = container.querySelector('#statFilterSelect');
+    const classSelect = container.querySelector('#classFilter');
+    const raritySelect = container.querySelector('#rarityFilter');
 
-    container.querySelectorAll('.stat-filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            container.querySelectorAll('.stat-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeStat = btn.dataset.stat;
-            loadMarketItems(activeStat, container);
-        });
-    });
-
+    // Применение фильтров при нажатии кнопки
     container.querySelector('#applyFilters').addEventListener('click', () => {
-        loadMarketItems(activeStat, container);
+        loadMarketItems(statSelect.value, container);
     });
 
-    await loadMarketItems(activeStat, container);
+    // Загрузка при старте
+    await loadMarketItems(statSelect.value, container);
 }
 
 async function loadMarketItems(statFilter = 'any', container) {

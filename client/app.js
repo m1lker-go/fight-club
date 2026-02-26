@@ -262,9 +262,10 @@ function showScreen(screen) {
     switch (screen) {
         case 'main': renderMain(); break;
         case 'equip': renderEquip(); break;
-        case 'shop': renderShop(); break;
-        case 'market': renderMarket(); break;
+        case 'trade': renderTrade(); break;
+        case 'forge': renderForge(); break;
         case 'tasks': renderTasks(); break;
+        case 'rating': renderRating(); break;
         case 'profile': renderProfile(); break;
         case 'skills': renderSkills(); break;
         default: renderMain();

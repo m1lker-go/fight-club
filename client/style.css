@@ -138,6 +138,16 @@ body {
     text-align: center;
 }
 
+.filters select {
+    background-color: #2f3542;
+    color: white;
+    border: 1px solid #00aaff;
+    border-radius: 20px;
+    padding: 8px 12px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
 /* Контейнеры аватаров в бою */
 .hero-avatar, .enemy-avatar {
     width: 80px;

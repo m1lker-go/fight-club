@@ -794,7 +794,54 @@ function renderEquip() {
 
     renderInventoryForClass(selectedClass);
 }
-
+// ==================== ТОРГОВЛЯ ====================
+function renderTrade() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <h3 style="text-align:center;">Торговля</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn" id="tradeShopBtn" style="flex:1;">МАГАЗИН</button>
+            <button class="btn" id="tradeMarketBtn" style="flex:1;">МАРКЕТ</button>
+        </div>
+        <div id="tradeContent"></div>
+    `;
+    
+    const tradeContent = document.getElementById('tradeContent');
+    
+    document.getElementById('tradeShopBtn').addEventListener('click', () => {
+        renderShop(tradeContent);
+    });
+    
+    document.getElementById('tradeMarketBtn').addEventListener('click', () => {
+        renderMarket(tradeContent);
+    });
+    
+    // По умолчанию показываем магазин
+    renderShop(tradeContent);
+}
+// ==================== КУЗНИЦА ====================
+function renderForge() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <h3 style="text-align:center;">Кузница</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn" id="forgeSmeltBtn" style="flex:1;">РАСПЛАВИТЬ</button>
+            <button class="btn" id="forgeCraftBtn" style="flex:1;">КОВАТЬ</button>
+        </div>
+        <div id="forgeContent" style="text-align:center; color:#aaa;">
+            Здесь будет функционал кузницы (в разработке)
+        </div>
+    `;
+    // Пока обработчики не нужны
+}
+// ==================== РЕЙТИНГ ====================
+function renderRating() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <h3 style="text-align:center;">Рейтинг игроков</h3>
+        <p style="text-align:center; color:#aaa;">Скоро здесь появится таблица лидеров</p>
+    `;
+}
 // ==================== МАГАЗИН СУНДУКОВ ====================
 function renderShop() {
     const content = document.getElementById('content');

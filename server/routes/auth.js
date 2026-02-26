@@ -76,7 +76,8 @@ router.post('/login', async (req, res) => {
     res.json({
       user: userData,
       classes: classes.rows,
-      inventory: inventory.rows
+      inventory: inventory.rows,
+      bot_username: process.env.BOT_USERNAME || '' // ← добавляем имя бота
     });
   } catch (err) {
     console.error(err);
@@ -119,7 +120,8 @@ router.post('/refresh', async (req, res) => {
     res.json({
       user: userData,
       classes: classes.rows,
-      inventory: inventory.rows
+      inventory: inventory.rows,
+      bot_username: process.env.BOT_USERNAME || '' // ← добавляем имя бота
     });
   } catch (err) {
     console.error(err);

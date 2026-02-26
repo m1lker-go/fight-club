@@ -5,15 +5,16 @@ const { pool } = require('../db');
 // Получить список всех доступных аватаров
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, name, filename, is_default FROM avatars ORDER BY is_default DESC, name');
+        const result = await pool.query(
+            'SELECT id, name, filename, is_default, price_gold, price_diamonds FROM avatars ORDER BY is_default DESC, name'
+        );
+        console.log('Avatars fetched:', result.rows); // для отладки
         res.json(result.rows);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
     }
 });
-
-module.exports = router;
 
 // Получить список купленных аватаров пользователя
 router.get('/user/:tg_id', async (req, res) => {
@@ -55,14 +56,12 @@ router.post('/buy', async (req, res) => {
         if (price_gold > 0 && coins < price_gold) throw new Error('Not enough coins');
         if (price_diamonds > 0 && diamonds < price_diamonds) throw new Error('Not enough diamonds');
 
-        // Проверяем, не куплен ли уже
         const owned = await client.query(
             'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
             [userId, avatar_id]
         );
         if (owned.rows.length > 0) throw new Error('Already owned');
 
-        // Списываем валюту
         if (price_gold > 0) {
             await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price_gold, userId]);
         }
@@ -70,7 +69,6 @@ router.post('/buy', async (req, res) => {
             await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [price_diamonds, userId]);
         }
 
-        // Добавляем в купленные
         await client.query(
             'INSERT INTO user_avatars (user_id, avatar_id) VALUES ($1, $2)',
             [userId, avatar_id]
@@ -86,3 +84,5 @@ router.post('/buy', async (req, res) => {
         client.release();
     }
 });
+
+module.exports = router;

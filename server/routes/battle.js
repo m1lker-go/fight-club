@@ -801,10 +801,12 @@ router.post('/start', async (req, res) => {
 
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
 
-        await client.query('COMMIT');
+              await client.query('COMMIT');
+
         // Получаем актуальное значение энергии после всех обновлений
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
         const newEnergy = energyRes.rows[0].energy;
+
         res.json({
             opponent: {
                 username: bot.username,
@@ -821,13 +823,14 @@ router.post('/start', async (req, res) => {
                 log: battleResult.log,
                 turns: battleResult.turns
             },
-                       reward: {
+            reward: {
                 exp: expGain,
                 coins: coinReward,
                 leveledUp,
                 newStreak
             },
-            ratingChange: ratingChange
+            ratingChange: ratingChange,
+            newEnergy: newEnergy // ← добавляем
         });
 
     } catch (e) {

@@ -837,3 +837,30 @@ td {
     font-size: 18px;
     margin-top: 4px;
 }
+.task-card {
+    background-color: #232833;
+    border-radius: 16px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    border-left: 4px solid #00aaff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.task-card .btn {
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-size: 14px;
+}
+
+.task-card .btn:active {
+    opacity: 0.7;
+}
+
+.task-card .btn i {
+    font-size: 18px;
+}

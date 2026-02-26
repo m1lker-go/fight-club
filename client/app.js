@@ -626,7 +626,7 @@ function renderMain() {
         </div>
 
         <!-- Кнопка боя -->
-        <button class="btn" id="fightBtn" style="margin: 0 20px 20px 20px;">Начать бой</button>
+        <button class="btn" id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px);">Начать бой</button>
     `;
 
     const subclassSelect = document.getElementById('subclassSelect');
@@ -1994,14 +1994,14 @@ function showBattleResult(battleData, timeOut = false) {
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
             ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
             
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="btn" id="rematchBtn">В бой</button>
-                <button class="btn" id="backBtn">Назад</button>
+                       <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                <button class="btn" id="rematchBtn" style="flex: 1;">В бой</button>
+                <button class="btn" id="backBtn" style="flex: 1;">Назад</button>
             </div>
             
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button class="btn result-tab active" id="tabLog">Лог боя</button>
-                <button class="btn result-tab" id="tabStats">Статистика</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
+                <button class="btn result-tab active" id="tabLog" style="flex: 1;">Лог боя</button>
+                <button class="btn result-tab" id="tabStats" style="flex: 1;">Статистика</button>
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">

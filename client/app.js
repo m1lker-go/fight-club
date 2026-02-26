@@ -843,9 +843,9 @@ function renderRating() {
     `;
 }
 // ==================== МАГАЗИН СУНДУКОВ ====================
-function renderShop() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
+function renderShop(target = null) {
+    const container = target || document.getElementById('content');
+    container.innerHTML = `
         <h3 style="text-align: center; margin-bottom: 20px;">МАГАЗИН</h3>
         <div class="chest-list">
             <div class="chest-card">
@@ -890,7 +890,7 @@ function renderShop() {
         </div>
     `;
 
-    document.querySelectorAll('.chest-btn').forEach(btn => {
+    container.querySelectorAll('.chest-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const chest = btn.dataset.chest;
             const res = await fetch('/shop/buychest', {
@@ -909,70 +909,10 @@ function renderShop() {
     });
 }
 
-function showChestResult(item) {
-    const modal = document.getElementById('chestResultModal');
-    const body = document.getElementById('chestResultBody');
-    
-    const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-    const classFolderMap = {
-        warrior: 'tank',
-        assassin: 'assassin',
-        mage: 'mage'
-    };
-    const typeFileMap = {
-        armor: 'armor',
-        boots: 'boots',
-        helmet: 'helmet',
-        weapon: 'weapon',
-        accessory: 'ring',
-        gloves: 'bracer'
-    };
-    
-    let iconPath = '';
-    if (item.owner_class && item.type) {
-        const folder = classFolderMap[item.owner_class];
-        const fileType = typeFileMap[item.type];
-        if (folder && fileType) {
-            iconPath = `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
-        }
-    }
-    const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
-
-    let classDisplay = '';
-    if (item.class_restriction && item.class_restriction !== 'any') {
-        classDisplay = item.class_restriction === 'warrior' ? 'Воин' : (item.class_restriction === 'assassin' ? 'Ассасин' : 'Маг');
-    } else {
-        classDisplay = 'Универсальный';
-    }
-
-    body.innerHTML = `
-        <div style="text-align: center;">
-            <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${itemNameTranslations[item.name] || item.name}</div>
-            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
-            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
-        </div>
-    `;
-    
-    modal.style.display = 'block';
-}
-
 // ==================== МАРКЕТ ====================
-function renderMarket() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
+async function renderMarket(target = null) {
+    const container = target || document.getElementById('content');
+    container.innerHTML = `
         <h3 style="text-align: center; margin-bottom: 15px;">Маркет</h3>
         <div class="filters">
             <select id="classFilter">
@@ -1011,25 +951,26 @@ function renderMarket() {
 
     let activeStat = 'any';
 
-    document.querySelectorAll('.stat-filter-btn').forEach(btn => {
+    container.querySelectorAll('.stat-filter-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.stat-filter-btn').forEach(b => b.classList.remove('active'));
+            container.querySelectorAll('.stat-filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeStat = btn.dataset.stat;
-            loadMarketItems(activeStat);
+            loadMarketItems(activeStat, container);
         });
     });
 
-    document.getElementById('applyFilters').addEventListener('click', () => {
-        loadMarketItems(activeStat);
+    container.querySelector('#applyFilters').addEventListener('click', () => {
+        loadMarketItems(activeStat, container);
     });
 
-    loadMarketItems(activeStat);
+    await loadMarketItems(activeStat, container);
 }
 
-async function loadMarketItems(statFilter = 'any') {
-    const classFilter = document.getElementById('classFilter').value;
-    const rarityFilter = document.getElementById('rarityFilter').value;
+// Вспомогательная функция загрузки предметов маркета (модифицирована)
+async function loadMarketItems(statFilter = 'any', container) {
+    const classFilter = container.querySelector('#classFilter').value;
+    const rarityFilter = container.querySelector('#rarityFilter').value;
     const params = new URLSearchParams({ class: classFilter, rarity: rarityFilter });
     const res = await fetch('/market?' + params);
     const items = await res.json();
@@ -1039,8 +980,8 @@ async function loadMarketItems(statFilter = 'any') {
         filteredItems = items.filter(item => item[statFilter] > 0);
     }
 
-    const container = document.getElementById('marketItems');
-    container.innerHTML = '';
+    const marketItemsDiv = container.querySelector('#marketItems');
+    marketItemsDiv.innerHTML = '';
 
     const classFolderMap = {
         warrior: 'tank',
@@ -1080,7 +1021,7 @@ async function loadMarketItems(statFilter = 'any') {
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
 
-        container.innerHTML += `
+        marketItemsDiv.innerHTML += `
             <div class="market-item ${rarityClass}" data-item-id="${item.id}">
                 <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
                 <div class="item-content">
@@ -1094,7 +1035,7 @@ async function loadMarketItems(statFilter = 'any') {
         `;
     });
 
-    document.querySelectorAll('.buy-btn').forEach(btn => {
+    container.querySelectorAll('.buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const itemId = btn.dataset.itemId;

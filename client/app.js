@@ -1102,10 +1102,10 @@ function renderTasks() {
             </div>
             <div style="flex: 0 0 120px; display: flex; gap: 5px;">
                 <button class="btn" id="copyRefLink" style="flex: 1; padding: 8px 0;" title="Копировать ссылку">
-                    <img src="/assets/fight/copy.png" style="width:20px; height:20px;" alt="копировать">
+                    <img src="/assets/icons/copy.png" style="width:20px; height:20px;" alt="копировать">
                 </button>
                 <button class="btn" id="shareRefLink" style="flex: 1; padding: 8px 0;" title="Поделиться">
-                    <img src="/assets/fight/post.png" style="width:20px; height:20px;" alt="поделиться">
+                    <img src="/assets/icons/post.png" style="width:20px; height:20px;" alt="поделиться">
                 </button>
             </div>
         </div>

@@ -1920,7 +1920,7 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 }
-Вот исправленная функция `showBattleResult` с добавленным обновлением энергии. Вставьте её вместо существующей в ваш `app.js`.
+//==================Вот исправленная функция `showBattleResult` с добавленным обновлением энергии. Вставьте её вместо существующей в ваш `app.js`.
 
 ```javascript
 function showBattleResult(battleData, timeOut = false) {

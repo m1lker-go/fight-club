@@ -6,6 +6,7 @@ let userClasses = [];
 let inventory = [];
 let currentScreen = 'main';
 let currentPower = 0;
+let BOT_USERNAME = '';
 
 // Словарь для перевода подклассов
 const roleDescriptions = {

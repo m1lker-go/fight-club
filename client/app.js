@@ -186,7 +186,6 @@ async function checkAdvent() {
         const { currentDay, mask } = data;
         for (let day = 1; day <= currentDay; day++) {
             if (!(mask & (1 << (day-1)))) {
-                // Есть доступная награда
                 showAdventCalendar();
                 return;
             }
@@ -272,7 +271,232 @@ function showScreen(screen) {
     }
 }
 
-// ==================== ГЛАВНЫЙ ЭКРАН ====================
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (вынесены вверх) ====================
+
+function getCurrentClassData() {
+    if (!userData || !userData.current_class) {
+        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
+    }
+    return userClasses.find(c => c.class === userData.current_class) || { 
+        level: 1, skill_points: 0, 
+        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
+        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
+        dodge_points: 0, acc_points: 0, mana_points: 0 
+    };
+}
+
+function calculateClassStats(className, classData, inventory, subclass) {
+    const base = baseStats[className] || baseStats.warrior;
+
+    let baseStatsWithSkills = {
+        hp: base.hp + (classData.hp_points || 0) * 2,
+        atk: base.atk + (classData.atk_points || 0),
+        def: base.def + (classData.def_points || 0),
+        agi: base.agi + (classData.dodge_points || 0),
+        int: base.int + (classData.int_points || 0),
+        spd: base.spd + (classData.spd_points || 0),
+        crit: base.crit + (classData.crit_points || 0),
+        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
+        vamp: base.vamp + (classData.vamp_points || 0),
+        reflect: base.reflect + (classData.reflect_points || 0)
+    };
+
+    let gearBonuses = {
+        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
+    };
+    let roleBonuses = {
+        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
+    };
+
+    const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
+    equippedItems.forEach(item => {
+        gearBonuses.hp += item.hp_bonus || 0;
+        gearBonuses.atk += item.atk_bonus || 0;
+        gearBonuses.def += item.def_bonus || 0;
+        gearBonuses.agi += item.agi_bonus || 0;
+        gearBonuses.int += item.int_bonus || 0;
+        gearBonuses.spd += item.spd_bonus || 0;
+        gearBonuses.crit += item.crit_bonus || 0;
+        gearBonuses.critDmg += (item.crit_dmg_bonus || 0) / 100;
+        gearBonuses.vamp += item.vamp_bonus || 0;
+        gearBonuses.reflect += item.reflect_bonus || 0;
+    });
+
+    const rolePassives = {
+        knight: { reflect: 20 },
+        assassin: { vamp: 20 },
+        blood_hunter: { vamp: 20 }
+    };
+    const roleBonus = rolePassives[subclass] || {};
+    if (roleBonus.vamp) roleBonuses.vamp += roleBonus.vamp;
+    if (roleBonus.reflect) roleBonuses.reflect += roleBonus.reflect;
+
+    let final = {
+        hp: baseStatsWithSkills.hp + gearBonuses.hp + roleBonuses.hp,
+        atk: baseStatsWithSkills.atk + gearBonuses.atk + roleBonuses.atk,
+        def: baseStatsWithSkills.def + gearBonuses.def + roleBonuses.def,
+        agi: baseStatsWithSkills.agi + gearBonuses.agi + roleBonuses.agi,
+        int: baseStatsWithSkills.int + gearBonuses.int + roleBonuses.int,
+        spd: baseStatsWithSkills.spd + gearBonuses.spd + roleBonuses.spd,
+        crit: baseStatsWithSkills.crit + gearBonuses.crit + roleBonuses.crit,
+        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg + roleBonuses.critDmg,
+        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp + roleBonuses.vamp,
+        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
+    };
+
+    final.def = Math.min(100, final.def);
+    final.agi = Math.min(100, final.agi);
+    final.crit = Math.min(100, final.crit);
+
+    final.hp = Math.round(final.hp);
+    final.atk = Math.round(final.atk);
+    final.spd = Math.round(final.spd);
+    final.def = Math.round(final.def * 10) / 10;
+    final.agi = Math.round(final.agi * 10) / 10;
+    final.int = Math.round(final.int * 10) / 10;
+    final.crit = Math.round(final.crit * 10) / 10;
+    final.critDmg = Math.round(final.critDmg * 100) / 100;
+    final.vamp = Math.round(final.vamp * 10) / 10;
+    final.reflect = Math.round(final.reflect * 10) / 10;
+
+    return { base: baseStatsWithSkills, gear: gearBonuses, role: roleBonuses, final: final };
+}
+
+function calculatePower(className, finalStats) {
+    const importance = {
+        warrior: {
+            hp: 2.0, atk: 2.0, def: 2.0, agi: 1.0, int: 1.0,
+            spd: 1.0, crit: 1.5, critDmg: 1.5, vamp: 0.5, reflect: 1.0
+        },
+        assassin: {
+            hp: 1.5, atk: 2.0, def: 1.0, agi: 2.0, int: 1.0,
+            spd: 1.5, crit: 2.0, critDmg: 1.5, vamp: 1.5, reflect: 1.0
+        },
+        mage: {
+            hp: 1.5, atk: 2.0, def: 1.0, agi: 1.0, int: 2.0,
+            spd: 1.0, crit: 1.5, critDmg: 1.5, vamp: 0.5, reflect: 0.5
+        }
+    };
+    const coeff = importance[className] || importance.warrior;
+    let power = 0;
+    power += finalStats.hp * coeff.hp;
+    power += finalStats.atk * coeff.atk * 2;
+    power += finalStats.def * coeff.def * 2;
+    power += finalStats.agi * coeff.agi * 2;
+    power += finalStats.int * coeff.int * 2;
+    power += finalStats.spd * coeff.spd * 2;
+    power += finalStats.crit * coeff.crit * 3;
+    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg;
+    power += finalStats.vamp * coeff.vamp * 3;
+    power += finalStats.reflect * coeff.reflect * 2;
+    return Math.round(power);
+}
+
+function showRoleInfoModal(className) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
+    modalTitle.innerText = `Роли класса ${classNameRu}`;
+    
+    const subclasses = {
+        warrior: ['guardian', 'berserker', 'knight'],
+        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+        mage: ['pyromancer', 'cryomancer', 'illusionist']
+    }[className] || [];
+    
+    let html = '';
+    subclasses.forEach(sc => {
+        const desc = roleDescriptions[sc];
+        if (desc) {
+            html += `
+                <div class="role-card">
+                    <h3>${desc.name}</h3>
+                    <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
+                    <p><span class="active">Активный:</span> ${desc.active}</p>
+                </div>
+            `;
+        }
+    });
+    modalBody.innerHTML = html;
+    
+    modal.style.display = 'block';
+    
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    };
+    
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    };
+}
+
+function showChestResult(item) {
+    const modal = document.getElementById('chestResultModal');
+    const body = document.getElementById('chestResultBody');
+    
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
+    
+    let iconPath = '';
+    if (item.owner_class && item.type) {
+        const folder = classFolderMap[item.owner_class];
+        const fileType = typeFileMap[item.type];
+        if (folder && fileType) {
+            iconPath = `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
+        }
+    }
+    const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
+
+    let classDisplay = '';
+    if (item.class_restriction && item.class_restriction !== 'any') {
+        classDisplay = item.class_restriction === 'warrior' ? 'Воин' : (item.class_restriction === 'assassin' ? 'Ассасин' : 'Маг');
+    } else {
+        classDisplay = 'Универсальный';
+    }
+
+    body.innerHTML = `
+        <div style="text-align: center;">
+            <div style="margin-bottom: 10px;">${iconHtml}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${itemNameTranslations[item.name] || item.name}</div>
+            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
+            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+}
+
+// ==================== ОСНОВНЫЕ ЭКРАНЫ ====================
+
 function renderMain() {
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
@@ -350,7 +574,6 @@ function renderMain() {
         <button class="btn" id="fightBtn" style="margin: 0 20px 20px 20px;">Начать бой</button>
     `;
 
-    // Обработчики
     const subclassSelect = document.getElementById('subclassSelect');
 
     function updateSubclasses(className) {
@@ -421,7 +644,6 @@ function renderMain() {
     });
 }
 
-// ==================== ЭКИПИРОВКА ====================
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
@@ -668,7 +890,7 @@ function renderEquip() {
 
     renderInventoryForClass(selectedClass);
 }
-// ==================== ТОРГОВЛЯ ====================
+
 function renderTrade() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -690,10 +912,9 @@ function renderTrade() {
         renderMarket(tradeContent);
     });
     
-    // По умолчанию показываем магазин
     renderShop(tradeContent);
 }
-// ==================== КУЗНИЦА ====================
+
 function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -706,9 +927,8 @@ function renderForge() {
             Здесь будет функционал кузницы (в разработке)
         </div>
     `;
-    // Пока обработчики не нужны
 }
-// ==================== РЕЙТИНГ ====================
+
 function renderRating() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -716,7 +936,7 @@ function renderRating() {
         <p style="text-align:center; color:#aaa;">Скоро здесь появится таблица лидеров</p>
     `;
 }
-// ==================== МАГАЗИН СУНДУКОВ ====================
+
 function renderShop(target = null) {
     const container = target || document.getElementById('content');
     container.innerHTML = `
@@ -783,7 +1003,6 @@ function renderShop(target = null) {
     });
 }
 
-// ==================== МАРКЕТ ====================
 async function renderMarket(target = null) {
     const container = target || document.getElementById('content');
     container.innerHTML = `
@@ -841,7 +1060,6 @@ async function renderMarket(target = null) {
     await loadMarketItems(activeStat, container);
 }
 
-// Вспомогательная функция загрузки предметов маркета (модифицирована)
 async function loadMarketItems(statFilter = 'any', container) {
     const classFilter = container.querySelector('#classFilter').value;
     const rarityFilter = container.querySelector('#rarityFilter').value;
@@ -930,13 +1148,11 @@ async function loadMarketItems(statFilter = 'any', container) {
     });
 }
 
-// ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <h3 style="text-align:center; margin-bottom:20px;">Ежедневные награды</h3>
         
-        <!-- Карточка адвент-календаря -->
         <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 2;">
                 <div style="font-size: 18px; font-weight: bold;">Адвент-календарь</div>
@@ -952,7 +1168,6 @@ function renderTasks() {
             </div>
         </div>
 
-        <!-- Карточка реферальной программы -->
         <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 2;">
                 <div style="font-size: 18px; font-weight: bold;">Реферальная программа</div>
@@ -972,7 +1187,6 @@ function renderTasks() {
             </div>
         </div>
 
-        <!-- Карточка топ игроков -->
         <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 2;">
                 <div style="font-size: 18px; font-weight: bold;">Топ игроков</div>
@@ -985,7 +1199,6 @@ function renderTasks() {
         </div>
     `;
 
-    // Обработчики
     document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
     
     document.getElementById('copyRefLink').addEventListener('click', () => {
@@ -1032,7 +1245,6 @@ function renderTasks() {
     });
 }
 
-// ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const currentClass = userData.current_class;
     const classData = getCurrentClassData();
@@ -1105,7 +1317,6 @@ function renderStatRow(label, baseValue, gearValue, roleValue, finalValue) {
     `;
 }
 
-// ==================== НАВЫКИ ====================
 function renderSkills() {
     const classData = getCurrentClassData();
     const skillPoints = classData.skill_points;
@@ -1186,7 +1397,6 @@ function renderSkillItem(statName, displayName, description, currentValue, level
     `;
 }
 
-// ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 function showAdventCalendar() {
     fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
         .then(res => res.json())
@@ -1203,7 +1413,6 @@ function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, mask } = data;
     const content = document.getElementById('content');
     
-    // Находим первый неполученный день
     let firstUnclaimed = null;
     for (let d = 1; d <= currentDay; d++) {
         if (!(mask & (1 << (d-1)))) {
@@ -1216,7 +1425,7 @@ function renderAdventCalendar(data) {
     
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
-        const available = (day === firstUnclaimed); // только первый неполученный день доступен
+        const available = (day === firstUnclaimed);
         let className = 'advent-day';
         if (claimed) className += ' claimed';
         else if (available) className += ' available';
@@ -1269,7 +1478,7 @@ function claimAdventDay(day, daysInMonth) {
             else {
                 alert(`Вы получили: ${data.reward}`);
                 showAdventCalendar();
-                refreshData(); // обновит монеты и инвентарь
+                refreshData();
             }
         })
         .catch(err => alert('Ошибка: ' + err));
@@ -1318,7 +1527,6 @@ function showClassChoiceModal(day, expAmount) {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-// ==================== БОЙ ====================
 async function startBattle() {
     try {
         const res = await fetch('/battle/start', {
@@ -1459,7 +1667,6 @@ function showBattleScreen(battleData) {
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
 
-        // Активные навыки (ультимейты)
         if (action.includes('несокрушимость')) {
             anim = 'hill.gif';
             target = isPlayerTurn ? 'hero' : 'enemy';
@@ -1480,14 +1687,11 @@ function showBattleScreen(battleData) {
             anim = 'ice.gif';
         } else if (action.includes('зазеркалье')) {
             anim = 'chara.gif';
-        }
-        // Эффекты яда и огня (пассивные)
-        else if (action.includes('яд разъедает') || action.includes('отравление')) {
+        } else if (action.includes('яд разъедает') || action.includes('отравление')) {
             anim = 'poison.gif';
         } else if (action.includes('пламя пожирает') || action.includes('огонь обжигает') || action.includes('горящие души')) {
             anim = 'fire.gif';
         }
-        // В противном случае остаётся shot.gif (обычная атака)
 
         return { target, anim };
     }
@@ -1562,9 +1766,8 @@ function showBattleResult(battleData, timeOut = false) {
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
-    const newStreak = battleData.reward?.newStreak || 0; // серия побед после боя (только при победе)
+    const newStreak = battleData.reward?.newStreak || 0;
 
-    // Сбор статистики из turns
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
     };
@@ -1709,19 +1912,6 @@ function showBattleResult(battleData, timeOut = false) {
         await refreshData();
         showScreen('main');
     });
-}
-
-// ==================== ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ КЛАССА ====================
-function getCurrentClassData() {
-    if (!userData || !userData.current_class) {
-        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
-    }
-    return userClasses.find(c => c.class === userData.current_class) || { 
-        level: 1, skill_points: 0, 
-        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
-        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
-        dodge_points: 0, acc_points: 0, mana_points: 0 
-    };
 }
 
 // Инициализация меню

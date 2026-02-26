@@ -1486,9 +1486,10 @@ function renderSkins(container) {
         sortedAvatars.forEach(avatar => {
             const isActive = avatar.id === activeAvatarId;
             const isOwned = ownedSet.has(avatar.id);
-            // Преобразуем цены в числа
-            const priceGold = Number(avatar.price_gold) || 0;
-            const priceDiamonds = Number(avatar.price_diamonds) || 0;
+            // Приводим цены к числам (если приходят как строки или null)
+            const priceGold = parseInt(avatar.price_gold, 10) || 0;
+            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+            console.log(`Avatar ${avatar.id}: price_gold=${priceGold}, price_diamonds=${priceDiamonds}`);
 
             let priceHtml = '';
             if (!isOwned) {
@@ -1545,9 +1546,10 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             const isActive = avatarId === userData.avatar_id;
             modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
             
-            // Преобразуем цены в числа
-            const priceGold = Number(avatar.price_gold) || 0;
-            const priceDiamonds = Number(avatar.price_diamonds) || 0;
+            // Приводим цены к числам
+            const priceGold = parseInt(avatar.price_gold, 10) || 0;
+            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+            console.log(`Modal avatar ${avatarId}: price_gold=${priceGold}, price_diamonds=${priceDiamonds}`);
 
             let priceHtml = '';
             if (!owned && !isActive) {

@@ -124,11 +124,11 @@ router.post('/avatar', async (req, res) => {
         return res.status(400).json({ error: 'Missing data' });
     }
     try {
-        // Проверяем, есть ли у пользователя этот аватар
         const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const userId = user.rows[0].id;
 
+        // Проверяем, есть ли у пользователя этот аватар
         const owned = await pool.query(
             'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
             [userId, avatar_id]

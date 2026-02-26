@@ -1458,11 +1458,20 @@ function renderStatRow(label, baseValue, gearValue, roleValue, finalValue) {
 // ==================== СКИНЫ ====================
 
 function renderSkins(container) {
+    console.log('Fetching avatars...');
     Promise.all([
-        fetch('/avatars').then(res => res.json()),
-        fetch(`/avatars/user/${userData.tg_id}`).then(res => res.json())
+        fetch('/avatars').then(res => {
+            if (!res.ok) throw new Error('Failed to fetch avatars');
+            return res.json();
+        }),
+        fetch(`/avatars/user/${userData.tg_id}`).then(res => {
+            if (!res.ok) throw new Error('Failed to fetch owned avatars');
+            return res.json();
+        })
     ])
     .then(([allAvatars, ownedIds]) => {
+        console.log('All avatars:', allAvatars);
+        console.log('Owned ids:', ownedIds);
         const activeAvatarId = userData.avatar_id || 1;
         const ownedSet = new Set(ownedIds);
         // Добавляем базовый аватар как всегда купленный
@@ -1471,7 +1480,7 @@ function renderSkins(container) {
         const sortedAvatars = [...allAvatars].sort((a, b) => {
             if (a.id === activeAvatarId) return -1;
             if (b.id === activeAvatarId) return 1;
-            return a.name.localeCompare(b.name);
+            return (a.name || '').localeCompare(b.name || '');
         });
 
         let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">';
@@ -1481,9 +1490,9 @@ function renderSkins(container) {
             let priceHtml = '';
             if (!isOwned) {
                 let parts = [];
-                if (avatar.price_gold > 0) parts.push(`${avatar.price_gold} <i class="fas fa-coins" style="color:gold;"></i>`);
-                if (avatar.price_diamonds > 0) parts.push(`${avatar.price_diamonds} <i class="fas fa-gem" style="color:cyan;"></i>`);
-                priceHtml = `<div style="font-size: 10px; color:#aaa;">${parts.join(' + ')}</div>`;
+                if (avatar.price_gold > 0) parts.push(`${avatar.price_gold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (avatar.price_diamonds > 0) parts.push(`${avatar.price_diamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                priceHtml = `<div style="font-size: 10px; color:white;">${parts.join(' + ')}</div>`;
             }
             html += `
                 <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
@@ -1507,7 +1516,7 @@ function renderSkins(container) {
     })
     .catch(err => {
         console.error('Error loading avatars:', err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров</p>';
+        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
     });
 }
 
@@ -1519,9 +1528,12 @@ function showSkinModal(avatarId, avatarFilename, owned) {
     // Загружаем детали аватара, включая цену
     fetch('/avatars')
         .then(res => res.json())
-        .then(avatars => {
-            const avatar = avatars.find(a => a.id === avatarId);
-            if (!avatar) return;
+        .then(avatarsList => {  // ← исправлено: avatarsList, а не avatars
+            const avatar = avatarsList.find(a => a.id === avatarId);
+            if (!avatar) {
+                alert('Аватар не найден');
+                return;
+            }
 
             const isActive = avatarId === userData.avatar_id;
             modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
@@ -1529,9 +1541,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             let priceHtml = '';
             if (!owned && !isActive) {
                 let parts = [];
-                if (avatar.price_gold > 0) parts.push(`${avatar.price_gold} монет`);
-                if (avatar.price_diamonds > 0) parts.push(`${avatar.price_diamonds} алмазов`);
-                priceHtml = `<p style="color:gold;">Цена: ${parts.join(' + ')}</p>`;
+                if (avatar.price_gold > 0) parts.push(`${avatar.price_gold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (avatar.price_diamonds > 0) parts.push(`${avatar.price_diamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
             }
 
             modalBody.innerHTML = `
@@ -1557,7 +1569,6 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                     });
                     const data = await res.json();
                     if (data.success) {
-                        // Обновляем баланс и список купленных
                         await refreshData();
                         modal.style.display = 'none';
                         renderProfileTab('skins');
@@ -1593,6 +1604,10 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             
             const closeBtn = modal.querySelector('.close');
             closeBtn.onclick = () => modal.style.display = 'none';
+        })
+        .catch(err => {
+            console.error('Error loading avatar details:', err);
+            alert('Ошибка загрузки данных аватара');
         });
 }
 // ==================== АДВЕНТ-КАЛЕНДАРЬ ====================

@@ -286,44 +286,70 @@ function renderMain() {
 
     const content = document.getElementById('content');
     content.innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-            <div class="hero-avatar" style="width: 120px; height: 180px; margin: 20px auto;">
-                <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
+        <div style="display: flex; justify-content: space-between; align-items: stretch; padding: 20px;">
+            <!-- Левая колонка (пустая) -->
+            <div style="flex: 1;"></div>
+
+            <!-- Центральная колонка с аватаром -->
+            <div style="flex: 0 0 auto; text-align: center;">
+                <div class="hero-avatar" style="width: 120px; height: 180px; cursor: pointer; margin: 0 auto;" id="avatarClick">
+                    <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%;">
+                </div>
+                <h2 style="margin-top: 10px;">${userData.username || 'Игрок'}</h2>
             </div>
-            <h2>${userData.username || 'Игрок'}</h2>
-            
-            <div style="margin: 15px 0; text-align: left;">
-                <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                    <span>Уровень ${level}</span>
-                    <span>${exp}/${nextExp} опыта</span>
+
+            <!-- Правая колонка с круглыми кнопками -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                <div class="round-button" data-screen="equip">
+                    <i class="fas fa-tshirt"></i>
+                    <span>Снаряжение</span>
                 </div>
-                <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
-                    <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
+                <div class="round-button" data-screen="trade">
+                    <i class="fas fa-store"></i>
+                    <span>Торговля</span>
                 </div>
-            </div>
-            
-            <div style="margin: 20px 0;">
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
-                    <div class="class-selector" style="flex: 1; margin-left: 10px;">
-                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
-                    <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
-                        <!-- заполняется динамически -->
-                    </select>
-                    <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
+                <div class="round-button" data-screen="forge">
+                    <i class="fas fa-hammer"></i>
+                    <span>Кузница</span>
                 </div>
             </div>
-            
-            <button class="btn" id="fightBtn" style="margin-top: 20px;">Начать бой</button>
         </div>
+
+        <!-- Информация об уровне и опыте -->
+        <div style="margin: 20px 20px 0 20px;">
+            <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                <span>Уровень ${level}</span>
+                <span>${exp}/${nextExp} опыта</span>
+            </div>
+            <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
+                <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
+            </div>
+        </div>
+
+        <!-- Выбор класса и роли -->
+        <div style="margin: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
+                <div class="class-selector" style="flex: 1; margin-left: 10px;">
+                    <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                    <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                    <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
+                <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
+                    <!-- заполняется динамически -->
+                </select>
+                <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
+            </div>
+        </div>
+
+        <!-- Кнопка боя -->
+        <button class="btn" id="fightBtn" style="margin: 0 20px 20px 20px;">Начать бой</button>
     `;
 
+    // Обработчики
     const subclassSelect = document.getElementById('subclassSelect');
 
     function updateSubclasses(className) {
@@ -384,167 +410,14 @@ function renderMain() {
 
     document.getElementById('fightBtn').addEventListener('click', () => startBattle());
     document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(currentClass));
-}
+    document.getElementById('avatarClick').addEventListener('click', () => showScreen('profile'));
 
-function showRoleInfoModal(className) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-    const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
-    modalTitle.innerText = `Роли класса ${classNameRu}`;
-    
-    const subclasses = {
-        warrior: ['guardian', 'berserker', 'knight'],
-        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-        mage: ['pyromancer', 'cryomancer', 'illusionist']
-    }[className] || [];
-    
-    let html = '';
-    subclasses.forEach(sc => {
-        const desc = roleDescriptions[sc];
-        if (desc) {
-            html += `
-                <div class="role-card">
-                    <h3>${desc.name}</h3>
-                    <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
-                    <p><span class="active">Активный:</span> ${desc.active}</p>
-                </div>
-            `;
-        }
+    document.querySelectorAll('.round-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const screen = btn.dataset.screen;
+            if (screen) showScreen(screen);
+        });
     });
-    modalBody.innerHTML = html;
-    
-    modal.style.display = 'block';
-    
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
-    };
-    
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-}
-
-function getCurrentClassData() {
-    if (!userData || !userData.current_class) {
-        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
-    }
-    return userClasses.find(c => c.class === userData.current_class) || { 
-        level: 1, skill_points: 0, 
-        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
-        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
-        dodge_points: 0, acc_points: 0, mana_points: 0 
-    };
-}
-
-function calculateClassStats(className, classData, inventory, subclass) {
-    const base = baseStats[className] || baseStats.warrior;
-
-    let baseStatsWithSkills = {
-        hp: base.hp + (classData.hp_points || 0) * 2,
-        atk: base.atk + (classData.atk_points || 0),
-        def: base.def + (classData.def_points || 0),
-        agi: base.agi + (classData.dodge_points || 0),
-        int: base.int + (classData.int_points || 0),
-        spd: base.spd + (classData.spd_points || 0),
-        crit: base.crit + (classData.crit_points || 0),
-        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
-        vamp: base.vamp + (classData.vamp_points || 0),
-        reflect: base.reflect + (classData.reflect_points || 0)
-    };
-
-    let gearBonuses = {
-        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
-    };
-    let roleBonuses = {
-        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
-    };
-
-    const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
-    equippedItems.forEach(item => {
-        gearBonuses.hp += item.hp_bonus || 0;
-        gearBonuses.atk += item.atk_bonus || 0;
-        gearBonuses.def += item.def_bonus || 0;
-        gearBonuses.agi += item.agi_bonus || 0;
-        gearBonuses.int += item.int_bonus || 0;
-        gearBonuses.spd += item.spd_bonus || 0;
-        gearBonuses.crit += item.crit_bonus || 0;
-        gearBonuses.critDmg += (item.crit_dmg_bonus || 0) / 100;
-        gearBonuses.vamp += item.vamp_bonus || 0;
-        gearBonuses.reflect += item.reflect_bonus || 0;
-    });
-
-    const rolePassives = {
-        knight: { reflect: 20 },
-        assassin: { vamp: 20 },
-        blood_hunter: { vamp: 20 }
-    };
-    const roleBonus = rolePassives[subclass] || {};
-    if (roleBonus.vamp) roleBonuses.vamp += roleBonus.vamp;
-    if (roleBonus.reflect) roleBonuses.reflect += roleBonus.reflect;
-
-    let final = {
-        hp: baseStatsWithSkills.hp + gearBonuses.hp + roleBonuses.hp,
-        atk: baseStatsWithSkills.atk + gearBonuses.atk + roleBonuses.atk,
-        def: baseStatsWithSkills.def + gearBonuses.def + roleBonuses.def,
-        agi: baseStatsWithSkills.agi + gearBonuses.agi + roleBonuses.agi,
-        int: baseStatsWithSkills.int + gearBonuses.int + roleBonuses.int,
-        spd: baseStatsWithSkills.spd + gearBonuses.spd + roleBonuses.spd,
-        crit: baseStatsWithSkills.crit + gearBonuses.crit + roleBonuses.crit,
-        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg + roleBonuses.critDmg,
-        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp + roleBonuses.vamp,
-        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
-    };
-
-    final.def = Math.min(100, final.def);
-    final.agi = Math.min(100, final.agi);
-    final.crit = Math.min(100, final.crit);
-
-    final.hp = Math.round(final.hp);
-    final.atk = Math.round(final.atk);
-    final.spd = Math.round(final.spd);
-    final.def = Math.round(final.def * 10) / 10;
-    final.agi = Math.round(final.agi * 10) / 10;
-    final.int = Math.round(final.int * 10) / 10;
-    final.crit = Math.round(final.crit * 10) / 10;
-    final.critDmg = Math.round(final.critDmg * 100) / 100;
-    final.vamp = Math.round(final.vamp * 10) / 10;
-    final.reflect = Math.round(final.reflect * 10) / 10;
-
-    return { base: baseStatsWithSkills, gear: gearBonuses, role: roleBonuses, final: final };
-}
-function calculatePower(className, finalStats) {
-    const importance = {
-        warrior: {
-            hp: 2.0, atk: 2.0, def: 2.0, agi: 1.0, int: 1.0,
-            spd: 1.0, crit: 1.5, critDmg: 1.5, vamp: 0.5, reflect: 1.0
-        },
-        assassin: {
-            hp: 1.5, atk: 2.0, def: 1.0, agi: 2.0, int: 1.0,
-            spd: 1.5, crit: 2.0, critDmg: 1.5, vamp: 1.5, reflect: 1.0
-        },
-        mage: {
-            hp: 1.5, atk: 2.0, def: 1.0, agi: 1.0, int: 2.0,
-            spd: 1.0, crit: 1.5, critDmg: 1.5, vamp: 0.5, reflect: 0.5
-        }
-    };
-    const coeff = importance[className] || importance.warrior;
-    let power = 0;
-    power += finalStats.hp * coeff.hp;
-    power += finalStats.atk * coeff.atk * 2;
-    power += finalStats.def * coeff.def * 2;
-    power += finalStats.agi * coeff.agi * 2;
-    power += finalStats.int * coeff.int * 2;
-    power += finalStats.spd * coeff.spd * 2;
-    power += finalStats.crit * coeff.crit * 3;
-    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg;
-    power += finalStats.vamp * coeff.vamp * 3;
-    power += finalStats.reflect * coeff.reflect * 2;
-    return Math.round(power);
 }
 
 // ==================== ЭКИПИРОВКА ====================

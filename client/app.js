@@ -1474,9 +1474,8 @@ function renderSkins(container) {
         console.log('Owned ids:', ownedIds);
         const activeAvatarId = userData.avatar_id || 1;
         const ownedSet = new Set(ownedIds);
-        // Добавляем базовый аватар как всегда купленный
-        ownedSet.add(1);
-        
+        ownedSet.add(1); // базовый аватар всегда куплен
+
         const sortedAvatars = [...allAvatars].sort((a, b) => {
             if (a.id === activeAvatarId) return -1;
             if (b.id === activeAvatarId) return 1;
@@ -1487,13 +1486,22 @@ function renderSkins(container) {
         sortedAvatars.forEach(avatar => {
             const isActive = avatar.id === activeAvatarId;
             const isOwned = ownedSet.has(avatar.id);
+            // Преобразуем цены в числа
+            const priceGold = Number(avatar.price_gold) || 0;
+            const priceDiamonds = Number(avatar.price_diamonds) || 0;
+
             let priceHtml = '';
             if (!isOwned) {
                 let parts = [];
-                if (avatar.price_gold > 0) parts.push(`${avatar.price_gold} <i class="fas fa-coins" style="color:white;"></i>`);
-                if (avatar.price_diamonds > 0) parts.push(`${avatar.price_diamonds} <i class="fas fa-gem" style="color:white;"></i>`);
-                priceHtml = `<div style="font-size: 10px; color:white;">${parts.join(' + ')}</div>`;
+                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                if (parts.length > 0) {
+                    priceHtml = `<div style="font-size: 10px; color:white;">${parts.join(' + ')}</div>`;
+                } else {
+                    priceHtml = `<div style="font-size: 10px; color:white;">Бесплатно</div>`;
+                }
             }
+
             html += `
                 <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
                     ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1;">АКТИВНЫЙ</div>' : ''}
@@ -1525,10 +1533,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     
-    // Загружаем детали аватара, включая цену
     fetch('/avatars')
         .then(res => res.json())
-        .then(avatarsList => {  // ← исправлено: avatarsList, а не avatars
+        .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
             if (!avatar) {
                 alert('Аватар не найден');
@@ -1538,12 +1545,20 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             const isActive = avatarId === userData.avatar_id;
             modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
             
+            // Преобразуем цены в числа
+            const priceGold = Number(avatar.price_gold) || 0;
+            const priceDiamonds = Number(avatar.price_diamonds) || 0;
+
             let priceHtml = '';
             if (!owned && !isActive) {
                 let parts = [];
-                if (avatar.price_gold > 0) parts.push(`${avatar.price_gold} <i class="fas fa-coins" style="color:white;"></i>`);
-                if (avatar.price_diamonds > 0) parts.push(`${avatar.price_diamonds} <i class="fas fa-gem" style="color:white;"></i>`);
-                priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
+                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                if (parts.length > 0) {
+                    priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
+                } else {
+                    priceHtml = `<p style="color:white;">Бесплатно</p>`;
+                }
             }
 
             modalBody.innerHTML = `

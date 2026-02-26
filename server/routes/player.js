@@ -124,12 +124,24 @@ router.post('/avatar', async (req, res) => {
         return res.status(400).json({ error: 'Missing data' });
     }
     try {
-        await pool.query('UPDATE users SET avatar_id = $1 WHERE tg_id = $2', [avatar_id, tg_id]);
+        // Проверяем, есть ли у пользователя этот аватар
+        const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const userId = user.rows[0].id;
+
+        const owned = await pool.query(
+            'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
+            [userId, avatar_id]
+        );
+        if (owned.rows.length === 0) {
+            return res.status(403).json({ error: 'Avatar not owned' });
+        }
+
+        await pool.query('UPDATE users SET avatar_id = $1 WHERE id = $2', [avatar_id, userId]);
         res.json({ success: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
     }
 });
-
 module.exports = router;

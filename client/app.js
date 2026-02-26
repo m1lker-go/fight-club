@@ -1920,7 +1920,17 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 }
+Вот исправленная функция `showBattleResult` с добавленным обновлением энергии. Вставьте её вместо существующей в ваш `app.js`.
+
+```javascript
 function showBattleResult(battleData, timeOut = false) {
+    // +++ НОВЫЙ БЛОК ДЛЯ ЭНЕРГИИ +++
+    if (battleData.newEnergy !== undefined) {
+        userData.energy = battleData.newEnergy;
+        updateTopBar();
+    }
+    // +++ КОНЕЦ БЛОКА +++
+
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
@@ -1930,7 +1940,7 @@ function showBattleResult(battleData, timeOut = false) {
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // Сбор статистики из turns (оставляем как есть)
+    // Сбор статистики из turns
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
     };
@@ -2081,12 +2091,5 @@ function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 }
-
-// Инициализация меню
-document.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('click', () => {
-        showScreen(item.dataset.screen);
-    });
-});
-
+```
 init();

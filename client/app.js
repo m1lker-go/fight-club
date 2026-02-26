@@ -1821,12 +1821,7 @@ function showBattleScreen(battleData) {
         item.style.opacity = '0.5';
     });
 
-    const getClassNameRu = (cls) => {
-        if (cls === 'warrior') return 'Воин';
-        if (cls === 'assassin') return 'Ассасин';
-        return 'Маг';
-    };
-
+   
     const getRoleNameRu = (role) => {
         const roles = {
             guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
@@ -2026,7 +2021,6 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 }
-
 function showBattleResult(battleData, timeOut = false) {
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
@@ -2037,6 +2031,7 @@ function showBattleResult(battleData, timeOut = false) {
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
 
+    // Сбор статистики из turns (оставляем как есть)
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
     };
@@ -2181,6 +2176,11 @@ function showBattleResult(battleData, timeOut = false) {
         await refreshData();
         showScreen('main');
     });
+
+    // Если персонаж получил уровень, показываем модалку
+    if (leveledUp) {
+        showLevelUpModal(userData.current_class);
+    }
 }
 
 // Инициализация меню

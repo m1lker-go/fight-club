@@ -1080,10 +1080,10 @@ function renderTasks() {
                 <div style="font-size: 18px; font-weight: bold;">Адвент-календарь</div>
                 <div style="font-size: 12px; color: #aaa;">Забирайте награды каждый день!</div>
             </div>
-            <div style="flex: 1; display: flex; gap: 10px; justify-content: center;">
-                <img src="/assets/coins.png" style="width:24px; height:24px;" alt="монеты">
-                <span style="font-weight: bold; color: #00aaff; font-size: 24px;">EXP</span>
-                <img src="/assets/equip/tank/tank-bracer-001.png" style="width:24px; height:24px;" alt="снаряжение">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <i class="fas fa-coins" style="color: white; font-size: 24px;"></i>
+                <span style="font-size: 12px; color: white; font-weight: bold;">EXP</span>
+                <i class="fas fa-tshirt" style="color: white; font-size: 24px;"></i>
             </div>
             <div style="flex: 0 0 120px;">
                 <button class="btn" id="adventBtn" style="width: 100%;">ПОКАЗАТЬ</button>
@@ -1096,9 +1096,9 @@ function renderTasks() {
                 <div style="font-size: 18px; font-weight: bold;">Реферальная программа</div>
                 <div style="font-size: 12px; color: #aaa;">Пригласи друга и получи 100 монет</div>
             </div>
-            <div style="flex: 1; display: flex; gap: 10px; justify-content: center;">
-                <span style="font-weight: bold; color: gold;">100</span>
-                <img src="/assets/coins.png" style="width:20px; height:20px;" alt="монеты">
+            <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px;">
+                <span style="font-weight: bold; color: white;">100</span>
+                <i class="fas fa-coins" style="color: white; font-size: 20px;"></i>
             </div>
             <div style="flex: 0 0 120px; display: flex; gap: 5px;">
                 <button class="btn" id="copyRefLink" style="flex: 1; padding: 8px 0;" title="Копировать ссылку">
@@ -1169,7 +1169,6 @@ function renderTasks() {
         alert('Рейтинг пока не реализован');
     });
 }
-
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const currentClass = userData.current_class;

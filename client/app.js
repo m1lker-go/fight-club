@@ -1047,7 +1047,6 @@ async function renderMarket(target = null) {
                 <option value="epic">Эпическое</option>
                 <option value="legendary">Легендарное</option>
             </select>
-            <button class="btn" id="applyFilters">Применить</button>
         </div>
         <div style="margin: 10px 0;">
             <select id="statFilterSelect" style="width:100%; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
@@ -1064,6 +1063,7 @@ async function renderMarket(target = null) {
                 <option value="reflect_bonus">ОТР</option>
             </select>
         </div>
+        <button class="btn" id="applyFilters" style="width:100%; margin-bottom:15px;">Применить</button>
         <div class="market-container">
             <div id="marketItems" class="market-grid"></div>
         </div>
@@ -1073,15 +1073,12 @@ async function renderMarket(target = null) {
     const classSelect = container.querySelector('#classFilter');
     const raritySelect = container.querySelector('#rarityFilter');
 
-    // Применение фильтров при нажатии кнопки
     container.querySelector('#applyFilters').addEventListener('click', () => {
         loadMarketItems(statSelect.value, container);
     });
 
-    // Загрузка при старте
     await loadMarketItems(statSelect.value, container);
 }
-
 async function loadMarketItems(statFilter = 'any', container) {
     const classFilter = container.querySelector('#classFilter').value;
     const rarityFilter = container.querySelector('#rarityFilter').value;

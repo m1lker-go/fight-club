@@ -52,8 +52,8 @@ router.post('/login', async (req, res) => {
       console.log('Creating new user...');
       const referralCode = Math.random().toString(36).substring(2, 10);
       const newUser = await client.query(
-        `INSERT INTO users (tg_id, username, referral_code, current_class) 
-         VALUES ($1, $2, $3, 'warrior') RETURNING *`,
+        `INSERT INTO users (tg_id, username, referral_code, current_class, avatar_id) 
+         VALUES ($1, $2, $3, 'warrior', 1) RETURNING *`,
         [tgId, username, referralCode]
       );
       userRes = newUser;

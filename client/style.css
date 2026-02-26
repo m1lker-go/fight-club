@@ -360,6 +360,10 @@ body {
     margin-bottom: 15px;
     border-left: 4px solid #00aaff;
 }
+.btn.active {
+    background-color: #00aaff;
+    color: white;
+}
 .role-card h3 {
     margin-top: 0;
     color: #00aaff;

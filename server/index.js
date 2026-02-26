@@ -1,17 +1,20 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // подключаем path для работы с путями
+const path = require('path');
 const { initDB } = require('./db');
 require('dotenv').config();
+
+console.log('Starting server...');
+console.log('Environment:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Раздача статических файлов из папки client (находится уровнем выше)
 app.use(express.static(path.join(__dirname, '../client')));
 
-// Подключаем маршруты API
 app.use('/auth', require('./routes/auth'));
 app.use('/player', require('./routes/player'));
 app.use('/inventory', require('./routes/inventory'));
@@ -23,9 +26,11 @@ app.use('/tasks', require('./routes/tasks'));
 const PORT = process.env.PORT || 3000;
 
 initDB().then(() => {
+    console.log('Database initialized');
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on port ${PORT}`);
     });
 }).catch(err => {
     console.error('Failed to initialize database:', err);
+    process.exit(1);
 });

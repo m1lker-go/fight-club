@@ -2092,4 +2092,3 @@ function showBattleResult(battleData, timeOut = false) {
     }
 }
 ```
-init();

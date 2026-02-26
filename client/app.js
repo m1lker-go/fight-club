@@ -161,7 +161,7 @@ async function init() {
             body: JSON.stringify({ initData: tg.initData })
         });
         const data = await response.json();
-                     if (data.user) {
+                            if (data.user) {
             userData = data.user;
             userClasses = data.classes || [];
             inventory = data.inventory || [];

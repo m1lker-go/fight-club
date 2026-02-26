@@ -161,7 +161,7 @@ async function init() {
             body: JSON.stringify({ initData: tg.initData })
         });
         const data = await response.json();
-                            if (data.user) {
+        if (data.user) {
             userData = data.user;
             userClasses = data.classes || [];
             inventory = data.inventory || [];
@@ -229,11 +229,11 @@ async function refreshData() {
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
         const data = await response.json();
-                if (data.user) {
+        if (data.user) {
             userData = data.user;
             userClasses = data.classes || [];
             inventory = data.inventory || [];
-            BOT_USERNAME = data.bot_username || ''; // ← добавить
+            BOT_USERNAME = data.bot_username || '';
             updateTopBar();
             showScreen(currentScreen);
         }
@@ -1031,6 +1031,7 @@ function renderTasks() {
         alert('Рейтинг пока не реализован');
     });
 }
+
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const currentClass = userData.current_class;
@@ -1316,6 +1317,7 @@ function showClassChoiceModal(day, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
+
 // ==================== БОЙ ====================
 async function startBattle() {
     try {
@@ -1452,7 +1454,7 @@ function showBattleScreen(battleData) {
         }, 1000);
     }
 
-          function getAnimationForAction(action, isPlayerTurn) {
+    function getAnimationForAction(action, isPlayerTurn) {
         action = action.toLowerCase();
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
@@ -1489,6 +1491,7 @@ function showBattleScreen(battleData) {
 
         return { target, anim };
     }
+
     function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
@@ -1706,6 +1709,19 @@ function showBattleResult(battleData, timeOut = false) {
         await refreshData();
         showScreen('main');
     });
+}
+
+// ==================== ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ КЛАССА ====================
+function getCurrentClassData() {
+    if (!userData || !userData.current_class) {
+        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
+    }
+    return userClasses.find(c => c.class === userData.current_class) || { 
+        level: 1, skill_points: 0, 
+        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
+        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
+        dodge_points: 0, acc_points: 0, mana_points: 0 
+    };
 }
 
 // Инициализация меню

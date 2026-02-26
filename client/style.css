@@ -91,8 +91,9 @@ body {
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: background-color 0.2s, color 0.2s;
 }
+
 .btn.active {
     background-color: #00aaff;
     color: white;

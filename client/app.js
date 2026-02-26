@@ -1561,6 +1561,102 @@ function renderSkins(container) {
         container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
     });
 }
+function showSkinModal(avatarId, avatarFilename, owned) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    fetch('/avatars')
+        .then(res => res.json())
+        .then(avatarsList => {
+            const avatar = avatarsList.find(a => a.id === avatarId);
+            if (!avatar) {
+                alert('Аватар не найден');
+                return;
+            }
+
+            const isActive = avatarId === userData.avatar_id;
+            modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
+            
+            const priceGold = parseInt(avatar.price_gold, 10) || 0;
+            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+
+            let priceHtml = '';
+            if (!owned && !isActive) {
+                let parts = [];
+                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                if (parts.length > 0) {
+                    priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
+                } else {
+                    priceHtml = `<p style="color:white;">Бесплатно</p>`;
+                }
+            }
+
+            modalBody.innerHTML = `
+                <div style="text-align: center;">
+                    <img src="/assets/${avatarFilename}" style="max-width: 100%; max-height: 300px; border-radius: 10px;">
+                    ${priceHtml}
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                        ${!owned && !isActive ? '<button class="btn" id="buySkin">Купить</button>' : ''}
+                        ${owned && !isActive ? '<button class="btn" id="activateSkin">Активировать</button>' : ''}
+                        <button class="btn" id="closeSkinModal">Назад</button>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+            
+            if (!owned && !isActive) {
+                document.getElementById('buySkin').addEventListener('click', async () => {
+                    const res = await fetch('/avatars/buy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        await refreshData();
+                        modal.style.display = 'none';
+                        renderProfileTab('skins');
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                });
+            }
+            
+            if (owned && !isActive) {
+                document.getElementById('activateSkin').addEventListener('click', async () => {
+                    const res = await fetch('/player/avatar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        userData.avatar_id = avatarId;
+                        userData.avatar = avatarFilename;
+                        modal.style.display = 'none';
+                        renderProfileTab('skins');
+                        if (currentScreen === 'main') renderMain();
+                    } else {
+                        alert('Ошибка при смене аватара');
+                    }
+                });
+            }
+            
+            document.getElementById('closeSkinModal').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            
+            const closeBtn = modal.querySelector('.close');
+            closeBtn.onclick = () => modal.style.display = 'none';
+        })
+        .catch(err => {
+            console.error('Error loading avatar details:', err);
+            alert('Ошибка загрузки данных аватара');
+        });
+}
 // ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 
 function showAdventCalendar() {

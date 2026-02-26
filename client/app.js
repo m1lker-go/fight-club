@@ -23,7 +23,7 @@ const roleDescriptions = {
         active: 'Несокрушимость – восстанавливает 20% от максимального HP, снимает отрицательные эффекты.'
     },
     berserker: {
-        name: 'Берсерк',
+        name: 'Берсерк',//==================Вот
         passive: 'Кровавая ярость – чем меньше HP, тем выше урон (до +50% при HP < 20%). Каждая атака наносит себе 10% от показателя атаки (но не менее 1).',
         active: 'Кровопускание – жертвует 30% от максимального HP, затем наносит урон x3 от атаки.'
     },
@@ -1920,9 +1920,6 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 }
-//==================Вот исправленная функция `showBattleResult` с добавленным обновлением энергии. Вставьте её вместо существующей в ваш `app.js`.
-
-```javascript
 function showBattleResult(battleData, timeOut = false) {
     // +++ НОВЫЙ БЛОК ДЛЯ ЭНЕРГИИ +++
     if (battleData.newEnergy !== undefined) {
@@ -2091,4 +2088,12 @@ function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 }
-```
+
+// Инициализация меню
+document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', () => {
+        showScreen(item.dataset.screen);
+    });
+});
+
+init();

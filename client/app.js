@@ -1072,26 +1072,58 @@ async function loadMarketItems(statFilter = 'any') {
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3>Ежедневные награды</h3>
-        <div class="task-card">
-            <div>Адвент-календарь</div>
-            <div>Забирайте награды каждый день!</div>
-            <button class="btn" id="adventBtn">Открыть календарь</button>
-        </div>
-        <div class="task-card">
-            <div>Реферальная программа</div>
-            <div>Ваш код: ${userData.referral_code}</div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn" id="copyRefLink">Копировать ссылку</button>
-                <button class="btn" id="shareRefLink">Пригласить друга</button>
+        <h3 style="text-align:center; margin-bottom:20px;">Ежедневные награды</h3>
+        
+        <!-- Карточка адвент-календаря -->
+        <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 2;">
+                <div style="font-size: 18px; font-weight: bold;">Адвент-календарь</div>
+                <div style="font-size: 12px; color: #aaa;">Забирайте награды каждый день!</div>
+            </div>
+            <div style="flex: 1; display: flex; gap: 10px; justify-content: center;">
+                <img src="/assets/coins.png" style="width:24px; height:24px;" alt="монеты">
+                <span style="font-weight: bold; color: #00aaff; font-size: 24px;">EXP</span>
+                <img src="/assets/equip/tank/tank-bracer-001.png" style="width:24px; height:24px;" alt="снаряжение">
+            </div>
+            <div style="flex: 0 0 120px;">
+                <button class="btn" id="adventBtn" style="width: 100%;">ПОКАЗАТЬ</button>
             </div>
         </div>
-        <div class="task-card">
-            <div>Топ игроков</div>
-            <button class="btn" id="ratingBtn">Рейтинг</button>
+
+        <!-- Карточка реферальной программы -->
+        <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 2;">
+                <div style="font-size: 18px; font-weight: bold;">Реферальная программа</div>
+                <div style="font-size: 12px; color: #aaa;">Пригласи друга и получи 100 монет</div>
+            </div>
+            <div style="flex: 1; display: flex; gap: 10px; justify-content: center;">
+                <span style="font-weight: bold; color: gold;">100</span>
+                <img src="/assets/coins.png" style="width:20px; height:20px;" alt="монеты">
+            </div>
+            <div style="flex: 0 0 120px; display: flex; gap: 5px;">
+                <button class="btn" id="copyRefLink" style="flex: 1; padding: 8px 0;" title="Копировать ссылку">
+                    <img src="/assets/fight/copy.png" style="width:20px; height:20px;" alt="копировать">
+                </button>
+                <button class="btn" id="shareRefLink" style="flex: 1; padding: 8px 0;" title="Поделиться">
+                    <img src="/assets/fight/post.png" style="width:20px; height:20px;" alt="поделиться">
+                </button>
+            </div>
+        </div>
+
+        <!-- Карточка топ игроков -->
+        <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 2;">
+                <div style="font-size: 18px; font-weight: bold;">Топ игроков</div>
+                <div style="font-size: 12px; color: #aaa;">Рейтинг лучших бойцов</div>
+            </div>
+            <div style="flex: 1;"></div>
+            <div style="flex: 0 0 120px;">
+                <button class="btn" id="ratingBtn" style="width: 100%;">РЕЙТИНГ</button>
+            </div>
         </div>
     `;
 
+    // Обработчики
     document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
     
     document.getElementById('copyRefLink').addEventListener('click', () => {
@@ -1100,7 +1132,6 @@ function renderTasks() {
             return;
         }
         const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
-        // Копирование в буфер обмена
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(link).then(() => {
                 alert('Ссылка скопирована в буфер обмена');
@@ -1108,7 +1139,6 @@ function renderTasks() {
                 alert('Не удалось скопировать ссылку');
             });
         } else {
-            // Fallback для старых браузеров
             const textarea = document.createElement('textarea');
             textarea.value = link;
             document.body.appendChild(textarea);
@@ -1127,11 +1157,9 @@ function renderTasks() {
         const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
         const message = `Присоединяйся и сражайся!meow-meow 🐾\n\n${link}`;
         
-        // Используем Telegram WebApp API для отправки сообщения
         if (window.Telegram && Telegram.WebApp && Telegram.WebApp.shareMessage) {
             Telegram.WebApp.shareMessage(message);
         } else {
-            // Fallback: открываем стандартный диалог шаринга Telegram
             const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся и сражайся!meow-meow 🐾')}`;
             window.open(shareUrl, '_blank');
         }

@@ -402,6 +402,12 @@ function calculatePower(className, finalStats) {
     power += finalStats.reflect * coeff.reflect * 2;
     return Math.round(power);
 }
+// Вспомогательная функция для получения русского названия класса
+function getClassNameRu(cls) {
+    if (cls === 'warrior') return 'Воин';
+    if (cls === 'assassin') return 'Ассасин';
+    return 'Маг';
+}
 
 function showRoleInfoModal(className) {
     const modal = document.getElementById('roleModal');

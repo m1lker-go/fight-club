@@ -24,7 +24,7 @@ const roleDescriptions = {
         active: 'Несокрушимость – восстанавливает 20% от максимального HP, снимает отрицательные эффекты.'
     },
     berserker: {
-        name: 'Берсерк',//==================Вот
+        name: 'Берсерк',
         passive: 'Кровавая ярость – чем меньше HP, тем выше урон (до +50% при HP < 20%). Каждая атака наносит себе 10% от показателя атаки (но не менее 1).',
         active: 'Кровопускание – жертвует 30% от максимального HP, затем наносит урон x3 от атаки.'
     },
@@ -1385,15 +1385,80 @@ async function loadMarketItems(statFilter = 'any', container) {
         });
     });
 }
-// ==================== ЗАДАНИЯ ====================
 
+// ==================== НОВАЯ ФУНКЦИЯ ДЛЯ АДВЕНТА В КОНТЕЙНЕРЕ ====================
+function renderAdventCalendarInContainer(data, container) {
+    const { currentDay, daysInMonth, mask } = data;
+    
+    let firstUnclaimed = null;
+    for (let d = 1; d <= currentDay; d++) {
+        if (!(mask & (1 << (d-1)))) {
+            firstUnclaimed = d;
+            break;
+        }
+    }
+
+    let html = '<div class="advent-grid">';
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const claimed = mask & (1 << (day-1));
+        const available = (day === firstUnclaimed);
+        let className = 'advent-day';
+        if (claimed) className += ' claimed';
+        else if (available) className += ' available';
+        else className += ' locked';
+        
+        const reward = getAdventReward(day, daysInMonth);
+        let iconHtml = '';
+        if (reward.type === 'coins') {
+            iconHtml = '<i class="fas fa-coins" style="color: gold;"></i>';
+        } else if (reward.type === 'exp') {
+            iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
+        } else if (reward.type === 'item') {
+            let color = '#aaa';
+            if (reward.rarity === 'uncommon') color = '#2ecc71';
+            else if (reward.rarity === 'rare') color = '#2e86de';
+            else if (reward.rarity === 'epic') color = '#9b59b6';
+            else if (reward.rarity === 'legendary') color = '#f1c40f';
+            iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
+        }
+        
+        html += `<div class="${className}" data-day="${day}">
+            <div>${day}</div>
+            <div style="font-size: 12px;">${iconHtml}</div>
+        </div>`;
+    }
+    html += '</div>';
+    
+    container.innerHTML = html;
+    
+    container.querySelectorAll('.advent-day.available').forEach(div => {
+        div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
+    });
+}
+
+// ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3 style="text-align:center; margin-bottom:20px;">Ежедневные задания</h3>
+        <h3 style="text-align:center; margin-bottom:20px;">Адвент-календарь</h3>
+        <div id="adventCalendar"></div>
+        <h3 style="text-align:center; margin:20px 0;">Ежедневные задания</h3>
         <div id="tasksList"></div>
     `;
 
+    // Загружаем адвент-календарь
+    fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
+        .then(res => res.json())
+        .then(data => {
+            renderAdventCalendarInContainer(data, document.getElementById('adventCalendar'));
+        })
+        .catch(err => {
+            console.error('Error loading advent:', err);
+            document.getElementById('adventCalendar').innerHTML = '<p style="color:#aaa;">Ошибка загрузки календаря</p>';
+        });
+
+    // Загружаем ежедневные задания
     loadDailyTasks();
 }
 
@@ -1466,6 +1531,7 @@ async function loadDailyTasks() {
         console.error('Error loading daily tasks:', e);
     }
 }
+
 // ==================== ПРОФИЛЬ И ВКЛАДКИ ====================
 
 function renderProfile() {
@@ -1840,8 +1906,8 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             alert('Ошибка загрузки данных аватара');
         });
 }
-// ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 
+// ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
 function showAdventCalendar() {
     fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
         .then(res => res.json())
@@ -1968,6 +2034,11 @@ function showClassChoiceModal(day, expAmount) {
         });
     });
 
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+
+// ==================== ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ОПЫТА ИЗ ЕЖЕДНЕВНЫХ ЗАДАНИЙ ====================
 function claimDailyExp(taskId, expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -2007,52 +2078,6 @@ function claimDailyExp(taskId, expAmount) {
         });
     });
     
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-}
-    
-    function claimDailyExp(taskId, expAmount) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    
-    modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
-        </div>
-    `;
-    
-    modal.style.display = 'block';
-    
-    const classButtons = modalBody.querySelectorAll('.class-choice');
-    classButtons.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const classChoice = e.target.dataset.class;
-            modal.style.display = 'none';
-            
-            const res = await fetch('/tasks/daily/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId, class_choice: classChoice })
-            });
-            const data = await res.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
-                alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
-                renderTasks(); // перерисовать список заданий
-                refreshData(); // обновить топ-бар и данные классов
-            }
-        });
-    });
-    
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-}
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }

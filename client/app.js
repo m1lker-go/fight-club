@@ -569,7 +569,6 @@ function showLevelUpModal(className) {
 
     newUpgrade.addEventListener('click', () => {
         modal.style.display = 'none';
-        showScreen('skills'); // переходим на страницу навыков
     });
 
     newLater.addEventListener('click', () => {
@@ -580,6 +579,7 @@ function showLevelUpModal(className) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
+
 function renderItemColumn(item, isEquipped) {
     if (!item) {
         return `

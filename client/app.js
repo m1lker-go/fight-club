@@ -158,7 +158,21 @@ const rarityTranslations = {
     'epic': 'Эпическое',
     'legendary': 'Легендарное'
 };
+// Словарь для перевода названий скинов (английские из БД -> русские)
+const skinNameTranslations = {
+    'skin1': 'Бедолага',
+    'skin3': 'Зоркий глаз',
+    'skin4': 'Улыбочка',
+    'skin5': 'Ночная тень',
+    'skin6': 'Стальная броня',
+    'skin7': 'Чародей',
+    'skin9': 'Магический снежок',
+    'skin10': 'Страж королевства'
+};
 
+function translateSkinName(englishName) {
+    return skinNameTranslations[englishName] || englishName; // если нет перевода, оставляем как есть
+}
 // Инициализация
 async function init() {
     try {
@@ -525,7 +539,7 @@ function showChestResult(item) {
     body.innerHTML = `
         <div style="text-align: center;">
             <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${itemNameTranslations[item.name] || item.name}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(avatar.name)}</div>
             <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
             <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
@@ -612,7 +626,7 @@ function renderItemColumn(item, isEquipped) {
             <div style="width: 80px; height: 80px; margin: 0 auto;">
                 <img src="${iconPath}" style="width:100%; height:100%; object-fit: contain;">
             </div>
-            <div style="font-weight: bold; margin-top: 5px;">${itemNameTranslations[item.name] || item.name}</div>
+            <div style="font-weight: bold; margin-top: 5px;">${translateSkinName(avatar.name)}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
             <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>

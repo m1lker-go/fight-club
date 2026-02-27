@@ -566,13 +566,13 @@ function showLevelUpModal(className) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
-function renderItemColumn(item, isEquipped, onEquip) {
+function renderItemColumn(item, isEquipped) {
     if (!item) {
         return `
             <div style="text-align: center;">
                 <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 8px;"></div>
                 <div style="margin: 10px 0;">— пусто —</div>
-                <button class="btn" style="margin-top: 10px;" onclick="(${onEquip})()">⬆️ Надеть</button>
+                <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️</button>
             </div>
         `;
     }
@@ -615,44 +615,49 @@ function renderItemColumn(item, isEquipped, onEquip) {
             <div style="font-weight: bold; margin-top: 5px;">${itemNameTranslations[item.name] || item.name}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
-            <button class="btn" style="margin-top: 10px;" onclick="(${onEquip})()">⬆️ Надеть</button>
+            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️</button>
         </div>
     `;
+}
 }
 function showEquipCompareModal(oldItem, newItem) {
     const modal = document.getElementById('equipCompareModal');
     const body = document.getElementById('equipCompareBody');
     const closeBtn = modal.querySelector('.close');
 
-    // Функции для кнопок надевания (будут вызваны после клика)
-    const equipOld = () => {
-        // Оставляем старый предмет (ничего не делаем)
-        modal.style.display = 'none';
-    };
-    const equipNew = async () => {
-        // Надеваем новый предмет
-        const res = await fetch('/inventory/equip', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, item_id: newItem.id })
-        });
-        if (res.ok) {
-            await refreshData();
-            // Перерисовываем текущий экран экипировки
-            if (currentScreen === 'equip') renderEquip();
-        } else {
-            const err = await res.json();
-            alert('Ошибка: ' + err.error);
-        }
-        modal.style.display = 'none';
-    };
-
     body.innerHTML = `
-        <div id="oldItemColumn" style="flex: 1;">${renderItemColumn(oldItem, true, equipOld)}</div>
-        <div id="newItemColumn" style="flex: 1;">${renderItemColumn(newItem, false, equipNew)}</div>
+        <div id="oldItemColumn" style="flex: 1;">${renderItemColumn(oldItem, true)}</div>
+        <div id="newItemColumn" style="flex: 1;">${renderItemColumn(newItem, false)}</div>
     `;
 
     modal.style.display = 'block';
+
+    const oldBtn = body.querySelector('#oldItemColumn .equip-compare-btn');
+    const newBtn = body.querySelector('#newItemColumn .equip-compare-btn');
+
+    if (oldBtn) {
+        oldBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    if (newBtn) {
+        newBtn.addEventListener('click', async () => {
+            const res = await fetch('/inventory/equip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, item_id: newItem.id })
+            });
+            if (res.ok) {
+                await refreshData();
+                if (currentScreen === 'equip') renderEquip();
+            } else {
+                const err = await res.json();
+                alert('Ошибка: ' + err.error);
+            }
+            modal.style.display = 'none';
+        });
+    }
 
     closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (event) => {

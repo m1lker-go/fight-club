@@ -1125,40 +1125,91 @@ function renderTrade() {
     }
 }
 
-function renderForge() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <h3 style="text-align:center;">Кузница</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn" id="forgeSmeltBtn" style="flex:1;">РАСПЛАВИТЬ</button>
-            <button class="btn" id="forgeCraftBtn" style="flex:1;">КОВАТЬ</button>
-        </div>
-        <div id="forgeContent" style="text-align:center; color:#aaa;">
-            Здесь будет функционал кузницы (в разработке)
+function renderShop(target = null) {
+    const container = target || document.getElementById('content');
+    container.innerHTML = `
+        <div class="chest-list">
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/common-chess.png" alt="Обычный сундук">
+                </div>
+                <div class="chest-info">
+                    <div class="chest-name">Обычный сундук</div>
+                    <div class="chest-desc">Первый в день бесплатно, далее 50 монет</div>
+                </div>
+                <button class="chest-btn" data-chest="common">
+                    <span class="chest-price" id="commonChestPrice">?</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
+            </div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
+                </div>
+                <div class="chest-info">
+                    <div class="chest-name">Необычный сундук</div>
+                    <div class="chest-desc">25% обычный, 65% необычный, 10% редкий</div>
+                </div>
+                <button class="chest-btn" data-chest="uncommon">
+                    <span class="chest-price">200</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
+            </div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/rare-chess.png" alt="Редкий сундук">
+                </div>
+                <div class="chest-info">
+                    <div class="chest-name">Редкий сундук</div>
+                    <div class="chest-desc">Шанс получения редкого снаряжения 70%</div>
+                </div>
+                <button class="chest-btn" data-chest="rare">
+                    <span class="chest-price">800</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
+            </div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/epic-chess.png" alt="Эпический сундук">
+                </div>
+                <div class="chest-info">
+                    <div class="chest-name">Эпический сундук</div>
+                    <div class="chest-desc">Шанс получения эпического снаряжения 70%</div>
+                </div>
+                <button class="chest-btn" data-chest="epic">
+                    <span class="chest-price">1800</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
+            </div>
+            <div class="chest-card">
+                <div class="chest-icon">
+                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
+                </div>
+                <div class="chest-info">
+                    <div class="chest-name">Легендарный сундук</div>
+                    <div class="chest-desc">Шанс получения легендарного снаряжения 70%</div>
+                </div>
+                <button class="chest-btn" data-chest="legendary">
+                    <span class="chest-price">3500</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
+            </div>
         </div>
     `;
-}
 
-function renderRating() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <h3 style="text-align:center;">Рейтинг игроков</h3>
-        <p style="text-align:center; color:#aaa;">Скоро здесь появится таблица лидеров</p>
-    `;
-}
-
-
-
-    // Функция для обновления цены обычного сундука (бесплатно/50)
     async function updateCommonChestPrice() {
         try {
             const res = await fetch(`/user/freechest?tg_id=${userData.tg_id}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             if (data.freeAvailable) {
-                priceSpan.innerText = 'Бесплатно';
+                priceSpan.innerHTML = 'FREE';
+                const icon = container.querySelector('[data-chest="common"] i');
+                if (icon) icon.style.display = 'none';
             } else {
                 priceSpan.innerText = '50';
+                const icon = container.querySelector('[data-chest="common"] i');
+                if (icon) icon.style.display = 'inline-block';
             }
         } catch (e) {
             console.error('Failed to fetch free chest status', e);
@@ -1179,14 +1230,20 @@ function renderRating() {
             if (data.item) {
                 showChestResult(data.item);
                 await refreshData();
-                // Если это был обычный сундук, обновляем цену
                 if (chest === 'common') updateCommonChestPrice();
+                // Обновляем прогресс задания "Счастливчик"
+                fetch('/tasks/daily/update/chest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
+                }).catch(err => console.error('Failed to update chest task', err));
             } else {
                 alert('Ошибка: ' + data.error);
             }
         });
     });
 }
+
 async function renderMarket(target = null) {
     const container = target || document.getElementById('content');
     container.innerHTML = `
@@ -1237,6 +1294,7 @@ async function renderMarket(target = null) {
 
     await loadMarketItems(statSelect.value, container);
 }
+
 async function loadMarketItems(statFilter = 'any', container) {
     const classFilter = container.querySelector('#classFilter').value;
     const rarityFilter = container.querySelector('#rarityFilter').value;
@@ -1324,7 +1382,6 @@ async function loadMarketItems(statFilter = 'any', container) {
         });
     });
 }
-
 // ==================== ЗАДАНИЯ ====================
 
 function renderTasks() {

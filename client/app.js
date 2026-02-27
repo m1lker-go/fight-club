@@ -1514,10 +1514,10 @@ function renderRating() {
     content.innerHTML = '<p style="text-align:center; color:#aaa;">Рейтинг временно недоступен</p>';
 }
 
-    // Загружаем ежедневные задания
-   async function loadDailyTasks() {
+  // Загружаем ежедневные задания
+async function loadDailyTasks() {
     try {
-        const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}`);
+        const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const tasks = await res.json();
         const tasksList = document.getElementById('tasksList');
         tasksList.innerHTML = '';

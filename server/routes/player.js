@@ -149,35 +149,19 @@ router.post('/avatar', async (req, res) => {
 // Проверка доступности бесплатного обычного сундука
 router.get('/freechest', async (req, res) => {
     const { tg_id } = req.query;
-    
-    // Защита от некорректных данных
-    if (!tg_id) {
-        return res.status(400).json({ error: 'tg_id required', freeAvailable: false });
-    }
-    
-    // Проверяем, что tg_id - это число
-    const tgId = parseInt(tg_id);
-    if (isNaN(tgId) || tg_id === 'freechest' || tg_id.includes('freechest')) {
-        console.error('Invalid tg_id received in /freechest:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format', freeAvailable: false });
-    }
-    
+    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
     try {
-        const user = await pool.query('SELECT last_free_common_chest FROM users WHERE tg_id = $1', [tgId]);
-        if (user.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found', freeAvailable: false });
-        }
-        
+        const user = await pool.query('SELECT last_free_common_chest FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const lastFree = user.rows[0].last_free_common_chest;
         const now = new Date();
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
         const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
-        
         res.json({ freeAvailable });
     } catch (e) {
-        console.error('Database error in /freechest:', e);
-        res.status(500).json({ error: 'Database error', freeAvailable: false });
+        console.error(e);
+        res.status(500).json({ error: 'Database error' });
     }
 });
 

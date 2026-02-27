@@ -2,6 +2,33 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+// ========== ТЕСТОВЫЙ МАРШРУТ (ДЛЯ ДИАГНОСТИКИ) ==========
+router.get('/test', async (req, res) => {
+    try {
+        console.log('=== TEST ROUTE CALLED ===');
+        console.log('Query params:', req.query);
+        
+        // Простой запрос к БД
+        const result = await pool.query('SELECT 1+1 as sum');
+        
+        res.json({ 
+            status: 'ok', 
+            db: 'connected',
+            test: result.rows[0].sum,
+            time: new Date().toISOString(),
+            query: req.query
+        });
+    } catch (e) {
+        console.error('TEST ROUTE ERROR:', e);
+        res.status(500).json({ 
+            status: 'error', 
+            message: e.message,
+            stack: e.stack 
+        });
+    }
+});
+// =====================================================
+
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
     if (user.rows.length === 0) return;
@@ -145,7 +172,7 @@ router.post('/avatar', async (req, res) => {
     }
 });
 
-// Проверка доступности бесплатного обычного сундука - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Проверка доступности бесплатного обычного сундука
 router.get('/freechest', async (req, res) => {
     const rawTgId = req.query.tg_id;
     

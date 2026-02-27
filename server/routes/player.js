@@ -129,7 +129,6 @@ router.post('/avatar', async (req, res) => {
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const userId = user.rows[0].id;
 
-        // Проверяем, есть ли у пользователя этот аватар
         const owned = await pool.query(
             'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
             [userId, avatar_id]
@@ -146,30 +145,37 @@ router.post('/avatar', async (req, res) => {
     }
 });
 
-// Проверка доступности бесплатного обычного сундука
+// Проверка доступности бесплатного обычного сундука - ИСПРАВЛЕННАЯ ВЕРСИЯ
 router.get('/freechest', async (req, res) => {
-    const { tg_id } = req.query;
+    const rawTgId = req.query.tg_id;
     
     console.log('=== FREE CHEST DEBUG ===');
-    console.log('tg_id received:', tg_id);
+    console.log('rawTgId:', rawTgId);
+    console.log('Тип rawTgId:', typeof rawTgId);
     
-    if (!tg_id) {
+    if (!rawTgId) {
         return res.status(400).json({ error: 'tg_id required' });
     }
     
-    // Защита от строки "freechest"
-    if (tg_id === 'freechest' || tg_id === 'freecheck') {
-        console.log('Пойман некорректный запрос с tg_id =', tg_id);
+    if (rawTgId === 'freechest' || rawTgId === 'freecheck') {
+        console.log('Пойман некорректный запрос');
         return res.json({ freeAvailable: false });
     }
     
-    const tgId = parseInt(tg_id);
+    const tgId = parseInt(rawTgId, 10);
+    console.log('tgId после parseInt:', tgId);
+    
     if (isNaN(tgId)) {
-        return res.status(400).json({ error: 'Invalid tg_id' });
+        return res.status(400).json({ error: 'Invalid tg_id format' });
     }
     
     try {
-        const user = await pool.query('SELECT last_free_common_chest FROM users WHERE tg_id = $1', [tgId]);
+        const user = await pool.query(
+            'SELECT last_free_common_chest FROM users WHERE tg_id = $1', 
+            [tgId]
+        );
+        
+        console.log('Результат запроса к БД:', user.rows[0]);
         
         if (user.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });

@@ -566,6 +566,99 @@ function showLevelUpModal(className) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
+function renderItemColumn(item, isEquipped, onEquip) {
+    if (!item) {
+        return `
+            <div style="text-align: center;">
+                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 8px;"></div>
+                <div style="margin: 10px 0;">— пусто —</div>
+                <button class="btn" style="margin-top: 10px;" onclick="(${onEquip})()">⬆️ Надеть</button>
+            </div>
+        `;
+    }
+
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
+    const rarityClass = `rarity-${item.rarity}`;
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
+    const folder = classFolderMap[item.owner_class];
+    const fileType = typeFileMap[item.type];
+    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
+
+    return `
+        <div style="text-align: center;">
+            <div style="width: 80px; height: 80px; margin: 0 auto;">
+                <img src="${iconPath}" style="width:100%; height:100%; object-fit: contain;">
+            </div>
+            <div style="font-weight: bold; margin-top: 5px;">${itemNameTranslations[item.name] || item.name}</div>
+            <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
+            <button class="btn" style="margin-top: 10px;" onclick="(${onEquip})()">⬆️ Надеть</button>
+        </div>
+    `;
+}
+function showEquipCompareModal(oldItem, newItem) {
+    const modal = document.getElementById('equipCompareModal');
+    const body = document.getElementById('equipCompareBody');
+    const closeBtn = modal.querySelector('.close');
+
+    // Функции для кнопок надевания (будут вызваны после клика)
+    const equipOld = () => {
+        // Оставляем старый предмет (ничего не делаем)
+        modal.style.display = 'none';
+    };
+    const equipNew = async () => {
+        // Надеваем новый предмет
+        const res = await fetch('/inventory/equip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, item_id: newItem.id })
+        });
+        if (res.ok) {
+            await refreshData();
+            // Перерисовываем текущий экран экипировки
+            if (currentScreen === 'equip') renderEquip();
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + err.error);
+        }
+        modal.style.display = 'none';
+    };
+
+    body.innerHTML = `
+        <div id="oldItemColumn" style="flex: 1;">${renderItemColumn(oldItem, true, equipOld)}</div>
+        <div id="newItemColumn" style="flex: 1;">${renderItemColumn(newItem, false, equipNew)}</div>
+    `;
+
+    modal.style.display = 'block';
+
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
+}
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 
@@ -932,20 +1025,32 @@ function renderEquip() {
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const res = await fetch('/inventory/equip', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                            });
-                            if (res.ok) {
-                                await refreshData();
-                            } else {
-                                const err = await res.json();
-                                alert('Ошибка: ' + err.error);
-                            }
-                        });
+actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    // Определяем тип предмета и ищем уже надетый в этом слоте
+    const item = inventory.find(i => i.id == itemId);
+    if (!item) return;
+
+    const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
+    
+    if (equippedInSlot) {
+        // Если слот занят, открываем окно сравнения
+        showEquipCompareModal(equippedInSlot, item);
+    } else {
+        // Иначе сразу надеваем
+        const res = await fetch('/inventory/equip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+        });
+        if (res.ok) {
+            await refreshData();
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + err.error);
+        }
+    }
+});
                         actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const price = prompt('Введите цену продажи в монетах:');

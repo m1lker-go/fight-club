@@ -49,13 +49,46 @@ function validateTgId(tg_id) {
 }
 
 // ========== БЕСПЛАТНЫЙ СУНДУК - БЕЗ ЗАЩИТЫ ==========
-router.get('/freechest', (req, res) => {
-    console.log('=== FREE CHEST HIT ===');
-    console.log('tg_id:', req.query.tg_id);
-    console.log('Time:', new Date().toISOString());
+router.get('/freechest', async (req, res) => {
+    const rawTgId = req.query.tg_id;
     
-    // Просто возвращаем true, без проверок
-    res.json({ freeAvailable: true });
+    console.log('=== FREE CHEST CHECK ===');
+    console.log('tg_id:', rawTgId);
+    
+    if (!rawTgId) {
+        return res.status(400).json({ error: 'tg_id required' });
+    }
+    
+    const tgId = parseInt(rawTgId);
+    if (isNaN(tgId)) {
+        return res.status(400).json({ error: 'Invalid tg_id' });
+    }
+    
+    try {
+        // Проверяем, когда последний раз брали бесплатный сундук
+        const user = await pool.query(
+            'SELECT last_free_common_chest FROM users WHERE tg_id = $1', 
+            [tgId]
+        );
+        
+        if (user.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const lastFree = user.rows[0].last_free_common_chest;
+        const now = new Date();
+        const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+        const today = moscowNow.toISOString().split('T')[0];
+        
+        // Бесплатно, если никогда не брали или брали не сегодня
+        const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
+        
+        console.log('freeAvailable:', freeAvailable);
+        res.json({ freeAvailable });
+    } catch (e) {
+        console.error('Database error:', e);
+        res.status(500).json({ error: 'Database error' });
+    }
 });
 // =================================================
 

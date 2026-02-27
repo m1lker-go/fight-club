@@ -158,6 +158,39 @@ const rarityTranslations = {
     'epic': 'Эпическое',
     'legendary': 'Легендарное'
 };
+
+// Словарь для перевода ежедневных заданий (английские -> русские)
+const dailyTaskTranslations = {
+    'Warrior Winner': {
+        name: 'Воин',
+        description: 'Выиграйте 5 боёв, играя за Воина'
+    },
+    'Assassin Winner': {
+        name: 'Ассасин',
+        description: 'Выиграйте 5 боёв, играя за Ассасина'
+    },
+    'Mage Winner': {
+        name: 'Маг',
+        description: 'Выиграйте 5 боёв, играя за Мага'
+    },
+    'Experience Gain': {
+        name: 'Набор опыта',
+        description: 'Получите 50 очков опыта (суммарно за все классы)'
+    },
+    'Training Day': {
+        name: 'Тренировочный день',
+        description: 'Сыграйте 15 матчей за день (любых)'
+    },
+    'Curious': {
+        name: 'Любознательный',
+        description: 'Зайдите на страницу профиля'
+    },
+    'Lucky': {
+        name: 'Счастливчик',
+        description: 'Получите предмет редкостью не ниже «Редкий» из сундука'
+    }
+};
+
 // Словарь для перевода названий скинов (английские из БД -> русские)
 const skinNameTranslations = {
     'skin1': 'Бедолага',

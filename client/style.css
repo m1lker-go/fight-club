@@ -24,6 +24,10 @@ body {
     position: relative;
 }
 
+#tasksList {
+    display: block;
+}
+
 /* Верхняя панель */
 .top-bar {
     display: flex;

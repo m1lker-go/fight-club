@@ -1330,100 +1330,82 @@ async function loadMarketItems(statFilter = 'any', container) {
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3 style="text-align:center; margin-bottom:20px;">Ежедневные награды</h3>
-        
-        <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 2;">
-                <div style="font-size: 18px; font-weight: bold;">Адвент-календарь</div>
-                <div style="font-size: 12px; color: #aaa;">Забирайте награды каждый день!</div>
-            </div>
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                <i class="fas fa-coins" style="color: white; font-size: 24px;"></i>
-                <span style="font-size: 12px; color: white; font-weight: bold;">EXP</span>
-                <i class="fas fa-tshirt" style="color: white; font-size: 24px;"></i>
-            </div>
-            <div style="flex: 0 0 120px;">
-                <button class="btn" id="adventBtn" style="width: 100%;">ПОКАЗАТЬ</button>
-            </div>
-        </div>
-
-        <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 2;">
-                <div style="font-size: 18px; font-weight: bold;">Реферальная программа</div>
-                <div style="font-size: 12px; color: #aaa;">Пригласи друга и получи 100 монет</div>
-            </div>
-            <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px;">
-                <span style="font-weight: bold; color: white;">100</span>
-                <i class="fas fa-coins" style="color: white; font-size: 20px;"></i>
-            </div>
-            <div style="flex: 0 0 120px; display: flex; gap: 5px;">
-                <button class="btn" id="copyRefLink" style="flex: 1; padding: 8px 0;" title="Копировать ссылку">
-                    <img src="/assets/icons/copy.png" style="width:20px; height:20px;" alt="копировать">
-                </button>
-                <button class="btn" id="shareRefLink" style="flex: 1; padding: 8px 0;" title="Поделиться">
-                    <img src="/assets/icons/post.png" style="width:20px; height:20px;" alt="поделиться">
-                </button>
-            </div>
-        </div>
-
-        <div class="task-card" style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="flex: 2;">
-                <div style="font-size: 18px; font-weight: bold;">Топ игроков</div>
-                <div style="font-size: 12px; color: #aaa;">Рейтинг лучших бойцов</div>
-            </div>
-            <div style="flex: 1;"></div>
-            <div style="flex: 0 0 120px;">
-                <button class="btn" id="ratingBtn" style="width: 100%;">РЕЙТИНГ</button>
-            </div>
-        </div>
+        <h3 style="text-align:center; margin-bottom:20px;">Ежедневные задания</h3>
+        <div id="tasksList"></div>
     `;
 
-    document.getElementById('adventBtn').addEventListener('click', () => showAdventCalendar());
-    
-    document.getElementById('copyRefLink').addEventListener('click', () => {
-        if (!BOT_USERNAME) {
-            alert('Имя бота не загружено');
-            return;
-        }
-        const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(link).then(() => {
-                alert('Ссылка скопирована в буфер обмена');
-            }).catch(() => {
-                alert('Не удалось скопировать ссылку');
-            });
-        } else {
-            const textarea = document.createElement('textarea');
-            textarea.value = link;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('Ссылка скопирована в буфер обмена');
-        }
-    });
-
-    document.getElementById('shareRefLink').addEventListener('click', () => {
-        if (!BOT_USERNAME) {
-            alert('Имя бота не загружено');
-            return;
-        }
-        const link = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code}`;
-        const message = `Присоединяйся и сражайся!meow-meow 🐾\n\n${link}`;
-        
-        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.shareMessage) {
-            Telegram.WebApp.shareMessage(message);
-        } else {
-            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся и сражайся!meow-meow 🐾')}`;
-            window.open(shareUrl, '_blank');
-        }
-    });
-
-    document.getElementById('ratingBtn').addEventListener('click', () => {
-        alert('Рейтинг пока не реализован');
-    });
+    loadDailyTasks();
 }
 
+async function loadDailyTasks() {
+    try {
+        const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}`);
+        const tasks = await res.json();
+        const tasksList = document.getElementById('tasksList');
+        tasksList.innerHTML = '';
+
+        tasks.forEach(task => {
+            if (task.completed) return; // выполненные не показываем
+
+            const progressPercent = (task.progress / task.target_value) * 100;
+            const rewardText = task.reward_type === 'coins' ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` : `${task.reward_amount} EXP`;
+
+            const taskCard = document.createElement('div');
+            taskCard.className = 'task-card';
+            taskCard.style.display = 'flex';
+            taskCard.style.alignItems = 'center';
+            taskCard.style.justifyContent = 'space-between';
+            taskCard.innerHTML = `
+                <div style="flex: 2;">
+                    <div style="font-size: 18px; font-weight: bold;">${task.name}</div>
+                    <div style="font-size: 12px; color: #aaa;">${task.description}</div>
+                    <div style="margin-top: 8px;">
+                        <div style="background-color: #2f3542; height: 6px; border-radius: 3px;">
+                            <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
+                        </div>
+                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">${task.progress}/${task.target_value}</div>
+                    </div>
+                </div>
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px;">
+                    <span style="font-weight: bold; color: white;">${rewardText}</span>
+                </div>
+                <div style="flex: 0 0 120px;">
+                    <button class="btn claim-task-btn" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}">ПОЛУЧИТЬ</button>
+                </div>
+            `;
+            tasksList.appendChild(taskCard);
+        });
+
+        document.querySelectorAll('.claim-task-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const taskId = btn.dataset.taskId;
+                const rewardType = btn.dataset.rewardType;
+                const rewardAmount = parseInt(btn.dataset.rewardAmount);
+
+                if (rewardType === 'exp') {
+                    claimDailyExp(taskId, rewardAmount);
+                } else {
+                    const res = await fetch('/tasks/daily/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                    });
+                    const data = await res.json();
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        alert(`Вы получили ${rewardAmount} монет!`);
+                        loadDailyTasks(); // перезагрузить список
+                        refreshData(); // обновить баланс
+                    }
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error('Error loading daily tasks:', e);
+    }
+}
 // ==================== ПРОФИЛЬ И ВКЛАДКИ ====================
 
 function renderProfile() {
@@ -1909,7 +1891,49 @@ function showClassChoiceModal(day, expAmount) {
             }
         });
     });
+
+    function claimDailyExp(taskId, expAmount) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
     
+    modalTitle.innerText = 'Выберите класс';
+    modalBody.innerHTML = `
+        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+            <button class="btn class-choice" data-class="warrior">Воин</button>
+            <button class="btn class-choice" data-class="assassin">Ассасин</button>
+            <button class="btn class-choice" data-class="mage">Маг</button>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    const classButtons = modalBody.querySelectorAll('.class-choice');
+    classButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const classChoice = e.target.dataset.class;
+            modal.style.display = 'none';
+            
+            const res = await fetch('/tasks/daily/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId, class_choice: classChoice })
+            });
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
+                renderTasks(); // перерисовать список заданий
+                refreshData(); // обновить топ-бар и данные классов
+            }
+        });
+    });
+    
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
@@ -2302,7 +2326,16 @@ function showBattleResult(battleData, timeOut = false) {
         await refreshData();
         showScreen('main');
     });
-
+// Обновляем прогресс заданий после боя
+fetch('/tasks/daily/update/battle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        tg_id: userData.tg_id,
+        class_played: userData.current_class,
+        is_victory: isVictory
+    })
+}).catch(err => console.error('Failed to update battle task', err));
     // Если персонаж получил уровень, показываем модалку
     if (leveledUp) {
         showLevelUpModal(userData.current_class);

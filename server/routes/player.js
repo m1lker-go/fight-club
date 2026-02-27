@@ -43,8 +43,22 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
+// Вспомогательная функция для проверки tg_id
+function validateTgId(tg_id) {
+    if (!tg_id) return false;
+    const num = parseInt(tg_id);
+    return !isNaN(num) && num > 0;
+}
+
 router.get('/:tg_id', async (req, res) => {
     const { tg_id } = req.params;
+    
+    // Защита от некорректного tg_id
+    if (!validateTgId(tg_id)) {
+        console.log('Invalid tg_id in /:tg_id:', tg_id);
+        return res.status(400).json({ error: 'Invalid tg_id format' });
+    }
+    
     const client = await pool.connect();
     try {
         const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
@@ -79,10 +93,18 @@ router.get('/:tg_id', async (req, res) => {
 
 router.get('/class/:tg_id/:class', async (req, res) => {
     const { tg_id, class: className } = req.params;
+    
+    // Защита от некорректного tg_id
+    if (!validateTgId(tg_id)) {
+        console.log('Invalid tg_id in /class:', tg_id);
+        return res.status(400).json({ error: 'Invalid tg_id format' });
+    }
+    
     const client = await pool.connect();
     try {
         const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        
         const classData = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
             [user.rows[0].id, className]
@@ -96,6 +118,13 @@ router.get('/class/:tg_id/:class', async (req, res) => {
 
 router.post('/upgrade', async (req, res) => {
     const { tg_id, class: className, stat, points } = req.body;
+    
+    // Защита от некорректного tg_id
+    if (!validateTgId(tg_id)) {
+        console.log('Invalid tg_id in /upgrade:', tg_id);
+        return res.status(400).json({ error: 'Invalid tg_id format' });
+    }
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -126,6 +155,13 @@ router.post('/upgrade', async (req, res) => {
 
 router.post('/class', async (req, res) => {
     const { tg_id, class: newClass } = req.body;
+    
+    // Защита от некорректного tg_id
+    if (!validateTgId(tg_id)) {
+        console.log('Invalid tg_id in /class:', tg_id);
+        return res.status(400).json({ error: 'Invalid tg_id format' });
+    }
+    
     try {
         await pool.query('UPDATE users SET current_class = $1 WHERE tg_id = $2', [newClass, tg_id]);
         res.json({ success: true });
@@ -136,6 +172,13 @@ router.post('/class', async (req, res) => {
 
 router.post('/subclass', async (req, res) => {
     const { tg_id, subclass } = req.body;
+    
+    // Защита от некорректного tg_id
+    if (!validateTgId(tg_id)) {
+        console.log('Invalid tg_id in /subclass:', tg_id);
+        return res.status(400).json({ error: 'Invalid tg_id format' });
+    }
+    
     try {
         await pool.query('UPDATE users SET subclass = $1 WHERE tg_id = $2', [subclass, tg_id]);
         res.json({ success: true });
@@ -147,9 +190,17 @@ router.post('/subclass', async (req, res) => {
 // Смена аватара
 router.post('/avatar', async (req, res) => {
     const { tg_id, avatar_id } = req.body;
-    if (!tg_id || !avatar_id) {
-        return res.status(400).json({ error: 'Missing data' });
+    
+    // Защита от некорректного tg_id
+    if (!validateTgId(tg_id)) {
+        console.log('Invalid tg_id in /avatar:', tg_id);
+        return res.status(400).json({ error: 'Invalid tg_id format' });
     }
+    
+    if (!avatar_id) {
+        return res.status(400).json({ error: 'Missing avatar_id' });
+    }
+    
     try {
         const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });

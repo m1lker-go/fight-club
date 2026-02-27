@@ -2,13 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// ========== ТЕСТОВЫЙ МАРШРУТ (ДЛЯ ДИАГНОСТИКИ) ==========
+// ========== ТЕСТОВЫЙ МАРШРУТ ==========
 router.get('/test', async (req, res) => {
     try {
         console.log('=== TEST ROUTE CALLED ===');
         console.log('Query params:', req.query);
         
-        // Простой запрос к БД
         const result = await pool.query('SELECT 1+1 as sum');
         
         res.json({ 
@@ -27,7 +26,7 @@ router.get('/test', async (req, res) => {
         });
     }
 });
-// =====================================================
+// ================================
 
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
@@ -172,54 +171,19 @@ router.post('/avatar', async (req, res) => {
     }
 });
 
-// Проверка доступности бесплатного обычного сундука
+// ========== УПРОЩЁННЫЙ МАРШРУТ ДЛЯ БЕСПЛАТНОГО СУНДУКА ==========
 router.get('/freechest', async (req, res) => {
-    const rawTgId = req.query.tg_id;
+    console.log('=== FREE CHEST SIMPLIFIED ===');
+    console.log('Query:', req.query);
+    console.log('Time:', new Date().toISOString());
     
-    console.log('=== FREE CHEST DEBUG ===');
-    console.log('rawTgId:', rawTgId);
-    console.log('Тип rawTgId:', typeof rawTgId);
-    
-    if (!rawTgId) {
-        return res.status(400).json({ error: 'tg_id required' });
-    }
-    
-    if (rawTgId === 'freechest' || rawTgId === 'freecheck') {
-        console.log('Пойман некорректный запрос');
-        return res.json({ freeAvailable: false });
-    }
-    
-    const tgId = parseInt(rawTgId, 10);
-    console.log('tgId после parseInt:', tgId);
-    
-    if (isNaN(tgId)) {
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
-    
-    try {
-        const user = await pool.query(
-            'SELECT last_free_common_chest FROM users WHERE tg_id = $1', 
-            [tgId]
-        );
-        
-        console.log('Результат запроса к БД:', user.rows[0]);
-        
-        if (user.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        const lastFree = user.rows[0].last_free_common_chest;
-        const now = new Date();
-        const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const today = moscowNow.toISOString().split('T')[0];
-        const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
-        
-        console.log('freeAvailable:', freeAvailable);
-        res.json({ freeAvailable });
-    } catch (e) {
-        console.error('Database error in /freechest:', e);
-        res.status(500).json({ error: 'Database error' });
-    }
+    // Просто возвращаем успех, без обращений к БД
+    res.json({ 
+        freeAvailable: true,
+        message: 'Simplified test response',
+        receivedTgId: req.query.tg_id || 'no tg_id'
+    });
 });
+// ==============================================================
 
 module.exports = router;

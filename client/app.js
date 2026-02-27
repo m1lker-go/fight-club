@@ -1509,6 +1509,11 @@ function renderTasks() {
     loadDailyTasks();
 }
 
+function renderRating() {
+    const content = document.getElementById('content');
+    content.innerHTML = '<p style="text-align:center; color:#aaa;">Рейтинг временно недоступен</p>';
+}
+
     // Загружаем ежедневные задания
    async function loadDailyTasks() {
     try {

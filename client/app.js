@@ -1199,17 +1199,16 @@ function renderShop(target = null) {
 
     async function updateCommonChestPrice() {
         try {
-            const res = await fetch(`/user/freechest?tg_id=${userData.tg_id}`);
+            const res = await fetch(`/player/freechest?tg_id=${userData.tg_id}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
+            const coinIcon = container.querySelector('[data-chest="common"] i');
             if (data.freeAvailable) {
-                priceSpan.innerHTML = 'FREE';
-                const icon = container.querySelector('[data-chest="common"] i');
-                if (icon) icon.style.display = 'none';
+                priceSpan.innerText = 'FREE';
+                coinIcon.style.display = 'none'; // скрываем иконку монеты
             } else {
                 priceSpan.innerText = '50';
-                const icon = container.querySelector('[data-chest="common"] i');
-                if (icon) icon.style.display = 'inline-block';
+                coinIcon.style.display = 'inline-block'; // показываем иконку
             }
         } catch (e) {
             console.error('Failed to fetch free chest status', e);
@@ -1230,7 +1229,9 @@ function renderShop(target = null) {
             if (data.item) {
                 showChestResult(data.item);
                 await refreshData();
+                // Если это был обычный сундук, обновляем цену
                 if (chest === 'common') updateCommonChestPrice();
+                
                 // Обновляем прогресс задания "Счастливчик"
                 fetch('/tasks/daily/update/chest', {
                     method: 'POST',
@@ -1467,7 +1468,14 @@ async function loadDailyTasks() {
 
 function renderProfile() {
     const content = document.getElementById('content');
-   
+
+// Обновляем задание "Любознательный"
+fetch('/tasks/daily/update/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tg_id: userData.tg_id })
+}).catch(err => console.error('Failed to update profile task', err));
+    
     // Обновляем задание "Любознательный"
     fetch('/tasks/daily/update/profile', {
         method: 'POST',
@@ -1958,6 +1966,49 @@ function showClassChoiceModal(day, expAmount) {
         });
     });
 
+function claimDailyExp(taskId, expAmount) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    modalTitle.innerText = 'Выберите класс';
+    modalBody.innerHTML = `
+        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+            <button class="btn class-choice" data-class="warrior">Воин</button>
+            <button class="btn class-choice" data-class="assassin">Ассасин</button>
+            <button class="btn class-choice" data-class="mage">Маг</button>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    const classButtons = modalBody.querySelectorAll('.class-choice');
+    classButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const classChoice = e.target.dataset.class;
+            modal.style.display = 'none';
+            
+            const res = await fetch('/tasks/daily/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId, class_choice: classChoice })
+            });
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
+                renderTasks(); // перерисовать список заданий
+                refreshData(); // обновить топ-бар и данные классов
+            }
+        });
+    });
+    
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+    
     function claimDailyExp(taskId, expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');

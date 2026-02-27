@@ -146,22 +146,46 @@ router.post('/avatar', async (req, res) => {
     }
 });
 
-// Проверка доступности бесплатного обычного сундука
+// Проверка доступности бесплатного обычного сундука - ИСПРАВЛЕННАЯ ВЕРСИЯ
 router.get('/freechest', async (req, res) => {
     const { tg_id } = req.query;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    
+    console.log('=== FREE CHEST DEBUG ===');
+    console.log('tg_id received:', tg_id);
+    
+    if (!tg_id) {
+        return res.status(400).json({ error: 'tg_id required' });
+    }
+    
+    // Защита от строки "freechest"
+    if (tg_id === 'freechest' || tg_id === 'freecheck') {
+        console.log('Пойман некорректный запрос с tg_id =', tg_id);
+        return res.json({ freeAvailable: false });
+    }
+    
+    const tgId = parseInt(tg_id);
+    if (isNaN(tgId)) {
+        return res.status(400).json({ error: 'Invalid tg_id' });
+    }
+    
     try {
-       const tgId = parseInt(tg_id);
-const user = await pool.query('SELECT last_free_common_chest FROM users WHERE tg_id = $1', [tgId]);
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = await pool.query('SELECT last_free_common_chest FROM users WHERE tg_id = $1', [tgId]);
+        console.log('User found:', user.rows[0]);
+        
+        if (user.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
         const lastFree = user.rows[0].last_free_common_chest;
         const now = new Date();
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
         const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
+        
+        console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });
     } catch (e) {
-        console.error(e);
+        console.error('Database error in /freechest:', e);
         res.status(500).json({ error: 'Database error' });
     }
 });

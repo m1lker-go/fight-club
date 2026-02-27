@@ -1011,28 +1011,7 @@ function renderEquip() {
                     }
                     actionsDiv.style.display = 'flex';
 
-                            document.querySelectorAll('.inventory-item').forEach(itemDiv => {
-            itemDiv.addEventListener('click', (e) => {
-                if (e.target.classList.contains('action-btn')) return;
-
-                const itemId = itemDiv.dataset.itemId;
-                const forSale = itemDiv.dataset.forSale === 'true';
-                const actionsDiv = itemDiv.querySelector('.item-actions');
-
-                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
-                    if (div !== actionsDiv) div.style.display = 'none';
-                });
-
-                if (actionsDiv.style.display === 'flex') {
-                    actionsDiv.style.display = 'none';
-                } else {
                     if (forSale) {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
-                        `;
-                        actionsDiv.style.display = 'flex';
-
                         actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const res = await fetch('/inventory/unsell', {
@@ -1046,25 +1025,18 @@ function renderEquip() {
                                 alert('Ошибка при снятии с продажи');
                             }
                         });
-
                         actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
                             e.stopPropagation();
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
-                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
-                        `;
-                        actionsDiv.style.display = 'flex';
-
                         actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const item = inventory.find(i => i.id == itemId);
                             if (!item) return;
 
                             const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
-
+                            
                             if (equippedInSlot) {
                                 showEquipCompareModal(equippedInSlot, item);
                             } else {
@@ -1104,6 +1076,10 @@ function renderEquip() {
                 }
             });
         });
+    }
+
+    renderInventoryForClass(selectedClass);
+}
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {

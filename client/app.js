@@ -1234,8 +1234,8 @@ function renderShop(target = null) {
 
     async function updateCommonChestPrice() {
         try {
-            const tgId = Number(userData.tg_id); // принудительно в число
-            const res = await fetch(`/player/freechest?tg_id=${userData.tg_id}`);
+            console.log('userData.tg_id в updateCommonChestPrice:', userData.tg_id);
+             const res = await fetch(`/player/freechest?tg_id=${userData.tg_id}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             const coinIcon = container.querySelector('[data-chest="common"] i');

@@ -569,6 +569,8 @@ function showLevelUpModal(className) {
 
     newUpgrade.addEventListener('click', () => {
         modal.style.display = 'none';
+        profileTab = 'upgrade';      // переключаем вкладку профиля
+        showScreen('profile');        // переходим в профиль
     });
 
     newLater.addEventListener('click', () => {
@@ -2316,7 +2318,7 @@ function showBattleResult(battleData, timeOut = false) {
         body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
     }).catch(err => console.error('Failed to update exp task', err));
     
-    // Сбор статистики из turns
+    // Сбор статистики из turns (оставляем как есть)
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
     };
@@ -2461,16 +2463,7 @@ function showBattleResult(battleData, timeOut = false) {
         await refreshData();
         showScreen('main');
     });
-// Обновляем прогресс заданий после боя
-fetch('/tasks/daily/update/battle', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        tg_id: userData.tg_id,
-        class_played: userData.current_class,
-        is_victory: isVictory
-    })
-}).catch(err => console.error('Failed to update battle task', err));
+
     // Если персонаж получил уровень, показываем модалку
     if (leveledUp) {
         showLevelUpModal(userData.current_class);

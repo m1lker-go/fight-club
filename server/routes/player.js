@@ -226,13 +226,10 @@ router.post('/avatar', async (req, res) => {
 router.get('/freechest', async (req, res) => {
     console.log('=== FREE CHEST SIMPLIFIED ===');
     console.log('Query:', req.query);
-    console.log('Time:', new Date().toISOString());
     
-    // Просто возвращаем успех, без обращений к БД
     res.json({ 
         freeAvailable: true,
-        message: 'Simplified test response',
-        receivedTgId: req.query.tg_id || 'no tg_id'
+        receivedTgId: req.query.tg_id
     });
 });
 // ==============================================================

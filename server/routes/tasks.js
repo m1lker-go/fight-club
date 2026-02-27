@@ -9,7 +9,7 @@ function getProgress(userData, taskId) {
     return progress ? parseInt(progress) : 0;
 }
 
-// Получить список доступных заданий для пользователя
+// Получить список доступных заданий
 router.get('/daily/list', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -66,9 +66,9 @@ router.get('/daily/list', async (req, res) => {
     }
 });
 
-// Получить награду за задание
+// Получить награду за задание (с возможностью выбора класса для EXP)
 router.post('/daily/claim', async (req, res) => {
-    const { tg_id, task_id } = req.body;
+    const { tg_id, task_id, class_choice } = req.body;
     if (!tg_id || !task_id) return res.status(400).json({ error: 'Missing data' });
 
     const client = await pool.connect();
@@ -108,29 +108,30 @@ router.post('/daily/claim', async (req, res) => {
         if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, userId]);
         } else if (task.reward_type === 'exp') {
-            // Опыт начисляем на текущий класс? Или на все? Пока на текущий.
-            // Для простоты – позже можно доработать.
+            if (!class_choice) {
+                throw new Error('class_choice required for exp reward');
+            }
+            // Получаем данные класса
             const classRes = await client.query(
-                'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = (SELECT current_class FROM users WHERE id = $1)',
-                [userId]
+                'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+                [userId, class_choice]
             );
-            if (classRes.rows.length > 0) {
-                let { level, exp } = classRes.rows[0];
-                exp += task.reward_amount;
-                const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
-                while (exp >= expNeeded(level)) {
-                    exp -= expNeeded(level);
-                    level++;
-                    await client.query(
-                        'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
-                        [userId, classRes.rows[0].class]
-                    );
-                }
+            if (classRes.rows.length === 0) throw new Error('Class not found');
+            let { level, exp } = classRes.rows[0];
+            exp += task.reward_amount;
+            const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
+            while (exp >= expNeeded(level)) {
+                exp -= expNeeded(level);
+                level++;
                 await client.query(
-                    'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
-                    [level, exp, userId, classRes.rows[0].class]
+                    'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
+                    [userId, class_choice]
                 );
             }
+            await client.query(
+                'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
+                [level, exp, userId, class_choice]
+            );
         }
 
         // Отмечаем задание выполненным
@@ -150,9 +151,7 @@ router.post('/daily/claim', async (req, res) => {
     }
 });
 
-// Маршруты для обновления прогресса (будут вызываться из других частей игры)
-// Например, после боя, после открытия сундука и т.д.
-
+// Маршруты для обновления прогресса
 router.post('/daily/update/battle', async (req, res) => {
     const { tg_id, class_played, is_victory } = req.body;
     const client = await pool.connect();
@@ -171,17 +170,16 @@ router.post('/daily/update/battle', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         if (user.last_daily_reset !== today) {
-            // Сброс произойдёт при следующем запросе списка, пока игнорируем
             await client.query('ROLLBACK');
-            return res.json({ success: true }); // ничего не обновляем
+            return res.json({ success: true }); // игнорируем, если новый день
         }
 
         let progress = user.daily_tasks_progress || {};
 
-        // Задание "Сыграть 15 матчей"
+        // Задание 5: сыграть 15 матчей
         progress[5] = (progress[5] || 0) + 1;
 
-        // Задания на классовые победы
+        // Классовые победы (задания 1-3)
         if (is_victory) {
             if (class_played === 'warrior') progress[1] = (progress[1] || 0) + 1;
             if (class_played === 'assassin') progress[2] = (progress[2] || 0) + 1;
@@ -227,6 +225,7 @@ router.post('/daily/update/exp', async (req, res) => {
         }
 
         let progress = user.daily_tasks_progress || {};
+        // Задание 4: набор опыта
         progress[4] = (progress[4] || 0) + exp_gained;
 
         await client.query(
@@ -268,8 +267,7 @@ router.post('/daily/update/chest', async (req, res) => {
         }
 
         let progress = user.daily_tasks_progress || {};
-
-        // Задание на получение редкого+ предмета
+        // Задание 7: счастливчик (редкий+ предмет)
         if (['rare', 'epic', 'legendary'].includes(item_rarity)) {
             progress[7] = (progress[7] || 0) + 1;
         }
@@ -307,8 +305,28 @@ router.post('/daily/update/profile', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         if (user.last_daily_reset !== today) {
-            // Сброс позже
+            await client.query('ROLLBACK');
             return res.json({ success: true });
         }
 
-        // Если сегодня ещё не заходил в профиль,
+        let progress = user.daily_tasks_progress || {};
+        // Задание 6: любознательный
+        progress[6] = (progress[6] || 0) + 1;
+
+        await client.query(
+            'UPDATE users SET daily_tasks_progress = $1, last_profile_visit = $2 WHERE id = $3',
+            [JSON.stringify(progress), moscowNow, userId]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+module.exports = router;

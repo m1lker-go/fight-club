@@ -1240,10 +1240,10 @@ function renderShop(target = null) {
             const coinIcon = container.querySelector('[data-chest="common"] i');
             if (data.freeAvailable) {
                 priceSpan.innerText = 'FREE';
-                coinIcon.style.display = 'none'; // скрываем иконку монеты
+                coinIcon.style.display = 'none';
             } else {
                 priceSpan.innerText = '50';
-                coinIcon.style.display = 'inline-block'; // показываем иконку
+                coinIcon.style.display = 'inline-block';
             }
         } catch (e) {
             console.error('Failed to fetch free chest status', e);
@@ -1264,15 +1264,15 @@ function renderShop(target = null) {
             if (data.item) {
                 showChestResult(data.item);
                 await refreshData();
-                // Если это был обычный сундук, обновляем цену
                 if (chest === 'common') updateCommonChestPrice();
                 
-                // Обновляем прогресс задания "Счастливчик"
+                // --- ОБНОВЛЕНИЕ ЗАДАНИЯ "СЧАСТЛИВЧИК" ---
                 fetch('/tasks/daily/update/chest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
                 }).catch(err => console.error('Failed to update chest task', err));
+                // -----------------------------------------
             } else {
                 alert('Ошибка: ' + data.error);
             }
@@ -1598,20 +1598,13 @@ function renderTasks() {
 function renderProfile() {
     const content = document.getElementById('content');
 
-// Обновляем задание "Любознательный"
-fetch('/tasks/daily/update/profile', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tg_id: userData.tg_id })
-}).catch(err => console.error('Failed to update profile task', err));
-    
-    // Обновляем задание "Любознательный"
+    // --- ОБНОВЛЕНИЕ ЗАДАНИЯ "ЛЮБОЗНАТЕЛЬНЫЙ" ---
     fetch('/tasks/daily/update/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id })
     }).catch(err => console.error('Failed to update profile task', err));
-    
+    // ---------------------------------------------
     
     content.innerHTML = `
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
@@ -1625,11 +1618,10 @@ fetch('/tasks/daily/update/profile', {
     document.querySelectorAll('.profile-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             profileTab = e.target.dataset.tab;
-            renderProfile(); // перерисовываем весь профиль, чтобы обновить активную кнопку
+            renderProfile(); // перерисовываем весь профиль
         });
     });
 
-    // Отрисовываем содержимое текущей вкладки
     renderProfileTab(profileTab);
 }
 function renderProfileTab(tab) {
@@ -2126,7 +2118,11 @@ function claimDailyExp(taskId, expAmount) {
             const res = await fetch('/tasks/daily/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId, class_choice: classChoice })
+                body: JSON.stringify({ 
+                    tg_id: userData.tg_id, 
+                    task_id: taskId, 
+                    class_choice: classChoice 
+                })
             });
             const data = await res.json();
             if (data.error) {
@@ -2370,12 +2366,11 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 function showBattleResult(battleData, timeOut = false) {
-    // +++ НОВЫЙ БЛОК ДЛЯ ЭНЕРГИИ +++
+    // Обновление энергии, если пришло с сервера
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
         updateTopBar();
     }
-    // +++ КОНЕЦ БЛОКА +++
 
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
@@ -2386,7 +2381,7 @@ function showBattleResult(battleData, timeOut = false) {
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // Обновляем прогресс заданий после боя
+    // --- ОБНОВЛЕНИЕ ПРОГРЕССА ЗАДАНИЙ ---
     fetch('/tasks/daily/update/battle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2397,13 +2392,13 @@ function showBattleResult(battleData, timeOut = false) {
         })
     }).catch(err => console.error('Failed to update battle task', err));
 
-    // Обновляем прогресс задания на получение опыта
     fetch('/tasks/daily/update/exp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
     }).catch(err => console.error('Failed to update exp task', err));
-    
+    // ------------------------------------
+
     // Сбор статистики из turns (оставляем как есть)
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
@@ -2461,7 +2456,7 @@ function showBattleResult(battleData, timeOut = false) {
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
             ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
             
-                       <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
                 <button class="btn" id="rematchBtn" style="flex: 1;">В бой</button>
                 <button class="btn" id="backBtn" style="flex: 1;">Назад</button>
             </div>
@@ -2550,11 +2545,13 @@ function showBattleResult(battleData, timeOut = false) {
         showScreen('main');
     });
 
-    // Если персонаж получил уровень, показываем модалку
     if (leveledUp) {
         showLevelUpModal(userData.current_class);
     }
 }
+
+
+
 
 // Инициализация меню
 document.querySelectorAll('.menu-item').forEach(item => {

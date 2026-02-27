@@ -572,7 +572,7 @@ function renderItemColumn(item, isEquipped) {
             <div style="text-align: center;">
                 <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 8px;"></div>
                 <div style="margin: 10px 0;">— пусто —</div>
-                <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️</button>
+                <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
             </div>
         `;
     }
@@ -615,7 +615,7 @@ function renderItemColumn(item, isEquipped) {
             <div style="font-weight: bold; margin-top: 5px;">${itemNameTranslations[item.name] || item.name}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
-            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️</button>
+            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️Надеть</button>
         </div>
     `;
 }
@@ -1011,7 +1011,28 @@ function renderEquip() {
                     }
                     actionsDiv.style.display = 'flex';
 
+                            document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('action-btn')) return;
+
+                const itemId = itemDiv.dataset.itemId;
+                const forSale = itemDiv.dataset.forSale === 'true';
+                const actionsDiv = itemDiv.querySelector('.item-actions');
+
+                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+                    if (div !== actionsDiv) div.style.display = 'none';
+                });
+
+                if (actionsDiv.style.display === 'flex') {
+                    actionsDiv.style.display = 'none';
+                } else {
                     if (forSale) {
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                            <button class="action-btn cancel-btn">Отмена</button>
+                        `;
+                        actionsDiv.style.display = 'flex';
+
                         actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const res = await fetch('/inventory/unsell', {
@@ -1025,37 +1046,42 @@ function renderEquip() {
                                 alert('Ошибка при снятии с продажи');
                             }
                         });
+
                         actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
                             e.stopPropagation();
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    // Определяем тип предмета и ищем уже надетый в этом слоте
-    const item = inventory.find(i => i.id == itemId);
-    if (!item) return;
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
+                        `;
+                        actionsDiv.style.display = 'flex';
 
-    const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
-    
-    if (equippedInSlot) {
-        // Если слот занят, открываем окно сравнения
-        showEquipCompareModal(equippedInSlot, item);
-    } else {
-        // Иначе сразу надеваем
-        const res = await fetch('/inventory/equip', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-        });
-        if (res.ok) {
-            await refreshData();
-        } else {
-            const err = await res.json();
-            alert('Ошибка: ' + err.error);
-        }
-    }
-});
+                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const item = inventory.find(i => i.id == itemId);
+                            if (!item) return;
+
+                            const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
+
+                            if (equippedInSlot) {
+                                showEquipCompareModal(equippedInSlot, item);
+                            } else {
+                                const res = await fetch('/inventory/equip', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                                });
+                                if (res.ok) {
+                                    await refreshData();
+                                } else {
+                                    const err = await res.json();
+                                    alert('Ошибка: ' + err.error);
+                                }
+                            }
+                        });
+
                         actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const price = prompt('Введите цену продажи в монетах:');
@@ -1078,10 +1104,6 @@ actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
                 }
             });
         });
-    }
-
-    renderInventoryForClass(selectedClass);
-}
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {

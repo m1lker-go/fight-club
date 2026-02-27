@@ -701,6 +701,8 @@ function renderMain() {
 
 // ==================== ЭКИПИРОВКА ====================
 
+
+  
 function renderEquip() {
     let selectedClass = localStorage.getItem('equipSelectedClass');
     if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
@@ -947,7 +949,6 @@ function renderEquip() {
 
     renderInventoryForClass(selectedClass);
 }
-
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {
@@ -1637,8 +1638,12 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                         userData.avatar_id = avatarId;
                         userData.avatar = avatarFilename;
                         modal.style.display = 'none';
+                        // Обновляем текущую вкладку скинов
                         renderProfileTab('skins');
+                        // Если открыт главный экран – перерисовываем его
                         if (currentScreen === 'main') renderMain();
+                        // Если открыт экран экипировки – перерисовываем его
+                        if (currentScreen === 'equip') renderEquip();
                     } else {
                         alert('Ошибка при смене аватара');
                     }

@@ -1233,19 +1233,16 @@ function renderShop(target = null) {
     `;
 
     async function updateCommonChestPrice() {
-        try {
-            console.log('Поиск запросов freechest:');
-        const requests = performance.getEntries().filter(e => e.name.includes('freechest'));
-        console.log('Найдено запросов:', requests.length);
-        requests.forEach(r => console.log('Запрос:', r.name));
-        
+    try {
         console.log('userData.tg_id в updateCommonChestPrice:', userData.tg_id);
         const tgId = Number(userData.tg_id);
         console.log('Проверка бесплатного сундука для tg_id:', tgId);
+        
         const res = await fetch(`/player/freechest?tg_id=${tgId}`);
         const data = await res.json();
         const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
         const coinIcon = container.querySelector('[data-chest="common"] i');
+        
         if (data.freeAvailable) {
             priceSpan.innerText = 'FREE';
             coinIcon.style.display = 'none';

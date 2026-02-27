@@ -1147,77 +1147,7 @@ function renderRating() {
     `;
 }
 
-function renderShop(target = null) {
-    const container = target || document.getElementById('content');
-    container.innerHTML = `
-        <div class="chest-list">
-            <div class="chest-card">
-                <div class="chest-icon">
-                    <img src="/assets/common-chess.png" alt="Обычный сундук">
-                </div>
-                <div class="chest-info">
-                    <div class="chest-name">Обычный сундук</div>
-                    <div class="chest-desc">Первый в день бесплатно, далее 50 монет</div>
-                </div>
-                <button class="chest-btn" data-chest="common">
-                    <span class="chest-price" id="commonChestPrice">?</span>
-                    <i class="fas fa-coins" style="color: white;"></i>
-                </button>
-            </div>
-            <div class="chest-card">
-                <div class="chest-icon">
-                    <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
-                </div>
-                <div class="chest-info">
-                    <div class="chest-name">Необычный сундук</div>
-                    <div class="chest-desc">25% обычный, 65% необычный, 10% редкий</div>
-                </div>
-                <button class="chest-btn" data-chest="uncommon">
-                    <span class="chest-price">200</span>
-                    <i class="fas fa-coins" style="color: white;"></i>
-                </button>
-            </div>
-            <div class="chest-card">
-                <div class="chest-icon">
-                    <img src="/assets/rare-chess.png" alt="Редкий сундук">
-                </div>
-                <div class="chest-info">
-                    <div class="chest-name">Редкий сундук</div>
-                    <div class="chest-desc">Шанс получения редкого снаряжения 70%</div>
-                </div>
-                <button class="chest-btn" data-chest="rare">
-                    <span class="chest-price">800</span>
-                    <i class="fas fa-coins" style="color: white;"></i>
-                </button>
-            </div>
-            <div class="chest-card">
-                <div class="chest-icon">
-                    <img src="/assets/epic-chess.png" alt="Эпический сундук">
-                </div>
-                <div class="chest-info">
-                    <div class="chest-name">Эпический сундук</div>
-                    <div class="chest-desc">Шанс получения эпического снаряжения 70%</div>
-                </div>
-                <button class="chest-btn" data-chest="epic">
-                    <span class="chest-price">1800</span>
-                    <i class="fas fa-coins" style="color: white;"></i>
-                </button>
-            </div>
-            <div class="chest-card">
-                <div class="chest-icon">
-                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
-                </div>
-                <div class="chest-info">
-                    <div class="chest-name">Легендарный сундук</div>
-                    <div class="chest-desc">Шанс получения легендарного снаряжения 70%</div>
-                </div>
-                <button class="chest-btn" data-chest="legendary">
-                    <span class="chest-price">3500</span>
-                    <i class="fas fa-coins" style="color: white;"></i>
-                </button>
-            </div>
-        </div>
-    `;
+
 
     // Функция для обновления цены обычного сундука (бесплатно/50)
     async function updateCommonChestPrice() {

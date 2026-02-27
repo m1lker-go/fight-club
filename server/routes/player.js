@@ -228,16 +228,12 @@ router.post('/avatar', async (req, res) => {
 });
 
 // ========== УПРОЩЁННЫЙ МАРШРУТ ДЛЯ БЕСПЛАТНОГО СУНДУКА ==========
-router.get('/freechest', async (req, res) => {
-    console.log('=== FREE CHEST SIMPLIFIED ===');
-    console.log('Query:', req.query);
-    console.log('Time:', new Date().toISOString());
+router.get('/freechest', (req, res) => {
+    console.log('=== FREE CHEST HIT ===');
+    console.log('tg_id:', req.query.tg_id);
     
-    // Просто возвращаем успех, без обращений к БД и без проверок
     res.json({ 
-        freeAvailable: true,
-        message: 'Simplified test response',
-        receivedTgId: req.query.tg_id || 'no tg_id'
+        freeAvailable: true
     });
 });
 // ==============================================================

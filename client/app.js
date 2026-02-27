@@ -1727,6 +1727,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             modalBody.innerHTML = `
                 <div style="text-align: center;">
                     <img src="/assets/${avatarFilename}" style="max-width: 100%; max-height: 300px; border-radius: 10px;">
+                    <div style="font-size: 24px; font-weight: bold; color: white; margin: 15px 0 5px;">${avatar.name}</div>
                     ${priceHtml}
                     <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
                         ${!owned && !isActive ? '<button class="btn" id="buySkin">Купить</button>' : ''}

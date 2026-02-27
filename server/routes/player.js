@@ -45,8 +45,8 @@ async function rechargeEnergy(client, userId) {
 
 // Вспомогательная функция для проверки tg_id
 function validateTgId(tg_id) {
-    if (!tg_id) return false;
-    const num = parseInt(tg_id);
+    if (tg_id === undefined || tg_id === null) return false;
+    const num = Number(tg_id);
     return !isNaN(num) && num > 0;
 }
 

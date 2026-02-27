@@ -1235,7 +1235,9 @@ function renderShop(target = null) {
     async function updateCommonChestPrice() {
         try {
             console.log('userData.tg_id в updateCommonChestPrice:', userData.tg_id);
-             const res = await fetch(`/player/freechest?tg_id=${userData.tg_id}`);
+             const tgId = Number(userData.tg_id);
+console.log('Проверка бесплатного сундука для tg_id:', tgId);
+const res = await fetch(`/player/freechest?tg_id=${tgId}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             const coinIcon = container.querySelector('[data-chest="common"] i');
@@ -1518,6 +1520,7 @@ function renderRating() {
   // Загружаем ежедневные задания
 async function loadDailyTasks() {
     try {
+        console.log('Загружаю задания для tg_id:', userData.tg_id);
         const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const tasks = await res.json();
         const tasksList = document.getElementById('tasksList');
@@ -1578,11 +1581,11 @@ async function loadDailyTasks() {
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {
-                    const res = await fetch('/tasks/daily/claim', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-                    });
+                   const res = await fetch('/tasks/daily/claim', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+});
                     const data = await res.json();
                     if (data.error) {
                         alert(data.error);
@@ -2128,15 +2131,15 @@ function claimDailyExp(taskId, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
             
-            const res = await fetch('/tasks/daily/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
-                    task_id: taskId, 
-                    class_choice: classChoice 
-                })
-            });
+           const res = await fetch('/tasks/daily/claim', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+        tg_id: userData.tg_id, 
+        task_id: taskId, 
+        class_choice: classChoice 
+    })
+});
             const data = await res.json();
             if (data.error) {
                 alert(data.error);

@@ -146,7 +146,7 @@ router.post('/avatar', async (req, res) => {
     }
 });
 
-// Проверка доступности бесплатного обычного сундука - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Проверка доступности бесплатного обычного сундука
 router.get('/freechest', async (req, res) => {
     const { tg_id } = req.query;
     
@@ -170,7 +170,6 @@ router.get('/freechest', async (req, res) => {
     
     try {
         const user = await pool.query('SELECT last_free_common_chest FROM users WHERE tg_id = $1', [tgId]);
-        console.log('User found:', user.rows[0]);
         
         if (user.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });

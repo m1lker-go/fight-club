@@ -615,10 +615,9 @@ function renderItemColumn(item, isEquipped) {
             <div style="font-weight: bold; margin-top: 5px;">${itemNameTranslations[item.name] || item.name}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
-            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️Надеть</button>
+            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
         </div>
     `;
-}
 }
 function showEquipCompareModal(oldItem, newItem) {
     const modal = document.getElementById('equipCompareModal');

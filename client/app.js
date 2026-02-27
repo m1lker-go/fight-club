@@ -1682,10 +1682,10 @@ function renderSkins(container) {
             }
 
             html += `
+    html += `
     <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
         ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
         <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
-        <div style="font-weight: bold; margin-top: 5px; font-size: 12px;">${translateSkinName(avatar.name)}</div>
         ${priceHtml}
     </div>
 `;

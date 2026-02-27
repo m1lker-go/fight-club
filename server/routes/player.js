@@ -45,8 +45,13 @@ async function rechargeEnergy(client, userId) {
 
 // Вспомогательная функция для проверки tg_id
 function validateTgId(tg_id) {
+    // Если параметр вообще не передан
     if (tg_id === undefined || tg_id === null) return false;
+    
+    // Пробуем преобразовать в число
     const num = Number(tg_id);
+    
+    // Проверяем, что это число и оно положительное
     return !isNaN(num) && num > 0;
 }
 
@@ -226,10 +231,13 @@ router.post('/avatar', async (req, res) => {
 router.get('/freechest', async (req, res) => {
     console.log('=== FREE CHEST SIMPLIFIED ===');
     console.log('Query:', req.query);
+    console.log('Time:', new Date().toISOString());
     
+    // Просто возвращаем успех, без обращений к БД и без проверок
     res.json({ 
         freeAvailable: true,
-        receivedTgId: req.query.tg_id
+        message: 'Simplified test response',
+        receivedTgId: req.query.tg_id || 'no tg_id'
     });
 });
 // ==============================================================

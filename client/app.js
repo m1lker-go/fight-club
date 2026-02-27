@@ -7,6 +7,7 @@ let inventory = [];
 let currentScreen = 'main';
 let currentPower = 0;
 let BOT_USERNAME = '';
+let avatarsList = null; // для хранения списка аватаров
 
 // Для вкладок в профиле
 let profileTab = 'bonuses';
@@ -172,9 +173,11 @@ async function init() {
             userClasses = data.classes || [];
             inventory = data.inventory || [];
             BOT_USERNAME = data.bot_username || '';
-            // Устанавливаем аватар по умолчанию, если нет
-            if (!userData.avatar_id) userData.avatar_id = 1;
-            if (!userData.avatar) userData.avatar = 'cat_heroweb.png';
+            
+            // Загружаем список аватаров и устанавливаем имя файла по avatar_id
+            await loadAvatars();
+            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+            
             updateTopBar();
             showScreen('main');
             checkAdvent();
@@ -242,8 +245,11 @@ async function refreshData() {
             userClasses = data.classes || [];
             inventory = data.inventory || [];
             BOT_USERNAME = data.bot_username || '';
-            if (!userData.avatar_id) userData.avatar_id = 1;
-            if (!userData.avatar) userData.avatar = 'cat_heroweb.png';
+            
+            // Обновляем имя файла аватара в соответствии с новым avatar_id
+            await loadAvatars(); // безопасно, если уже загружены – просто вернёт
+            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+            
             updateTopBar();
             showScreen(currentScreen);
         }
@@ -281,7 +287,24 @@ function showScreen(screen) {
         default: renderMain();
     }
 }
+async function loadAvatars() {
+    if (avatarsList) return avatarsList;
+    try {
+        const res = await fetch('/avatars');
+        if (!res.ok) throw new Error('Failed to fetch avatars');
+        avatarsList = await res.json();
+        return avatarsList;
+    } catch (e) {
+        console.error('Error loading avatars:', e);
+        return [];
+    }
+}
 
+function getAvatarFilenameById(id) {
+    if (!avatarsList) return 'cat_heroweb.png';
+    const avatar = avatarsList.find(a => a.id === id);
+    return avatar ? avatar.filename : 'cat_heroweb.png';
+}
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 function getCurrentClassData() {

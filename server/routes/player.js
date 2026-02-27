@@ -26,7 +26,6 @@ router.get('/test', async (req, res) => {
         });
     }
 });
-// ================================
 
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
@@ -43,22 +42,26 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-// Вспомогательная функция для проверки tg_id
 function validateTgId(tg_id) {
-    // Если параметр вообще не передан
     if (tg_id === undefined || tg_id === null) return false;
-    
-    // Пробуем преобразовать в число
     const num = Number(tg_id);
-    
-    // Проверяем, что это число и оно положительное
     return !isNaN(num) && num > 0;
 }
+
+// ========== БЕСПЛАТНЫЙ СУНДУК - БЕЗ ЗАЩИТЫ ==========
+router.get('/freechest', (req, res) => {
+    console.log('=== FREE CHEST HIT ===');
+    console.log('tg_id:', req.query.tg_id);
+    console.log('Time:', new Date().toISOString());
+    
+    // Просто возвращаем true, без проверок
+    res.json({ freeAvailable: true });
+});
+// =================================================
 
 router.get('/:tg_id', async (req, res) => {
     const { tg_id } = req.params;
     
-    // Защита от некорректного tg_id
     if (!validateTgId(tg_id)) {
         console.log('Invalid tg_id in /:tg_id:', tg_id);
         return res.status(400).json({ error: 'Invalid tg_id format' });
@@ -99,7 +102,6 @@ router.get('/:tg_id', async (req, res) => {
 router.get('/class/:tg_id/:class', async (req, res) => {
     const { tg_id, class: className } = req.params;
     
-    // Защита от некорректного tg_id
     if (!validateTgId(tg_id)) {
         console.log('Invalid tg_id in /class:', tg_id);
         return res.status(400).json({ error: 'Invalid tg_id format' });
@@ -124,7 +126,6 @@ router.get('/class/:tg_id/:class', async (req, res) => {
 router.post('/upgrade', async (req, res) => {
     const { tg_id, class: className, stat, points } = req.body;
     
-    // Защита от некорректного tg_id
     if (!validateTgId(tg_id)) {
         console.log('Invalid tg_id in /upgrade:', tg_id);
         return res.status(400).json({ error: 'Invalid tg_id format' });
@@ -161,7 +162,6 @@ router.post('/upgrade', async (req, res) => {
 router.post('/class', async (req, res) => {
     const { tg_id, class: newClass } = req.body;
     
-    // Защита от некорректного tg_id
     if (!validateTgId(tg_id)) {
         console.log('Invalid tg_id in /class:', tg_id);
         return res.status(400).json({ error: 'Invalid tg_id format' });
@@ -178,7 +178,6 @@ router.post('/class', async (req, res) => {
 router.post('/subclass', async (req, res) => {
     const { tg_id, subclass } = req.body;
     
-    // Защита от некорректного tg_id
     if (!validateTgId(tg_id)) {
         console.log('Invalid tg_id in /subclass:', tg_id);
         return res.status(400).json({ error: 'Invalid tg_id format' });
@@ -192,11 +191,9 @@ router.post('/subclass', async (req, res) => {
     }
 });
 
-// Смена аватара
 router.post('/avatar', async (req, res) => {
     const { tg_id, avatar_id } = req.body;
     
-    // Защита от некорректного tg_id
     if (!validateTgId(tg_id)) {
         console.log('Invalid tg_id in /avatar:', tg_id);
         return res.status(400).json({ error: 'Invalid tg_id format' });
@@ -226,16 +223,5 @@ router.post('/avatar', async (req, res) => {
         res.status(500).json({ error: 'Database error' });
     }
 });
-
-// ========== УПРОЩЁННЫЙ МАРШРУТ ДЛЯ БЕСПЛАТНОГО СУНДУКА ==========
-router.get('/freechest', (req, res) => {
-    console.log('=== FREE CHEST HIT ===');
-    console.log('tg_id:', req.query.tg_id);
-    
-    res.json({ 
-        freeAvailable: true
-    });
-});
-// ==============================================================
 
 module.exports = router;

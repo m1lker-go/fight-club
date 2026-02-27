@@ -1503,10 +1503,15 @@ async function loadDailyTasks() {
         tasksList.innerHTML = '';
 
         tasks.forEach(task => {
-            if (task.completed) return; // выполненные не показываем
+            if (task.completed) return;
 
             const progressPercent = (task.progress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` : `${task.reward_amount} EXP`;
+
+            // Получаем перевод
+            const translated = dailyTaskTranslations[task.name] || {};
+            const displayName = translated.name || task.name;
+            const displayDesc = translated.description || task.description;
 
             const taskCard = document.createElement('div');
             taskCard.className = 'task-card';
@@ -1515,8 +1520,8 @@ async function loadDailyTasks() {
             taskCard.style.justifyContent = 'space-between';
             taskCard.innerHTML = `
                 <div style="flex: 2;">
-                   <div style="font-size: 18px; font-weight: bold;">${dailyTaskTranslations[task.name]?.name || task.name}</div>
-<div style="font-size: 12px; color: #aaa;">${dailyTaskTranslations[task.name]?.description || task.description}</div>
+                    <div style="font-size: 18px; font-weight: bold;">${displayName}</div>
+                    <div style="font-size: 12px; color: #aaa;">${displayDesc}</div>
                     <div style="margin-top: 8px;">
                         <div style="background-color: #2f3542; height: 6px; border-radius: 3px;">
                             <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
@@ -1534,6 +1539,7 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
+        // Обработчики кнопок остаются без изменений
         document.querySelectorAll('.claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const taskId = btn.dataset.taskId;
@@ -1553,8 +1559,8 @@ async function loadDailyTasks() {
                         alert(data.error);
                     } else {
                         alert(`Вы получили ${rewardAmount} монет!`);
-                        loadDailyTasks(); // перезагрузить список
-                        refreshData(); // обновить баланс
+                        loadDailyTasks();
+                        refreshData();
                     }
                 }
             });

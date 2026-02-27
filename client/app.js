@@ -1476,18 +1476,18 @@ function renderTasks() {
     content.innerHTML = `
         <div class="tasks-container">
             <!-- Карточка адвент-календаря -->
-            <div class="task-card advent-card" style="margin-bottom: 20px;">
-                <div style="flex: 2;">
-                    <div style="font-size: 16px; font-weight: bold;">Адвент-календарь</div>
-                    <div style="font-size: 11px; color: #aaa;">Ежедневные подарки каждый день декабря</div>
+            <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 12px; padding: 12px; box-sizing: border-box;">
+                <div style="flex: 2; min-width: 0;">
+                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
                 </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
                     <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
                     <span style="font-size: 12px; color: white;">EXP</span>
                     <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
                 </div>
-                <div style="flex: 0 0 100px;">
-                    <button class="btn" id="showAdventBtn" style="padding: 8px 12px; font-size: 12px;">ПОСМОТРЕТЬ</button>
+                <div style="flex: 0 0 100px; text-align: right;">
+                    <button class="btn" id="showAdventBtn" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОСМОТРЕТЬ</button>
                 </div>
             </div>
 

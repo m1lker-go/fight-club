@@ -2181,6 +2181,24 @@ function showBattleResult(battleData, timeOut = false) {
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
 
+    // Обновляем прогресс заданий после боя
+    fetch('/tasks/daily/update/battle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            tg_id: userData.tg_id,
+            class_played: userData.current_class,
+            is_victory: isVictory
+        })
+    }).catch(err => console.error('Failed to update battle task', err));
+
+    // Обновляем прогресс задания на получение опыта
+    fetch('/tasks/daily/update/exp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
+    }).catch(err => console.error('Failed to update exp task', err));
+    
     // Сбор статистики из turns
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0

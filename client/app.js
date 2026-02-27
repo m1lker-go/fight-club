@@ -1410,6 +1410,15 @@ async function loadDailyTasks() {
 
 function renderProfile() {
     const content = document.getElementById('content');
+   
+    // Обновляем задание "Любознательный"
+    fetch('/tasks/daily/update/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tg_id: userData.tg_id })
+    }).catch(err => console.error('Failed to update profile task', err));
+    
+    
     content.innerHTML = `
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>

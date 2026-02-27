@@ -171,7 +171,7 @@ const skinNameTranslations = {
 };
 
 function translateSkinName(englishName) {
-    return skinNameTranslations[englishName] || englishName; // если нет перевода, оставляем как есть
+    return skinNameTranslations[englishName] || englishName;
 }
 // Инициализация
 async function init() {
@@ -539,7 +539,7 @@ function showChestResult(item) {
     body.innerHTML = `
         <div style="text-align: center;">
             <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(avatar.name)}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
             <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
             <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
@@ -626,7 +626,7 @@ function renderItemColumn(item, isEquipped) {
             <div style="width: 80px; height: 80px; margin: 0 auto;">
                 <img src="${iconPath}" style="width:100%; height:100%; object-fit: contain;">
             </div>
-            <div style="font-weight: bold; margin-top: 5px;">${translateSkinName(avatar.name)}</div>
+            <div style="font-weight: bold; margin-top: 5px;">${translateSkinName(item.name)}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
             <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
@@ -1682,12 +1682,13 @@ function renderSkins(container) {
             }
 
             html += `
-                <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
-                  ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
-                    <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
-                    ${priceHtml}
-                </div>
-            `;
+    <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
+        ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
+        <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
+        <div style="font-weight: bold; margin-top: 5px; font-size: 12px;">${translateSkinName(avatar.name)}</div>
+        ${priceHtml}
+    </div>
+`;
         });
         html += '</div>';
         container.innerHTML = html;
@@ -1741,7 +1742,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             modalBody.innerHTML = `
                 <div style="text-align: center;">
                     <img src="/assets/${avatarFilename}" style="max-width: 100%; max-height: 300px; border-radius: 10px;">
-                    <div style="font-size: 24px; font-weight: bold; color: white; margin: 15px 0 5px;">${avatar.name}</div>
+                    <div style="font-size: 24px; font-weight: bold; color: white; margin: 15px 0 5px;">${translateSkinName(avatar.name)}</div>
                     ${priceHtml}
                     <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
                         ${!owned && !isActive ? '<button class="btn" id="buySkin">Купить</button>' : ''}

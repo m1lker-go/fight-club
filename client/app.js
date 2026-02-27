@@ -1474,103 +1474,45 @@ function renderAdventCalendarInContainer(data, container) {
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h3 style="text-align:center; margin-bottom:20px;">Адвент-календарь</h3>
-        <div id="adventCalendar"></div>
-        <h3 style="text-align:center; margin:20px 0;">Ежедневные задания</h3>
-        <div id="tasksList"></div>
+        <div class="tasks-container">
+            <!-- Карточка адвент-календаря -->
+            <div class="task-card advent-card">
+                <div style="flex: 2;">
+                    <div style="font-size: 18px; font-weight: bold;">Адвент-календарь</div>
+                    <div style="font-size: 12px; color: #aaa;">Ежедневные подарки каждый день декабря</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
+                    <span style="font-size: 10px; color: white;">EXP</span>
+                    <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
+                </div>
+                <div style="flex: 0 0 120px;">
+                    <button class="btn" id="showAdventBtn">ПОСМОТРЕТЬ</button>
+                </div>
+            </div>
+
+            <h3 style="text-align:center; margin:20px 0 10px;">Ежедневные задания</h3>
+            <div id="tasksList"></div>
+        </div>
     `;
 
-    // Загружаем адвент-календарь
-    fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
-        .then(res => res.json())
-        .then(data => {
-            renderAdventCalendarInContainer(data, document.getElementById('adventCalendar'));
-        })
-        .catch(err => {
-            console.error('Error loading advent:', err);
-            document.getElementById('adventCalendar').innerHTML = '<p style="color:#aaa;">Ошибка загрузки календаря</p>';
-        });
+    // Обработчик кнопки "ПОСМОТРЕТЬ" для адвент-календаря
+    document.getElementById('showAdventBtn').addEventListener('click', () => {
+        // Загружаем данные календаря и показываем полноэкранный режим
+        fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
+            .then(res => res.json())
+            .then(data => {
+                showAdventCalendar(data); // используем существующую функцию
+            })
+            .catch(err => {
+                console.error('Error loading advent:', err);
+                alert('Ошибка загрузки календаря');
+            });
+    });
 
     // Загружаем ежедневные задания
     loadDailyTasks();
 }
-
-async function loadDailyTasks() {
-    try {
-        const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}`);
-        const tasks = await res.json();
-        const tasksList = document.getElementById('tasksList');
-        tasksList.innerHTML = '';
-
-        tasks.forEach(task => {
-            if (task.completed) return;
-
-            const progressPercent = (task.progress / task.target_value) * 100;
-            const rewardText = task.reward_type === 'coins' ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` : `${task.reward_amount} EXP`;
-
-            // Получаем перевод
-            const translated = dailyTaskTranslations[task.name] || {};
-            const displayName = translated.name || task.name;
-            const displayDesc = translated.description || task.description;
-
-            const taskCard = document.createElement('div');
-            taskCard.className = 'task-card';
-            taskCard.style.display = 'flex';
-            taskCard.style.alignItems = 'center';
-            taskCard.style.justifyContent = 'space-between';
-            taskCard.innerHTML = `
-                <div style="flex: 2;">
-                    <div style="font-size: 18px; font-weight: bold;">${displayName}</div>
-                    <div style="font-size: 12px; color: #aaa;">${displayDesc}</div>
-                    <div style="margin-top: 8px;">
-                        <div style="background-color: #2f3542; height: 6px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
-                        </div>
-                        <div style="font-size: 11px; color: #aaa; margin-top: 4px;">${task.progress}/${task.target_value}</div>
-                    </div>
-                </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px;">
-                    <span style="font-weight: bold; color: white;">${rewardText}</span>
-                </div>
-                <div style="flex: 0 0 120px;">
-                    <button class="btn claim-task-btn" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}">ПОЛУЧИТЬ</button>
-                </div>
-            `;
-            tasksList.appendChild(taskCard);
-        });
-
-        // Обработчики кнопок остаются без изменений
-        document.querySelectorAll('.claim-task-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const taskId = btn.dataset.taskId;
-                const rewardType = btn.dataset.rewardType;
-                const rewardAmount = parseInt(btn.dataset.rewardAmount);
-
-                if (rewardType === 'exp') {
-                    claimDailyExp(taskId, rewardAmount);
-                } else {
-                    const res = await fetch('/tasks/daily/claim', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-                    });
-                    const data = await res.json();
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        alert(`Вы получили ${rewardAmount} монет!`);
-                        loadDailyTasks();
-                        refreshData();
-                    }
-                }
-            });
-        });
-
-    } catch (e) {
-        console.error('Error loading daily tasks:', e);
-    }
-}
-
 // ==================== ПРОФИЛЬ И ВКЛАДКИ ====================
 
 function renderProfile() {

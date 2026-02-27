@@ -1029,16 +1029,16 @@ function renderEquip() {
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const item = inventory.find(i => i.id == itemId);
-                            if (!item) return;
+                       actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const item = inventory.find(i => i.id == itemId);
+    if (!item) return;
 
-                            const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
-                            
-                            if (equippedInSlot) {
-                                showEquipCompareModal(equippedInSlot, item);
-                            } else {
+    const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
+    
+    if (equippedInSlot) {
+        showEquipCompareModal(equippedInSlot, item);
+    } else {
                                 const res = await fetch('/inventory/equip', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },

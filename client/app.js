@@ -581,9 +581,9 @@ body.innerHTML = `
     </div>
 `;
 
-modal.style.display = 'block';
+    modal.style.display = 'block';
+}
 
-    
 function showLevelUpModal(className) {
     const modal = document.getElementById('levelUpModal');
     const body = document.getElementById('levelUpBody');

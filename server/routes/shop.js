@@ -65,24 +65,23 @@ function generateItemFromChest(chestType) {
         if (!selected.includes(stat)) selected.push(stat);
     }
 
-    const item = {
-        name: name,
-        type: type,
-        rarity: rarity,
-        class_restriction: 'any',
-        owner_class: ['warrior','assassin','mage'][Math.floor(Math.random()*3)],
-        atk_bonus: 0,
-        def_bonus: 0,
-        hp_bonus: 0,
-        spd_bonus: 0,
-        crit_bonus: 0,
-        crit_dmg_bonus: 0,
-        agi_bonus: 0,
-        int_bonus: 0,
-        vamp_bonus: 0,
-        reflect_bonus: 0
-    };
-
+   const item = {
+    name: name,
+    type: type,
+    rarity: rarity,
+    class_restriction: 'any',
+    owner_class: ['warrior','assassin','mage'][Math.floor(Math.random()*3)], // ← всегда выбираем класс
+    atk_bonus: 0,
+    def_bonus: 0,
+    hp_bonus: 0,
+    spd_bonus: 0,
+    crit_bonus: 0,
+    crit_dmg_bonus: 0,
+    agi_bonus: 0,
+    int_bonus: 0,
+    vamp_bonus: 0,
+    reflect_bonus: 0
+};
     selected.forEach(stat => {
         if (stat === 'atk') item.atk_bonus = Math.floor(b.atk * (0.8 + 0.4*Math.random()));
         else if (stat === 'def') item.def_bonus = Math.floor(b.def * (0.8 + 0.4*Math.random()));

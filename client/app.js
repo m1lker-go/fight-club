@@ -1081,18 +1081,22 @@ function renderEquip() {
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                      actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                     actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
-    const item = inventory.find(i => i.id == itemId);
-    if (!item) return;
-
-    // Проверка класса
-    if (item.owner_class !== userData.current_class && item.class_restriction !== 'any') {
-        alert('Этот предмет нельзя надеть на текущий класс!');
+    
+    // Получаем текущий класс из интерфейса (не из userData)
+    const currentClass = document.querySelector('.class-btn.active').dataset.class;
+    
+    // Фильтруем предметы ТОЛЬКО для текущего класса
+    const classItems = inventory.filter(item => item.owner_class === currentClass);
+    const item = classItems.find(i => i.id == itemId);
+    
+    if (!item) {
+        alert('Этот предмет не принадлежит текущему классу!');
         return;
     }
 
-    const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
+    const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
     
     if (equippedInSlot) {
         showEquipCompareModal(equippedInSlot, item);
@@ -1110,33 +1114,41 @@ function renderEquip() {
         }
     }
 });
-
-                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const price = prompt('Введите цену продажи в монетах:');
-                            if (price && !isNaN(price) && parseInt(price) > 0) {
-                                const res = await fetch('/inventory/sell', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, price: parseInt(price) })
-                                });
-                                const data = await res.json();
-                                if (data.success) {
-                                    alert('Предмет выставлен на маркет');
-                                    await refreshData();
-                                } else {
-                                    alert('Ошибка: ' + data.error);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-        });
+actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    
+    // Получаем текущий класс из активной кнопки
+    const currentClass = document.querySelector('.class-btn.active').dataset.class;
+    
+    // Фильтруем предметы только для текущего класса
+    const classItems = inventory.filter(item => item.owner_class === currentClass);
+    const item = classItems.find(i => i.id == itemId);
+    
+    if (!item) {
+        alert('Этот предмет не принадлежит текущему классу!');
+        return;
     }
-
-    renderInventoryForClass(selectedClass);
-}
+    
+    const price = prompt('Введите цену продажи в монетах:');
+    if (price && !isNaN(price) && parseInt(price) > 0) {
+        const res = await fetch('/inventory/sell', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                tg_id: userData.tg_id, 
+                item_id: itemId, 
+                price: parseInt(price) 
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('Предмет выставлен на маркет');
+            await refreshData();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    }
+});
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {

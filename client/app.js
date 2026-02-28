@@ -1008,7 +1008,7 @@ function renderEquip() {
             });
         });
 
-       document.querySelectorAll('.equip-slot').forEach(slot => {
+     document.querySelectorAll('.equip-slot').forEach(slot => {
     slot.addEventListener('click', async (e) => {
         const itemId = slot.dataset.itemId;
         if (!itemId) return;

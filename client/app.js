@@ -1008,30 +1008,30 @@ function renderEquip() {
             });
         });
 
-        document.querySelectorAll('.equip-slot').forEach(slot => {
-           slot.addEventListener('click', async (e) => {
-    const itemId = slot.dataset.itemId;
-    if (!itemId) return;
-    if (confirm('Снять этот предмет?')) {
-        try {
-            const res = await fetch('/inventory/unequip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-            });
-           if (res.ok) {
-    await refreshData();
-    if (currentScreen === 'equip') {
-        renderEquip();
-    }
-}
-            } else {
-                alert('Ошибка при снятии');
+       document.querySelectorAll('.equip-slot').forEach(slot => {
+    slot.addEventListener('click', async (e) => {
+        const itemId = slot.dataset.itemId;
+        if (!itemId) return;
+        if (confirm('Снять этот предмет?')) {
+            try {
+                const res = await fetch('/inventory/unequip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                });
+                if (res.ok) {
+                    await refreshData();
+                    if (currentScreen === 'equip') {
+                        renderEquip();
+                    }
+                } else {
+                    alert('Ошибка при снятии');
+                }
+            } catch (e) {
+                alert('Сеть недоступна');
             }
-        } catch (e) {
-            alert('Сеть недоступна');
         }
-    }
+    });
 });
 
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {

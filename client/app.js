@@ -1081,35 +1081,35 @@ function renderEquip() {
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                       actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                      actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     const item = inventory.find(i => i.id == itemId);
     if (!item) return;
 
-    // Проверяем, можно ли вообще надеть этот предмет на текущий класс
-if (item.owner_class !== userData.current_class && item.class_restriction !== 'any') {
-    alert('Этот предмет нельзя надеть на текущий класс!');
-    return;
-}
+    // Проверка класса
+    if (item.owner_class !== userData.current_class && item.class_restriction !== 'any') {
+        alert('Этот предмет нельзя надеть на текущий класс!');
+        return;
+    }
 
-const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
+    const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
     
     if (equippedInSlot) {
         showEquipCompareModal(equippedInSlot, item);
     } else {
-                                const res = await fetch('/inventory/equip', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                                });
-                                if (res.ok) {
-                                    await refreshData();
-                                } else {
-                                    const err = await res.json();
-                                    alert('Ошибка: ' + err.error);
-                                }
-                            }
-                        });
+        const res = await fetch('/inventory/equip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+        });
+        if (res.ok) {
+            await refreshData();
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + err.error);
+        }
+    }
+});
 
                         actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();

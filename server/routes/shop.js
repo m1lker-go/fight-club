@@ -99,6 +99,10 @@ function generateItemFromChest(chestType) {
 }
 
 router.post('/buychest', async (req, res) => {
+    console.log('=== ПОКУПКА СУНДУКА ===');
+    console.log('tg_id:', req.body.tg_id);
+    console.log('chestType:', req.body.chestType);
+    
     const { tg_id, chestType } = req.body;
     const client = await pool.connect();
     try {
@@ -149,6 +153,8 @@ router.post('/buychest', async (req, res) => {
 
         // Генерируем предмет
         const item = generateItemFromChest(chestType);
+        console.log('Сгенерирован предмет:', item);
+        console.log('Редкость:', item.rarity);
 
         // Вставляем предмет в таблицу items (если она используется)
         const itemRes = await client.query(
@@ -161,12 +167,14 @@ router.post('/buychest', async (req, res) => {
              item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
         );
         const itemId = itemRes.rows[0].id;
+        console.log('ID созданного предмета в items:', itemId);
 
         // Добавляем в инвентарь
         await client.query(
             'INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)',
             [userId, itemId]
         );
+        console.log('Предмет добавлен в инвентарь пользователя', userId);
 
         await client.query('COMMIT');
 
@@ -175,11 +183,9 @@ router.post('/buychest', async (req, res) => {
 
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('Ошибка при покупке сундука:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
     }
 });
-
-module.exports = router;

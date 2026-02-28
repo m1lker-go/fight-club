@@ -1019,12 +1019,12 @@ function renderEquip() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
             });
-            if (res.ok) {
-                await refreshData();
-                // Добавить эту строку:
-                if (currentScreen === 'equip') {
-                    renderEquip();
-                }
+           if (res.ok) {
+    await refreshData();
+    if (currentScreen === 'equip') {
+        renderEquip();
+    }
+}
             } else {
                 alert('Ошибка при снятии');
             }
@@ -1618,15 +1618,7 @@ fetch('/tasks/daily/update/profile', {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tg_id: userData.tg_id })
 }).catch(err => console.error('Failed to update profile task', err));
-    
-    // Обновляем задание "Любознательный"  <-- ДУБЛИКАТ!
-    fetch('/tasks/daily/update/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userData.tg_id })
-    }).catch(err => console.error('Failed to update profile task', err));
-    
-    
+            
     content.innerHTML = `
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>

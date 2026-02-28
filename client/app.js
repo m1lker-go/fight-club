@@ -1,5 +1,7 @@
 let tg = window.Telegram.WebApp;
-tg.expand();
+if (tg) {
+    tg.expand();
+}
 
 let userData = null;
 let userClasses = [];
@@ -7,7 +9,7 @@ let inventory = [];
 let currentScreen = 'main';
 let currentPower = 0;
 let BOT_USERNAME = '';
-let avatarsList = null; // для хранения списка аватаров
+let avatarsList = null;
 
 // Для вкладок в профиле
 let profileTab = 'bonuses';
@@ -869,123 +871,283 @@ function renderMain() {
 }
 
 // ==================== ЭКИПИРОВКА ====================
+function renderEquip() {
+    let selectedClass = localStorage.getItem('equipSelectedClass');
+    if (!selectedClass || !['warrior', 'assassin', 'mage'].includes(selectedClass)) {
+        selectedClass = userData.current_class;
+    }
 
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
 
-  
-document.querySelectorAll('.inventory-item').forEach(itemDiv => {
-    itemDiv.addEventListener('click', (e) => {
-        if (e.target.classList.contains('action-btn')) return;
+    function getItemIconPath(item) {
+        if (!item) return '';
+        const folder = classFolderMap[item.owner_class];
+        const fileType = typeFileMap[item.type];
+        if (!folder || !fileType) return '';
+        return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
+    }
 
-        const itemId = itemDiv.dataset.itemId;
-        const forSale = itemDiv.dataset.forSale === 'true';
-        const actionsDiv = itemDiv.querySelector('.item-actions');
+    function renderInventoryForClass(className) {
+        const classItems = inventory.filter(item => 
+            item.owner_class === className && 
+            (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
+        );
+        const equipped = classItems.filter(item => item.equipped);
+        const unequipped = classItems.filter(item => !item.equipped);
 
-        document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
-            if (div !== actionsDiv) div.style.display = 'none';
+        const slotConfig = {
+            left: [
+                { type: 'helmet', icon: '/assets/helmet.png' },
+                { type: 'armor', icon: '/assets/armor.png' },
+                { type: 'gloves', icon: '/assets/arm.png' }
+            ],
+            right: [
+                { type: 'weapon', icon: '/assets/weapon.png' },
+                { type: 'boots', icon: '/assets/leg.png' },
+                { type: 'accessory', icon: '/assets/ring.png' }
+            ]
+        };
+
+        let html = `
+            <div class="equip-layout">
+                <div class="class-selector">
+                    <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                    <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                    <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                </div>
+                <div class="equip-main">
+                    <div class="equip-column">
+        `;
+
+        slotConfig.left.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
         });
 
-        if (actionsDiv.style.display === 'flex') {
-            actionsDiv.style.display = 'none';
-        } else {
-            if (forSale) {
-                actionsDiv.innerHTML = `
-                    <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
-                    <button class="action-btn cancel-btn">Отмена</button>
-                `;
-            } else {
-                actionsDiv.innerHTML = `
-                    <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
-                    <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
-                `;
-            }
-            actionsDiv.style.display = 'flex';
+        html += `</div>
+                <div class="hero-center">
+                    <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                </div>
+                <div class="equip-column">
+        `;
 
-            if (forSale) {
-                actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const res = await fetch('/inventory/unsell', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                    } else {
-                        alert('Ошибка при снятии с продажи');
-                    }
-                });
-                actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    actionsDiv.style.display = 'none';
-                });
-            } else {
-                actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    
-                    const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                    const classItems = inventory.filter(item => item.owner_class === currentClass);
-                    const item = classItems.find(i => i.id == itemId);
-                    
-                    if (!item) {
-                        alert('Этот предмет не принадлежит текущему классу!');
-                        return;
-                    }
+        slotConfig.right.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
+        });
 
-                    const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
-                    
-                    if (equippedInSlot) {
-                        showEquipCompareModal(equippedInSlot, item);
-                    } else {
-                        const res = await fetch('/inventory/equip', {
+        html += `</div>
+                </div>
+                <h3>Рюкзак</h3>
+                <div class="inventory-container">
+                    <div class="inventory-grid">
+        `;
+
+        unequipped.forEach(item => {
+            const rarityClass = `rarity-${item.rarity}`;
+            const stats = [];
+            if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+            if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+            if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+            if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+            if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+            if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+            if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+            if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+            if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+            if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
+            const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
+            const itemIcon = getItemIconPath(item) || '';
+
+            html += `
+                <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}">
+                    <div class="item-icon" style="background-image: url('${itemIcon}'); background-size: cover; background-position: center;"></div>
+                    <div class="item-content">
+                        <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                        <div class="item-stats">${stats.join(' • ')}</div>
+                        <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                        ${saleTag}
+                        <div class="item-actions" style="display: none;"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div></div>`;
+        document.getElementById('content').innerHTML = html;
+
+        document.querySelectorAll('.class-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const newClass = e.target.dataset.class;
+                localStorage.setItem('equipSelectedClass', newClass);
+                renderInventoryForClass(newClass);
+            });
+        });
+
+        document.querySelectorAll('.equip-slot').forEach(slot => {
+            slot.addEventListener('click', async (e) => {
+                const itemId = slot.dataset.itemId;
+                if (!itemId) return;
+                if (confirm('Снять этот предмет?')) {
+                    try {
+                        const res = await fetch('/inventory/unequip', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                         });
                         if (res.ok) {
                             await refreshData();
+                            if (currentScreen === 'equip') {
+                                renderEquip();
+                            }
                         } else {
-                            const err = await res.json();
-                            alert('Ошибка: ' + err.error);
+                            alert('Ошибка при снятии');
                         }
+                    } catch (e) {
+                        alert('Сеть недоступна');
                     }
+                }
+            });
+        });
+
+        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('action-btn')) return;
+
+                const itemId = itemDiv.dataset.itemId;
+                const forSale = itemDiv.dataset.forSale === 'true';
+                const actionsDiv = itemDiv.querySelector('.item-actions');
+
+                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+                    if (div !== actionsDiv) div.style.display = 'none';
                 });
 
-                actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    
-                    const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                    const classItems = inventory.filter(item => item.owner_class === currentClass);
-                    const item = classItems.find(i => i.id == itemId);
-                    
-                    if (!item) {
-                        alert('Этот предмет не принадлежит текущему классу!');
-                        return;
+                if (actionsDiv.style.display === 'flex') {
+                    actionsDiv.style.display = 'none';
+                } else {
+                    if (forSale) {
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                            <button class="action-btn cancel-btn">Отмена</button>
+                        `;
+                    } else {
+                        actionsDiv.innerHTML = `
+                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
+                        `;
                     }
-                    
-                    const price = prompt('Введите цену продажи в монетах:');
-                    if (price && !isNaN(price) && parseInt(price) > 0) {
-                        const res = await fetch('/inventory/sell', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                tg_id: userData.tg_id, 
-                                item_id: itemId, 
-                                price: parseInt(price) 
-                            })
+                    actionsDiv.style.display = 'flex';
+
+                    if (forSale) {
+                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('/inventory/unsell', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                            });
+                            if (res.ok) {
+                                await refreshData();
+                            } else {
+                                alert('Ошибка при снятии с продажи');
+                            }
                         });
-                        const data = await res.json();
-                        if (data.success) {
-                            alert('Предмет выставлен на маркет');
-                            await refreshData();
-                        } else {
-                           alert('Ошибка: ' + data.error);
-                        }
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else {
+                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            
+                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                            const classItems = inventory.filter(item => item.owner_class === currentClass);
+                            const item = classItems.find(i => i.id == itemId);
+                            
+                            if (!item) {
+                                alert('Этот предмет не принадлежит текущему классу!');
+                                return;
+                            }
+
+                            const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
+                            
+                            if (equippedInSlot) {
+                                showEquipCompareModal(equippedInSlot, item);
+                            } else {
+                                const res = await fetch('/inventory/equip', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                                });
+                                if (res.ok) {
+                                    await refreshData();
+                                } else {
+                                    const err = await res.json();
+                                    alert('Ошибка: ' + err.error);
+                                }
+                            }
+                        });
+
+                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            
+                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                            const classItems = inventory.filter(item => item.owner_class === currentClass);
+                            const item = classItems.find(i => i.id == itemId);
+                            
+                            if (!item) {
+                                alert('Этот предмет не принадлежит текущему классу!');
+                                return;
+                            }
+                            
+                            const price = prompt('Введите цену продажи в монетах:');
+                            if (price && !isNaN(price) && parseInt(price) > 0) {
+                                const res = await fetch('/inventory/sell', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        tg_id: userData.tg_id, 
+                                        item_id: itemId, 
+                                        price: parseInt(price) 
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('Предмет выставлен на маркет');
+                                    await refreshData();
+                                } else {
+                                    alert('Ошибка: ' + data.error);
+                                }
+                            }
+                        });
                     }
-                });
-            }
-        }
-    });
-});
+                }
+            });
+        });
+    }
 
     renderInventoryForClass(selectedClass);
 }

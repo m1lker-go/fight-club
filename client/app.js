@@ -978,7 +978,7 @@ document.querySelectorAll('.inventory-item').forEach(itemDiv => {
                             alert('Предмет выставлен на маркет');
                             await refreshData();
                         } else {
-                            alert('Ошибка: ' + data.error);
+                           alert('Ошибка: ' + data.error);
                         }
                     }
                 });

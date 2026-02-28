@@ -4,7 +4,9 @@ const { pool } = require('../db');
 
 // Надеть предмет
 router.post('/equip', async (req, res) => {
-    console.log('Equip request:', req.body);
+    console.log('=== НАДЕВАНИЕ ПРЕДМЕТА ===');
+    console.log('Request body:', req.body);
+    
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
@@ -15,32 +17,44 @@ router.post('/equip', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
         const userClass = user.rows[0].current_class;
+        console.log('User ID:', userId, 'Current class:', userClass);
 
-        // Получаем предмет (только тип и owner_class)
+        // Получаем предмет (тип и owner_class)
         const item = await client.query('SELECT type, owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
         const ownerClass = item.rows[0].owner_class;
+        console.log('Item type:', type, 'Owner class:', ownerClass);
+
+        // Проверяем, что предмет подходит текущему классу
+        if (ownerClass !== userClass) {
+            throw new Error('Item does not belong to current class');
+        }
 
         // Снимаем все предметы того же типа, принадлежащие текущему классу
-        await client.query(
-            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3',
+        const unequipRes = await client.query(
+            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3 RETURNING id',
             [userId, type, userClass]
         );
+        console.log('Снято предметов:', unequipRes.rowCount);
+        if (unequipRes.rowCount > 0) {
+            console.log('ID снятых предметов:', unequipRes.rows.map(r => r.id));
+        }
 
         // Одеваем выбранный
-        const updateRes = await client.query(
+        const equipRes = await client.query(
             'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
             [item_id, userId]
         );
-        if (updateRes.rowCount === 0) throw new Error('Failed to equip item');
+        if (equipRes.rowCount === 0) throw new Error('Failed to equip item');
+        console.log('Надет предмет с ID:', item_id);
 
         await client.query('COMMIT');
-        console.log('Equip success for item', item_id);
+        console.log('=== ОПЕРАЦИЯ УСПЕШНА ===');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Equip error:', e);
+        console.error('Ошибка при надевании:', e);
         res.status(500).json({ error: e.message });
     } finally {
         client.release();

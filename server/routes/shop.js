@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+
+router.get('/test', (req, res) => {
+    res.json({ message: 'shop works' });
+});
 
 // Вспомогательная функция для генерации предмета по типу сундука
 function generateItemFromChest(chestType) {

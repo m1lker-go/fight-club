@@ -1080,36 +1080,39 @@ function renderEquip() {
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            
-                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                            const classItems = inventory.filter(item => item.owner_class === currentClass);
-                            const item = classItems.find(i => i.id == itemId);
-                            
-                            if (!item) {
-                                alert('Этот предмет не принадлежит текущему классу!');
-                                return;
-                            }
+                       actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    
+    const currentClass = document.querySelector('.class-btn.active').dataset.class;
+    const classItems = inventory.filter(item => item.owner_class === currentClass);
+    const item = classItems.find(i => i.id == itemId);
+    
+    if (!item) {
+        alert('Этот предмет не принадлежит текущему классу!');
+        return;
+    }
 
-                            const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
-                            
-                            if (equippedInSlot) {
-                                showEquipCompareModal(equippedInSlot, item);
-                            } else {
-                                const res = await fetch('/inventory/equip', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                                });
-                                if (res.ok) {
-                                    await refreshData();
-                                } else {
-                                    const err = await res.json();
-                                    alert('Ошибка: ' + err.error);
-                                }
-                            }
-                        });
+    const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
+    
+    if (equippedInSlot) {
+        showEquipCompareModal(equippedInSlot, item);
+    } else {
+        const res = await fetch('/inventory/equip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+        });
+        if (res.ok) {
+            await refreshData();
+            if (currentScreen === 'equip') {
+                renderEquip();
+            }
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + err.error);
+        }
+    }
+});
 
                         actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();

@@ -565,25 +565,25 @@ function showChestResult(item) {
     const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
 
     let classDisplay = '';
-    if (item.class_restriction && item.class_restriction !== 'any') {
-        classDisplay = item.class_restriction === 'warrior' ? 'Воин' : (item.class_restriction === 'assassin' ? 'Ассасин' : 'Маг');
-    } else {
-        classDisplay = 'Универсальный';
-    }
-
-    body.innerHTML = `
-        <div style="text-align: center;">
-            <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
-            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
-            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
-        </div>
-    `;
-    
-    modal.style.display = 'block';
+if (item.owner_class) {
+    classDisplay = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
+} else {
+    classDisplay = 'Неизвестный класс';
 }
 
+body.innerHTML = `
+    <div style="text-align: center;">
+        <div style="margin-bottom: 10px;">${iconHtml}</div>
+        <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
+        <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
+        <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
+        <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
+    </div>
+`;
+
+modal.style.display = 'block';
+
+    
 function showLevelUpModal(className) {
     const modal = document.getElementById('levelUpModal');
     const body = document.getElementById('levelUpBody');

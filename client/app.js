@@ -1086,7 +1086,13 @@ function renderEquip() {
     const item = inventory.find(i => i.id == itemId);
     if (!item) return;
 
-    const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
+    // Проверяем, можно ли вообще надеть этот предмет на текущий класс
+if (item.owner_class !== userData.current_class && item.class_restriction !== 'any') {
+    alert('Этот предмет нельзя надеть на текущий класс!');
+    return;
+}
+
+const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === userData.current_class);
     
     if (equippedInSlot) {
         showEquipCompareModal(equippedInSlot, item);

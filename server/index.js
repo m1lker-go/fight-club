@@ -19,9 +19,9 @@ app.use('/auth', require('./routes/auth'));
 app.use('/player', require('./routes/player'));
 app.use('/inventory', require('./routes/inventory'));
 app.use('/shop', require('./routes/shop'));
-//app.use('/market', require('./routes/market'));
-//app.use('/battle', require('./routes/battle'));
-//app.use('/tasks', require('./routes/tasks'));
+app.use('/market', require('./routes/market'));
+app.use('/battle', require('./routes/battle'));
+app.use('/tasks', require('./routes/tasks'));
 app.use('/avatars', require('./routes/avatars'));
 
 const PORT = process.env.PORT || 3000;

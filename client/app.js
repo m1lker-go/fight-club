@@ -1034,120 +1034,119 @@ function renderEquip() {
     });
 });
 
-        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
-            itemDiv.addEventListener('click', (e) => {
-                if (e.target.classList.contains('action-btn')) return;
+   document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+    itemDiv.addEventListener('click', (e) => {
+        if (e.target.classList.contains('action-btn')) return;
 
-                const itemId = itemDiv.dataset.itemId;
-                const forSale = itemDiv.dataset.forSale === 'true';
-                const actionsDiv = itemDiv.querySelector('.item-actions');
+        const itemId = itemDiv.dataset.itemId;
+        const forSale = itemDiv.dataset.forSale === 'true';
+        const actionsDiv = itemDiv.querySelector('.item-actions');
 
-                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
-                    if (div !== actionsDiv) div.style.display = 'none';
+        document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+            if (div !== actionsDiv) div.style.display = 'none';
+        });
+
+        if (actionsDiv.style.display === 'flex') {
+            actionsDiv.style.display = 'none';
+        } else {
+            if (forSale) {
+                actionsDiv.innerHTML = `
+                    <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                    <button class="action-btn cancel-btn">Отмена</button>
+                `;
+            } else {
+                actionsDiv.innerHTML = `
+                    <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                    <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
+                `;
+            }
+            actionsDiv.style.display = 'flex';
+
+            if (forSale) {
+                actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const res = await fetch('/inventory/unsell', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                    });
+                    if (res.ok) {
+                        await refreshData();
+                    } else {
+                        alert('Ошибка при снятии с продажи');
+                    }
+                });
+                actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    actionsDiv.style.display = 'none';
+                });
+            } else {
+                actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    
+                    const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                    const classItems = inventory.filter(item => item.owner_class === currentClass);
+                    const item = classItems.find(i => i.id == itemId);
+                    
+                    if (!item) {
+                        alert('Этот предмет не принадлежит текущему классу!');
+                        return;
+                    }
+
+                    const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
+                    
+                    if (equippedInSlot) {
+                        showEquipCompareModal(equippedInSlot, item);
+                    } else {
+                        const res = await fetch('/inventory/equip', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        });
+                        if (res.ok) {
+                            await refreshData();
+                        } else {
+                            const err = await res.json();
+                            alert('Ошибка: ' + err.error);
+                        }
+                    }
                 });
 
-                if (actionsDiv.style.display === 'flex') {
-                    actionsDiv.style.display = 'none';
-                } else {
-                    if (forSale) {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
-                        `;
-                    } else {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
-                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
-                        `;
+                actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    
+                    const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                    const classItems = inventory.filter(item => item.owner_class === currentClass);
+                    const item = classItems.find(i => i.id == itemId);
+                    
+                    if (!item) {
+                        alert('Этот предмет не принадлежит текущему классу!');
+                        return;
                     }
-                    actionsDiv.style.display = 'flex';
-
-                    if (forSale) {
-                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            const res = await fetch('/inventory/unsell', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                            });
-                            if (res.ok) {
-                                await refreshData();
-                            } else {
-                                alert('Ошибка при снятии с продажи');
-                            }
+                    
+                    const price = prompt('Введите цену продажи в монетах:');
+                    if (price && !isNaN(price) && parseInt(price) > 0) {
+                        const res = await fetch('/inventory/sell', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                tg_id: userData.tg_id, 
+                                item_id: itemId, 
+                                price: parseInt(price) 
+                            })
                         });
-                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            actionsDiv.style.display = 'none';
-                        });
-                    } else {
-                     actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    
-    // Получаем текущий класс из интерфейса (не из userData)
-    const currentClass = document.querySelector('.class-btn.active').dataset.class;
-    
-    // Фильтруем предметы ТОЛЬКО для текущего класса
-    const classItems = inventory.filter(item => item.owner_class === currentClass);
-    const item = classItems.find(i => i.id == itemId);
-    
-    if (!item) {
-        alert('Этот предмет не принадлежит текущему классу!');
-        return;
-    }
-
-    const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
-    
-    if (equippedInSlot) {
-        showEquipCompareModal(equippedInSlot, item);
-    } else {
-        const res = await fetch('/inventory/equip', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-        });
-        if (res.ok) {
-            await refreshData();
-        } else {
-            const err = await res.json();
-            alert('Ошибка: ' + err.error);
+                        const data = await res.json();
+                        if (data.success) {
+                            alert('Предмет выставлен на маркет');
+                            await refreshData();
+                        } else {
+                            alert('Ошибка: ' + data.error);
+                        }
+                    }
+                });
+            }
         }
-    }
-});
-actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    
-    // Получаем текущий класс из активной кнопки
-    const currentClass = document.querySelector('.class-btn.active').dataset.class;
-    
-    // Фильтруем предметы только для текущего класса
-    const classItems = inventory.filter(item => item.owner_class === currentClass);
-    const item = classItems.find(i => i.id == itemId);
-    
-    if (!item) {
-        alert('Этот предмет не принадлежит текущему классу!');
-        return;
-    }
-    
-    const price = prompt('Введите цену продажи в монетах:');
-    if (price && !isNaN(price) && parseInt(price) > 0) {
-        const res = await fetch('/inventory/sell', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                tg_id: userData.tg_id, 
-                item_id: itemId, 
-                price: parseInt(price) 
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            alert('Предмет выставлен на маркет');
-            await refreshData();
-        } else {
-            alert('Ошибка: ' + data.error);
-        }
-    }
+    });
 });
 // ==================== ТОРГОВЛЯ ====================
 
@@ -2580,9 +2579,6 @@ function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 }
-
-
-
 
 // Инициализация меню
 document.querySelectorAll('.menu-item').forEach(item => {

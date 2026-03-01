@@ -1689,13 +1689,20 @@ function renderRating() {
 async function loadDailyTasks() {
     try {
         console.log('Загружаю задания для tg_id:', userData.tg_id);
-        console.log('Ответ от /daily/list:', tasks);
         const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
-        const tasks = await res.json();
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const tasksData = await res.json();
+        // Проверяем, что ответ - массив
+        if (!Array.isArray(tasksData)) {
+            console.error('Ответ не является массивом:', tasksData);
+            return;
+        }
         const tasksList = document.getElementById('tasksList');
         tasksList.innerHTML = '';
 
-        tasks.forEach(task => {
+        tasksData.forEach(task => {
             if (task.completed) return;
 
             const progressPercent = (task.progress / task.target_value) * 100;
@@ -1703,14 +1710,12 @@ async function loadDailyTasks() {
                 ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
                 : `${task.reward_amount} EXP`;
 
-            // Перевод через словарь (должен быть определён выше)
             const translated = dailyTaskTranslations[task.name] || {};
             const displayName = translated.name || task.name;
             const displayDesc = translated.description || task.description;
 
             const taskCard = document.createElement('div');
             taskCard.className = 'task-card';
-            // Задаём стили непосредственно для гарантии
             taskCard.style.display = 'flex';
             taskCard.style.alignItems = 'center';
             taskCard.style.justifyContent = 'space-between';
@@ -1720,7 +1725,7 @@ async function loadDailyTasks() {
             taskCard.style.boxSizing = 'border-box';
 
             taskCard.innerHTML = `
-                <div style="flex: 2; min-width: 0;"> <!-- min-width:0 для переноса текста -->
+                <div style="flex: 2; min-width: 0;">
                     <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
                     <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
                     <div style="margin-top: 8px;">
@@ -1750,11 +1755,11 @@ async function loadDailyTasks() {
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {
-                   const res = await fetch('/tasks/daily/claim', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-});
+                    const res = await fetch('/tasks/daily/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                    });
                     const data = await res.json();
                     if (data.error) {
                         alert(data.error);

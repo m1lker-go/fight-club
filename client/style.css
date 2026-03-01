@@ -488,12 +488,11 @@ body {
 }
 
 .item-name {
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
+    hyphens: auto;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.2;
 }
 
 .item-stats {

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Вспомогательная функция генерации предмета по редкости
+// Вспомогательная функция генерации предмета по редкости (аналог из shop.js)
 function generateItemByRarity(rarity, ownerClass = null) {
     const itemNames = {
         common: ['Ржавый меч', 'Деревянный щит', 'Кожаный шлем', 'Тряпичные перчатки', 'Старые сапоги', 'Медное кольцо'],
@@ -14,7 +14,7 @@ function generateItemByRarity(rarity, ownerClass = null) {
     const types = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'];
     const type = types[Math.floor(Math.random() * types.length)];
     const name = itemNames[rarity][Math.floor(Math.random() * itemNames[rarity].length)];
-
+    
     const bonuses = {
         common: { atk: 1, def: 1, hp: 2 },
         uncommon: { atk: 2, def: 2, hp: 4 },
@@ -23,7 +23,7 @@ function generateItemByRarity(rarity, ownerClass = null) {
         legendary: { atk: 7, def: 7, hp: 15 }
     };
     const b = bonuses[rarity];
-
+    
     return {
         name: name,
         type: type,
@@ -64,21 +64,21 @@ function getAdventReward(day, daysInMonth) {
 router.get('/advent', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
-
+    
     const client = await pool.connect();
     try {
         const user = await client.query('SELECT id, advent_month, advent_year, advent_mask FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-
+        
         let { advent_month, advent_year, advent_mask } = user.rows[0];
         const userId = user.rows[0].id;
-
+        
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const currentMonth = mskTime.getMonth() + 1;
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
-
+        
         if (advent_month !== currentMonth || advent_year !== currentYear) {
             advent_mask = 0;
             advent_month = currentMonth;
@@ -88,9 +88,9 @@ router.get('/advent', async (req, res) => {
                 [currentMonth, currentYear, 0, userId]
             );
         }
-
+        
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-
+        
         res.json({
             currentDay,
             daysInMonth,
@@ -107,47 +107,48 @@ router.get('/advent', async (req, res) => {
 router.post('/advent/claim', async (req, res) => {
     const { tg_id, day, classChoice } = req.body;
     if (!tg_id || !day) return res.status(400).json({ error: 'Missing data' });
-
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
+        
         const user = await client.query('SELECT id, advent_month, advent_year, advent_mask FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
         let { advent_month, advent_year, advent_mask } = user.rows[0];
-
+        
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const currentMonth = mskTime.getMonth() + 1;
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
-
+        
         if (advent_month !== currentMonth || advent_year !== currentYear) {
             advent_mask = 0;
             advent_month = currentMonth;
             advent_year = currentYear;
         }
-
+        
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         if (day > currentDay || day > daysInMonth) {
             throw new Error('This day is not available yet');
         }
-
+        
         if (advent_mask & (1 << (day-1))) {
             throw new Error('Reward already claimed');
         }
-
+        
+        // Проверка, что все предыдущие дни получены
         if (day > 1) {
             const expectedMask = (1 << (day-1)) - 1;
             if ((advent_mask & expectedMask) !== expectedMask) {
                 throw new Error('You must claim previous days first');
             }
         }
-
+        
         const reward = getAdventReward(day, daysInMonth);
         let rewardDescription = '';
-
+        
         if (reward.type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward.amount, userId]);
             rewardDescription = `${reward.amount} монет`;
@@ -178,15 +179,15 @@ router.post('/advent/claim', async (req, res) => {
             await client.query('INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)', [userId, itemId]);
             rewardDescription = `Предмет: ${item.name} (${item.rarity})`;
         }
-
+        
         advent_mask |= (1 << (day-1));
-        await client.query('UPDATE users SET advent_mask = $1, advent_month = $2, advent_year = $3 WHERE id = $4',
+        await client.query('UPDATE users SET advent_mask = $1, advent_month = $2, advent_year = $3 WHERE id = $4', 
             [advent_mask, currentMonth, currentYear, userId]);
-
+        
         await client.query('COMMIT');
-
+        
         res.json({ success: true, reward: rewardDescription, mask: advent_mask });
-
+        
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);
@@ -341,8 +342,9 @@ router.post('/daily/claim', async (req, res) => {
 });
 
 // Маршруты для обновления прогресса
-
 router.post('/daily/update/battle', async (req, res) => {
+    console.log('=== /daily/update/battle called ===');
+    console.log('req.body:', req.body);
     const { tg_id, class_played, is_victory } = req.body;
     const client = await pool.connect();
     try {
@@ -361,7 +363,8 @@ router.post('/daily/update/battle', async (req, res) => {
 
         if (user.last_daily_reset !== today) {
             await client.query('ROLLBACK');
-            return res.json({ success: true }); // игнорируем, если новый день
+            console.log('Daily reset mismatch, ignoring update');
+            return res.json({ success: true });
         }
 
         let progress = user.daily_tasks_progress || {};
@@ -393,6 +396,8 @@ router.post('/daily/update/battle', async (req, res) => {
 });
 
 router.post('/daily/update/exp', async (req, res) => {
+    console.log('=== /daily/update/exp called ===');
+    console.log('req.body:', req.body);
     const { tg_id, exp_gained } = req.body;
     const client = await pool.connect();
     try {
@@ -411,6 +416,7 @@ router.post('/daily/update/exp', async (req, res) => {
 
         if (user.last_daily_reset !== today) {
             await client.query('ROLLBACK');
+            console.log('Daily reset mismatch, ignoring update');
             return res.json({ success: true });
         }
 

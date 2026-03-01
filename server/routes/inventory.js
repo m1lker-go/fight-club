@@ -7,39 +7,37 @@ router.post('/equip', async (req, res) => {
     console.log('=== НАДЕВАНИЕ ПРЕДМЕТА ===');
     console.log('Request body:', req.body);
     
-    const { tg_id, item_id } = req.body;
+    const { tg_id, item_id, target_class } = req.body; // target_class из запроса
+    if (!target_class) {
+        return res.status(400).json({ error: 'target_class is required' });
+    }
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Получаем пользователя и его текущий класс
-        const user = await client.query('SELECT id, current_class FROM users WHERE tg_id = $1', [tg_id]);
+        // Получаем пользователя
+        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
-        const userClass = user.rows[0].current_class;
-        console.log('User ID:', userId, 'Current class:', userClass);
 
-        // Получаем предмет (тип и owner_class)
+        // Получаем предмет
         const item = await client.query('SELECT type, owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
         const ownerClass = item.rows[0].owner_class;
-        console.log('Item type:', type, 'Owner class:', ownerClass);
 
-        // Проверяем, что предмет подходит текущему классу
-        if (ownerClass !== userClass) {
-            throw new Error('Item does not belong to current class');
+        // Проверяем, что предмет подходит целевому классу
+        if (ownerClass !== target_class) {
+            throw new Error(`Item belongs to class ${ownerClass}, not ${target_class}`);
         }
 
-        // Снимаем все предметы того же типа, принадлежащие текущему классу
+        // Снимаем все предметы того же типа, принадлежащие целевому классу
         const unequipRes = await client.query(
             'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3 RETURNING id',
-            [userId, type, userClass]
+            [userId, type, target_class]
         );
         console.log('Снято предметов:', unequipRes.rowCount);
-        if (unequipRes.rowCount > 0) {
-            console.log('ID снятых предметов:', unequipRes.rows.map(r => r.id));
-        }
 
         // Одеваем выбранный
         const equipRes = await client.query(

@@ -79,4 +79,45 @@ router.post('/buy', async (req, res) => {
     }
 });
 
+router.get('/', async (req, res) => {
+    const { class: className, rarity, minPrice, maxPrice, stat, statValue } = req.query;
+    let query = `
+        SELECT i.*, u.username as seller_name
+        FROM inventory i
+        JOIN users u ON i.user_id = u.id
+        WHERE i.for_sale = true
+    `;
+    const params = [];
+    if (className && className !== 'any') {
+        params.push(className);
+        query += ` AND i.class_restriction = $${params.length}`;
+    }
+    if (rarity && rarity !== 'any') {
+        params.push(rarity);
+        query += ` AND i.rarity = $${params.length}`;
+    }
+    if (minPrice) {
+        params.push(minPrice);
+        query += ` AND i.price >= $${params.length}`;
+    }
+    if (maxPrice) {
+        params.push(maxPrice);
+        query += ` AND i.price <= $${params.length}`;
+    }
+    // Фильтр по характеристике (например, atk_bonus > 0)
+    if (stat && stat !== 'any') {
+        params.push(stat);
+        query += ` AND i.${stat} > 0`; // или можно передавать пороговое значение
+    }
+    query += ' ORDER BY i.price';
+
+    try {
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;

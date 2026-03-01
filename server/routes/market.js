@@ -14,7 +14,8 @@ router.get('/', async (req, res) => {
         const params = [];
         if (className && className !== 'any') {
             params.push(className);
-            query += ` AND i.class_restriction = $${params.length}`;
+            // Фильтруем по owner_class, а не по class_restriction
+            query += ` AND i.owner_class = $${params.length}`;
         }
         if (rarity && rarity !== 'any') {
             params.push(rarity);
@@ -28,16 +29,16 @@ router.get('/', async (req, res) => {
             params.push(maxPrice);
             query += ` AND i.price <= $${params.length}`;
         }
-       if (stat && stat !== 'any') {
-    query += ` AND i.${stat} > 0`;  // параметр не добавляем
-}
+        if (stat && stat !== 'any') {
+            query += ` AND i.${stat} > 0`; // параметр не добавляем
+        }
         query += ' ORDER BY i.price';
 
         const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (e) {
         console.error('Market error:', e);
-        res.status(500).json({ error: e.message, rows: [] }); // возвращаем пустой массив
+        res.status(500).json({ error: e.message, rows: [] });
     }
 });
 

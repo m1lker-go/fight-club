@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+// Вспомогательная функция для парсинга прогресса
 function parseProgress(progress) {
     if (!progress) return {};
     try {
@@ -10,7 +11,6 @@ function parseProgress(progress) {
         return {};
     }
 }
-
 
 // Вспомогательная функция генерации предмета по редкости (аналог из shop.js)
 function generateItemByRarity(rarity, ownerClass = null) {
@@ -211,6 +211,8 @@ router.post('/advent/claim', async (req, res) => {
 
 // Получить список доступных заданий для пользователя
 router.get('/daily/list', async (req, res) => {
+    console.log('=== /daily/list called ===');
+    console.log('tg_id:', req.query.tg_id);
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
 
@@ -231,12 +233,15 @@ router.get('/daily/list', async (req, res) => {
         // Сброс, если новый день
         if (user.last_daily_reset !== today) {
             await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = \'{}\', last_daily_reset = $1 WHERE id = $2',
-                [today, userId]
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                ['{}', today, userId]
             );
             user.daily_tasks_mask = 0;
-            user.daily_tasks_progress = {};
+            user.daily_tasks_progress = '{}';
         }
+
+        // Парсим прогресс
+        let progressObj = parseProgress(user.daily_tasks_progress);
 
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;
@@ -244,7 +249,7 @@ router.get('/daily/list', async (req, res) => {
         const result = [];
         for (const task of tasks) {
             const completed = !!(user.daily_tasks_mask & (1 << (task.id - 1)));
-            const progress = completed ? task.target_value : (user.daily_tasks_progress[task.id] || 0);
+            const progress = completed ? task.target_value : (progressObj[task.id] || 0);
             result.push({
                 id: task.id,
                 name: task.name,
@@ -258,6 +263,7 @@ router.get('/daily/list', async (req, res) => {
             });
         }
 
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         res.json(result);
     } catch (e) {
         console.error(e);
@@ -300,7 +306,8 @@ router.post('/daily/claim', async (req, res) => {
         if (taskRes.rows.length === 0) throw new Error('Task not found');
         const task = taskRes.rows[0];
 
-        const progress = user.daily_tasks_progress[task_id] || 0;
+        let progressObj = parseProgress(user.daily_tasks_progress);
+        const progress = progressObj[task_id] || 0;
         if (parseInt(progress) < task.target_value) {
             throw new Error('Task not completed');
         }
@@ -352,6 +359,7 @@ router.post('/daily/claim', async (req, res) => {
 });
 
 // Маршруты для обновления прогресса
+
 router.post('/daily/update/battle', async (req, res) => {
     console.log('=== /daily/update/battle called ===');
     console.log('req.body:', req.body);
@@ -360,7 +368,7 @@ router.post('/daily/update/battle', async (req, res) => {
     try {
         await client.query('BEGIN');
         const userRes = await client.query(
-            'SELECT id, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
+            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
             [tg_id]
         );
         if (userRes.rows.length === 0) throw new Error('User not found');
@@ -371,13 +379,21 @@ router.post('/daily/update/battle', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
-        if (user.last_daily_reset !== today) {
-            await client.query('ROLLBACK');
-            console.log('Daily reset mismatch, ignoring update');
-            return res.json({ success: true });
-        }
+        let progress = {};
+        let mask = user.daily_tasks_mask;
 
-        let progress = user.daily_tasks_progress || {};
+        // Если дата не совпадает – сбрасываем прогресс и маску
+        if (user.last_daily_reset !== today) {
+            console.log('New day detected, resetting progress');
+            progress = {};
+            mask = 0;
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                ['{}', today, userId]
+            );
+        } else {
+            progress = parseProgress(user.daily_tasks_progress);
+        }
 
         // Задание 5: сыграть 15 матчей
         progress[5] = (progress[5] || 0) + 1;
@@ -395,6 +411,7 @@ router.post('/daily/update/battle', async (req, res) => {
         );
 
         await client.query('COMMIT');
+        console.log('Прогресс обновлён:', progress);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -413,7 +430,7 @@ router.post('/daily/update/exp', async (req, res) => {
     try {
         await client.query('BEGIN');
         const userRes = await client.query(
-            'SELECT id, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
+            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
             [tg_id]
         );
         if (userRes.rows.length === 0) throw new Error('User not found');
@@ -424,13 +441,21 @@ router.post('/daily/update/exp', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
+        let progress = {};
+        let mask = user.daily_tasks_mask;
+
         if (user.last_daily_reset !== today) {
-            await client.query('ROLLBACK');
-            console.log('Daily reset mismatch, ignoring update');
-            return res.json({ success: true });
+            console.log('New day detected, resetting progress');
+            progress = {};
+            mask = 0;
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                ['{}', today, userId]
+            );
+        } else {
+            progress = parseProgress(user.daily_tasks_progress);
         }
 
-        let progress = user.daily_tasks_progress || {};
         // Задание 4: набор опыта
         progress[4] = (progress[4] || 0) + exp_gained;
 
@@ -440,6 +465,7 @@ router.post('/daily/update/exp', async (req, res) => {
         );
 
         await client.query('COMMIT');
+        console.log('Прогресс обновлён:', progress);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -456,7 +482,7 @@ router.post('/daily/update/chest', async (req, res) => {
     try {
         await client.query('BEGIN');
         const userRes = await client.query(
-            'SELECT id, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
+            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
             [tg_id]
         );
         if (userRes.rows.length === 0) throw new Error('User not found');
@@ -467,12 +493,21 @@ router.post('/daily/update/chest', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
+        let progress = {};
+        let mask = user.daily_tasks_mask;
+
         if (user.last_daily_reset !== today) {
-            await client.query('ROLLBACK');
-            return res.json({ success: true });
+            console.log('New day detected, resetting progress');
+            progress = {};
+            mask = 0;
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                ['{}', today, userId]
+            );
+        } else {
+            progress = parseProgress(user.daily_tasks_progress);
         }
 
-        let progress = user.daily_tasks_progress || {};
         // Задание 7: счастливчик (редкий+ предмет)
         if (['rare', 'epic', 'legendary'].includes(item_rarity)) {
             progress[7] = (progress[7] || 0) + 1;
@@ -498,8 +533,9 @@ router.post('/daily/update/profile', async (req, res) => {
     const { tg_id } = req.body;
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
         const userRes = await client.query(
-            'SELECT id, last_daily_reset, last_profile_visit FROM users WHERE tg_id = $1',
+            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
             [tg_id]
         );
         if (userRes.rows.length === 0) throw new Error('User not found');
@@ -510,12 +546,21 @@ router.post('/daily/update/profile', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
+        let progress = {};
+        let mask = user.daily_tasks_mask;
+
         if (user.last_daily_reset !== today) {
-            await client.query('ROLLBACK');
-            return res.json({ success: true });
+            console.log('New day detected, resetting progress');
+            progress = {};
+            mask = 0;
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                ['{}', today, userId]
+            );
+        } else {
+            progress = parseProgress(user.daily_tasks_progress);
         }
 
-        let progress = user.daily_tasks_progress || {};
         // Задание 6: любознательный
         progress[6] = (progress[6] || 0) + 1;
 

@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+// Получить список предметов на продаже
 router.get('/', async (req, res) => {
-    const { class: className, rarity, minPrice, maxPrice } = req.query;
+    const { class: className, rarity, minPrice, maxPrice, stat } = req.query;
     let query = `
-        SELECT i.*, u.username as seller_name
+        SELECT i.*, u.username as seller_name, u.id as seller_id
         FROM inventory i
         JOIN users u ON i.user_id = u.id
         WHERE i.for_sale = true
@@ -27,6 +28,12 @@ router.get('/', async (req, res) => {
         params.push(maxPrice);
         query += ` AND i.price <= $${params.length}`;
     }
+    // Фильтр по характеристике (просто наличие бонуса)
+    if (stat && stat !== 'any') {
+        // Ожидаем, что stat — это имя колонки, например 'atk_bonus'
+        params.push(stat);
+        query += ` AND i.${stat} > 0`;
+    }
     query += ' ORDER BY i.price';
 
     try {
@@ -38,6 +45,7 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Купить предмет
 router.post('/buy', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
@@ -79,44 +87,72 @@ router.post('/buy', async (req, res) => {
     }
 });
 
-router.get('/', async (req, res) => {
-    const { class: className, rarity, minPrice, maxPrice, stat, statValue } = req.query;
-    let query = `
-        SELECT i.*, u.username as seller_name
-        FROM inventory i
-        JOIN users u ON i.user_id = u.id
-        WHERE i.for_sale = true
-    `;
-    const params = [];
-    if (className && className !== 'any') {
-        params.push(className);
-        query += ` AND i.class_restriction = $${params.length}`;
-    }
-    if (rarity && rarity !== 'any') {
-        params.push(rarity);
-        query += ` AND i.rarity = $${params.length}`;
-    }
-    if (minPrice) {
-        params.push(minPrice);
-        query += ` AND i.price >= $${params.length}`;
-    }
-    if (maxPrice) {
-        params.push(maxPrice);
-        query += ` AND i.price <= $${params.length}`;
-    }
-    // Фильтр по характеристике (например, atk_bonus > 0)
-    if (stat && stat !== 'any') {
-        params.push(stat);
-        query += ` AND i.${stat} > 0`; // или можно передавать пороговое значение
-    }
-    query += ' ORDER BY i.price';
-
+// Снять предмет с продажи (для владельца)
+router.post('/remove', async (req, res) => {
+    const { tg_id, item_id } = req.body;
+    const client = await pool.connect();
     try {
-        const result = await pool.query(query, params);
-        res.json(result.rows);
+        await client.query('BEGIN');
+
+        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) throw new Error('User not found');
+        const userId = user.rows[0].id;
+
+        const itemRes = await client.query(
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',
+            [item_id, userId]
+        );
+        if (itemRes.rows.length === 0) throw new Error('Item not found or not yours');
+
+        await client.query(
+            'UPDATE inventory SET for_sale = false, price = NULL WHERE id = $1',
+            [item_id]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true });
     } catch (e) {
+        await client.query('ROLLBACK');
         console.error(e);
-        res.status(500).json({ error: e.message });
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// Изменить цену предмета (для владельца)
+router.post('/update-price', async (req, res) => {
+    const { tg_id, item_id, new_price } = req.body;
+    if (!new_price || new_price <= 0) {
+        return res.status(400).json({ error: 'Invalid price' });
+    }
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) throw new Error('User not found');
+        const userId = user.rows[0].id;
+
+        const itemRes = await client.query(
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',
+            [item_id, userId]
+        );
+        if (itemRes.rows.length === 0) throw new Error('Item not found or not yours');
+
+        await client.query(
+            'UPDATE inventory SET price = $1 WHERE id = $2',
+            [new_price, item_id]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true, new_price });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
     }
 });
 

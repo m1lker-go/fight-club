@@ -170,7 +170,7 @@ router.post('/buychest', async (req, res) => {
                 name, type, rarity, class_restriction, owner_class,
                 atk_bonus, def_bonus, hp_bonus, spd_bonus,
                 crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
             [userId, itemId, false,
              item.name, item.type, item.rarity, 'any', item.owner_class,
              item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,

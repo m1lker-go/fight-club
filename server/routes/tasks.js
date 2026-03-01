@@ -383,17 +383,18 @@ router.post('/daily/update/battle', async (req, res) => {
         let mask = user.daily_tasks_mask;
 
         // Если дата не совпадает – сбрасываем прогресс и маску
-        if (user.last_daily_reset !== today) {
-            console.log('New day detected, resetting progress');
-            progress = {};
-            mask = 0;
-            await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
-                ['{}', today, userId]
-            );
-        } else {
-            progress = parseProgress(user.daily_tasks_progress);
-        }
+       const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+if (lastResetStr !== today) {
+    console.log('New day detected, resetting progress');
+    progress = {};
+    mask = 0;
+    await client.query(
+        'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+        ['{}', today, userId]
+    );
+} else {
+    progress = parseProgress(user.daily_tasks_progress);
+}
 
         // Задание 5: сыграть 15 матчей
         progress[5] = (progress[5] || 0) + 1;

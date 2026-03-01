@@ -1508,7 +1508,56 @@ function renderAdventCalendarInContainer(data, container) {
         div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
     });
 }
+function renderReferral() {
+    const referralDiv = document.createElement('div');
+    referralDiv.className = 'task-card referral-card';
+    referralDiv.style.display = 'flex';
+    referralDiv.style.alignItems = 'center';
+    referralDiv.style.justifyContent = 'space-between';
+    referralDiv.style.width = '100%';
+    referralDiv.style.marginBottom = '12px';
+    referralDiv.style.padding = '12px';
+    referralDiv.style.boxSizing = 'border-box';
 
+    const referralLink = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
+
+    referralDiv.innerHTML = `
+        <div style="flex: 2; min-width: 0;">
+            <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>
+            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>
+        </div>
+        <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            <span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>
+        </div>
+        <div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">
+            <button class="btn referral-copy-btn" style="padding: 8px 12px; font-size: 12px; width: 45px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
+            <button class="btn referral-share-btn" style="padding: 8px 12px; font-size: 12px; width: 45px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+        </div>
+    `;
+
+    // Обработчик копирования
+    referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(referralLink).then(() => {
+            alert('Ссылка скопирована!');
+        }).catch(() => {
+            alert('Ошибка копирования');
+        });
+    });
+
+    // Обработчик поделиться
+    referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
+        if (window.Telegram?.WebApp?.openTelegramLink) {
+            window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
+        } else {
+            // fallback – копируем
+            navigator.clipboard.writeText(referralLink).then(() => {
+                alert('Ссылка скопирована! Вы можете отправить её другу.');
+            });
+        }
+    });
+
+    return referralDiv;
+}
 // ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
@@ -1530,10 +1579,19 @@ function renderTasks() {
                 </div>
             </div>
 
+            <!-- Реферальная карточка -->
+            <div id="referralPlaceholder"></div>
+
             <h3 style="text-align:center; margin:10px 0; font-size: 16px;">Ежедневные задания</h3>
             <div id="tasksList"></div>
         </div>
     `;
+
+    // Вставляем реферальную карточку
+    const referralPlaceholder = document.getElementById('referralPlaceholder');
+    if (referralPlaceholder) {
+        referralPlaceholder.appendChild(renderReferral());
+    }
 
     document.getElementById('showAdventBtn').addEventListener('click', () => {
         fetch(`/tasks/advent?tg_id=${userData.tg_id}`)

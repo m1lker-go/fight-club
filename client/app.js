@@ -1693,8 +1693,7 @@ async function loadDailyTasks() {
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const tasksData = await res.json();
-        // Проверяем, что ответ - массив
+        const tasksData = await res.json(); // переименовано, чтобы избежать конфликта
         if (!Array.isArray(tasksData)) {
             console.error('Ответ не является массивом:', tasksData);
             return;
@@ -1765,8 +1764,8 @@ async function loadDailyTasks() {
                         alert(data.error);
                     } else {
                         alert(`Вы получили ${rewardAmount} монет!`);
-                        loadDailyTasks(); // перезагрузить список
-                        refreshData(); // обновить баланс
+                        loadDailyTasks();
+                        refreshData();
                     }
                 }
             });

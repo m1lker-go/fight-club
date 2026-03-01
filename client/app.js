@@ -1689,6 +1689,7 @@ function renderRating() {
 async function loadDailyTasks() {
     try {
         console.log('Загружаю задания для tg_id:', userData.tg_id);
+        console.log('Ответ от /daily/list:', tasks);
         const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const tasks = await res.json();
         const tasksList = document.getElementById('tasksList');

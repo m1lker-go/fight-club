@@ -4,41 +4,41 @@ const { pool } = require('../db');
 
 router.get('/', async (req, res) => {
     const { class: className, rarity, minPrice, maxPrice, stat } = req.query;
-    let query = `
-        SELECT i.*, u.username as seller_name, u.id as seller_id
-        FROM inventory i
-        JOIN users u ON i.user_id = u.id
-        WHERE i.for_sale = true
-    `;
-    const params = [];
-    if (className && className !== 'any') {
-        params.push(className);
-        query += ` AND i.class_restriction = $${params.length}`;
-    }
-    if (rarity && rarity !== 'any') {
-        params.push(rarity);
-        query += ` AND i.rarity = $${params.length}`;
-    }
-    if (minPrice) {
-        params.push(minPrice);
-        query += ` AND i.price >= $${params.length}`;
-    }
-    if (maxPrice) {
-        params.push(maxPrice);
-        query += ` AND i.price <= $${params.length}`;
-    }
-    if (stat && stat !== 'any') {
-        params.push(stat);
-        query += ` AND i.${stat} > 0`;
-    }
-    query += ' ORDER BY i.price';
-
     try {
+        let query = `
+            SELECT i.*, u.username as seller_name, u.id as seller_id
+            FROM inventory i
+            JOIN users u ON i.user_id = u.id
+            WHERE i.for_sale = true
+        `;
+        const params = [];
+        if (className && className !== 'any') {
+            params.push(className);
+            query += ` AND i.class_restriction = $${params.length}`;
+        }
+        if (rarity && rarity !== 'any') {
+            params.push(rarity);
+            query += ` AND i.rarity = $${params.length}`;
+        }
+        if (minPrice) {
+            params.push(minPrice);
+            query += ` AND i.price >= $${params.length}`;
+        }
+        if (maxPrice) {
+            params.push(maxPrice);
+            query += ` AND i.price <= $${params.length}`;
+        }
+        if (stat && stat !== 'any') {
+            params.push(stat);
+            query += ` AND i.${stat} > 0`;
+        }
+        query += ' ORDER BY i.price';
+
         const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: e.message });
+        console.error('Market error:', e);
+        res.status(500).json({ error: e.message, rows: [] }); // возвращаем пустой массив
     }
 });
 

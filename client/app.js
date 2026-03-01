@@ -180,7 +180,7 @@ const dailyTaskTranslations = {
         description: 'Получите 50 очков опыта (суммарно за все классы)'
     },
     'Training Day': {
-        name: 'Тренировочный день',
+        name: 'Тренировка',
         description: 'Сыграйте 15 матчей за день (любых)'
     },
     'Curious': {

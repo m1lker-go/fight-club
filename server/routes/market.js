@@ -28,10 +28,9 @@ router.get('/', async (req, res) => {
             params.push(maxPrice);
             query += ` AND i.price <= $${params.length}`;
         }
-        if (stat && stat !== 'any') {
-            params.push(stat);
-            query += ` AND i.${stat} > 0`;
-        }
+       if (stat && stat !== 'any') {
+    query += ` AND i.${stat} > 0`;  // параметр не добавляем
+}
         query += ' ORDER BY i.price';
 
         const result = await pool.query(query, params);

@@ -1693,7 +1693,7 @@ async function loadDailyTasks() {
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const tasksData = await res.json(); // переименовано, чтобы избежать конфликта
+        const tasksData = await res.json();
         if (!Array.isArray(tasksData)) {
             console.error('Ответ не является массивом:', tasksData);
             return;
@@ -1704,7 +1704,9 @@ async function loadDailyTasks() {
         tasksData.forEach(task => {
             if (task.completed) return;
 
-            const progressPercent = (task.progress / task.target_value) * 100;
+            // Ограничиваем прогресс максимальным значением
+            const clampedProgress = Math.min(task.progress, task.target_value);
+            const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
                 ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
                 : `${task.reward_amount} EXP`;
@@ -1731,7 +1733,7 @@ async function loadDailyTasks() {
                         <div style="background-color: #2f3542; height: 5px; border-radius: 3px;">
                             <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
                         </div>
-                        <div style="font-size: 10px; color: #aaa; margin-top: 3px;">${task.progress}/${task.target_value}</div>
+                        <div style="font-size: 10px; color: #aaa; margin-top: 3px;">${clampedProgress}/${task.target_value}</div>
                     </div>
                 </div>
                 <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
@@ -1744,7 +1746,6 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
-        // Обработчики кнопок
         document.querySelectorAll('.claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const taskId = btn.dataset.taskId;

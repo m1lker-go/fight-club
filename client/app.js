@@ -2557,7 +2557,8 @@ function showBattleResult(battleData, timeOut = false) {
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // --- ОБНОВЛЕНИЕ ПРОГРЕССА ЗАДАНИЙ ---
+    // --- ОБНОВЛЕНИЕ ПРОГРЕССА ЗАДАНИЙ (с логами) ---
+    console.log('Отправка обновления боя');
     fetch('/tasks/daily/update/battle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2566,14 +2567,31 @@ function showBattleResult(battleData, timeOut = false) {
             class_played: userData.current_class,
             is_victory: isVictory
         })
-    }).catch(err => console.error('Failed to update battle task', err));
+    })
+    .then(res => {
+        console.log('Статус /update/battle:', res.status);
+        return res.text().then(text => {
+            console.log('Ответ /update/battle:', text);
+            try { return JSON.parse(text); } catch { return text; }
+        });
+    })
+    .catch(err => console.error('Ошибка /update/battle:', err));
 
+    console.log('Отправка обновления опыта');
     fetch('/tasks/daily/update/exp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
-    }).catch(err => console.error('Failed to update exp task', err));
-    // ------------------------------------
+    })
+    .then(res => {
+        console.log('Статус /update/exp:', res.status);
+        return res.text().then(text => {
+            console.log('Ответ /update/exp:', text);
+            try { return JSON.parse(text); } catch { return text; }
+        });
+    })
+    .catch(err => console.error('Ошибка /update/exp:', err));
+    // ------------------------------------------------
 
     // Сбор статистики из turns (оставляем как есть)
     let playerStats = {
@@ -2725,7 +2743,6 @@ function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 }
-
 // Инициализация меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {

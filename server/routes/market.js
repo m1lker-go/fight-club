@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Получить список предметов на продаже (с фильтрацией)
 router.get('/', async (req, res) => {
     const { class: className, rarity, minPrice, maxPrice, stat } = req.query;
     let query = `
@@ -28,9 +27,7 @@ router.get('/', async (req, res) => {
         params.push(maxPrice);
         query += ` AND i.price <= $${params.length}`;
     }
-    // Фильтр по характеристике (проверяем, что бонус > 0)
     if (stat && stat !== 'any') {
-        // Ожидаем, что stat — это имя колонки, например 'atk_bonus'
         params.push(stat);
         query += ` AND i.${stat} > 0`;
     }
@@ -45,22 +42,17 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Купить предмет
 router.post('/buy', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
         const buyer = await client.query('SELECT id, coins FROM users WHERE tg_id = $1', [tg_id]);
         if (buyer.rows.length === 0) throw new Error('Buyer not found');
         const buyerId = buyer.rows[0].id;
         const buyerCoins = buyer.rows[0].coins;
 
-        const itemRes = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND for_sale = true',
-            [item_id]
-        );
+        const itemRes = await client.query('SELECT * FROM inventory WHERE id = $1 AND for_sale = true', [item_id]);
         if (itemRes.rows.length === 0) throw new Error('Item not found or not for sale');
         const item = itemRes.rows[0];
         const sellerId = item.user_id;
@@ -71,10 +63,7 @@ router.post('/buy', async (req, res) => {
 
         await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, buyerId]);
         await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [price, sellerId]);
-        await client.query(
-            'UPDATE inventory SET user_id = $1, for_sale = false, price = NULL WHERE id = $2',
-            [buyerId, item_id]
-        );
+        await client.query('UPDATE inventory SET user_id = $1, for_sale = false, price = NULL WHERE id = $2', [buyerId, item_id]);
 
         await client.query('COMMIT');
         res.json({ success: true });
@@ -87,27 +76,19 @@ router.post('/buy', async (req, res) => {
     }
 });
 
-// Снять предмет с продажи (для владельца)
 router.post('/remove', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
         const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
-        const itemRes = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',
-            [item_id, userId]
-        );
+        const itemRes = await client.query('SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true', [item_id, userId]);
         if (itemRes.rows.length === 0) throw new Error('Item not found or not yours');
 
-        await client.query(
-            'UPDATE inventory SET for_sale = false, price = NULL WHERE id = $1',
-            [item_id]
-        );
+        await client.query('UPDATE inventory SET for_sale = false, price = NULL WHERE id = $1', [item_id]);
 
         await client.query('COMMIT');
         res.json({ success: true });
@@ -120,30 +101,21 @@ router.post('/remove', async (req, res) => {
     }
 });
 
-// Изменить цену предмета (для владельца)
 router.post('/update-price', async (req, res) => {
     const { tg_id, item_id, new_price } = req.body;
-    if (!new_price || new_price <= 0) {
-        return res.status(400).json({ error: 'Invalid price' });
-    }
+    if (!new_price || new_price <= 0) return res.status(400).json({ error: 'Invalid price' });
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
         const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
-        const itemRes = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',
-            [item_id, userId]
-        );
+        const itemRes = await client.query('SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true', [item_id, userId]);
         if (itemRes.rows.length === 0) throw new Error('Item not found or not yours');
 
-        await client.query(
-            'UPDATE inventory SET price = $1 WHERE id = $2',
-            [new_price, item_id]
-        );
+        await client.query('UPDATE inventory SET price = $1 WHERE id = $2', [new_price, item_id]);
 
         await client.query('COMMIT');
         res.json({ success: true, new_price });

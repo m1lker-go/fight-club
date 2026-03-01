@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+function parseProgress(progress) {
+    if (!progress) return {};
+    try {
+        return typeof progress === 'string' ? JSON.parse(progress) : progress;
+    } catch {
+        return {};
+    }
+}
+
+
 // Вспомогательная функция генерации предмета по редкости (аналог из shop.js)
 function generateItemByRarity(rarity, ownerClass = null) {
     const itemNames = {

@@ -230,8 +230,10 @@ router.get('/daily/list', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
-        // Сброс, если новый день
-        if (user.last_daily_reset !== today) {
+        // Преобразуем last_daily_reset (который тип date) в строку для сравнения
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+
+        if (lastResetStr !== today) {
             await client.query(
                 'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
                 ['{}', today, userId]
@@ -240,7 +242,6 @@ router.get('/daily/list', async (req, res) => {
             user.daily_tasks_progress = '{}';
         }
 
-        // Парсим прогресс
         let progressObj = parseProgress(user.daily_tasks_progress);
 
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
@@ -294,7 +295,8 @@ router.post('/daily/claim', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
-        if (user.last_daily_reset !== today) {
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        if (lastResetStr !== today) {
             throw new Error('Daily reset needed, please refresh');
         }
 
@@ -382,19 +384,18 @@ router.post('/daily/update/battle', async (req, res) => {
         let progress = {};
         let mask = user.daily_tasks_mask;
 
-        // Если дата не совпадает – сбрасываем прогресс и маску
-       const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-if (lastResetStr !== today) {
-    console.log('New day detected, resetting progress');
-    progress = {};
-    mask = 0;
-    await client.query(
-        'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
-        ['{}', today, userId]
-    );
-} else {
-    progress = parseProgress(user.daily_tasks_progress);
-}
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        if (lastResetStr !== today) {
+            console.log('New day detected, resetting progress');
+            progress = {};
+            mask = 0;
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                ['{}', today, userId]
+            );
+        } else {
+            progress = parseProgress(user.daily_tasks_progress);
+        }
 
         // Задание 5: сыграть 15 матчей
         progress[5] = (progress[5] || 0) + 1;
@@ -445,7 +446,8 @@ router.post('/daily/update/exp', async (req, res) => {
         let progress = {};
         let mask = user.daily_tasks_mask;
 
-        if (user.last_daily_reset !== today) {
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        if (lastResetStr !== today) {
             console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;
@@ -497,7 +499,8 @@ router.post('/daily/update/chest', async (req, res) => {
         let progress = {};
         let mask = user.daily_tasks_mask;
 
-        if (user.last_daily_reset !== today) {
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        if (lastResetStr !== today) {
             console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;
@@ -550,7 +553,8 @@ router.post('/daily/update/profile', async (req, res) => {
         let progress = {};
         let mask = user.daily_tasks_mask;
 
-        if (user.last_daily_reset !== today) {
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        if (lastResetStr !== today) {
             console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;

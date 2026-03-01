@@ -4,6 +4,7 @@ const { pool } = require('../db');
 
 // Вспомогательная функция для генерации предмета по типу сундука
 function generateItemFromChest(chestType) {
+    // Массивы имён по редкости (можно расширить)
     const itemNames = {
         common: ['Ржавый меч', 'Деревянный щит', 'Кожаный шлем', 'Тряпичные перчатки', 'Старые сапоги', 'Медное кольцо'],
         uncommon: ['Качественный меч', 'Укреплённый щит', 'Кожаный шлем с заклёпками', 'Перчатки из плотной кожи', 'Сапоги скорохода', 'Кольцо силы'],
@@ -162,10 +163,18 @@ router.post('/buychest', async (req, res) => {
         const itemId = itemRes.rows[0].id;
         console.log('ID созданного предмета в items:', itemId);
 
-        // Добавляем в инвентарь
+        // Добавляем в инвентарь со всеми полями (дублируем данные для упрощения)
         await client.query(
-            'INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)',
-            [userId, itemId]
+            `INSERT INTO inventory (
+                user_id, item_id, equipped,
+                name, type, rarity, class_restriction, owner_class,
+                atk_bonus, def_bonus, hp_bonus, spd_bonus,
+                crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+            [userId, itemId, false,
+             item.name, item.type, item.rarity, 'any', item.owner_class,
+             item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
+             item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
         );
         console.log('Предмет добавлен в инвентарь пользователя', userId);
 

@@ -697,10 +697,16 @@ function showEquipCompareModal(oldItem, newItem) {
 
     if (newBtn) {
         newBtn.addEventListener('click', async () => {
+            // Получаем текущий класс из активной кнопки в экипировке
+            const currentClass = document.querySelector('.class-btn.active').dataset.class;
             const res = await fetch('/inventory/equip', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, item_id: newItem.id })
+                body: JSON.stringify({ 
+                    tg_id: userData.tg_id, 
+                    item_id: newItem.id,
+                    target_class: currentClass  // ← добавляем
+                })
             });
             if (res.ok) {
                 await refreshData();

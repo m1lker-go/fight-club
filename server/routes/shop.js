@@ -14,6 +14,7 @@ function generateItemFromChest(chestType) {
     const types = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'];
     const type = types[Math.floor(Math.random() * types.length)];
 
+    // Определяем редкость в зависимости от типа сундука
     let rarity;
     if (chestType === 'common') {
         const r = Math.random();
@@ -42,6 +43,7 @@ function generateItemFromChest(chestType) {
 
     const name = itemNames[rarity][Math.floor(Math.random() * itemNames[rarity].length)];
 
+    // Базовые бонусы для каждой редкости
     const bonuses = {
         common: { atk: 1, def: 1, hp: 2 },
         uncommon: { atk: 2, def: 2, hp: 4 },
@@ -51,6 +53,7 @@ function generateItemFromChest(chestType) {
     };
     const b = bonuses[rarity];
 
+    // Случайно выбираем 2 бонуса
     const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
     const selected = [];
     while (selected.length < 2) {
@@ -146,6 +149,7 @@ router.post('/buychest', async (req, res) => {
         console.log('Сгенерирован предмет:', item);
         console.log('Редкость:', item.rarity);
 
+        // Вставляем предмет в таблицу items
         const itemRes = await client.query(
             `INSERT INTO items (name, type, rarity, class_restriction, owner_class,
                 atk_bonus, def_bonus, hp_bonus, spd_bonus,
@@ -158,6 +162,7 @@ router.post('/buychest', async (req, res) => {
         const itemId = itemRes.rows[0].id;
         console.log('ID созданного предмета в items:', itemId);
 
+        // Добавляем в инвентарь
         await client.query(
             'INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)',
             [userId, itemId]
@@ -165,6 +170,7 @@ router.post('/buychest', async (req, res) => {
         console.log('Предмет добавлен в инвентарь пользователя', userId);
 
         await client.query('COMMIT');
+        console.log('=== ТРАНЗАКЦИЯ ЗАВЕРШЕНА, предмет добавлен ===');
         res.json({ success: true, item: { ...item, id: itemId } });
 
     } catch (e) {

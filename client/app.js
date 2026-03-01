@@ -1374,13 +1374,12 @@ async function loadMarketItems(statFilter = 'any', container) {
     const classFilter = container.querySelector('#classFilter').value;
     const rarityFilter = container.querySelector('#rarityFilter').value;
     const params = new URLSearchParams({ class: classFilter, rarity: rarityFilter });
+    if (statFilter !== 'any') {
+        params.append('stat', statFilter);
+    }
     const res = await fetch('/market?' + params);
     const items = await res.json();
     let filteredItems = items;
-
-    if (statFilter !== 'any') {
-        filteredItems = items.filter(item => item[statFilter] > 0);
-    }
 
     const marketItemsDiv = container.querySelector('#marketItems');
     marketItemsDiv.innerHTML = '';
@@ -1422,21 +1421,40 @@ async function loadMarketItems(statFilter = 'any', container) {
 
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
+        const isOwn = item.seller_id === userData.id; // предполагаем, что userData.id – это числовой id пользователя
 
-        marketItemsDiv.innerHTML += `
-            <div class="market-item ${rarityClass}" data-item-id="${item.id}">
-                <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
-                <div class="item-content">
-                    <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
-                    <div class="item-stats">${stats.join(' • ')}</div>
-                    <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
-                    <div class="item-price">${item.price} <i class="fas fa-coins" style="color: gold;"></i></div>
-                    <button class="buy-btn" data-item-id="${item.id}">Купить</button>
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `market-item ${rarityClass}`;
+        itemDiv.dataset.itemId = item.id;
+
+        let actionButtonHtml = '';
+        if (isOwn) {
+            // Свои предметы: кнопки изменения цены и удаления
+            actionButtonHtml = `
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <button class="btn edit-price-btn" style="flex:1; padding: 5px; font-size: 11px;">✏️ Цена</button>
+                    <button class="btn remove-from-market-btn" style="flex:1; padding: 5px; font-size: 11px;">❌ Убрать</button>
                 </div>
+            `;
+        } else {
+            actionButtonHtml = `<button class="buy-btn" data-item-id="${item.id}">Купить</button>`;
+        }
+
+        itemDiv.innerHTML = `
+            <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
+            <div class="item-content">
+                <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                <div class="item-stats">${stats.join(' • ')}</div>
+                <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                <div class="item-price">${item.price} <i class="fas fa-coins" style="color: gold;"></i></div>
+                ${actionButtonHtml}
             </div>
         `;
+
+        marketItemsDiv.appendChild(itemDiv);
     });
 
+    // Обработчики для чужих предметов (кнопка "Купить")
     container.querySelectorAll('.buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -1451,6 +1469,55 @@ async function loadMarketItems(statFilter = 'any', container) {
             if (data.success) {
                 alert('Покупка успешна!');
                 await refreshData();
+                // Перезагружаем список маркета
+                loadMarketItems(statFilter, container);
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        });
+    });
+
+    // Обработчики для своих предметов
+    container.querySelectorAll('.edit-price-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemDiv = btn.closest('.market-item');
+            const itemId = itemDiv.dataset.itemId;
+            const currentPrice = itemDiv.querySelector('.item-price').innerText.split(' ')[0]; // грубо
+            const newPrice = prompt('Введите новую цену в монетах:', currentPrice);
+            if (!newPrice || isNaN(newPrice) || parseInt(newPrice) <= 0) return;
+            const res = await fetch('/market/update-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: parseInt(newPrice) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Цена изменена');
+                await refreshData();
+                loadMarketItems(statFilter, container);
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        });
+    });
+
+    container.querySelectorAll('.remove-from-market-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemDiv = btn.closest('.market-item');
+            const itemId = itemDiv.dataset.itemId;
+            if (!confirm('Снять предмет с продажи?')) return;
+            const res = await fetch('/market/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Предмет снят с продажи');
+                await refreshData();
+                loadMarketItems(statFilter, container);
             } else {
                 alert('Ошибка: ' + data.error);
             }

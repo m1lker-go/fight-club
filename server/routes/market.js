@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Получить список предметов на продаже
+// Получить список предметов на продаже (с фильтрацией)
 router.get('/', async (req, res) => {
     const { class: className, rarity, minPrice, maxPrice, stat } = req.query;
     let query = `
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
         params.push(maxPrice);
         query += ` AND i.price <= $${params.length}`;
     }
-    // Фильтр по характеристике (просто наличие бонуса)
+    // Фильтр по характеристике (проверяем, что бонус > 0)
     if (stat && stat !== 'any') {
         // Ожидаем, что stat — это имя колонки, например 'atk_bonus'
         params.push(stat);

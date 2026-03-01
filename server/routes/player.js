@@ -107,13 +107,31 @@ router.get('/:tg_id', async (req, res) => {
 
         await rechargeEnergy(client, user.rows[0].id);
 
+        // ИСПРАВЛЕННЫЙ ЗАПРОС С JOIN
         const inventory = await client.query(
-            `SELECT id, name, type, rarity, class_restriction, owner_class,
-                    atk_bonus, def_bonus, hp_bonus, spd_bonus,
-                    crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus,
-                    equipped, for_sale, price
-             FROM inventory
-             WHERE user_id = $1`,
+            `SELECT 
+                i.id,
+                it.name,
+                it.type,
+                it.rarity,
+                it.class_restriction,
+                it.owner_class,
+                it.atk_bonus,
+                it.def_bonus,
+                it.hp_bonus,
+                it.spd_bonus,
+                it.crit_bonus,
+                it.crit_dmg_bonus,
+                it.agi_bonus,
+                it.int_bonus,
+                it.vamp_bonus,
+                it.reflect_bonus,
+                i.equipped,
+                i.for_sale,
+                i.price
+            FROM inventory i
+            JOIN items it ON i.item_id = it.id
+            WHERE i.user_id = $1`,
             [user.rows[0].id]
         );
 

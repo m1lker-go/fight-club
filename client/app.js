@@ -1084,10 +1084,10 @@ function renderEquip() {
                             actionsDiv.style.display = 'none';
                         });
                     } else {
-                   actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                  actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     
-    const currentClass = document.querySelector('.class-btn.active').dataset.class; // выбранный в интерфейсе класс
+    const currentClass = document.querySelector('.class-btn.active').dataset.class;
     const classItems = inventory.filter(item => item.owner_class === currentClass);
     const item = classItems.find(i => i.id == itemId);
     
@@ -1107,14 +1107,12 @@ function renderEquip() {
             body: JSON.stringify({ 
                 tg_id: userData.tg_id, 
                 item_id: itemId,
-                target_class: currentClass  // ← добавляем target_class
+                target_class: currentClass  // ← обязательно
             })
         });
         if (res.ok) {
             await refreshData();
-            if (currentScreen === 'equip') {
-                renderEquip();
-            }
+            if (currentScreen === 'equip') renderEquip();
         } else {
             const err = await res.json();
             alert('Ошибка: ' + err.error);

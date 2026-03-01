@@ -152,6 +152,15 @@ body {
     margin-bottom: 10px;
 }
 
+.inventory-item .item-name,
+.market-item .item-name {
+    word-break: break-word;
+    hyphens: auto;
+    white-space: normal;
+    line-height: 1.2;
+    max-width: 100%;
+}
+
 /* Контейнеры аватаров в бою */
 .hero-avatar, .enemy-avatar {
     width: 80px;

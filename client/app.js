@@ -234,6 +234,9 @@ async function init() {
             updateTopBar();
             showScreen('main');
             checkAdvent();
+
+            // Обновляем дату сброса заданий
+            fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
         } else {
             alert('Ошибка авторизации');
         }
@@ -697,7 +700,6 @@ function showEquipCompareModal(oldItem, newItem) {
 
     if (newBtn) {
         newBtn.addEventListener('click', async () => {
-            // Получаем текущий класс из активной кнопки в экипировке
             const currentClass = document.querySelector('.class-btn.active').dataset.class;
             const res = await fetch('/inventory/equip', {
                 method: 'POST',
@@ -705,7 +707,7 @@ function showEquipCompareModal(oldItem, newItem) {
                 body: JSON.stringify({ 
                     tg_id: userData.tg_id, 
                     item_id: newItem.id,
-                    target_class: currentClass  // ← добавляем
+                    target_class: currentClass
                 })
             });
             if (res.ok) {
@@ -1383,10 +1385,15 @@ async function loadMarketItems(statFilter = 'any', container) {
     }
     const res = await fetch('/market?' + params);
     const items = await res.json();
-    let filteredItems = items;
 
     const marketItemsDiv = container.querySelector('#marketItems');
     marketItemsDiv.innerHTML = '';
+
+    if (!Array.isArray(items)) {
+        console.error('Market returned non-array:', items);
+        marketItemsDiv.innerHTML = '<p style="color:#aaa;">Ошибка загрузки маркета</p>';
+        return;
+    }
 
     const classFolderMap = {
         warrior: 'tank',
@@ -1410,7 +1417,7 @@ async function loadMarketItems(statFilter = 'any', container) {
         return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
     }
 
-    filteredItems.forEach(item => {
+    items.forEach(item => {
         const stats = [];
         if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
         if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
@@ -1425,7 +1432,7 @@ async function loadMarketItems(statFilter = 'any', container) {
 
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
-        const isOwn = item.seller_id === userData.id; // предполагаем, что userData.id – это числовой id пользователя
+        const isOwn = item.seller_id === userData.id;
 
         const itemDiv = document.createElement('div');
         itemDiv.className = `market-item ${rarityClass}`;
@@ -1433,7 +1440,6 @@ async function loadMarketItems(statFilter = 'any', container) {
 
         let actionButtonHtml = '';
         if (isOwn) {
-            // Свои предметы: кнопки изменения цены и удаления
             actionButtonHtml = `
                 <div style="display: flex; gap: 5px; margin-top: 5px;">
                     <button class="btn edit-price-btn" style="flex:1; padding: 5px; font-size: 11px;">✏️ Цена</button>
@@ -1458,7 +1464,6 @@ async function loadMarketItems(statFilter = 'any', container) {
         marketItemsDiv.appendChild(itemDiv);
     });
 
-    // Обработчики для чужих предметов (кнопка "Купить")
     container.querySelectorAll('.buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -1473,7 +1478,6 @@ async function loadMarketItems(statFilter = 'any', container) {
             if (data.success) {
                 alert('Покупка успешна!');
                 await refreshData();
-                // Перезагружаем список маркета
                 loadMarketItems(statFilter, container);
             } else {
                 alert('Ошибка: ' + data.error);
@@ -1481,13 +1485,12 @@ async function loadMarketItems(statFilter = 'any', container) {
         });
     });
 
-    // Обработчики для своих предметов
     container.querySelectorAll('.edit-price-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const itemDiv = btn.closest('.market-item');
             const itemId = itemDiv.dataset.itemId;
-            const currentPrice = itemDiv.querySelector('.item-price').innerText.split(' ')[0]; // грубо
+            const currentPrice = itemDiv.querySelector('.item-price').innerText.split(' ')[0];
             const newPrice = prompt('Введите новую цену в монетах:', currentPrice);
             if (!newPrice || isNaN(newPrice) || parseInt(newPrice) <= 0) return;
             const res = await fetch('/market/update-price', {

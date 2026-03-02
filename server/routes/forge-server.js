@@ -24,7 +24,6 @@ function generateItemByRarity(rarity, ownerClass = null) {
     };
     const b = bonuses[rarity];
 
-    // Случайно выбираем 2 бонуса
     const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
     const selected = [];
     while (selected.length < 2) {
@@ -66,9 +65,12 @@ function generateItemByRarity(rarity, ownerClass = null) {
     return item;
 }
 
-// Добавить предмет в кузницу (in_forge = true)
+// Добавить предмет в кузницу (in_forge = true, forge_tab = tab)
 router.post('/add', async (req, res) => {
-    const { tg_id, item_id } = req.body;
+    const { tg_id, item_id, tab } = req.body;
+    if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
+        return res.status(400).json({ error: 'Invalid tab' });
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -82,7 +84,10 @@ router.post('/add', async (req, res) => {
         );
         if (item.rows.length === 0) throw new Error('Item not available');
 
-        await client.query('UPDATE inventory SET in_forge = true WHERE id = $1', [item_id]);
+        await client.query(
+            'UPDATE inventory SET in_forge = true, forge_tab = $1 WHERE id = $2',
+            [tab, item_id]
+        );
 
         await client.query('COMMIT');
         res.json({ success: true });
@@ -95,7 +100,7 @@ router.post('/add', async (req, res) => {
     }
 });
 
-// Убрать предмет из кузницы (in_forge = false)
+// Убрать предмет из кузницы (in_forge = false, forge_tab = NULL)
 router.post('/remove', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
@@ -111,7 +116,10 @@ router.post('/remove', async (req, res) => {
         );
         if (item.rows.length === 0) throw new Error('Item not in forge');
 
-        await client.query('UPDATE inventory SET in_forge = false WHERE id = $1', [item_id]);
+        await client.query(
+            'UPDATE inventory SET in_forge = false, forge_tab = NULL WHERE id = $1',
+            [item_id]
+        );
 
         await client.query('COMMIT');
         res.json({ success: true });
@@ -124,10 +132,13 @@ router.post('/remove', async (req, res) => {
     }
 });
 
-// Получить список ID предметов, находящихся в кузнице у пользователя
+// Получить список ID предметов в указанной вкладке кузницы
 router.get('/current', async (req, res) => {
-    const { tg_id } = req.query;
+    const { tg_id, tab } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
+        return res.status(400).json({ error: 'Invalid tab' });
+    }
 
     try {
         const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
@@ -135,8 +146,8 @@ router.get('/current', async (req, res) => {
         const userId = user.rows[0].id;
 
         const result = await pool.query(
-            'SELECT id FROM inventory WHERE user_id = $1 AND in_forge = true',
-            [userId]
+            'SELECT id FROM inventory WHERE user_id = $1 AND in_forge = true AND forge_tab = $2',
+            [userId, tab]
         );
         res.json(result.rows.map(row => row.id));
     } catch (e) {
@@ -243,7 +254,7 @@ router.post('/smelt', async (req, res) => {
                     break;
                 case 'epic':
                     coinsGain += Math.floor(Math.random() * 501) + 1500; // 1500-2000
-                    if (Math.random() < 0.5) diamondsGain += 1; // 0-1 с шансом 50%
+                    if (Math.random() < 0.5) diamondsGain += 1;
                     break;
                 case 'legendary':
                     coinsGain += Math.floor(Math.random() * 1301) + 2500; // 2500-3800

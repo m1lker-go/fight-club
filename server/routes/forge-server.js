@@ -202,9 +202,18 @@ router.post('/craft', async (req, res) => {
         );
         const newItemId = itemRes.rows[0].id;
 
+        // ИСПРАВЛЕНИЕ: теперь вставляем все поля, чтобы в inventory был owner_class и бонусы
         await client.query(
-            'INSERT INTO inventory (user_id, item_id, equipped, in_forge) VALUES ($1, $2, false, false)',
-            [userId, newItemId]
+            `INSERT INTO inventory (
+                user_id, item_id, equipped, in_forge,
+                name, type, rarity, class_restriction, owner_class,
+                atk_bonus, def_bonus, hp_bonus, spd_bonus,
+                crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+            [userId, newItemId, false, false,
+             newItem.name, newItem.type, newItem.rarity, 'any', newItem.owner_class,
+             newItem.atk_bonus, newItem.def_bonus, newItem.hp_bonus, newItem.spd_bonus,
+             newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
         await client.query('COMMIT');

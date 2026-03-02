@@ -2562,6 +2562,7 @@ function showBattleResult(battleData, timeOut = false) {
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
+    const ratingChange = battleData.ratingChange || 0; //
 
     // --- ОБНОВЛЕНИЕ ПРОГРЕССА ЗАДАНИЙ (с логами) ---
     console.log('Отправка обновления боя');

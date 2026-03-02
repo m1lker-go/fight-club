@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Функция генерации предмета (копия из shop.js)
+// Вспомогательная функция генерации предмета (копия из shop.js)
 function generateItemByRarity(rarity, ownerClass = null) {
     const itemNames = {
         common: ['Ржавый меч', 'Деревянный щит', 'Кожаный шлем', 'Тряпичные перчатки', 'Старые сапоги', 'Медное кольцо'],
@@ -24,16 +24,46 @@ function generateItemByRarity(rarity, ownerClass = null) {
     };
     const b = bonuses[rarity];
 
-    return {
+    // Случайно выбираем 2 бонуса
+    const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
+    const selected = [];
+    while (selected.length < 2) {
+        const stat = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+        if (!selected.includes(stat)) selected.push(stat);
+    }
+
+    const item = {
         name: name,
         type: type,
         rarity: rarity,
         class_restriction: 'any',
         owner_class: ownerClass || ['warrior','assassin','mage'][Math.floor(Math.random()*3)],
-        atk_bonus: Math.floor(b.atk * (0.8 + 0.4*Math.random())),
-        def_bonus: Math.floor(b.def * (0.8 + 0.4*Math.random())),
-        hp_bonus: Math.floor(b.hp * (0.8 + 0.4*Math.random())),
+        atk_bonus: 0,
+        def_bonus: 0,
+        hp_bonus: 0,
+        spd_bonus: 0,
+        crit_bonus: 0,
+        crit_dmg_bonus: 0,
+        agi_bonus: 0,
+        int_bonus: 0,
+        vamp_bonus: 0,
+        reflect_bonus: 0
     };
+
+    selected.forEach(stat => {
+        if (stat === 'atk') item.atk_bonus = Math.floor(b.atk * (0.8 + 0.4 * Math.random()));
+        else if (stat === 'def') item.def_bonus = Math.floor(b.def * (0.8 + 0.4 * Math.random()));
+        else if (stat === 'hp') item.hp_bonus = Math.floor(b.hp * (0.8 + 0.4 * Math.random()));
+        else if (stat === 'spd') item.spd_bonus = Math.floor(b.atk * 0.5 + 1);
+        else if (stat === 'crit') item.crit_bonus = Math.floor(b.atk * 2);
+        else if (stat === 'crit_dmg') item.crit_dmg_bonus = Math.floor(b.atk * 5);
+        else if (stat === 'agi') item.agi_bonus = Math.floor(b.atk * 2);
+        else if (stat === 'int') item.int_bonus = Math.floor(b.atk * 2);
+        else if (stat === 'vamp') item.vamp_bonus = Math.floor(b.atk * 2);
+        else if (stat === 'reflect') item.reflect_bonus = Math.floor(b.atk * 2);
+    });
+
+    return item;
 }
 
 // Добавить предмет в кузницу (in_forge = true)
@@ -91,6 +121,27 @@ router.post('/remove', async (req, res) => {
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
+    }
+});
+
+// Получить список ID предметов, находящихся в кузнице у пользователя
+router.get('/current', async (req, res) => {
+    const { tg_id } = req.query;
+    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+
+    try {
+        const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const userId = user.rows[0].id;
+
+        const result = await pool.query(
+            'SELECT id FROM inventory WHERE user_id = $1 AND in_forge = true',
+            [userId]
+        );
+        res.json(result.rows.map(row => row.id));
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Database error' });
     }
 });
 
@@ -156,11 +207,11 @@ router.post('/craft', async (req, res) => {
     }
 });
 
-// Плавка: превращение предметов в ресурсы
+// Плавка: превращение предметов в ресурсы (можно от 1 до 5 предметов)
 router.post('/smelt', async (req, res) => {
     const { tg_id, item_ids } = req.body;
-    if (!Array.isArray(item_ids) || item_ids.length === 0) {
-        return res.status(400).json({ error: 'Need at least one item' });
+    if (!Array.isArray(item_ids) || item_ids.length === 0 || item_ids.length > 5) {
+        return res.status(400).json({ error: 'Need 1 to 5 items' });
     }
     const client = await pool.connect();
     try {
@@ -182,24 +233,21 @@ router.post('/smelt', async (req, res) => {
         for (const item of items.rows) {
             switch (item.rarity) {
                 case 'common':
-                    coinsGain += Math.floor(Math.random() * 41) + 10; // 10-50
+                    coinsGain += Math.floor(Math.random() * 16) + 35; // 35-50
                     break;
                 case 'uncommon':
-                    coinsGain += Math.floor(Math.random() * 101) + 50; // 50-150
-                    if (Math.random() < 0.3) diamondsGain += 1;
+                    coinsGain += Math.floor(Math.random() * 51) + 150; // 150-200
                     break;
                 case 'rare':
-                    coinsGain += Math.floor(Math.random() * 151) + 150; // 150-300
-                    diamondsGain += 1;
-                    if (Math.random() < 0.2) diamondsGain += 1;
+                    coinsGain += Math.floor(Math.random() * 201) + 600; // 600-800
                     break;
                 case 'epic':
-                    coinsGain += Math.floor(Math.random() * 201) + 300; // 300-500
-                    diamondsGain += 2 + Math.floor(Math.random() * 2); // 2-3
+                    coinsGain += Math.floor(Math.random() * 501) + 1500; // 1500-2000
+                    if (Math.random() < 0.5) diamondsGain += 1; // 0-1 с шансом 50%
                     break;
                 case 'legendary':
-                    coinsGain += Math.floor(Math.random() * 501) + 500; // 500-1000
-                    diamondsGain += 5 + Math.floor(Math.random() * 3); // 5-7
+                    coinsGain += Math.floor(Math.random() * 1301) + 2500; // 2500-3800
+                    diamondsGain += 2 + Math.floor(Math.random() * 4); // 2-5
                     break;
             }
         }

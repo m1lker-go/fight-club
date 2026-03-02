@@ -23,7 +23,7 @@ app.use('/market', require('./routes/market'));
 app.use('/battle', require('./routes/battle'));
 app.use('/tasks', require('./routes/tasks'));
 app.use('/avatars', require('./routes/avatars'));
-app.use('/forge', require('./routes/forge'));
+app.use('/forge', require('./routes/forge-server'));
 
 
 const PORT = process.env.PORT || 3000;

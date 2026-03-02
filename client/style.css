@@ -949,3 +949,37 @@ td {
 .forge-slot span {
     color: #aaa;
 }
+
+
+/* Сетка для слотов кузницы */
+.forge-slots-grid {
+    display: grid;
+    gap: 10px;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* Классы редкости для списка в описании */
+.rarity-common { color: #aaa; }
+.rarity-uncommon { color: #2ecc71; }
+.rarity-rare { color: #2e86de; }
+.rarity-epic { color: #9b59b6; }
+.rarity-legendary { color: #f1c40f; }
+
+/* Карточка роли в модальном окне (уже есть, но для справки) */
+.role-card {
+    background-color: #232833;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #00aaff;
+}
+.role-card h3 {
+    margin-top: 0;
+    color: #00aaff;
+}
+.role-card p, .role-card ul {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #ddd;
+}

@@ -1777,6 +1777,35 @@ async function loadDailyTasks() {
         console.error('Error loading daily tasks:', e);
     }
 }
+// ==================== КУЗНИЦА ====================
+function renderForge() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="forge-container">
+            <!-- Баннер кузницы -->
+            <div class="forge-banner">
+                <img src="/assets/banner_forge.png" alt="Кузница" style="width: 100%; height: auto; display: block;">
+            </div>
+            <!-- Кнопки-переключатели -->
+            <div style="display: flex; gap: 10px; margin: 20px 0;">
+                <button class="btn forge-tab active" data-forge-tab="forge">Ковать</button>
+                <button class="btn forge-tab" data-forge-tab="smelt">Расплавить</button>
+            </div>
+            <!-- Контент (пока пустой) -->
+            <div id="forgeContent"></div>
+        </div>
+    `;
+
+    // Обработчики для кнопок – переключение активного класса
+    document.querySelectorAll('.forge-tab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.forge-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Здесь позже будет логика загрузки контента для вкладок
+        });
+    });
+}
+
 // ==================== ПРОФИЛЬ И ВКЛАДКИ ====================
 
 function renderProfile() {

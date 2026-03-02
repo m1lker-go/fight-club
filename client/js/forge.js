@@ -1,5 +1,4 @@
-// client/js/forge.js
-
+// forge.js
 let forgeItems = []; // массив ID предметов в слотах текущей вкладки
 let currentForgeTab = 'forge'; // 'forge' или 'smelt'
 
@@ -12,16 +11,14 @@ function renderForge() {
             <div class="forge-banner" style="width:100%; overflow:hidden; border-radius:10px; margin-bottom:15px;">
                 <img src="/assets/banner_forge.png" alt="Кузница" style="width:100%; height:auto; display:block;">
             </div>
-            <!-- Строка с кнопками и справкой -->
+            <!-- Кнопки переключения вкладок + иконка помощи -->
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                <div style="flex: 1; display: flex; gap: 10px;">
-                    <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge" style="flex: 1;">Ковать</button>
-                    <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt" style="flex: 1;">Расплавить</button>
-                </div>
+                <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge" style="flex: 1;">Ковать</button>
+                <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt" style="flex: 1;">Расплавить</button>
                 <i class="fas fa-circle-question" id="forgeHelpBtn" style="color: #00aaff; font-size: 28px; cursor: pointer;"></i>
             </div>
-            <!-- Слоты -->
-            <div id="forgeSlots" class="forge-slots"></div>
+            <!-- Слоты (динамическая сетка) -->
+            <div id="forgeSlots" class="forge-slots-grid"></div>
             <!-- Кнопка действия -->
             <button class="btn" id="forgeActionBtn" style="width:100%; margin:15px 0;" disabled>${currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить'}</button>
             <!-- Заголовок инвентаря -->
@@ -30,40 +27,38 @@ function renderForge() {
         </div>
     `;
 
-    // Обработчик кнопки справки
-    document.getElementById('forgeHelpBtn').addEventListener('click', showForgeHelpModal);
+    // Загружаем текущие предметы в кузнице (для синхронизации после перезагрузки)
+    loadCurrentForgeItems();
 
     // Обработчики переключения вкладок
     document.querySelectorAll('.forge-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             currentForgeTab = e.target.dataset.forgeTab;
-            forgeItems = []; // очищаем локальные слоты
-            renderForge(); // перерисовываем всю страницу
-            // После перерисовки загружаем актуальные предметы из кузницы (если они есть)
-            loadForgeItems().then(() => {
-                renderForgeSlots();
-                loadForgeInventory();
-            });
+            forgeItems = []; // очищаем слоты при смене вкладки
+            renderForge(); // перерисовываем
         });
     });
 
-    // Загружаем текущие предметы в кузнице с сервера и синхронизируем forgeItems
-    loadForgeItems().then(() => {
-        renderForgeSlots();
-        loadForgeInventory();
-    });
+    // Обработчик кнопки помощи
+    document.getElementById('forgeHelpBtn').addEventListener('click', showForgeHelp);
+
+    // Отрисовываем слоты и инвентарь
+    renderForgeSlots();
+    loadForgeInventory();
 }
 
-// Загрузить из БД список ID предметов, которые уже находятся в кузнице (in_forge = true)
-async function loadForgeItems() {
+// Загрузка с сервера списка предметов, уже находящихся в кузнице (in_forge=true)
+async function loadCurrentForgeItems() {
     try {
         const res = await fetch(`/forge/current?tg_id=${userData.tg_id}`);
-        if (!res.ok) throw new Error('Failed to load forge items');
-        const itemIds = await res.json();
-        forgeItems = itemIds; // синхронизируем локальный массив с сервером
+        if (res.ok) {
+            const data = await res.json();
+            forgeItems = data; // массив ID
+        } else {
+            console.error('Failed to load current forge items');
+        }
     } catch (e) {
-        console.error('Error loading forge items:', e);
-        forgeItems = [];
+        console.error('Error loading current forge items:', e);
     }
 }
 
@@ -71,7 +66,14 @@ async function loadForgeItems() {
 function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    let html = '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">';
+    // Создаём сетку: для ковки 3 колонки, для расплава 5 колонок
+    slotsContainer.style.display = 'grid';
+    slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, 70px)`;
+    slotsContainer.style.gap = '10px';
+    slotsContainer.style.justifyContent = 'center';
+    slotsContainer.style.margin = '0 auto';
+
+    let html = '';
     for (let i = 0; i < slotCount; i++) {
         const itemId = forgeItems[i];
         const item = inventory.find(it => it.id === itemId);
@@ -81,7 +83,6 @@ function renderForgeSlots() {
             </div>
         `;
     }
-    html += '</div>';
     slotsContainer.innerHTML = html;
 
     // Обработчики кликов на слоты – открыть детали предмета (если есть) для возврата
@@ -101,8 +102,7 @@ function renderForgeSlots() {
     if (currentForgeTab === 'forge') {
         actionBtn.disabled = forgeItems.length !== 3;
     } else {
-        // для плавки разрешаем от 1 до 5
-        actionBtn.disabled = forgeItems.length === 0;
+        actionBtn.disabled = forgeItems.length === 0; // для расплава достаточно хотя бы одного
     }
     // Обработчик кнопки действия
     actionBtn.onclick = performForgeAction;
@@ -183,11 +183,9 @@ function showForgeItemDetails(item, source, slotIndex = null) {
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
             });
             if (res.ok) {
-                await refreshData(); // обновляем inventory
-                // После добавления перезагружаем forgeItems с сервера, чтобы синхронизироваться
-                await loadForgeItems();
+                await refreshData(); // обновляем глобальный inventory
                 renderForgeSlots();
-                loadForgeInventory();
+                loadForgeInventory(); // перерисовываем доступные предметы
                 modal.style.display = 'none';
             } else {
                 const err = await res.json();
@@ -205,7 +203,6 @@ function showForgeItemDetails(item, source, slotIndex = null) {
             });
             if (res.ok) {
                 await refreshData();
-                await loadForgeItems();
                 renderForgeSlots();
                 loadForgeInventory();
                 modal.style.display = 'none';
@@ -219,34 +216,6 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     document.getElementById('closeModal').addEventListener('click', () => {
         modal.style.display = 'none';
     });
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-}
-
-// Показать модальное окно с описанием кузницы
-function showForgeHelpModal() {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.innerText = 'Кузница';
-    modalBody.innerHTML = `
-        <div style="text-align: left;">
-            <p><strong>Ковка:</strong> объедините 3 предмета одинаковой редкости, чтобы получить один предмет следующей редкости. Класс нового предмета вы выбираете сами.</p>
-            <p><strong>Плавка:</strong> переплавляйте ненужные предметы в ресурсы. Можно от 1 до 5 предметов за раз.</p>
-            <p>Награда за плавку:</p>
-            <ul>
-                <li>Обычный: 35–50 монет</li>
-                <li>Необычный: 150–200 монет</li>
-                <li>Редкий: 600–800 монет</li>
-                <li>Эпический: 1500–2000 монет + 0–1 алмаз</li>
-                <li>Легендарный: 2500–3800 монет + 2–5 алмазов</li>
-            </ul>
-            <p>Поместите предметы в слоты, затем нажмите кнопку действия.</p>
-        </div>
-    `;
-
-    modal.style.display = 'block';
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
@@ -278,56 +247,104 @@ function buildStatsArray(item) {
     return stats;
 }
 
-// Модальное окно выбора класса для ковки
-function showClassChoiceForForge() {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('roleModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalBody = document.getElementById('modalBody');
+// Модальное окно с описанием кузницы
+function showForgeHelp() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
 
-        modalTitle.innerText = 'Выберите класс';
-        modalBody.innerHTML = `
-            <p>Для какого класса выковать предмет?</p>
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-                <button class="btn class-choice" data-class="warrior">Воин</button>
-                <button class="btn class-choice" data-class="assassin">Ассасин</button>
-                <button class="btn class-choice" data-class="mage">Маг</button>
-                <button class="btn class-choice" data-class="random">Случайный</button>
+    modalTitle.innerText = 'Кузница';
+    modalBody.innerHTML = `
+        <div style="text-align: left;">
+            <div class="role-card">
+                <h3>⚒️ Ковка</h3>
+                <p>Поместите <strong>три предмета одинаковой редкости</strong> в слоты и нажмите «Ковать». Вы получите один предмет следующей редкости (например, три обычных → один необычный).</p>
+                <p>После нажатия появится окно выбора класса для нового предмета. Характеристики и тип предмета определяются случайно.</p>
             </div>
-            <button class="btn" id="closeChoice" style="margin-top:15px;">Отмена</button>
-        `;
-        modal.style.display = 'block';
+            <div class="role-card">
+                <h3>🔥 Расплавка</h3>
+                <p>Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</p>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li><span class="rarity-common">Обычный</span> – 35–50 монет</li>
+                    <li><span class="rarity-uncommon">Необычный</span> – 150–200 монет</li>
+                    <li><span class="rarity-rare">Редкий</span> – 600–800 монет</li>
+                    <li><span class="rarity-epic">Эпический</span> – 1500–2000 монет + шанс 50% на 1 алмаз</li>
+                    <li><span class="rarity-legendary">Легендарный</span> – 2500–3800 монет + 2–5 алмазов</li>
+                </ul>
+            </div>
+            <div class="role-card">
+                <h3>📦 Инвентарь кузницы</h3>
+                <p>Внизу отображаются все доступные предметы, которые можно добавить в слоты. Предметы, уже находящиеся в кузнице, здесь не показываются.</p>
+                <p>Чтобы вернуть предмет из слота обратно в инвентарь, кликните на слот и нажмите «Убрать из слота».</p>
+            </div>
+        </div>
+    `;
 
-        const handleChoice = (e) => {
+    modal.style.display = 'block';
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
+}
+
+// Модальное окно выбора класса при ковке
+function showClassChoiceForCraft(itemIds) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Выберите класс';
+    modalBody.innerHTML = `
+        <p style="text-align:center;">Для какого класса создать предмет?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+            <button class="btn class-choice" data-class="warrior">Воин</button>
+            <button class="btn class-choice" data-class="assassin">Ассасин</button>
+            <button class="btn class-choice" data-class="mage">Маг</button>
+        </div>
+        <p style="text-align:center; margin-top:15px;"><small>Если не выберете, класс будет случайным</small></p>
+    `;
+    modal.style.display = 'block';
+
+    const classButtons = modalBody.querySelectorAll('.class-choice');
+    classButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
             const chosenClass = e.target.dataset.class;
-            if (chosenClass === 'random') {
-                modal.style.display = 'none';
-                resolve(null);
-            } else {
-                modal.style.display = 'none';
-                resolve(chosenClass);
-            }
-            cleanup();
-        };
-
-        const handleCancel = () => {
             modal.style.display = 'none';
-            resolve(null); // отмена – не продолжаем
-            cleanup();
-        };
-
-        const cleanup = () => {
-            document.querySelectorAll('.class-choice').forEach(btn => btn.removeEventListener('click', handleChoice));
-            document.getElementById('closeChoice')?.removeEventListener('click', handleCancel);
-            const closeBtn = modal.querySelector('.close');
-            closeBtn.onclick = null;
-        };
-
-        document.querySelectorAll('.class-choice').forEach(btn => btn.addEventListener('click', handleChoice));
-        document.getElementById('closeChoice').addEventListener('click', handleCancel);
-        const closeBtn = modal.querySelector('.close');
-        closeBtn.onclick = handleCancel;
+            await performCraft(itemIds, chosenClass);
+        });
     });
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+
+// Выполнение ковки с выбранным классом
+async function performCraft(itemIds, chosenClass) {
+    const actionBtn = document.getElementById('forgeActionBtn');
+    actionBtn.disabled = true;
+
+    const res = await fetch('/forge/craft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            tg_id: userData.tg_id,
+            item_ids: itemIds,
+            chosen_class: chosenClass
+        })
+    });
+    const data = await res.json();
+    if (data.success) {
+        showChestResult(data.item); // используем существующую функцию
+        forgeItems = [];
+        await refreshData();
+        renderForgeSlots();
+        loadForgeInventory();
+    } else {
+        alert('Ошибка: ' + data.error);
+    }
+    actionBtn.disabled = false;
 }
 
 // Выполнение действия (ковка или плавка)
@@ -339,7 +356,6 @@ async function performForgeAction() {
         // Ковка
         if (forgeItems.length !== 3) {
             alert('Нужно ровно 3 предмета');
-            actionBtn.disabled = false;
             return;
         }
         // Проверяем одинаковую редкость
@@ -347,44 +363,13 @@ async function performForgeAction() {
         const rarities = items.map(it => it.rarity);
         if (!rarities.every(r => r === rarities[0])) {
             alert('Предметы должны быть одной редкости');
-            actionBtn.disabled = false;
             return;
         }
-
-        // Запрашиваем выбор класса
-        const chosenClass = await showClassChoiceForForge();
-        if (chosenClass === undefined) { // отмена
-            actionBtn.disabled = false;
-            return;
-        }
-
-        const res = await fetch('/forge/craft', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tg_id: userData.tg_id,
-                item_ids: forgeItems,
-                chosen_class: chosenClass // если null, на сервере выберется случайно
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showChestResult(data.item); // используем существующую функцию
-            forgeItems = [];
-            await refreshData();
-            await loadForgeItems();
-            renderForgeSlots();
-            loadForgeInventory();
-        } else {
-            alert('Ошибка: ' + data.error);
-        }
+        // Показываем окно выбора класса
+        showClassChoiceForCraft(forgeItems);
     } else {
-        // Плавка
-        if (forgeItems.length === 0) {
-            alert('Нет предметов для плавки');
-            actionBtn.disabled = false;
-            return;
-        }
+        // Плавка (можно от 1 до 5 предметов)
+        if (forgeItems.length === 0) return;
         const res = await fetch('/forge/smelt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -398,7 +383,6 @@ async function performForgeAction() {
             alert(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`);
             forgeItems = [];
             await refreshData();
-            await loadForgeItems();
             renderForgeSlots();
             loadForgeInventory();
         } else {

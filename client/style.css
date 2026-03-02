@@ -925,3 +925,10 @@ td {
     color: white;
     text-align: center;
 }
+
+.forge-tag {
+    color: #f39c12;
+    font-size: 10px;
+    display: block;
+    margin-top: 2px;
+}

@@ -1164,40 +1164,41 @@ function renderEquip() {
                         }
                     });
 
-                    actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                        const item = inventory.find(i => i.id == itemId);
-                        if (!item) return;
-                        if (item.owner_class !== currentClass) {
-                            alert('Этот предмет не принадлежит текущему классу!');
-                            return;
-                        }
-                        const price = prompt('Введите цену продажи в монетах:');
-                        if (price && !isNaN(price) && parseInt(price) > 0) {
-                            const res = await fetch('/inventory/sell', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    tg_id: userData.tg_id, 
-                                    item_id: itemId, 
-                                    price: parseInt(price) 
-                                })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                                alert('Предмет выставлен на маркет');
-                                await refreshData();
-                            } else {
-                                alert('Ошибка: ' + data.error);
+                                            actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                            const item = inventory.find(i => i.id == itemId);
+                            if (!item) return;
+                            if (item.owner_class !== currentClass) {
+                                alert('Этот предмет не принадлежит текущему классу!');
+                                return;
                             }
-                        }
-                    });
+                            const price = prompt('Введите цену продажи в монетах:');
+                            if (price && !isNaN(price) && parseInt(price) > 0) {
+                                const res = await fetch('/inventory/sell', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        tg_id: userData.tg_id, 
+                                        item_id: itemId, 
+                                        price: parseInt(price) 
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('Предмет выставлен на маркет');
+                                    await refreshData();
+                                } else {
+                                    alert('Ошибка: ' + data.error);
+                                }
+                            }
+                        });
+                    }
                 }
             }
         });
     });
-}
+} 
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {

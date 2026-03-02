@@ -1,4 +1,5 @@
-// forge.js
+// client/js/forge.js
+
 let forgeItems = []; // массив ID предметов в слотах текущей вкладки
 let currentForgeTab = 'forge'; // 'forge' или 'smelt'
 
@@ -11,10 +12,13 @@ function renderForge() {
             <div class="forge-banner" style="width:100%; overflow:hidden; border-radius:10px; margin-bottom:15px;">
                 <img src="/assets/banner_forge.png" alt="Кузница" style="width:100%; height:auto; display:block;">
             </div>
-            <!-- Кнопки переключения вкладок -->
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">Ковать</button>
-                <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt">Расплавить</button>
+            <!-- Строка с кнопками и справкой -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <div style="flex: 1; display: flex; gap: 10px;">
+                    <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge" style="flex: 1;">Ковать</button>
+                    <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt" style="flex: 1;">Расплавить</button>
+                </div>
+                <i class="fas fa-circle-question" id="forgeHelpBtn" style="color: #00aaff; font-size: 28px; cursor: pointer;"></i>
             </div>
             <!-- Слоты -->
             <div id="forgeSlots" class="forge-slots"></div>
@@ -26,18 +30,41 @@ function renderForge() {
         </div>
     `;
 
+    // Обработчик кнопки справки
+    document.getElementById('forgeHelpBtn').addEventListener('click', showForgeHelpModal);
+
     // Обработчики переключения вкладок
     document.querySelectorAll('.forge-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             currentForgeTab = e.target.dataset.forgeTab;
-            forgeItems = []; // очищаем слоты
-            renderForge(); // перерисовываем
+            forgeItems = []; // очищаем локальные слоты
+            renderForge(); // перерисовываем всю страницу
+            // После перерисовки загружаем актуальные предметы из кузницы (если они есть)
+            loadForgeItems().then(() => {
+                renderForgeSlots();
+                loadForgeInventory();
+            });
         });
     });
 
-    // Отрисовываем слоты и инвентарь
-    renderForgeSlots();
-    loadForgeInventory();
+    // Загружаем текущие предметы в кузнице с сервера и синхронизируем forgeItems
+    loadForgeItems().then(() => {
+        renderForgeSlots();
+        loadForgeInventory();
+    });
+}
+
+// Загрузить из БД список ID предметов, которые уже находятся в кузнице (in_forge = true)
+async function loadForgeItems() {
+    try {
+        const res = await fetch(`/forge/current?tg_id=${userData.tg_id}`);
+        if (!res.ok) throw new Error('Failed to load forge items');
+        const itemIds = await res.json();
+        forgeItems = itemIds; // синхронизируем локальный массив с сервером
+    } catch (e) {
+        console.error('Error loading forge items:', e);
+        forgeItems = [];
+    }
 }
 
 // Рендер слотов (3 для ковки, 5 для плавки)
@@ -49,7 +76,7 @@ function renderForgeSlots() {
         const itemId = forgeItems[i];
         const item = inventory.find(it => it.id === itemId);
         html += `
-            <div class="forge-slot" data-slot-index="${i}" style="width:90px; height:90px; background-color:#2f3542; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid #00aaff; cursor:pointer; overflow:hidden;">
+            <div class="forge-slot" data-slot-index="${i}" style="width:70px; height:70px; background-color:#2f3542; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid #00aaff; cursor:pointer; overflow:hidden;">
                 ${item ? `<img src="${getItemIconPath(item)}" style="max-width:100%; max-height:100%;" title="${item.name}">` : '<span style="color:#aaa;">Пусто</span>'}
             </div>
         `;
@@ -71,10 +98,11 @@ function renderForgeSlots() {
 
     // Обновляем состояние кнопки действия
     const actionBtn = document.getElementById('forgeActionBtn');
-    if (forgeItems.length === slotCount) {
-        actionBtn.disabled = false;
+    if (currentForgeTab === 'forge') {
+        actionBtn.disabled = forgeItems.length !== 3;
     } else {
-        actionBtn.disabled = true;
+        // для плавки разрешаем от 1 до 5
+        actionBtn.disabled = forgeItems.length === 0;
     }
     // Обработчик кнопки действия
     actionBtn.onclick = performForgeAction;
@@ -155,7 +183,9 @@ function showForgeItemDetails(item, source, slotIndex = null) {
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
             });
             if (res.ok) {
-                await refreshData();
+                await refreshData(); // обновляем inventory
+                // После добавления перезагружаем forgeItems с сервера, чтобы синхронизироваться
+                await loadForgeItems();
                 renderForgeSlots();
                 loadForgeInventory();
                 modal.style.display = 'none';
@@ -175,6 +205,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
             });
             if (res.ok) {
                 await refreshData();
+                await loadForgeItems();
                 renderForgeSlots();
                 loadForgeInventory();
                 modal.style.display = 'none';
@@ -188,6 +219,34 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     document.getElementById('closeModal').addEventListener('click', () => {
         modal.style.display = 'none';
     });
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+
+// Показать модальное окно с описанием кузницы
+function showForgeHelpModal() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Кузница';
+    modalBody.innerHTML = `
+        <div style="text-align: left;">
+            <p><strong>Ковка:</strong> объедините 3 предмета одинаковой редкости, чтобы получить один предмет следующей редкости. Класс нового предмета вы выбираете сами.</p>
+            <p><strong>Плавка:</strong> переплавляйте ненужные предметы в ресурсы. Можно от 1 до 5 предметов за раз.</p>
+            <p>Награда за плавку:</p>
+            <ul>
+                <li>Обычный: 35–50 монет</li>
+                <li>Необычный: 150–200 монет</li>
+                <li>Редкий: 600–800 монет</li>
+                <li>Эпический: 1500–2000 монет + 0–1 алмаз</li>
+                <li>Легендарный: 2500–3800 монет + 2–5 алмазов</li>
+            </ul>
+            <p>Поместите предметы в слоты, затем нажмите кнопку действия.</p>
+        </div>
+    `;
+
+    modal.style.display = 'block';
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
@@ -219,6 +278,58 @@ function buildStatsArray(item) {
     return stats;
 }
 
+// Модальное окно выбора класса для ковки
+function showClassChoiceForForge() {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('roleModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+
+        modalTitle.innerText = 'Выберите класс';
+        modalBody.innerHTML = `
+            <p>Для какого класса выковать предмет?</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button class="btn class-choice" data-class="warrior">Воин</button>
+                <button class="btn class-choice" data-class="assassin">Ассасин</button>
+                <button class="btn class-choice" data-class="mage">Маг</button>
+                <button class="btn class-choice" data-class="random">Случайный</button>
+            </div>
+            <button class="btn" id="closeChoice" style="margin-top:15px;">Отмена</button>
+        `;
+        modal.style.display = 'block';
+
+        const handleChoice = (e) => {
+            const chosenClass = e.target.dataset.class;
+            if (chosenClass === 'random') {
+                modal.style.display = 'none';
+                resolve(null);
+            } else {
+                modal.style.display = 'none';
+                resolve(chosenClass);
+            }
+            cleanup();
+        };
+
+        const handleCancel = () => {
+            modal.style.display = 'none';
+            resolve(null); // отмена – не продолжаем
+            cleanup();
+        };
+
+        const cleanup = () => {
+            document.querySelectorAll('.class-choice').forEach(btn => btn.removeEventListener('click', handleChoice));
+            document.getElementById('closeChoice')?.removeEventListener('click', handleCancel);
+            const closeBtn = modal.querySelector('.close');
+            closeBtn.onclick = null;
+        };
+
+        document.querySelectorAll('.class-choice').forEach(btn => btn.addEventListener('click', handleChoice));
+        document.getElementById('closeChoice').addEventListener('click', handleCancel);
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = handleCancel;
+    });
+}
+
 // Выполнение действия (ковка или плавка)
 async function performForgeAction() {
     const actionBtn = document.getElementById('forgeActionBtn');
@@ -228,32 +339,40 @@ async function performForgeAction() {
         // Ковка
         if (forgeItems.length !== 3) {
             alert('Нужно ровно 3 предмета');
+            actionBtn.disabled = false;
             return;
         }
-        // Проверяем одинаковую редкость (на клиенте для удобства)
+        // Проверяем одинаковую редкость
         const items = forgeItems.map(id => inventory.find(it => it.id === id));
         const rarities = items.map(it => it.rarity);
         if (!rarities.every(r => r === rarities[0])) {
             alert('Предметы должны быть одной редкости');
+            actionBtn.disabled = false;
             return;
         }
-        // Можно запросить выбор класса (сделаем просто случайный пока)
-        const chosenClass = null; // null = случайный
+
+        // Запрашиваем выбор класса
+        const chosenClass = await showClassChoiceForForge();
+        if (chosenClass === undefined) { // отмена
+            actionBtn.disabled = false;
+            return;
+        }
+
         const res = await fetch('/forge/craft', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 tg_id: userData.tg_id,
                 item_ids: forgeItems,
-                chosen_class: chosenClass
+                chosen_class: chosenClass // если null, на сервере выберется случайно
             })
         });
         const data = await res.json();
         if (data.success) {
-            // Показываем модальное окно с новым предметом
             showChestResult(data.item); // используем существующую функцию
             forgeItems = [];
             await refreshData();
+            await loadForgeItems();
             renderForgeSlots();
             loadForgeInventory();
         } else {
@@ -261,7 +380,11 @@ async function performForgeAction() {
         }
     } else {
         // Плавка
-        if (forgeItems.length === 0) return;
+        if (forgeItems.length === 0) {
+            alert('Нет предметов для плавки');
+            actionBtn.disabled = false;
+            return;
+        }
         const res = await fetch('/forge/smelt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -275,6 +398,7 @@ async function performForgeAction() {
             alert(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`);
             forgeItems = [];
             await refreshData();
+            await loadForgeItems();
             renderForgeSlots();
             loadForgeInventory();
         } else {

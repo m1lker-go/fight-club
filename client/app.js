@@ -749,8 +749,9 @@ function renderMain() {
 
             <!-- Центральная колонка с аватаром -->
             <div style="flex: 0 0 auto; text-align: center;">
-                <div class="hero-avatar" style="width: 120px; height: 180px; cursor: pointer; margin: 0 auto;" id="avatarClick">
+                <div class="hero-avatar" id="avatarClick" style="position: relative; width: 120px; height: 180px; cursor: pointer; margin: 0 auto;">
                     <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none; z-index: 1;">ПРОФИЛЬ</div>
                 </div>
                 <h2 style="margin-top: 10px;">${userData.username || 'Игрок'}</h2>
             </div>

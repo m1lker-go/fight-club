@@ -73,6 +73,8 @@ const critPhrases = {
 
 const vampPhrase = '%s восстанавливает <span style="color:#2ecc71;">%d</span> очков здоровья благодаря вампиризму.';
 const reflectPhrase = '%s отражает <span style="color:#e74c3c;">%d</span> урона обратно в %s!';
+const poisonStackPhrase = '<span style="color:#27ae60;">Яд накапливается на %s (+%d стак, всего %d).</span>';
+const burnStackPhrase = '<span style="color:#e67e22;">Пламя усиливается на %s (+%d стак, всего %d).</span>';
 const poisonPhrases = [
     '<span style="color:#27ae60;">Яд разъедает плоть %s, нанося %d урона.</span>',
     '<span style="color:#27ae60;">%s страдает от яда, теряя %d HP.</span>',
@@ -97,7 +99,7 @@ const ultPhrases = {
     // Маг
     pyromancer: '<span style="color:#3498db;">%s обрушивает ОГНЕННЫЙ ШТОРМ на %s, нанося %d урона!</span>',
     cryomancer: '<span style="color:#3498db;">%s призывает ВЕЧНУЮ ЗИМУ, замораживая %s и нанося %d урона!</span>',
-    illusionist: '<span style="color:#3498db;">%s создаёт ЗАЗЕРКАЛЬЕ, заставляя %s атаковать себя!</span>'
+    illusionist: '<span style="color:#3498db;">%s создаёт ЗАЗЕРКАЛЬЕ, заставляя %s атаковать себя, нанося %d урона!</span>'
 };
 
 // Вспомогательные функции
@@ -176,8 +178,10 @@ function calculateStats(classData, inventory, subclass) {
     return stats;
 }
 
-// Функция для выполнения атаки с учётом состояний
+// Функция для выполнения атаки с учётом состояний (только обычные атаки)
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState) {
+    let extraLogs = [];
+
     // Иллюзионист: гарантированное уклонение 1 раз в 4 удара
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist?.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
@@ -186,7 +190,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
                 .replace('%s', defenderName)
                 .replace('%s', attackerName);
-            return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 } };
+            return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs };
         }
     }
 
@@ -197,7 +201,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
             .replace('%s', defenderName)
             .replace('%s', attackerName);
-        return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {} };
+        return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
     }
 
     // Расчёт урона
@@ -236,16 +240,36 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         vampHeal = Math.floor(damage * attackerVamp / 100);
     }
 
-    // Отражение
+    // Отражение (только для обычных атак, здесь оно считается)
     let reflectDamage = 0;
     if (defenderReflect > 0) {
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    // Наложение яда (venom_blade)
+    // Наложение яда (venom_blade) с логом
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
+        const oldStacks = defenderState.poisonStacks;
         defenderState.poisonStacks = Math.min(30, defenderState.poisonStacks + 1);
+        if (defenderState.poisonStacks > oldStacks) {
+            extraLogs.push(poisonStackPhrase
+                .replace('%s', defenderName)
+                .replace('%d', defenderState.poisonStacks - oldStacks)
+                .replace('%d', defenderState.poisonStacks));
+        }
+    }
+
+    // Наложение огня (pyromancer) с логом
+    if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
+        if (!defenderState.burnStacks) defenderState.burnStacks = 0;
+        const oldStacks = defenderState.burnStacks;
+        defenderState.burnStacks = Math.min(30, defenderState.burnStacks + 1);
+        if (defenderState.burnStacks > oldStacks) {
+            extraLogs.push(burnStackPhrase
+                .replace('%s', defenderName)
+                .replace('%d', defenderState.burnStacks - oldStacks)
+                .replace('%d', defenderState.burnStacks));
+        }
     }
 
     // Выбор фразы
@@ -267,12 +291,13 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         log: attackPhrase,
         reflectDamage,
         vampHeal,
-        stateChanges: { poisonStacks: defenderState.poisonStacks },
-        berserkerBonus
+        stateChanges: { poisonStacks: defenderState.poisonStacks, burnStacks: defenderState.burnStacks },
+        berserkerBonus,
+        extraLogs
     };
 }
 
-// Активные навыки
+// Активные навыки (ультимейты) — не вызывают отражение
 function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass) {
     let damage = 0;
     let selfDamage = 0;
@@ -328,9 +353,8 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         case 'illusionist':
-            // Гарантированное попадание: враг атакует сам себя, урон без учёта уклонения и защиты
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
-            log = ultPhrases.illusionist.replace('%s', attackerName).replace('%s', defenderName);
+            log = ultPhrases.illusionist.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         default:
             return { damage: 0, heal: 0, log: 'ничего не произошло', selfDamage: 0, stateChanges: {} };
@@ -339,7 +363,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     return { damage, heal, log, selfDamage, stateChanges };
 }
 
-// Обработка эффектов в начале хода (яд, огонь, самоповреждение берсерка)
+// Обработка эффектов в начале хода (яд, огонь) — не вызывают отражение
 function applyTurnStartEffects(attackerStats, defenderState, attackerName, defenderName, attackerSubclass, attackerState) {
     let damageToDefender = 0;
     let damageToSelf = 0;
@@ -475,6 +499,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 } else {
                     actionLog = attackResult.log;
                 }
+                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                    log.push(...attackResult.extraLogs);
+                }
                 if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
             }
 
@@ -539,6 +566,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     }
                 } else {
                     actionLog = attackResult.log;
+                }
+                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                    log.push(...attackResult.extraLogs);
                 }
                 if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
             }
@@ -745,7 +775,7 @@ router.post('/start', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userData = user.rows[0];
 
-                      await rechargeEnergy(client, userData.id);
+        await rechargeEnergy(client, userData.id);
 
         // Получаем актуальное значение энергии после восполнения
         const energyResult = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
@@ -782,11 +812,11 @@ router.post('/start', async (req, res) => {
         let coinReward = 0;
         let newStreak = userData.win_streak || 0;
 
-                    let ratingChange = -15; // по умолчанию для поражения
+        let ratingChange = -15; // по умолчанию для поражения
         if (isVictory) {
             newStreak++;
             coinReward = getCoinReward(newStreak);
-            const ratingGain = getRatingChange(newStreak); // функция должна быть определена выше
+            const ratingGain = getRatingChange(newStreak);
             ratingChange = ratingGain;
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
             await client.query('UPDATE users SET rating = rating + $1 WHERE id = $2', [ratingGain, userData.id]);
@@ -801,7 +831,7 @@ router.post('/start', async (req, res) => {
 
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
 
-                     await client.query('COMMIT');
+        await client.query('COMMIT');
 
         // Получаем актуальное значение энергии после всех обновлений
         const energyQuery = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);

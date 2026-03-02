@@ -192,9 +192,9 @@ const dailyTaskTranslations = {
         description: 'Получите предмет редкостью не ниже «Редкий» из сундука'
     },
     'Referral': {
-    name: 'Реферальная программа',
-    description: 'Пригласи друга и получи 100 монет'
-}
+        name: 'Реферальная программа',
+        description: 'Пригласи друга и получи 100 монет'
+    }
 };
 
 // Словарь для перевода названий скинов (английские из БД -> русские)
@@ -212,6 +212,7 @@ const skinNameTranslations = {
 function translateSkinName(englishName) {
     return skinNameTranslations[englishName] || englishName;
 }
+
 // Инициализация
 async function init() {
     try {
@@ -226,16 +227,14 @@ async function init() {
             userClasses = data.classes || [];
             inventory = data.inventory || [];
             BOT_USERNAME = data.bot_username || '';
-            
-            // Загружаем список аватаров и устанавливаем имя файла по avatar_id
+
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-            
+
             updateTopBar();
             showScreen('main');
             checkAdvent();
 
-            // Обновляем дату сброса заданий
             fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
         } else {
             alert('Ошибка авторизации');
@@ -301,11 +300,10 @@ async function refreshData() {
             userClasses = data.classes || [];
             inventory = data.inventory || [];
             BOT_USERNAME = data.bot_username || '';
-            
-            // Обновляем имя файла аватара в соответствии с новым avatar_id
-            await loadAvatars(); // безопасно, если уже загружены – просто вернёт
+
+            await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-            
+
             updateTopBar();
             showScreen(currentScreen);
         }
@@ -316,7 +314,7 @@ async function refreshData() {
 
 function updateTopBar() {
     document.getElementById('coinCount').innerText = userData.coins;
-    document.getElementById('diamondCount').innerText = userData.diamonds || 0; // добавить элемент
+    document.getElementById('diamondCount').innerText = userData.diamonds || 0;
     document.getElementById('rating').innerText = userData.rating;
     document.getElementById('energy').innerText = userData.energy;
     document.getElementById('power').innerText = currentPower;
@@ -336,7 +334,7 @@ function showScreen(screen) {
         case 'main': renderMain(); break;
         case 'equip': renderEquip(); break;
         case 'trade': renderTrade(); break;
-        case 'forge': 
+        case 'forge':
             if (typeof renderForge === 'function') {
                 renderForge();
             } else {
@@ -374,6 +372,7 @@ function getAvatarFilenameById(id) {
     const avatar = avatarsList.find(a => a.id === id);
     return avatar ? avatar.filename : 'cat_heroweb.png';
 }
+
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 function getCurrentClassData() {
@@ -494,6 +493,7 @@ function calculatePower(className, finalStats) {
     power += finalStats.reflect * coeff.reflect * 2;
     return Math.round(power);
 }
+
 // Вспомогательная функция для получения русского названия класса
 function getClassNameRu(cls) {
     if (cls === 'warrior') return 'Воин';
@@ -505,16 +505,16 @@ function showRoleInfoModal(className) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    
+
     const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
     modalTitle.innerText = `Роли класса ${classNameRu}`;
-    
+
     const subclasses = {
         warrior: ['guardian', 'berserker', 'knight'],
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
         mage: ['pyromancer', 'cryomancer', 'illusionist']
     }[className] || [];
-    
+
     let html = '';
     subclasses.forEach(sc => {
         const desc = roleDescriptions[sc];
@@ -529,14 +529,14 @@ function showRoleInfoModal(className) {
         }
     });
     modalBody.innerHTML = html;
-    
+
     modal.style.display = 'block';
-    
+
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = function() {
         modal.style.display = 'none';
     };
-    
+
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = 'none';
@@ -547,7 +547,7 @@ function showRoleInfoModal(className) {
 function showChestResult(item) {
     const modal = document.getElementById('chestResultModal');
     const body = document.getElementById('chestResultBody');
-    
+
     const stats = [];
     if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
     if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
@@ -573,7 +573,7 @@ function showChestResult(item) {
         accessory: 'ring',
         gloves: 'bracer'
     };
-    
+
     let iconPath = '';
     if (item.owner_class && item.type) {
         const folder = classFolderMap[item.owner_class];
@@ -585,21 +585,21 @@ function showChestResult(item) {
     const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
 
     let classDisplay = '';
-if (item.owner_class) {
-    classDisplay = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
-} else {
-    classDisplay = 'Неизвестный класс';
-}
+    if (item.owner_class) {
+        classDisplay = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
+    } else {
+        classDisplay = 'Неизвестный класс';
+    }
 
-body.innerHTML = `
-    <div style="text-align: center;">
-        <div style="margin-bottom: 10px;">${iconHtml}</div>
-        <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
-        <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-        <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
-        <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
-    </div>
-`;
+    body.innerHTML = `
+        <div style="text-align: center;">
+            <div style="margin-bottom: 10px;">${iconHtml}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
+            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
+            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
+        </div>
+    `;
 
     modal.style.display = 'block';
 }
@@ -609,14 +609,12 @@ function showLevelUpModal(className) {
     const body = document.getElementById('levelUpBody');
     const classNameRu = getClassNameRu(className);
     body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны 3 очка навыков!</p>`;
-    
+
     modal.style.display = 'block';
 
-    // Обработчики кнопок (заменяем старые, чтобы избежать дублирования)
     const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
     const laterBtn = document.getElementById('levelUpLaterBtn');
-    
-    // Удаляем старые обработчики, заменяя кнопки новыми (простой способ)
+
     const newUpgrade = upgradeBtn.cloneNode(true);
     const newLater = laterBtn.cloneNode(true);
     upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
@@ -624,15 +622,14 @@ function showLevelUpModal(className) {
 
     newUpgrade.addEventListener('click', () => {
         modal.style.display = 'none';
-        profileTab = 'upgrade';      // переключаем вкладку профиля
-        showScreen('profile');        // переходим в профиль
+        profileTab = 'upgrade';
+        showScreen('profile');
     });
 
     newLater.addEventListener('click', () => {
         modal.style.display = 'none';
     });
 
-    // Закрытие по крестику
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
@@ -690,6 +687,7 @@ function renderItemColumn(item, isEquipped) {
         </div>
     `;
 }
+
 function showEquipCompareModal(oldItem, newItem) {
     const modal = document.getElementById('equipCompareModal');
     const body = document.getElementById('equipCompareBody');
@@ -925,246 +923,245 @@ function renderEquip() {
         return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
     }
 
- function renderInventoryForClass(className) {
-    const classItems = inventory.filter(item => 
-        item.owner_class === className && 
-        (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
-    );
-    const equipped = classItems.filter(item => item.equipped);
-    const unequipped = classItems.filter(item => !item.equipped && !item.for_sale && !item.in_forge); // не показываем предметы на продаже и в кузнице
+    function renderInventoryForClass(className) {
+        const classItems = inventory.filter(item => 
+            item.owner_class === className && 
+            (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
+        );
+        const equipped = classItems.filter(item => item.equipped);
+        const unequipped = classItems.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
 
-    const slotConfig = {
-        left: [
-            { type: 'helmet', icon: '/assets/helmet.png' },
-            { type: 'armor', icon: '/assets/armor.png' },
-            { type: 'gloves', icon: '/assets/arm.png' }
-        ],
-        right: [
-            { type: 'weapon', icon: '/assets/weapon.png' },
-            { type: 'boots', icon: '/assets/leg.png' },
-            { type: 'accessory', icon: '/assets/ring.png' }
-        ]
-    };
+        const slotConfig = {
+            left: [
+                { type: 'helmet', icon: '/assets/helmet.png' },
+                { type: 'armor', icon: '/assets/armor.png' },
+                { type: 'gloves', icon: '/assets/arm.png' }
+            ],
+            right: [
+                { type: 'weapon', icon: '/assets/weapon.png' },
+                { type: 'boots', icon: '/assets/leg.png' },
+                { type: 'accessory', icon: '/assets/ring.png' }
+            ]
+        };
 
-    let html = `
-        <div class="equip-layout">
-            <div class="class-selector">
-                <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-            </div>
-            <div class="equip-main">
-                <div class="equip-column">
-    `;
-
-    slotConfig.left.forEach(slot => {
-        const item = equipped.find(i => i.type === slot.type);
-        const icon = item ? getItemIconPath(item) : slot.icon;
-        html += `
-            <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
-                <div class="slot-icon" style="background-image: url('${icon}');"></div>
-            </div>
-        `;
-    });
-
-    html += `</div>
-            <div class="hero-center">
-                <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
-            </div>
-            <div class="equip-column">
-    `;
-
-    slotConfig.right.forEach(slot => {
-        const item = equipped.find(i => i.type === slot.type);
-        const icon = item ? getItemIconPath(item) : slot.icon;
-        html += `
-            <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
-                <div class="slot-icon" style="background-image: url('${icon}');"></div>
-            </div>
-        `;
-    });
-
-    html += `</div>
-            </div>
-            <h3>Рюкзак</h3>
-            <div class="inventory-container">
-                <div class="inventory-grid">
-    `;
-
-    unequipped.forEach(item => {
-        const rarityClass = `rarity-${item.rarity}`;
-        const stats = [];
-        if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-        if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-        if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-        if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-        if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-        if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-        if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-        if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-        if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-        if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-        const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
-        const forgeTag = item.in_forge ? '<span class="forge-tag" style="color:#f39c12;">(В кузнице)</span>' : '';
-        const itemIcon = getItemIconPath(item) || '';
-
-        html += `
-            <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}" data-in-forge="${item.in_forge}">
-                <div class="item-icon" style="background-image: url('${itemIcon}'); background-size: cover; background-position: center;"></div>
-                <div class="item-content">
-                    <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
-                    <div class="item-stats">${stats.join(' • ')}</div>
-                    <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
-                    ${saleTag}
-                    ${forgeTag}
-                    <div class="item-actions" style="display: none;"></div>
+        let html = `
+            <div class="equip-layout">
+                <div class="class-selector">
+                    <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                    <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                    <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
                 </div>
-            </div>
+                <div class="equip-main">
+                    <div class="equip-column">
         `;
-    });
 
-    html += `</div></div></div>`;
-    document.getElementById('content').innerHTML = html;
-
-    // Обработчики кнопок классов
-    document.querySelectorAll('.class-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const newClass = e.target.dataset.class;
-            localStorage.setItem('equipSelectedClass', newClass);
-            renderInventoryForClass(newClass);
+        slotConfig.left.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
         });
-    });
 
-    // Обработчики слотов (снятие)
-    document.querySelectorAll('.equip-slot').forEach(slot => {
-        slot.addEventListener('click', async (e) => {
-            const itemId = slot.dataset.itemId;
-            if (!itemId) return;
-            if (confirm('Снять этот предмет?')) {
-                try {
-                    const res = await fetch('/inventory/unequip', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                        if (currentScreen === 'equip') renderEquip();
-                    } else {
-                        alert('Ошибка при снятии');
-                    }
-                } catch (e) {
-                    alert('Сеть недоступна');
-                }
-            }
+        html += `</div>
+                <div class="hero-center">
+                    <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                </div>
+                <div class="equip-column">
+        `;
+
+        slotConfig.right.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
         });
-    });
 
-    // Обработчики предметов в рюкзаке
-    document.querySelectorAll('.inventory-item').forEach(itemDiv => {
-        itemDiv.addEventListener('click', (e) => {
-            if (e.target.classList.contains('action-btn')) return;
+        html += `</div>
+                </div>
+                <h3>Рюкзак</h3>
+                <div class="inventory-container">
+                    <div class="inventory-grid">
+        `;
 
-            const itemId = itemDiv.dataset.itemId;
-            const forSale = itemDiv.dataset.forSale === 'true';
-            const inForge = itemDiv.dataset.inForge === 'true';
-            const actionsDiv = itemDiv.querySelector('.item-actions');
+        unequipped.forEach(item => {
+            const rarityClass = `rarity-${item.rarity}`;
+            const stats = [];
+            if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+            if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+            if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+            if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+            if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+            if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+            if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+            if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+            if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+            if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
 
-            document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
-                if (div !== actionsDiv) div.style.display = 'none';
+            const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
+            const forgeTag = item.in_forge ? '<span class="forge-tag" style="color:#f39c12;">(В кузнице)</span>' : '';
+            const itemIcon = getItemIconPath(item) || '';
+
+            html += `
+                <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}" data-in-forge="${item.in_forge}">
+                    <div class="item-icon" style="background-image: url('${itemIcon}'); background-size: cover; background-position: center;"></div>
+                    <div class="item-content">
+                        <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                        <div class="item-stats">${stats.join(' • ')}</div>
+                        <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                        ${saleTag}
+                        ${forgeTag}
+                        <div class="item-actions" style="display: none;"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div></div>`;
+        document.getElementById('content').innerHTML = html;
+
+        // Обработчики кнопок классов
+        document.querySelectorAll('.class-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const newClass = e.target.dataset.class;
+                localStorage.setItem('equipSelectedClass', newClass);
+                renderInventoryForClass(newClass);
             });
+        });
 
-            if (actionsDiv.style.display === 'flex') {
-                actionsDiv.style.display = 'none';
-            } else {
-                if (forSale || inForge) {
-                    // Если предмет на продаже или в кузнице – показываем соответствующие кнопки
-                    if (forSale) {
+        // Обработчики слотов (снятие)
+        document.querySelectorAll('.equip-slot').forEach(slot => {
+            slot.addEventListener('click', async (e) => {
+                const itemId = slot.dataset.itemId;
+                if (!itemId) return;
+                if (confirm('Снять этот предмет?')) {
+                    try {
+                        const res = await fetch('/inventory/unequip', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        });
+                        if (res.ok) {
+                            await refreshData();
+                            if (currentScreen === 'equip') renderEquip();
+                        } else {
+                            alert('Ошибка при снятии');
+                        }
+                    } catch (e) {
+                        alert('Сеть недоступна');
+                    }
+                }
+            });
+        });
+
+        // Обработчики предметов в рюкзаке
+        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('action-btn')) return;
+
+                const itemId = itemDiv.dataset.itemId;
+                const forSale = itemDiv.dataset.forSale === 'true';
+                const inForge = itemDiv.dataset.inForge === 'true';
+                const actionsDiv = itemDiv.querySelector('.item-actions');
+
+                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+                    if (div !== actionsDiv) div.style.display = 'none';
+                });
+
+                if (actionsDiv.style.display === 'flex') {
+                    actionsDiv.style.display = 'none';
+                } else {
+                    if (forSale || inForge) {
+                        if (forSale) {
+                            actionsDiv.innerHTML = `
+                                <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                                <button class="action-btn cancel-btn">Отмена</button>
+                            `;
+                        } else if (inForge) {
+                            actionsDiv.innerHTML = `
+                                <button class="action-btn remove-forge-btn" data-item-id="${itemId}">Вернуть из кузницы</button>
+                                <button class="action-btn cancel-btn">Отмена</button>
+                            `;
+                        }
+                    } else {
                         actionsDiv.innerHTML = `
-                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
-                        `;
-                    } else if (inForge) {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn remove-forge-btn" data-item-id="${itemId}">Вернуть из кузницы</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
+                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
                         `;
                     }
-                } else {
-                    actionsDiv.innerHTML = `
-                        <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
-                        <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
-                    `;
-                }
-                actionsDiv.style.display = 'flex';
+                    actionsDiv.style.display = 'flex';
 
-                if (forSale) {
-                    actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const res = await fetch('/inventory/unsell', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                        });
-                        if (res.ok) {
-                            await refreshData();
-                        } else {
-                            alert('Ошибка при снятии с продажи');
-                        }
-                    });
-                    actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        actionsDiv.style.display = 'none';
-                    });
-                } else if (inForge) {
-                    actionsDiv.querySelector('.remove-forge-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const res = await fetch('/forge/remove', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                        });
-                        if (res.ok) {
-                            await refreshData();
-                        } else {
-                            alert('Ошибка при возврате из кузницы');
-                        }
-                    });
-                    actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        actionsDiv.style.display = 'none';
-                    });
-                } else {
-                    actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                        const item = inventory.find(i => i.id == itemId);
-                        if (!item) return;
-                        const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
-                        if (equippedInSlot) {
-                            showEquipCompareModal(equippedInSlot, item);
-                        } else {
-                            const res = await fetch('/inventory/equip', {
+                    if (forSale) {
+                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('/inventory/unsell', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    tg_id: userData.tg_id, 
-                                    item_id: itemId,
-                                    target_class: currentClass
-                                })
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                             });
                             if (res.ok) {
                                 await refreshData();
-                                if (currentScreen === 'equip') renderEquip();
                             } else {
-                                const err = await res.json();
-                                alert('Ошибка: ' + err.error);
+                                alert('Ошибка при снятии с продажи');
                             }
-                        }
-                    });
+                        });
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else if (inForge) {
+                        actionsDiv.querySelector('.remove-forge-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('/forge/remove', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                            });
+                            if (res.ok) {
+                                await refreshData();
+                            } else {
+                                alert('Ошибка при возврате из кузницы');
+                            }
+                        });
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else {
+                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                            const item = inventory.find(i => i.id == itemId);
+                            if (!item) return;
+                            const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
+                            if (equippedInSlot) {
+                                showEquipCompareModal(equippedInSlot, item);
+                            } else {
+                                const res = await fetch('/inventory/equip', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        tg_id: userData.tg_id, 
+                                        item_id: itemId,
+                                        target_class: currentClass
+                                    })
+                                });
+                                if (res.ok) {
+                                    await refreshData();
+                                    if (currentScreen === 'equip') renderEquip();
+                                } else {
+                                    const err = await res.json();
+                                    alert('Ошибка: ' + err.error);
+                                }
+                            }
+                        });
 
-                                            actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
                             const currentClass = document.querySelector('.class-btn.active').dataset.class;
                             const item = inventory.find(i => i.id == itemId);
@@ -1195,10 +1192,13 @@ function renderEquip() {
                         });
                     }
                 }
-            }
+            });
         });
-    });
-} 
+    } // закрытие функции renderInventoryForClass
+
+    renderInventoryForClass(selectedClass);
+} // закрытие renderEquip
+
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {
@@ -1211,19 +1211,19 @@ function renderTrade() {
         </div>
         <div id="tradeContent"></div>
     `;
-    
+
     const tradeContent = document.getElementById('tradeContent');
-    
+
     document.getElementById('tradeShopBtn').addEventListener('click', () => {
         tradeTab = 'shop';
-        renderTrade(); // перерисовываем, чтобы обновить стиль кнопок
+        renderTrade();
     });
-    
+
     document.getElementById('tradeMarketBtn').addEventListener('click', () => {
         tradeTab = 'market';
         renderTrade();
     });
-    
+
     if (tradeTab === 'shop') {
         renderShop(tradeContent);
     } else {
@@ -1304,27 +1304,27 @@ function renderShop(target = null) {
     `;
 
     async function updateCommonChestPrice() {
-    try {
-        console.log('userData.tg_id в updateCommonChestPrice:', userData.tg_id);
-        const tgId = Number(userData.tg_id);
-        console.log('Проверка бесплатного сундука для tg_id:', tgId);
-        
-        const res = await fetch(`/player/freechest?tg_id=${tgId}`);
-        const data = await res.json();
-        const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
-        const coinIcon = container.querySelector('[data-chest="common"] i');
-        
-        if (data.freeAvailable) {
-            priceSpan.innerText = 'FREE';
-            coinIcon.style.display = 'none';
-        } else {
-            priceSpan.innerText = '50';
-            coinIcon.style.display = 'inline-block';
+        try {
+            console.log('userData.tg_id в updateCommonChestPrice:', userData.tg_id);
+            const tgId = Number(userData.tg_id);
+            console.log('Проверка бесплатного сундука для tg_id:', tgId);
+
+            const res = await fetch(`/player/freechest?tg_id=${tgId}`);
+            const data = await res.json();
+            const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
+            const coinIcon = container.querySelector('[data-chest="common"] i');
+
+            if (data.freeAvailable) {
+                priceSpan.innerText = 'FREE';
+                coinIcon.style.display = 'none';
+            } else {
+                priceSpan.innerText = '50';
+                coinIcon.style.display = 'inline-block';
+            }
+        } catch (e) {
+            console.error('Failed to fetch free chest status', e);
         }
-    } catch (e) {
-        console.error('Failed to fetch free chest status', e);
     }
-}
 
     updateCommonChestPrice();
 
@@ -1341,14 +1341,12 @@ function renderShop(target = null) {
                 showChestResult(data.item);
                 await refreshData();
                 if (chest === 'common') updateCommonChestPrice();
-                
-                // --- ОБНОВЛЕНИЕ ЗАДАНИЯ "СЧАСТЛИВЧИК" ---
+
                 fetch('/tasks/daily/update/chest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
                 }).catch(err => console.error('Failed to update chest task', err));
-                // -----------------------------------------
             } else {
                 alert('Ошибка: ' + data.error);
             }
@@ -1566,7 +1564,7 @@ async function loadMarketItems(statFilter = 'any', container) {
 // ==================== НОВАЯ ФУНКЦИЯ ДЛЯ АДВЕНТА В КОНТЕЙНЕРЕ ====================
 function renderAdventCalendarInContainer(data, container) {
     const { currentDay, daysInMonth, mask } = data;
-    
+
     let firstUnclaimed = null;
     for (let d = 1; d <= currentDay; d++) {
         if (!(mask & (1 << (d-1)))) {
@@ -1576,7 +1574,7 @@ function renderAdventCalendarInContainer(data, container) {
     }
 
     let html = '<div class="advent-grid">';
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
         const available = (day === firstUnclaimed);
@@ -1584,7 +1582,7 @@ function renderAdventCalendarInContainer(data, container) {
         if (claimed) className += ' claimed';
         else if (available) className += ' available';
         else className += ' locked';
-        
+
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
@@ -1599,20 +1597,21 @@ function renderAdventCalendarInContainer(data, container) {
             else if (reward.rarity === 'legendary') color = '#f1c40f';
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
-        
+
         html += `<div class="${className}" data-day="${day}">
             <div>${day}</div>
             <div style="font-size: 12px;">${iconHtml}</div>
         </div>`;
     }
     html += '</div>';
-    
+
     container.innerHTML = html;
-    
+
     container.querySelectorAll('.advent-day.available').forEach(div => {
         div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
     });
 }
+
 function renderReferral() {
     const referralDiv = document.createElement('div');
     referralDiv.className = 'task-card referral-card';
@@ -1640,7 +1639,6 @@ function renderReferral() {
         </div>
     `;
 
-    // Обработчик копирования
     referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(referralLink).then(() => {
             alert('Ссылка скопирована!');
@@ -1649,12 +1647,10 @@ function renderReferral() {
         });
     });
 
-    // Обработчик поделиться
     referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
         if (window.Telegram?.WebApp?.openTelegramLink) {
             window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
         } else {
-            // fallback – копируем
             navigator.clipboard.writeText(referralLink).then(() => {
                 alert('Ссылка скопирована! Вы можете отправить её другу.');
             });
@@ -1663,6 +1659,7 @@ function renderReferral() {
 
     return referralDiv;
 }
+
 // ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
@@ -1692,7 +1689,6 @@ function renderTasks() {
         </div>
     `;
 
-    // Вставляем реферальную карточку
     const referralPlaceholder = document.getElementById('referralPlaceholder');
     if (referralPlaceholder) {
         referralPlaceholder.appendChild(renderReferral());
@@ -1716,7 +1712,6 @@ function renderRating() {
     content.innerHTML = '<p style="text-align:center; color:#aaa;">Рейтинг временно недоступен</p>';
 }
 
-  // Загружаем ежедневные задания
 async function loadDailyTasks() {
     try {
         console.log('Загружаю задания для tg_id:', userData.tg_id);
@@ -1735,7 +1730,6 @@ async function loadDailyTasks() {
         tasksData.forEach(task => {
             if (task.completed) return;
 
-            // Ограничиваем прогресс максимальным значением
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
@@ -1807,6 +1801,7 @@ async function loadDailyTasks() {
         console.error('Error loading daily tasks:', e);
     }
 }
+
 // ==================== КУЗНИЦА ====================
 function renderForge() {
     const content = document.getElementById('content');
@@ -1826,12 +1821,10 @@ function renderForge() {
         </div>
     `;
 
-    // Обработчики для кнопок – переключение активного класса
     document.querySelectorAll('.forge-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.forge-tab').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // Здесь позже будет логика загрузки контента для вкладок
         });
     });
 }
@@ -1841,13 +1834,12 @@ function renderForge() {
 function renderProfile() {
     const content = document.getElementById('content');
 
-// Обновляем задание "Любознательный"
-fetch('/tasks/daily/update/profile', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tg_id: userData.tg_id })
-}).catch(err => console.error('Failed to update profile task', err));
-            
+    fetch('/tasks/daily/update/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tg_id: userData.tg_id })
+    }).catch(err => console.error('Failed to update profile task', err));
+
     content.innerHTML = `
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
@@ -1860,12 +1852,13 @@ fetch('/tasks/daily/update/profile', {
     document.querySelectorAll('.profile-tab').forEach(btn => {
         btn.addEventListener('click', (e) => {
             profileTab = e.target.dataset.tab;
-            renderProfile(); // перерисовываем весь профиль
+            renderProfile();
         });
     });
 
     renderProfileTab(profileTab);
 }
+
 function renderProfileTab(tab) {
     const profileContent = document.getElementById('profileContent');
     if (tab === 'bonuses') {
@@ -2048,7 +2041,7 @@ function renderSkins(container) {
         console.log('Owned ids:', ownedIds);
         const activeAvatarId = userData.avatar_id || 1;
         const ownedSet = new Set(ownedIds);
-        ownedSet.add(1); // базовый аватар всегда куплен
+        ownedSet.add(1);
 
         const sortedAvatars = [...allAvatars].sort((a, b) => {
             if (a.id === activeAvatarId) return -1;
@@ -2063,7 +2056,7 @@ function renderSkins(container) {
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
 
-                       let priceHtml = '';
+            let priceHtml = '';
             if (!isOwned) {
                 let parts = [];
                 if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
@@ -2075,13 +2068,13 @@ function renderSkins(container) {
                 }
             }
 
-                        html += `
-    <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
-        ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
-        <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
-        ${priceHtml}
-    </div>
-`;
+            html += `
+                <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
+                    ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
+                    <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
+                    ${priceHtml}
+                </div>
+            `;
         });
         html += '</div>';
         container.innerHTML = html;
@@ -2100,11 +2093,12 @@ function renderSkins(container) {
         container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
     });
 }
+
 function showSkinModal(avatarId, avatarFilename, owned) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    
+
     fetch('/avatars')
         .then(res => res.json())
         .then(avatarsList => {
@@ -2116,7 +2110,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             const isActive = avatarId === userData.avatar_id;
             modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
-            
+
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
 
@@ -2144,9 +2138,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                     </div>
                 </div>
             `;
-            
+
             modal.style.display = 'block';
-            
+
             if (!owned && !isActive) {
                 document.getElementById('buySkin').addEventListener('click', async () => {
                     const res = await fetch('/avatars/buy', {
@@ -2164,7 +2158,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                     }
                 });
             }
-            
+
             if (owned && !isActive) {
                 document.getElementById('activateSkin').addEventListener('click', async () => {
                     const res = await fetch('/player/avatar', {
@@ -2177,22 +2171,19 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                         userData.avatar_id = avatarId;
                         userData.avatar = avatarFilename;
                         modal.style.display = 'none';
-                        // Обновляем текущую вкладку скинов
                         renderProfileTab('skins');
-                        // Если открыт главный экран – перерисовываем его
                         if (currentScreen === 'main') renderMain();
-                        // Если открыт экран экипировки – перерисовываем его
                         if (currentScreen === 'equip') renderEquip();
                     } else {
                         alert('Ошибка при смене аватара');
                     }
                 });
             }
-            
+
             document.getElementById('closeSkinModal').addEventListener('click', () => {
                 modal.style.display = 'none';
             });
-            
+
             const closeBtn = modal.querySelector('.close');
             closeBtn.onclick = () => modal.style.display = 'none';
         })
@@ -2218,7 +2209,7 @@ function showAdventCalendar() {
 function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, mask } = data;
     const content = document.getElementById('content');
-    
+
     let firstUnclaimed = null;
     for (let d = 1; d <= currentDay; d++) {
         if (!(mask & (1 << (d-1)))) {
@@ -2228,7 +2219,7 @@ function renderAdventCalendar(data) {
     }
 
     let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
         const available = (day === firstUnclaimed);
@@ -2236,7 +2227,7 @@ function renderAdventCalendar(data) {
         if (claimed) className += ' claimed';
         else if (available) className += ' available';
         else className += ' locked';
-        
+
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
@@ -2251,7 +2242,7 @@ function renderAdventCalendar(data) {
             else if (reward.rarity === 'legendary') color = '#f1c40f';
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
-        
+
         html += `<div class="${className}" data-day="${day}">
             <div>${day}</div>
             <div style="font-size: 12px;">${iconHtml}</div>
@@ -2259,17 +2250,17 @@ function renderAdventCalendar(data) {
     }
     html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
     content.innerHTML = html;
-    
+
     document.querySelectorAll('.advent-day.available').forEach(div => {
         div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
     });
-    
+
     document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
 }
 
 function claimAdventDay(day, daysInMonth) {
     const reward = getAdventReward(day, daysInMonth);
-    
+
     if (reward.type === 'exp') {
         showClassChoiceModal(day, reward.amount);
     } else {
@@ -2295,7 +2286,7 @@ function showClassChoiceModal(day, expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    
+
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
@@ -2305,15 +2296,15 @@ function showClassChoiceModal(day, expAmount) {
             <button class="btn class-choice" data-class="mage">Маг</button>
         </div>
     `;
-    
+
     modal.style.display = 'block';
-    
+
     const classButtons = modalBody.querySelectorAll('.class-choice');
     classButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
-            
+
             const res = await fetch('/tasks/advent/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2338,7 +2329,7 @@ function claimDailyExp(taskId, expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    
+
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
@@ -2348,35 +2339,35 @@ function claimDailyExp(taskId, expAmount) {
             <button class="btn class-choice" data-class="mage">Маг</button>
         </div>
     `;
-    
+
     modal.style.display = 'block';
-    
+
     const classButtons = modalBody.querySelectorAll('.class-choice');
     classButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
-            
-           const res = await fetch('/tasks/daily/claim', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-        tg_id: userData.tg_id, 
-        task_id: taskId, 
-        class_choice: classChoice 
-    })
-});
+
+            const res = await fetch('/tasks/daily/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    tg_id: userData.tg_id, 
+                    task_id: taskId, 
+                    class_choice: classChoice 
+                })
+            });
             const data = await res.json();
             if (data.error) {
                 alert(data.error);
             } else {
                 alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
-                renderTasks(); // перерисовать список заданий
-                refreshData(); // обновить топ-бар и данные классов
+                renderTasks();
+                refreshData();
             }
         });
     });
-    
+
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
@@ -2607,8 +2598,8 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 }
+
 function showBattleResult(battleData, timeOut = false) {
-    // Обновление энергии, если пришло с сервера
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
         updateTopBar();
@@ -2622,9 +2613,8 @@ function showBattleResult(battleData, timeOut = false) {
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
-    const ratingChange = battleData.ratingChange || 0; //
+    const ratingChange = battleData.ratingChange || 0;
 
-    // --- ОБНОВЛЕНИЕ ПРОГРЕССА ЗАДАНИЙ (с логами) ---
     console.log('Отправка обновления боя');
     fetch('/tasks/daily/update/battle', {
         method: 'POST',
@@ -2658,9 +2648,7 @@ function showBattleResult(battleData, timeOut = false) {
         });
     })
     .catch(err => console.error('Ошибка /update/exp:', err));
-    // ------------------------------------------------
 
-    // Сбор статистики из turns (оставляем как есть)
     let playerStats = {
         hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
     };
@@ -2714,7 +2702,7 @@ function showBattleResult(battleData, timeOut = false) {
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
-           <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
+            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
             ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
@@ -2810,6 +2798,7 @@ function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 }
+
 // Инициализация меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {

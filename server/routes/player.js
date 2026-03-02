@@ -107,7 +107,7 @@ router.get('/:tg_id', async (req, res) => {
 
         await rechargeEnergy(client, user.rows[0].id);
 
-        // ИСПРАВЛЕННЫЙ ЗАПРОС С JOIN
+        // ИСПРАВЛЕННЫЙ ЗАПРОС С JOIN, добавлено i.in_forge
         const inventory = await client.query(
             `SELECT 
                 i.id,
@@ -128,7 +128,8 @@ router.get('/:tg_id', async (req, res) => {
                 it.reflect_bonus,
                 i.equipped,
                 i.for_sale,
-                i.price
+                i.price,
+                i.in_forge
             FROM inventory i
             JOIN items it ON i.item_id = it.id
             WHERE i.user_id = $1`,

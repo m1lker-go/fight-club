@@ -925,7 +925,7 @@ function renderEquip() {
         return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
     }
 
-  function renderInventoryForClass(className) {
+ function renderInventoryForClass(className) {
     const classItems = inventory.filter(item => 
         item.owner_class === className && 
         (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
@@ -1198,7 +1198,6 @@ function renderEquip() {
         });
     });
 }
-
 // ==================== ТОРГОВЛЯ ====================
 
 function renderTrade() {

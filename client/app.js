@@ -2653,7 +2653,7 @@ function showBattleResult(battleData, timeOut = false) {
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
-            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} ${leveledUp ? '🎉' : ''}</p>
+           <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
             ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">

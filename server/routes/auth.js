@@ -77,7 +77,7 @@ router.post('/login', async (req, res) => {
     );
 
     console.log('Fetching inventory...');
-    // ИСПРАВЛЕННЫЙ ЗАПРОС С JOIN
+    // ИСПРАВЛЕННЫЙ ЗАПРОС С JOIN, добавлено i.in_forge
     const inventory = await client.query(
       `SELECT 
          i.id,
@@ -98,7 +98,8 @@ router.post('/login', async (req, res) => {
          it.reflect_bonus,
          i.equipped,
          i.for_sale,
-         i.price
+         i.price,
+         i.in_forge
        FROM inventory i
        JOIN items it ON i.item_id = it.id
        WHERE i.user_id = $1`,
@@ -162,7 +163,8 @@ router.post('/refresh', async (req, res) => {
          it.reflect_bonus,
          i.equipped,
          i.for_sale,
-         i.price
+         i.price,
+         i.in_forge
        FROM inventory i
        JOIN items it ON i.item_id = it.id
        WHERE i.user_id = $1`,

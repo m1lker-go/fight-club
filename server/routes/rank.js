@@ -2,16 +2,56 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Топ по рейтингу (обычному)
+// Проверка и сброс сезонного рейтинга (каждые 3 месяца) – можно оставить для будущего использования
+async function checkSeasonReset() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-11
+
+    // Начало текущего квартала
+    let seasonStart;
+    if (month < 3) { // янв-март
+        seasonStart = new Date(year, 0, 1);
+    } else if (month < 6) { // апр-июнь
+        seasonStart = new Date(year, 3, 1);
+    } else if (month < 9) { // июль-сент
+        seasonStart = new Date(year, 6, 1);
+    } else { // окт-дек
+        seasonStart = new Date(year, 9, 1);
+    }
+
+    const client = await pool.connect();
+    try {
+        const res = await client.query(
+            `UPDATE users 
+             SET season_rating = 0, last_season_reset = $1 
+             WHERE last_season_reset < $2 OR last_season_reset IS NULL`,
+            [seasonStart, seasonStart]
+        );
+        if (res.rowCount > 0) {
+            console.log(`Сброшен рейтинг для ${res.rowCount} пользователей (новый сезон)`);
+        }
+    } catch (e) {
+        console.error('Ошибка при сбросе сезонного рейтинга:', e);
+    } finally {
+        client.release();
+    }
+}
+
+// Топ по рейтингу (обычному, не сезонному)
 router.get('/rating', async (req, res) => {
     try {
+        // Сброс сезона пока не применяем, используем обычный rating
+        // await checkSeasonReset();
+
         const result = await pool.query(`
             SELECT 
                 u.username,
                 u.rating as rating,
                 u.current_class as class
             FROM users u
-            WHERE (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
+            WHERE u.username != 'test' 
+              AND (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
             ORDER BY u.rating DESC
             LIMIT 100
         `);
@@ -31,7 +71,8 @@ router.get('/power', async (req, res) => {
                 (SELECT power FROM user_classes uc WHERE uc.user_id = u.id ORDER BY power DESC LIMIT 1) as power,
                 u.current_class as class
             FROM users u
-            WHERE (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
+            WHERE u.username != 'test' 
+              AND (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
             ORDER BY power DESC
             LIMIT 100
         `);

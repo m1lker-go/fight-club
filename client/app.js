@@ -103,6 +103,25 @@ const baseStats = {
     mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
+// Веса характеристик для расчёта силы
+const importance = {
+    warrior: {
+        hp: 2.0, atk: 2.0, def: 2.0,
+        crit: 1.5, reflect: 1.5, critDmg: 1.5,
+        agi: 1.0, int: 1.0, spd: 1.0, vamp: 0.5
+    },
+    assassin: {
+        atk: 2.0, agi: 2.0, vamp: 2.0,
+        hp: 1.5, crit: 1.5, critDmg: 1.5,
+        def: 1.0, int: 1.0, spd: 1.0, reflect: 1.0
+    },
+    mage: {
+        atk: 2.0, int: 2.0, agi: 2.0,
+        hp: 1.5, crit: 1.5, critDmg: 1.5,
+        def: 1.0, spd: 1.0, vamp: 0.5, reflect: 0.5
+    }
+};
+
 // Словарь перевода названий предметов
 const itemNameTranslations = {
     'Rusty Sword': 'Ржавый меч',
@@ -305,8 +324,6 @@ async function checkAdvent() {
     }
 }
 
-
-
 // Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
@@ -355,7 +372,7 @@ async function refreshData() {
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
 
-            recalculatePower(); // ← добавляем
+            recalculatePower(); // пересчёт силы
             showScreen(currentScreen);
         }
     } catch (e) {
@@ -513,6 +530,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
     return { base: baseStatsWithSkills, gear: gearBonuses, role: roleBonuses, final: final };
 }
 
+// Функция расчёта силы (с учётом уровня)
 function calculatePower(className, finalStats, level) {
     const coeff = importance[className] || importance.warrior;
     let power = 0;
@@ -528,20 +546,6 @@ function calculatePower(className, finalStats, level) {
     power += finalStats.reflect * coeff.reflect * 2;
     // Бонус за уровень: +10 за каждый уровень
     power += level * 10;
-    return Math.round(power);
-}
-    const coeff = importance[className] || importance.warrior;
-    let power = 0;
-    power += finalStats.hp * coeff.hp;
-    power += finalStats.atk * coeff.atk * 2;
-    power += finalStats.def * coeff.def * 2;
-    power += finalStats.agi * coeff.agi * 2;
-    power += finalStats.int * coeff.int * 2;
-    power += finalStats.spd * coeff.spd * 2;
-    power += finalStats.crit * coeff.crit * 3;
-    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg;
-    power += finalStats.vamp * coeff.vamp * 3;
-    power += finalStats.reflect * coeff.reflect * 2;
     return Math.round(power);
 }
 
@@ -1793,6 +1797,7 @@ async function loadRatingData(type) {
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>';
     }
 }
+
 // ==================== КУЗНИЦА ====================
 function renderForge() {
     const content = document.getElementById('content');
@@ -2567,7 +2572,7 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-function showBattleResult(battleData, timeOut = false) {
+async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
         updateTopBar();
@@ -2741,6 +2746,7 @@ function showBattleResult(battleData, timeOut = false) {
     });
 
     if (leveledUp) {
+        await refreshData(); // обновляем данные, чтобы получить актуальные очки навыков
         showLevelUpModal(userData.current_class);
     }
 }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { updatePlayerPower } = require('../utils/power'); // добавлен импорт
 
 // Базовые характеристики для каждого класса (на 1 уровне)
 const baseStats = {
@@ -828,6 +829,11 @@ router.post('/start', async (req, res) => {
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
 
         const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
+
+        // Если уровень повысился, пересчитываем силу
+        if (leveledUp) {
+            await updatePlayerPower(client, userData.id, userData.current_class);
+        }
 
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
 

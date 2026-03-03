@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const crypto = require('crypto');
+const { updatePlayerPower } = require('../utils/power'); // ← добавлен импорт
 
 // Вспомогательная функция для восстановления энергии
 async function rechargeEnergy(client, userId) {
@@ -98,6 +99,11 @@ router.post('/login', async (req, res) => {
       [userData.id]
     );
 
+    // Пересчитываем силу для всех классов пользователя
+    for (let cls of classes.rows) {
+        await updatePlayerPower(client, userData.id, cls.class);
+    }
+
     console.log('Fetching inventory...');
     const inventory = await client.query(
       `SELECT 
@@ -167,6 +173,11 @@ router.post('/refresh', async (req, res) => {
       'SELECT * FROM user_classes WHERE user_id = $1',
       [userData.id]
     );
+
+    // Пересчитываем силу для всех классов пользователя
+    for (let cls of classes.rows) {
+        await updatePlayerPower(client, userData.id, cls.class);
+    }
 
     const inventory = await client.query(
       `SELECT 

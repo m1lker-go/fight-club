@@ -54,7 +54,7 @@ async function renderForge() {
 // Загрузка с сервера списка предметов в указанной вкладке
 async function loadCurrentForgeItems(tab) {
     try {
-        const res = await fetch(`/forge/current?tg_id=${userData.tg_id}&tab=${tab}`);
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/forge/current?tg_id=${userData.tg_id}&tab=${tab}`);
         if (res.ok) {
             forgeItems = await res.json(); // массив ID
         } else {
@@ -198,7 +198,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
                 return;
             }
             forgeItems.push(item.id);
-            const res = await fetch('/forge/add', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/forge/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -221,7 +221,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
         document.getElementById('forgeRemoveBtn').addEventListener('click', async () => {
             const index = forgeItems.indexOf(item.id);
             if (index > -1) forgeItems.splice(index, 1);
-            const res = await fetch('/forge/remove', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/forge/remove', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
@@ -319,7 +319,7 @@ async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
 
-    const res = await fetch('/forge/craft', {
+    const res = await fetch('https://fight-club-api-4och.onrender.com/forge/craft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -361,7 +361,7 @@ async function performForgeAction() {
         showClassChoiceForCraft(forgeItems);
     } else {
         if (forgeItems.length === 0) return;
-        const res = await fetch('/forge/smelt', {
+        const res = await fetch('https://fight-club-api-4och.onrender.com/forge/smelt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

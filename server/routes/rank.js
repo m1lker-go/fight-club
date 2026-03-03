@@ -38,20 +38,16 @@ async function checkSeasonReset() {
     }
 }
 
-// Топ по рейтингу (обычному, не сезонному)
+// Топ по рейтингу
 router.get('/rating', async (req, res) => {
     try {
-        // Сброс сезона пока не применяем, используем обычный rating
-        // await checkSeasonReset();
-
         const result = await pool.query(`
             SELECT 
                 u.username,
                 u.rating as rating,
                 u.current_class as class
             FROM users u
-            WHERE u.username != 'test' 
-              AND (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
+            WHERE u.username != 'test'
             ORDER BY u.rating DESC
             LIMIT 100
         `);
@@ -62,7 +58,7 @@ router.get('/rating', async (req, res) => {
     }
 });
 
-// Топ по силе (максимальная сила среди классов игрока)
+// Топ по силе
 router.get('/power', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -71,8 +67,7 @@ router.get('/power', async (req, res) => {
                 (SELECT power FROM user_classes uc WHERE uc.user_id = u.id ORDER BY power DESC LIMIT 1) as power,
                 u.current_class as class
             FROM users u
-            WHERE u.username != 'test' 
-              AND (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
+            WHERE u.username != 'test'
             ORDER BY power DESC
             LIMIT 100
         `);

@@ -262,11 +262,11 @@ function showForgeHelp() {
                 <h3>🔥 Расплавка</h3>
                 <p>Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</p>
                 <ul style="list-style: none; padding-left: 0;">
-                    <li><span class="rarity-common">Обычный</span> – 35–50 монет</li>
-                    <li><span class="rarity-uncommon">Необычный</span> – 150–200 монет</li>
-                    <li><span class="rarity-rare">Редкий</span> – 600–800 монет</li>
-                    <li><span class="rarity-epic">Эпический</span> – 1500–2000 монет + шанс 50% на 1 алмаз</li>
-                    <li><span class="rarity-legendary">Легендарный</span> – 2500–3800 монет + 2–5 алмазов</li>
+                   <li><span class="rarity-common">Обычный</span> – 65–85 монет</li>
+<li><span class="rarity-uncommon">Необычный</span> – 120–160 монет</li>
+<li><span class="rarity-rare">Редкий</span> – 400–600 монет</li>
+<li><span class="rarity-epic">Эпический</span> – 1000–1500 монет + шанс 50% на 1 алмаз</li>
+<li><span class="rarity-legendary">Легендарный</span> – 2000–3000 монет + 2–5 алмазов</li>
                 </ul>
             </div>
             <div class="role-card">

@@ -3,6 +3,22 @@ const router = express.Router();
 const { pool } = require('../db');
 const crypto = require('crypto');
 
+// Вспомогательная функция для восстановления энергии
+async function rechargeEnergy(client, userId) {
+    const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
+    if (user.rows.length === 0) return;
+    const last = new Date(user.rows[0].last_energy);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - last) / (1000 * 60));
+    if (diffMinutes > 0) {
+        const newEnergy = Math.min(20, user.rows[0].energy + diffMinutes);
+        await client.query(
+            'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
+            [newEnergy, now, userId]
+        );
+    }
+}
+
 function validateTelegramWebAppData(initData, botToken) {
   const urlParams = new URLSearchParams(initData);
   const hash = urlParams.get('hash');
@@ -67,6 +83,12 @@ router.post('/login', async (req, res) => {
         );
       }
       console.log('New user created');
+    } else {
+      // Для существующего пользователя восстанавливаем энергию
+      await rechargeEnergy(client, userRes.rows[0].id);
+      // Получаем обновлённые данные
+      const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userRes.rows[0].id]);
+      userRes = updatedUser;
     }
 
     const userData = userRes.rows[0];
@@ -77,7 +99,6 @@ router.post('/login', async (req, res) => {
     );
 
     console.log('Fetching inventory...');
-    // ИСПРАВЛЕННЫЙ ЗАПРОС С JOIN, добавлено i.in_forge
     const inventory = await client.query(
       `SELECT 
          i.id,
@@ -136,7 +157,11 @@ router.post('/refresh', async (req, res) => {
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    const userData = userRes.rows[0];
+    
+    // Восстанавливаем энергию перед отправкой
+    await rechargeEnergy(client, userRes.rows[0].id);
+    const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userRes.rows[0].id]);
+    const userData = updatedUser.rows[0];
 
     const classes = await client.query(
       'SELECT * FROM user_classes WHERE user_id = $1',

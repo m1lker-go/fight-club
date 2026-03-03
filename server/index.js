@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { initDB } = require('./db');
+const { pool, initDB } = require('./db'); // добавлен pool
+const { updatePlayerPower } = require('./utils/power'); // перенесён в начало
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -21,10 +22,10 @@ app.use('/market', require('./routes/market'));
 app.use('/battle', require('./routes/battle'));
 app.use('/tasks', require('./routes/tasks'));
 app.use('/avatars', require('./routes/avatars'));
-app.use('/forge', require('./routes/forge-server')); // переименованный файл кузницы
-app.use('/rank', require('./routes/rank')); // добавлен маршрут рейтинга
+app.use('/forge', require('./routes/forge-server'));
+app.use('/rank', require('./routes/rank'));
 
-// Webhook для Telegram (обработка команд)
+// Webhook для Telegram
 app.post('/webhook', async (req, res) => {
     const { message } = req.body;
     if (!message) return res.sendStatus(200);
@@ -52,7 +53,7 @@ app.post('/webhook', async (req, res) => {
                 {
                     text: '⚔️ Начать игру',
                     web_app: {
-                        url: 'https://fight-club-ecru.vercel.app' // Ваш Vercel URL
+                        url: 'https://fight-club-ecru.vercel.app'
                     }
                 }
             ]]
@@ -78,8 +79,6 @@ app.post('/webhook', async (req, res) => {
 });
 
 // Временный маршрут для пересчёта силы всех пользователей
-const { updatePlayerPower } = require('./utils/power');
-
 app.get('/admin/recalc-power', async (req, res) => {
     const client = await pool.connect();
     try {

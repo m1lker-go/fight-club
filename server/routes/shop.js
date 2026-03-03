@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Словарь названий предметов: класс -> тип -> редкость -> массив из 5 названий
+// Словари названий предметов (полные, как в предыдущей версии)
 const itemNames = {
     warrior: {
         weapon: {
@@ -678,16 +678,37 @@ const itemNames = {
     }
 };
 
-// Вспомогательная функция для генерации предмета по типу сундука
+// Фиксированные бонусы для каждой редкости
+const fixedBonuses = {
+    common: {
+        atk: 1, def: 1, hp: 2, spd: 1,
+        crit: 2, crit_dmg: 5, agi: 2, int: 2, vamp: 2, reflect: 2
+    },
+    uncommon: {
+        atk: 2, def: 2, hp: 4, spd: 2,
+        crit: 4, crit_dmg: 10, agi: 4, int: 4, vamp: 4, reflect: 4
+    },
+    rare: {
+        atk: 3, def: 3, hp: 6, spd: 3,
+        crit: 6, crit_dmg: 15, agi: 6, int: 6, vamp: 6, reflect: 6
+    },
+    epic: {
+        atk: 5, def: 5, hp: 10, spd: 4,
+        crit: 10, crit_dmg: 25, agi: 10, int: 10, vamp: 10, reflect: 10
+    },
+    legendary: {
+        atk: 10, def: 10, hp: 20, spd: 5,
+        crit: 15, crit_dmg: 40, agi: 15, int: 15, vamp: 15, reflect: 15
+    }
+};
+
+// Функция генерации предмета из сундука
 function generateItemFromChest(chestType) {
-    // Случайно выбираем класс и тип
     const classes = ['warrior', 'assassin', 'mage'];
     const className = classes[Math.floor(Math.random() * classes.length)];
-    
     const types = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'];
     const type = types[Math.floor(Math.random() * types.length)];
 
-    // Определяем редкость в зависимости от типа сундука
     let rarity;
     if (chestType === 'common') {
         const r = Math.random();
@@ -714,27 +735,13 @@ function generateItemFromChest(chestType) {
         rarity = 'common';
     }
 
-    // Выбираем название из соответствующего массива
     const namesArray = itemNames[className][type][rarity];
     const name = namesArray[Math.floor(Math.random() * namesArray.length)];
 
-    // Базовые бонусы для каждой редкости
-    const bonuses = {
-        common: { atk: 1, def: 1, hp: 2 },
-        uncommon: { atk: 2, def: 2, hp: 4 },
-        rare: { atk: 3, def: 3, hp: 6 },
-        epic: { atk: 5, def: 5, hp: 10 },
-        legendary: { atk: 7, def: 7, hp: 15 }
-    };
-    const b = bonuses[rarity];
-
-    // Случайно выбираем 2 бонуса
+    // Выбираем две характеристики случайно с возможностью повтора
     const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
-    const selected = [];
-    while (selected.length < 2) {
-        const stat = possibleStats[Math.floor(Math.random() * possibleStats.length)];
-        if (!selected.includes(stat)) selected.push(stat);
-    }
+    const stat1 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+    const stat2 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
 
     const item = {
         name: name,
@@ -754,22 +761,31 @@ function generateItemFromChest(chestType) {
         reflect_bonus: 0
     };
 
-    selected.forEach(stat => {
-        if (stat === 'atk') item.atk_bonus = Math.floor(b.atk * (0.8 + 0.4*Math.random()));
-        else if (stat === 'def') item.def_bonus = Math.floor(b.def * (0.8 + 0.4*Math.random()));
-        else if (stat === 'hp') item.hp_bonus = Math.floor(b.hp * (0.8 + 0.4*Math.random()));
-        else if (stat === 'spd') item.spd_bonus = Math.floor(b.atk * 0.5 + 1);
-        else if (stat === 'crit') item.crit_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'crit_dmg') item.crit_dmg_bonus = Math.floor(b.atk * 5);
-        else if (stat === 'agi') item.agi_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'int') item.int_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'vamp') item.vamp_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'reflect') item.reflect_bonus = Math.floor(b.atk * 2);
-    });
+    const bonus = fixedBonuses[rarity];
+
+    // Функция добавления бонуса к характеристике
+    const addBonus = (stat) => {
+        switch (stat) {
+            case 'atk': item.atk_bonus += bonus.atk; break;
+            case 'def': item.def_bonus += bonus.def; break;
+            case 'hp': item.hp_bonus += bonus.hp; break;
+            case 'spd': item.spd_bonus += bonus.spd; break;
+            case 'crit': item.crit_bonus += bonus.crit; break;
+            case 'crit_dmg': item.crit_dmg_bonus += bonus.crit_dmg; break;
+            case 'agi': item.agi_bonus += bonus.agi; break;
+            case 'int': item.int_bonus += bonus.int; break;
+            case 'vamp': item.vamp_bonus += bonus.vamp; break;
+            case 'reflect': item.reflect_bonus += bonus.reflect; break;
+        }
+    };
+
+    addBonus(stat1);
+    addBonus(stat2);
 
     return item;
 }
 
+// Маршрут покупки сундука
 router.post('/buychest', async (req, res) => {
     console.log('=== ПОКУПКА СУНДУКА ===');
     console.log('tg_id:', req.body.tg_id);
@@ -837,7 +853,7 @@ router.post('/buychest', async (req, res) => {
         const itemId = itemRes.rows[0].id;
         console.log('ID созданного предмета в items:', itemId);
 
-        // Добавляем в инвентарь со всеми полями (дублируем данные для упрощения)
+        // Добавляем в инвентарь со всеми полями
         await client.query(
             `INSERT INTO inventory (
                 user_id, item_id, equipped,

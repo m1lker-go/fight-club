@@ -983,3 +983,78 @@ td {
     font-size: 14px;
     color: #ddd;
 }
+
+/* ===== ЗАСТАВКА ЗАГРУЗКИ ===== */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/assets/splash-bg.png'); /* путь к вашему изображению */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: flex-end;        /* прижимаем содержимое к низу */
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+
+/* Полупрозрачный слой для затемнения фона, чтобы текст читался */
+#splash-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4); /* регулируйте прозрачность */
+    z-index: 1;
+}
+
+.splash-content {
+    position: relative;
+    z-index: 2;                   /* выше затемнения */
+    text-align: center;
+    margin-bottom: 15vh;           /* отступ от низа, чтобы текст был в нижней трети */
+    color: white;
+    max-width: 80%;
+}
+
+.splash-title {
+    font-size: 28px;
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.splash-subtitle {
+    font-size: 16px;
+    margin-bottom: 20px;
+    opacity: 0.9;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+/* Белый спиннер */
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Скрытое состояние (когда игра загрузилась) */
+#splash-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}

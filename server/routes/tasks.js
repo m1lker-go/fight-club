@@ -47,14 +47,21 @@ function generateItemByRarity(rarity, ownerClass = null) {
 }
 
 // Функция для определения награды по дню
+// Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
+    
+    // Особые дни с предметами
     if (day === 7) return { type: 'item', rarity: 'common' };
-    if (day === 10) return { type: 'item', rarity: 'uncommon' };
-    if (day === 15) return { type: 'item', rarity: 'rare' };
+    if (day === 14) return { type: 'item', rarity: 'uncommon' };
     if (day === 22) return { type: 'item', rarity: 'epic' };
-    if (day === 30) return { type: 'item', rarity: 'legendary' };
-    if (daysInMonth === 31 && day === 31) return { type: 'item', rarity: 'legendary' };
+    
+    // Последний день месяца — легендарный предмет (только если дней 30 или 31)
+    if (day === daysInMonth && (daysInMonth === 30 || daysInMonth === 31)) {
+        return { type: 'item', rarity: 'legendary' };
+    }
+    
+    // Для остальных дней: чередование монет и опыта
     const index = day - 1;
     if (index < coinExpBase.length) {
         if (day % 2 === 1) return { type: 'coins', amount: coinExpBase[index] };

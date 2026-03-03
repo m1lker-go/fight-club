@@ -678,38 +678,44 @@ const itemNames = {
     }
 };
 
-// ==================== ФУНКЦИЯ ГЕНЕРАЦИИ ПРЕДМЕТА ПО РЕДКОСТИ И КЛАССУ ====================
+// Фиксированные бонусы для каждой редкости
+const fixedBonuses = {
+    common: {
+        atk: 1, def: 1, hp: 2, spd: 1,
+        crit: 2, crit_dmg: 5, agi: 2, int: 2, vamp: 2, reflect: 2
+    },
+    uncommon: {
+        atk: 2, def: 2, hp: 4, spd: 2,
+        crit: 4, crit_dmg: 10, agi: 4, int: 4, vamp: 4, reflect: 4
+    },
+    rare: {
+        atk: 3, def: 3, hp: 6, spd: 3,
+        crit: 6, crit_dmg: 15, agi: 6, int: 6, vamp: 6, reflect: 6
+    },
+    epic: {
+        atk: 5, def: 5, hp: 10, spd: 4,
+        crit: 10, crit_dmg: 25, agi: 10, int: 10, vamp: 10, reflect: 10
+    },
+    legendary: {
+        atk: 10, def: 10, hp: 20, spd: 5,
+        crit: 15, crit_dmg: 40, agi: 15, int: 15, vamp: 15, reflect: 15
+    }
+};
+
+// Функция генерации предмета по редкости и классу
 function generateItemByRarity(rarity, ownerClass = null) {
-    // Если класс не указан, выбираем случайный
     const classes = ['warrior', 'assassin', 'mage'];
     const chosenClass = ownerClass || classes[Math.floor(Math.random() * classes.length)];
-    
-    // Все возможные типы предметов
     const types = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'];
     const type = types[Math.floor(Math.random() * types.length)];
-    
-    // Получаем массив названий для выбранного класса, типа и редкости
     const namesArray = itemNames[chosenClass][type][rarity];
     const name = namesArray[Math.floor(Math.random() * namesArray.length)];
-    
-    // Базовые бонусы для каждой редкости
-    const bonuses = {
-        common: { atk: 1, def: 1, hp: 2 },
-        uncommon: { atk: 2, def: 2, hp: 4 },
-        rare: { atk: 3, def: 3, hp: 6 },
-        epic: { atk: 5, def: 5, hp: 10 },
-        legendary: { atk: 7, def: 7, hp: 15 }
-    };
-    const b = bonuses[rarity];
-    
-    // Случайно выбираем 2 бонуса
+
+    // Выбираем две характеристики случайно (с возможностью повтора)
     const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
-    const selected = [];
-    while (selected.length < 2) {
-        const stat = possibleStats[Math.floor(Math.random() * possibleStats.length)];
-        if (!selected.includes(stat)) selected.push(stat);
-    }
-    
+    const stat1 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+    const stat2 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+
     const item = {
         name: name,
         type: type,
@@ -727,24 +733,31 @@ function generateItemByRarity(rarity, ownerClass = null) {
         vamp_bonus: 0,
         reflect_bonus: 0
     };
-    
-    selected.forEach(stat => {
-        if (stat === 'atk') item.atk_bonus = Math.floor(b.atk * (0.8 + 0.4 * Math.random()));
-        else if (stat === 'def') item.def_bonus = Math.floor(b.def * (0.8 + 0.4 * Math.random()));
-        else if (stat === 'hp') item.hp_bonus = Math.floor(b.hp * (0.8 + 0.4 * Math.random()));
-        else if (stat === 'spd') item.spd_bonus = Math.floor(b.atk * 0.5 + 1);
-        else if (stat === 'crit') item.crit_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'crit_dmg') item.crit_dmg_bonus = Math.floor(b.atk * 5);
-        else if (stat === 'agi') item.agi_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'int') item.int_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'vamp') item.vamp_bonus = Math.floor(b.atk * 2);
-        else if (stat === 'reflect') item.reflect_bonus = Math.floor(b.atk * 2);
-    });
-    
+
+    const bonus = fixedBonuses[rarity];
+
+    const addBonus = (stat) => {
+        switch (stat) {
+            case 'atk': item.atk_bonus += bonus.atk; break;
+            case 'def': item.def_bonus += bonus.def; break;
+            case 'hp': item.hp_bonus += bonus.hp; break;
+            case 'spd': item.spd_bonus += bonus.spd; break;
+            case 'crit': item.crit_bonus += bonus.crit; break;
+            case 'crit_dmg': item.crit_dmg_bonus += bonus.crit_dmg; break;
+            case 'agi': item.agi_bonus += bonus.agi; break;
+            case 'int': item.int_bonus += bonus.int; break;
+            case 'vamp': item.vamp_bonus += bonus.vamp; break;
+            case 'reflect': item.reflect_bonus += bonus.reflect; break;
+        }
+    };
+
+    addBonus(stat1);
+    addBonus(stat2);
+
     return item;
 }
 
-// Добавить предмет в кузницу (in_forge = true, forge_tab = tab)
+// Добавить предмет в кузницу
 router.post('/add', async (req, res) => {
     const { tg_id, item_id, tab } = req.body;
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
@@ -779,7 +792,7 @@ router.post('/add', async (req, res) => {
     }
 });
 
-// Убрать предмет из кузницы (in_forge = false, forge_tab = NULL)
+// Убрать предмет из кузницы
 router.post('/remove', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
@@ -869,7 +882,6 @@ router.post('/craft', async (req, res) => {
 
         await client.query('DELETE FROM inventory WHERE id = ANY($1::int[])', [item_ids]);
 
-        // Генерируем новый предмет с учётом выбранного класса (или случайного)
         const newItem = generateItemByRarity(newRarity, chosen_class || null);
         const itemRes = await client.query(
             `INSERT INTO items (name, type, rarity, class_restriction, owner_class,
@@ -882,7 +894,7 @@ router.post('/craft', async (req, res) => {
         );
         const newItemId = itemRes.rows[0].id;
 
-        // Вставляем в инвентарь со всеми полями (чтобы owner_class и бонусы были на месте)
+        // Вставляем в инвентарь со всеми полями
         await client.query(
             `INSERT INTO inventory (
                 user_id, item_id, equipped, in_forge,
@@ -930,27 +942,27 @@ router.post('/smelt', async (req, res) => {
 
         await client.query('DELETE FROM inventory WHERE id = ANY($1::int[])', [item_ids]);
 
-       for (const item of items.rows) {
-    switch (item.rarity) {
-        case 'common':
-            coinsGain += Math.floor(Math.random() * 21) + 65; // 65–85
-            break;
-        case 'uncommon':
-            coinsGain += Math.floor(Math.random() * 41) + 120; // 120–160
-            break;
-        case 'rare':
-            coinsGain += Math.floor(Math.random() * 201) + 400; // 400–600
-            break;
-        case 'epic':
-            coinsGain += Math.floor(Math.random() * 501) + 1000; // 1000–1500
-            if (Math.random() < 0.5) diamondsGain += 1;
-            break;
-        case 'legendary':
-            coinsGain += Math.floor(Math.random() * 1001) + 2000; // 2000–3000
-            diamondsGain += 2 + Math.floor(Math.random() * 4); // 2–5
-            break;
-    }
-}
+        for (const item of items.rows) {
+            switch (item.rarity) {
+                case 'common':
+                    coinsGain += Math.floor(Math.random() * 21) + 65; // 65–85
+                    break;
+                case 'uncommon':
+                    coinsGain += Math.floor(Math.random() * 41) + 120; // 120–160
+                    break;
+                case 'rare':
+                    coinsGain += Math.floor(Math.random() * 201) + 400; // 400–600
+                    break;
+                case 'epic':
+                    coinsGain += Math.floor(Math.random() * 501) + 1000; // 1000–1500
+                    if (Math.random() < 0.5) diamondsGain += 1;
+                    break;
+                case 'legendary':
+                    coinsGain += Math.floor(Math.random() * 1001) + 2000; // 2000–3000
+                    diamondsGain += 2 + Math.floor(Math.random() * 4); // 2–5
+                    break;
+            }
+        }
 
         await client.query('UPDATE users SET coins = coins + $1, diamonds = diamonds + $2 WHERE id = $3',
             [coinsGain, diamondsGain, userId]);

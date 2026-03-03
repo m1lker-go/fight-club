@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const { initDB } = require('./db');
-const { updatePlayerPower } = require('./utils/power'); // добавлен импорт
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -79,6 +78,8 @@ app.post('/webhook', async (req, res) => {
 });
 
 // Временный маршрут для пересчёта силы всех пользователей
+const { updatePlayerPower } = require('./utils/power');
+
 app.get('/admin/recalc-power', async (req, res) => {
     const client = await pool.connect();
     try {

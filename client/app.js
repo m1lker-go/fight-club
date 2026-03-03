@@ -305,13 +305,7 @@ async function checkAdvent() {
     }
 }
 
-// Функция подсчёта силы
-function recalculatePower() {
-    const classData = getCurrentClassData();
-    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
-    currentPower = calculatePower(userData.current_class, stats.final, classData.level);
-    updateTopBar();
-}
+
 
 // Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
@@ -549,6 +543,14 @@ function calculatePower(className, finalStats, level) {
     power += finalStats.vamp * coeff.vamp * 3;
     power += finalStats.reflect * coeff.reflect * 2;
     return Math.round(power);
+}
+
+// Функция переподсчёта силы
+function recalculatePower() {
+    const classData = getCurrentClassData();
+    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
+    currentPower = calculatePower(userData.current_class, stats.final, classData.level);
+    updateTopBar();
 }
 
 function getClassNameRu(cls) {

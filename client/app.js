@@ -651,6 +651,7 @@ function showLevelUpModal(className) {
     const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
     const laterBtn = document.getElementById('levelUpLaterBtn');
 
+    // Удаляем старые обработчики, чтобы не дублировались
     const newUpgrade = upgradeBtn.cloneNode(true);
     const newLater = laterBtn.cloneNode(true);
     upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);

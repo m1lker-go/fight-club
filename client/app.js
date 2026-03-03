@@ -1743,6 +1743,94 @@ function renderTasks() {
     loadDailyTasks();
 }
 
+async function loadDailyTasks() {
+    try {
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const tasksData = await res.json();
+        if (!Array.isArray(tasksData)) {
+            console.error('Ответ не является массивом:', tasksData);
+            return;
+        }
+        const tasksList = document.getElementById('tasksList');
+        tasksList.innerHTML = '';
+
+        tasksData.forEach(task => {
+            if (task.completed) return;
+
+            const clampedProgress = Math.min(task.progress, task.target_value);
+            const progressPercent = (clampedProgress / task.target_value) * 100;
+            const rewardText = task.reward_type === 'coins' 
+                ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
+                : `${task.reward_amount} EXP`;
+
+            const translated = dailyTaskTranslations[task.name] || {};
+            const displayName = translated.name || task.name;
+            const displayDesc = translated.description || task.description;
+
+            const taskCard = document.createElement('div');
+            taskCard.className = 'task-card';
+            taskCard.style.display = 'flex';
+            taskCard.style.alignItems = 'center';
+            taskCard.style.justifyContent = 'space-between';
+            taskCard.style.width = '100%';
+            taskCard.style.marginBottom = '12px';
+            taskCard.style.padding = '12px';
+            taskCard.style.boxSizing = 'border-box';
+
+            taskCard.innerHTML = `
+                <div style="flex: 2; min-width: 0;">
+                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
+                    <div style="margin-top: 8px;">
+                        <div style="background-color: #2f3542; height: 5px; border-radius: 3px;">
+                            <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
+                        </div>
+                        <div style="font-size: 10px; color: #aaa; margin-top: 3px;">${clampedProgress}/${task.target_value}</div>
+                    </div>
+                </div>
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
+                    <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
+                </div>
+                <div style="flex: 0 0 100px; text-align: right;">
+                    <button class="btn claim-task-btn" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОЛУЧИТЬ</button>
+                </div>
+            `;
+            tasksList.appendChild(taskCard);
+        });
+
+        document.querySelectorAll('.claim-task-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const taskId = btn.dataset.taskId;
+                const rewardType = btn.dataset.rewardType;
+                const rewardAmount = parseInt(btn.dataset.rewardAmount);
+
+                if (rewardType === 'exp') {
+                    claimDailyExp(taskId, rewardAmount);
+                } else {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                    });
+                    const data = await res.json();
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        alert(`Вы получили ${rewardAmount} монет!`);
+                        loadDailyTasks();
+                        refreshData();
+                    }
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error('Error loading daily tasks:', e);
+    }
+}
+
+
 function renderRating() {
     const content = document.getElementById('content');
     content.innerHTML = `

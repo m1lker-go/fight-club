@@ -24,6 +24,27 @@ app.use('/avatars', require('./routes/avatars'));
 app.use('/rank', require('./routes/rank'));
 app.use('/forge', require('./routes/forge-server')); // переименованный файл кузницы
 
+const { updatePlayerPower } = require('./utils/power');
+
+app.get('/admin/recalc-power', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const users = await client.query('SELECT id FROM users');
+        for (const user of users.rows) {
+            const classes = await client.query('SELECT class FROM user_classes WHERE user_id = $1', [user.id]);
+            for (const cls of classes.rows) {
+                await updatePlayerPower(client, user.id, cls.class);
+            }
+        }
+        res.send('Сила пересчитана для всех пользователей');
+    } catch (e) {
+        console.error(e);
+        res.status(500).send('Ошибка');
+    } finally {
+        client.release();
+    }
+});
+
 // Webhook для Telegram (обработка команд)
 app.post('/webhook', async (req, res) => {
     const { message } = req.body;

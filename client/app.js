@@ -17,6 +17,8 @@ let profileTab = 'bonuses';
 // Для вкладок в торговле
 let tradeTab = 'shop';
 
+let ratingTab = 'rating'; // 'rating' или 'power'
+
 // ===== УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ =====
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');

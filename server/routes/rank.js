@@ -44,11 +44,11 @@ router.get('/rating', async (req, res) => {
         await checkSeasonReset();
 
         const result = await pool.query(`
-            SELECT 
-                u.username,
-                u.season_rating as rating,
-                u.current_class as class
-            FROM users u
+           SELECT 
+    u.username,
+    u.rating as rating,
+    u.current_class as class
+FROM users u
             WHERE (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
             ORDER BY u.season_rating DESC
             LIMIT 100

@@ -22,7 +22,6 @@ function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
     if (splash) {
         splash.classList.add('hidden');
-        // Полностью удаляем из DOM после анимации (необязательно)
         setTimeout(() => {
             splash.style.display = 'none';
         }, 500);
@@ -42,7 +41,6 @@ function showErrorSplash() {
         `;
     }
 }
-
 
 // Словарь для перевода подклассов
 const roleDescriptions = {
@@ -188,7 +186,7 @@ const rarityTranslations = {
     'legendary': 'Легендарное'
 };
 
-// Словарь для перевода ежедневных заданий (английские -> русские)
+// Словарь для перевода ежедневных заданий
 const dailyTaskTranslations = {
     'Warrior Winner': {
         name: 'Воин',
@@ -224,7 +222,7 @@ const dailyTaskTranslations = {
     }
 };
 
-// Словарь для перевода названий скинов (английские из БД -> русские)
+// Словарь для перевода названий скинов
 const skinNameTranslations = {
     'skin1': 'Бедолага',
     'skin3': 'Зоркий глаз',
@@ -240,14 +238,20 @@ function translateSkinName(englishName) {
     return skinNameTranslations[englishName] || englishName;
 }
 
-// Инициализация
+// Инициализация с таймаутом
 async function init() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд
+
     try {
         const response = await fetch('/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: tg.initData })
+            body: JSON.stringify({ initData: tg.initData }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         const data = await response.json();
         if (data.user) {
             userData = data.user;
@@ -268,41 +272,17 @@ async function init() {
             hideSplashScreen();
         } else {
             alert('Ошибка авторизации');
-            showErrorSplash(); // показываем экран с ошибкой
+            showErrorSplash();
         }
     } catch (e) {
+        clearTimeout(timeoutId);
         console.error('Init error:', e);
-        alert('Ошибка соединения с сервером');
-        showErrorSplash(); // показываем экран с ошибкой
-    }
-}
-    try {
-        const response = await fetch('/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: tg.initData })
-        });
-        const data = await response.json();
-        if (data.user) {
-            userData = data.user;
-            userClasses = data.classes || [];
-            inventory = data.inventory || [];
-            BOT_USERNAME = data.bot_username || '';
-
-            await loadAvatars();
-            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-
-            updateTopBar();
-            showScreen('main');
-            checkAdvent();
-
-            fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
+        if (e.name === 'AbortError') {
+            alert('Сервер не отвечает. Попробуйте позже.');
         } else {
-            alert('Ошибка авторизации');
+            alert('Ошибка соединения с сервером');
         }
-    } catch (e) {
-        console.error('Init error:', e);
-        alert('Ошибка соединения с сервером');
+        showErrorSplash();
     }
 }
 
@@ -323,7 +303,7 @@ async function checkAdvent() {
     }
 }
 
-// Функция для определения награды по дню (копия с сервера)
+// Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
     if (day === 7) return { type: 'item', rarity: 'common' };
@@ -409,7 +389,6 @@ function showScreen(screen) {
     }
 }
 
-// Функция-заглушка для кузницы
 function renderForgeFallback() {
     const content = document.getElementById('content');
     content.innerHTML = '<p style="text-align:center; color:#aaa;">Кузница временно недоступна</p>';
@@ -435,7 +414,6 @@ function getAvatarFilenameById(id) {
 }
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-
 function getCurrentClassData() {
     if (!userData || !userData.current_class) {
         return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
@@ -555,7 +533,6 @@ function calculatePower(className, finalStats) {
     return Math.round(power);
 }
 
-// Вспомогательная функция для получения русского названия класса
 function getClassNameRu(cls) {
     if (cls === 'warrior') return 'Воин';
     if (cls === 'assassin') return 'Ассасин';
@@ -592,12 +569,10 @@ function showRoleInfoModal(className) {
     modalBody.innerHTML = html;
 
     modal.style.display = 'block';
-
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = function() {
         modal.style.display = 'none';
     };
-
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = 'none';
@@ -800,7 +775,6 @@ function showEquipCompareModal(oldItem, newItem) {
 }
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
-
 function renderMain() {
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
@@ -816,10 +790,9 @@ function renderMain() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: stretch; padding: 20px;">
-            <!-- Левая колонка (пустая) -->
+            <!-- Левая колонка -->
             <div style="flex: 1;"></div>
-
-            <!-- Центральная колонка с аватаром -->
+            <!-- Центр с аватаром -->
             <div style="flex: 0 0 auto; text-align: center;">
                 <div class="hero-avatar" id="avatarClick" style="position: relative; width: 120px; height: 180px; cursor: pointer; margin: 0 auto;">
                     <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
@@ -827,8 +800,7 @@ function renderMain() {
                 </div>
                 <h2 style="margin-top: 10px;">${userData.username || 'Игрок'}</h2>
             </div>
-
-            <!-- Правая колонка с круглыми кнопками (уменьшенные) -->
+            <!-- Правая колонка с круглыми кнопками -->
             <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; align-items: center;">
                 <div style="display: flex; flex-direction: column; align-items: center;">
                     <div class="round-button" data-screen="equip" style="width: 50px; height: 50px;">
@@ -851,7 +823,7 @@ function renderMain() {
             </div>
         </div>
 
-        <!-- Информация об уровне и опыте -->
+        <!-- Информация об уровне -->
         <div style="margin: 20px 20px 0 20px;">
             <div style="display: flex; justify-content: space-between; font-size: 14px;">
                 <span>Уровень ${level}</span>
@@ -874,9 +846,7 @@ function renderMain() {
             </div>
             <div style="display: flex; align-items: center;">
                 <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
-                <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
-                    <!-- заполняется динамически -->
-                </select>
+                <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;"></select>
                 <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
             </div>
         </div>
@@ -886,7 +856,6 @@ function renderMain() {
     `;
 
     const subclassSelect = document.getElementById('subclassSelect');
-
     function updateSubclasses(className) {
         const subclasses = {
             warrior: ['guardian', 'berserker', 'knight'],
@@ -900,7 +869,6 @@ function renderMain() {
             return `<option value="${sc}" ${selected}>${displayName}</option>`;
         }).join('');
     }
-
     updateSubclasses(currentClass);
 
     document.querySelectorAll('.class-btn').forEach(btn => {
@@ -1086,7 +1054,6 @@ function renderEquip() {
         html += `</div></div></div>`;
         document.getElementById('content').innerHTML = html;
 
-        // Обработчики кнопок классов
         document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const newClass = e.target.dataset.class;
@@ -1095,7 +1062,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики слотов (снятие)
         document.querySelectorAll('.equip-slot').forEach(slot => {
             slot.addEventListener('click', async (e) => {
                 const itemId = slot.dataset.itemId;
@@ -1120,7 +1086,6 @@ function renderEquip() {
             });
         });
 
-        // Обработчики предметов в рюкзаке
         document.querySelectorAll('.inventory-item').forEach(itemDiv => {
             itemDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('action-btn')) return;
@@ -1255,13 +1220,12 @@ function renderEquip() {
                 }
             });
         });
-    } // закрытие функции renderInventoryForClass
+    }
 
     renderInventoryForClass(selectedClass);
-} // закрытие renderEquip
+}
 
 // ==================== ТОРГОВЛЯ ====================
-
 function renderTrade() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -1366,10 +1330,7 @@ function renderShop(target = null) {
 
     async function updateCommonChestPrice() {
         try {
-            console.log('userData.tg_id в updateCommonChestPrice:', userData.tg_id);
             const tgId = Number(userData.tg_id);
-            console.log('Проверка бесплатного сундука для tg_id:', tgId);
-
             const res = await fetch(`/player/freechest?tg_id=${tgId}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
@@ -1456,9 +1417,6 @@ async function renderMarket(target = null) {
     `;
 
     const statSelect = container.querySelector('#statFilterSelect');
-    const classSelect = container.querySelector('#classFilter');
-    const raritySelect = container.querySelector('#rarityFilter');
-
     container.querySelector('#applyFilters').addEventListener('click', () => {
         loadMarketItems(statSelect.value, container);
     });
@@ -1622,10 +1580,9 @@ async function loadMarketItems(statFilter = 'any', container) {
     });
 }
 
-// ==================== НОВАЯ ФУНКЦИЯ ДЛЯ АДВЕНТА В КОНТЕЙНЕРЕ ====================
+// ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
 function renderAdventCalendarInContainer(data, container) {
     const { currentDay, daysInMonth, mask } = data;
-
     let firstUnclaimed = null;
     for (let d = 1; d <= currentDay; d++) {
         if (!(mask & (1 << (d-1)))) {
@@ -1635,7 +1592,6 @@ function renderAdventCalendarInContainer(data, container) {
     }
 
     let html = '<div class="advent-grid">';
-
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
         const available = (day === firstUnclaimed);
@@ -1665,7 +1621,6 @@ function renderAdventCalendarInContainer(data, container) {
         </div>`;
     }
     html += '</div>';
-
     container.innerHTML = html;
 
     container.querySelectorAll('.advent-day.available').forEach(div => {
@@ -1721,12 +1676,10 @@ function renderReferral() {
     return referralDiv;
 }
 
-// ==================== ЗАДАНИЯ ====================
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="tasks-container">
-            <!-- Карточка адвент-календаря -->
             <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 12px; padding: 12px; box-sizing: border-box;">
                 <div style="flex: 2; min-width: 0;">
                     <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
@@ -1741,10 +1694,7 @@ function renderTasks() {
                     <button class="btn" id="showAdventBtn" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОСМОТРЕТЬ</button>
                 </div>
             </div>
-
-            <!-- Реферальная карточка -->
             <div id="referralPlaceholder"></div>
-
             <h3 style="text-align:center; margin:10px 0; font-size: 16px;">Ежедневные задания</h3>
             <div id="tasksList"></div>
         </div>
@@ -1775,11 +1725,8 @@ function renderRating() {
 
 async function loadDailyTasks() {
     try {
-        console.log('Загружаю задания для tg_id:', userData.tg_id);
         const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const tasksData = await res.json();
         if (!Array.isArray(tasksData)) {
             console.error('Ответ не является массивом:', tasksData);
@@ -1868,16 +1815,13 @@ function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="forge-container">
-            <!-- Баннер кузницы -->
             <div class="forge-banner">
                 <img src="/assets/banner_forge.png" alt="Кузница" style="width: 100%; height: auto; display: block;">
             </div>
-            <!-- Кнопки-переключатели -->
             <div style="display: flex; gap: 10px; margin: 20px 0;">
                 <button class="btn forge-tab active" data-forge-tab="forge">Ковать</button>
                 <button class="btn forge-tab" data-forge-tab="smelt">Расплавить</button>
             </div>
-            <!-- Контент (пока пустой) -->
             <div id="forgeContent"></div>
         </div>
     `;
@@ -1890,8 +1834,7 @@ function renderForge() {
     });
 }
 
-// ==================== ПРОФИЛЬ И ВКЛАДКИ ====================
-
+// ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const content = document.getElementById('content');
 
@@ -1949,13 +1892,7 @@ function renderProfileBonuses(container) {
         </div>
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
-            <tr>
-                <th style="text-align:left;">Параметр</th>
-                <th style="text-align:center;">База</th>
-                <th style="text-align:center;">+Снаряжение</th>
-                <th style="text-align:center;">+Роль</th>
-                <th style="text-align:center;">Итого</th>
-            </tr>
+            <tr><th style="text-align:left;">Параметр</th><th style="text-align:center;">База</th><th style="text-align:center;">+Снаряжение</th><th style="text-align:center;">+Роль</th><th style="text-align:center;">Итого</th></tr>
             ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.role.hp, stats.final.hp)}
             ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.role.atk, stats.final.atk)}
             ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.role.def + '%', stats.final.def + '%')}
@@ -2084,9 +2021,7 @@ function renderStatRow(label, baseValue, gearValue, roleValue, finalValue) {
 }
 
 // ==================== СКИНЫ ====================
-
 function renderSkins(container) {
-    console.log('Fetching avatars...');
     Promise.all([
         fetch('/avatars').then(res => {
             if (!res.ok) throw new Error('Failed to fetch avatars');
@@ -2098,8 +2033,6 @@ function renderSkins(container) {
         })
     ])
     .then(([allAvatars, ownedIds]) => {
-        console.log('All avatars:', allAvatars);
-        console.log('Owned ids:', ownedIds);
         const activeAvatarId = userData.avatar_id || 1;
         const ownedSet = new Set(ownedIds);
         ownedSet.add(1);
@@ -2254,7 +2187,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         });
 }
 
-// ==================== АДВЕНТ-КАЛЕНДАРЬ ====================
+// ==================== АДВЕНТ-КАЛЕНДАРЬ (функции) ====================
 function showAdventCalendar() {
     fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
         .then(res => res.json())
@@ -2280,7 +2213,6 @@ function renderAdventCalendar(data) {
     }
 
     let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
-
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
         const available = (day === firstUnclaimed);
@@ -2385,7 +2317,6 @@ function showClassChoiceModal(day, expAmount) {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-// ==================== ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ОПЫТА ИЗ ЕЖЕДНЕВНЫХ ЗАДАНИЙ ====================
 function claimDailyExp(taskId, expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -2434,7 +2365,6 @@ function claimDailyExp(taskId, expAmount) {
 }
 
 // ==================== БОЙ ====================
-
 async function startBattle() {
     try {
         const res = await fetch('/battle/start', {
@@ -2521,13 +2451,7 @@ function showBattleScreen(battleData) {
     `;
 
     const style = document.createElement('style');
-    style.innerHTML = `
-        .animation-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-    `;
+    style.innerHTML = `.animation-container img { width: 100%; height: 100%; object-fit: contain; }`;
     document.head.appendChild(style);
 
     let turnIndex = 0;
@@ -2676,7 +2600,6 @@ function showBattleResult(battleData, timeOut = false) {
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
 
-    console.log('Отправка обновления боя');
     fetch('/tasks/daily/update/battle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2685,37 +2608,16 @@ function showBattleResult(battleData, timeOut = false) {
             class_played: userData.current_class,
             is_victory: isVictory
         })
-    })
-    .then(res => {
-        console.log('Статус /update/battle:', res.status);
-        return res.text().then(text => {
-            console.log('Ответ /update/battle:', text);
-            try { return JSON.parse(text); } catch { return text; }
-        });
-    })
-    .catch(err => console.error('Ошибка /update/battle:', err));
+    }).catch(err => console.error('Ошибка /update/battle:', err));
 
-    console.log('Отправка обновления опыта');
     fetch('/tasks/daily/update/exp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
-    })
-    .then(res => {
-        console.log('Статус /update/exp:', res.status);
-        return res.text().then(text => {
-            console.log('Ответ /update/exp:', text);
-            try { return JSON.parse(text); } catch { return text; }
-        });
-    })
-    .catch(err => console.error('Ошибка /update/exp:', err));
+    }).catch(err => console.error('Ошибка /update/exp:', err));
 
-    let playerStats = {
-        hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
-    };
-    let enemyStats = {
-        hits: 0, crits: 0, dodges: 0, totalDamage: 0, heal: 0, reflect: 0
-    };
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
     if (battleData.result.turns && Array.isArray(battleData.result.turns)) {
         battleData.result.turns.forEach(turn => {
@@ -2860,7 +2762,7 @@ function showBattleResult(battleData, timeOut = false) {
     }
 }
 
-// Инициализация меню
+// Инициализация меню и запуск
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         showScreen(item.dataset.screen);

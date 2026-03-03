@@ -61,13 +61,12 @@ router.get('/rating', async (req, res) => {
 });
 
 // Топ по силе (максимальная сила среди классов игрока)
-// ВНИМАНИЕ: здесь используется заглушка (уровень × 10) – для реальной силы нужно доработать
 router.get('/power', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
                 u.username,
-                (SELECT MAX(uc.level * 10) FROM user_classes uc WHERE uc.user_id = u.id) as power,
+                (SELECT power FROM user_classes uc WHERE uc.user_id = u.id ORDER BY power DESC LIMIT 1) as power,
                 u.current_class as class
             FROM users u
             WHERE (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0

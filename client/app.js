@@ -1318,7 +1318,7 @@ function renderShop(target = null) {
                     <div class="chest-desc">25% обычный, 65% необычный, 10% редкий</div>
                 </div>
                 <button class="chest-btn" data-chest="uncommon">
-                    <span class="chest-price">200</span>
+                    <span class="chest-price">250</span>
                     <i class="fas fa-coins" style="color: white;"></i>
                 </button>
             </div>
@@ -1379,7 +1379,7 @@ function renderShop(target = null) {
                 priceSpan.innerText = 'FREE';
                 coinIcon.style.display = 'none';
             } else {
-                priceSpan.innerText = '50';
+                priceSpan.innerText = '100';
                 coinIcon.style.display = 'inline-block';
             }
         } catch (e) {

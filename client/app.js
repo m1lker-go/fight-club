@@ -241,10 +241,10 @@ function translateSkinName(englishName) {
 // Инициализация с таймаутом
 async function init() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 секунд
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 секунд
 
     try {
-        const response = await fetch('/auth/login', {
+        const response = await fetch('https://fight-club-api-4och.onrender.com/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData: tg.initData }),
@@ -266,7 +266,7 @@ async function init() {
             showScreen('main');
             checkAdvent();
 
-            fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
+            fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
 
             // Скрываем заставку после успешной загрузки
             hideSplashScreen();
@@ -289,7 +289,7 @@ async function init() {
 // Функция адвента
 async function checkAdvent() {
     try {
-        const res = await fetch(`/tasks/advent?tg_id=${userData.tg_id}`);
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`);
         const data = await res.json();
         const { currentDay, mask } = data;
         for (let day = 1; day <= currentDay; day++) {
@@ -330,7 +330,7 @@ function getAdventReward(day, daysInMonth) {
 async function refreshData() {
     if (!userData || !userData.tg_id) return;
     try {
-        const response = await fetch('/auth/refresh', {
+        const response = await fetch('https://fight-club-api-4och.onrender.com/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
@@ -397,7 +397,7 @@ function renderForgeFallback() {
 async function loadAvatars() {
     if (avatarsList) return avatarsList;
     try {
-        const res = await fetch('/avatars');
+        const res = await fetch('https://fight-club-api-4och.onrender.com/avatars');
         if (!res.ok) throw new Error('Failed to fetch avatars');
         avatarsList = await res.json();
         return avatarsList;
@@ -748,7 +748,7 @@ function showEquipCompareModal(oldItem, newItem) {
     if (newBtn) {
         newBtn.addEventListener('click', async () => {
             const currentClass = document.querySelector('.class-btn.active').dataset.class;
-            const res = await fetch('/inventory/equip', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -875,7 +875,7 @@ function renderMain() {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            const res = await fetch('/player/class', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
@@ -888,7 +888,7 @@ function renderMain() {
                     mage: 'pyromancer'
                 }[newClass];
                 userData.subclass = firstSubclass;
-                await fetch('/player/subclass', {
+                await fetch('https://fight-club-api-4och.onrender.com/player/subclass', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
@@ -900,7 +900,7 @@ function renderMain() {
 
     subclassSelect.addEventListener('change', async (e) => {
         const newSubclass = e.target.value;
-        const res = await fetch('/player/subclass', {
+        const res = await fetch('https://fight-club-api-4och.onrender.com/player/subclass', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id, subclass: newSubclass })
@@ -1068,7 +1068,7 @@ function renderEquip() {
                 if (!itemId) return;
                 if (confirm('Снять этот предмет?')) {
                     try {
-                        const res = await fetch('/inventory/unequip', {
+                        const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -1125,7 +1125,7 @@ function renderEquip() {
                     if (forSale) {
                         actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
-                            const res = await fetch('/inventory/unsell', {
+                            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -1143,7 +1143,7 @@ function renderEquip() {
                     } else if (inForge) {
                         actionsDiv.querySelector('.remove-forge-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
-                            const res = await fetch('/forge/remove', {
+                            const res = await fetch('https://fight-club-api-4och.onrender.com/forge/remove', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -1168,7 +1168,7 @@ function renderEquip() {
                             if (equippedInSlot) {
                                 showEquipCompareModal(equippedInSlot, item);
                             } else {
-                                const res = await fetch('/inventory/equip', {
+                                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
@@ -1198,7 +1198,7 @@ function renderEquip() {
                             }
                             const price = prompt('Введите цену продажи в монетах:');
                             if (price && !isNaN(price) && parseInt(price) > 0) {
-                                const res = await fetch('/inventory/sell', {
+                                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ 
@@ -1331,7 +1331,7 @@ function renderShop(target = null) {
     async function updateCommonChestPrice() {
         try {
             const tgId = Number(userData.tg_id);
-            const res = await fetch(`/player/freechest?tg_id=${tgId}`);
+            const res = await fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${tgId}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             const coinIcon = container.querySelector('[data-chest="common"] i');
@@ -1353,7 +1353,7 @@ function renderShop(target = null) {
     container.querySelectorAll('.chest-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const chest = btn.dataset.chest;
-            const res = await fetch('/shop/buychest', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/shop/buychest', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, chestType: chest })
@@ -1364,7 +1364,7 @@ function renderShop(target = null) {
                 await refreshData();
                 if (chest === 'common') updateCommonChestPrice();
 
-                fetch('/tasks/daily/update/chest', {
+                fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/chest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
@@ -1431,7 +1431,7 @@ async function loadMarketItems(statFilter = 'any', container) {
     if (statFilter !== 'any') {
         params.append('stat', statFilter);
     }
-    const res = await fetch('/market?' + params);
+    const res = await fetch('https://fight-club-api-4och.onrender.com/market?' + params);
     const items = await res.json();
 
     const marketItemsDiv = container.querySelector('#marketItems');
@@ -1517,7 +1517,7 @@ async function loadMarketItems(statFilter = 'any', container) {
             e.stopPropagation();
             const itemId = btn.dataset.itemId;
             if (!confirm('Подтвердите покупку')) return;
-            const res = await fetch('/market/buy', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/market/buy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -1541,7 +1541,7 @@ async function loadMarketItems(statFilter = 'any', container) {
             const currentPrice = itemDiv.querySelector('.item-price').innerText.split(' ')[0];
             const newPrice = prompt('Введите новую цену в монетах:', currentPrice);
             if (!newPrice || isNaN(newPrice) || parseInt(newPrice) <= 0) return;
-            const res = await fetch('/market/update-price', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: parseInt(newPrice) })
@@ -1563,7 +1563,7 @@ async function loadMarketItems(statFilter = 'any', container) {
             const itemDiv = btn.closest('.market-item');
             const itemId = itemDiv.dataset.itemId;
             if (!confirm('Снять предмет с продажи?')) return;
-            const res = await fetch('/market/remove', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -1706,7 +1706,7 @@ function renderTasks() {
     }
 
     document.getElementById('showAdventBtn').addEventListener('click', () => {
-        fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
+        fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
             .then(res => res.json())
             .then(data => showAdventCalendar(data))
             .catch(err => {
@@ -1725,7 +1725,7 @@ function renderRating() {
 
 async function loadDailyTasks() {
     try {
-        const res = await fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const tasksData = await res.json();
         if (!Array.isArray(tasksData)) {
@@ -1788,7 +1788,7 @@ async function loadDailyTasks() {
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {
-                    const res = await fetch('/tasks/daily/claim', {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
@@ -1838,7 +1838,7 @@ function renderForge() {
 function renderProfile() {
     const content = document.getElementById('content');
 
-    fetch('/tasks/daily/update/profile', {
+    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id })
@@ -1910,7 +1910,7 @@ function renderProfileBonuses(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            const res = await fetch('/player/class', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
@@ -1957,7 +1957,7 @@ function renderSkills(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            await fetch('/player/class', {
+            await fetch('https://fight-club-api-4och.onrender.com/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
@@ -1970,7 +1970,7 @@ function renderSkills(container) {
     container.querySelectorAll('.skill-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = e.target.dataset.stat;
-            const res = await fetch('/player/upgrade', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/player/upgrade', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2023,11 +2023,11 @@ function renderStatRow(label, baseValue, gearValue, roleValue, finalValue) {
 // ==================== СКИНЫ ====================
 function renderSkins(container) {
     Promise.all([
-        fetch('/avatars').then(res => {
+        fetch('https://fight-club-api-4och.onrender.com/avatars').then(res => {
             if (!res.ok) throw new Error('Failed to fetch avatars');
             return res.json();
         }),
-        fetch(`/avatars/user/${userData.tg_id}`).then(res => {
+        fetch(`https://fight-club-api-4och.onrender.com/avatars/user/${userData.tg_id}`).then(res => {
             if (!res.ok) throw new Error('Failed to fetch owned avatars');
             return res.json();
         })
@@ -2093,7 +2093,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    fetch('/avatars')
+    fetch('https://fight-club-api-4och.onrender.com/avatars')
         .then(res => res.json())
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
@@ -2137,7 +2137,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (!owned && !isActive) {
                 document.getElementById('buySkin').addEventListener('click', async () => {
-                    const res = await fetch('/avatars/buy', {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/avatars/buy', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
@@ -2155,7 +2155,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (owned && !isActive) {
                 document.getElementById('activateSkin').addEventListener('click', async () => {
-                    const res = await fetch('/player/avatar', {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/player/avatar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
@@ -2189,7 +2189,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
 // ==================== АДВЕНТ-КАЛЕНДАРЬ (функции) ====================
 function showAdventCalendar() {
-    fetch(`/tasks/advent?tg_id=${userData.tg_id}`)
+    fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
         .then(res => res.json())
         .then(data => {
             renderAdventCalendar(data);
@@ -2257,7 +2257,7 @@ function claimAdventDay(day, daysInMonth) {
     if (reward.type === 'exp') {
         showClassChoiceModal(day, reward.amount);
     } else {
-        fetch('/tasks/advent/claim', {
+        fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id, day })
@@ -2298,7 +2298,7 @@ function showClassChoiceModal(day, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            const res = await fetch('/tasks/advent/claim', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, day, classChoice })
@@ -2340,7 +2340,7 @@ function claimDailyExp(taskId, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            const res = await fetch('/tasks/daily/claim', {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -2367,7 +2367,7 @@ function claimDailyExp(taskId, expAmount) {
 // ==================== БОЙ ====================
 async function startBattle() {
     try {
-        const res = await fetch('/battle/start', {
+        const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
@@ -2600,7 +2600,7 @@ function showBattleResult(battleData, timeOut = false) {
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
 
-    fetch('/tasks/daily/update/battle', {
+    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2610,7 +2610,7 @@ function showBattleResult(battleData, timeOut = false) {
         })
     }).catch(err => console.error('Ошибка /update/battle:', err));
 
-    fetch('/tasks/daily/update/exp', {
+    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })

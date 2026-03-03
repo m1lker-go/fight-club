@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { updatePlayerPower } = require('../utils/power'); // добавлен импорт
 
 // Надеть предмет
 router.post('/equip', async (req, res) => {
     console.log('=== НАДЕВАНИЕ ПРЕДМЕТА ===');
     console.log('Request body:', req.body);
     
-    const { tg_id, item_id, target_class } = req.body; // target_class из запроса
+    const { tg_id, item_id, target_class } = req.body;
     if (!target_class) {
         return res.status(400).json({ error: 'target_class is required' });
     }
@@ -16,36 +17,31 @@ router.post('/equip', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Получаем пользователя
         const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
-        // Получаем предмет
         const item = await client.query('SELECT type, owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
         if (item.rows.length === 0) throw new Error('Item not found');
         const type = item.rows[0].type;
         const ownerClass = item.rows[0].owner_class;
 
-        // Проверяем, что предмет подходит целевому классу
         if (ownerClass !== target_class) {
             throw new Error(`Item belongs to class ${ownerClass}, not ${target_class}`);
         }
 
-        // Снимаем все предметы того же типа, принадлежащие целевому классу
-        const unequipRes = await client.query(
-            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3 RETURNING id',
+        await client.query(
+            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3',
             [userId, type, target_class]
         );
-        console.log('Снято предметов:', unequipRes.rowCount);
 
-        // Одеваем выбранный
-        const equipRes = await client.query(
-            'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2 RETURNING id',
+        await client.query(
+            'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (equipRes.rowCount === 0) throw new Error('Failed to equip item');
-        console.log('Надет предмет с ID:', item_id);
+
+        // Пересчитываем силу для целевого класса
+        await updatePlayerPower(client, userId, target_class);
 
         await client.query('COMMIT');
         console.log('=== ОПЕРАЦИЯ УСПЕШНА ===');
@@ -65,18 +61,31 @@ router.post('/unequip', async (req, res) => {
     const { tg_id, item_id } = req.body;
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+
         const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
+
+        // Получаем класс предмета перед снятием
+        const itemRes = await client.query('SELECT owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
+        if (itemRes.rows.length === 0) throw new Error('Item not found');
+        const ownerClass = itemRes.rows[0].owner_class;
 
         const result = await client.query(
             'UPDATE inventory SET equipped = false WHERE id = $1 AND user_id = $2 RETURNING id',
             [item_id, userId]
         );
         if (result.rowCount === 0) throw new Error('Item not found or not yours');
+
+        // Пересчитываем силу для класса этого предмета
+        await updatePlayerPower(client, userId, ownerClass);
+
+        await client.query('COMMIT');
         console.log('Unequip success for item', item_id);
         res.json({ success: true });
     } catch (e) {
+        await client.query('ROLLBACK');
         console.error('Unequip error:', e);
         res.status(400).json({ error: e.message });
     } finally {

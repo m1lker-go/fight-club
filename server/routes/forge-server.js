@@ -930,27 +930,27 @@ router.post('/smelt', async (req, res) => {
 
         await client.query('DELETE FROM inventory WHERE id = ANY($1::int[])', [item_ids]);
 
-        for (const item of items.rows) {
-            switch (item.rarity) {
-                case 'common':
-                    coinsGain += Math.floor(Math.random() * 16) + 35; // 35-50
-                    break;
-                case 'uncommon':
-                    coinsGain += Math.floor(Math.random() * 51) + 150; // 150-200
-                    break;
-                case 'rare':
-                    coinsGain += Math.floor(Math.random() * 201) + 600; // 600-800
-                    break;
-                case 'epic':
-                    coinsGain += Math.floor(Math.random() * 501) + 1500; // 1500-2000
-                    if (Math.random() < 0.5) diamondsGain += 1;
-                    break;
-                case 'legendary':
-                    coinsGain += Math.floor(Math.random() * 1301) + 2500; // 2500-3800
-                    diamondsGain += 2 + Math.floor(Math.random() * 4); // 2-5
-                    break;
-            }
-        }
+       for (const item of items.rows) {
+    switch (item.rarity) {
+        case 'common':
+            coinsGain += Math.floor(Math.random() * 21) + 65; // 65–85
+            break;
+        case 'uncommon':
+            coinsGain += Math.floor(Math.random() * 41) + 120; // 120–160
+            break;
+        case 'rare':
+            coinsGain += Math.floor(Math.random() * 201) + 400; // 400–600
+            break;
+        case 'epic':
+            coinsGain += Math.floor(Math.random() * 501) + 1000; // 1000–1500
+            if (Math.random() < 0.5) diamondsGain += 1;
+            break;
+        case 'legendary':
+            coinsGain += Math.floor(Math.random() * 1001) + 2000; // 2000–3000
+            diamondsGain += 2 + Math.floor(Math.random() * 4); // 2–5
+            break;
+    }
+}
 
         await client.query('UPDATE users SET coins = coins + $1, diamonds = diamonds + $2 WHERE id = $3',
             [coinsGain, diamondsGain, userId]);

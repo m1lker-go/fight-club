@@ -799,10 +799,10 @@ router.post('/buychest', async (req, res) => {
                 isFree = true;
                 price = 0;
             } else {
-                price = 50;
+                price = 100;
             }
         } else if (chestType === 'uncommon') {
-            price = 200;
+            price = 250;
         } else if (chestType === 'rare') {
             price = 800;
         } else if (chestType === 'epic') {

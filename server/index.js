@@ -21,6 +21,7 @@ app.use('/market', require('./routes/market'));
 app.use('/battle', require('./routes/battle'));
 app.use('/tasks', require('./routes/tasks'));
 app.use('/avatars', require('./routes/avatars'));
+app.use('/rank', require('./routes/rank'));
 app.use('/forge', require('./routes/forge-server')); // переименованный файл кузницы
 
 // Webhook для Telegram (обработка команд)

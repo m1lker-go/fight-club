@@ -17,6 +17,33 @@ let profileTab = 'bonuses';
 // Для вкладок в торговле
 let tradeTab = 'shop';
 
+// ===== УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ =====
+function hideSplashScreen() {
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+        splash.classList.add('hidden');
+        // Полностью удаляем из DOM после анимации (необязательно)
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 500);
+    }
+}
+
+function showErrorSplash() {
+    const splash = document.getElementById('splash-screen');
+    if (splash) {
+        splash.innerHTML = `
+            <div class="splash-content">
+                <h1 class="splash-title">Ошибка соединения</h1>
+                <p class="splash-subtitle">Не удалось подключиться к серверу.</p>
+                <p style="font-size:14px; margin-bottom:20px;">Попробуйте позже или нажмите "Повторить"</p>
+                <button class="btn" onclick="location.reload()" style="margin-top: 10px;">Повторить</button>
+            </div>
+        `;
+    }
+}
+
+
 // Словарь для перевода подклассов
 const roleDescriptions = {
     // Воин

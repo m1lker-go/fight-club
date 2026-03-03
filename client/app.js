@@ -263,6 +263,40 @@ async function init() {
             checkAdvent();
 
             fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
+
+            // Скрываем заставку после успешной загрузки
+            hideSplashScreen();
+        } else {
+            alert('Ошибка авторизации');
+            showErrorSplash(); // показываем экран с ошибкой
+        }
+    } catch (e) {
+        console.error('Init error:', e);
+        alert('Ошибка соединения с сервером');
+        showErrorSplash(); // показываем экран с ошибкой
+    }
+}
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: tg.initData })
+        });
+        const data = await response.json();
+        if (data.user) {
+            userData = data.user;
+            userClasses = data.classes || [];
+            inventory = data.inventory || [];
+            BOT_USERNAME = data.bot_username || '';
+
+            await loadAvatars();
+            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+
+            updateTopBar();
+            showScreen('main');
+            checkAdvent();
+
+            fetch(`/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
         } else {
             alert('Ошибка авторизации');
         }

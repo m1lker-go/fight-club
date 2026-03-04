@@ -58,17 +58,20 @@ router.get('/rating', async (req, res) => {
     }
 });
 
-// Топ по силе
+// Топ по силе (максимальная сила среди классов игрока)
 router.get('/power', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
                 u.username,
-                (SELECT power FROM user_classes uc WHERE uc.user_id = u.id ORDER BY power DESC LIMIT 1) as power,
-                u.current_class as class
+                uc.power as power,
+                uc.class as class
             FROM users u
-            WHERE u.username != 'test'
-            ORDER BY power DESC
+            JOIN user_classes uc ON u.id = uc.user_id
+            WHERE u.username != 'test' 
+              AND (SELECT COUNT(*) FROM battles WHERE player1_id = u.id OR player2_id = u.id) > 0
+              AND uc.power = (SELECT MAX(power) FROM user_classes WHERE user_id = u.id)
+            ORDER BY uc.power DESC
             LIMIT 100
         `);
         res.json(result.rows);

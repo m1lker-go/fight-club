@@ -2498,7 +2498,7 @@ function showBattleScreen(battleData) {
                 <div>VS</div>
                 <div class="enemy-card">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
-                        <img src="/assets/cat_heroweb.png" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
                     <div class="hp-bar">
@@ -2529,6 +2529,8 @@ function showBattleScreen(battleData) {
     let interval;
     let currentAnimationTimeout = null;
 
+    // ... остальная часть функции без изменений (hideAnimations, showAnimation, getAnimationForAction, playTurn и т.д.)
+}
     function hideAnimations() {
         if (currentAnimationTimeout) {
             clearTimeout(currentAnimationTimeout);

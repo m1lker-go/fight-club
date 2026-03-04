@@ -59,11 +59,10 @@ async function updatePlayerPower(client, userId, className) {
     });
 
     // Пассивные бонусы подкласса
-    const rolePassives = {
-        knight: { reflect: 20 },
-        assassin: { vamp: 20 },
-        blood_hunter: { vamp: 20 }
-    };
+const rolePassives = {
+    knight: { reflect: 20 },
+    blood_hunter: { vamp: 20 } 
+};
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;

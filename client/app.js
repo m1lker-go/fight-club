@@ -490,15 +490,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
         gearBonuses.reflect += item.reflect_bonus || 0;
     });
 
-    const rolePassives = {
-        knight: { reflect: 20 },
-        assassin: { vamp: 20 },
-        blood_hunter: { vamp: 20 }
-    };
-    const roleBonus = rolePassives[subclass] || {};
-    if (roleBonus.vamp) roleBonuses.vamp += roleBonus.vamp;
-    if (roleBonus.reflect) roleBonuses.reflect += roleBonus.reflect;
-
+    
     let final = {
         hp: baseStatsWithSkills.hp + gearBonuses.hp + roleBonuses.hp,
         atk: baseStatsWithSkills.atk + gearBonuses.atk + roleBonuses.atk,

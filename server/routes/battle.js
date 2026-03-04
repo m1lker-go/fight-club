@@ -679,8 +679,10 @@ async function rechargeEnergy(client, userId) {
     const last = new Date(user.rows[0].last_energy);
     const now = new Date();
     const diffMinutes = Math.floor((now - last) / (1000 * 60));
-    if (diffMinutes > 0) {
-        const newEnergy = Math.min(20, user.rows[0].energy + diffMinutes);
+    const intervals = Math.floor(diffMinutes / 15); // количество 15-минутных интервалов
+    if (intervals > 0) {
+        const newEnergy = Math.min(20, user.rows[0].energy + intervals);
+        // Обновляем время последнего восстановления на текущее
         await client.query(
             'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
             [newEnergy, now, userId]

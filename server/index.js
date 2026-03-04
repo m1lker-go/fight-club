@@ -78,6 +78,112 @@ app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
 });
 
+// Временный маршрут для обновления старых предметов
+app.get('/admin/update-items', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        // Новые фиксированные бонусы
+        const fixedBonuses = {
+            common: {
+                atk: 1, def: 1, hp: 2, spd: 1,
+                crit: 2, crit_dmg: 5, agi: 2, int: 2, vamp: 2, reflect: 2
+            },
+            uncommon: {
+                atk: 2, def: 2, hp: 4, spd: 2,
+                crit: 4, crit_dmg: 10, agi: 4, int: 4, vamp: 4, reflect: 4
+            },
+            rare: {
+                atk: 3, def: 3, hp: 6, spd: 3,
+                crit: 6, crit_dmg: 15, agi: 6, int: 6, vamp: 6, reflect: 6
+            },
+            epic: {
+                atk: 5, def: 5, hp: 10, spd: 4,
+                crit: 10, crit_dmg: 25, agi: 10, int: 10, vamp: 10, reflect: 10
+            },
+            legendary: {
+                atk: 10, def: 10, hp: 20, spd: 5,
+                crit: 15, crit_dmg: 40, agi: 15, int: 15, vamp: 15, reflect: 15
+            }
+        };
+
+        const fields = [
+            'atk_bonus', 'def_bonus', 'hp_bonus', 'spd_bonus',
+            'crit_bonus', 'crit_dmg_bonus', 'agi_bonus', 'int_bonus',
+            'vamp_bonus', 'reflect_bonus'
+        ];
+        const fieldToStat = {
+            atk_bonus: 'atk',
+            def_bonus: 'def',
+            hp_bonus: 'hp',
+            spd_bonus: 'spd',
+            crit_bonus: 'crit',
+            crit_dmg_bonus: 'crit_dmg',
+            agi_bonus: 'agi',
+            int_bonus: 'int',
+            vamp_bonus: 'vamp',
+            reflect_bonus: 'reflect'
+        };
+
+        // Обновляем таблицу items
+        const items = await client.query('SELECT * FROM items');
+        let itemsUpdated = 0;
+        for (const item of items.rows) {
+            const rarity = item.rarity;
+            if (!fixedBonuses[rarity]) continue;
+
+            // Находим ненулевые характеристики (до 2 штук)
+            const activeFields = fields.filter(f => item[f] > 0);
+            if (activeFields.length === 0) continue;
+
+            // Обнуляем все бонусы
+            const zeroQuery = `UPDATE items SET ${fields.map(f => `${f} = 0`).join(', ')} WHERE id = $1`;
+            await client.query(zeroQuery, [item.id]);
+
+            // Применяем новые бонусы для каждой активной характеристики
+            for (const field of activeFields) {
+                const stat = fieldToStat[field];
+                const bonus = fixedBonuses[rarity][stat];
+                await client.query(
+                    `UPDATE items SET ${field} = ${field} + $1 WHERE id = $2`,
+                    [bonus, item.id]
+                );
+            }
+            itemsUpdated++;
+        }
+
+        // Обновляем таблицу inventory аналогично
+        const invItems = await client.query('SELECT * FROM inventory');
+        let invUpdated = 0;
+        for (const inv of invItems.rows) {
+            const rarity = inv.rarity;
+            if (!fixedBonuses[rarity]) continue;
+
+            const activeFields = fields.filter(f => inv[f] > 0);
+            if (activeFields.length === 0) continue;
+
+            const zeroQuery = `UPDATE inventory SET ${fields.map(f => `${f} = 0`).join(', ')} WHERE id = $1`;
+            await client.query(zeroQuery, [inv.id]);
+
+            for (const field of activeFields) {
+                const stat = fieldToStat[field];
+                const bonus = fixedBonuses[rarity][stat];
+                await client.query(
+                    `UPDATE inventory SET ${field} = ${field} + $1 WHERE id = $2`,
+                    [bonus, inv.id]
+                );
+            }
+            invUpdated++;
+        }
+
+        res.send(`Обновлено предметов: ${itemsUpdated} в items, ${invUpdated} в inventory`);
+    } catch (e) {
+        console.error(e);
+        res.status(500).send('Ошибка: ' + e.message);
+    } finally {
+        client.release();
+    }
+});
+
 // Временный маршрут для пересчёта силы всех пользователей
 app.get('/admin/recalc-power', async (req, res) => {
     const client = await pool.connect();

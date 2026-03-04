@@ -17,7 +17,7 @@ const rolePassives = {
     berserker: { rage: true },
     knight: { reflect: 20 },
     // Ассасин
-    assassin: { critMultiplier: 2.5 },
+   assassin: { critMultiplier: 2.5 },
     venom_blade: { poison: true },
     blood_hunter: { vamp: 20 },
     // Маг

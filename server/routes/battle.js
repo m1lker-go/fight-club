@@ -446,7 +446,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (playerMana >= 100) {
                 const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
                 if (skill.damage > 0) enemyHp -= skill.damage;
-                if (skill.heal > 0) playerHp += skill.heal; // без ограничения
+                if (skill.heal > 0) playerHp += skill.heal;
                 if (skill.selfDamage > 0) playerHp -= skill.selfDamage;
                 actionLog = skill.log;
                 playerMana -= 100;
@@ -462,7 +462,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
                 if (attackResult.hit) {
                     enemyHp -= attackResult.damage;
-                    playerHp += attackResult.vampHeal; // без ограничения
+                    playerHp += attackResult.vampHeal;
                     playerHp -= attackResult.reflectDamage;
                     actionLog = attackResult.log;
                     if (attackResult.berserkerBonus > 0) {
@@ -666,7 +666,6 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-// Генерация бота (упрощённая)
 function generateBot(playerLevel) {
     const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
     const names = [
@@ -761,7 +760,6 @@ async function selectPvPOpponent(client, currentUserId, currentPosition, allPlay
     const candidates = [];
     for (let i = minPos; i <= maxPos; i++) {
         if (allPlayers[i].id !== currentUserId) {
-            // Проверяем, не сражались ли с этим игроком недавно
             const recent = await client.query(
                 `SELECT 1 FROM users WHERE id = $1 AND last_pvp_opponent_id = $2 
                  AND last_pvp_time > NOW() - INTERVAL '15 minutes'`,
@@ -851,6 +849,7 @@ router.post('/start', async (req, res) => {
                             opponentData = {
                                 id: opponentUserId,
                                 username: opponentUser.rows[0].username,
+                                avatar_id: opponentUser.rows[0].avatar_id, // ← добавляем аватар
                                 class: bestClass,
                                 subclass: subclass,
                                 level: opponentClassData.level,
@@ -870,6 +869,7 @@ router.post('/start', async (req, res) => {
 
         if (!opponentData) {
             opponentData = generateBot(classData.rows[0].level);
+            // у бота нет avatar_id – клиент использует заглушку
         }
 
         const battleResult = simulateBattle(
@@ -925,6 +925,7 @@ router.post('/start', async (req, res) => {
         res.json({
             opponent: {
                 username: opponentData.username,
+                avatar_id: opponentData.avatar_id, // передаём аватар
                 class: opponentData.class,
                 subclass: opponentData.subclass,
                 level: opponentData.level

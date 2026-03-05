@@ -3,11 +3,11 @@ const router = express.Router();
 const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 
-// Базовые характеристики для каждого класса (на 1 уровне)
+// Базовые характеристики для каждого класса (новые значения)
 const baseStats = {
-    warrior: { hp: 28, atk: 3, def: 4, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-    assassin: { hp: 20, atk: 5, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-    mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+    warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 18, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
 // Пассивные бонусы подклассов
@@ -148,10 +148,24 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
+    // Классовые особенности (постоянные бонусы)
+    if (classData.class === 'warrior') {
+        stats.hp += Math.floor(stats.def / 5) * 3;
+    }
+    if (classData.class === 'assassin') {
+        stats.spd += Math.floor(stats.agi / 5);
+    }
+    if (classData.class === 'mage') {
+        stats.atk += Math.floor(stats.int / 5) * 2;
+        stats.manaRegen += Math.floor(stats.int / 5) * 2; // бонус к регенерации маны
+    }
+
+    // Пассивные бонусы подклассов (добавляем к статам, чтобы они влияли на бой)
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
+    // Классовые бонусы (умножение)
     if (classData.class === 'warrior') {
         stats.def = Math.min(70, stats.def * 1.5);
     } else if (classData.class === 'assassin') {
@@ -194,6 +208,12 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     }
 
     let damage = attackerStats.atk;
+
+    // Бонус мага: +2 урона за каждые 5 интеллекта
+    if (attackerClass === 'mage') {
+        damage += Math.floor(attackerStats.int / 5) * 2;
+    }
+
     let berserkerBonus = 0;
     if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
         const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);
@@ -849,7 +869,7 @@ router.post('/start', async (req, res) => {
                             opponentData = {
                                 id: opponentUserId,
                                 username: opponentUser.rows[0].username,
-                                avatar_id: opponentUser.rows[0].avatar_id, // ← добавляем аватар
+                                avatar_id: opponentUser.rows[0].avatar_id,
                                 class: bestClass,
                                 subclass: subclass,
                                 level: opponentClassData.level,
@@ -869,7 +889,6 @@ router.post('/start', async (req, res) => {
 
         if (!opponentData) {
             opponentData = generateBot(classData.rows[0].level);
-            // у бота нет avatar_id – клиент использует заглушку
         }
 
         const battleResult = simulateBattle(
@@ -925,7 +944,7 @@ router.post('/start', async (req, res) => {
         res.json({
             opponent: {
                 username: opponentData.username,
-                avatar_id: opponentData.avatar_id, // передаём аватар
+                avatar_id: opponentData.avatar_id,
                 class: opponentData.class,
                 subclass: opponentData.subclass,
                 level: opponentData.level

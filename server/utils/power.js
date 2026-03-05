@@ -22,11 +22,11 @@ async function updatePlayerPower(client, userId, className) {
     );
     const inventory = invRes.rows;
 
-    // Базовая статистика (копия из клиента)
+    // Базовая статистика (новые значения)
     const baseStats = {
-        warrior: { hp: 28, atk: 3, def: 4, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-        assassin: { hp: 20, atk: 5, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-        mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+        warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+        assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+        mage: { hp: 18, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
     };
     const base = baseStats[className] || baseStats.warrior;
 
@@ -58,11 +58,34 @@ async function updatePlayerPower(client, userId, className) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-   
+    // Классовые особенности (добавляются к статам)
+    if (className === 'warrior') {
+        stats.hp += Math.floor(stats.def / 5) * 3;
+    }
+    if (className === 'assassin') {
+        stats.spd += Math.floor(stats.agi / 5);
+    }
+    if (className === 'mage') {
+        stats.atk += Math.floor(stats.int / 5) * 2;
+        // бонус к регенерации маны не влияет на силу, поэтому не добавляем
+    }
+
+    // Классовые бонусы (как в battle.js)
+    if (className === 'warrior') {
+        stats.def = Math.min(70, stats.def * 1.5);
+    } else if (className === 'assassin') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.crit = Math.min(100, stats.crit * 1.25);
+        stats.agi = Math.min(100, stats.agi * 1.1);
+    } else if (className === 'mage') {
+        stats.atk = Math.floor(stats.atk * 1.2);
+        stats.int = stats.int * 1.2;
+    }
+
     // Капы
-    stats.def = Math.min(100, stats.def);
-    stats.agi = Math.min(100, stats.agi);
+    stats.def = Math.min(70, stats.def);
     stats.crit = Math.min(100, stats.crit);
+    stats.agi = Math.min(100, stats.agi);
 
     // Веса характеристик (importance) – те же, что на клиенте
     const importance = {

@@ -785,20 +785,29 @@ router.post('/start', async (req, res) => {
                                 [opponentUserId, bestClass]
                             );
                             const opponentClassData = classDataRes.rows[0];
-                            const subclass = opponentUser.rows[0].subclass;
+
+                            // Случайный выбор подкласса для лучшего класса
+                            const subclassOptions = {
+                                warrior: ['guardian', 'berserker', 'knight'],
+                                assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+                                mage: ['pyromancer', 'cryomancer', 'illusionist']
+                            };
+                            const options = subclassOptions[bestClass] || subclassOptions.warrior;
+                            const randomSubclass = options[Math.floor(Math.random() * options.length)];
+
                             const invRes = await client.query(`
                                 SELECT i.*, it.* FROM inventory i
                                 JOIN items it ON i.item_id = it.id
                                 WHERE i.user_id = $1 AND i.equipped = true AND it.owner_class = $2
                             `, [opponentUserId, bestClass]);
                             const opponentInventory = invRes.rows;
-                            const opponentStats = calculateStats(opponentClassData, opponentInventory, subclass);
+                            const opponentStats = calculateStats(opponentClassData, opponentInventory, randomSubclass);
                             opponentData = {
                                 id: opponentUserId,
                                 username: opponentUser.rows[0].username,
                                 avatar_id: opponentUser.rows[0].avatar_id,
                                 class: bestClass,
-                                subclass: subclass,
+                                subclass: randomSubclass,
                                 level: opponentClassData.level,
                                 stats: opponentStats
                             };

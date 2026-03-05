@@ -2732,7 +2732,8 @@ async function showBattleResult(battleData, timeOut = false) {
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
 
-    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
+    try {
+    await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2740,13 +2741,23 @@ async function showBattleResult(battleData, timeOut = false) {
             class_played: userData.current_class,
             is_victory: isVictory
         })
-    }).catch(err => console.error('Ошибка /update/battle:', err));
+    });
+} catch (err) {
+    console.error('Ошибка /update/battle:', err);
+}
 
-    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
+try {
+    await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
-    }).catch(err => console.error('Ошибка /update/exp:', err));
+    });
+} catch (err) {
+    console.error('Ошибка /update/exp:', err);
+}
+
+// Обновляем список заданий после всех обновлений
+await loadDailyTasks();
 
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

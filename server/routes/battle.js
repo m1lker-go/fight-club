@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
+const { generateBot } = require('../utils/botGenerator'); // импортируем нового генератора ботов
 
 // Базовые характеристики для каждого класса (новые значения)
 const baseStats = {
@@ -686,81 +687,7 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-function generateBot(playerLevel) {
-    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
-    const names = [
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' }
-    ];
-    const template = names[Math.floor(Math.random() * names.length)];
-
-    const base = baseStats[template.class] || baseStats.warrior;
-    let stats = {
-        hp: base.hp,
-        atk: base.atk,
-        def: base.def,
-        agi: base.agi,
-        int: base.int,
-        spd: base.spd,
-        crit: base.crit,
-        critDmg: 1.5,
-        vamp: 0,
-        reflect: 0,
-        manaMax: 100,
-        manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
-    };
-
-    const totalSkillPoints = (level - 1) * 3;
-    const skillDist = new Array(10).fill(0);
-    for (let i = 0; i < totalSkillPoints; i++) {
-        skillDist[Math.floor(Math.random() * 10)]++;
-    }
-    stats.hp += skillDist[0] * 2;
-    stats.atk += skillDist[1];
-    stats.def += skillDist[2];
-    stats.agi += skillDist[3];
-    stats.int += skillDist[4];
-    stats.spd += skillDist[5];
-    stats.crit += skillDist[6];
-    stats.critDmg += skillDist[7] / 100;
-    stats.vamp += skillDist[8];
-    stats.reflect += skillDist[9];
-
-    const roleBonus = rolePassives[template.subclass] || {};
-    if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
-    if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
-
-    if (template.class === 'warrior') {
-        stats.def = Math.min(70, stats.def * 1.5);
-    } else if (template.class === 'assassin') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = Math.min(100, stats.crit * 1.25);
-        stats.agi = Math.min(100, stats.agi * 1.1);
-    } else if (template.class === 'mage') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.int = stats.int * 1.2;
-    }
-
-    stats.def = Math.min(70, stats.def);
-    stats.crit = Math.min(100, stats.crit);
-    stats.agi = Math.min(100, stats.agi);
-
-    return {
-        id: `bot_${Date.now()}_${Math.random()}`,
-        username: template.name,
-        class: template.class,
-        subclass: template.subclass,
-        level: level,
-        stats: stats
-    };
-}
+// Функция generateBot удалена – она вынесена в отдельный модуль
 
 // Вспомогательные функции для PvP-подбора
 async function getPlayerRatingPosition(client, userId) {
@@ -888,7 +815,7 @@ router.post('/start', async (req, res) => {
         }
 
         if (!opponentData) {
-            opponentData = generateBot(classData.rows[0].level);
+            opponentData = generateBot(classData.rows[0].level); // используется импортированная функция
         }
 
         const battleResult = simulateBattle(

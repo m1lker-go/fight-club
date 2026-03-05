@@ -98,9 +98,9 @@ const roleDescriptions = {
 
 // Базовые характеристики классов
 const baseStats = {
-    warrior: { hp: 28, atk: 3, def: 4, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-    assassin: { hp: 20, atk: 5, def: 1, agi: 5, int: 0, spd: 15, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-    mage: { hp: 18, atk: 2, def: 1, agi: 2, int: 5, spd: 12, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+    warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 18, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
 // Веса характеристик для расчёта силы
@@ -472,9 +472,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
     let gearBonuses = {
         hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
     };
-    let roleBonuses = {
-        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
-    };
 
     const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
     equippedItems.forEach(item => {
@@ -490,19 +487,39 @@ function calculateClassStats(className, classData, inventory, subclass) {
         gearBonuses.reflect += item.reflect_bonus || 0;
     });
 
-    
     let final = {
-        hp: baseStatsWithSkills.hp + gearBonuses.hp + roleBonuses.hp,
-        atk: baseStatsWithSkills.atk + gearBonuses.atk + roleBonuses.atk,
-        def: baseStatsWithSkills.def + gearBonuses.def + roleBonuses.def,
-        agi: baseStatsWithSkills.agi + gearBonuses.agi + roleBonuses.agi,
-        int: baseStatsWithSkills.int + gearBonuses.int + roleBonuses.int,
-        spd: baseStatsWithSkills.spd + gearBonuses.spd + roleBonuses.spd,
-        crit: baseStatsWithSkills.crit + gearBonuses.crit + roleBonuses.crit,
-        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg + roleBonuses.critDmg,
-        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp + roleBonuses.vamp,
-        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect + roleBonuses.reflect
+        hp: baseStatsWithSkills.hp + gearBonuses.hp,
+        atk: baseStatsWithSkills.atk + gearBonuses.atk,
+        def: baseStatsWithSkills.def + gearBonuses.def,
+        agi: baseStatsWithSkills.agi + gearBonuses.agi,
+        int: baseStatsWithSkills.int + gearBonuses.int,
+        spd: baseStatsWithSkills.spd + gearBonuses.spd,
+        crit: baseStatsWithSkills.crit + gearBonuses.crit,
+        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg,
+        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
+        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
     };
+
+    // Классовые особенности (добавляются к final)
+    let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
+
+    if (className === 'warrior') {
+        const bonusHp = Math.floor(final.def / 5) * 3;
+        classBonus.hp = bonusHp;
+        final.hp += bonusHp;
+    }
+
+    if (className === 'assassin') {
+        const bonusSpd = Math.floor(final.agi / 5);
+        classBonus.spd = bonusSpd;
+        final.spd += bonusSpd;
+    }
+
+    if (className === 'mage') {
+        const bonusAtk = Math.floor(final.int / 5) * 2;
+        classBonus.atk = bonusAtk;
+        final.atk += bonusAtk;
+    }
 
     final.def = Math.min(100, final.def);
     final.agi = Math.min(100, final.agi);
@@ -519,7 +536,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
     final.vamp = Math.round(final.vamp * 10) / 10;
     final.reflect = Math.round(final.reflect * 10) / 10;
 
-    return { base: baseStatsWithSkills, gear: gearBonuses, role: roleBonuses, final: final };
+    return { base: baseStatsWithSkills, gear: gearBonuses, classBonus, final };
 }
 
 // Функция расчёта силы (с учётом уровня)
@@ -561,7 +578,32 @@ function showRoleInfoModal(className) {
     const modalBody = document.getElementById('modalBody');
 
     const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
-    modalTitle.innerText = `Роли класса ${classNameRu}`;
+    modalTitle.innerText = `Класс ${classNameRu}`;
+
+    // Описание классовой особенности
+    let classFeatureHtml = '';
+    if (className === 'warrior') {
+        classFeatureHtml = `
+            <div class="role-card" style="border-left-color: #f39c12;">
+                <h3>Особенность класса</h3>
+                <p><strong>Стойкость:</strong> за каждые 5 единиц защиты получает +3 к максимальному здоровью.</p>
+            </div>
+        `;
+    } else if (className === 'assassin') {
+        classFeatureHtml = `
+            <div class="role-card" style="border-left-color: #f39c12;">
+                <h3>Особенность класса</h3>
+                <p><strong>Стремительность:</strong> за каждые 5 единиц ловкости получает +1 к скорости.</p>
+            </div>
+        `;
+    } else if (className === 'mage') {
+        classFeatureHtml = `
+            <div class="role-card" style="border-left-color: #f39c12;">
+                <h3>Особенность класса</h3>
+                <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +2 к атаке и +2 к регенерации маны за ход.</p>
+            </div>
+        `;
+    }
 
     const subclasses = {
         warrior: ['guardian', 'berserker', 'knight'],
@@ -569,11 +611,11 @@ function showRoleInfoModal(className) {
         mage: ['pyromancer', 'cryomancer', 'illusionist']
     }[className] || [];
 
-    let html = '';
+    let rolesHtml = '';
     subclasses.forEach(sc => {
         const desc = roleDescriptions[sc];
         if (desc) {
-            html += `
+            rolesHtml += `
                 <div class="role-card">
                     <h3>${desc.name}</h3>
                     <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
@@ -582,7 +624,8 @@ function showRoleInfoModal(className) {
             `;
         }
     });
-    modalBody.innerHTML = html;
+
+    modalBody.innerHTML = classFeatureHtml + rolesHtml;
 
     modal.style.display = 'block';
     const closeBtn = modal.querySelector('.close');
@@ -1960,17 +2003,23 @@ function renderProfileBonuses(container) {
         </div>
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
-            <tr><th style="text-align:left;">Параметр</th><th style="text-align:center;">База</th><th style="text-align:center;">+Снаряжение</th><th style="text-align:center;">+Роль</th><th style="text-align:center;">Итого</th></tr>
-            ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.role.hp, stats.final.hp)}
-            ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.role.atk, stats.final.atk)}
-            ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.role.def + '%', stats.final.def + '%')}
-            ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.role.agi + '%', stats.final.agi + '%')}
-            ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.role.int + '%', stats.final.int + '%')}
-            ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.role.spd, stats.final.spd)}
-            ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.role.crit + '%', stats.final.crit + '%')}
-            ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', (stats.role.critDmg*100).toFixed(1) + '%', (stats.final.critDmg*100).toFixed(1) + '%')}
-            ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.role.vamp + '%', stats.final.vamp + '%')}
-            ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.role.reflect + '%', stats.final.reflect + '%')}
+            <tr>
+                <th style="text-align:left;">Параметр</th>
+                <th style="text-align:center;">База</th>
+                <th style="text-align:center;">+Инв.</th>
+                <th style="text-align:center;">+Особ.</th>
+                <th style="text-align:center;">Итого</th>
+            </tr>
+            ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
+            ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
+            ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
+            ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.classBonus?.agi ? stats.classBonus.agi + '%' : '', stats.final.agi + '%')}
+            ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
+            ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
+            ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
+            ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
+            ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
+            ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
         </table>
     `;
 
@@ -2072,17 +2121,17 @@ function renderSkillItem(statName, displayName, description, currentValue, level
     `;
 }
 
-function renderStatRow(label, baseValue, gearValue, roleValue, finalValue) {
+function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue) {
     const gearNum = parseFloat(gearValue) || 0;
-    const roleNum = parseFloat(roleValue) || 0;
+    const classBonusNum = parseFloat(classBonusValue) || 0;
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
-    const roleDisplay = roleNum !== 0 ? `<span style="color:#00aaff;">+${roleValue}</span>` : '';
+    const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
         <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
-            <td style="text-align:center;">${roleDisplay}</td>
+            <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
         </tr>
     `;

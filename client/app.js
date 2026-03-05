@@ -717,10 +717,15 @@ function showLevelUpModal(className) {
     laterBtn.parentNode.replaceChild(newLater, laterBtn);
 
     newUpgrade.addEventListener('click', () => {
-        modal.style.display = 'none';
-        profileTab = 'upgrade';
-        showScreen('profile');
+    modal.style.display = 'none';
+    // Разблокируем меню, так как мы покидаем бой
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'auto';
+        item.style.opacity = '1';
     });
+    profileTab = 'upgrade';
+    showScreen('profile');
+});
 
     newLater.addEventListener('click', () => {
         modal.style.display = 'none';

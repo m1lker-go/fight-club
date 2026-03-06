@@ -516,10 +516,10 @@ function calculateClassStats(className, classData, inventory, subclass) {
     }
 
     if (className === 'mage') {
-        const bonusAtk = Math.floor(final.int / 5) * 2;
-        classBonus.atk = bonusAtk;
-        final.atk += bonusAtk;
-    }
+    const bonusAgi = Math.floor(final.int / 5); // +1 ловкости за 5 интеллекта
+    classBonus.agi = bonusAgi;
+    final.agi += bonusAgi;
+}
 
     final.def = Math.min(100, final.def);
     final.agi = Math.min(100, final.agi);
@@ -597,12 +597,12 @@ function showRoleInfoModal(className) {
             </div>
         `;
     } else if (className === 'mage') {
-        classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
-                <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +2 к атаке и +2 к регенерации маны за ход.</p>
-            </div>
-        `;
+       classFeatureHtml = `
+    <div class="role-card" style="border-left-color: #f39c12;">
+        <h3>Особенность класса</h3>
+        <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</p>
+    </div>
+`;
     }
 
     const subclasses = {

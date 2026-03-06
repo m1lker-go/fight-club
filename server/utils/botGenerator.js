@@ -23,13 +23,8 @@ const bestStatsByClass = {
     mage: ['atk', 'int', 'agi', 'hp', 'crit', 'critDmg']
 };
 
-// Остальные характеристики (всего 10, остальные 4)
-const otherStats = ['spd', 'dodge', 'acc', 'mana']; // но нужно точное соответствие полей
-// В реальности у нас 10 характеристик: hp, atk, def, agi, int, spd, crit, critDmg, vamp, reflect
-// Поэтому для каждого класса остальные будут вычисляться как разность.
-
 /**
- * Генерация бота с уровнем, приблизительно равным уровню игрока (в диапазоне ±2)
+ * Генерация бота с уровнем, приблизительно равным уровню игрока (в диапазоне ±3)
  * @param {number} playerLevel - уровень игрока
  * @returns {object} - данные бота
  */
@@ -105,24 +100,13 @@ function generateBot(playerLevel) {
     const bestDist = distributePoints(pointsToBest, bestStats);
     const otherDist = distributePoints(pointsToOther, otherStats);
 
-    // Применяем распределение к stats
-    // Примечание: каждое очко в hp_points даёт +2 к hp, в остальных +1 к соответствующей характеристике
-    // Но в stats у нас уже есть база, будем добавлять напрямую бонусы от навыков, как это делается у игроков.
-    // Удобно создать объект classData, имитирующий запись из БД.
-    const classData = {
-        hp_points: 0,
-        atk_points: 0,
-        def_points: 0,
-        dodge_points: 0,
-        int_points: 0,
-        spd_points: 0,
-        crit_points: 0,
-        crit_dmg_points: 0,
-        vamp_points: 0,
-        reflect_points: 0
-    };
+    // Объединяем распределения
+    const totalDist = { ...bestDist };
+    for (let stat in otherDist) {
+        totalDist[stat] = (totalDist[stat] || 0) + otherDist[stat];
+    }
 
-    // Маппинг характеристик на поля в classData
+    // Маппинг характеристик на поля, как в БД
     const statToField = {
         hp: 'hp_points',
         atk: 'atk_points',
@@ -136,45 +120,56 @@ function generateBot(playerLevel) {
         reflect: 'reflect_points'
     };
 
-    // Суммируем распределения
-    const totalDist = { ...bestDist };
-    for (let stat in otherDist) {
-        totalDist[stat] = (totalDist[stat] || 0) + otherDist[stat];
-    }
-
-    // Заполняем classData
+    // Применяем бонусы от навыков
     for (let stat in totalDist) {
-        const field = statToField[stat];
-        if (field) {
-            classData[field] = totalDist[stat];
+        const points = totalDist[stat];
+        switch (stat) {
+            case 'hp':
+                stats.hp += points * 2;
+                break;
+            case 'atk':
+                stats.atk += points;
+                break;
+            case 'def':
+                stats.def += points;
+                break;
+            case 'agi':
+                stats.agi += points;
+                break;
+            case 'int':
+                stats.int += points;
+                break;
+            case 'spd':
+                stats.spd += points;
+                break;
+            case 'crit':
+                stats.crit += points;
+                break;
+            case 'critDmg':
+                stats.critDmg += points / 100;
+                break;
+            case 'vamp':
+                stats.vamp += points;
+                break;
+            case 'reflect':
+                stats.reflect += points;
+                break;
         }
     }
-
-    // Применяем бонусы от навыков
-    stats.hp += classData.hp_points * 2;
-    stats.atk += classData.atk_points;
-    stats.def += classData.def_points;
-    stats.agi += classData.dodge_points;
-    stats.int += classData.int_points;
-    stats.spd += classData.spd_points;
-    stats.crit += classData.crit_points;
-    stats.critDmg += classData.crit_dmg_points / 100;
-    stats.vamp += classData.vamp_points;
-    stats.reflect += classData.reflect_points;
 
     // Пассивные бонусы подкласса
     const roleBonus = rolePassives[template.subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
-    // Классовые особенности (постоянные бонусы)
+    // Классовые особенности (постоянные бонусы) – обновлено для мага
     if (template.class === 'warrior') {
         stats.hp += Math.floor(stats.def / 5) * 3;
     } else if (template.class === 'assassin') {
         stats.spd += Math.floor(stats.agi / 5);
     } else if (template.class === 'mage') {
-        stats.atk += Math.floor(stats.int / 5) * 2;
-        stats.manaRegen += Math.floor(stats.int / 5) * 2;
+        stats.agi += Math.floor(stats.int / 5);          // +1 ловкости за 5 интеллекта
+        stats.manaRegen += Math.floor(stats.int / 5) * 2; // +2 регенерации маны
     }
 
     // Классовые бонусы (умножение)

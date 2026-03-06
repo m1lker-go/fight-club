@@ -208,6 +208,7 @@ const skinNameTranslations = {
     'skin7': 'Чародей',
     'skin9': 'Магический снежок',
     'skin10': 'Страж королевства'
+     'firelegend': 'Разрушитель'
 };
 
 function translateSkinName(englishName) {

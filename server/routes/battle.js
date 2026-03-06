@@ -19,7 +19,7 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
-// Базовые характеристики для каждого класса (новые значения)
+// Базовые характеристики для каждого класса
 const baseStats = {
     warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
     assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
@@ -102,7 +102,7 @@ function calculateStats(classData, inventory, subclass) {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
-    // Пассивные бонусы подклассов (добавляем к статам, чтобы они влияли на бой)
+    // Пассивные бонусы подклассов (добавляем к статам)
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
@@ -191,6 +191,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
+    // Накопление яда (venom_blade)
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
@@ -203,15 +204,29 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
+    // Накопление огня (pyromancer) – максимум 5 стаков
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
-        defenderState.burnStacks = Math.min(30, defenderState.burnStacks + 1);
+        defenderState.burnStacks = Math.min(5, defenderState.burnStacks + 1);
         if (defenderState.burnStacks > oldStacks) {
             extraLogs.push(burnStackPhrase
                 .replace('%s', defenderName)
                 .replace('%d', defenderState.burnStacks - oldStacks)
                 .replace('%d', defenderState.burnStacks));
+        }
+    }
+
+    // Накопление стаков заморозки (cryomancer) – каждая атака добавляет 1 стак, при 3 – заморозка
+    if (attackerSubclass === 'cryomancer') {
+        if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
+        defenderState.freezeStacks++;
+        if (defenderState.freezeStacks >= 3) {
+            defenderState.frozen = 1; // заморозка на следующий ход
+            defenderState.freezeStacks = 0; // сброс стаков
+            extraLogs.push(`<span style="color:#00aaff;">${defenderName} заморожен!</span>`);
+        } else {
+            extraLogs.push(`<span style="color:#00aaff;">Стак заморозки на ${defenderName} (${defenderState.freezeStacks}/3)</span>`);
         }
     }
 
@@ -233,7 +248,12 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         log: attackPhrase,
         reflectDamage,
         vampHeal,
-        stateChanges: { poisonStacks: defenderState.poisonStacks, burnStacks: defenderState.burnStacks },
+        stateChanges: { 
+            poisonStacks: defenderState.poisonStacks, 
+            burnStacks: defenderState.burnStacks,
+            freezeStacks: defenderState.freezeStacks,
+            frozen: defenderState.frozen
+        },
         berserkerBonus,
         extraLogs
     };
@@ -252,6 +272,11 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         case 'guardian':
             heal = Math.floor(attackerStats.hp * 0.2);
             log = ultPhrases.guardian.replace('%s', attackerName).replace('%d', heal);
+            // Снятие всех отрицательных эффектов с себя
+            attackerState.poisonStacks = 0;
+            attackerState.burnStacks = 0;
+            attackerState.freezeStacks = 0;
+            attackerState.frozen = 0;
             break;
         case 'berserker':
             selfDamage = Math.floor(attackerStats.hp * 0.3);
@@ -263,6 +288,11 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             attackerState.reflectBuff = 2;
             attackerState.reflectBonus = 50;
             log = ultPhrases.knight.replace('%s', attackerName);
+            // Снятие всех отрицательных эффектов с себя
+            attackerState.poisonStacks = 0;
+            attackerState.burnStacks = 0;
+            attackerState.freezeStacks = 0;
+            attackerState.frozen = 0;
             break;
         case 'assassin':
             damage = applyIntBonus(attackerStats.atk * 3.5, attackerStats.int);
@@ -281,16 +311,23 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
             break;
         case 'pyromancer':
-            damage = applyIntBonus(attackerStats.atk * 4, attackerStats.int);
-            if (!defenderState.burnStacks) defenderState.burnStacks = 0;
-            defenderState.burnStacks += Math.floor(damage * 0.5);
+            // Урон = интеллект × 2.5 + текущие стаки × 2
+            const burnStacks = defenderState.burnStacks || 0;
+            damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
             log = ultPhrases.pyromancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+            defenderState.burnStacks = 0; // сброс стаков
             break;
         case 'cryomancer':
-            let frozen = defenderState.frozen;
-            damage = applyIntBonus(attackerStats.atk * 2, attackerStats.int);
-            if (frozen) damage *= 2;
+            // Если цель уже заморожена, урон ×3, иначе ×2
+            if (defenderState.frozen) {
+                damage = attackerStats.int * 3;
+            } else {
+                damage = attackerStats.int * 2;
+            }
+            // Гарантированная заморозка на 1 ход
             defenderState.frozen = 1;
+            // Сбрасываем стаки заморозки, так как цель заморожена ультимейтом
+            defenderState.freezeStacks = 0;
             log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         case 'illusionist':
@@ -309,6 +346,7 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     let damageToSelf = 0;
     let logEntries = [];
 
+    // Урон от яда в конце хода цели
     if (defenderState.poisonStacks && defenderState.poisonStacks > 0) {
         const poisonDamage = defenderState.poisonStacks * 2;
         damageToDefender += poisonDamage;
@@ -318,6 +356,7 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
         logEntries.push(phrase);
     }
 
+    // Урон от огня в конце хода цели (игнорирует защиту)
     if (defenderState.burnStacks && defenderState.burnStacks > 0) {
         const burnDamage = defenderState.burnStacks * 2;
         damageToDefender += burnDamage;
@@ -327,6 +366,7 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
         logEntries.push(phrase);
     }
 
+    // Урон берсерку от его же пассивки
     if (attackerSubclass === 'berserker' && attackerState.hp > 1) {
         const rageDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
         damageToSelf = Math.min(rageDamage, attackerState.hp - 1);
@@ -349,6 +389,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let playerState = {
         poisonStacks: 0,
         burnStacks: 0,
+        freezeStacks: 0,
         frozen: 0,
         reflectBuff: 0,
         reflectBonus: 0,
@@ -360,6 +401,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let enemyState = {
         poisonStacks: 0,
         burnStacks: 0,
+        freezeStacks: 0,
         frozen: 0,
         reflectBuff: 0,
         reflectBonus: 0,
@@ -385,6 +427,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         };
 
         if (turn === 'player') {
+            // Если игрок заморожен, он пропускает ход
+            if (playerState.frozen > 0) {
+                playerState.frozen = 0; // разморозка
+                log.push(`<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`);
+                turnState.action = `${playerName} пропускает ход.`;
+                // Мана не восстанавливается? Оставим без изменений.
+                turn = 'enemy';
+                turns.push(turnState);
+                continue;
+            }
+
             playerState.hp = playerHp;
             enemyState.hp = enemyHp;
 
@@ -399,7 +452,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
 
             if (enemyState.frozen > 0) {
-                enemyState.frozen--;
+                // враг был заморожен в прошлом ходу, сейчас размораживается (до своего хода)
+                // оставляем как есть
             }
 
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
@@ -453,6 +507,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             turn = 'enemy';
         } else {
+            // Если враг заморожен, он пропускает ход
+            if (enemyState.frozen > 0) {
+                enemyState.frozen = 0;
+                log.push(`<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`);
+                turnState.action = `${enemyName} пропускает ход.`;
+                turn = 'player';
+                turns.push(turnState);
+                continue;
+            }
+
             playerState.hp = playerHp;
             enemyState.hp = enemyHp;
 
@@ -467,7 +531,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
 
             if (playerState.frozen > 0) {
-                playerState.frozen--;
+                // игрок был заморожен в прошлом ходу
             }
 
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);

@@ -65,10 +65,10 @@ async function updatePlayerPower(client, userId, className) {
     if (className === 'assassin') {
         stats.spd += Math.floor(stats.agi / 5);
     }
-    if (className === 'mage') {
-        stats.atk += Math.floor(stats.int / 5) * 2;
-        // бонус к регенерации маны не влияет на силу, поэтому не добавляем
-    }
+   if (className === 'mage') {
+    stats.agi += Math.floor(stats.int / 5);          // +1 ловкости за 5 интеллекта
+    stats.manaRegen += Math.floor(stats.int / 5) * 2; // +2 регенерации маны за 5 интеллекта
+}
 
     // Классовые бонусы (как в battle.js)
     if (className === 'warrior') {

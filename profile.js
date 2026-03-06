@@ -1,6 +1,6 @@
 // profile.js
-// Функции для экрана профиля (вкладки: скины, бонусы, улучшения)
 
+// ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const content = document.getElementById('content');
 
@@ -192,6 +192,7 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     `;
 }
 
+// ==================== СКИНЫ ====================
 function renderSkins(container) {
     Promise.all([
         fetch('https://fight-club-api-4och.onrender.com/avatars').then(res => {

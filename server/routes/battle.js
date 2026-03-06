@@ -408,7 +408,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         mirageCounter: 0
     };
 
-    let turn = playerStats.spd >= enemyStats.spd ? 'player' : 'enemy';
+    // Определение первого хода с учётом равенства скорости (рандом)
+    let turn;
+    if (playerStats.spd > enemyStats.spd) {
+        turn = 'player';
+    } else if (enemyStats.spd > playerStats.spd) {
+        turn = 'enemy';
+    } else {
+        // При равенстве скорости – случайный выбор
+        turn = Math.random() < 0.5 ? 'player' : 'enemy';
+    }
+
     let maxTurns = 100;
     let t = 0;
 
@@ -429,7 +439,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 playerState.frozen = 0; // разморозка
                 log.push(`<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`);
                 turnState.action = `${playerName} пропускает ход.`;
-                // Мана не восстанавливается? Оставим без изменений.
                 turn = 'enemy';
                 turns.push(turnState);
                 continue;
@@ -446,11 +455,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToSelf > 0) {
                 playerHp -= startEffects.damageToSelf;
                 log.push(...startEffects.logEntries);
-            }
-
-            if (enemyState.frozen > 0) {
-                // враг был заморожен в прошлом ходу, сейчас размораживается (до своего хода)
-                // оставляем как есть
             }
 
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
@@ -525,10 +529,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToSelf > 0) {
                 enemyHp -= startEffects.damageToSelf;
                 log.push(...startEffects.logEntries);
-            }
-
-            if (playerState.frozen > 0) {
-                // игрок был заморожен в прошлом ходу
             }
 
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);

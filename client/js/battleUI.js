@@ -38,8 +38,8 @@ function showBattleScreen(battleData) {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
-            <!-- Верхняя панель с именами и переключателем скорости -->
-            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; position: relative;">
+            <!-- Верхняя панель с именами (без таймера и кнопки скорости) -->
+            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <div style="text-align: left;">
                     <div>${userData.username}</div>
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
@@ -48,13 +48,11 @@ function showBattleScreen(battleData) {
                     <div>${battleData.opponent.username}</div>
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
                 </div>
-                <!-- Кнопка переключения скорости (одна) -->
-                <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; right: 20px; top: 10px; background: none; border: 1px solid #00aaff; color: #00aaff; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold;">x1</button>
             </div>
 
             <!-- Основная арена: 5 колонок -->
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 10px; padding: 10px;">
-                <!-- Колонка 1: аватар игрока (контент прижат к верху) -->
+                <!-- Колонка 1: аватар игрока -->
                 <div class="hero-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
@@ -69,7 +67,7 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Колонка 2: стаки на игроке (без фона, маленькие иконки) -->
+                <!-- Колонка 2: стаки на игроке (без фона) -->
                 <div class="player-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="player" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="2" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
@@ -78,9 +76,10 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="5" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: только таймер (без VS) по центру вертикали -->
-                <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                    <div class="battle-timer" id="battleTimer" style="background-color: #00aaff; padding: 5px 15px; border-radius: 20px; font-weight: bold;">45</div>
+                <!-- Колонка 3: таймер и кнопка скорости по центру -->
+                <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+                    <div class="battle-timer" id="battleTimer" style="width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
+                    <button id="singleSpeedBtn" class="speed-btn" style="background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
                 </div>
 
                 <!-- Колонка 4: стаки на враге (без фона) -->
@@ -92,7 +91,7 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="5" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 5: аватар противника (контент прижат к верху) -->
+                <!-- Колонка 5: аватар противника -->
                 <div class="enemy-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
@@ -147,13 +146,9 @@ function showBattleScreen(battleData) {
 
     // Функции для работы со стаками
     function updateDebuffSlot(side, type, active) {
-        // side: 'player' или 'enemy'
-        // type: 'poison', 'burn', 'freeze'
-        // active: true/false - показывать или скрывать иконку
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         if (slots.length === 0) return;
         
-        // poison -> слот 0, burn -> слот 1, freeze -> слот 2 (остальные резерв)
         let slotIndex;
         if (type === 'poison') slotIndex = 0;
         else if (type === 'burn') slotIndex = 1;
@@ -164,7 +159,6 @@ function showBattleScreen(battleData) {
         if (!slot) return;
         
         if (active) {
-            // Вставляем иконку, если её нет
             if (!slot.querySelector('img')) {
                 const img = document.createElement('img');
                 let src = '';
@@ -173,21 +167,18 @@ function showBattleScreen(battleData) {
                 else if (type === 'freeze') src = '/assets/icons/icon_ice.png';
                 img.src = src;
                 img.alt = type;
-                slot.innerHTML = ''; // очищаем
+                slot.innerHTML = '';
                 slot.appendChild(img);
             }
         } else {
-            // Убираем иконку
-            slot.innerHTML = ''; // оставляем пустым
+            slot.innerHTML = '';
         }
     }
 
     function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
-        // Определяем, на кого направлен эффект (цель) – на противника атакующего
         const targetSide = isPlayerTurn ? 'enemy' : 'player';
         const lower = action.toLowerCase();
 
-        // Определяем, является ли действие ультимейтом
         const isUltimate = lower.includes('ультимейт') || lower.includes('ядовитая волна') || 
                           lower.includes('огненный шторм') || lower.includes('вечная зима') ||
                           lower.includes('зазеркалье') || lower.includes('смертельный удар') ||
@@ -195,26 +186,20 @@ function showBattleScreen(battleData) {
                           lower.includes('несокрушимость') || lower.includes('щит правосудия');
 
         if (!isUltimate) {
-            // Обычная атака – накладываем стак в соответствии с подклассом атакующего
             if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
                 const type = passiveDebuffMap[attackerSubclass];
                 updateDebuffSlot(targetSide, type, true);
             }
         } else {
-            // Ультимейты: особые эффекты
             if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
-                // Ядовитая волна – сбрасывает яд у цели (врага)
                 updateDebuffSlot(targetSide, 'poison', false);
             }
             if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                // Огненный шторм – накладывает горение
                 updateDebuffSlot(targetSide, 'burn', true);
             }
             if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
-                // Вечная зима – замораживает
                 updateDebuffSlot(targetSide, 'freeze', true);
             }
-            // Другие ультимейты пока не требуют иконок
         }
     }
 
@@ -309,13 +294,11 @@ function showBattleScreen(battleData) {
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
-        // Определяем подкласс атакующего в этом ходу
         const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
         const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
         showAnimation(target, anim);
 
-        // Обновляем стаки на основе подкласса атакующего
         parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         const logEntry = document.createElement('div');
@@ -361,7 +344,7 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-// ==================== ПОКАЗ РЕЗУЛЬТАТА БОЯ (без изменений) ====================
+// ==================== ПОКАЗ РЕЗУЛЬТАТА БОЯ ====================
 async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
@@ -402,7 +385,6 @@ async function showBattleResult(battleData, timeOut = false) {
         console.error('Ошибка /update/exp:', err);
     }
 
-    // Обновляем список заданий после всех обновлений
     await loadDailyTasks();
 
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

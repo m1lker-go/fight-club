@@ -1,6 +1,6 @@
 // battleUI.js
-// Функции для экрана боя и результата
 
+// ==================== БОЙ ====================
 async function startBattle() {
     try {
         const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
@@ -98,6 +98,7 @@ function showBattleScreen(battleData) {
     let currentAnimationTimeout = null;
     let timer;
 
+    // Вспомогательные функции для анимации
     function hideAnimations() {
         if (currentAnimationTimeout) {
             clearTimeout(currentAnimationTimeout);
@@ -193,9 +194,11 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
+    // Запуск первого хода
     playTurn();
     interval = setInterval(playTurn, 2500 / speed);
 
+    // Управление скоростью
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
@@ -206,6 +209,7 @@ function showBattleScreen(battleData) {
         });
     });
 
+    // Таймер 45 секунд
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
     timer = setInterval(() => {
@@ -266,6 +270,7 @@ async function showBattleResult(battleData, timeOut = false) {
         console.error('Ошибка /update/exp:', err);
     }
 
+    // Обновляем список заданий после всех обновлений
     await loadDailyTasks();
 
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

@@ -36,50 +36,83 @@ function showBattleScreen(battleData) {
     };
 
     const content = document.getElementById('content');
+    // Новая структура с пятью колонками
     content.innerHTML = `
         <div class="battle-screen">
-            <div class="battle-header" style="position: relative; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+            <!-- Верхняя панель с именами (без таймера) -->
+            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <div style="text-align: left;">
                     <div>${userData.username}</div>
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
                 </div>
-                <div class="battle-timer" id="battleTimer" style="position: absolute; left: 50%; transform: translateX(-50%); background-color: #00aaff; padding: 5px 15px; border-radius: 20px; font-weight: bold;">45</div>
                 <div style="text-align: right;">
                     <div>${battleData.opponent.username}</div>
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
                 </div>
             </div>
-            <div class="battle-arena">
-                <div class="hero-card">
+
+            <!-- Основная арена: 5 колонок -->
+            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 10px; padding: 10px;">
+                <!-- Колонка 1: аватар игрока -->
+                <div class="hero-card" style="flex: 0 0 100px; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="hp-bar">
+                    <div class="hp-bar" style="width:80px; margin:5px auto;">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>
-                    <div id="heroHpText">${battleData.result.playerHpRemain}/${battleData.result.playerMaxHp}</div>
-                    <div class="mana-bar">
+                    <div id="heroHpText" style="font-size:12px;">${battleData.result.playerHpRemain}/${battleData.result.playerMaxHp}</div>
+                    <div class="mana-bar" style="width:80px; margin:2px auto;">
                         <div class="mana-fill" id="heroMana" style="width:0%"></div>
                     </div>
                 </div>
-                <div>VS</div>
-                <div class="enemy-card">
+
+                <!-- Колонка 2: стаки, наложенные на игрока (вражеские эффекты) -->
+                <div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: center; gap: 5px;">
+                    <div class="debuff-slot" data-side="player" data-slot="1" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="2" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="3" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="4" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="5" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                </div>
+
+                <!-- Колонка 3: счётчик и VS -->
+                <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="battle-timer" id="battleTimer" style="background-color: #00aaff; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 10px;">45</div>
+                    <div style="font-weight: bold; font-size: 18px;">VS</div>
+                </div>
+
+                <!-- Колонка 4: стаки, наложенные на врага (наши эффекты) -->
+                <div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: center; gap: 5px;">
+                    <div class="debuff-slot" data-side="enemy" data-slot="1" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="2" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="3" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="4" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="5" style="width:40px; height:40px; background-color:#2f3542; border-radius:5px; margin:0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                </div>
+
+                <!-- Колонка 5: аватар противника -->
+                <div class="enemy-card" style="flex: 0 0 100px; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="hp-bar">
+                    <div class="hp-bar" style="width:80px; margin:5px auto;">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                     </div>
-                    <div id="enemyHpText">${battleData.result.enemyHpRemain}/${battleData.result.enemyMaxHp}</div>
-                    <div class="mana-bar">
+                    <div id="enemyHpText" style="font-size:12px;">${battleData.result.enemyHpRemain}/${battleData.result.enemyMaxHp}</div>
+                    <div class="mana-bar" style="width:80px; margin:2px auto;">
                         <div class="mana-fill" id="enemyMana" style="width:0%"></div>
                     </div>
                 </div>
             </div>
-            <div class="battle-log" id="battleLog"></div>
-            <div class="battle-controls">
+
+            <!-- Лог боя -->
+            <div class="battle-log" id="battleLog" style="height:150px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
+            
+            <!-- Управление скоростью -->
+            <div class="battle-controls" style="display: flex; justify-content: center; gap: 20px; padding: 10px 0;">
                 <button class="speed-btn active" data-speed="1">x1</button>
                 <button class="speed-btn" data-speed="2">x2</button>
             </div>
@@ -87,7 +120,22 @@ function showBattleScreen(battleData) {
     `;
 
     const style = document.createElement('style');
-    style.innerHTML = `.animation-container img { width: 100%; height: 100%; object-fit: contain; }`;
+    style.innerHTML = `
+        .animation-container img { width: 100%; height: 100%; object-fit: contain; }
+        .debuff-slot {
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+        .debuff-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+    `;
     document.head.appendChild(style);
 
     let turnIndex = 0;
@@ -98,7 +146,77 @@ function showBattleScreen(battleData) {
     let currentAnimationTimeout = null;
     let timer;
 
-    // Вспомогательные функции для анимации
+    // Функции для работы со стаками
+    function updateDebuffSlot(side, type, active) {
+        // side: 'player' или 'enemy'
+        // type: 'poison', 'burn', 'freeze'
+        // active: true/false - показывать или скрывать иконку
+        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+        if (slots.length === 0) return;
+        
+        // poison -> слот 1, burn -> слот 2, freeze -> слот 3 (остальные резерв)
+        let slotIndex;
+        if (type === 'poison') slotIndex = 0;
+        else if (type === 'burn') slotIndex = 1;
+        else if (type === 'freeze') slotIndex = 2;
+        else return;
+        
+        const slot = slots[slotIndex];
+        if (!slot) return;
+        
+        if (active) {
+            // Вставляем иконку, если её нет
+            if (!slot.querySelector('img')) {
+                const img = document.createElement('img');
+                let src = '';
+                if (type === 'poison') src = '/assets/icons/icon_poison.png';
+                else if (type === 'burn') src = '/assets/icons/icon_fire.png';
+                else if (type === 'freeze') src = '/assets/icons/icon_ice.png';
+                img.src = src;
+                img.alt = type;
+                slot.innerHTML = ''; // очищаем
+                slot.appendChild(img);
+            }
+        } else {
+            // Убираем иконку
+            slot.innerHTML = ''; // оставляем пустым (фон)
+        }
+    }
+
+    function parseActionForDebuffs(action, isPlayerAction) {
+        // isPlayerAction: true если действие совершил игрок (атаковал врага), false если враг атаковал игрока
+        const lower = action.toLowerCase();
+        const targetSide = isPlayerAction ? 'enemy' : 'player';
+        
+        // Проверяем наложение стаков (упрощённо)
+        if (lower.includes('яд') || lower.includes('отравление') || lower.includes('poison') || 
+            lower.includes('ядовитый клинок') || lower.includes('venom')) {
+            updateDebuffSlot(targetSide, 'poison', true);
+        }
+        if (lower.includes('огонь') || lower.includes('пламя') || lower.includes('burn') || 
+            lower.includes('fire') || lower.includes('поджигатель') || lower.includes('pyromancer')) {
+            updateDebuffSlot(targetSide, 'burn', true);
+        }
+        if (lower.includes('лёд') || lower.includes('заморозка') || lower.includes('freeze') || 
+            lower.includes('ice') || lower.includes('ледяной маг') || lower.includes('cryomancer')) {
+            updateDebuffSlot(targetSide, 'freeze', true);
+        }
+        
+        // Сброс стаков (ультимейты)
+        if (lower.includes('ядовитая волна')) {
+            updateDebuffSlot('enemy', 'poison', false);
+        }
+        // Для огня и льда пока нет сброса, можно добавить позже
+    }
+
+    function clearAllDebuffSlots() {
+        document.querySelectorAll('.debuff-slot').forEach(slot => {
+            slot.innerHTML = '';
+        });
+    }
+    clearAllDebuffSlots();
+
+    // Вспомогательные функции для анимации (без изменений)
     function hideAnimations() {
         if (currentAnimationTimeout) {
             clearTimeout(currentAnimationTimeout);
@@ -185,6 +303,9 @@ function showBattleScreen(battleData) {
         const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
         showAnimation(target, anim);
 
+        // Обновляем стаки на основе действия
+        parseActionForDebuffs(turn.action, isPlayerTurn);
+
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
         logEntry.innerHTML = turn.action;
@@ -209,7 +330,7 @@ function showBattleScreen(battleData) {
         });
     });
 
-    // Таймер 45 секунд
+    // Таймер 45 секунд (теперь в центральной колонке)
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
     timer = setInterval(() => {
@@ -230,6 +351,7 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
+// ==================== ПОКАЗ РЕЗУЛЬТАТА БОЯ (без изменений) ====================
 async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;

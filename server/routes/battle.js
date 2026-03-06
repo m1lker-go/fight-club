@@ -319,16 +319,13 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
         case 'cryomancer':
             // Если цель уже заморожена, урон ×3, иначе ×2
-            if (defenderState.frozen) {
-                damage = attackerStats.int * 3;
-            } else {
-                damage = attackerStats.int * 2;
-            }
+            const frozenBonus = defenderState.frozen ? 3 : 2;
+            damage = Math.round(attackerStats.int * frozenBonus); // округляем до целого
             // Гарантированная заморозка на 1 ход
             defenderState.frozen = 1;
-            // Сбрасываем стаки заморозки, так как цель заморожена ультимейтом
             defenderState.freezeStacks = 0;
-            log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+            // Формируем лог с указанием множителя
+            log = `<span style="color:#3498db;">${attackerName} призывает ВЕЧНУЮ ЗИМУ, замораживая ${defenderName} и нанося ${damage} урона магией льда${frozenBonus === 3 ? ' (тройной урон!)' : ' (двойной урон!)'}!</span>`;
             break;
         case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);

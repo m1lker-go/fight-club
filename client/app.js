@@ -262,11 +262,11 @@ function renderMain() {
 
         <div style="margin: 20px 20px 0 20px;">
             <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                <span>Уровень ${level}</span>
-                <span>${exp}/${nextExp} опыта</span>
+                <span>Уровень <span class="level-display">${level}</span></span>
+                <span class="exp-display">${exp}/${nextExp} опыта</span>
             </div>
             <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
-                <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
+                <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
             </div>
         </div>
 
@@ -289,50 +289,45 @@ function renderMain() {
         <button class="btn" id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px);">Начать бой</button>
     `;
 
-    const subclassSelect = document.getElementById('subclassSelect');
-    function updateSubclasses(className) {
-        const subclasses = {
-            warrior: ['guardian', 'berserker', 'knight'],
-            assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-            mage: ['pyromancer', 'cryomancer', 'illusionist']
-        };
-        const options = subclasses[className] || [];
-        subclassSelect.innerHTML = options.map(sc => {
-            const selected = (userData.subclass === sc) ? 'selected' : '';
-            const displayName = roleDescriptions[sc]?.name || sc;
-            return `<option value="${sc}" ${selected}>${displayName}</option>`;
-        }).join('');
-    }
+    // Заполняем список подклассов
     updateSubclasses(currentClass);
 
+    // Обработчики
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
-            if (newClass === currentClass) return;
+            if (newClass === userData.current_class) return;
+
+            // Меняем класс на сервере
             const res = await fetch('https://fight-club-api-4och.onrender.com/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
             });
-            if (res.ok) {
-                userData.current_class = newClass;
-                const firstSubclass = {
-                    warrior: 'guardian',
-                    assassin: 'assassin',
-                    mage: 'pyromancer'
-                }[newClass];
-                userData.subclass = firstSubclass;
-                await fetch('https://fight-club-api-4och.onrender.com/player/subclass', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
-                });
-                await refreshData();
-            }
+            if (!res.ok) return;
+
+            // Устанавливаем подкласс по умолчанию
+            const firstSubclass = {
+                warrior: 'guardian',
+                assassin: 'assassin',
+                mage: 'pyromancer'
+            }[newClass];
+            await fetch('https://fight-club-api-4och.onrender.com/player/subclass', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
+            });
+
+            // Обновляем глобальные переменные
+            userData.current_class = newClass;
+            userData.subclass = firstSubclass;
+
+            // Обновляем экран без полной перерисовки
+            updateMainScreen();
         });
     });
 
-    subclassSelect.addEventListener('change', async (e) => {
+    document.getElementById('subclassSelect').addEventListener('change', async (e) => {
         const newSubclass = e.target.value;
         const res = await fetch('https://fight-club-api-4och.onrender.com/player/subclass', {
             method: 'POST',
@@ -346,7 +341,7 @@ function renderMain() {
     });
 
     document.getElementById('fightBtn').addEventListener('click', () => startBattle());
-    document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(currentClass));
+    document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(userData.current_class));
     document.getElementById('avatarClick').addEventListener('click', () => showScreen('profile'));
 
     document.querySelectorAll('.round-button').forEach(btn => {
@@ -355,6 +350,57 @@ function renderMain() {
             if (screen) showScreen(screen);
         });
     });
+}
+
+// Функция обновления главного экрана без перерисовки
+function updateMainScreen() {
+    const classData = getCurrentClassData();
+    const currentClass = userData.current_class;
+
+    // Пересчёт силы
+    const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
+    currentPower = calculatePower(currentClass, stats.final, classData.level);
+    updateTopBar();
+
+    // Обновление уровня и опыта
+    const level = classData.level;
+    const exp = classData.exp;
+    const nextExp = Math.floor(80 * Math.pow(level, 1.5));
+    const expPercent = nextExp > 0 ? (exp / nextExp) * 100 : 0;
+
+    const levelSpan = document.querySelector('.level-display');
+    const expSpan = document.querySelector('.exp-display');
+    const expBarFill = document.querySelector('.exp-bar-fill');
+
+    if (levelSpan) levelSpan.innerText = level;
+    if (expSpan) expSpan.innerText = `${exp}/${nextExp} опыта`;
+    if (expBarFill) expBarFill.style.width = expPercent + '%';
+
+    // Обновление активного класса в селекторе
+    document.querySelectorAll('.class-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.class === currentClass);
+    });
+
+    // Обновление списка подклассов
+    updateSubclasses(currentClass);
+}
+
+// Функция обновления списка подклассов (вынесена из renderMain)
+function updateSubclasses(className) {
+    const subclassSelect = document.getElementById('subclassSelect');
+    if (!subclassSelect) return;
+
+    const subclasses = {
+        warrior: ['guardian', 'berserker', 'knight'],
+        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+        mage: ['pyromancer', 'cryomancer', 'illusionist']
+    };
+    const options = subclasses[className] || [];
+    subclassSelect.innerHTML = options.map(sc => {
+        const selected = (userData.subclass === sc) ? 'selected' : '';
+        const displayName = roleDescriptions[sc]?.name || sc;
+        return `<option value="${sc}" ${selected}>${displayName}</option>`;
+    }).join('');
 }
 
 // ==================== ЭКИПИРОВКА ====================

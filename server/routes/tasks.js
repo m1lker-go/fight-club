@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { itemNames, fixedBonuses } = require('../data/itemData'); // импортируем общие словари
 
 // Вспомогательная функция для парсинга прогресса
 function parseProgress(progress) {
@@ -12,42 +13,62 @@ function parseProgress(progress) {
     }
 }
 
-// Вспомогательная функция генерации предмета по редкости (аналог из shop.js)
+// Функция генерации предмета по редкости и классу (аналог из shop.js и forge-server.js)
 function generateItemByRarity(rarity, ownerClass = null) {
-    const itemNames = {
-        common: ['Ржавый меч', 'Деревянный щит', 'Кожаный шлем', 'Тряпичные перчатки', 'Старые сапоги', 'Медное кольцо'],
-        uncommon: ['Качественный меч', 'Укреплённый щит', 'Кожаный шлем с заклёпками', 'Перчатки из плотной кожи', 'Сапоги скорохода', 'Кольцо силы'],
-        rare: ['Стальной меч', 'Щит рыцаря', 'Шлем с забралом', 'Перчатки воина', 'Сапоги легионера', 'Кольцо защиты'],
-        epic: ['Меч героя', 'Эгида', 'Шлем вождя', 'Перчатки титана', 'Сапоги ветра', 'Кольцо мудрости'],
-        legendary: ['Экскалибур', 'Щит Ахилла', 'Шлем Одина', 'Перчатки Геракла', 'Сапоги Гермеса', 'Кольцо всевластия']
-    };
+    const classes = ['warrior', 'assassin', 'mage'];
+    const chosenClass = ownerClass || classes[Math.floor(Math.random() * classes.length)];
     const types = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'];
     const type = types[Math.floor(Math.random() * types.length)];
-    const name = itemNames[rarity][Math.floor(Math.random() * itemNames[rarity].length)];
-    
-    const bonuses = {
-        common: { atk: 1, def: 1, hp: 2 },
-        uncommon: { atk: 2, def: 2, hp: 4 },
-        rare: { atk: 3, def: 3, hp: 6 },
-        epic: { atk: 5, def: 5, hp: 10 },
-        legendary: { atk: 7, def: 7, hp: 15 }
-    };
-    const b = bonuses[rarity];
-    
-    return {
+    const namesArray = itemNames[chosenClass][type][rarity];
+    const name = namesArray[Math.floor(Math.random() * namesArray.length)];
+
+    // Выбираем две характеристики случайно (с возможностью повтора)
+    const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
+    const stat1 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+    const stat2 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+
+    const item = {
         name: name,
         type: type,
         rarity: rarity,
         class_restriction: 'any',
-        owner_class: ownerClass || ['warrior','assassin','mage'][Math.floor(Math.random()*3)],
-        atk_bonus: Math.floor(b.atk * (0.8 + 0.4*Math.random())),
-        def_bonus: Math.floor(b.def * (0.8 + 0.4*Math.random())),
-        hp_bonus: Math.floor(b.hp * (0.8 + 0.4*Math.random())),
+        owner_class: chosenClass,
+        atk_bonus: 0,
+        def_bonus: 0,
+        hp_bonus: 0,
+        spd_bonus: 0,
+        crit_bonus: 0,
+        crit_dmg_bonus: 0,
+        agi_bonus: 0,
+        int_bonus: 0,
+        vamp_bonus: 0,
+        reflect_bonus: 0
     };
+
+    const bonus = fixedBonuses[rarity];
+
+    const addBonus = (stat) => {
+        switch (stat) {
+            case 'atk': item.atk_bonus += bonus.atk; break;
+            case 'def': item.def_bonus += bonus.def; break;
+            case 'hp': item.hp_bonus += bonus.hp; break;
+            case 'spd': item.spd_bonus += bonus.spd; break;
+            case 'crit': item.crit_bonus += bonus.crit; break;
+            case 'crit_dmg': item.crit_dmg_bonus += bonus.crit_dmg; break;
+            case 'agi': item.agi_bonus += bonus.agi; break;
+            case 'int': item.int_bonus += bonus.int; break;
+            case 'vamp': item.vamp_bonus += bonus.vamp; break;
+            case 'reflect': item.reflect_bonus += bonus.reflect; break;
+        }
+    };
+
+    addBonus(stat1);
+    addBonus(stat2);
+
+    return item;
 }
 
-// Функция для определения награды по дню
-// Функция для определения награды по дню
+// Функция для определения награды по дню (без изменений)
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
     
@@ -186,14 +207,29 @@ router.post('/advent/claim', async (req, res) => {
             await client.query('UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4', [level, exp, userId, classChoice]);
             rewardDescription = `${reward.amount} опыта для класса ${classChoice}`;
         } else if (reward.type === 'item') {
+            // Используем новую функцию генерации с общими данными
             const item = generateItemByRarity(reward.rarity, null);
             const itemRes = await client.query(
-                `INSERT INTO items (name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-                [item.name, item.type, item.rarity, 'any', item.owner_class, item.atk_bonus, item.def_bonus, item.hp_bonus]
+                `INSERT INTO items (name, type, rarity, class_restriction, owner_class, 
+                    atk_bonus, def_bonus, hp_bonus, spd_bonus,
+                    crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
+                [item.name, item.type, item.rarity, 'any', item.owner_class,
+                 item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
+                 item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
             );
             const itemId = itemRes.rows[0].id;
-            await client.query('INSERT INTO inventory (user_id, item_id, equipped) VALUES ($1, $2, false)', [userId, itemId]);
+            await client.query(
+                `INSERT INTO inventory (user_id, item_id, equipped,
+                    name, type, rarity, class_restriction, owner_class,
+                    atk_bonus, def_bonus, hp_bonus, spd_bonus,
+                    crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+                [userId, itemId, false,
+                 item.name, item.type, item.rarity, 'any', item.owner_class,
+                 item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
+                 item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
+            );
             rewardDescription = `Предмет: ${item.name} (${item.rarity})`;
         }
         
@@ -237,7 +273,6 @@ router.get('/daily/list', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
-        // Преобразуем last_daily_reset (который тип date) в строку для сравнения
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
 
         if (lastResetStr !== today) {

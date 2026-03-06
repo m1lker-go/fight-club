@@ -157,9 +157,9 @@ function calculateStats(classData, inventory, subclass) {
         stats.spd += Math.floor(stats.agi / 5);
     }
     if (classData.class === 'mage') {
-        stats.atk += Math.floor(stats.int / 5) * 2;
-        stats.manaRegen += Math.floor(stats.int / 5) * 2; // бонус к регенерации маны
-    }
+    stats.agi += Math.floor(stats.int / 5);
+    stats.manaRegen += Math.floor(stats.int / 5) * 2;
+}
 
     // Пассивные бонусы подклассов (добавляем к статам, чтобы они влияли на бой)
     const roleBonus = rolePassives[subclass] || {};

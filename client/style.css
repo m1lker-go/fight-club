@@ -852,6 +852,7 @@ td {
     min-height: 60px;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     color: white;
 }
 .advent-day.claimed {
@@ -859,6 +860,7 @@ td {
     border-color: #27ae60;
     cursor: default;
     opacity: 0.6;
+    background-image: none !important; /* убираем фон для уже полученных */
 }
 .advent-day.available {
     background-image: url('/assets/icons/advent_available.png');

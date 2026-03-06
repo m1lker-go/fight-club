@@ -11,13 +11,9 @@ let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
 
-// Для вкладок в профиле
 let profileTab = 'bonuses';
-
-// Для вкладок в торговле
 let tradeTab = 'shop';
-
-let ratingTab = 'rating'; // 'rating' или 'power'
+let ratingTab = 'rating';
 
 // ===== УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ =====
 function hideSplashScreen() {
@@ -44,10 +40,9 @@ function showErrorSplash() {
     }
 }
 
-// Инициализация с таймаутом
 async function init() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 секунд
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
         const response = await fetch('https://fight-club-api-4och.onrender.com/auth/login', {
@@ -74,7 +69,6 @@ async function init() {
 
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
 
-            // Скрываем заставку после успешной загрузки
             hideSplashScreen();
         } else {
             alert('Ошибка авторизации');
@@ -92,7 +86,6 @@ async function init() {
     }
 }
 
-// Функция адвента
 async function checkAdvent() {
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`);
@@ -109,16 +102,13 @@ async function checkAdvent() {
     }
 }
 
-// Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
     
-    // Особые дни с предметами
     if (day === 7) return { type: 'item', rarity: 'common' };
     if (day === 14) return { type: 'item', rarity: 'uncommon' };
     if (day === 22) return { type: 'item', rarity: 'epic' };
     
-    // Последний день месяца — легендарный предмет
     if (day === daysInMonth && (daysInMonth === 30 || daysInMonth === 31)) {
         return { type: 'item', rarity: 'legendary' };
     }
@@ -138,7 +128,6 @@ function getAdventReward(day, daysInMonth) {
     return { type: 'coins', amount: 100 };
 }
 
-// Функция обновления данных с сервера
 async function refreshData() {
     if (!userData || !userData.tg_id) return;
     try {
@@ -157,7 +146,7 @@ async function refreshData() {
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
 
-            recalculatePower(); // пересчёт силы
+            recalculatePower();
             showScreen(currentScreen);
         }
     } catch (e) {
@@ -225,405 +214,6 @@ function getAvatarFilenameById(id) {
     return avatar ? avatar.filename : 'cat_heroweb.png';
 }
 
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
-function getCurrentClassData() {
-    if (!userData || !userData.current_class) {
-        return { level: 1, skill_points: 0, hp_points:0, atk_points:0, def_points:0, res_points:0, spd_points:0, crit_points:0, crit_dmg_points:0, dodge_points:0, acc_points:0, mana_points:0 };
-    }
-    return userClasses.find(c => c.class === userData.current_class) || { 
-        level: 1, skill_points: 0, 
-        hp_points: 0, atk_points: 0, def_points: 0, res_points: 0, 
-        spd_points: 0, crit_points: 0, crit_dmg_points: 0, 
-        dodge_points: 0, acc_points: 0, mana_points: 0 
-    };
-}
-
-function calculateClassStats(className, classData, inventory, subclass) {
-    const base = baseStats[className] || baseStats.warrior;
-
-    let baseStatsWithSkills = {
-        hp: base.hp + (classData.hp_points || 0) * 2,
-        atk: base.atk + (classData.atk_points || 0),
-        def: base.def + (classData.def_points || 0),
-        agi: base.agi + (classData.dodge_points || 0),
-        int: base.int + (classData.int_points || 0),
-        spd: base.spd + (classData.spd_points || 0),
-        crit: base.crit + (classData.crit_points || 0),
-        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
-        vamp: base.vamp + (classData.vamp_points || 0),
-        reflect: base.reflect + (classData.reflect_points || 0)
-    };
-
-    let gearBonuses = {
-        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
-    };
-
-    const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
-    equippedItems.forEach(item => {
-        gearBonuses.hp += item.hp_bonus || 0;
-        gearBonuses.atk += item.atk_bonus || 0;
-        gearBonuses.def += item.def_bonus || 0;
-        gearBonuses.agi += item.agi_bonus || 0;
-        gearBonuses.int += item.int_bonus || 0;
-        gearBonuses.spd += item.spd_bonus || 0;
-        gearBonuses.crit += item.crit_bonus || 0;
-        gearBonuses.critDmg += (item.crit_dmg_bonus || 0) / 100;
-        gearBonuses.vamp += item.vamp_bonus || 0;
-        gearBonuses.reflect += item.reflect_bonus || 0;
-    });
-
-    let final = {
-        hp: baseStatsWithSkills.hp + gearBonuses.hp,
-        atk: baseStatsWithSkills.atk + gearBonuses.atk,
-        def: baseStatsWithSkills.def + gearBonuses.def,
-        agi: baseStatsWithSkills.agi + gearBonuses.agi,
-        int: baseStatsWithSkills.int + gearBonuses.int,
-        spd: baseStatsWithSkills.spd + gearBonuses.spd,
-        crit: baseStatsWithSkills.crit + gearBonuses.crit,
-        critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg,
-        vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
-        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
-    };
-
-    // Классовые особенности (добавляются к final)
-    let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
-
-    if (className === 'warrior') {
-        const bonusHp = Math.floor(final.def / 5) * 3;
-        classBonus.hp = bonusHp;
-        final.hp += bonusHp;
-    }
-
-    if (className === 'assassin') {
-        const bonusSpd = Math.floor(final.agi / 5);
-        classBonus.spd = bonusSpd;
-        final.spd += bonusSpd;
-    }
-
-    if (className === 'mage') {
-        const bonusAgi = Math.floor(final.int / 5); // +1 ловкости за 5 интеллекта
-        classBonus.agi = bonusAgi;
-        final.agi += bonusAgi;
-    }
-
-    final.def = Math.min(100, final.def);
-    final.agi = Math.min(100, final.agi);
-    final.crit = Math.min(100, final.crit);
-
-    final.hp = Math.round(final.hp);
-    final.atk = Math.round(final.atk);
-    final.spd = Math.round(final.spd);
-    final.def = Math.round(final.def * 10) / 10;
-    final.agi = Math.round(final.agi * 10) / 10;
-    final.int = Math.round(final.int * 10) / 10;
-    final.crit = Math.round(final.crit * 10) / 10;
-    final.critDmg = Math.round(final.critDmg * 100) / 100;
-    final.vamp = Math.round(final.vamp * 10) / 10;
-    final.reflect = Math.round(final.reflect * 10) / 10;
-
-    return { base: baseStatsWithSkills, gear: gearBonuses, classBonus, final };
-}
-
-// Функция расчёта силы (с учётом уровня)
-function calculatePower(className, finalStats, level) {
-    const coeff = importance[className] || importance.warrior;
-    let power = 0;
-    power += finalStats.hp * coeff.hp;
-    power += finalStats.atk * coeff.atk * 2;
-    power += finalStats.def * coeff.def * 2;
-    power += finalStats.agi * coeff.agi * 2;
-    power += finalStats.int * coeff.int * 2;
-    power += finalStats.spd * coeff.spd * 2;
-    power += finalStats.crit * coeff.crit * 3;
-    power += (finalStats.critDmg - 1.5) * 100 * coeff.critDmg;
-    power += finalStats.vamp * coeff.vamp * 3;
-    power += finalStats.reflect * coeff.reflect * 2;
-    // Бонус за уровень: +10 за каждый уровень
-    power += level * 10;
-    return Math.round(power);
-}
-
-// Функция переподсчёта силы
-function recalculatePower() {
-    const classData = getCurrentClassData();
-    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
-    currentPower = calculatePower(userData.current_class, stats.final, classData.level);
-    updateTopBar();
-}
-
-function getClassNameRu(cls) {
-    if (cls === 'warrior') return 'Воин';
-    if (cls === 'assassin') return 'Ассасин';
-    return 'Маг';
-}
-
-function showRoleInfoModal(className) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
-    modalTitle.innerText = `Класс ${classNameRu}`;
-
-    // Описание классовой особенности
-    let classFeatureHtml = '';
-    if (className === 'warrior') {
-        classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
-                <p><strong>Стойкость:</strong> за каждые 5 единиц защиты получает +3 к максимальному здоровью.</p>
-            </div>
-        `;
-    } else if (className === 'assassin') {
-        classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
-                <p><strong>Стремительность:</strong> за каждые 5 единиц ловкости получает +1 к скорости.</p>
-            </div>
-        `;
-    } else if (className === 'mage') {
-        classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
-                <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</p>
-            </div>
-        `;
-    }
-
-    const subclasses = {
-        warrior: ['guardian', 'berserker', 'knight'],
-        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-        mage: ['pyromancer', 'cryomancer', 'illusionist']
-    }[className] || [];
-
-    let rolesHtml = '';
-    subclasses.forEach(sc => {
-        const desc = roleDescriptions[sc];
-        if (desc) {
-            rolesHtml += `
-                <div class="role-card">
-                    <h3>${desc.name}</h3>
-                    <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
-                    <p><span class="active">Активный:</span> ${desc.active}</p>
-                </div>
-            `;
-        }
-    });
-
-    modalBody.innerHTML = classFeatureHtml + rolesHtml;
-
-    modal.style.display = 'block';
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = function() {
-        modal.style.display = 'none';
-    };
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-}
-
-function showChestResult(item) {
-    const modal = document.getElementById('chestResultModal');
-    const body = document.getElementById('chestResultBody');
-
-    const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-    const classFolderMap = {
-        warrior: 'tank',
-        assassin: 'assassin',
-        mage: 'mage'
-    };
-    const typeFileMap = {
-        armor: 'armor',
-        boots: 'boots',
-        helmet: 'helmet',
-        weapon: 'weapon',
-        accessory: 'ring',
-        gloves: 'bracer'
-    };
-
-    let iconPath = '';
-    if (item.owner_class && item.type) {
-        const folder = classFolderMap[item.owner_class];
-        const fileType = typeFileMap[item.type];
-        if (folder && fileType) {
-            iconPath = `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
-        }
-    }
-    const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
-
-    let classDisplay = '';
-    if (item.owner_class) {
-        classDisplay = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
-    } else {
-        classDisplay = 'Неизвестный класс';
-    }
-
-    body.innerHTML = `
-        <div style="text-align: center;">
-            <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
-            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
-            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
-        </div>
-    `;
-
-    modal.style.display = 'block';
-}
-
-function showLevelUpModal(className) {
-    const modal = document.getElementById('levelUpModal');
-    const body = document.getElementById('levelUpBody');
-    const classNameRu = getClassNameRu(className);
-    body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны 3 очка навыков!</p>`;
-
-    modal.style.display = 'block';
-
-    const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
-    const laterBtn = document.getElementById('levelUpLaterBtn');
-
-    // Удаляем старые обработчики, чтобы не дублировались
-    const newUpgrade = upgradeBtn.cloneNode(true);
-    const newLater = laterBtn.cloneNode(true);
-    upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
-    laterBtn.parentNode.replaceChild(newLater, laterBtn);
-
-    newUpgrade.addEventListener('click', () => {
-        modal.style.display = 'none';
-        // Разблокируем меню, так как мы покидаем бой
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.pointerEvents = 'auto';
-            item.style.opacity = '1';
-        });
-        profileTab = 'upgrade';
-        showScreen('profile');
-    });
-
-    newLater.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-}
-
-function renderItemColumn(item, isEquipped) {
-    if (!item) {
-        return `
-            <div style="text-align: center;">
-                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 8px;"></div>
-                <div style="margin: 10px 0;">— пусто —</div>
-                <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
-            </div>
-        `;
-    }
-
-    const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-    const rarityClass = `rarity-${item.rarity}`;
-    const classFolderMap = {
-        warrior: 'tank',
-        assassin: 'assassin',
-        mage: 'mage'
-    };
-    const typeFileMap = {
-        armor: 'armor',
-        boots: 'boots',
-        helmet: 'helmet',
-        weapon: 'weapon',
-        accessory: 'ring',
-        gloves: 'bracer'
-    };
-    const folder = classFolderMap[item.owner_class];
-    const fileType = typeFileMap[item.type];
-    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
-
-    return `
-        <div style="text-align: center;">
-            <div style="width: 80px; height: 80px; margin: 0 auto;">
-                <img src="${iconPath}" style="width:100%; height:100%; object-fit: contain;">
-            </div>
-            <div style="font-weight: bold; margin-top: 5px;">${translateSkinName(item.name)}</div>
-            <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
-            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
-        </div>
-    `;
-}
-
-function showEquipCompareModal(oldItem, newItem) {
-    const modal = document.getElementById('equipCompareModal');
-    const body = document.getElementById('equipCompareBody');
-    const closeBtn = modal.querySelector('.close');
-
-    body.innerHTML = `
-        <div id="oldItemColumn" style="flex: 1;">${renderItemColumn(oldItem, true)}</div>
-        <div id="newItemColumn" style="flex: 1;">${renderItemColumn(newItem, false)}</div>
-    `;
-
-    modal.style.display = 'block';
-
-    const oldBtn = body.querySelector('#oldItemColumn .equip-compare-btn');
-    const newBtn = body.querySelector('#newItemColumn .equip-compare-btn');
-
-    if (oldBtn) {
-        oldBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-    }
-
-    if (newBtn) {
-        newBtn.addEventListener('click', async () => {
-            const currentClass = document.querySelector('.class-btn.active').dataset.class;
-            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
-                    item_id: newItem.id,
-                    target_class: currentClass
-                })
-            });
-            if (res.ok) {
-                await refreshData();
-                if (currentScreen === 'equip') renderEquip();
-            } else {
-                const err = await res.json();
-                alert('Ошибка: ' + err.error);
-            }
-            modal.style.display = 'none';
-        });
-    }
-
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target === modal) modal.style.display = 'none';
-    };
-}
-
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 function renderMain() {
     const classData = getCurrentClassData();
@@ -640,9 +230,7 @@ function renderMain() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: stretch; padding: 20px;">
-            <!-- Левая колонка -->
             <div style="flex: 1;"></div>
-            <!-- Центр с аватаром -->
             <div style="flex: 0 0 auto; text-align: center;">
                 <div class="hero-avatar" id="avatarClick" style="position: relative; width: 120px; height: 180px; cursor: pointer; margin: 0 auto;">
                     <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
@@ -650,7 +238,6 @@ function renderMain() {
                 </div>
                 <h2 style="margin-top: 10px;">${userData.username || 'Игрок'}</h2>
             </div>
-            <!-- Правая колонка с круглыми кнопками -->
             <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; align-items: center;">
                 <div style="display: flex; flex-direction: column; align-items: center;">
                     <div class="round-button" data-screen="equip" style="width: 50px; height: 50px;">
@@ -673,7 +260,6 @@ function renderMain() {
             </div>
         </div>
 
-        <!-- Информация об уровне -->
         <div style="margin: 20px 20px 0 20px;">
             <div style="display: flex; justify-content: space-between; font-size: 14px;">
                 <span>Уровень ${level}</span>
@@ -684,7 +270,6 @@ function renderMain() {
             </div>
         </div>
 
-        <!-- Выбор класса и роли -->
         <div style="margin: 20px;">
             <div style="display: flex; align-items: center; margin-bottom: 15px;">
                 <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
@@ -701,7 +286,6 @@ function renderMain() {
             </div>
         </div>
 
-        <!-- Кнопка боя -->
         <button class="btn" id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px);">Начать бой</button>
     `;
 
@@ -1430,232 +1014,7 @@ async function loadMarketItems(statFilter = 'any', container) {
     });
 }
 
-// ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
-function renderAdventCalendarInContainer(data, container) {
-    const { currentDay, daysInMonth, mask } = data;
-    let firstUnclaimed = null;
-    for (let d = 1; d <= currentDay; d++) {
-        if (!(mask & (1 << (d-1)))) {
-            firstUnclaimed = d;
-            break;
-        }
-    }
-
-    let html = '<div class="advent-grid">';
-    for (let day = 1; day <= daysInMonth; day++) {
-        const claimed = mask & (1 << (day-1));
-        const available = (day === firstUnclaimed);
-        let className = 'advent-day';
-        if (claimed) className += ' claimed';
-        else if (available) className += ' available';
-        else className += ' locked';
-
-        const reward = getAdventReward(day, daysInMonth);
-        let iconHtml = '';
-        if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: gold;"></i>';
-        } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
-        } else if (reward.type === 'item') {
-            let color = '#aaa';
-            if (reward.rarity === 'uncommon') color = '#2ecc71';
-            else if (reward.rarity === 'rare') color = '#2e86de';
-            else if (reward.rarity === 'epic') color = '#9b59b6';
-            else if (reward.rarity === 'legendary') color = '#f1c40f';
-            iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
-        }
-
-        html += `<div class="${className}" data-day="${day}">
-            <div>${day}</div>
-            <div style="font-size: 12px;">${iconHtml}</div>
-        </div>`;
-    }
-    html += '</div>';
-    container.innerHTML = html;
-
-    container.querySelectorAll('.advent-day.available').forEach(div => {
-        div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
-    });
-}
-
-function renderReferral() {
-    const referralDiv = document.createElement('div');
-    referralDiv.className = 'task-card referral-card';
-    referralDiv.style.display = 'flex';
-    referralDiv.style.alignItems = 'center';
-    referralDiv.style.justifyContent = 'space-between';
-    referralDiv.style.width = '100%';
-    referralDiv.style.marginBottom = '12px';
-    referralDiv.style.padding = '12px';
-    referralDiv.style.boxSizing = 'border-box';
-
-    const referralLink = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
-
-    referralDiv.innerHTML = `
-        <div style="flex: 2; min-width: 0;">
-            <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>
-            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>
-        </div>
-        <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">
-            <span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>
-        </div>
-        <div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">
-            <button class="btn referral-copy-btn" style="padding: 8px 12px; font-size: 12px; width: 45px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
-            <button class="btn referral-share-btn" style="padding: 8px 12px; font-size: 12px; width: 45px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
-        </div>
-    `;
-
-    referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
-        navigator.clipboard.writeText(referralLink).then(() => {
-            alert('Ссылка скопирована!');
-        }).catch(() => {
-            alert('Ошибка копирования');
-        });
-    });
-
-    referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
-        if (window.Telegram?.WebApp?.openTelegramLink) {
-            window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
-        } else {
-            navigator.clipboard.writeText(referralLink).then(() => {
-                alert('Ссылка скопирована! Вы можете отправить её другу.');
-            });
-        }
-    });
-
-    return referralDiv;
-}
-
-function renderTasks() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div class="tasks-container">
-            <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 12px; padding: 12px; box-sizing: border-box;">
-                <div style="flex: 2; min-width: 0;">
-                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
-                </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
-                    <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
-                    <span style="font-size: 12px; color: white;">EXP</span>
-                    <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
-                </div>
-                <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="btn" id="showAdventBtn" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОСМОТРЕТЬ</button>
-                </div>
-            </div>
-            <div id="referralPlaceholder"></div>
-            <h3 style="text-align:center; margin:10px 0; font-size: 16px;">Ежедневные задания</h3>
-            <div id="tasksList"></div>
-        </div>
-    `;
-
-    const referralPlaceholder = document.getElementById('referralPlaceholder');
-    if (referralPlaceholder) {
-        referralPlaceholder.appendChild(renderReferral());
-    }
-
-    document.getElementById('showAdventBtn').addEventListener('click', () => {
-        fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
-            .then(res => res.json())
-            .then(data => showAdventCalendar(data))
-            .catch(err => {
-                console.error('Error loading advent:', err);
-                alert('Ошибка загрузки календаря');
-            });
-    });
-
-    loadDailyTasks();
-}
-
-async function loadDailyTasks() {
-    try {
-        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const tasksData = await res.json();
-        if (!Array.isArray(tasksData)) {
-            console.error('Ответ не является массивом:', tasksData);
-            return;
-        }
-        const tasksList = document.getElementById('tasksList');
-        tasksList.innerHTML = '';
-
-        tasksData.forEach(task => {
-            if (task.completed) return;
-
-            const clampedProgress = Math.min(task.progress, task.target_value);
-            const progressPercent = (clampedProgress / task.target_value) * 100;
-            const rewardText = task.reward_type === 'coins' 
-                ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
-                : `${task.reward_amount} EXP`;
-
-            const translated = dailyTaskTranslations[task.name] || {};
-            const displayName = translated.name || task.name;
-            const displayDesc = translated.description || task.description;
-
-            const taskCard = document.createElement('div');
-            taskCard.className = 'task-card';
-            taskCard.style.display = 'flex';
-            taskCard.style.alignItems = 'center';
-            taskCard.style.justifyContent = 'space-between';
-            taskCard.style.width = '100%';
-            taskCard.style.marginBottom = '12px';
-            taskCard.style.padding = '12px';
-            taskCard.style.boxSizing = 'border-box';
-
-            taskCard.innerHTML = `
-                <div style="flex: 2; min-width: 0;">
-                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
-                    <div style="margin-top: 8px;">
-                        <div style="background-color: #2f3542; height: 5px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
-                        </div>
-                        <div style="font-size: 10px; color: #aaa; margin-top: 3px;">${clampedProgress}/${task.target_value}</div>
-                    </div>
-                </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
-                    <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
-                </div>
-                <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="btn claim-task-btn" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОЛУЧИТЬ</button>
-                </div>
-            `;
-            tasksList.appendChild(taskCard);
-        });
-
-        document.querySelectorAll('.claim-task-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const taskId = btn.dataset.taskId;
-                const rewardType = btn.dataset.rewardType;
-                const rewardAmount = parseInt(btn.dataset.rewardAmount);
-
-                if (rewardType === 'exp') {
-                    claimDailyExp(taskId, rewardAmount);
-                } else {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-                    });
-                    const data = await res.json();
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        alert(`Вы получили ${rewardAmount} монет!`);
-                        loadDailyTasks();
-                        refreshData();
-                    }
-                }
-            });
-        });
-
-    } catch (e) {
-        console.error('Error loading daily tasks:', e);
-    }
-}
-
-
+// ==================== РЕЙТИНГ ====================
 function renderRating() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -1735,181 +1094,363 @@ function renderForge() {
     });
 }
 
-// ==================== АДВЕНТ-КАЛЕНДАРЬ (функции) ====================
-function showAdventCalendar() {
-    fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
-        .then(res => res.json())
-        .then(data => {
-            renderAdventCalendar(data);
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Ошибка загрузки календаря');
-        });
-}
-
-function renderAdventCalendar(data) {
-    const { currentDay, daysInMonth, mask } = data;
+// ==================== ПРОФИЛЬ ====================
+function renderProfile() {
     const content = document.getElementById('content');
 
-    let firstUnclaimed = null;
-    for (let d = 1; d <= currentDay; d++) {
-        if (!(mask & (1 << (d-1)))) {
-            firstUnclaimed = d;
-            break;
-        }
-    }
+    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tg_id: userData.tg_id })
+    }).catch(err => console.error('Failed to update profile task', err));
 
-    let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
-    for (let day = 1; day <= daysInMonth; day++) {
-        const claimed = mask & (1 << (day-1));
-        const available = (day === firstUnclaimed);
-        let className = 'advent-day';
-        if (claimed) className += ' claimed';
-        else if (available) className += ' available';
-        else className += ' locked';
-
-        const reward = getAdventReward(day, daysInMonth);
-        let iconHtml = '';
-        if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: gold;"></i>';
-        } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
-        } else if (reward.type === 'item') {
-            let color = '#aaa';
-            if (reward.rarity === 'uncommon') color = '#2ecc71';
-            else if (reward.rarity === 'rare') color = '#2e86de';
-            else if (reward.rarity === 'epic') color = '#9b59b6';
-            else if (reward.rarity === 'legendary') color = '#f1c40f';
-            iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
-        }
-
-        html += `<div class="${className}" data-day="${day}">
-            <div>${day}</div>
-            <div style="font-size: 12px;">${iconHtml}</div>
-        </div>`;
-    }
-    html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
-    content.innerHTML = html;
-
-    document.querySelectorAll('.advent-day.available').forEach(div => {
-        div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
-    });
-
-    document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
-}
-
-function claimAdventDay(day, daysInMonth) {
-    const reward = getAdventReward(day, daysInMonth);
-
-    if (reward.type === 'exp') {
-        showClassChoiceModal(day, reward.amount);
-    } else {
-        fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, day })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) alert(data.error);
-            else {
-                alert(`Вы получили: ${data.reward}`);
-                showAdventCalendar();
-                refreshData();
-            }
-        })
-        .catch(err => alert('Ошибка: ' + err));
-    }
-}
-
-function showClassChoiceModal(day, expAmount) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
+    content.innerHTML = `
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
+            <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
+            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">Улучшить</button>
         </div>
+        <div id="profileContent"></div>
     `;
 
-    modal.style.display = 'block';
-
-    const classButtons = modalBody.querySelectorAll('.class-choice');
-    classButtons.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const classChoice = e.target.dataset.class;
-            modal.style.display = 'none';
-
-            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, day, classChoice })
-            });
-            const data = await res.json();
-            if (data.error) alert(data.error);
-            else {
-                alert(`Вы получили: ${data.reward}`);
-                showAdventCalendar();
-                refreshData();
-            }
+    document.querySelectorAll('.profile-tab').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            profileTab = e.target.dataset.tab;
+            renderProfile();
         });
     });
 
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
+    renderProfileTab(profileTab);
 }
 
-function claimDailyExp(taskId, expAmount) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+function renderProfileTab(tab) {
+    const profileContent = document.getElementById('profileContent');
+    if (tab === 'bonuses') {
+        renderProfileBonuses(profileContent);
+    } else if (tab === 'upgrade') {
+        renderSkills(profileContent);
+    } else if (tab === 'skins') {
+        renderSkins(profileContent);
+    }
+}
 
-    modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
+function renderProfileBonuses(container) {
+    const currentClass = userData.current_class;
+    const classData = getCurrentClassData();
+    const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
+
+    container.innerHTML = `
+        <div class="class-selector" style="margin-bottom: 15px;">
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+        </div>
+        <div style="margin-top: 15px;">
+            <div><strong>Уровень:</strong> ${classData.level}</div>
+            <div><strong>Опыт:</strong> ${classData.exp}</div>
+            <div><strong>Очки навыков:</strong> ${classData.skill_points}</div>
+        </div>
+        <h4 style="margin: 15px 0 5px;">Характеристики</h4>
+        <table style="width:100%; border-collapse: collapse;">
+            <tr>
+                <th style="text-align:left;">Параметр</th>
+                <th style="text-align:center;">База</th>
+                <th style="text-align:center;">+Инв.</th>
+                <th style="text-align:center;">+Особ.</th>
+                <th style="text-align:center;">Итого</th>
+            </tr>
+            ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
+            ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
+            ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
+            ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.classBonus?.agi ? stats.classBonus.agi + '%' : '', stats.final.agi + '%')}
+            ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
+            ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
+            ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
+            ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
+            ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
+            ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
+        </table>
+    `;
+
+    container.querySelectorAll('.class-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const newClass = e.target.dataset.class;
+            if (newClass === currentClass) return;
+            const res = await fetch('https://fight-club-api-4och.onrender.com/player/class', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+            });
+            if (res.ok) {
+                userData.current_class = newClass;
+                await refreshData();
+                renderProfileTab(profileTab);
+            }
+        });
+    });
+}
+
+function renderSkills(container) {
+    const classData = getCurrentClassData();
+    const skillPoints = classData.skill_points;
+    const currentClass = userData.current_class;
+    const base = baseStats[currentClass] || baseStats.warrior;
+
+    container.innerHTML = `
+        <div class="class-selector" style="margin-bottom: 15px;">
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+        </div>
+        <div style="text-align: center; margin: 10px 0; font-size: 18px;">
+            Доступно очков навыков: <strong>${skillPoints}</strong>
+        </div>
+        <div class="skills-list">
+            ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 2', base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
+            ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
+            ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
+            ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
+            ${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
+            ${renderSkillItem('spd_points', 'Скорость', 'Увеличивает скорость (очередность хода) на 1', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
+            ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1% (макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
+            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Увеличивает множитель критического урона на 1% (база ×1.5)', (1.5 + (classData.crit_dmg_points || 0)/100).toFixed(2) + 'x', classData.crit_dmg_points || 0, skillPoints)}
+            ${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает % от нанесённого урона', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
+            ${renderSkillItem('reflect_points', 'Отражение', 'Возвращает % полученного урона атакующему', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
         </div>
     `;
 
-    modal.style.display = 'block';
-
-    const classButtons = modalBody.querySelectorAll('.class-choice');
-    classButtons.forEach(btn => {
+    container.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            const classChoice = e.target.dataset.class;
-            modal.style.display = 'none';
-
-            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+            const newClass = e.target.dataset.class;
+            if (newClass === currentClass) return;
+            await fetch('https://fight-club-api-4och.onrender.com/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
-                    task_id: taskId, 
-                    class_choice: classChoice 
+                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+            });
+            userData.current_class = newClass;
+            renderSkills(container);
+        });
+    });
+
+    container.querySelectorAll('.skill-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const stat = e.target.dataset.stat;
+            const res = await fetch('https://fight-club-api-4och.onrender.com/player/upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tg_id: userData.tg_id,
+                    class: currentClass,
+                    stat: stat,
+                    points: 1
                 })
             });
             const data = await res.json();
-            if (data.error) {
-                alert(data.error);
+            if (data.success) {
+                await refreshData();
+                renderSkills(container);
             } else {
-                alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
-                renderTasks();
-                refreshData();
+                alert('Ошибка: ' + data.error);
             }
         });
     });
+}
 
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
+function renderSkillItem(statName, displayName, description, currentValue, level, skillPoints) {
+    return `
+        <div class="skill-item">
+            <div class="skill-info">
+                <div class="skill-name">${displayName}</div>
+                <div class="skill-desc">${description}</div>
+            </div>
+            <div class="skill-value">${currentValue}</div>
+            <button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}>+</button>
+        </div>
+    `;
+}
+
+function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue) {
+    const gearNum = parseFloat(gearValue) || 0;
+    const classBonusNum = parseFloat(classBonusValue) || 0;
+    const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
+    const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
+    return `
+        <tr>
+            <td style="padding: 5px 0;">${label}</td>
+            <td style="text-align:center;">${baseValue}</td>
+            <td style="text-align:center;">${gearDisplay}</td>
+            <td style="text-align:center;">${classBonusDisplay}</td>
+            <td style="text-align:center; font-weight:bold;">${finalValue}</td>
+        </tr>
+    `;
+}
+
+// ==================== СКИНЫ ====================
+function renderSkins(container) {
+    Promise.all([
+        fetch('https://fight-club-api-4och.onrender.com/avatars').then(res => {
+            if (!res.ok) throw new Error('Failed to fetch avatars');
+            return res.json();
+        }),
+        fetch(`https://fight-club-api-4och.onrender.com/avatars/user/${userData.tg_id}`).then(res => {
+            if (!res.ok) throw new Error('Failed to fetch owned avatars');
+            return res.json();
+        })
+    ])
+    .then(([allAvatars, ownedIds]) => {
+        const activeAvatarId = userData.avatar_id || 1;
+        const ownedSet = new Set(ownedIds);
+        ownedSet.add(1);
+
+        const sortedAvatars = [...allAvatars].sort((a, b) => {
+            if (a.id === activeAvatarId) return -1;
+            if (b.id === activeAvatarId) return 1;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+
+        let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">';
+        sortedAvatars.forEach(avatar => {
+            const isActive = avatar.id === activeAvatarId;
+            const isOwned = ownedSet.has(avatar.id);
+            const priceGold = parseInt(avatar.price_gold, 10) || 0;
+            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+
+            let priceHtml = '';
+            if (!isOwned) {
+                let parts = [];
+                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                if (parts.length > 0) {
+                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">${parts.join(' + ')}</div>`;
+                } else {
+                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">Бесплатно</div>`;
+                }
+            }
+
+            html += `
+                <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
+                    ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
+                    <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
+                    ${priceHtml}
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+
+        container.querySelectorAll('[data-avatar-id]').forEach(div => {
+            div.addEventListener('click', () => {
+                const avatarId = parseInt(div.dataset.avatarId);
+                const avatarFilename = div.dataset.avatarFilename;
+                const owned = div.dataset.owned === 'true';
+                showSkinModal(avatarId, avatarFilename, owned);
+            });
+        });
+    })
+    .catch(err => {
+        console.error('Error loading avatars:', err);
+        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
+    });
+}
+
+function showSkinModal(avatarId, avatarFilename, owned) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    fetch('https://fight-club-api-4och.onrender.com/avatars')
+        .then(res => res.json())
+        .then(avatarsList => {
+            const avatar = avatarsList.find(a => a.id === avatarId);
+            if (!avatar) {
+                alert('Аватар не найден');
+                return;
+            }
+
+            const isActive = avatarId === userData.avatar_id;
+            modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
+
+            const priceGold = parseInt(avatar.price_gold, 10) || 0;
+            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+
+            let priceHtml = '';
+            if (!owned && !isActive) {
+                let parts = [];
+                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
+                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                if (parts.length > 0) {
+                    priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
+                } else {
+                    priceHtml = `<p style="color:white;">Бесплатно</p>`;
+                }
+            }
+
+            modalBody.innerHTML = `
+                <div style="text-align: center;">
+                    <img src="/assets/${avatarFilename}" style="max-width: 100%; max-height: 300px; border-radius: 10px;">
+                    <div style="font-size: 24px; font-weight: bold; color: white; margin: 15px 0 5px;">${translateSkinName(avatar.name)}</div>
+                    ${priceHtml}
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                        ${!owned && !isActive ? '<button class="btn" id="buySkin">Купить</button>' : ''}
+                        ${owned && !isActive ? '<button class="btn" id="activateSkin">Активировать</button>' : ''}
+                        <button class="btn" id="closeSkinModal">Назад</button>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'block';
+
+            if (!owned && !isActive) {
+                document.getElementById('buySkin').addEventListener('click', async () => {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/avatars/buy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        await refreshData();
+                        modal.style.display = 'none';
+                        renderProfileTab('skins');
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                });
+            }
+
+            if (owned && !isActive) {
+                document.getElementById('activateSkin').addEventListener('click', async () => {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/player/avatar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        userData.avatar_id = avatarId;
+                        userData.avatar = avatarFilename;
+                        modal.style.display = 'none';
+                        renderProfileTab('skins');
+                        if (currentScreen === 'main') renderMain();
+                        if (currentScreen === 'equip') renderEquip();
+                    } else {
+                        alert('Ошибка при смене аватара');
+                    }
+                });
+            }
+
+            document.getElementById('closeSkinModal').addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            const closeBtn = modal.querySelector('.close');
+            closeBtn.onclick = () => modal.style.display = 'none';
+        })
+        .catch(err => {
+            console.error('Error loading avatar details:', err);
+            alert('Ошибка загрузки данных аватара');
+        });
 }
 
 // Инициализация меню и запуск

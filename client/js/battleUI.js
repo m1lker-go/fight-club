@@ -38,7 +38,7 @@ function showBattleScreen(battleData) {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
-            <!-- Верхняя панель с именами (без таймера и кнопки скорости) -->
+            <!-- Верхняя панель с именами -->
             <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <div style="text-align: left;">
                     <div>${userData.username}</div>
@@ -67,28 +67,28 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Колонка 2: стаки на игроке (без фона) -->
+                <!-- Колонка 2: стаки на игроке -->
                 <div class="player-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
+                    <div class="debuff-slot" data-side="player" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="2" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="3" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
-                    <div class="debuff-slot" data-side="player" data-slot="5" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: таймер и кнопка скорости по центру -->
+                <!-- Колонка 3: таймер и кнопка скорости -->
                 <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
                     <div class="battle-timer" id="battleTimer" style="width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
                 </div>
 
-                <!-- Колонка 4: стаки на враге (без фона) -->
+                <!-- Колонка 4: стаки на враге -->
                 <div class="enemy-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
+                    <div class="debuff-slot" data-side="enemy" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="2" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="3" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
-                    <div class="debuff-slot" data-side="enemy" data-slot="5" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
                 <!-- Колонка 5: аватар противника -->
@@ -107,7 +107,7 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Лог боя – увеличенная высота -->
+            <!-- Лог боя -->
             <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
         </div>
     `;
@@ -137,78 +137,120 @@ function showBattleScreen(battleData) {
     let currentAnimationTimeout = null;
     let timer;
 
-    // Карта соответствия подкласса и типа стака (для обычных атак)
-    const passiveDebuffMap = {
-        venom_blade: 'poison',
-        pyromancer: 'burn',
-        cryomancer: 'freeze'
+    // Состояние стаков для игрока и врага
+    let playerStacks = { poison: 0, burn: 0, freeze: 0 };
+    let enemyStacks = { poison: 0, burn: 0, freeze: 0 };
+
+    // Максимальное количество стаков для каждого типа (до сброса)
+    const MAX_STACKS = {
+        poison: 30,   // но мы не будем отслеживать до 30, просто показываем до 5 слотов
+        burn: 30,
+        freeze: 3     // при 3 заморозка и сброс
     };
 
-    // Функции для работы со стаками
-    function updateDebuffSlot(side, type, active) {
+    // Функция обновления отображения всех слотов для конкретной стороны и типа
+    function updateStacksVisual(side, type) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         if (slots.length === 0) return;
-        
-        let slotIndex;
-        if (type === 'poison') slotIndex = 0;
-        else if (type === 'burn') slotIndex = 1;
-        else if (type === 'freeze') slotIndex = 2;
+
+        const stacks = (side === 'player' ? playerStacks : enemyStacks)[type];
+        // Определяем, какой тип иконки использовать
+        let iconSrc = '';
+        if (type === 'poison') iconSrc = '/assets/icons/icon_poison.png';
+        else if (type === 'burn') iconSrc = '/assets/icons/icon_fire.png';
+        else if (type === 'freeze') iconSrc = '/assets/icons/icon_ice.png';
         else return;
-        
-        const slot = slots[slotIndex];
-        if (!slot) return;
-        
-        if (active) {
-            if (!slot.querySelector('img')) {
-                const img = document.createElement('img');
-                let src = '';
-                if (type === 'poison') src = '/assets/icons/icon_poison.png';
-                else if (type === 'burn') src = '/assets/icons/icon_fire.png';
-                else if (type === 'freeze') src = '/assets/icons/icon_ice.png';
-                img.src = src;
-                img.alt = type;
+
+        // Для каждого слота от 0 до 4 (первые пять) решаем, показывать иконку или нет
+        for (let i = 0; i < 5; i++) {
+            const slot = slots[i];
+            if (!slot) continue;
+            // Если номер слота меньше текущего количества стаков, вставляем иконку (или обновляем)
+            if (i < stacks) {
+                if (!slot.querySelector('img')) {
+                    const img = document.createElement('img');
+                    img.src = iconSrc;
+                    img.alt = type;
+                    slot.innerHTML = '';
+                    slot.appendChild(img);
+                }
+            } else {
+                // Убираем иконку, если она есть
                 slot.innerHTML = '';
-                slot.appendChild(img);
-            }
-        } else {
-            slot.innerHTML = '';
-        }
-    }
-
-    function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
-        const targetSide = isPlayerTurn ? 'enemy' : 'player';
-        const lower = action.toLowerCase();
-
-        const isUltimate = lower.includes('ультимейт') || lower.includes('ядовитая волна') || 
-                          lower.includes('огненный шторм') || lower.includes('вечная зима') ||
-                          lower.includes('зазеркалье') || lower.includes('смертельный удар') ||
-                          lower.includes('кровопускание') || lower.includes('кровавая жатва') ||
-                          lower.includes('несокрушимость') || lower.includes('щит правосудия');
-
-        if (!isUltimate) {
-            if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
-                const type = passiveDebuffMap[attackerSubclass];
-                updateDebuffSlot(targetSide, type, true);
-            }
-        } else {
-            if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
-                updateDebuffSlot(targetSide, 'poison', false);
-            }
-            if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                updateDebuffSlot(targetSide, 'burn', true);
-            }
-            if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
-                updateDebuffSlot(targetSide, 'freeze', true);
             }
         }
     }
 
+    // Функция для добавления стака
+    function addStack(side, type, count = 1) {
+        const stacks = (side === 'player' ? playerStacks : enemyStacks);
+        const max = (type === 'freeze') ? 3 : 30; // для льда максимум 3, для остальных условно 30
+        const old = stacks[type];
+        const newVal = Math.min(old + count, max);
+        stacks[type] = newVal;
+        updateStacksVisual(side, type);
+
+        // Проверка на заморозку (достигли 3)
+        if (type === 'freeze' && newVal === 3) {
+            // Заморозка: сбрасываем стаки и, возможно, показываем другой эффект (здесь просто сброс)
+            stacks[type] = 0;
+            updateStacksVisual(side, type);
+            // Можно добавить логику, что цель заморожена (но сервер сам обрабатывает)
+        }
+    }
+
+    // Функция для сброса всех стаков определённого типа
+    function resetStack(side, type) {
+        const stacks = (side === 'player' ? playerStacks : enemyStacks);
+        stacks[type] = 0;
+        updateStacksVisual(side, type);
+    }
+
+    // Очистка всех слотов при старте
     function clearAllDebuffSlots() {
         document.querySelectorAll('.debuff-slot').forEach(slot => {
             slot.innerHTML = '';
         });
     }
     clearAllDebuffSlots();
+
+    // Карта соответствия подкласса и типа стака
+    const passiveDebuffMap = {
+        venom_blade: 'poison',
+        pyromancer: 'burn',
+        cryomancer: 'freeze'
+    };
+
+    function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
+        const targetSide = isPlayerTurn ? 'enemy' : 'player';
+        const lower = action.toLowerCase();
+
+        // Определяем, является ли действие ультимейтом (упрощённо)
+        const isUltimate = lower.includes('ядовитая волна') || lower.includes('огненный шторм') || lower.includes('вечная зима');
+
+        if (!isUltimate) {
+            // Обычная атака – накладываем стак в соответствии с подклассом атакующего
+            if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
+                const type = passiveDebuffMap[attackerSubclass];
+                addStack(targetSide, type, 1);
+            }
+        } else {
+            // Ультимейты
+            if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
+                // Ядовитая волна – сбрасывает яд у цели
+                resetStack(targetSide, 'poison');
+            }
+            if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
+                // Огненный шторм – накладывает много стаков? В описании "поджигает с силой 50% от урона", 
+                // но для простоты добавим 1 стак (или можно увеличить на 1)
+                addStack(targetSide, 'burn', 1);
+            }
+            if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
+                // Вечная зима – замораживает (накладывает 1 стак льда, но если уже 2, то станет 3 и произойдёт заморозка)
+                addStack(targetSide, 'freeze', 1);
+            }
+        }
+    }
 
     // Вспомогательные функции для анимации
     function hideAnimations() {
@@ -299,6 +341,7 @@ function showBattleScreen(battleData) {
         const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
         showAnimation(target, anim);
 
+        // Обновляем стаки на основе действия
         parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         const logEntry = document.createElement('div');
@@ -310,7 +353,7 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
-    // Управление скоростью одной кнопкой
+    // Управление скоростью
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         speed = (speed === 1) ? 2 : 1;

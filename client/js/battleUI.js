@@ -146,6 +146,13 @@ function showBattleScreen(battleData) {
     let currentAnimationTimeout = null;
     let timer;
 
+    // Карта соответствия подкласса и типа стака (для обычных атак)
+    const passiveDebuffMap = {
+        venom_blade: 'poison',
+        pyromancer: 'burn',
+        cryomancer: 'freeze'
+    };
+
     // Функции для работы со стаками
     function updateDebuffSlot(side, type, active) {
         // side: 'player' или 'enemy'
@@ -154,7 +161,7 @@ function showBattleScreen(battleData) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         if (slots.length === 0) return;
         
-        // poison -> слот 1, burn -> слот 2, freeze -> слот 3 (остальные резерв)
+        // poison -> слот 0, burn -> слот 1, freeze -> слот 2 (остальные резерв)
         let slotIndex;
         if (type === 'poison') slotIndex = 0;
         else if (type === 'burn') slotIndex = 1;
@@ -183,30 +190,41 @@ function showBattleScreen(battleData) {
         }
     }
 
-    function parseActionForDebuffs(action, isPlayerAction) {
-        // isPlayerAction: true если действие совершил игрок (атаковал врага), false если враг атаковал игрока
+    function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
+        // Определяем, на кого направлен эффект (цель) – на противника атакующего
+        const targetSide = isPlayerTurn ? 'enemy' : 'player';
         const lower = action.toLowerCase();
-        const targetSide = isPlayerAction ? 'enemy' : 'player';
-        
-        // Проверяем наложение стаков (упрощённо)
-        if (lower.includes('яд') || lower.includes('отравление') || lower.includes('poison') || 
-            lower.includes('ядовитый клинок') || lower.includes('venom')) {
-            updateDebuffSlot(targetSide, 'poison', true);
+
+        // 1. Обычная атака (не ультимейт) – накладываем стак, если подкласс соответствует
+        // Определяем, является ли действие ультимейтом (по ключевым словам)
+        const isUltimate = lower.includes('ультимейт') || lower.includes('ядовитая волна') || 
+                          lower.includes('огненный шторм') || lower.includes('вечная зима') ||
+                          lower.includes('зазеркалье') || lower.includes('смертельный удар') ||
+                          lower.includes('кровопускание') || lower.includes('кровавая жатва') ||
+                          lower.includes('несокрушимость') || lower.includes('щит правосудия');
+
+        if (!isUltimate) {
+            // Обычная атака – накладываем стак в соответствии с подклассом атакующего
+            if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
+                const type = passiveDebuffMap[attackerSubclass];
+                updateDebuffSlot(targetSide, type, true);
+            }
+        } else {
+            // Ультимейты: особые эффекты
+            if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
+                // Ядовитая волна – сбрасывает яд у цели (врага)
+                updateDebuffSlot(targetSide, 'poison', false);
+            }
+            if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
+                // Огненный шторм – накладывает горение (в серверной логике он добавляет стаки, поэтому включаем)
+                updateDebuffSlot(targetSide, 'burn', true);
+            }
+            if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
+                // Вечная зима – замораживает (накладывает стак заморозки)
+                updateDebuffSlot(targetSide, 'freeze', true);
+            }
+            // Другие ультимейты пока не требуют иконок
         }
-        if (lower.includes('огонь') || lower.includes('пламя') || lower.includes('burn') || 
-            lower.includes('fire') || lower.includes('поджигатель') || lower.includes('pyromancer')) {
-            updateDebuffSlot(targetSide, 'burn', true);
-        }
-        if (lower.includes('лёд') || lower.includes('заморозка') || lower.includes('freeze') || 
-            lower.includes('ice') || lower.includes('ледяной маг') || lower.includes('cryomancer')) {
-            updateDebuffSlot(targetSide, 'freeze', true);
-        }
-        
-        // Сброс стаков (ультимейты)
-        if (lower.includes('ядовитая волна')) {
-            updateDebuffSlot('enemy', 'poison', false);
-        }
-        // Для огня и льда пока нет сброса, можно добавить позже
     }
 
     function clearAllDebuffSlots() {
@@ -300,11 +318,14 @@ function showBattleScreen(battleData) {
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
+        // Определяем подкласс атакующего в этом ходу
+        const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
+
         const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
         showAnimation(target, anim);
 
-        // Обновляем стаки на основе действия
-        parseActionForDebuffs(turn.action, isPlayerTurn);
+        // Обновляем стаки на основе подкласса атакующего
+        parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';

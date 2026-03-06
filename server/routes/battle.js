@@ -375,6 +375,8 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     return { damageToDefender, damageToSelf, logEntries };
 }
 
+
+
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
@@ -415,7 +417,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     } else if (enemyStats.spd > playerStats.spd) {
         turn = 'enemy';
     } else {
-        // При равенстве скорости – случайный выбор
         turn = Math.random() < 0.5 ? 'player' : 'enemy';
     }
 
@@ -434,9 +435,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         };
 
         if (turn === 'player') {
-            // Если игрок заморожен, он пропускает ход
+            // Если игрок заморожен, пропускает ход
             if (playerState.frozen > 0) {
-                playerState.frozen = 0; // разморозка
+                playerState.frozen = 0;
                 log.push(`<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`);
                 turnState.action = `${playerName} пропускает ход.`;
                 turn = 'enemy';
@@ -447,6 +448,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             playerState.hp = playerHp;
             enemyState.hp = enemyHp;
 
+            // Эффекты в начале хода (яд, огонь, берсерк)
             const startEffects = applyTurnStartEffects(playerStats, enemyState, playerName, enemyName, playerSubclass, playerState);
             if (startEffects.damageToDefender > 0) {
                 enemyHp -= startEffects.damageToDefender;
@@ -456,6 +458,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 playerHp -= startEffects.damageToSelf;
                 log.push(...startEffects.logEntries);
             }
+
+            // Проверка, не умер ли кто-то от эффектов
+            if (enemyHp <= 0) break;
+            if (playerHp <= 0) break;
 
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
             let actionLog = '';
@@ -503,12 +509,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             log.push(actionLog);
             turnState.action = actionLog;
 
+            // Проверка смерти после действия
+            if (enemyHp <= 0) break;
+            if (playerHp <= 0) break;
+
             if (playerState.reflectBuff > 0) playerState.reflectBuff--;
             if (playerState.vampBuff > 0) playerState.vampBuff--;
 
             turn = 'enemy';
         } else {
-            // Если враг заморожен, он пропускает ход
+            // Аналогично для хода врага
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
                 log.push(`<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`);
@@ -530,6 +540,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 enemyHp -= startEffects.damageToSelf;
                 log.push(...startEffects.logEntries);
             }
+
+            if (playerHp <= 0) break;
+            if (enemyHp <= 0) break;
 
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
             let actionLog = '';
@@ -577,6 +590,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             log.push(actionLog);
             turnState.action = actionLog;
 
+            if (playerHp <= 0) break;
+            if (enemyHp <= 0) break;
+
             if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
             if (enemyState.vampBuff > 0) enemyState.vampBuff--;
 
@@ -585,11 +601,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         turns.push(turnState);
     }
 
+    // Определение победителя
     let winner = null;
     if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
     else if (playerHp <= 0) winner = 'enemy';
     else if (enemyHp <= 0) winner = 'player';
 
+    // Добавление финальной фразы
     const victoryPhrases = [
         'Вы наносите сокрушительный удар. Соперник повержен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
         'Ваша атака не оставляет шансов. Враг падает. <span style="color:#2ecc71;">ПОБЕДА!</span>',
@@ -630,6 +648,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         enemyMaxHp: enemyStats.hp
     };
 }
+
 
 // --- Вспомогательные функции для опыта, энергии и генерации бота ---
 function expNeeded(level) {

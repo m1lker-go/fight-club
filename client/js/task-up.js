@@ -24,9 +24,9 @@ function renderAdventCalendarInContainer(data, container) {
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: gold;"></i>';
+            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>'; // белый цвет
         } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
+            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>'; // белый цвет
         } else if (reward.type === 'item') {
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';
@@ -262,9 +262,9 @@ function renderAdventCalendar(data) {
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: gold;"></i>';
+            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>'; // белый цвет
         } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color:#00aaff;">EXP</span>';
+            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>'; // белый цвет
         } else if (reward.type === 'item') {
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';

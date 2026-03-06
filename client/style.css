@@ -168,7 +168,7 @@ body {
 /* Контейнеры аватаров в бою */
 .hero-avatar, .enemy-avatar {
     width: 80px;
-    height: 120px; /* можно изменить на нужную высоту */
+    height: 120px;
     border-radius: 10px;
     border: 2px solid #00aaff;
     overflow: hidden;
@@ -850,6 +850,9 @@ td {
     align-items: center;
     justify-content: center;
     min-height: 60px;
+    background-size: cover;
+    background-position: center;
+    color: white;
 }
 .advent-day.claimed {
     background-color: #2ecc71;
@@ -858,19 +861,24 @@ td {
     opacity: 0.6;
 }
 .advent-day.available {
-    background-color: #00aaff;
-    color: white;
+    background-image: url('/assets/icons/advent_available.png');
+    background-color: transparent;
 }
 .advent-day.locked {
-    background-color: #2f3542;
-    border-color: #7f8c8d;
-    color: #7f8c8d;
-    cursor: not-allowed;
+    background-image: url('/assets/icons/advent_locked.png');
+    background-color: transparent;
+    filter: grayscale(100%);
+    color: #aaa;
+}
+.advent-day.locked i, .advent-day.locked span {
+    filter: grayscale(100%);
+    opacity: 0.7;
 }
 .advent-day i, .advent-day span {
     font-size: 18px;
     margin-top: 4px;
 }
+
 .task-card {
     background-color: #232833;
     border-radius: 16px;
@@ -933,7 +941,6 @@ td {
     margin-top: 2px;
 }
 
-
 .forge-slot {
     width: 70px;
     height: 70px;
@@ -949,7 +956,6 @@ td {
 .forge-slot span {
     color: #aaa;
 }
-
 
 /* Сетка для слотов кузницы */
 .forge-slots-grid {
@@ -991,18 +997,17 @@ td {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('/assets/splash-bg.png'); /* путь к вашему изображению */
+    background-image: url('/assets/splash-bg.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     display: flex;
-    align-items: flex-end;        /* прижимаем содержимое к низу */
+    align-items: flex-end;
     justify-content: center;
     z-index: 9999;
     transition: opacity 0.5s ease;
 }
 
-/* Полупрозрачный слой для затемнения фона, чтобы текст читался */
 #splash-screen::before {
     content: '';
     position: absolute;
@@ -1010,15 +1015,15 @@ td {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.4); /* регулируйте прозрачность */
+    background-color: rgba(0, 0, 0, 0.4);
     z-index: 1;
 }
 
 .splash-content {
     position: relative;
-    z-index: 2;                   /* выше затемнения */
+    z-index: 2;
     text-align: center;
-    margin-bottom: 15vh;           /* отступ от низа, чтобы текст был в нижней трети */
+    margin-bottom: 15vh;
     color: white;
     max-width: 80%;
 }

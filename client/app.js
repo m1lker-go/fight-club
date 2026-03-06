@@ -44,221 +44,6 @@ function showErrorSplash() {
     }
 }
 
-// Словарь для перевода подклассов
-const roleDescriptions = {
-    // Воин
-    guardian: {
-        name: 'Страж',
-        passive: 'Живой щит – снижает весь входящий урон на 10%, 20% шанс полностью заблокировать атаку.',
-        active: 'Несокрушимость – восстанавливает 20% от максимального HP, снимает отрицательные эффекты.'
-    },
-    berserker: {
-        name: 'Берсерк',
-        passive: 'Кровавая ярость – чем меньше HP, тем выше урон (до +50% при HP < 20%). Каждая атака наносит себе 10% от показателя атаки (но не менее 1).',
-        active: 'Кровопускание – жертвует 30% от максимального HP, затем наносит урон x3 от атаки.'
-    },
-    knight: {
-        name: 'Рыцарь',
-        passive: 'Зеркальный щит – отражает 20% полученного физического урона обратно атакующему.',
-        active: 'Щит правосудия – на 2 хода увеличивает отражение урона на 50% и снимает все негативные эффекты.'
-    },
-    // Ассасин
-    assassin: {
-        name: 'Убийца',
-        passive: 'Смертельное касание – критический урон ×2.5 вместо ×1.5.',
-        active: 'Смертельный удар – наносит 350% урона от атаки, гарантированный критический удар.'
-    },
-    venom_blade: {
-        name: 'Ядовитый клинок',
-        passive: 'Кумулятивный яд – каждая атака накладывает яд (+2 урона за стак, макс. 30). В конце хода яд наносит урон = стаки ×2.',
-        active: 'Ядовитая волна – наносит урон = текущий яд ×5 и сбрасывает стаки.'
-    },
-    blood_hunter: {
-        name: 'Кровавый охотник',
-        passive: 'Вампиризм – восстанавливает 20% от нанесённого урона.',
-        active: 'Кровавая жатва – на 2 хода усиливает вампиризм до 50% и наносит 150% урона от атаки.'
-    },
-    // Маг
-    pyromancer: {
-        name: 'Поджигатель',
-        passive: 'Горящие души – каждая атака поджигает цель (+2 урона огнём за стак). В конце хода огонь наносит урон = стаки ×2.',
-        active: 'Огненный шторм – наносит 400% урона от атаки и поджигает с силой 50% от урона.'
-    },
-    cryomancer: {
-        name: 'Ледяной маг',
-        passive: 'Ледяная кровь – 25% шанс заморозить атакующего на 1 ход при получении урона. Снижает входящий физический урон на 30% (не действует на ультимейты).',
-        active: 'Вечная зима – замораживает врага на 1 ход и наносит 200% урона от атаки (удваивается, если враг уже заморожен).'
-    },
-    illusionist: {
-        name: 'Иллюзионист',
-        passive: 'Мираж – гарантированно избегает каждой 4-й атаки противника.',
-        active: 'Зазеркалье – заставляет врага атаковать самого себя, нанося себе удвоенный урон от своей атаки.'
-    }
-};
-
-// Базовые характеристики классов
-const baseStats = {
-    warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-    assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-    mage: { hp: 18, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
-};
-
-// Веса характеристик для расчёта силы
-const importance = {
-    warrior: {
-        hp: 2.0, atk: 2.0, def: 2.0,
-        crit: 1.5, reflect: 1.5, critDmg: 1.5,
-        agi: 1.0, int: 1.0, spd: 1.0, vamp: 0.5
-    },
-    assassin: {
-        atk: 2.0, agi: 2.0, vamp: 2.0,
-        hp: 1.5, crit: 1.5, critDmg: 1.5,
-        def: 1.0, int: 1.0, spd: 1.0, reflect: 1.0
-    },
-    mage: {
-        atk: 2.0, int: 2.0, agi: 2.0,
-        hp: 1.5, crit: 1.5, critDmg: 1.5,
-        def: 1.0, spd: 1.0, vamp: 0.5, reflect: 0.5
-    }
-};
-
-// Словарь перевода названий предметов
-const itemNameTranslations = {
-    'Rusty Sword': 'Ржавый меч',
-    'Wooden Shield': 'Деревянный щит',
-    'Leather Helmet': 'Кожаный шлем',
-    'Rag Gloves': 'Тряпичные перчатки',
-    'Old Boots': 'Старые сапоги',
-    'Copper Ring': 'Медное кольцо',
-    'Blunt Dagger': 'Затупленный кинжал',
-    'Rag Cloak': 'Тряпичный плащ',
-    'Burlap Mask': 'Маска из мешковины',
-    'Thief Gloves': 'Перчатки вора',
-    'Torn Boots': 'Рваные сапоги',
-    'Trickster Ring': 'Кольцо ловкача',
-    'Broken Staff': 'Сломанный посох',
-    'Worn Robe': 'Потёртая мантия',
-    'Old Hood': 'Старый капюшон',
-    'Rag Mitts': 'Тряпичные рукавицы',
-    'Holey Shoes': 'Дырявые башмаки',
-    'Novice Ring': 'Кольцо начинающего',
-    'Quality Sword': 'Качественный меч',
-    'Reinforced Shield': 'Укреплённый щит',
-    'Visor Helmet': 'Шлем с забралом',
-    'Leather Gloves': 'Кожаные перчатки',
-    'Speed Boots': 'Сапоги скорохода',
-    'Strength Ring': 'Кольцо силы',
-    'Sharp Dagger': 'Острый кинжал',
-    'Wanderer Cloak': 'Плащ странника',
-    'Stealth Mask': 'Маска скрытности',
-    'Nimble Gloves': 'Перчатки проворства',
-    'Silent Boots': 'Сапоги бесшумные',
-    'Lucky Ring': 'Кольцо удачи',
-    'Unity Staff': 'Посох единства',
-    'Apprentice Robe': 'Мантия ученика',
-    'Wizard Hood': 'Капюшон чародея',
-    'Spellcaster Gloves': 'Перчатки заклинателя',
-    'Wanderer Boots': 'Сапоги странника',
-    'Wisdom Ring': 'Кольцо мудрости',
-    'Knights Shield': 'Щит рыцаря',
-    'Warrior Sword': 'Меч воина',
-    'Heavy Sword': 'Тяжелый меч',
-    'Plate Armor': 'Латы',
-    'Warrior Helmet': 'Шлем воина',
-    'Warrior Gloves': 'Перчатки воина',
-    'Warrior Boots': 'Сапоги воина',
-    'Warrior Ring': 'Кольцо воина',
-    'Health Ring': 'Кольцо здоровья',
-    'Assassin Dagger': 'Кинжал ассасина',
-    'Poison Blade': 'Отравленный клинок',
-    'Shadow Cloak': 'Плащ теней',
-    'Assassin Mask': 'Маска убийцы',
-    'Assassin Gloves': 'Перчатки ловкача',
-    'Speed Boots': 'Сапоги скорости',
-    'Assassin Ring': 'Кольцо ловкости',
-    'Critical Amulet': 'Амулет крита',
-    'Mage Staff': 'Посох мага',
-    'Fire Wand': 'Жезл огня',
-    'Mage Robe': 'Мантия чародея',
-    'Mage Hood': 'Капюшон мага',
-    'Mage Gloves': 'Перчатки мага',
-    'Mage Boots': 'Сапоги мага',
-    'Mana Ring': 'Кольцо маны',
-    'Resistance Amulet': 'Амулет сопротивления',
-    'Legendary Sword': 'Легендарный меч',
-    'Blade of Darkness': 'Клинок тьмы',
-    'Elemental Staff': 'Посох стихий',
-    'Titan Cuirass': 'Кираса титана',
-    'Ghost Cloak': 'Плащ призрака',
-    'Archmage Robe': 'Роба архимага',
-    'Excalibur': 'Экскалибур',
-    'Dagger of Fate': 'Кинжал судьбы',
-    'Staff of Gods': 'Посох богов',
-    'Ancient Armor': 'Доспех древних',
-    'Invisibility Cloak': 'Плащ невидимости',
-    'Omnipotence Robe': 'Мантия всевластия'
-};
-
-const rarityTranslations = {
-    'common': 'Обычное',
-    'uncommon': 'Необычное',
-    'rare': 'Редкое',
-    'epic': 'Эпическое',
-    'legendary': 'Легендарное'
-};
-
-// Словарь для перевода ежедневных заданий
-const dailyTaskTranslations = {
-    'Warrior Winner': {
-        name: 'Воин',
-        description: 'Выиграйте 5 боёв, играя за Воина'
-    },
-    'Assassin Winner': {
-        name: 'Ассасин',
-        description: 'Выиграйте 5 боёв, играя за Ассасина'
-    },
-    'Mage Winner': {
-        name: 'Маг',
-        description: 'Выиграйте 5 боёв, играя за Мага'
-    },
-    'Experience Gain': {
-        name: 'Набор опыта',
-        description: 'Получите 50 очков опыта (суммарно за все классы)'
-    },
-    'Training Day': {
-        name: 'Тренировка',
-        description: 'Сыграйте 15 матчей за день (любых)'
-    },
-    'Curious': {
-        name: 'Любознательный',
-        description: 'Зайдите на страницу профиля'
-    },
-    'Lucky': {
-        name: 'Счастливчик',
-        description: 'Получите предмет редкостью не ниже «Редкий» из сундука'
-    },
-    'Referral': {
-        name: 'Реферальная программа',
-        description: 'Пригласи друга и получи 100 монет'
-    }
-};
-
-// Словарь для перевода названий скинов
-const skinNameTranslations = {
-    'skin1': 'Бедолага',
-    'skin3': 'Зоркий глаз',
-    'skin4': 'Улыбочка',
-    'skin5': 'Ночная тень',
-    'skin6': 'Стальная броня',
-    'skin7': 'Чародей',
-    'skin9': 'Магический снежок',
-    'skin10': 'Страж королевства'
-};
-
-function translateSkinName(englishName) {
-    return skinNameTranslations[englishName] || englishName;
-}
-
 // Инициализация с таймаутом
 async function init() {
     const controller = new AbortController();
@@ -516,10 +301,10 @@ function calculateClassStats(className, classData, inventory, subclass) {
     }
 
     if (className === 'mage') {
-    const bonusAgi = Math.floor(final.int / 5); // +1 ловкости за 5 интеллекта
-    classBonus.agi = bonusAgi;
-    final.agi += bonusAgi;
-}
+        const bonusAgi = Math.floor(final.int / 5); // +1 ловкости за 5 интеллекта
+        classBonus.agi = bonusAgi;
+        final.agi += bonusAgi;
+    }
 
     final.def = Math.min(100, final.def);
     final.agi = Math.min(100, final.agi);
@@ -597,12 +382,12 @@ function showRoleInfoModal(className) {
             </div>
         `;
     } else if (className === 'mage') {
-       classFeatureHtml = `
-    <div class="role-card" style="border-left-color: #f39c12;">
-        <h3>Особенность класса</h3>
-        <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</p>
-    </div>
-`;
+        classFeatureHtml = `
+            <div class="role-card" style="border-left-color: #f39c12;">
+                <h3>Особенность класса</h3>
+                <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</p>
+            </div>
+        `;
     }
 
     const subclasses = {
@@ -717,15 +502,15 @@ function showLevelUpModal(className) {
     laterBtn.parentNode.replaceChild(newLater, laterBtn);
 
     newUpgrade.addEventListener('click', () => {
-    modal.style.display = 'none';
-    // Разблокируем меню, так как мы покидаем бой
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.style.pointerEvents = 'auto';
-        item.style.opacity = '1';
+        modal.style.display = 'none';
+        // Разблокируем меню, так как мы покидаем бой
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
+        profileTab = 'upgrade';
+        showScreen('profile');
     });
-    profileTab = 'upgrade';
-    showScreen('profile');
-});
 
     newLater.addEventListener('click', () => {
         modal.style.display = 'none';
@@ -2733,31 +2518,31 @@ async function showBattleResult(battleData, timeOut = false) {
     const ratingChange = battleData.ratingChange || 0;
 
     try {
-    await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            tg_id: userData.tg_id,
-            class_played: userData.current_class,
-            is_victory: isVictory
-        })
-    });
-} catch (err) {
-    console.error('Ошибка /update/battle:', err);
-}
+        await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tg_id: userData.tg_id,
+                class_played: userData.current_class,
+                is_victory: isVictory
+            })
+        });
+    } catch (err) {
+        console.error('Ошибка /update/battle:', err);
+    }
 
-try {
-    await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
-    });
-} catch (err) {
-    console.error('Ошибка /update/exp:', err);
-}
+    try {
+        await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
+        });
+    } catch (err) {
+        console.error('Ошибка /update/exp:', err);
+    }
 
-// Обновляем список заданий после всех обновлений
-await loadDailyTasks();
+    // Обновляем список заданий после всех обновлений
+    await loadDailyTasks();
 
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

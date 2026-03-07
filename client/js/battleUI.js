@@ -296,6 +296,7 @@ function showBattleScreen(battleData) {
             return;
         }
         const turn = turns[turnIndex];
+        console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         document.getElementById('heroHp').style.width = (turn.playerHp / battleData.result.playerMaxHp) * 100 + '%';
         document.getElementById('heroHpText').innerText = turn.playerHp + '/' + battleData.result.playerMaxHp;
         document.getElementById('enemyHp').style.width = (turn.enemyHp / battleData.result.enemyMaxHp) * 100 + '%';

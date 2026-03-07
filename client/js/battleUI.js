@@ -162,12 +162,11 @@ function showBattleScreen(battleData) {
             element.innerText = `${current}/${maxHp}`;
             if (currentStep >= steps) {
                 clearInterval(interval);
-                element.innerText = `${end}/${maxHp}`; // финальное значение
+                element.innerText = `${end}/${maxHp}`;
             }
         }, stepTime);
     }
 
-    // Функция для плавного изменения ширины (через CSS transition уже есть, но для точности можно оставить)
     function setHpBarWidth(barId, percent) {
         const bar = document.getElementById(barId);
         if (bar) bar.style.width = percent + '%';
@@ -264,7 +263,7 @@ function showBattleScreen(battleData) {
     }
 
     function showAnimation(target, animationFile) {
-        console.log('showAnimation', target, animationFile); // для отладки
+        console.log('showAnimation', target, animationFile);
         hideAnimations();
         const container = document.getElementById(target + '-animation');
         if (!container) return;
@@ -284,7 +283,12 @@ function showBattleScreen(battleData) {
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
 
-        if (action.includes('несокрушимость')) {
+        // Анимация промаха (уклонение)
+        if (action.includes('уклоняется') || action.includes('уворачивается') || action.includes('использует неуловимый манёвр')) {
+            anim = 'missx.gif';
+            // цель остаётся target (защитник) – это правильно
+        }
+        else if (action.includes('несокрушимость')) {
             anim = 'hill.gif';
             target = isPlayerTurn ? 'hero' : 'enemy';
         } else if (action.includes('кровопускание')) {
@@ -326,14 +330,13 @@ function showBattleScreen(battleData) {
                 showAnimation('hero', 'defeat.gif');
             }
             
-            // Увеличили задержку до 2000 мс, чтобы анимация HP точно завершилась
             finishTimeout = setTimeout(() => showBattleResult(battleData), 2000);
             return;
         }
 
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
-        console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp); // добавили лог для проверки
+        console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
 
         // Получаем текущие значения HP из DOM (старые)
         const heroHpText = document.getElementById('heroHpText');
@@ -380,9 +383,9 @@ function showBattleScreen(battleData) {
         const isPlayerTurn = turn.turn === 'player';
         const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
-        // Проверяем, нужно ли показывать анимацию (пропуск хода, уворот)
+        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода, уклонение теперь обрабатывается в getAnimationForAction)
         const actionLower = turn.action.toLowerCase();
-        const skipAnimation = actionLower.includes('пропускает ход') || actionLower.includes('уклоняется') || actionLower.includes('уворачивается');
+        const skipAnimation = actionLower.includes('пропускает ход'); // уклонение убрали
 
         if (!skipAnimation) {
             const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);

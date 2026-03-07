@@ -838,10 +838,7 @@ td {
     margin: 15px 0;
 }
 .advent-day {
-    width: 100%;
     aspect-ratio: 1 / 1;
-    background-color: #232833;
-    border: 1px solid #00aaff;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -852,14 +849,16 @@ td {
     background-position: center;
     background-repeat: no-repeat;
     color: white;
-    font-size: 10px; /* для номера дня */
+    font-size: 10px;
+    border: none;
+    background-color: transparent;
 }
 .advent-day > div:first-child {
     font-size: 10px;
     margin-bottom: 2px;
 }
 .advent-day > div:last-child {
-    font-size: 14px; /* для иконок */
+    font-size: 14px;
     line-height: 1;
 }
 .advent-day i, .advent-day span {
@@ -869,45 +868,32 @@ td {
 /* Доступные ячейки */
 .advent-day.available {
     background-image: url('/assets/icons/advent_available.png');
-    background-color: transparent;
     color: white;
 }
 .advent-day.available .fa-coins,
 .advent-day.available span {
-    color: white !important; /* для монет и EXP */
-}
-.advent-day.available .fa-tshirt {
-    /* цвет остаётся из style */
+    color: white !important;
 }
 
 /* Заблокированные ячейки */
 .advent-day.locked {
     background-image: url('/assets/icons/advent_locked.png');
-    background-color: transparent;
     color: #aaa;
 }
 .advent-day.locked .fa-coins,
 .advent-day.locked span {
     color: #aaa !important;
 }
-.advent-day.locked .fa-tshirt {
-    /* цвет редкости не трогаем */
-}
 
 /* Уже полученные ячейки */
 .advent-day.claimed {
     background-image: url('/assets/icons/advent_claimed.png');
-    border-color: #27ae60;
-    background-color: transparent;
     cursor: default;
     color: #aaa;
 }
 .advent-day.claimed .fa-coins,
 .advent-day.claimed span {
     color: #aaa !important;
-}
-.advent-day.claimed .fa-tshirt {
-    /* цвет редкости не трогаем */
 }
 
 /* Адаптация для маленьких экранов */

@@ -438,6 +438,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             // Пропуск хода при заморозке
             if (playerState.frozen > 0) {
                 playerState.frozen = 0;
+                playerState.freezeStacks = 0;
                 const msg = `<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`;
                 log.push(msg);
                 turnState.action = msg;
@@ -545,6 +546,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             // Ход врага – аналогично с проверками
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
+                enemyState.freezeStacks = 0; 
                 const msg = `<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`;
                 log.push(msg);
                 turnState.action = msg;

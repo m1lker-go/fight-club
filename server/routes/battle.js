@@ -376,6 +376,8 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
 
 // ... (весь код до simulateBattle остаётся без изменений)
 
+// ... (весь код до simulateBattle остаётся без изменений)
+
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
@@ -450,8 +452,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             const startEffects = applyTurnStartEffects(playerStats, enemyState, playerName, enemyName, playerSubclass, playerState);
             if (startEffects.damageToDefender > 0) {
                 enemyHp -= startEffects.damageToDefender;
+                // Обнуляем HP, если <= 0
+                if (enemyHp <= 0) {
+                    enemyHp = 0;
+                }
                 log.push(...startEffects.logEntries);
                 if (enemyHp <= 0) {
+                    turnState.enemyHp = enemyHp; // обновляем в turnState
                     turnState.action = startEffects.logEntries.join(' ');
                     turns.push(turnState);
                     break;
@@ -459,8 +466,12 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
             if (startEffects.damageToSelf > 0) {
                 playerHp -= startEffects.damageToSelf;
+                if (playerHp <= 0) {
+                    playerHp = 0;
+                }
                 log.push(...startEffects.logEntries);
                 if (playerHp <= 0) {
+                    turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
                     turns.push(turnState);
                     break;
@@ -472,9 +483,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             if (playerMana >= 100) {
                 const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
-                if (skill.damage > 0) enemyHp -= skill.damage;
+                if (skill.damage > 0) {
+                    enemyHp -= skill.damage;
+                    if (enemyHp <= 0) enemyHp = 0;
+                }
                 if (skill.heal > 0) playerHp += skill.heal;
-                if (skill.selfDamage > 0) playerHp -= skill.selfDamage;
+                if (skill.selfDamage > 0) {
+                    playerHp -= skill.selfDamage;
+                    if (playerHp <= 0) playerHp = 0;
+                }
                 actionLog = skill.log;
                 playerMana -= 100;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
@@ -489,8 +506,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
                 if (attackResult.hit) {
                     enemyHp -= attackResult.damage;
+                    if (enemyHp <= 0) enemyHp = 0;
                     playerHp += attackResult.vampHeal;
                     playerHp -= attackResult.reflectDamage;
+                    if (playerHp <= 0) playerHp = 0;
                     actionLog = attackResult.log;
                     if (attackResult.berserkerBonus > 0) {
                         actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
@@ -512,6 +531,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             log.push(actionLog);
             turnState.action = actionLog;
+            turnState.playerHp = playerHp;  // обновляем значения в turnState
+            turnState.enemyHp = enemyHp;
             turns.push(turnState);
 
             if (enemyHp <= 0 || playerHp <= 0) break;
@@ -538,8 +559,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             const startEffects = applyTurnStartEffects(enemyStats, playerState, enemyName, playerName, enemySubclass, enemyState);
             if (startEffects.damageToDefender > 0) {
                 playerHp -= startEffects.damageToDefender;
+                if (playerHp <= 0) playerHp = 0;
                 log.push(...startEffects.logEntries);
                 if (playerHp <= 0) {
+                    turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
                     turns.push(turnState);
                     break;
@@ -547,8 +570,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
             if (startEffects.damageToSelf > 0) {
                 enemyHp -= startEffects.damageToSelf;
+                if (enemyHp <= 0) enemyHp = 0;
                 log.push(...startEffects.logEntries);
                 if (enemyHp <= 0) {
+                    turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
                     turns.push(turnState);
                     break;
@@ -560,9 +585,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             if (enemyMana >= 100) {
                 const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
-                if (skill.damage > 0) playerHp -= skill.damage;
+                if (skill.damage > 0) {
+                    playerHp -= skill.damage;
+                    if (playerHp <= 0) playerHp = 0;
+                }
                 if (skill.heal > 0) enemyHp += skill.heal;
-                if (skill.selfDamage > 0) enemyHp -= skill.selfDamage;
+                if (skill.selfDamage > 0) {
+                    enemyHp -= skill.selfDamage;
+                    if (enemyHp <= 0) enemyHp = 0;
+                }
                 actionLog = skill.log;
                 enemyMana -= 100;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
@@ -577,8 +608,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
                 if (attackResult.hit) {
                     playerHp -= attackResult.damage;
+                    if (playerHp <= 0) playerHp = 0;
                     enemyHp += attackResult.vampHeal;
                     enemyHp -= attackResult.reflectDamage;
+                    if (enemyHp <= 0) enemyHp = 0;
                     actionLog = attackResult.log;
                     if (attackResult.berserkerBonus > 0) {
                         actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
@@ -600,6 +633,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             log.push(actionLog);
             turnState.action = actionLog;
+            turnState.playerHp = playerHp;
+            turnState.enemyHp = enemyHp;
             turns.push(turnState);
 
             if (playerHp <= 0 || enemyHp <= 0) break;
@@ -611,7 +646,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         }
     }
 
-    // Определение победителя
+    // Определение победителя (уже с обнулёнными значениями)
     let winner = null;
     if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
     else if (playerHp <= 0) winner = 'enemy';
@@ -635,7 +670,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
     return {
         winner,
-        playerHpRemain: Math.max(0, playerHp),
+        playerHpRemain: Math.max(0, playerHp), // на всякий случай
         enemyHpRemain: Math.max(0, enemyHp),
         log,
         turns,

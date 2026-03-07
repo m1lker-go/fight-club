@@ -50,7 +50,7 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Строка с переключателем скорости -->
+            <!-- Строка с переключателем скорости (над аватарами) -->
             <div class="speed-row" style="display: flex; justify-content: center; padding: 5px;">
                 <button id="singleSpeedBtn" class="speed-btn" style="background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
             </div>
@@ -82,7 +82,7 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: таймер -->
+                <!-- Колонка 3: таймер (только таймер) -->
                 <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <div class="battle-timer" id="battleTimer" style="width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
                 </div>
@@ -176,7 +176,7 @@ function showBattleScreen(battleData) {
     let timer;
     let finishTimeout = null;
 
-    // Состояние стаков для игрока и врага
+    // Состояние стаков для игрока и врага (будем обновлять из данных сервера)
     let playerStacks = { poison: 0, burn: 0, freeze: 0 };
     let enemyStacks = { poison: 0, burn: 0, freeze: 0 };
 
@@ -261,27 +261,10 @@ function showBattleScreen(battleData) {
     }
     clearAllDebuffSlots();
 
+    // Функция parseActionForDebuffs больше не нужна для определения стаков – мы будем получать их с сервера,
+    // но оставим для анимации (можно удалить, если не нужна)
     function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
-        const targetSide = isPlayerTurn ? 'enemy' : 'player';
-        const lower = action.toLowerCase();
-        const isUltimate = lower.includes('ядовитая волна') || lower.includes('огненный шторм') || lower.includes('вечная зима');
-
-        if (!isUltimate) {
-            if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
-                const type = passiveDebuffMap[attackerSubclass];
-                addStack(targetSide, type, 1);
-            }
-        } else {
-            if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
-                resetStack(targetSide, 'poison');
-            }
-            if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                resetStack(targetSide, 'burn');
-            }
-            if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
-                resetStack(targetSide, 'freeze');
-            }
-        }
+        // (можно оставить для дополнительной анимации или удалить)
     }
 
     function hideAnimations() {
@@ -322,6 +305,7 @@ function showBattleScreen(battleData) {
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
 
+        // Анимация промаха (уклонение)
         if (action.includes('уклоняется') || action.includes('уворачивается') || action.includes('использует неуловимый манёвр')) {
             anim = 'missx.gif';
         }
@@ -367,7 +351,7 @@ function showBattleScreen(battleData) {
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
             
-            // В финальном блоке не применяем эффект поражения – он уже применён в последнем ходе
+            // В финале не применяем эффект поражения – он уже применён в последнем ходе
             finishTimeout = setTimeout(() => showBattleResult(battleData), 2500);
             return;
         }
@@ -376,8 +360,37 @@ function showBattleScreen(battleData) {
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
 
+        // ========== ОБНОВЛЕНИЕ СТАКОВ ИЗ ДАННЫХ СЕРВЕРА ==========
+        if (turn.playerPoisonStacks !== undefined) {
+            playerStacks.poison = turn.playerPoisonStacks;
+            updateStacksVisual('player', 'poison');
+        }
+        if (turn.playerBurnStacks !== undefined) {
+            playerStacks.burn = turn.playerBurnStacks;
+            updateStacksVisual('player', 'burn');
+        }
+        if (turn.playerFreezeStacks !== undefined) {
+            playerStacks.freeze = turn.playerFreezeStacks;
+            updateStacksVisual('player', 'freeze');
+        }
+        if (turn.enemyPoisonStacks !== undefined) {
+            enemyStacks.poison = turn.enemyPoisonStacks;
+            updateStacksVisual('enemy', 'poison');
+        }
+        if (turn.enemyBurnStacks !== undefined) {
+            enemyStacks.burn = turn.enemyBurnStacks;
+            updateStacksVisual('enemy', 'burn');
+        }
+        if (turn.enemyFreezeStacks !== undefined) {
+            enemyStacks.freeze = turn.enemyFreezeStacks;
+            updateStacksVisual('enemy', 'freeze');
+        }
+        // ==========================================================
+
+        // Если это финальное сообщение (не ход)
         if (turn.turn === 'final') {
             const winner = battleData.result.winner;
+            // Принудительно обнуляем полоску и текст проигравшего
             if (winner === 'player') {
                 document.getElementById('enemyHp').style.width = '0%';
                 document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
@@ -385,6 +398,7 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
+            // Добавляем финальное сообщение в лог (если action отсутствует, используем стандартное)
             const finalMessage = turn.action || (winner === 'player' ? 'Победа!' : 'Поражение!');
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
@@ -395,11 +409,13 @@ function showBattleScreen(battleData) {
             return;
         }
 
+        // Получаем текущие значения HP из DOM (старые)
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
         const enemyHpBar = document.getElementById('enemyHp');
 
+        // Парсим старые значения
         const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
         const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
 
@@ -408,6 +424,7 @@ function showBattleScreen(battleData) {
         const heroMax = battleData.result.playerMaxHp;
         const enemyMax = battleData.result.enemyMaxHp;
 
+        // Анимация HP (текст)
         if (heroNew !== heroOld && heroHpText) {
             animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
         }
@@ -415,15 +432,18 @@ function showBattleScreen(battleData) {
             animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
+        // Устанавливаем ширину полосы
         if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
         if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
+        // Обновление маны
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
         const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
+        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
         const actionLower = turn.action ? turn.action.toLowerCase() : '';
         const skipAnimation = actionLower.includes('пропускает ход');
 
@@ -432,7 +452,8 @@ function showBattleScreen(battleData) {
             showAnimation(target, anim);
         }
 
-        parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
+        // parseActionForDebuffs можно оставить закомментированным, так как стаки обновлены из данных сервера
+        // parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         if (turn.action) {
             const logEntry = document.createElement('div');

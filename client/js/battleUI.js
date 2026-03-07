@@ -55,7 +55,8 @@ function showBattleScreen(battleData) {
                 <!-- Колонка 1: аватар игрока -->
                 <div class="hero-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
-                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
                     <div class="hp-bar" style="width:80px; margin:5px auto;">
@@ -94,7 +95,8 @@ function showBattleScreen(battleData) {
                 <!-- Колонка 5: аватар противника -->
                 <div class="enemy-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
-                        <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
                     <div class="hp-bar" style="width:80px; margin:5px auto;">
@@ -124,6 +126,35 @@ function showBattleScreen(battleData) {
         }
         @keyframes fadeIn {
             to { opacity: 1; }
+        }
+
+        /* Стили для эффекта поражения */
+        .hero-card.defeated .hero-avatar-img,
+        .enemy-card.defeated .enemy-avatar-img {
+            filter: grayscale(1);
+            transition: filter 0.5s ease;
+        }
+        .defeat-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            background-color: rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .defeated .defeat-overlay {
+            opacity: 1;
         }
     `;
     document.head.appendChild(style);
@@ -316,6 +347,14 @@ function showBattleScreen(battleData) {
         return { target, anim };
     }
 
+    // Функция для применения эффекта поражения (ч/б + надпись)
+    function applyDefeatEffect(side) {
+        const card = document.querySelector(`.${side}-card`);
+        if (card) {
+            card.classList.add('defeated');
+        }
+    }
+
     function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
@@ -324,12 +363,12 @@ function showBattleScreen(battleData) {
             
             const winner = battleData.result.winner;
             if (winner === 'player') {
-                showAnimation('enemy', 'defeat.gif');
+                applyDefeatEffect('enemy');
             } else if (winner === 'enemy') {
-                showAnimation('hero', 'defeat.gif');
+                applyDefeatEffect('hero');
             }
             
-            // Уменьшаем задержку до 1500 мс (вместе с анимацией поражения ~2500 мс)
+            // Задержка перед показом результата (уменьшена до 1500 мс)
             finishTimeout = setTimeout(() => showBattleResult(battleData), 1500);
             return;
         }

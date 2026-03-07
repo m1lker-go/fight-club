@@ -451,7 +451,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToDefender > 0) {
                 enemyHp -= startEffects.damageToDefender;
                 log.push(...startEffects.logEntries);
-                // Если враг умер от эффектов, нужно добавить ход с действием? Но у нас нет отдельного действия, поэтому просто добавим запись в лог и завершим.
                 if (enemyHp <= 0) {
                     turnState.action = startEffects.logEntries.join(' ');
                     turns.push(turnState);
@@ -513,18 +512,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             log.push(actionLog);
             turnState.action = actionLog;
-
-            // Проверка смерти после действия
-            const died = enemyHp <= 0 || playerHp <= 0;
             turns.push(turnState);
-            if (died) break;
+
+            if (enemyHp <= 0 || playerHp <= 0) break;
 
             if (playerState.reflectBuff > 0) playerState.reflectBuff--;
             if (playerState.vampBuff > 0) playerState.vampBuff--;
 
             turn = 'enemy';
         } else {
-            // Ход врага – аналогично (с такими же проверками)
+            // Ход врага – аналогично с проверками
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
                 const msg = `<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`;
@@ -603,10 +600,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             log.push(actionLog);
             turnState.action = actionLog;
-
-            const died = playerHp <= 0 || enemyHp <= 0;
             turns.push(turnState);
-            if (died) break;
+
+            if (playerHp <= 0 || enemyHp <= 0) break;
 
             if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
             if (enemyState.vampBuff > 0) enemyState.vampBuff--;

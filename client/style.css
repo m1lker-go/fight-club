@@ -1075,3 +1075,7 @@ td {
     height: auto;
     display: block;
 }
+
+.hp-fill, .mana-fill {
+    transition: width 0.3s ease;
+}

@@ -326,12 +326,14 @@ function showBattleScreen(battleData) {
                 showAnimation('hero', 'defeat.gif');
             }
             
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 1500);
+            // Увеличили задержку до 2000 мс, чтобы анимация HP точно завершилась
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 2000);
             return;
         }
 
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
+        console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp); // добавили лог для проверки
 
         // Получаем текущие значения HP из DOM (старые)
         const heroHpText = document.getElementById('heroHpText');

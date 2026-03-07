@@ -1059,3 +1059,19 @@ td {
     opacity: 0;
     pointer-events: none;
 }
+
+.animation-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: auto; /* высота подстроится под содержимое */
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+}
+.animation-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}

@@ -36,10 +36,11 @@ function renderAdventCalendarInContainer(data, container) {
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
 
-      html += `<div class="${className}" data-day="${day}">
-    <div style="font-size: 12px;">${iconHtml}</div>
-    <div>${day}</div>
-</div>`;
+        // Иконка сверху, номер снизу (размеры управляются CSS)
+        html += `<div class="${className}" data-day="${day}">
+            <div class="advent-icon">${iconHtml}</div>
+            <div class="advent-day-number">${day}</div>
+        </div>`;
     }
     html += '</div>';
     container.innerHTML = html;
@@ -262,9 +263,9 @@ function renderAdventCalendar(data) {
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>'; // белый цвет
+            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
         } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>'; // белый цвет
+            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
         } else if (reward.type === 'item') {
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';
@@ -273,10 +274,11 @@ function renderAdventCalendar(data) {
             else if (reward.rarity === 'legendary') color = '#f1c40f';
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
-html += `<div class="${className}" data-day="${day}">
-    <div style="font-size: 12px;">${iconHtml}</div>
-    <div>${day}</div>
-</div>`;
+
+        html += `<div class="${className}" data-day="${day}">
+            <div class="advent-icon">${iconHtml}</div>
+            <div class="advent-day-number">${day}</div>
+        </div>`;
     }
     html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
     content.innerHTML = html;

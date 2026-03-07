@@ -317,102 +317,104 @@ function showBattleScreen(battleData) {
         return { target, anim };
     }
 
-function playTurn() {
-    if (turnIndex >= turns.length) {
-        clearInterval(interval);
-        if (timer) clearInterval(timer);
-        if (finishTimeout) clearTimeout(finishTimeout);
-        
-        const winner = battleData.result.winner;
-        if (winner === 'player') {
-            showAnimation('enemy', 'defeat.gif');
-        } else if (winner === 'enemy') {
-            showAnimation('hero', 'defeat.gif');
+    function playTurn() {
+        if (turnIndex >= turns.length) {
+            clearInterval(interval);
+            if (timer) clearInterval(timer);
+            if (finishTimeout) clearTimeout(finishTimeout);
+            
+            const winner = battleData.result.winner;
+            if (winner === 'player') {
+                showAnimation('enemy', 'defeat.gif');
+            } else if (winner === 'enemy') {
+                showAnimation('hero', 'defeat.gif');
+            }
+            
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 2000);
+            return;
         }
-        
-        finishTimeout = setTimeout(() => showBattleResult(battleData), 2000);
-        return;
-    }
 
-    const turn = turns[turnIndex];
-    console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
-    console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
+        const turn = turns[turnIndex];
+        console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
+        console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
 
-    // Если это финальное сообщение (не ход), просто добавляем его в лог и переходим к следующему
-    if (turn.turn === 'final') {
-        const winner = battleData.result.winner;
-    if (winner === 'player') {
-        // Враг мёртв
-        document.getElementById('enemyHp').style.width = '0%';
-        document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
-    } else if (winner === 'enemy') {
-        document.getElementById('heroHp').style.width = '0%';
-        document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = turn.action || '';
-        logContainer.appendChild(logEntry);
-        logContainer.scrollTop = logContainer.scrollHeight;
+        // Если это финальное сообщение (не ход)
+        if (turn.turn === 'final') {
+            const winner = battleData.result.winner;
+            // Принудительно обнуляем полоску и текст проигравшего
+            if (winner === 'player') {
+                document.getElementById('enemyHp').style.width = '0%';
+                document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
+            } else if (winner === 'enemy') {
+                document.getElementById('heroHp').style.width = '0%';
+                document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
+            }
+            // Добавляем финальное сообщение в лог
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = turn.action || '';
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            turnIndex++;
+            return;
+        }
+
+        // Получаем текущие значения HP из DOM (старые)
+        const heroHpText = document.getElementById('heroHpText');
+        const enemyHpText = document.getElementById('enemyHpText');
+        const heroHpBar = document.getElementById('heroHp');
+        const enemyHpBar = document.getElementById('enemyHp');
+
+        // Парсим старые значения (они могут быть вида "текущее/макс")
+        const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
+        const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
+
+        // Новые значения могут быть undefined – в этом случае оставляем старые
+        const heroNew = turn.playerHp !== undefined ? turn.playerHp : heroOld;
+        const enemyNew = turn.enemyHp !== undefined ? turn.enemyHp : enemyOld;
+        const heroMax = battleData.result.playerMaxHp;
+        const enemyMax = battleData.result.enemyMaxHp;
+
+        // Анимация HP (текст) – только если значения изменились и новые не undefined
+        if (heroNew !== heroOld && heroHpText) {
+            animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
+        }
+        if (enemyNew !== enemyOld && enemyHpText) {
+            animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
+        }
+
+        // Устанавливаем ширину полосы
+        if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
+        if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
+
+        // Обновление маны
+        document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
+        document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
+
+        const isPlayerTurn = turn.turn === 'player';
+        const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
+
+        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
+        const actionLower = turn.action ? turn.action.toLowerCase() : '';
+        const skipAnimation = actionLower.includes('пропускает ход');
+
+        if (!skipAnimation && turn.action) {
+            const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
+            showAnimation(target, anim);
+        }
+
+        parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
+
+        if (turn.action) {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = turn.action;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
         turnIndex++;
-        return;
     }
-
-    // Получаем текущие значения HP из DOM (старые)
-    const heroHpText = document.getElementById('heroHpText');
-    const enemyHpText = document.getElementById('enemyHpText');
-    const heroHpBar = document.getElementById('heroHp');
-    const enemyHpBar = document.getElementById('enemyHp');
-
-    // Парсим старые значения (они могут быть вида "текущее/макс")
-    const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
-    const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
-
-    // Новые значения могут быть undefined – в этом случае оставляем старые
-    const heroNew = turn.playerHp !== undefined ? turn.playerHp : heroOld;
-    const enemyNew = turn.enemyHp !== undefined ? turn.enemyHp : enemyOld;
-    const heroMax = battleData.result.playerMaxHp;
-    const enemyMax = battleData.result.enemyMaxHp;
-
-    // Анимация HP (текст) – только если значения изменились и новые не undefined
-    if (heroNew !== heroOld && heroHpText) {
-        animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
-    }
-    if (enemyNew !== enemyOld && enemyHpText) {
-        animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
-    }
-
-    // Устанавливаем ширину полосы
-    if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
-    if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
-
-    // Обновление маны
-    document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
-    document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
-
-    const isPlayerTurn = turn.turn === 'player';
-    const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
-
-    // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
-    const actionLower = turn.action ? turn.action.toLowerCase() : '';
-    const skipAnimation = actionLower.includes('пропускает ход');
-
-    if (!skipAnimation && turn.action) {
-        const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
-        showAnimation(target, anim);
-    }
-
-    parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
-
-    if (turn.action) {
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = turn.action;
-        logContainer.appendChild(logEntry);
-        logContainer.scrollTop = logContainer.scrollHeight;
-    }
-
-    turnIndex++;
-}
 
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {

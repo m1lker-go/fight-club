@@ -112,7 +112,6 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Стили для анимации иконок
     const style = document.createElement('style');
     style.innerHTML = `
         .animation-container img { width: 100%; height: 100%; object-fit: contain; }
@@ -132,12 +131,13 @@ function showBattleScreen(battleData) {
     let turnIndex = 0;
     const turns = battleData.result.turns || [];
     const logContainer = document.getElementById('battleLog');
-    let speed = 1; // 1 = x1, 2 = x2
+    let speed = 1;
     let interval;
     let currentAnimationTimeout = null;
     let timer;
+    let finishTimeout = null; // для задержки после последнего хода
 
-    // Состояние стаков для игрока и врага (только для отображения)
+    // Состояние стаков для игрока и врага
     let playerStacks = { poison: 0, burn: 0, freeze: 0 };
     let enemyStacks = { poison: 0, burn: 0, freeze: 0 };
 
@@ -148,24 +148,18 @@ function showBattleScreen(battleData) {
         cryomancer: 'freeze'
     };
 
-    // Функция обновления отображения всех слотов для конкретной стороны и типа
     function updateStacksVisual(side, type) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         if (slots.length === 0) return;
-
         const stacks = (side === 'player' ? playerStacks : enemyStacks)[type];
-        // Определяем, какой тип иконки использовать
         let iconSrc = '';
         if (type === 'poison') iconSrc = '/assets/icons/icon_poison.png';
         else if (type === 'burn') iconSrc = '/assets/icons/icon_fire.png';
         else if (type === 'freeze') iconSrc = '/assets/icons/icon_ice.png';
         else return;
-
-        // Для каждого слота от 0 до 4 (первые пять) решаем, показывать иконку или нет
         for (let i = 0; i < 5; i++) {
             const slot = slots[i];
             if (!slot) continue;
-            // Если номер слота меньше текущего количества стаков, вставляем иконку (или обновляем)
             if (i < stacks) {
                 if (!slot.querySelector('img')) {
                     const img = document.createElement('img');
@@ -175,16 +169,13 @@ function showBattleScreen(battleData) {
                     slot.appendChild(img);
                 }
             } else {
-                // Убираем иконку, если она есть
                 slot.innerHTML = '';
             }
         }
     }
 
-    // Функция для добавления стака (вызывается при анализе действия)
     function addStack(side, type, count = 1) {
         const stacks = (side === 'player' ? playerStacks : enemyStacks);
-        // Для льда максимум 3, для остальных показываем до 5 (но сервер ограничивает до 5)
         const max = (type === 'freeze') ? 3 : 5;
         const old = stacks[type];
         const newVal = Math.min(old + count, max);
@@ -192,14 +183,12 @@ function showBattleScreen(battleData) {
         updateStacksVisual(side, type);
     }
 
-    // Функция для сброса стаков определённого типа
     function resetStack(side, type) {
         const stacks = (side === 'player' ? playerStacks : enemyStacks);
         stacks[type] = 0;
         updateStacksVisual(side, type);
     }
 
-    // Очистка всех слотов при старте
     function clearAllDebuffSlots() {
         document.querySelectorAll('.debuff-slot').forEach(slot => {
             slot.innerHTML = '';
@@ -212,37 +201,26 @@ function showBattleScreen(battleData) {
     function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
         const targetSide = isPlayerTurn ? 'enemy' : 'player';
         const lower = action.toLowerCase();
-
-        // Определяем, является ли действие ультимейтом (упрощённо)
         const isUltimate = lower.includes('ядовитая волна') || lower.includes('огненный шторм') || lower.includes('вечная зима');
 
         if (!isUltimate) {
-            // Обычная атака – накладываем стак в соответствии с подклассом атакующего
             if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
                 const type = passiveDebuffMap[attackerSubclass];
                 addStack(targetSide, type, 1);
             }
         } else {
-            // Ультимейты
             if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
-                // Ядовитая волна – сбрасывает яд у цели
                 resetStack(targetSide, 'poison');
             }
             if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                // Огненный шторм – накладывает стаки? В описании он наносит урон и сжигает стаки, значит сначала добавляем? 
-                // По логике ультимейт наносит урон и сбрасывает стаки, но сам тоже накладывает? Решим, что он сбрасывает.
-                // В серверной логике ультимейт поджигателя наносит урон + стаки и сбрасывает. Здесь для визуала добавим, что стаки сбрасываются.
-                resetStack(targetSide, 'burn');
-                // Можно также показать, что был применён огонь, но для простоты сбросим.
+                addStack(targetSide, 'burn', 1);
             }
             if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
-                // Вечная зима – замораживает (накладывает 1 стак льда, но если уже 2, то станет 3 и произойдёт заморозка)
                 addStack(targetSide, 'freeze', 1);
             }
         }
     }
 
-    // Вспомогательные функции для анимации
     function hideAnimations() {
         if (currentAnimationTimeout) {
             clearTimeout(currentAnimationTimeout);
@@ -311,10 +289,12 @@ function showBattleScreen(battleData) {
 
     function playTurn() {
         if (turnIndex >= turns.length) {
+            // Все ходы сыграны – останавливаем интервалы и планируем показ результата
             clearInterval(interval);
             if (timer) clearInterval(timer);
-            hideAnimations();
-            showBattleResult(battleData);
+            // Не вызываем hideAnimations, чтобы последняя анимация осталась
+            if (finishTimeout) clearTimeout(finishTimeout);
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1500);
             return;
         }
         const turn = turns[turnIndex];
@@ -331,7 +311,6 @@ function showBattleScreen(battleData) {
         const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
         showAnimation(target, anim);
 
-        // Обновляем стаки на основе действия
         parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         const logEntry = document.createElement('div');
@@ -343,7 +322,6 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
-    // Управление скоростью
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         speed = (speed === 1) ? 2 : 1;
@@ -356,7 +334,6 @@ function showBattleScreen(battleData) {
     playTurn();
     interval = setInterval(playTurn, 2500 / speed);
 
-    // Таймер 45 секунд
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
     timer = setInterval(() => {
@@ -365,6 +342,7 @@ function showBattleScreen(battleData) {
         if (timeLeft <= 0) {
             clearInterval(timer);
             clearInterval(interval);
+            if (finishTimeout) clearTimeout(finishTimeout); // не даём finishTimeout сработать
             hideAnimations();
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
@@ -372,6 +350,7 @@ function showBattleScreen(battleData) {
             if (playerPercent > enemyPercent) winner = 'player';
             else if (enemyPercent > playerPercent) winner = 'enemy';
             else winner = 'draw';
+            // Можно сразу показать результат, без задержки, так как таймер истёк
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);

@@ -374,6 +374,8 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     return { damageToDefender, damageToSelf, logEntries };
 }
 
+// ... (весь код до simulateBattle остаётся без изменений)
+
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
@@ -434,8 +436,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             // Пропуск хода при заморозке
             if (playerState.frozen > 0) {
                 playerState.frozen = 0;
-                log.push(`<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`);
-                turnState.action = `${playerName} пропускает ход.`;
+                const msg = `<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`;
+                log.push(msg);
+                turnState.action = msg;
                 turns.push(turnState);
                 turn = 'enemy';
                 continue;
@@ -448,20 +451,21 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToDefender > 0) {
                 enemyHp -= startEffects.damageToDefender;
                 log.push(...startEffects.logEntries);
+                // Если враг умер от эффектов, нужно добавить ход с действием? Но у нас нет отдельного действия, поэтому просто добавим запись в лог и завершим.
+                if (enemyHp <= 0) {
+                    turnState.action = startEffects.logEntries.join(' ');
+                    turns.push(turnState);
+                    break;
+                }
             }
             if (startEffects.damageToSelf > 0) {
                 playerHp -= startEffects.damageToSelf;
                 log.push(...startEffects.logEntries);
-            }
-
-            // Проверка смерти после эффектов начала хода
-            if (enemyHp <= 0) {
-                turns.push(turnState);
-                break;
-            }
-            if (playerHp <= 0) {
-                turns.push(turnState);
-                break;
+                if (playerHp <= 0) {
+                    turnState.action = startEffects.logEntries.join(' ');
+                    turns.push(turnState);
+                    break;
+                }
             }
 
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
@@ -520,11 +524,12 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             turn = 'enemy';
         } else {
-            // Ход врага – аналогично
+            // Ход врага – аналогично (с такими же проверками)
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
-                log.push(`<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`);
-                turnState.action = `${enemyName} пропускает ход.`;
+                const msg = `<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`;
+                log.push(msg);
+                turnState.action = msg;
                 turns.push(turnState);
                 turn = 'player';
                 continue;
@@ -537,19 +542,20 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToDefender > 0) {
                 playerHp -= startEffects.damageToDefender;
                 log.push(...startEffects.logEntries);
+                if (playerHp <= 0) {
+                    turnState.action = startEffects.logEntries.join(' ');
+                    turns.push(turnState);
+                    break;
+                }
             }
             if (startEffects.damageToSelf > 0) {
                 enemyHp -= startEffects.damageToSelf;
                 log.push(...startEffects.logEntries);
-            }
-
-            if (playerHp <= 0) {
-                turns.push(turnState);
-                break;
-            }
-            if (enemyHp <= 0) {
-                turns.push(turnState);
-                break;
+                if (enemyHp <= 0) {
+                    turnState.action = startEffects.logEntries.join(' ');
+                    turns.push(turnState);
+                    break;
+                }
             }
 
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
@@ -616,24 +622,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     else if (enemyHp <= 0) winner = 'player';
 
     // Добавление финальной фразы
-    const victoryPhrases = [
-        'Вы наносите сокрушительный удар. Соперник повержен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
-        'Ваша атака не оставляет шансов. Враг падает. <span style="color:#2ecc71;">ПОБЕДА!</span>',
-        'С последним ударом противник рушится на землю. <span style="color:#2ecc71;">ПОБЕДА!</span>',
-        'Вы оказались сильнее. Бой окончен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
-        'Невероятная схватка! Вы выходите победителем. <span style="color:#2ecc71;">ПОБЕДА!</span>'
-    ];
-    const defeatPhrases = [
-        'Соперник наносит решающий удар. Вы повержены. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
-        'Ваши силы иссякли... Это поражение. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
-        'Удар оказался смертельным. Вы проиграли. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
-        'Противник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
-        'Бой закончен. Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>'
-    ];
-    const drawPhrases = [
-        'Оба бойца падают одновременно. Ничья!',
-        'Взаимный удар – никто не выжил. Ничья.'
-    ];
+    const victoryPhrases = [ /* ... */ ];
+    const defeatPhrases = [ /* ... */ ];
+    const drawPhrases = [ /* ... */ ];
 
     let finalPhrase = '';
     if (winner === 'player') {

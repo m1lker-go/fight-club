@@ -36,10 +36,10 @@ function renderAdventCalendarInContainer(data, container) {
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
 
-        html += `<div class="${className}" data-day="${day}">
-            <div>${day}</div>
-            <div style="font-size: 12px;">${iconHtml}</div>
-        </div>`;
+      html += `<div class="${className}" data-day="${day}">
+    <div style="font-size: 12px;">${iconHtml}</div>
+    <div>${day}</div>
+</div>`;
     }
     html += '</div>';
     container.innerHTML = html;
@@ -273,11 +273,10 @@ function renderAdventCalendar(data) {
             else if (reward.rarity === 'legendary') color = '#f1c40f';
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
-
-        html += `<div class="${className}" data-day="${day}">
-            <div>${day}</div>
-            <div style="font-size: 12px;">${iconHtml}</div>
-        </div>`;
+html += `<div class="${className}" data-day="${day}">
+    <div style="font-size: 12px;">${iconHtml}</div>
+    <div>${day}</div>
+</div>`;
     }
     html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
     content.innerHTML = html;

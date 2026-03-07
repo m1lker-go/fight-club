@@ -82,7 +82,7 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: таймер (теперь только таймер) -->
+                <!-- Колонка 3: таймер (только таймер) -->
                 <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
                     <div class="battle-timer" id="battleTimer" style="width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
                 </div>
@@ -149,7 +149,7 @@ function showBattleScreen(battleData) {
             justify-content: center;
             color: #e74c3c;
             font-weight: bold;
-            font-size: 14px;  /* уменьшенный шрифт */
+            font-size: 14px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
             background-color: rgba(0,0,0,0.3);
             opacity: 0;
@@ -314,7 +314,7 @@ function showBattleScreen(battleData) {
             container.style.display = 'none';
             container.innerHTML = '';
             currentAnimationTimeout = null;
-        }, 1000);
+        }, 1000); // анимация длится 1 секунду
     }
 
     function getAnimationForAction(action, isPlayerTurn) {
@@ -376,8 +376,9 @@ function showBattleScreen(battleData) {
                 applyDefeatEffect('hero');
             }
             
-            // Увеличенная задержка до 2000 мс для общей длительности ~3 секунды
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 2000);
+            // Общая задержка после удара: анимация поражения 0.5с + пауза 2с = 2.5с
+            // Плюс анимация удара 1с даёт 3.5с до окна результата
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 2500);
             return;
         }
 
@@ -464,7 +465,6 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
-    // Управление скоростью теперь через кнопку вверху
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         speed = (speed === 1) ? 2 : 1;

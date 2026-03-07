@@ -61,7 +61,7 @@ function showBattleScreen(battleData) {
                     <div class="hp-bar" style="width:80px; margin:5px auto;">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>
-                    <div id="heroHpText" style="font-size:12px;">${battleData.result.playerHpRemain}/${battleData.result.playerMaxHp}</div>
+                    <div id="heroHpText" style="font-size:12px;">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
                     <div class="mana-bar" style="width:80px; margin:2px auto;">
                         <div class="mana-fill" id="heroMana" style="width:0%"></div>
                     </div>
@@ -100,7 +100,7 @@ function showBattleScreen(battleData) {
                     <div class="hp-bar" style="width:80px; margin:5px auto;">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                     </div>
-                    <div id="enemyHpText" style="font-size:12px;">${battleData.result.enemyHpRemain}/${battleData.result.enemyMaxHp}</div>
+                    <div id="enemyHpText" style="font-size:12px;">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
                     <div class="mana-bar" style="width:80px; margin:2px auto;">
                         <div class="mana-fill" id="enemyMana" style="width:0%"></div>
                     </div>
@@ -146,6 +146,32 @@ function showBattleScreen(battleData) {
         pyromancer: 'burn',
         cryomancer: 'freeze'
     };
+
+    // Функция для плавного изменения текста HP
+    function animateHpText(elementId, start, end, maxHp, duration = 300) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        const steps = 20;
+        const stepTime = duration / steps;
+        const diff = end - start;
+        let currentStep = 0;
+        const interval = setInterval(() => {
+            currentStep++;
+            const progress = currentStep / steps;
+            const current = Math.round(start + diff * progress);
+            element.innerText = `${current}/${maxHp}`;
+            if (currentStep >= steps) {
+                clearInterval(interval);
+                element.innerText = `${end}/${maxHp}`; // финальное значение
+            }
+        }, stepTime);
+    }
+
+    // Функция для плавного изменения ширины (через CSS transition уже есть, но для точности можно оставить)
+    function setHpBarWidth(barId, percent) {
+        const bar = document.getElementById(barId);
+        if (bar) bar.style.width = percent + '%';
+    }
 
     function updateStacksVisual(side, type) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
@@ -212,10 +238,10 @@ function showBattleScreen(battleData) {
                 resetStack(targetSide, 'poison');
             }
             if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                addStack(targetSide, 'burn', 1);
+                resetStack(targetSide, 'burn');
             }
             if (attackerSubclass === 'cryomancer' && lower.includes('вечная зима')) {
-                addStack(targetSide, 'freeze', 1);
+                resetStack(targetSide, 'freeze');
             }
         }
     }
@@ -288,13 +314,11 @@ function showBattleScreen(battleData) {
     }
 
     function playTurn() {
-        // Если все ходы обработаны, завершаем бой
         if (turnIndex >= turns.length) {
             clearInterval(interval);
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
             
-            // Показываем анимацию поражения на проигравшем
             const winner = battleData.result.winner;
             if (winner === 'player') {
                 showAnimation('enemy', 'defeat.gif');
@@ -309,11 +333,34 @@ function showBattleScreen(battleData) {
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
 
-        // Обновление HP и маны
-        document.getElementById('heroHp').style.width = (turn.playerHp / battleData.result.playerMaxHp) * 100 + '%';
-        document.getElementById('heroHpText').innerText = turn.playerHp + '/' + battleData.result.playerMaxHp;
-        document.getElementById('enemyHp').style.width = (turn.enemyHp / battleData.result.enemyMaxHp) * 100 + '%';
-        document.getElementById('enemyHpText').innerText = turn.enemyHp + '/' + battleData.result.enemyMaxHp;
+        // Получаем текущие значения HP из DOM (старые)
+        const heroHpText = document.getElementById('heroHpText');
+        const enemyHpText = document.getElementById('enemyHpText');
+        const heroHpBar = document.getElementById('heroHp');
+        const enemyHpBar = document.getElementById('enemyHp');
+
+        // Парсим старые значения (они могут быть вида "текущее/макс")
+        const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
+        const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
+
+        const heroNew = turn.playerHp;
+        const enemyNew = turn.enemyHp;
+        const heroMax = battleData.result.playerMaxHp;
+        const enemyMax = battleData.result.enemyMaxHp;
+
+        // Анимация HP (текст)
+        if (heroHpText && heroNew !== undefined) {
+            animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
+        }
+        if (enemyHpText && enemyNew !== undefined) {
+            animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
+        }
+
+        // Устанавливаем ширину полосы (плавно благодаря CSS transition)
+        if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
+        if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
+
+        // Обновление маны (без анимации текста, только ширина)
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
@@ -325,15 +372,20 @@ function showBattleScreen(battleData) {
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
             turnIndex++;
-            // Не показываем анимацию для final
             return;
         }
 
         const isPlayerTurn = turn.turn === 'player';
         const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
-        const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
-        showAnimation(target, anim);
+        // Проверяем, нужно ли показывать анимацию (пропуск хода, уворот)
+        const actionLower = turn.action.toLowerCase();
+        const skipAnimation = actionLower.includes('пропускает ход') || actionLower.includes('уклоняется') || actionLower.includes('уворачивается');
+
+        if (!skipAnimation) {
+            const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
+            showAnimation(target, anim);
+        }
 
         parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 

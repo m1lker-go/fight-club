@@ -653,9 +653,24 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     else if (enemyHp <= 0) winner = 'player';
 
     // Добавление финальной фразы
-    const victoryPhrases = [ /* ... */ ];
-    const defeatPhrases = [ /* ... */ ];
-    const drawPhrases = [ /* ... */ ];
+    const victoryPhrases = [
+    'Вы наносите сокрушительный удар. Соперник повержен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'Ваша атака не оставляет шансов. Враг падает. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'С последним ударом противник рушится на землю. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'Вы оказались сильнее. Бой окончен. <span style="color:#2ecc71;">ПОБЕДА!</span>',
+    'Невероятная схватка! Вы выходите победителем. <span style="color:#2ecc71;">ПОБЕДА!</span>'
+];
+const defeatPhrases = [
+    'Соперник наносит решающий удар. Вы повержены. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Ваши силы иссякли... Это поражение. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Удар оказался смертельным. Вы проиграли. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Противник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>',
+    'Бой закончен. Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ!</span>'
+];
+const drawPhrases = [
+    'Оба бойца падают одновременно. Ничья!',
+    'Взаимный удар – никто не выжил. Ничья.'
+];
 
     let finalPhrase = '';
     if (winner === 'player') {

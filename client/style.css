@@ -838,75 +838,83 @@ td {
     margin: 15px 0;
 }
 .advent-day {
+    width: 100%;
+    aspect-ratio: 1 / 1;
     background-color: #232833;
     border: 1px solid #00aaff;
     border-radius: 8px;
-    padding: 10px 0;
-    text-align: center;
-    font-weight: bold;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 60px;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     color: white;
+    font-size: 10px; /* для номера дня */
 }
-.advent-day.claimed {
-    background-color: #2ecc71;
-    border-color: #27ae60;
-    cursor: default;
-    opacity: 0.6;
-    background-image: none !important; /* убираем фон для уже полученных */
+.advent-day > div:first-child {
+    font-size: 10px;
+    margin-bottom: 2px;
 }
+.advent-day > div:last-child {
+    font-size: 14px; /* для иконок */
+    line-height: 1;
+}
+.advent-day i, .advent-day span {
+    font-size: inherit;
+}
+
+/* Доступные ячейки */
 .advent-day.available {
     background-image: url('/assets/icons/advent_available.png');
     background-color: transparent;
+    color: white;
 }
+.advent-day.available .fa-coins,
+.advent-day.available span {
+    color: white !important; /* для монет и EXP */
+}
+.advent-day.available .fa-tshirt {
+    /* цвет остаётся из style */
+}
+
+/* Заблокированные ячейки */
 .advent-day.locked {
     background-image: url('/assets/icons/advent_locked.png');
     background-color: transparent;
-    filter: grayscale(100%);
     color: #aaa;
 }
-.advent-day.locked i, .advent-day.locked span {
-    filter: grayscale(100%);
-    opacity: 0.7;
+.advent-day.locked .fa-coins,
+.advent-day.locked span {
+    color: #aaa !important;
 }
-.advent-day i, .advent-day span {
-    font-size: 18px;
-    margin-top: 4px;
-}
-
-.task-card {
-    background-color: #232833;
-    border-radius: 16px;
-    padding: 15px 20px;
-    margin-bottom: 15px;
-    border-left: 4px solid #00aaff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+.advent-day.locked .fa-tshirt {
+    /* цвет редкости не трогаем */
 }
 
-.task-card .btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    border-radius: 30px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    font-size: 14px;
+/* Уже полученные ячейки */
+.advent-day.claimed {
+    background-image: url('/assets/icons/advent_claimed.png');
+    border-color: #27ae60;
+    background-color: transparent;
+    cursor: default;
+    color: #aaa;
+}
+.advent-day.claimed .fa-coins,
+.advent-day.claimed span {
+    color: #aaa !important;
+}
+.advent-day.claimed .fa-tshirt {
+    /* цвет редкости не трогаем */
 }
 
-.task-card .btn:active {
-    opacity: 0.7;
-}
-
-.task-card .btn i {
-    font-size: 18px;
+/* Адаптация для маленьких экранов */
+@media (max-width: 400px) {
+    .advent-day > div:last-child {
+        font-size: 12px;
+    }
 }
 /* Круглые кнопки на главной */
 .round-button {

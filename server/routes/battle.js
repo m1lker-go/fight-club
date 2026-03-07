@@ -320,11 +320,10 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         case 'cryomancer':
             // Если цель уже заморожена, урон ×3, иначе ×2
             const frozenBonus = defenderState.frozen ? 3 : 2;
-            damage = Math.round(attackerStats.int * frozenBonus); // округляем до целого
+            damage = Math.round(attackerStats.int * frozenBonus);
             // Гарантированная заморозка на 1 ход
             defenderState.frozen = 1;
             defenderState.freezeStacks = 0;
-            // Формируем лог с указанием множителя
             log = `<span style="color:#3498db;">${attackerName} призывает ВЕЧНУЮ ЗИМУ, замораживая ${defenderName} и нанося ${damage} урона магией льда${frozenBonus === 3 ? ' (тройной урон!)' : ' (двойной урон!)'}!</span>`;
             break;
         case 'illusionist':
@@ -375,8 +374,6 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     return { damageToDefender, damageToSelf, logEntries };
 }
 
-
-
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
@@ -410,7 +407,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         mirageCounter: 0
     };
 
-    // Определение первого хода с учётом равенства скорости (рандом)
     let turn;
     if (playerStats.spd > enemyStats.spd) {
         turn = 'player';
@@ -435,20 +431,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         };
 
         if (turn === 'player') {
-            // Если игрок заморожен, пропускает ход
+            // Пропуск хода при заморозке
             if (playerState.frozen > 0) {
                 playerState.frozen = 0;
                 log.push(`<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`);
                 turnState.action = `${playerName} пропускает ход.`;
-                turn = 'enemy';
                 turns.push(turnState);
+                turn = 'enemy';
                 continue;
             }
 
             playerState.hp = playerHp;
             enemyState.hp = enemyHp;
 
-            // Эффекты в начале хода (яд, огонь, берсерк)
             const startEffects = applyTurnStartEffects(playerStats, enemyState, playerName, enemyName, playerSubclass, playerState);
             if (startEffects.damageToDefender > 0) {
                 enemyHp -= startEffects.damageToDefender;
@@ -459,9 +454,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 log.push(...startEffects.logEntries);
             }
 
-            // Проверка, не умер ли кто-то от эффектов
-            if (enemyHp <= 0) break;
-            if (playerHp <= 0) break;
+            // Проверка смерти после эффектов начала хода
+            if (enemyHp <= 0) {
+                turns.push(turnState);
+                break;
+            }
+            if (playerHp <= 0) {
+                turns.push(turnState);
+                break;
+            }
 
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
             let actionLog = '';
@@ -510,21 +511,22 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turnState.action = actionLog;
 
             // Проверка смерти после действия
-            if (enemyHp <= 0) break;
-            if (playerHp <= 0) break;
+            const died = enemyHp <= 0 || playerHp <= 0;
+            turns.push(turnState);
+            if (died) break;
 
             if (playerState.reflectBuff > 0) playerState.reflectBuff--;
             if (playerState.vampBuff > 0) playerState.vampBuff--;
 
             turn = 'enemy';
         } else {
-            // Аналогично для хода врага
+            // Ход врага – аналогично
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
                 log.push(`<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`);
                 turnState.action = `${enemyName} пропускает ход.`;
-                turn = 'player';
                 turns.push(turnState);
+                turn = 'player';
                 continue;
             }
 
@@ -541,8 +543,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 log.push(...startEffects.logEntries);
             }
 
-            if (playerHp <= 0) break;
-            if (enemyHp <= 0) break;
+            if (playerHp <= 0) {
+                turns.push(turnState);
+                break;
+            }
+            if (enemyHp <= 0) {
+                turns.push(turnState);
+                break;
+            }
 
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
             let actionLog = '';
@@ -590,15 +598,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             log.push(actionLog);
             turnState.action = actionLog;
 
-            if (playerHp <= 0) break;
-            if (enemyHp <= 0) break;
+            const died = playerHp <= 0 || enemyHp <= 0;
+            turns.push(turnState);
+            if (died) break;
 
             if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
             if (enemyState.vampBuff > 0) enemyState.vampBuff--;
 
             turn = 'player';
         }
-        turns.push(turnState);
     }
 
     // Определение победителя
@@ -648,7 +656,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         enemyMaxHp: enemyStats.hp
     };
 }
-
 
 // --- Вспомогательные функции для опыта, энергии и генерации бота ---
 function expNeeded(level) {
@@ -843,7 +850,7 @@ router.post('/start', async (req, res) => {
         }
 
         if (!opponentData) {
-            opponentData = generateBot(classData.rows[0].level); // используется импортированная функция
+            opponentData = generateBot(classData.rows[0].level);
         }
 
         const battleResult = simulateBattle(

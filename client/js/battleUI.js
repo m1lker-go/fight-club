@@ -135,13 +135,12 @@ function showBattleScreen(battleData) {
     let interval;
     let currentAnimationTimeout = null;
     let timer;
-    let finishTimeout = null; // для задержки после последнего хода
+    let finishTimeout = null;
 
     // Состояние стаков для игрока и врага
     let playerStacks = { poison: 0, burn: 0, freeze: 0 };
     let enemyStacks = { poison: 0, burn: 0, freeze: 0 };
 
-    // Карта соответствия подкласса и типа стака
     const passiveDebuffMap = {
         venom_blade: 'poison',
         pyromancer: 'burn',
@@ -239,7 +238,7 @@ function showBattleScreen(battleData) {
     }
 
     function showAnimation(target, animationFile) {
-console.log('showAnimation', target, animationFile);
+        console.log('showAnimation', target, animationFile); // для отладки
         hideAnimations();
         const container = document.getElementById(target + '-animation');
         if (!container) return;
@@ -290,10 +289,8 @@ console.log('showAnimation', target, animationFile);
 
     function playTurn() {
         if (turnIndex >= turns.length) {
-            // Все ходы сыграны – останавливаем интервалы и планируем показ результата
             clearInterval(interval);
             if (timer) clearInterval(timer);
-            // Не вызываем hideAnimations, чтобы последняя анимация осталась
             if (finishTimeout) clearTimeout(finishTimeout);
             finishTimeout = setTimeout(() => showBattleResult(battleData), 1500);
             return;
@@ -331,7 +328,6 @@ console.log('showAnimation', target, animationFile);
         interval = setInterval(playTurn, 1000 / speed);
     });
 
-    // Запуск первого хода
     playTurn();
     interval = setInterval(playTurn, 2500 / speed);
 
@@ -343,7 +339,7 @@ console.log('showAnimation', target, animationFile);
         if (timeLeft <= 0) {
             clearInterval(timer);
             clearInterval(interval);
-            if (finishTimeout) clearTimeout(finishTimeout); // не даём finishTimeout сработать
+            if (finishTimeout) clearTimeout(finishTimeout);
             hideAnimations();
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
@@ -351,7 +347,6 @@ console.log('showAnimation', target, animationFile);
             if (playerPercent > enemyPercent) winner = 'player';
             else if (enemyPercent > playerPercent) winner = 'enemy';
             else winner = 'draw';
-            // Можно сразу показать результат, без задержки, так как таймер истёк
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);
@@ -398,7 +393,7 @@ async function showBattleResult(battleData, timeOut = false) {
         console.error('Ошибка /update/exp:', err);
     }
 
-    await loadDailyTasks();
+    // УБИРАЕМ ВЫЗОВ loadDailyTasks() – он вызывал ошибку, так как элемента tasksList нет на экране боя
 
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

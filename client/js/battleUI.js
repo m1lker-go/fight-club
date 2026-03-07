@@ -50,7 +50,7 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Строка с переключателем скорости (над аватарами) -->
+            <!-- Строка с переключателем скорости -->
             <div class="speed-row" style="display: flex; justify-content: center; padding: 5px;">
                 <button id="singleSpeedBtn" class="speed-btn" style="background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
             </div>
@@ -82,8 +82,8 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: таймер (только таймер) -->
-                <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;">
+                <!-- Колонка 3: таймер -->
+                <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <div class="battle-timer" id="battleTimer" style="width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
                 </div>
 
@@ -314,7 +314,7 @@ function showBattleScreen(battleData) {
             container.style.display = 'none';
             container.innerHTML = '';
             currentAnimationTimeout = null;
-        }, 1000); // анимация длится 1 секунду
+        }, 1000);
     }
 
     function getAnimationForAction(action, isPlayerTurn) {
@@ -322,7 +322,6 @@ function showBattleScreen(battleData) {
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
 
-        // Анимация промаха (уклонение)
         if (action.includes('уклоняется') || action.includes('уворачивается') || action.includes('использует неуловимый манёвр')) {
             anim = 'missx.gif';
         }
@@ -355,7 +354,6 @@ function showBattleScreen(battleData) {
         return { target, anim };
     }
 
-    // Функция для применения эффекта поражения (ч/б + надпись)
     function applyDefeatEffect(side) {
         const card = document.querySelector(`.${side}-card`);
         if (card) {
@@ -369,15 +367,7 @@ function showBattleScreen(battleData) {
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
             
-            const winner = battleData.result.winner;
-            if (winner === 'player') {
-                applyDefeatEffect('enemy');
-            } else if (winner === 'enemy') {
-                applyDefeatEffect('hero');
-            }
-            
-            // Общая задержка после удара: анимация поражения 0.5с + пауза 2с = 2.5с
-            // Плюс анимация удара 1с даёт 3.5с до окна результата
+            // В финальном блоке не применяем эффект поражения – он уже применён в последнем ходе
             finishTimeout = setTimeout(() => showBattleResult(battleData), 2500);
             return;
         }
@@ -386,10 +376,8 @@ function showBattleScreen(battleData) {
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
 
-        // Если это финальное сообщение (не ход)
         if (turn.turn === 'final') {
             const winner = battleData.result.winner;
-            // Принудительно обнуляем полоску и текст проигравшего
             if (winner === 'player') {
                 document.getElementById('enemyHp').style.width = '0%';
                 document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
@@ -397,7 +385,6 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
-            // Добавляем финальное сообщение в лог (если action отсутствует, используем стандартное)
             const finalMessage = turn.action || (winner === 'player' ? 'Победа!' : 'Поражение!');
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
@@ -408,23 +395,19 @@ function showBattleScreen(battleData) {
             return;
         }
 
-        // Получаем текущие значения HP из DOM (старые)
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
         const enemyHpBar = document.getElementById('enemyHp');
 
-        // Парсим старые значения (они могут быть вида "текущее/макс")
         const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
         const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
 
-        // Новые значения могут быть undefined – в этом случае оставляем старые
         const heroNew = turn.playerHp !== undefined ? turn.playerHp : heroOld;
         const enemyNew = turn.enemyHp !== undefined ? turn.enemyHp : enemyOld;
         const heroMax = battleData.result.playerMaxHp;
         const enemyMax = battleData.result.enemyMaxHp;
 
-        // Анимация HP (текст) – только если значения изменились и новые не undefined
         if (heroNew !== heroOld && heroHpText) {
             animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
         }
@@ -432,18 +415,15 @@ function showBattleScreen(battleData) {
             animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
-        // Устанавливаем ширину полосы
         if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
         if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
-        // Обновление маны
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
         const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
-        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
         const actionLower = turn.action ? turn.action.toLowerCase() : '';
         const skipAnimation = actionLower.includes('пропускает ход');
 
@@ -460,6 +440,14 @@ function showBattleScreen(battleData) {
             logEntry.innerHTML = turn.action;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Если после этого хода кто-то мёртв, немедленно применяем эффект поражения
+        if (enemyNew <= 0) {
+            applyDefeatEffect('enemy');
+        }
+        if (heroNew <= 0) {
+            applyDefeatEffect('hero');
         }
 
         turnIndex++;

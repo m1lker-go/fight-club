@@ -286,7 +286,6 @@ function showBattleScreen(battleData) {
         // Анимация промаха (уклонение)
         if (action.includes('уклоняется') || action.includes('уворачивается') || action.includes('использует неуловимый манёвр')) {
             anim = 'missx.gif';
-            // цель остаётся target (защитник) – это правильно
         }
         else if (action.includes('несокрушимость')) {
             anim = 'hill.gif';
@@ -330,7 +329,8 @@ function showBattleScreen(battleData) {
                 showAnimation('hero', 'defeat.gif');
             }
             
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 2000);
+            // Уменьшаем задержку до 1500 мс (вместе с анимацией поражения ~2500 мс)
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1500);
             return;
         }
 
@@ -349,10 +349,11 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
-            // Добавляем финальное сообщение в лог
+            // Добавляем финальное сообщение в лог (если action отсутствует, используем стандартное)
+            const finalMessage = turn.action || (winner === 'player' ? 'Победа!' : 'Поражение!');
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.innerHTML = turn.action || '';
+            logEntry.innerHTML = finalMessage;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
             turnIndex++;

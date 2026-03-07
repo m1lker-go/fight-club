@@ -340,6 +340,14 @@ function playTurn() {
 
     // Если это финальное сообщение (не ход), просто добавляем его в лог и переходим к следующему
     if (turn.turn === 'final') {
+        const winner = battleData.result.winner;
+    if (winner === 'player') {
+        // Враг мёртв
+        document.getElementById('enemyHp').style.width = '0%';
+        document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
+    } else if (winner === 'enemy') {
+        document.getElementById('heroHp').style.width = '0%';
+        document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
         logEntry.innerHTML = turn.action || '';

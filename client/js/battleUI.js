@@ -239,6 +239,7 @@ function showBattleScreen(battleData) {
     }
 
     function showAnimation(target, animationFile) {
+console.log('showAnimation', target, animationFile);
         hideAnimations();
         const container = document.getElementById(target + '-animation');
         if (!container) return;

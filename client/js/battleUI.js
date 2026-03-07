@@ -288,21 +288,46 @@ function showBattleScreen(battleData) {
     }
 
     function playTurn() {
+        // Если все ходы обработаны, завершаем бой
         if (turnIndex >= turns.length) {
             clearInterval(interval);
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
+            
+            // Показываем анимацию поражения на проигравшем
+            const winner = battleData.result.winner;
+            if (winner === 'player') {
+                showAnimation('enemy', 'defeat.gif');
+            } else if (winner === 'enemy') {
+                showAnimation('hero', 'defeat.gif');
+            }
+            
             finishTimeout = setTimeout(() => showBattleResult(battleData), 1500);
             return;
         }
+
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
+
+        // Обновление HP и маны
         document.getElementById('heroHp').style.width = (turn.playerHp / battleData.result.playerMaxHp) * 100 + '%';
         document.getElementById('heroHpText').innerText = turn.playerHp + '/' + battleData.result.playerMaxHp;
         document.getElementById('enemyHp').style.width = (turn.enemyHp / battleData.result.enemyMaxHp) * 100 + '%';
         document.getElementById('enemyHpText').innerText = turn.enemyHp + '/' + battleData.result.enemyMaxHp;
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
+
+        // Если это финальное сообщение (не ход), просто добавляем его в лог и переходим к следующему
+        if (turn.turn === 'final') {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = turn.action;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            turnIndex++;
+            // Не показываем анимацию для final
+            return;
+        }
 
         const isPlayerTurn = turn.turn === 'player';
         const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
@@ -393,8 +418,6 @@ async function showBattleResult(battleData, timeOut = false) {
     } catch (err) {
         console.error('Ошибка /update/exp:', err);
     }
-
-    // УБИРАЕМ ВЫЗОВ loadDailyTasks() – он вызывал ошибку, так как элемента tasksList нет на экране боя
 
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

@@ -1073,3 +1073,93 @@ td {
 .hp-fill, .mana-fill {
     transition: width 0.3s ease;
 }
+
+/* ===== УЛУЧШЕНИЯ ДЛЯ БОЯ ===== */
+.battle-arena {
+    gap: 3px; /* уменьшенный отступ между колонками */
+}
+
+.hero-card, .enemy-card {
+    flex: 0 0 160px; /* ширина колонки под увеличенный аватар */
+}
+
+/* Контейнеры аватаров */
+.hero-card > div:first-child,
+.enemy-card > div:first-child {
+    width: 120px !important;
+    height: 180px !important;
+}
+
+/* Полоски HP и маны */
+.hp-bar {
+    width: 120px;
+    height: 18px; /* увеличено в 2-2.5 раза */
+    background-color: #2f3542;
+    border-radius: 5px;
+    margin: 5px auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.mana-bar {
+    width: 120px;
+    height: 12px; /* увеличено */
+    background-color: #2f3542;
+    border-radius: 5px;
+    margin: 2px auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.hp-fill, .mana-fill {
+    transition: width 0.3s ease;
+    height: 100%;
+}
+
+.hp-fill {
+    background-color: #e74c3c;
+}
+
+.mana-fill {
+    background-color: #00aaff;
+}
+
+/* Текст поверх полосок */
+.hp-text, .mana-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 0 0 3px black;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 5px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Уменьшение ширины колонок статусов */
+.player-debuffs, .enemy-debuffs {
+    flex: 0 0 25px !important;
+}
+
+.debuff-slot {
+    width: 22px;
+    height: 22px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+}
+
+/* Центральная колонка можно немного сдвинуть */
+.battle-center {
+    margin: 0 -5px; /* при необходимости */
+}

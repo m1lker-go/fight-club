@@ -246,7 +246,6 @@ function showBattleScreen(battleData) {
         if (bar) bar.style.width = percent + '%';
     }
 
-    // Обновление отображения слота
     function updateSlot(side, slotIndex, iconSrc, active) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         if (slots.length <= slotIndex) return;
@@ -265,33 +264,55 @@ function showBattleScreen(battleData) {
         }
     }
 
-    // Универсальная функция обновления статусов
-    function updateStacksVisual(side, type) {
-        const stacks = (side === 'player' ? playerStacks : enemyStacks);
-        // Слот 0: яд (poison) – показываем количество стаков
-        updateSlot(side, 0, '/assets/icons/icon_poison.png', stacks.poison > 0);
-        // Слот 1: огонь (burn)
-        updateSlot(side, 1, '/assets/icons/icon_fire.png', stacks.burn > 0);
-        // Слот 2: заморозка (статус frozen) – активен если freeze > 0 или есть флаг frozen
-        updateSlot(side, 2, '/assets/icons/icon_frozen.png', stacks.freeze > 0);
-        // Слот 3: щит (shield)
-        updateSlot(side, 3, '/assets/icons/icon_shield.png', stacks.shield > 0);
-        // Слот 4: резерв (не используется)
+    // Обновление отображения всех статусов (фиксированные слоты)
+    function updateAllStatuses() {
+        // Слот 0: яд
+        updateSlot('player', 0, '/assets/icons/icon_poison.png', playerStacks.poison > 0);
+        updateSlot('enemy', 0, '/assets/icons/icon_poison.png', enemyStacks.poison > 0);
+        // Слот 1: огонь
+        updateSlot('player', 1, '/assets/icons/icon_fire.png', playerStacks.burn > 0);
+        updateSlot('enemy', 1, '/assets/icons/icon_fire.png', enemyStacks.burn > 0);
+        // Слот 2: заморозка (статус, не стаки)
+        updateSlot('player', 2, '/assets/icons/icon_frozen.png', playerStacks.freeze > 0);
+        updateSlot('enemy', 2, '/assets/icons/icon_frozen.png', enemyStacks.freeze > 0);
+        // Слот 3: щит
+        updateSlot('player', 3, '/assets/icons/icon_shield.png', playerStacks.shield > 0);
+        updateSlot('enemy', 3, '/assets/icons/icon_shield.png', enemyStacks.shield > 0);
+        // Слот 4: резерв
     }
 
-    function addStack(side, type, count = 1) {
-        const stacks = (side === 'player' ? playerStacks : enemyStacks);
-        const max = (type === 'freeze') ? 3 : 5;
-        const old = stacks[type];
-        const newVal = Math.min(old + count, max);
-        stacks[type] = newVal;
-        updateStacksVisual(side, type);
-    }
+    // Анализ действия для обновления стаков (яд, огонь) – без изменения статусов заморозки и щита
+    function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
+        const targetSide = isPlayerTurn ? 'enemy' : 'player';
+        const lower = action.toLowerCase();
+        const isUltimate = lower.includes('ядовитая волна') || lower.includes('огненный шторм') || lower.includes('вечная зима');
 
-    function resetStack(side, type) {
-        const stacks = (side === 'player' ? playerStacks : enemyStacks);
-        stacks[type] = 0;
-        updateStacksVisual(side, type);
+        if (!isUltimate) {
+            if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
+                const type = passiveDebuffMap[attackerSubclass];
+                // Увеличиваем соответствующий стак
+                if (type === 'poison') {
+                    const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
+                    stacks.poison = Math.min(5, stacks.poison + 1);
+                } else if (type === 'burn') {
+                    const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
+                    stacks.burn = Math.min(5, stacks.burn + 1);
+                }
+                // Для freeze стаки обрабатываются сервером через поля frozen
+            }
+        } else {
+            // Ультимейты
+            if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
+                const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
+                stacks.poison = 0;
+            }
+            if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
+                const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
+                stacks.burn = 0;
+            }
+            // Для криоманта стаки заморозки обрабатываются сервером
+        }
+        updateAllStatuses();
     }
 
     function clearAllDebuffSlots() {
@@ -396,56 +417,32 @@ function showBattleScreen(battleData) {
         console.log('playerFrozen:', turn.playerFrozen, 'enemyFrozen:', turn.enemyFrozen);
         console.log('playerShield:', turn.playerShield, 'enemyShield:', turn.enemyShield);
 
-        // Обновление стаков из данных сервера (слоты 0 и 1)
-        if (turn.playerPoisonStacks !== undefined) {
-            playerStacks.poison = turn.playerPoisonStacks;
-            updateStacksVisual('player', 'poison');
-        }
-        if (turn.playerBurnStacks !== undefined) {
-            playerStacks.burn = turn.playerBurnStacks;
-            updateStacksVisual('player', 'burn');
-        }
-        if (turn.enemyPoisonStacks !== undefined) {
-            enemyStacks.poison = turn.enemyPoisonStacks;
-            updateStacksVisual('enemy', 'poison');
-        }
-        if (turn.enemyBurnStacks !== undefined) {
-            enemyStacks.burn = turn.enemyBurnStacks;
-            updateStacksVisual('enemy', 'burn');
-        }
-
-        // Обновление статуса заморозки (слот 2)
+        // Обновление статусов заморозки и щита из данных сервера
         if (turn.playerFrozen !== undefined) {
             playerStacks.freeze = turn.playerFrozen; // 0 или 1
-            updateStacksVisual('player', 'freeze');
         }
         if (turn.enemyFrozen !== undefined) {
             enemyStacks.freeze = turn.enemyFrozen;
-            updateStacksVisual('enemy', 'freeze');
         }
-
-        // Обновление статуса щита (слот 3) – ожидаем поля playerShield, enemyShield от сервера
         if (turn.playerShield !== undefined) {
-            playerStacks.shield = turn.playerShield;
-            updateStacksVisual('player', 'shield');
+            playerStacks.shield = turn.playerShield; // 0 или 1
         }
         if (turn.enemyShield !== undefined) {
             enemyStacks.shield = turn.enemyShield;
-            updateStacksVisual('enemy', 'shield');
         }
 
         // Управление оверлеем заморозки на аватаре
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) {
-            if (turn.playerFrozen === 1) {
+            if (playerStacks.freeze) {
                 heroFrozenOverlay.classList.add('active');
             } else {
                 heroFrozenOverlay.classList.remove('active');
             }
         }
         if (enemyFrozenOverlay) {
-            if (turn.enemyFrozen === 1) {
+            if (enemyStacks.freeze) {
                 enemyFrozenOverlay.classList.add('active');
             } else {
                 enemyFrozenOverlay.classList.remove('active');
@@ -501,7 +498,6 @@ function showBattleScreen(battleData) {
         const heroHpBar = document.getElementById('heroHp');
         const enemyHpBar = document.getElementById('enemyHp');
 
-        // Парсим старые значения
         const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
         const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
 
@@ -537,6 +533,12 @@ function showBattleScreen(battleData) {
             const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
             showAnimation(target, anim);
         }
+
+        // Анализируем действие для обновления стаков яда и огня
+        parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
+
+        // Обновляем отображение всех статусов (включая обновлённые из сервера)
+        updateAllStatuses();
 
         if (turn.action) {
             const logEntry = document.createElement('div');

@@ -77,7 +77,7 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: центральная с таймером и кнопкой скорости (позиционированы относительно слотов) -->
+                <!-- Колонка 3: центральная с таймером и кнопкой скорости -->
                 <div class="battle-center" style="flex: 0 0 60px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
@@ -119,7 +119,7 @@ function showBattleScreen(battleData) {
         .animation-container img { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover; /* анимация заполняет весь аватар */
+            object-fit: cover;
         }
         .debuff-slot img {
             width: 100%;
@@ -309,7 +309,6 @@ function showBattleScreen(battleData) {
         let target = isPlayerTurn ? 'enemy' : 'hero';
         let anim = 'shot.gif';
 
-        // Анимация промаха (уклонение)
         if (action.includes('уклоняется') || action.includes('уворачивается') || action.includes('использует неуловимый манёвр')) {
             anim = 'missx.gif';
         }
@@ -355,7 +354,7 @@ function showBattleScreen(battleData) {
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
             
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000); // уменьшено до 1 секунды
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
             return;
         }
 
@@ -400,10 +399,28 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
-            // Добавляем финальное сообщение в лог с цветом
+            // Разнообразные финальные фразы, если сервер не прислал
             let finalMessage = turn.action;
             if (!finalMessage) {
-                finalMessage = winner === 'player' ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
+                const victoryVariants = [
+                    'Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',
+                    'С последним ударом враг повержен. <span class="victory">ПОБЕДА</span>!',
+                    'Вы оказались сильнее! <span class="victory">ПОБЕДА</span>!',
+                    'Невероятная битва! <span class="victory">ПОБЕДА</span> за вами!'
+                ];
+                const defeatVariants = [
+                    'В этой напряжённой схватке враг был сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>',
+                    'Ваши силы иссякли... <span class="defeat">ПОРАЖЕНИЕ</span>',
+                    'Увы, победа не ваша. <span class="defeat">ПОРАЖЕНИЕ</span>',
+                    'Соперник оказался сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>'
+                ];
+                if (winner === 'player') {
+                    finalMessage = victoryVariants[Math.floor(Math.random() * victoryVariants.length)];
+                } else if (winner === 'enemy') {
+                    finalMessage = defeatVariants[Math.floor(Math.random() * defeatVariants.length)];
+                } else {
+                    finalMessage = 'Ничья!';
+                }
             }
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry ' + (winner === 'player' ? 'victory' : 'defeat');
@@ -612,7 +629,7 @@ async function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('')}
+                ${battleData.result.log.filter(l => l).map(l => `<div class="log-entry">${l}</div>`).join('')}
             </div>
         </div>
     `;
@@ -624,7 +641,7 @@ async function showBattleResult(battleData, timeOut = false) {
     tabLog.addEventListener('click', () => {
         tabLog.classList.add('active');
         tabStats.classList.remove('active');
-        resultDiv.innerHTML = battleData.result.log.map(l => `<div class="log-entry">${l}</div>`).join('');
+        resultDiv.innerHTML = battleData.result.log.filter(l => l).map(l => `<div class="log-entry">${l}</div>`).join('');
     });
 
     tabStats.addEventListener('click', () => {

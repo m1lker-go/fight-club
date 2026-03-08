@@ -894,10 +894,19 @@ router.post('/start', async (req, res) => {
 
         const playerStats = calculateStats(classData.rows[0], playerInventory, userData.subclass);
 
-        const isPvP = Math.random() < 0.3; // 30% шанс
+        // ========== НОВАЯ ЛОГИКА ВЫБОРА ПРОТИВНИКА ==========
+        const rand = Math.random(); // случайное число от 0 до 1
         let opponentData = null;
 
-        if (isPvP) {
+        if (rand < 0.25) {
+            // 25% - КИБЕРКОТ
+            const cybercatLevel = Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1);
+            opponentData = generateBot(cybercatLevel, true); // true = киберкот
+        } else if (rand < 0.70) {
+            // 45% - обычный бот (25% + 45% = 70%)
+            opponentData = generateBot(classData.rows[0].level, false);
+        } else {
+            // 30% - тень игрока (PvP)
             try {
                 const playersRes = await client.query(`
                     SELECT id, rating FROM users 
@@ -958,10 +967,11 @@ router.post('/start', async (req, res) => {
             } catch (e) {
                 console.error('Error selecting PvP opponent:', e);
             }
-        }
-
-        if (!opponentData) {
-            opponentData = generateBot(classData.rows[0].level);
+            
+            // Если PvP не удался, создаём обычного бота как запасной вариант
+            if (!opponentData) {
+                opponentData = generateBot(classData.rows[0].level, false);
+            }
         }
 
         const battleResult = simulateBattle(
@@ -1020,7 +1030,8 @@ router.post('/start', async (req, res) => {
                 avatar_id: opponentData.avatar_id,
                 class: opponentData.class,
                 subclass: opponentData.subclass,
-                level: opponentData.level
+                level: opponentData.level,
+                is_cybercat: opponentData.is_cybercat || false // Добавляем флаг для клиента
             },
             result: {
                 winner: battleResult.winner,

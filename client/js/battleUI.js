@@ -70,7 +70,7 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Колонка 2: стаки на игроке -->
+                <!-- Колонка 2: статусы игрока (слоты 0-4) -->
                 <div class="player-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="player" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
@@ -85,7 +85,7 @@ function showBattleScreen(battleData) {
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
                 </div>
 
-                <!-- Колонка 4: стаки на враге -->
+                <!-- Колонка 4: статусы врага (слоты 0-4) -->
                 <div class="enemy-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
@@ -211,9 +211,9 @@ function showBattleScreen(battleData) {
     let timer;
     let finishTimeout = null;
 
-    // Состояние стаков для игрока и врага
-    let playerStacks = { poison: 0, burn: 0, freeze: 0 };
-    let enemyStacks = { poison: 0, burn: 0, freeze: 0 };
+    // Состояние стаков/статусов для игрока и врага
+    let playerStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
+    let enemyStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
 
     const passiveDebuffMap = {
         venom_blade: 'poison',
@@ -246,30 +246,37 @@ function showBattleScreen(battleData) {
         if (bar) bar.style.width = percent + '%';
     }
 
-    function updateStacksVisual(side, type) {
+    // Обновление отображения слота
+    function updateSlot(side, slotIndex, iconSrc, active) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-        if (slots.length === 0) return;
-        const stacks = (side === 'player' ? playerStacks : enemyStacks)[type];
-        let iconSrc = '';
-        if (type === 'poison') iconSrc = '/assets/icons/icon_poison.png';
-        else if (type === 'burn') iconSrc = '/assets/icons/icon_fire.png';
-        else if (type === 'freeze') iconSrc = '/assets/icons/icon_ice.png';
-        else return;
-        for (let i = 0; i < 5; i++) {
-            const slot = slots[i];
-            if (!slot) continue;
-            if (i < stacks) {
-                if (!slot.querySelector('img')) {
-                    const img = document.createElement('img');
-                    img.src = iconSrc;
-                    img.alt = type;
-                    slot.innerHTML = '';
-                    slot.appendChild(img);
-                }
-            } else {
+        if (slots.length <= slotIndex) return;
+        const slot = slots[slotIndex];
+        if (!slot) return;
+        if (active) {
+            if (!slot.querySelector('img')) {
+                const img = document.createElement('img');
+                img.src = iconSrc;
+                img.alt = 'status';
                 slot.innerHTML = '';
+                slot.appendChild(img);
             }
+        } else {
+            slot.innerHTML = '';
         }
+    }
+
+    // Универсальная функция обновления статусов
+    function updateStacksVisual(side, type) {
+        const stacks = (side === 'player' ? playerStacks : enemyStacks);
+        // Слот 0: яд (poison) – показываем количество стаков
+        updateSlot(side, 0, '/assets/icons/icon_poison.png', stacks.poison > 0);
+        // Слот 1: огонь (burn)
+        updateSlot(side, 1, '/assets/icons/icon_fire.png', stacks.burn > 0);
+        // Слот 2: заморозка (статус frozen) – активен если freeze > 0 или есть флаг frozen
+        updateSlot(side, 2, '/assets/icons/icon_frozen.png', stacks.freeze > 0);
+        // Слот 3: щит (shield)
+        updateSlot(side, 3, '/assets/icons/icon_shield.png', stacks.shield > 0);
+        // Слот 4: резерв (не используется)
     }
 
     function addStack(side, type, count = 1) {
@@ -291,8 +298,8 @@ function showBattleScreen(battleData) {
         document.querySelectorAll('.debuff-slot').forEach(slot => {
             slot.innerHTML = '';
         });
-        playerStacks = { poison: 0, burn: 0, freeze: 0 };
-        enemyStacks = { poison: 0, burn: 0, freeze: 0 };
+        playerStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
+        enemyStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
     }
     clearAllDebuffSlots();
 
@@ -386,9 +393,10 @@ function showBattleScreen(battleData) {
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
-        console.log('playerFrozen:', turn.playerFrozen, 'enemyFrozen:', turn.enemyFrozen); // для отладки
+        console.log('playerFrozen:', turn.playerFrozen, 'enemyFrozen:', turn.enemyFrozen);
+        console.log('playerShield:', turn.playerShield, 'enemyShield:', turn.enemyShield);
 
-        // Обновление стаков из данных сервера
+        // Обновление стаков из данных сервера (слоты 0 и 1)
         if (turn.playerPoisonStacks !== undefined) {
             playerStacks.poison = turn.playerPoisonStacks;
             updateStacksVisual('player', 'poison');
@@ -396,10 +404,6 @@ function showBattleScreen(battleData) {
         if (turn.playerBurnStacks !== undefined) {
             playerStacks.burn = turn.playerBurnStacks;
             updateStacksVisual('player', 'burn');
-        }
-        if (turn.playerFreezeStacks !== undefined) {
-            playerStacks.freeze = turn.playerFreezeStacks;
-            updateStacksVisual('player', 'freeze');
         }
         if (turn.enemyPoisonStacks !== undefined) {
             enemyStacks.poison = turn.enemyPoisonStacks;
@@ -409,12 +413,28 @@ function showBattleScreen(battleData) {
             enemyStacks.burn = turn.enemyBurnStacks;
             updateStacksVisual('enemy', 'burn');
         }
-        if (turn.enemyFreezeStacks !== undefined) {
-            enemyStacks.freeze = turn.enemyFreezeStacks;
+
+        // Обновление статуса заморозки (слот 2)
+        if (turn.playerFrozen !== undefined) {
+            playerStacks.freeze = turn.playerFrozen; // 0 или 1
+            updateStacksVisual('player', 'freeze');
+        }
+        if (turn.enemyFrozen !== undefined) {
+            enemyStacks.freeze = turn.enemyFrozen;
             updateStacksVisual('enemy', 'freeze');
         }
 
-        // Управление оверлеем заморозки
+        // Обновление статуса щита (слот 3) – ожидаем поля playerShield, enemyShield от сервера
+        if (turn.playerShield !== undefined) {
+            playerStacks.shield = turn.playerShield;
+            updateStacksVisual('player', 'shield');
+        }
+        if (turn.enemyShield !== undefined) {
+            enemyStacks.shield = turn.enemyShield;
+            updateStacksVisual('enemy', 'shield');
+        }
+
+        // Управление оверлеем заморозки на аватаре
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) {

@@ -51,21 +51,21 @@ function showBattleScreen(battleData) {
             </div>
 
             <!-- Основная арена: 5 колонок -->
-            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 10px; padding: 10px;">
+            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 3px; padding: 10px;">
                 <!-- Колонка 1: аватар игрока -->
-                <div class="hero-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
-                    <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
+                <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 100px; height: 150px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
                         <!-- Оверлей заморозки -->
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="hp-bar" style="width:80px; margin:5px auto;">
+                    <div class="hp-bar" style="width:100px; margin:5px auto;">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                     </div>
-                    <div id="heroHpText" style="font-size:12px;">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
-                    <div class="mana-bar" style="width:80px; margin:2px auto;">
+                    <div id="heroHpText" style="font-size:14px;">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
+                    <div class="mana-bar" style="width:100px; margin:2px auto;">
                         <div class="mana-fill" id="heroMana" style="width:0%"></div>
                     </div>
                 </div>
@@ -95,8 +95,8 @@ function showBattleScreen(battleData) {
                 </div>
 
                 <!-- Колонка 5: аватар противника -->
-                <div class="enemy-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
-                    <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
+                <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 100px; height: 150px; margin: 0 auto;">
                         <!-- УСЛОВИЕ: если это киберкот, показываем специальный скин -->
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
                         <!-- Оверлей заморозки -->
@@ -104,11 +104,11 @@ function showBattleScreen(battleData) {
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="hp-bar" style="width:80px; margin:5px auto;">
+                    <div class="hp-bar" style="width:100px; margin:5px auto;">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                     </div>
-                    <div id="enemyHpText" style="font-size:12px;">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
-                    <div class="mana-bar" style="width:80px; margin:2px auto;">
+                    <div id="enemyHpText" style="font-size:14px;">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
+                    <div class="mana-bar" style="width:100px; margin:2px auto;">
                         <div class="mana-fill" id="enemyMana" style="width:0%"></div>
                     </div>
                 </div>

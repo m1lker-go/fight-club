@@ -137,6 +137,25 @@ function showBattleScreen(battleData) {
         }
 
         /* Оверлей заморозки */
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .animation-container img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+        }
+        .debuff-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Оверлей заморозки */
         .frozen-overlay {
             position: absolute;
             top: 0;
@@ -155,6 +174,12 @@ function showBattleScreen(battleData) {
         }
         .frozen-overlay.active {
             opacity: 1;
+        }
+
+        /* Скрываем анимацию заморозки при смерти */
+        .hero-card.defeated .frozen-overlay,
+        .enemy-card.defeated .frozen-overlay {
+            display: none;
         }
 
         /* Стили для эффекта поражения */
@@ -448,6 +473,7 @@ function showBattleScreen(battleData) {
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
+        console.log('enemyFreezeStacks:', turn.enemyFreezeStacks);
 
         // Обновляем переменные из данных сервера
         if (turn.playerFrozen !== undefined) playerFrozen = turn.playerFrozen;
@@ -456,6 +482,10 @@ function showBattleScreen(battleData) {
         if (turn.enemyShield !== undefined) enemyShield = turn.enemyShield;
         if (turn.playerFreezeStacks !== undefined) playerFreezeStacks = turn.playerFreezeStacks;
         if (turn.enemyFreezeStacks !== undefined) enemyFreezeStacks = turn.enemyFreezeStacks;
+        if (turn.playerPoisonStacks !== undefined) playerPoisonStacks = turn.playerPoisonStacks;
+        if (turn.enemyPoisonStacks !== undefined) enemyPoisonStacks = turn.enemyPoisonStacks;
+        if (turn.playerBurnStacks !== undefined) playerBurnStacks = turn.playerBurnStacks;
+        if (turn.enemyBurnStacks !== undefined) enemyBurnStacks = turn.enemyBurnStacks;
 
         // Управление оверлеем заморозки на аватаре
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
@@ -560,7 +590,7 @@ function showBattleScreen(battleData) {
             showAnimation(target, anim);
         }
 
-        // Анализируем действие для обновления яда и огня
+        // Анализируем действие для обновления яда и огня (из лога)
         parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         // Обновляем эффекты на основе всех текущих переменных

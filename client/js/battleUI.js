@@ -211,9 +211,17 @@ function showBattleScreen(battleData) {
     let timer;
     let finishTimeout = null;
 
-    // Состояние стаков/статусов для игрока и врага
-    let playerStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
-    let enemyStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
+    // Списки активных эффектов для игрока и врага (порядок определяет слоты)
+    let playerEffects = []; // каждый элемент: { type: 'poison'|'burn'|'freeze'|'shield', count: число (для poison/burn), icon: путь }
+    let enemyEffects = [];
+
+    // Соответствие типов иконкам
+    const effectIcons = {
+        poison: '/assets/icons/icon_poison.png',
+        burn: '/assets/icons/icon_fire.png',
+        freeze: '/assets/icons/icon_frozen.png',
+        shield: '/assets/icons/icon_shield.png'
+    };
 
     const passiveDebuffMap = {
         venom_blade: 'poison',
@@ -246,42 +254,56 @@ function showBattleScreen(battleData) {
         if (bar) bar.style.width = percent + '%';
     }
 
-    function updateSlot(side, slotIndex, iconSrc, active) {
+    // Функция обновления всех слотов на основе списка эффектов
+    function renderEffects(side) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-        if (slots.length <= slotIndex) return;
-        const slot = slots[slotIndex];
-        if (!slot) return;
-        if (active) {
-            if (!slot.querySelector('img')) {
-                const img = document.createElement('img');
-                img.src = iconSrc;
-                img.alt = 'status';
-                slot.innerHTML = '';
-                slot.appendChild(img);
-            }
-        } else {
-            slot.innerHTML = '';
+        const effects = side === 'player' ? playerEffects : enemyEffects;
+        // Очищаем все слоты
+        slots.forEach(slot => slot.innerHTML = '');
+        // Заполняем первые N слотов
+        for (let i = 0; i < effects.length && i < 5; i++) {
+            const effect = effects[i];
+            const slot = slots[i];
+            if (!slot) continue;
+            const img = document.createElement('img');
+            img.src = effect.icon;
+            img.alt = effect.type;
+            // Для poison и burn можно добавить числовой счётчик, но пока без
+            slot.appendChild(img);
         }
     }
 
-    // Обновление отображения всех статусов (фиксированные слоты)
-    function updateAllStatuses() {
-        // Слот 0: яд
-        updateSlot('player', 0, '/assets/icons/icon_poison.png', playerStacks.poison > 0);
-        updateSlot('enemy', 0, '/assets/icons/icon_poison.png', enemyStacks.poison > 0);
-        // Слот 1: огонь
-        updateSlot('player', 1, '/assets/icons/icon_fire.png', playerStacks.burn > 0);
-        updateSlot('enemy', 1, '/assets/icons/icon_fire.png', enemyStacks.burn > 0);
-        // Слот 2: заморозка (статус, не стаки)
-        updateSlot('player', 2, '/assets/icons/icon_frozen.png', playerStacks.freeze > 0);
-        updateSlot('enemy', 2, '/assets/icons/icon_frozen.png', enemyStacks.freeze > 0);
-        // Слот 3: щит
-        updateSlot('player', 3, '/assets/icons/icon_shield.png', playerStacks.shield > 0);
-        updateSlot('enemy', 3, '/assets/icons/icon_shield.png', enemyStacks.shield > 0);
-        // Слот 4: резерв
+    // Функция добавления/обновления эффекта в список
+    function addEffect(side, type, count = 1) {
+        const effects = side === 'player' ? playerEffects : enemyEffects;
+        const existing = effects.find(e => e.type === type);
+        if (existing) {
+            // Если эффект уже есть, обновляем счётчик (для яда/огня)
+            if (type === 'poison' || type === 'burn') {
+                existing.count = Math.min(existing.count + count, 5);
+            }
+            // Для заморозки и щита счётчик не нужен, просто оставляем
+        } else {
+            // Добавляем новый эффект в конец
+            effects.push({
+                type,
+                count: (type === 'poison' || type === 'burn') ? count : 1,
+                icon: effectIcons[type]
+            });
+        }
+        renderEffects(side);
     }
 
-    // Анализ действия для обновления стаков (яд, огонь) – без изменения статусов заморозки и щита
+    function removeEffect(side, type) {
+        const effects = side === 'player' ? playerEffects : enemyEffects;
+        const index = effects.findIndex(e => e.type === type);
+        if (index !== -1) {
+            effects.splice(index, 1);
+        }
+        renderEffects(side);
+    }
+
+    // Анализ действия для обновления стаков (яд, огонь)
     function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
         const targetSide = isPlayerTurn ? 'enemy' : 'player';
         const lower = action.toLowerCase();
@@ -290,39 +312,27 @@ function showBattleScreen(battleData) {
         if (!isUltimate) {
             if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
                 const type = passiveDebuffMap[attackerSubclass];
-                // Увеличиваем соответствующий стак
-                if (type === 'poison') {
-                    const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
-                    stacks.poison = Math.min(5, stacks.poison + 1);
-                } else if (type === 'burn') {
-                    const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
-                    stacks.burn = Math.min(5, stacks.burn + 1);
-                }
-                // Для freeze стаки обрабатываются сервером через поля frozen
+                addEffect(targetSide, type, 1);
             }
         } else {
-            // Ультимейты
             if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
-                const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
-                stacks.poison = 0;
+                removeEffect(targetSide, 'poison');
             }
             if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                const stacks = targetSide === 'player' ? playerStacks : enemyStacks;
-                stacks.burn = 0;
+                removeEffect(targetSide, 'burn');
             }
-            // Для криоманта стаки заморозки обрабатываются сервером
+            // Для криоманта заморозка обрабатывается сервером
         }
-        updateAllStatuses();
     }
 
-    function clearAllDebuffSlots() {
+    function clearAllEffects() {
+        playerEffects = [];
+        enemyEffects = [];
         document.querySelectorAll('.debuff-slot').forEach(slot => {
             slot.innerHTML = '';
         });
-        playerStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
-        enemyStacks = { poison: 0, burn: 0, freeze: 0, shield: 0 };
     }
-    clearAllDebuffSlots();
+    clearAllEffects();
 
     function hideAnimations() {
         if (currentAnimationTimeout) {
@@ -417,32 +427,48 @@ function showBattleScreen(battleData) {
         console.log('playerFrozen:', turn.playerFrozen, 'enemyFrozen:', turn.enemyFrozen);
         console.log('playerShield:', turn.playerShield, 'enemyShield:', turn.enemyShield);
 
-        // Обновление статусов заморозки и щита из данных сервера
+        // Обновление статусов заморозки и щита из сервера
         if (turn.playerFrozen !== undefined) {
-            playerStacks.freeze = turn.playerFrozen; // 0 или 1
+            if (turn.playerFrozen) {
+                addEffect('player', 'freeze');
+            } else {
+                removeEffect('player', 'freeze');
+            }
         }
         if (turn.enemyFrozen !== undefined) {
-            enemyStacks.freeze = turn.enemyFrozen;
+            if (turn.enemyFrozen) {
+                addEffect('enemy', 'freeze');
+            } else {
+                removeEffect('enemy', 'freeze');
+            }
         }
         if (turn.playerShield !== undefined) {
-            playerStacks.shield = turn.playerShield; // 0 или 1
+            if (turn.playerShield) {
+                addEffect('player', 'shield');
+            } else {
+                removeEffect('player', 'shield');
+            }
         }
         if (turn.enemyShield !== undefined) {
-            enemyStacks.shield = turn.enemyShield;
+            if (turn.enemyShield) {
+                addEffect('enemy', 'shield');
+            } else {
+                removeEffect('enemy', 'shield');
+            }
         }
 
         // Управление оверлеем заморозки на аватаре
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) {
-            if (playerStacks.freeze) {
+            if (turn.playerFrozen) {
                 heroFrozenOverlay.classList.add('active');
             } else {
                 heroFrozenOverlay.classList.remove('active');
             }
         }
         if (enemyFrozenOverlay) {
-            if (enemyStacks.freeze) {
+            if (turn.enemyFrozen) {
                 enemyFrozenOverlay.classList.add('active');
             } else {
                 enemyFrozenOverlay.classList.remove('active');
@@ -536,9 +562,6 @@ function showBattleScreen(battleData) {
 
         // Анализируем действие для обновления стаков яда и огня
         parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
-
-        // Обновляем отображение всех статусов (включая обновлённые из сервера)
-        updateAllStatuses();
 
         if (turn.action) {
             const logEntry = document.createElement('div');

@@ -130,45 +130,28 @@ body {
     font-weight: bold;
 }
 
+/* ========== УВЕЛИЧЕННЫЕ АВАТАРЫ И ОТСТУПЫ ========== */
 .battle-arena {
     display: flex;
-    justify-content: space-around;
-    align-items: center;
-    flex: 1;
-    min-height: 200px;
+    justify-content: center;
+    align-items: stretch;
+    gap: 3px;                /* отступ между колонками 3px */
+    padding: 10px;
 }
 
-.hero-card, .enemy-card {
+.hero-card,
+.enemy-card {
+    flex: 0 0 140px;          /* ширина колонки с аватаром */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
     text-align: center;
 }
 
-.filters select {
-    background-color: #2f3542;
-    color: white;
-    border: 1px solid #00aaff;
-    border-radius: 20px;
-    padding: 8px 12px;
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-/* Перенос длинных названий в инвентаре и маркете */
-.inventory-item .item-name,
-.market-item .item-name {
-    word-break: break-word;
-    hyphens: auto;
-    white-space: normal;
-    line-height: 1.2;
-    max-width: 100%;
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 2px;
-}
-
-/* Контейнеры аватаров в бою */
-.hero-avatar, .enemy-avatar {
-    width: 80px;
-    height: 120px;
+.hero-avatar,
+.enemy-avatar {
+    width: 100px !important;   /* ширина контейнера аватара */
+    height: 150px !important;  /* высота контейнера аватара */
     border-radius: 10px;
     border: 2px solid #00aaff;
     overflow: hidden;
@@ -178,8 +161,9 @@ body {
     margin: 0 auto;
 }
 
-/* Единый стиль для изображений внутри аватаров */
-.hero-avatar img, .hero-center img, .enemy-avatar img {
+.hero-avatar img,
+.hero-center img,
+.enemy-avatar img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
@@ -187,32 +171,42 @@ body {
 }
 
 .hp-bar {
-    width: 100px;
+    width: 100px;              /* ширина под аватар */
     height: 10px;
     background-color: #444;
     border-radius: 5px;
     margin: 5px auto;
     overflow: hidden;
 }
+
 .hp-fill {
     height: 100%;
     background-color: #e74c3c;
     width: 100%;
 }
+
 .mana-bar {
-    width: 100px;
+    width: 100px;              /* ширина под аватар */
     height: 5px;
     background-color: #222;
     border-radius: 3px;
     margin: 2px auto;
     overflow: hidden;
 }
+
 .mana-fill {
     height: 100%;
     background-color: #00aaff;
     width: 0%;
 }
 
+/* Текст HP – можно увеличить шрифт */
+#heroHpText,
+#enemyHpText {
+    font-size: 14px;
+}
+
+/* ===== ОСТАЛЬНЫЕ СТИЛИ (БЕЗ ИЗМЕНЕНИЙ) ===== */
 .battle-log {
     background-color: #232833;
     border-radius: 10px;

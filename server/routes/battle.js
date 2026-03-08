@@ -374,8 +374,6 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     return { damageToDefender, damageToSelf, logEntries };
 }
 
-// ... (весь код до simulateBattle остаётся без изменений)
-
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
@@ -429,7 +427,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyHp,
             playerMana,
             enemyMana,
-            // Добавляем текущие значения стаков
+            // Добавляем поля для статусов
+            playerFrozen: playerState.frozen,
+            enemyFrozen: enemyState.frozen,
+            playerShield: playerState.reflectBuff > 0 ? 1 : 0,
+            enemyShield: enemyState.reflectBuff > 0 ? 1 : 0,
             playerPoisonStacks: playerState.poisonStacks,
             playerBurnStacks: playerState.burnStacks,
             playerFreezeStacks: playerState.freezeStacks,
@@ -447,8 +449,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 const msg = `<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`;
                 log.push(msg);
                 turnState.action = msg;
-                // Обновляем стаки в turnState перед добавлением
+                turnState.playerFrozen = 0;
                 turnState.playerFreezeStacks = 0;
+                turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
                 turns.push(turnState);
                 turn = 'enemy';
                 continue;
@@ -465,13 +468,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (enemyHp <= 0) {
                     turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем стаки
+                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
                     turnState.enemyPoisonStacks = enemyState.poisonStacks;
                     turnState.enemyBurnStacks = enemyState.burnStacks;
                     turnState.enemyFreezeStacks = enemyState.freezeStacks;
+                    turnState.playerFrozen = playerState.frozen;
+                    turnState.enemyFrozen = enemyState.frozen;
+                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
+                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -483,13 +490,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (playerHp <= 0) {
                     turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем стаки
+                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
                     turnState.enemyPoisonStacks = enemyState.poisonStacks;
                     turnState.enemyBurnStacks = enemyState.burnStacks;
                     turnState.enemyFreezeStacks = enemyState.freezeStacks;
+                    turnState.playerFrozen = playerState.frozen;
+                    turnState.enemyFrozen = enemyState.frozen;
+                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
+                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -550,13 +561,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turnState.action = actionLog;
             turnState.playerHp = playerHp;
             turnState.enemyHp = enemyHp;
-            // Обновляем стаки в turnState
+            // Обновляем все поля
             turnState.playerPoisonStacks = playerState.poisonStacks;
             turnState.playerBurnStacks = playerState.burnStacks;
             turnState.playerFreezeStacks = playerState.freezeStacks;
             turnState.enemyPoisonStacks = enemyState.poisonStacks;
             turnState.enemyBurnStacks = enemyState.burnStacks;
             turnState.enemyFreezeStacks = enemyState.freezeStacks;
+            turnState.playerFrozen = playerState.frozen;
+            turnState.enemyFrozen = enemyState.frozen;
+            turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
+            turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
             turns.push(turnState);
 
             if (enemyHp <= 0 || playerHp <= 0) break;
@@ -566,14 +581,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             turn = 'enemy';
         } else {
-            // Ход врага – аналогично с проверками и добавлением стаков в turnState
+            // Ход врага – аналогично с проверками и добавлением полей
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
                 enemyState.freezeStacks = 0; 
                 const msg = `<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`;
                 log.push(msg);
                 turnState.action = msg;
+                turnState.enemyFrozen = 0;
                 turnState.enemyFreezeStacks = 0;
+                turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                 turns.push(turnState);
                 turn = 'player';
                 continue;
@@ -590,13 +607,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (playerHp <= 0) {
                     turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем стаки
+                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
                     turnState.enemyPoisonStacks = enemyState.poisonStacks;
                     turnState.enemyBurnStacks = enemyState.burnStacks;
                     turnState.enemyFreezeStacks = enemyState.freezeStacks;
+                    turnState.playerFrozen = playerState.frozen;
+                    turnState.enemyFrozen = enemyState.frozen;
+                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
+                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -608,13 +629,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (enemyHp <= 0) {
                     turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем стаки
+                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
                     turnState.enemyPoisonStacks = enemyState.poisonStacks;
                     turnState.enemyBurnStacks = enemyState.burnStacks;
                     turnState.enemyFreezeStacks = enemyState.freezeStacks;
+                    turnState.playerFrozen = playerState.frozen;
+                    turnState.enemyFrozen = enemyState.frozen;
+                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
+                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -675,13 +700,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turnState.action = actionLog;
             turnState.playerHp = playerHp;
             turnState.enemyHp = enemyHp;
-            // Обновляем стаки в turnState
+            // Обновляем все поля
             turnState.playerPoisonStacks = playerState.poisonStacks;
             turnState.playerBurnStacks = playerState.burnStacks;
             turnState.playerFreezeStacks = playerState.freezeStacks;
             turnState.enemyPoisonStacks = enemyState.poisonStacks;
             turnState.enemyBurnStacks = enemyState.burnStacks;
             turnState.enemyFreezeStacks = enemyState.freezeStacks;
+            turnState.playerFrozen = playerState.frozen;
+            turnState.enemyFrozen = enemyState.frozen;
+            turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
+            turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
             turns.push(turnState);
 
             if (playerHp <= 0 || enemyHp <= 0) break;
@@ -693,15 +722,29 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         }
     }
 
-    // Определение победителя и финальная фраза (без изменений)
+    // Определение победителя (уже с обнулёнными значениями)
     let winner = null;
     if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
     else if (playerHp <= 0) winner = 'enemy';
     else if (enemyHp <= 0) winner = 'player';
 
-    const victoryPhrases = [ /* ... */ ];
-    const defeatPhrases = [ /* ... */ ];
-    const drawPhrases = [ /* ... */ ];
+    // Добавление финальной фразы
+    const victoryPhrases = [
+        'Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
+        'С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
+        'Вы оказались сильнее! <span style="color:#2ecc71;">ПОБЕДА</span>!',
+        'Невероятная битва! <span style="color:#2ecc71;">ПОБЕДА</span> за вами!'
+    ];
+    const defeatPhrases = [
+        'В этой напряжённой схватке враг был сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
+        'Ваши силы иссякли... <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
+        'Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
+        'Соперник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>'
+    ];
+    const drawPhrases = [
+        'Оба бойца падают одновременно. Ничья!',
+        'Взаимный удар – никто не выжил. Ничья.'
+    ];
 
     let finalPhrase = '';
     if (winner === 'player') {
@@ -724,8 +767,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         enemyMaxHp: enemyStats.hp
     };
 }
-
-// ... остальной код без изменений
 
 // --- Вспомогательные функции для опыта, энергии и генерации бота ---
 function expNeeded(level) {

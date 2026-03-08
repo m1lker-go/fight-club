@@ -118,7 +118,7 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Единый блок стилей
+    // Единый блок стилей (добавлены transition для плавности полосок)
     const style = document.createElement('style');
     style.innerHTML = `
         .animation-container img { 
@@ -135,6 +135,11 @@ function showBattleScreen(battleData) {
         }
         @keyframes fadeIn {
             to { opacity: 1; }
+        }
+
+        /* Плавное изменение полосок HP и маны */
+        .hp-fill, .mana-fill {
+            transition: width 0.3s ease;
         }
 
         /* Оверлей заморозки */
@@ -402,6 +407,14 @@ function showBattleScreen(battleData) {
         if (card) {
             card.classList.add('defeated');
         }
+        // Также обнуляем ману побеждённого для красоты
+        if (side === 'hero') {
+            const manaBar = document.getElementById('heroMana');
+            if (manaBar) manaBar.style.width = '0%';
+        } else if (side === 'enemy') {
+            const manaBar = document.getElementById('enemyMana');
+            if (manaBar) manaBar.style.width = '0%';
+        }
     }
 
     function playTurn() {
@@ -456,9 +469,11 @@ function showBattleScreen(battleData) {
             if (winner === 'player') {
                 document.getElementById('enemyHp').style.width = '0%';
                 document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
+                document.getElementById('enemyMana').style.width = '0%'; // обнуляем ману
             } else if (winner === 'enemy') {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
+                document.getElementById('heroMana').style.width = '0%'; // обнуляем ману
             }
             // Разнообразные финальные фразы, если сервер не прислал
             let finalMessage = turn.action;
@@ -514,11 +529,11 @@ function showBattleScreen(battleData) {
             animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
-        // Устанавливаем ширину полосы
+        // Устанавливаем ширину полосы (transition сделает плавным)
         if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
         if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
-        // Обновление маны
+        // Обновление маны (тоже плавно благодаря transition)
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 

@@ -1,3 +1,5 @@
+// utils/botGenerator.js
+
 const baseStats = {
     warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
     assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
@@ -23,28 +25,30 @@ const bestStatsByClass = {
     mage: ['atk', 'int', 'agi', 'hp', 'crit', 'critDmg']
 };
 
+// Имена для обычных ботов
+const botTemplates = [
+    { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
+    { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
+    { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
+    { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
+    { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
+    { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
+    { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
+    { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
+    { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' }
+];
+
 /**
- * Генерация бота с уровнем, приблизительно равным уровню игрока (в диапазоне ±3)
+ * Генерация обычного бота
  * @param {number} playerLevel - уровень игрока
  * @returns {object} - данные бота
  */
-function generateBot(playerLevel) {
+function generateNormalBot(playerLevel) {
     // Диапазон уровня бота: от playerLevel-3 до playerLevel+3, но не меньше 1 и не больше 60
     const level = Math.max(1, Math.min(60, playerLevel - 3 + Math.floor(Math.random() * 7))); // 7 вариантов: -3,-2,-1,0,+1,+2,+3
 
     // Выбор шаблона бота
-    const templates = [
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'guardian' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'berserker' },
-        { name: 'Деревянный манекен', class: 'warrior', subclass: 'knight' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'assassin' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'venom_blade' },
-        { name: 'Серебряный защитник', class: 'assassin', subclass: 'blood_hunter' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'pyromancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
-        { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' }
-    ];
-    const template = templates[Math.floor(Math.random() * templates.length)];
+    const template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
 
     // Базовые характеристики
     const base = baseStats[template.class] || baseStats.warrior;
@@ -106,20 +110,6 @@ function generateBot(playerLevel) {
         totalDist[stat] = (totalDist[stat] || 0) + otherDist[stat];
     }
 
-    // Маппинг характеристик на поля, как в БД
-    const statToField = {
-        hp: 'hp_points',
-        atk: 'atk_points',
-        def: 'def_points',
-        agi: 'dodge_points',
-        int: 'int_points',
-        spd: 'spd_points',
-        crit: 'crit_points',
-        critDmg: 'crit_dmg_points',
-        vamp: 'vamp_points',
-        reflect: 'reflect_points'
-    };
-
     // Применяем бонусы от навыков
     for (let stat in totalDist) {
         const points = totalDist[stat];
@@ -162,14 +152,14 @@ function generateBot(playerLevel) {
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
-    // Классовые особенности (постоянные бонусы) – обновлено для мага
+    // Классовые особенности (постоянные бонусы)
     if (template.class === 'warrior') {
         stats.hp += Math.floor(stats.def / 5) * 3;
     } else if (template.class === 'assassin') {
         stats.spd += Math.floor(stats.agi / 5);
     } else if (template.class === 'mage') {
-        stats.agi += Math.floor(stats.int / 5);          // +1 ловкости за 5 интеллекта
-        stats.manaRegen += Math.floor(stats.int / 5) * 2; // +2 регенерации маны
+        stats.agi += Math.floor(stats.int / 5);
+        stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
     // Классовые бонусы (умножение)
@@ -190,13 +180,73 @@ function generateBot(playerLevel) {
     stats.agi = Math.min(100, stats.agi);
 
     return {
-        id: `bot_${Date.now()}_${Math.random()}`,
         username: template.name,
+        avatar_id: null,
         class: template.class,
         subclass: template.subclass,
         level: level,
-        stats: stats
+        stats: stats,
+        is_cybercat: false
     };
+}
+
+/**
+ * Генерация киберкота
+ * @param {number} playerLevel - уровень игрока
+ * @returns {object} - данные киберкота
+ */
+function generateCybercat(playerLevel) {
+    // Киберкот: уровень +1-3 (но не больше 60)
+    const cybercatLevel = Math.min(60, playerLevel + Math.floor(Math.random() * 3) + 1);
+    
+    // Случайный класс
+    const classes = ['warrior', 'assassin', 'mage'];
+    const randomClass = classes[Math.floor(Math.random() * classes.length)];
+    
+    // Случайный подкласс для этого класса
+    const subclassOptions = {
+        warrior: ['guardian', 'berserker', 'knight'],
+        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+        mage: ['pyromancer', 'cryomancer', 'illusionist']
+    };
+    const options = subclassOptions[randomClass];
+    const randomSubclass = options[Math.floor(Math.random() * options.length)];
+    
+    // Базовые характеристики для этого уровня (используем ту же логику, что и для обычного бота)
+    // Но нам нужно сгенерировать обычного бота этого уровня, чтобы получить нормальные статы
+    const baseBot = generateNormalBot(cybercatLevel);
+    
+    // Добавляем бонусы киберкота
+    const cybercatStats = {
+        ...baseBot.stats,
+        hp: baseBot.stats.hp + 10,
+        atk: baseBot.stats.atk + 3,
+        def: baseBot.stats.def + 2
+    };
+    
+    return {
+        username: 'Киберкот',
+        avatar_id: null,
+        class: randomClass,
+        subclass: randomSubclass,
+        level: cybercatLevel,
+        stats: cybercatStats,
+        is_cybercat: true
+    };
+}
+
+/**
+ * Основная функция генерации бота
+ * @param {number} playerLevel - уровень игрока
+ * @param {boolean} isCybercat - true для киберкота, false для обычного бота
+ * @returns {object} - данные бота
+ */
+function generateBot(playerLevel, isCybercat = false) {
+    if (isCybercat) {
+        return generateCybercat(playerLevel);
+    } else {
+        return generateNormalBot(playerLevel);
+    }
 }
 
 module.exports = { generateBot };

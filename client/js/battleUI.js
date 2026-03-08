@@ -50,11 +50,6 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Строка с переключателем скорости (над аватарами) -->
-            <div class="speed-row" style="display: flex; justify-content: center; padding: 5px;">
-                <button id="singleSpeedBtn" class="speed-btn" style="background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
-            </div>
-
             <!-- Основная арена: 5 колонок -->
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 10px; padding: 10px;">
                 <!-- Колонка 1: аватар игрока -->
@@ -82,9 +77,10 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: таймер (только таймер) -->
-                <div class="battle-center" style="flex: 0 0 60px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                    <div class="battle-timer" id="battleTimer" style="width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
+                <!-- Колонка 3: центральная с таймером и кнопкой скорости (позиционированы относительно слотов) -->
+                <div class="battle-center" style="flex: 0 0 60px; position: relative; height: 120px;">
+                    <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
+                    <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
                 </div>
 
                 <!-- Колонка 4: стаки на враге -->
@@ -120,7 +116,11 @@ function showBattleScreen(battleData) {
 
     const style = document.createElement('style');
     style.innerHTML = `
-        .animation-container img { width: 100%; height: 100%; object-fit: contain; }
+        .animation-container img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; /* анимация заполняет весь аватар */
+        }
         .debuff-slot img {
             width: 100%;
             height: 100%;
@@ -164,6 +164,16 @@ function showBattleScreen(battleData) {
         .defeated .defeat-overlay {
             opacity: 1;
         }
+
+        /* Цветные логи победы/поражения */
+        .log-entry.victory {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .log-entry.defeat {
+            color: #e74c3c;
+            font-weight: bold;
+        }
     `;
     document.head.appendChild(style);
 
@@ -176,7 +186,7 @@ function showBattleScreen(battleData) {
     let timer;
     let finishTimeout = null;
 
-    // Состояние стаков для игрока и врага (будем обновлять из данных сервера)
+    // Состояние стаков для игрока и врага
     let playerStacks = { poison: 0, burn: 0, freeze: 0 };
     let enemyStacks = { poison: 0, burn: 0, freeze: 0 };
 
@@ -260,12 +270,6 @@ function showBattleScreen(battleData) {
         enemyStacks = { poison: 0, burn: 0, freeze: 0 };
     }
     clearAllDebuffSlots();
-
-    // Функция parseActionForDebuffs больше не нужна для определения стаков – мы будем получать их с сервера,
-    // но оставим для анимации (можно удалить, если не нужна)
-    function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
-        // (можно оставить для дополнительной анимации или удалить)
-    }
 
     function hideAnimations() {
         if (currentAnimationTimeout) {
@@ -351,8 +355,7 @@ function showBattleScreen(battleData) {
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
             
-            // В финале не применяем эффект поражения – он уже применён в последнем ходе
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 2500);
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000); // уменьшено до 1 секунды
             return;
         }
 
@@ -360,7 +363,7 @@ function showBattleScreen(battleData) {
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
 
-        // ========== ОБНОВЛЕНИЕ СТАКОВ ИЗ ДАННЫХ СЕРВЕРА ==========
+        // Обновление стаков из данных сервера
         if (turn.playerPoisonStacks !== undefined) {
             playerStacks.poison = turn.playerPoisonStacks;
             updateStacksVisual('player', 'poison');
@@ -385,7 +388,6 @@ function showBattleScreen(battleData) {
             enemyStacks.freeze = turn.enemyFreezeStacks;
             updateStacksVisual('enemy', 'freeze');
         }
-        // ==========================================================
 
         // Если это финальное сообщение (не ход)
         if (turn.turn === 'final') {
@@ -398,10 +400,13 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
-            // Добавляем финальное сообщение в лог (если action отсутствует, используем стандартное)
-            const finalMessage = turn.action || (winner === 'player' ? 'Победа!' : 'Поражение!');
+            // Добавляем финальное сообщение в лог с цветом
+            let finalMessage = turn.action;
+            if (!finalMessage) {
+                finalMessage = winner === 'player' ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
+            }
             const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
+            logEntry.className = 'log-entry ' + (winner === 'player' ? 'victory' : 'defeat');
             logEntry.innerHTML = finalMessage;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
@@ -451,9 +456,6 @@ function showBattleScreen(battleData) {
             const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
             showAnimation(target, anim);
         }
-
-        // parseActionForDebuffs можно оставить закомментированным, так как стаки обновлены из данных сервера
-        // parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         if (turn.action) {
             const logEntry = document.createElement('div');

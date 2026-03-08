@@ -97,7 +97,8 @@ function showBattleScreen(battleData) {
                 <!-- Колонка 5: аватар противника -->
                 <div class="enemy-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
-                        <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <!-- УСЛОВИЕ: если это киберкот, показываем специальный скин -->
+                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
                         <!-- Оверлей заморозки -->
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>

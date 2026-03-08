@@ -746,7 +746,7 @@ function renderShop(target = null) {
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Обычный сундук</div>
-                    <div class="chest-desc">Первый в день бесплатно, далее 50 монет</div>
+                    <div class="chest-desc">Обычное 85%<br>Необычное 15%</div>
                 </div>
                 <button class="chest-btn" data-chest="common">
                     <span class="chest-price" id="commonChestPrice">?</span>
@@ -759,7 +759,7 @@ function renderShop(target = null) {
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Необычный сундук</div>
-                    <div class="chest-desc">25% обычный, 65% необычный, 10% редкий</div>
+                    <div class="chest-desc">Обычное 25%<br>Необычное 65%<br>Редкое 10%</div>
                 </div>
                 <button class="chest-btn" data-chest="uncommon">
                     <span class="chest-price">250</span>
@@ -772,7 +772,7 @@ function renderShop(target = null) {
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Редкий сундук</div>
-                    <div class="chest-desc">Шанс получения редкого снаряжения 70%</div>
+                    <div class="chest-desc">Редкое 70%<br>Эпическое 30%</div>
                 </div>
                 <button class="chest-btn" data-chest="rare">
                     <span class="chest-price">800</span>
@@ -785,7 +785,7 @@ function renderShop(target = null) {
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Эпический сундук</div>
-                    <div class="chest-desc">Шанс получения эпического снаряжения 70%</div>
+                    <div class="chest-desc">Эпическое 70%<br>Легендарное 30%</div>
                 </div>
                 <button class="chest-btn" data-chest="epic">
                     <span class="chest-price">1800</span>
@@ -798,7 +798,7 @@ function renderShop(target = null) {
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Легендарный сундук</div>
-                    <div class="chest-desc">Шанс получения легендарного снаряжения 70%</div>
+                    <div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div>
                 </div>
                 <button class="chest-btn" data-chest="legendary">
                     <span class="chest-price">3500</span>

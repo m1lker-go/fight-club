@@ -56,6 +56,8 @@ function showBattleScreen(battleData) {
                 <div class="hero-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <!-- Оверлей заморозки -->
+                        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
@@ -96,6 +98,8 @@ function showBattleScreen(battleData) {
                 <div class="enemy-card" style="flex: 0 0 100px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 80px; height: 120px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <!-- Оверлей заморозки -->
+                        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
@@ -130,6 +134,27 @@ function showBattleScreen(battleData) {
         }
         @keyframes fadeIn {
             to { opacity: 1; }
+        }
+
+        /* Оверлей заморозки */
+        .frozen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .frozen-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .frozen-overlay.active {
+            opacity: 1;
         }
 
         /* Стили для эффекта поражения */
@@ -361,6 +386,7 @@ function showBattleScreen(battleData) {
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
         console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
+        console.log('playerFrozen:', turn.playerFrozen, 'enemyFrozen:', turn.enemyFrozen); // для отладки
 
         // Обновление стаков из данных сервера
         if (turn.playerPoisonStacks !== undefined) {
@@ -386,6 +412,24 @@ function showBattleScreen(battleData) {
         if (turn.enemyFreezeStacks !== undefined) {
             enemyStacks.freeze = turn.enemyFreezeStacks;
             updateStacksVisual('enemy', 'freeze');
+        }
+
+        // Управление оверлеем заморозки
+        const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
+        const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
+        if (heroFrozenOverlay) {
+            if (turn.playerFrozen === 1) {
+                heroFrozenOverlay.classList.add('active');
+            } else {
+                heroFrozenOverlay.classList.remove('active');
+            }
+        }
+        if (enemyFrozenOverlay) {
+            if (turn.enemyFrozen === 1) {
+                enemyFrozenOverlay.classList.add('active');
+            } else {
+                enemyFrozenOverlay.classList.remove('active');
+            }
         }
 
         // Если это финальное сообщение (не ход)

@@ -611,6 +611,34 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     }
 
+    // Подготавливаем лог для отображения, убирая пустые строки
+    let logArray = battleData.result.log.filter(l => l && l.trim() !== '');
+    
+    // Если в логе нет финального сообщения (последняя строка не содержит слов ПОБЕДА/ПОРАЖЕНИЕ), добавляем его
+    if (logArray.length === 0 || !logArray[logArray.length-1].includes('ПОБЕДА') && !logArray[logArray.length-1].includes('ПОРАЖЕНИЕ')) {
+        const victoryFallback = [
+            'Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',
+            'С последним ударом враг повержен. <span class="victory">ПОБЕДА</span>!',
+            'Вы оказались сильнее! <span class="victory">ПОБЕДА</span>!',
+            'Невероятная битва! <span class="victory">ПОБЕДА</span> за вами!'
+        ];
+        const defeatFallback = [
+            'В этой напряжённой схватке враг был сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>',
+            'Ваши силы иссякли... <span class="defeat">ПОРАЖЕНИЕ</span>',
+            'Увы, победа не ваша. <span class="defeat">ПОРАЖЕНИЕ</span>',
+            'Соперник оказался сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>'
+        ];
+        let finalMsg;
+        if (winner === 'player') {
+            finalMsg = victoryFallback[Math.floor(Math.random() * victoryFallback.length)];
+        } else if (winner === 'enemy') {
+            finalMsg = defeatFallback[Math.floor(Math.random() * defeatFallback.length)];
+        } else {
+            finalMsg = 'Ничья!';
+        }
+        logArray.push(finalMsg);
+    }
+
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
@@ -629,7 +657,7 @@ async function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${battleData.result.log.filter(l => l).map(l => `<div class="log-entry">${l}</div>`).join('')}
+                ${logArray.map(l => `<div class="log-entry">${l}</div>`).join('')}
             </div>
         </div>
     `;
@@ -641,7 +669,7 @@ async function showBattleResult(battleData, timeOut = false) {
     tabLog.addEventListener('click', () => {
         tabLog.classList.add('active');
         tabStats.classList.remove('active');
-        resultDiv.innerHTML = battleData.result.log.filter(l => l).map(l => `<div class="log-entry">${l}</div>`).join('');
+        resultDiv.innerHTML = logArray.map(l => `<div class="log-entry">${l}</div>`).join('');
     });
 
     tabStats.addEventListener('click', () => {

@@ -50,28 +50,31 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Основная арена: 5 колонок -->
+            <!-- Основная арена: 5 колонок с увеличенными аватарами и плотными отступами -->
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 3px; padding: 10px;">
                 <!-- Колонка 1: аватар игрока -->
-                <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
-                    <div style="position: relative; width: 100px; height: 150px; margin: 0 auto;">
+                <div class="hero-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
                         <!-- Оверлей заморозки -->
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="hp-bar" style="width:100px; margin:5px auto;">
+                    <!-- Полоска HP с текстом поверх -->
+                    <div class="hp-bar" style="width: 120px; margin: 5px auto; position: relative;">
                         <div class="hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
+                        <div class="hp-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
                     </div>
-                    <div id="heroHpText" style="font-size:14px;">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
-                    <div class="mana-bar" style="width:100px; margin:2px auto;">
+                    <!-- Полоска маны с текстом поверх -->
+                    <div class="mana-bar" style="width: 120px; margin: 2px auto; position: relative;">
                         <div class="mana-fill" id="heroMana" style="width:0%"></div>
+                        <div class="mana-text" id="heroManaText">0</div>
                     </div>
                 </div>
 
-                <!-- Колонка 2: статусы игрока (слоты 0-4) -->
-                <div class="player-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
+                <!-- Колонка 2: статусы игрока (слоты 0-4) – уменьшена ширина для плотности -->
+                <div class="player-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="player" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="2" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
@@ -79,14 +82,14 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                 </div>
 
-                <!-- Колонка 3: центральная с таймером и кнопкой скорости -->
+                <!-- Колонка 3: центральная с таймером и кнопкой скорости (без изменений) -->
                 <div class="battle-center" style="flex: 0 0 60px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 50px; height: 50px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 18px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 5px 15px; border-radius: 15px; cursor: pointer; font-weight: bold; opacity: 0.8;">x1</button>
                 </div>
 
-                <!-- Колонка 4: статусы врага (слоты 0-4) -->
-                <div class="enemy-debuffs" style="flex: 0 0 30px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
+                <!-- Колонка 4: статусы врага -->
+                <div class="enemy-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="2" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
@@ -95,21 +98,20 @@ function showBattleScreen(battleData) {
                 </div>
 
                 <!-- Колонка 5: аватар противника -->
-                <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
-                    <div style="position: relative; width: 100px; height: 150px; margin: 0 auto;">
-                        <!-- УСЛОВИЕ: если это киберкот, показываем специальный скин -->
-                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
-                        <!-- Оверлей заморозки -->
+                <div class="enemy-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
+                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="hp-bar" style="width:100px; margin:5px auto;">
+                    <div class="hp-bar" style="width: 120px; margin: 5px auto; position: relative;">
                         <div class="hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
+                        <div class="hp-text" id="enemyHpText">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
                     </div>
-                    <div id="enemyHpText" style="font-size:14px;">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
-                    <div class="mana-bar" style="width:100px; margin:2px auto;">
+                    <div class="mana-bar" style="width: 120px; margin: 2px auto; position: relative;">
                         <div class="mana-fill" id="enemyMana" style="width:0%"></div>
+                        <div class="mana-text" id="enemyManaText">0</div>
                     </div>
                 </div>
             </div>
@@ -119,9 +121,56 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Единый блок стилей (добавлены transition для плавности полосок)
+    // Добавляем стили для текста поверх баров и увеличенной высоты (можно добавить в общий CSS, но для надёжности продублируем)
     const style = document.createElement('style');
     style.innerHTML = `
+        .hp-bar, .mana-bar {
+            position: relative;
+            background-color: #2f3542;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .hp-fill, .mana-fill {
+            transition: width 0.3s ease;
+            height: 100%;
+        }
+        .hp-text, .mana-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            text-shadow: 0 0 3px black;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .mana-text {
+            font-size: 10px;
+        }
+        /* Увеличенная высота баров */
+        .hp-bar {
+            height: 18px;
+        }
+        .mana-bar {
+            height: 12px;
+        }
+        /* Уменьшение отступов у слотов статусов */
+        .player-debuffs, .enemy-debuffs {
+            flex: 0 0 25px !important;
+        }
+        .debuff-slot {
+            width: 22px;
+            height: 22px;
+        }
+        /* Анимации */
         .animation-container img { 
             width: 100%; 
             height: 100%; 
@@ -136,11 +185,6 @@ function showBattleScreen(battleData) {
         }
         @keyframes fadeIn {
             to { opacity: 1; }
-        }
-
-        /* Плавное изменение полосок HP и маны */
-        .hp-fill, .mana-fill {
-            transition: width 0.3s ease;
         }
 
         /* Оверлей заморозки */
@@ -240,7 +284,11 @@ function showBattleScreen(battleData) {
     let playerEffects = [];
     let enemyEffects = [];
 
-    // Функция для плавного изменения текста HP
+    // Для анимации маны запоминаем предыдущие значения
+    let lastHeroMana = 0;
+    let lastEnemyMana = 0;
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
     function animateHpText(elementId, start, end, maxHp, duration = 300) {
         const element = document.getElementById(elementId);
         if (!element) return;
@@ -260,7 +308,26 @@ function showBattleScreen(battleData) {
         }, stepTime);
     }
 
-    function setHpBarWidth(barId, percent) {
+    function animateManaText(elementId, start, end, duration = 300) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        const steps = 20;
+        const stepTime = duration / steps;
+        const diff = end - start;
+        let currentStep = 0;
+        const interval = setInterval(() => {
+            currentStep++;
+            const progress = currentStep / steps;
+            const current = Math.round(start + diff * progress);
+            element.innerText = current;
+            if (currentStep >= steps) {
+                clearInterval(interval);
+                element.innerText = end;
+            }
+        }, stepTime);
+    }
+
+    function setBarWidth(barId, percent) {
         const bar = document.getElementById(barId);
         if (bar) bar.style.width = percent + '%';
     }
@@ -269,9 +336,7 @@ function showBattleScreen(battleData) {
     function renderEffects(side) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         const effects = side === 'player' ? playerEffects : enemyEffects;
-        // Очищаем все слоты
         slots.forEach(slot => slot.innerHTML = '');
-        // Заполняем первые N слотов (макс 5)
         for (let i = 0; i < Math.min(effects.length, 5); i++) {
             const effect = effects[i];
             const slot = slots[i];
@@ -283,7 +348,6 @@ function showBattleScreen(battleData) {
         }
     }
 
-    // Функция построения списка эффектов из текущих состояний
     function buildEffectsList(side) {
         const effects = [];
         if (side === 'player') {
@@ -306,7 +370,6 @@ function showBattleScreen(battleData) {
         return effects;
     }
 
-    // Обновление эффектов из текущих переменных
     function updateAllEffects() {
         playerEffects = buildEffectsList('player');
         enemyEffects = buildEffectsList('enemy');
@@ -408,7 +471,6 @@ function showBattleScreen(battleData) {
         if (card) {
             card.classList.add('defeated');
         }
-        // Также обнуляем ману побеждённого для красоты
         if (side === 'hero') {
             const manaBar = document.getElementById('heroMana');
             if (manaBar) manaBar.style.width = '0%';
@@ -418,6 +480,17 @@ function showBattleScreen(battleData) {
         }
     }
 
+    function isUltimateAction(action) {
+        const lower = action.toLowerCase();
+        return lower.includes('смертельный удар') ||
+               lower.includes('ядовитая волна') ||
+               lower.includes('кровавая жатва') ||
+               lower.includes('огненный шторм') ||
+               lower.includes('вечная зима') ||
+               lower.includes('зазеркалье');
+    }
+
+    // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
     function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
@@ -445,38 +518,30 @@ function showBattleScreen(battleData) {
         if (turn.playerBurnStacks !== undefined) playerBurnStacks = turn.playerBurnStacks;
         if (turn.enemyBurnStacks !== undefined) enemyBurnStacks = turn.enemyBurnStacks;
 
-        // Управление оверлеем заморозки на аватаре
+        // Управление оверлеем заморозки
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) {
-            if (playerFrozen) {
-                heroFrozenOverlay.classList.add('active');
-            } else {
-                heroFrozenOverlay.classList.remove('active');
-            }
+            if (playerFrozen) heroFrozenOverlay.classList.add('active');
+            else heroFrozenOverlay.classList.remove('active');
         }
         if (enemyFrozenOverlay) {
-            if (enemyFrozen) {
-                enemyFrozenOverlay.classList.add('active');
-            } else {
-                enemyFrozenOverlay.classList.remove('active');
-            }
+            if (enemyFrozen) enemyFrozenOverlay.classList.add('active');
+            else enemyFrozenOverlay.classList.remove('active');
         }
 
-        // Если это финальное сообщение (не ход)
+        // Если это финальное сообщение
         if (turn.turn === 'final') {
             const winner = battleData.result.winner;
-            // Принудительно обнуляем полоску и текст проигравшего
             if (winner === 'player') {
                 document.getElementById('enemyHp').style.width = '0%';
                 document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
-                document.getElementById('enemyMana').style.width = '0%'; // обнуляем ману
+                document.getElementById('enemyMana').style.width = '0%';
             } else if (winner === 'enemy') {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
-                document.getElementById('heroMana').style.width = '0%'; // обнуляем ману
+                document.getElementById('heroMana').style.width = '0%';
             }
-            // Разнообразные финальные фразы, если сервер не прислал
             let finalMessage = turn.action;
             if (!finalMessage) {
                 const victoryVariants = [
@@ -508,7 +573,7 @@ function showBattleScreen(battleData) {
             return;
         }
 
-        // Получаем текущие значения HP из DOM (старые)
+        // --- Обработка HP ---
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -522,7 +587,6 @@ function showBattleScreen(battleData) {
         const heroMax = battleData.result.playerMaxHp;
         const enemyMax = battleData.result.enemyMaxHp;
 
-        // Анимация HP (текст)
         if (heroNew !== heroOld && heroHpText) {
             animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
         }
@@ -530,37 +594,86 @@ function showBattleScreen(battleData) {
             animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
-        // Устанавливаем ширину полосы (transition сделает плавным)
-        if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
-        if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
+        if (heroHpBar && heroMax) setBarWidth('heroHp', (heroNew / heroMax) * 100);
+        if (enemyHpBar && enemyMax) setBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
-        // Обновление маны (тоже плавно благодаря transition)
-        document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
-        document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
-
+        // --- Обработка маны с учётом ульты ---
         const isPlayerTurn = turn.turn === 'player';
+        const action = turn.action || '';
 
-        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
-        const actionLower = turn.action ? turn.action.toLowerCase() : '';
-        const skipAnimation = actionLower.includes('пропускает ход');
+        const heroNewMana = turn.playerMana !== undefined ? turn.playerMana : lastHeroMana;
+        const enemyNewMana = turn.enemyMana !== undefined ? turn.enemyMana : lastEnemyMana;
 
-        if (!skipAnimation && turn.action) {
-            const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
+        const isUlt = isUltimateAction(action);
+
+        if (isUlt) {
+            // Атакующая сторона
+            const attackerManaId = isPlayerTurn ? 'heroMana' : 'enemyMana';
+            const attackerManaTextId = isPlayerTurn ? 'heroManaText' : 'enemyManaText';
+            const startMana = isPlayerTurn ? lastHeroMana : lastEnemyMana;
+            const finalMana = isPlayerTurn ? heroNewMana : enemyNewMana;
+
+            // Фаза 1: подъём до 100 за 0.5 сек
+            setTimeout(() => {
+                setBarWidth(attackerManaId, 100); // 100% ширина
+                animateManaText(attackerManaTextId, startMana, 100, 500);
+            }, 0);
+
+            // Фаза 2: спад до реального значения через 0.5 сек
+            setTimeout(() => {
+                const finalPercent = (finalMana / 100) * 100; // максимум маны 100
+                setBarWidth(attackerManaId, finalPercent);
+                animateManaText(attackerManaTextId, 100, finalMana, 500);
+            }, 500);
+
+            // Для противоположной стороны обычная анимация (если изменилась)
+            if (!isPlayerTurn) {
+                if (heroNewMana !== lastHeroMana) {
+                    setBarWidth('heroMana', (heroNewMana / 100) * 100);
+                    animateManaText('heroManaText', lastHeroMana, heroNewMana, 300);
+                }
+            } else {
+                if (enemyNewMana !== lastEnemyMana) {
+                    setBarWidth('enemyMana', (enemyNewMana / 100) * 100);
+                    animateManaText('enemyManaText', lastEnemyMana, enemyNewMana, 300);
+                }
+            }
+        } else {
+            // Обычная анимация маны для обеих сторон
+            if (heroNewMana !== lastHeroMana) {
+                setBarWidth('heroMana', (heroNewMana / 100) * 100);
+                animateManaText('heroManaText', lastHeroMana, heroNewMana, 300);
+            }
+            if (enemyNewMana !== lastEnemyMana) {
+                setBarWidth('enemyMana', (enemyNewMana / 100) * 100);
+                animateManaText('enemyManaText', lastEnemyMana, enemyNewMana, 300);
+            }
+        }
+
+        // Обновляем сохранённые значения маны
+        lastHeroMana = heroNewMana;
+        lastEnemyMana = enemyNewMana;
+
+        // --- Анимация действия ---
+        const skipAnimation = action.toLowerCase().includes('пропускает ход');
+        if (!skipAnimation && action) {
+            const { target, anim } = getAnimationForAction(action, isPlayerTurn);
             showAnimation(target, anim);
         }
 
-        // Обновляем эффекты на основе всех текущих переменных
+        // Обновляем эффекты
         updateAllEffects();
 
-        if (turn.action) {
+        // Добавляем запись в лог
+        if (action) {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.innerHTML = turn.action;
+            logEntry.innerHTML = action;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        // Если после этого хода кто-то мёртв, немедленно применяем эффект поражения
+        // Проверка смерти
         if (enemyNew <= 0) {
             applyDefeatEffect('enemy');
         }
@@ -571,6 +684,7 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
+    // --- Управление скоростью и таймер ---
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         speed = (speed === 1) ? 2 : 1;
@@ -689,12 +803,12 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     }
 
-    // Формируем лог из действий (turns)
+    // Формируем лог из действий
     let logArray = battleData.result.turns
         .map(t => t.action)
         .filter(a => a && a.trim() !== '');
 
-    // Если в логе нет финального сообщения (последняя строка не содержит слов ПОБЕДА/ПОРАЖЕНИЕ), добавляем его
+    // Добавляем финальное сообщение, если его нет
     if (logArray.length === 0 || !logArray[logArray.length-1].includes('ПОБЕДА') && !logArray[logArray.length-1].includes('ПОРАЖЕНИЕ')) {
         const victoryFallback = [
             'Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',

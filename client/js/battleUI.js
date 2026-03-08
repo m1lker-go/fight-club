@@ -118,25 +118,7 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .animation-container img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover;
-        }
-        .debuff-slot img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            opacity: 0;
-            animation: fadeIn 0.3s forwards;
-        }
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-
-        /* Оверлей заморозки */
+    // Единый блок стилей
     const style = document.createElement('style');
     style.innerHTML = `
         .animation-container img { 
@@ -252,12 +234,6 @@ function showBattleScreen(battleData) {
     let playerEffects = [];
     let enemyEffects = [];
 
-    const passiveDebuffMap = {
-        venom_blade: 'poison',
-        pyromancer: 'burn',
-        cryomancer: 'freeze'
-    };
-
     // Функция для плавного изменения текста HP
     function animateHpText(elementId, start, end, maxHp, duration = 300) {
         const element = document.getElementById(elementId);
@@ -330,38 +306,6 @@ function showBattleScreen(battleData) {
         enemyEffects = buildEffectsList('enemy');
         renderEffects('player');
         renderEffects('enemy');
-    }
-
-    // Анализ действия для обновления яда и огня (из лога)
-    function parseActionForDebuffs(action, isPlayerTurn, attackerSubclass) {
-        const targetSide = isPlayerTurn ? 'enemy' : 'player';
-        const lower = action.toLowerCase();
-        const isUltimate = lower.includes('ядовитая волна') || lower.includes('огненный шторм') || lower.includes('вечная зима');
-
-        if (!isUltimate) {
-            if (attackerSubclass && passiveDebuffMap[attackerSubclass]) {
-                const type = passiveDebuffMap[attackerSubclass];
-                if (type === 'poison') {
-                    if (targetSide === 'player') playerPoisonStacks = Math.min(5, playerPoisonStacks + 1);
-                    else enemyPoisonStacks = Math.min(5, enemyPoisonStacks + 1);
-                } else if (type === 'burn') {
-                    if (targetSide === 'player') playerBurnStacks = Math.min(5, playerBurnStacks + 1);
-                    else enemyBurnStacks = Math.min(5, enemyBurnStacks + 1);
-                }
-                // freeze обрабатывается сервером, не трогаем
-            }
-        } else {
-            if (attackerSubclass === 'venom_blade' && lower.includes('ядовитая волна')) {
-                if (targetSide === 'player') playerPoisonStacks = 0;
-                else enemyPoisonStacks = 0;
-            }
-            if (attackerSubclass === 'pyromancer' && lower.includes('огненный шторм')) {
-                if (targetSide === 'player') playerBurnStacks = 0;
-                else enemyBurnStacks = 0;
-            }
-            // для криоманта заморозка уже обработана сервером
-        }
-        updateAllEffects();
     }
 
     function clearAllEffects() {
@@ -579,7 +523,6 @@ function showBattleScreen(battleData) {
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
-        const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
         // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
         const actionLower = turn.action ? turn.action.toLowerCase() : '';
@@ -589,9 +532,6 @@ function showBattleScreen(battleData) {
             const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
             showAnimation(target, anim);
         }
-
-        // Анализируем действие для обновления яда и огня (из лога)
-        parseActionForDebuffs(turn.action, isPlayerTurn, attackerSubclass);
 
         // Обновляем эффекты на основе всех текущих переменных
         updateAllEffects();
@@ -733,9 +673,11 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     }
 
-    // Подготавливаем лог для отображения, убирая пустые строки
-    let logArray = battleData.result.log.filter(l => l && l.trim() !== '');
-    
+    // Формируем лог из действий (turns)
+    let logArray = battleData.result.turns
+        .map(t => t.action)
+        .filter(a => a && a.trim() !== '');
+
     // Если в логе нет финального сообщения (последняя строка не содержит слов ПОБЕДА/ПОРАЖЕНИЕ), добавляем его
     if (logArray.length === 0 || !logArray[logArray.length-1].includes('ПОБЕДА') && !logArray[logArray.length-1].includes('ПОРАЖЕНИЕ')) {
         const victoryFallback = [

@@ -9,7 +9,6 @@ async function startBattle() {
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
         const data = await res.json();
-        console.log('Opponent data:', data.opponent);
         if (data.error) {
             alert(data.error);
             return;
@@ -62,7 +61,7 @@ function showBattleScreen(battleData) {
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <!-- Полоска HP с текстом поверх (унифицирована с маной) -->
+                    <!-- Полоска HP с текстом поверх -->
                     <div class="stat-bar hp-bar" style="width: 120px; margin: 5px auto; position: relative;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                         <div class="stat-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
@@ -162,7 +161,7 @@ function showBattleScreen(battleData) {
             z-index: 2;
         }
 
-        /* Остальные стили (без изменений) */
+        /* Остальные стили */
         .animation-container img { 
             width: 100%; 
             height: 100%; 
@@ -252,6 +251,9 @@ function showBattleScreen(battleData) {
     let timer;
     let finishTimeout = null;
 
+    // Массив для хранения всех таймаутов анимации маны
+    let manaAnimationTimeouts = [];
+
     // Состояния для каждой стороны
     let playerFrozen = 0;
     let enemyFrozen = 0;
@@ -273,6 +275,11 @@ function showBattleScreen(battleData) {
     let currentEnemyMana = 0;
 
     // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+    function clearManaAnimations() {
+        manaAnimationTimeouts.forEach(timeout => clearTimeout(timeout));
+        manaAnimationTimeouts = [];
+    }
+
     function animateHpText(elementId, start, end, maxHp, duration = 300) {
         const element = document.getElementById(elementId);
         if (!element) return;
@@ -455,12 +462,20 @@ function showBattleScreen(battleData) {
         if (card) {
             card.classList.add('defeated');
         }
+        // Также обнуляем ману побеждённого и убираем анимации
         if (side === 'hero') {
             const manaBar = document.getElementById('heroMana');
             if (manaBar) manaBar.style.width = '0%';
+            const manaText = document.getElementById('heroManaText');
+            if (manaText) manaText.innerText = '0';
+            // Очищаем анимации маны для героя
+            clearManaAnimations();
         } else if (side === 'enemy') {
             const manaBar = document.getElementById('enemyMana');
             if (manaBar) manaBar.style.width = '0%';
+            const manaText = document.getElementById('enemyManaText');
+            if (manaText) manaText.innerText = '0';
+            clearManaAnimations();
         }
     }
 
@@ -524,6 +539,9 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
                 document.getElementById('heroMana').style.width = '0%';
             }
+            // Очищаем все анимации маны, так как бой закончен
+            clearManaAnimations();
+
             let finalMessage = turn.action;
             if (!finalMessage) {
                 const victoryVariants = [
@@ -597,6 +615,9 @@ function showBattleScreen(battleData) {
             showAnimation(target, anim);
         }
 
+        // Очищаем предыдущие анимации маны для этого хода, чтобы избежать наложения
+        clearManaAnimations();
+
         // --- Планирование анимации маны ---
         if (isUlt) {
             // Для атакующей стороны двухфазная анимация (подъём до 100 и спад)
@@ -605,48 +626,67 @@ function showBattleScreen(battleData) {
             const startMana = isPlayerTurn ? currentHeroMana : currentEnemyMana;
             const finalMana = isPlayerTurn ? heroNewMana : enemyNewMana;
 
-            // Фаза 1: подъём до 100 (0 мс задержки)
-            setTimeout(() => {
+            // Проверяем, жив ли атакующий после применения ульты
+            const attackerAlive = isPlayerTurn ? (heroNewHp > 0) : (enemyNewHp > 0);
+            // Проверяем, жива ли цель
+            const targetAlive = isPlayerTurn ? (enemyNewHp > 0) : (heroNewHp > 0);
+
+            // Фаза 1: подъём до 100 (0 мс задержки) – показываем всегда, даже если кто-то умрёт
+            const timeout1 = setTimeout(() => {
                 setBarWidth(attackerManaId, 100);
                 animateManaText(attackerManaTextId, startMana, 100, 500);
             }, 0);
+            manaAnimationTimeouts.push(timeout1);
 
-            // Фаза 2: спад до реального значения через 500 мс
-            setTimeout(() => {
+            // Фаза 2: спад до реального значения через 500 мс – только если атакующий и цель живы (или хотя бы атакующий жив, чтобы показать остаток маны)
+            if (attackerAlive && targetAlive) {
+                const timeout2 = setTimeout(() => {
+                    const finalPercent = (finalMana / 100) * 100;
+                    setBarWidth(attackerManaId, finalPercent);
+                    animateManaText(attackerManaTextId, 100, finalMana, 500);
+                }, 500);
+                manaAnimationTimeouts.push(timeout2);
+            } else {
+                // Если кто-то умер, сразу устанавливаем конечное значение маны без анимации
                 const finalPercent = (finalMana / 100) * 100;
                 setBarWidth(attackerManaId, finalPercent);
-                animateManaText(attackerManaTextId, 100, finalMana, 500);
-            }, 500);
+                const manaText = document.getElementById(attackerManaTextId);
+                if (manaText) manaText.innerText = finalMana;
+            }
 
             // Для противоположной стороны (если её мана изменилась) планируем обычную анимацию в конце хода
             if (!isPlayerTurn) {
-                if (heroNewMana !== currentHeroMana) {
-                    setTimeout(() => {
+                if (heroNewMana !== currentHeroMana && heroNewHp > 0) {
+                    const timeout = setTimeout(() => {
                         setBarWidth('heroMana', (heroNewMana / 100) * 100);
                         animateManaText('heroManaText', currentHeroMana, heroNewMana, 500);
                     }, turnDuration - 500);
+                    manaAnimationTimeouts.push(timeout);
                 }
             } else {
-                if (enemyNewMana !== currentEnemyMana) {
-                    setTimeout(() => {
+                if (enemyNewMana !== currentEnemyMana && enemyNewHp > 0) {
+                    const timeout = setTimeout(() => {
                         setBarWidth('enemyMana', (enemyNewMana / 100) * 100);
                         animateManaText('enemyManaText', currentEnemyMana, enemyNewMana, 500);
                     }, turnDuration - 500);
+                    manaAnimationTimeouts.push(timeout);
                 }
             }
         } else {
-            // Обычный ход: анимируем ману обеих сторон в конце хода
-            if (heroNewMana !== currentHeroMana) {
-                setTimeout(() => {
+            // Обычный ход: анимируем ману обеих сторон в конце хода, только если они живы
+            if (heroNewMana !== currentHeroMana && heroNewHp > 0) {
+                const timeout = setTimeout(() => {
                     setBarWidth('heroMana', (heroNewMana / 100) * 100);
                     animateManaText('heroManaText', currentHeroMana, heroNewMana, 500);
                 }, turnDuration - 500);
+                manaAnimationTimeouts.push(timeout);
             }
-            if (enemyNewMana !== currentEnemyMana) {
-                setTimeout(() => {
+            if (enemyNewMana !== currentEnemyMana && enemyNewHp > 0) {
+                const timeout = setTimeout(() => {
                     setBarWidth('enemyMana', (enemyNewMana / 100) * 100);
                     animateManaText('enemyManaText', currentEnemyMana, enemyNewMana, 500);
                 }, turnDuration - 500);
+                manaAnimationTimeouts.push(timeout);
             }
         }
 
@@ -666,7 +706,7 @@ function showBattleScreen(battleData) {
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        // Проверка смерти
+        // Проверка смерти и применение эффекта поражения (очистит анимации маны через applyDefeatEffect)
         if (enemyNewHp <= 0) {
             applyDefeatEffect('enemy');
         }
@@ -699,6 +739,7 @@ function showBattleScreen(battleData) {
             clearInterval(interval);
             if (finishTimeout) clearTimeout(finishTimeout);
             hideAnimations();
+            clearManaAnimations(); // очищаем все анимации маны при таймауте
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
             let winner;

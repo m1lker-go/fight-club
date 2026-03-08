@@ -9,6 +9,7 @@ async function startBattle() {
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
         const data = await res.json();
+        console.log('Opponent data:', data.opponent);
         if (data.error) {
             alert(data.error);
             return;

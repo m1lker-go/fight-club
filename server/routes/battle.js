@@ -6,7 +6,7 @@ const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
 
-// Импорт фраз из отдельного файла
+// Импорт фраз из отдельного файла (добавлен selfDamagePhrase)
 const {
     attackPhrases,
     dodgePhrases,
@@ -26,19 +26,19 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
-// Базовые характеристики для каждого класса
+// === БАЗОВЫЕ ХАРАКТЕРИСТИКИ (изменены HP воина, ассасина, мага) ===
 const baseStats = {
-    warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-    assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-    mage: { hp: 18, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+    warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// Пассивные бонусы подклассов
+// === ПАССИВНЫЕ БОНУСЫ ПОДКЛАССОВ (изменён critMultiplier ассасина) ===
 const rolePassives = {
     guardian: { damageReduction: 10, blockChance: 20 },
     berserker: { rage: true },
     knight: { reflect: 20 },
-    assassin: { critMultiplier: 2.5 },
+    assassin: { critMultiplier: 2.0 }, // было 2.5
     venom_blade: { poison: true },
     blood_hunter: { vamp: 20 },
     pyromancer: { burn: true },
@@ -69,8 +69,9 @@ function calculateStats(classData, inventory, subclass) {
     const base = baseStats[classData.class] || baseStats.warrior;
     const classInventory = inventory.filter(item => item.owner_class === classData.class);
 
+    // === ИЗМЕНЕНО: бонус за очки здоровья теперь +5 за очко (было +2) ===
     let stats = {
-        hp: base.hp + (classData.hp_points || 0) * 2,
+        hp: base.hp + (classData.hp_points || 0) * 5,
         atk: base.atk + (classData.atk_points || 0),
         def: base.def + (classData.def_points || 0),
         agi: base.agi + (classData.dodge_points || 0),
@@ -99,7 +100,8 @@ function calculateStats(classData, inventory, subclass) {
 
     // Классовые особенности (постоянные бонусы)
     if (classData.class === 'warrior') {
-        stats.hp += Math.floor(stats.def / 5) * 3;
+        // === ИЗМЕНЕНО: бонус от защиты теперь +5 HP за каждые 5 защиты (было +3) ===
+        stats.hp += Math.floor(stats.def / 5) * 5;
     }
     if (classData.class === 'assassin') {
         stats.spd += Math.floor(stats.agi / 5);
@@ -117,6 +119,8 @@ function calculateStats(classData, inventory, subclass) {
     // Классовые бонусы (умножение)
     if (classData.class === 'warrior') {
         stats.def = Math.min(70, stats.def * 1.5);
+        // === ДОБАВЛЕНО: пассивная особенность воина +10% к итоговому HP ===
+        stats.hp = Math.floor(stats.hp * 1.1);
     } else if (classData.class === 'assassin') {
         stats.atk = Math.floor(stats.atk * 1.2);
         stats.crit = Math.min(100, stats.crit * 1.25);
@@ -126,6 +130,7 @@ function calculateStats(classData, inventory, subclass) {
         stats.int = stats.int * 1.2;
     }
 
+    // Капы
     stats.def = Math.min(70, stats.def);
     stats.crit = Math.min(100, stats.crit);
     stats.agi = Math.min(100, stats.agi);
@@ -173,7 +178,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let critMultiplier = attackerStats.critDmg;
 
     if (attackerSubclass === 'assassin' && rolePassives.assassin.critMultiplier) {
-        critMultiplier = rolePassives.assassin.critMultiplier;
+        critMultiplier = rolePassives.assassin.critMultiplier; // теперь 2.0
     }
 
     if (Math.random() * 100 < attackerStats.crit) {
@@ -234,7 +239,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             defenderState.freezeStacks++;
             
             if (defenderState.freezeStacks >= 3) {
-                defenderState.frozen = 2; // заморозка на 2 хода
+                defenderState.frozen = 2;
                 defenderState.freezeStacks = 0;
                 extraLogs.push(frozenPhrase.replace('%s', defenderName));
             } else {
@@ -287,7 +292,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         case 'guardian':
             heal = Math.floor(attackerStats.hp * 0.2);
             log = ultPhrases.guardian.replace('%s', attackerName).replace('%d', heal);
-            // Снятие всех отрицательных эффектов с себя
             attackerState.poisonStacks = 0;
             attackerState.burnStacks = 0;
             attackerState.freezeStacks = 0;
@@ -303,14 +307,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             attackerState.reflectBuff = 2;
             attackerState.reflectBonus = 50;
             log = ultPhrases.knight.replace('%s', attackerName);
-            // Снятие всех отрицательных эффектов с себя
             attackerState.poisonStacks = 0;
             attackerState.burnStacks = 0;
             attackerState.freezeStacks = 0;
             attackerState.frozen = 0;
             break;
         case 'assassin':
-            damage = applyIntBonus(attackerStats.atk * 3.5, attackerStats.int);
+            // === ИЗМЕНЕНО: урон ультимейта ассасина теперь 300% (было 350%) ===
+            damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
             log = ultPhrases.assassin.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         case 'venom_blade':
@@ -319,7 +323,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.venom_blade
                 .replace('%s', attackerName)
                 .replace('%d', damage);
-            defenderState.poisonStacks = 0; // сброс стаков
+            defenderState.poisonStacks = 0;
             break;
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
@@ -328,18 +332,19 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
             break;
         case 'pyromancer':
+            // === ИЗМЕНЕНО: урон огненного шторма теперь int×2.0 + стаки×2 (было int×2.5) ===
             const burnStacks = defenderState.burnStacks || 0;
-            damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
+            damage = Math.floor(attackerStats.int * 2.0) + (burnStacks * 2);
             log = ultPhrases.pyromancer
                 .replace('%s', attackerName)
                 .replace('%s', defenderName)
                 .replace('%d', damage);
-            defenderState.burnStacks = 0; // сброс стаков
+            defenderState.burnStacks = 0;
             break;
         case 'cryomancer':
             const frozenBonus = defenderState.frozen ? 3 : 2;
             damage = Math.round(attackerStats.int * frozenBonus);
-            defenderState.frozen = 2; // заморозка на 2 хода
+            defenderState.frozen = 2;
             defenderState.freezeStacks = 0;
             log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
@@ -359,27 +364,22 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     let damageToSelf = 0;
     let logEntries = [];
 
-    // Урон от яда в конце хода цели
     if (defenderState.poisonStacks && defenderState.poisonStacks > 0) {
         const poisonDamage = defenderState.poisonStacks * 2;
         damageToDefender += poisonDamage;
         logEntries.push(poisonDamagePhrase
             .replace('%s', defenderName)
             .replace('%d', poisonDamage));
-        // Яд НЕ уменьшается
     }
 
-    // Урон от огня в конце хода цели
     if (defenderState.burnStacks && defenderState.burnStacks > 0) {
         const burnDamage = defenderState.burnStacks * 2;
         damageToDefender += burnDamage;
         logEntries.push(burnDamagePhrase
             .replace('%s', defenderName)
             .replace('%d', burnDamage));
-        // Огонь НЕ уменьшается
     }
 
-    // Урон берсерку от его же пассивки
     if (attackerSubclass === 'berserker' && attackerState.hp > 1) {
         const rageDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
         damageToSelf = Math.min(rageDamage, attackerState.hp - 1);
@@ -458,7 +458,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         };
 
         if (turn === 'player') {
-            // Пропуск хода при заморозке
             if (playerState.frozen > 0) {
                 const frozenLeft = playerState.frozen;
                 playerState.frozen--;
@@ -750,13 +749,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         }
     }
 
-    // Определение победителя
     let winner = null;
     if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
     else if (playerHp <= 0) winner = 'enemy';
     else if (enemyHp <= 0) winner = 'player';
 
-    // Добавление финальной фразы
     const victoryPhrases = [
         '🎉 Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
         '⚔️ С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
@@ -796,7 +793,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     };
 }
 
-// --- Вспомогательные функции для опыта, энергии и генерации бота ---
+// --- Вспомогательные функции для опыта, энергии и генерации бота (без изменений) ---
 function expNeeded(level) {
     return Math.floor(80 * Math.pow(level, 1.5));
 }
@@ -854,7 +851,6 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-// Вспомогательные функции для PvP-подбора
 async function getPlayerRatingPosition(client, userId) {
     const res = await client.query(`
         SELECT id, rating FROM users 
@@ -922,19 +918,15 @@ router.post('/start', async (req, res) => {
 
         const playerStats = calculateStats(classData.rows[0], playerInventory, userData.subclass);
 
-        // Логика выбора противника
         const rand = Math.random();
         let opponentData = null;
 
         if (rand < 0.25) {
-            // 25% - КИБЕРКОТ
             const cybercatLevel = Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1);
             opponentData = generateBot(cybercatLevel, true);
         } else if (rand < 0.70) {
-            // 45% - обычный бот
             opponentData = generateBot(classData.rows[0].level, false);
         } else {
-            // 30% - тень игрока (PvP)
             try {
                 const playersRes = await client.query(`
                     SELECT id, rating FROM users 
@@ -960,7 +952,6 @@ router.post('/start', async (req, res) => {
                             );
                             const opponentClassData = classDataRes.rows[0];
 
-                            // Случайный выбор подкласса для лучшего класса
                             const subclassOptions = {
                                 warrior: ['guardian', 'berserker', 'knight'],
                                 assassin: ['assassin', 'venom_blade', 'blood_hunter'],
@@ -996,7 +987,6 @@ router.post('/start', async (req, res) => {
                 console.error('Error selecting PvP opponent:', e);
             }
             
-            // Если PvP не удался, создаём обычного бота как запасной вариант
             if (!opponentData) {
                 opponentData = generateBot(classData.rows[0].level, false);
             }

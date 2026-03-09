@@ -736,6 +736,8 @@ function renderTrade() {
     }
 }
 
+// client/app.js (функция renderShop)
+
 function renderShop(target = null) {
     const container = target || document.getElementById('content');
     container.innerHTML = `
@@ -753,6 +755,7 @@ function renderShop(target = null) {
                     <i class="fas fa-coins" style="color: white;"></i>
                 </button>
             </div>
+            
             <div class="chest-card">
                 <div class="chest-icon">
                     <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
@@ -766,39 +769,42 @@ function renderShop(target = null) {
                     <i class="fas fa-coins" style="color: white;"></i>
                 </button>
             </div>
+            
             <div class="chest-card">
                 <div class="chest-icon">
                     <img src="/assets/rare-chess.png" alt="Редкий сундук">
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Редкий сундук</div>
-                    <div class="chest-desc">Редкое 70%<br>Эпическое 30%</div>
+                    <div class="chest-desc">Редкое 65%<br>Необычное 25%<br>Эпическое 10%</div>
                 </div>
                 <button class="chest-btn" data-chest="rare">
                     <span class="chest-price">800</span>
                     <i class="fas fa-coins" style="color: white;"></i>
                 </button>
             </div>
+            
             <div class="chest-card">
                 <div class="chest-icon">
                     <img src="/assets/epic-chess.png" alt="Эпический сундук">
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Эпический сундук</div>
-                    <div class="chest-desc">Эпическое 70%<br>Легендарное 30%</div>
+                    <div class="chest-desc">Эпическое 65%<br>Редкое 25%<br>Легендарное 10%</div>
                 </div>
                 <button class="chest-btn" data-chest="epic">
                     <span class="chest-price">1800</span>
                     <i class="fas fa-coins" style="color: white;"></i>
                 </button>
             </div>
+            
             <div class="chest-card">
                 <div class="chest-icon">
                     <img src="/assets/leg-chess.png" alt="Легендарный сундук">
                 </div>
                 <div class="chest-info">
                     <div class="chest-name">Легендарный<br>сундук</div>
-                    <div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div>
+                    <div class="chest-desc">Легендарное 65%<br>Эпическое 25%<br>Редкое 10%</div>
                 </div>
                 <button class="chest-btn" data-chest="legendary">
                     <span class="chest-price">3500</span>
@@ -808,6 +814,7 @@ function renderShop(target = null) {
         </div>
     `;
 
+    // Функция для обновления цены обычного сундука (бесплатный/платный)
     async function updateCommonChestPrice() {
         try {
             const tgId = Number(userData.tg_id);

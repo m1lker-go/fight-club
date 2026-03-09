@@ -157,6 +157,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     let damage = attackerStats.atk;
 
+    // Бонус мага: +2 урона за каждые 5 интеллекта
     if (attackerClass === 'mage') {
         damage += Math.floor(attackerStats.int / 5) * 2;
     }
@@ -167,7 +168,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage += bonus;
         berserkerBonus = bonus;
     }
-
     let isCrit = false;
     let critMultiplier = attackerStats.critDmg;
 
@@ -312,34 +312,32 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             damage = applyIntBonus(attackerStats.atk * 3.5, attackerStats.int);
             log = ultPhrases.assassin.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
-       case 'venom_blade':
-    const stacks = defenderState.poisonStacks || 0;
-    damage = stacks * 5;
-    log = ultPhrases.venom_blade
-        .replace('%s', attackerName)
-        .replace('%d', damage);
-    defenderState.poisonStacks = 0; // сброс стаков
-    break;
+        case 'venom_blade':
+            const stacks = defenderState.poisonStacks || 0;
+            damage = stacks * 5;
+            log = ultPhrases.venom_blade
+                .replace('%s', attackerName)
+                .replace('%d', damage);
+            defenderState.poisonStacks = 0; // сброс стаков
+            break;
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;
             attackerState.vampBonus = 50;
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
             break;
-       case 'pyromancer':
-    const burnStacks = defenderState.burnStacks || 0;
-    damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
-    log = ultPhrases.pyromancer
-        .replace('%s', attackerName)
-        .replace('%s', defenderName)
-        .replace('%d', damage);
-    defenderState.burnStacks = 0; // сброс стаков
-    break;
+        case 'pyromancer':
+            const burnStacks = defenderState.burnStacks || 0;
+            damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
+            log = ultPhrases.pyromancer
+                .replace('%s', attackerName)
+                .replace('%s', defenderName)
+                .replace('%d', damage);
+            defenderState.burnStacks = 0; // сброс стаков
+            break;
         case 'cryomancer':
-            // Если цель уже заморожена, урон ×3, иначе ×2
             const frozenBonus = defenderState.frozen ? 3 : 2;
             damage = Math.round(attackerStats.int * frozenBonus);
-            // Гарантированная заморозка на 1 ход
             defenderState.frozen = 2; // заморозка на 2 хода
             defenderState.freezeStacks = 0;
             log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
@@ -367,7 +365,7 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
         logEntries.push(poisonDamagePhrase
             .replace('%s', defenderName)
             .replace('%d', poisonDamage));
-        // Яд не уменьшается
+        // Яд НЕ уменьшается
     }
 
     // Урон от огня в конце хода цели
@@ -377,7 +375,7 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
         logEntries.push(burnDamagePhrase
             .replace('%s', defenderName)
             .replace('%d', burnDamage));
-        // Огонь не уменьшается
+        // Огонь НЕ уменьшается
     }
 
     // Урон берсерку от его же пассивки
@@ -604,7 +602,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             turn = 'enemy';
         } else {
-            // Ход врага
+            // Ход врага (аналогично с обработкой заморозки)
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;

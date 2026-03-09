@@ -51,8 +51,13 @@ const reflectPhrase = '%s отражает <span style="color:#e74c3c;">%d</span
 // Исправленные фразы для стаков с эмодзи и цветами
 const poisonStackPhrase = '<span style="color:#27ae60;">☠️ Яд накапливается на %s (+%d стак, всего %d).</span>';
 const burnStackPhrase = '<span style="color:#e67e22;">🔥 Пламя усиливается на %s (+%d стак, всего %d).</span>';
-const freezeStackPhrase = '<span style="color:#3498db;">❄️ Стак заморозки на %s (%d/3).</span>';
-const frozenPhrase = '<span style="color:#00aaff;">❄️❄️❄️ %s ЗАМОРОЖЕН на следующий ход!</span>';
+
+// НОВЫЕ ФРАЗЫ ДЛЯ ЛЕДЯНОГО МАГА
+const freezeStackPhrase = '<span style="color:#3498db;">❄️ %s накапливает лёд (%d/3). Мороз усиливается...</span>';
+const frozenPhrase = '<span style="color:#00aaff; font-weight:bold;">❄️❄️❄️ %s ПРЕВРАЩАЕТСЯ В ЛЕДЯНУЮ ГЛЫБУ! Следующий ход будет пропущен! ❄️❄️❄️</span>';
+const frozenContinuePhrase = '<span style="color:#00aaff;">❄️ %s остаётся в ледяном плену. Осталось %d хода.</span>';
+const frozenEndPhrase = '<span style="color:#3498db;">❄️ Лёд тает! %s освобождается из ледяной тюрьмы.</span>';
+const frozenAlreadyPhrase = '<span style="color:#3498db;">❄️ %s уже в ледяной глыбе, стаки не накапливаются.</span>';
 
 const poisonPhrases = [
     '<span style="color:#27ae60;">☠️ Яд разъедает плоть %s, нанося %d урона.</span>',
@@ -88,6 +93,9 @@ module.exports = {
     burnStackPhrase,
     freezeStackPhrase,
     frozenPhrase,
+    frozenContinuePhrase,
+    frozenEndPhrase,
+    frozenAlreadyPhrase,
     poisonPhrases,
     burnPhrases,
     selfDamagePhrase,

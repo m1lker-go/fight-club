@@ -22,16 +22,19 @@ function generateItemFromChest(chestType) {
         else rarity = 'rare';
     } else if (chestType === 'rare') {
         const r = Math.random();
-        if (r < 0.7) rarity = 'rare';
-        else rarity = 'epic';
+        if (r < 0.65) rarity = 'rare';        // 65% редкое
+        else if (r < 0.90) rarity = 'uncommon'; // 25% необычное (65+25=90)
+        else rarity = 'epic';                   // 10% эпическое
     } else if (chestType === 'epic') {
         const r = Math.random();
-        if (r < 0.7) rarity = 'epic';
-        else rarity = 'legendary';
+        if (r < 0.65) rarity = 'epic';         // 65% эпическое
+        else if (r < 0.90) rarity = 'rare';    // 25% редкое (65+25=90)
+        else rarity = 'legendary';              // 10% легендарное
     } else if (chestType === 'legendary') {
         const r = Math.random();
-        if (r < 0.7) rarity = 'legendary';
-        else rarity = 'epic';
+        if (r < 0.65) rarity = 'legendary';    // 65% легендарное
+        else if (r < 0.90) rarity = 'epic';    // 25% эпическое (65+25=90)
+        else rarity = 'rare';                   // 10% редкое
     } else {
         rarity = 'common';
     }

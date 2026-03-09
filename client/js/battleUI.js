@@ -1,4 +1,4 @@
-// battleUI.js
+// client/js/battleUI.js
 
 // ==================== БОЙ ====================
 async function startBattle() {
@@ -50,7 +50,7 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Основная арена: 5 колонок с увеличенными аватарами и плотными отступами -->
+            <!-- Основная арена: 5 колонок -->
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 3px; padding: 10px;">
                 <!-- Колонка 1: аватар игрока -->
                 <div class="hero-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
@@ -73,7 +73,7 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Колонка 2: статусы игрока (слоты 0-4) – уменьшена ширина для плотности -->
+                <!-- Колонка 2: статусы игрока -->
                 <div class="player-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="player" data-slot="0" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1" style="width:22px; height:22px; margin:0 auto; display: flex; align-items: center; justify-content: center; background: none;"></div>
@@ -121,16 +121,15 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Добавляем унифицированные стили для баров
+    // Добавляем стили
     const style = document.createElement('style');
     style.innerHTML = `
-        /* Общие стили для полосок */
         .stat-bar {
             position: relative;
             background-color: #2f3542;
             border-radius: 5px;
             overflow: hidden;
-            height: 20px; /* одинаковая высота для HP и маны */
+            height: 20px;
         }
         .stat-fill {
             transition: width 0.3s ease;
@@ -152,7 +151,7 @@ function showBattleScreen(battleData) {
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 12px; /* единый размер шрифта */
+            font-size: 12px;
             font-weight: bold;
             text-shadow: 0 0 3px black;
             background-color: rgba(0,0,0,0.3);
@@ -160,8 +159,6 @@ function showBattleScreen(battleData) {
             pointer-events: none;
             z-index: 2;
         }
-
-        /* Остальные стили */
         .animation-container img { 
             width: 100%; 
             height: 100%; 
@@ -323,7 +320,55 @@ function showBattleScreen(battleData) {
         }, stepTime);
     }
 
-    // Функция обновления всех слотов на основе списка эффектов
+    // Функция построения списка эффектов
+    function buildEffectsList(side) {
+        const effects = [];
+        if (side === 'player') {
+            // Статус заморозки (приоритет - показываем frozen вместо стаков)
+            if (playerFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                // Если не заморожен, показываем стаки льда
+                for (let i = 0; i < playerFreezeStacks; i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            
+            // Яд - одна иконка за все стаки
+            if (playerPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            // Огонь - по одной иконке на стак
+            for (let i = 0; i < playerBurnStacks; i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            // Статус щита
+            if (playerShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        } else {
+            // Аналогично для врага
+            if (enemyFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < enemyFreezeStacks; i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            
+            if (enemyPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < enemyBurnStacks; i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (enemyShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        }
+        return effects;
+    }
+
     function renderEffects(side) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         const effects = side === 'player' ? playerEffects : enemyEffects;
@@ -337,50 +382,6 @@ function showBattleScreen(battleData) {
             img.alt = effect.type;
             slot.appendChild(img);
         }
-    }
-
-    function buildEffectsList(side) {
-        const effects = [];
-        if (side === 'player') {
-            // Яд - одна иконка за все стаки
-            if (playerPoisonStacks > 0) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
-            // Огонь - по одной иконке на стак
-            for (let i = 0; i < playerBurnStacks; i++) {
-                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-            }
-            // Стаки заморозки (накопление перед заморозкой) - иконки льда
-            for (let i = 0; i < playerFreezeStacks; i++) {
-                effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-            }
-            // Статус заморозки (иконка frozen)
-            if (playerFrozen) {
-                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            }
-            // Статус щита
-            if (playerShield) {
-                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-            }
-        } else {
-            // Аналогично для врага
-            if (enemyPoisonStacks > 0) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
-            for (let i = 0; i < enemyBurnStacks; i++) {
-                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-            }
-            for (let i = 0; i < enemyFreezeStacks; i++) {
-                effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-            }
-            if (enemyFrozen) {
-                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            }
-            if (enemyShield) {
-                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-            }
-        }
-        return effects;
     }
 
     function updateAllEffects() {
@@ -474,6 +475,15 @@ function showBattleScreen(battleData) {
             anim = 'poison.gif';
         } else if (action.includes('пламя пожирает') || action.includes('огонь обжигает') || action.includes('горящие души')) {
             anim = 'fire.gif';
+        } else if (action.includes('превращается в ледяную глыбу')) {
+            anim = 'frozenx.gif';
+            target = isPlayerTurn ? 'enemy' : 'hero';
+        } else if (action.includes('остаётся в ледяном плену')) {
+            anim = 'frozenx.gif';
+            target = isPlayerTurn ? 'enemy' : 'hero';
+        } else if (action.includes('лёд тает') || action.includes('освобождается')) {
+            anim = 'frozenx.gif';
+            target = isPlayerTurn ? 'hero' : 'enemy';
         }
 
         return { target, anim };
@@ -484,13 +494,11 @@ function showBattleScreen(battleData) {
         if (card) {
             card.classList.add('defeated');
         }
-        // Также обнуляем ману побеждённого и убираем анимации
         if (side === 'hero') {
             const manaBar = document.getElementById('heroMana');
             if (manaBar) manaBar.style.width = '0%';
             const manaText = document.getElementById('heroManaText');
             if (manaText) manaText.innerText = '0';
-            // Очищаем анимации маны для героя
             clearManaAnimations();
         } else if (side === 'enemy') {
             const manaBar = document.getElementById('enemyMana');
@@ -501,18 +509,8 @@ function showBattleScreen(battleData) {
         }
     }
 
-    function isUltimateAction(action) {
-        const lower = action.toLowerCase();
-        return lower.includes('смертельный удар') ||
-               lower.includes('ядовитая волна') ||
-               lower.includes('кровавая жатва') ||
-               lower.includes('огненный шторм') ||
-               lower.includes('вечная зима') ||
-               lower.includes('зазеркалье');
-    }
-
     // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
-   function playTurn() {
+    function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
             if (timer) clearInterval(timer);
@@ -523,13 +521,43 @@ function showBattleScreen(battleData) {
         }
 
         const turn = turns[turnIndex];
-        console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
-        console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
-        console.log('enemyFreezeStacks:', turn.enemyFreezeStacks);
+        console.log('turn:', turn.turn, 'action:', turn.action);
 
         // Обновляем переменные из данных сервера
-        if (turn.playerFrozen !== undefined) playerFrozen = turn.playerFrozen;
-        if (turn.enemyFrozen !== undefined) enemyFrozen = turn.enemyFrozen;
+        if (turn.playerFrozen !== undefined) {
+            const wasFrozen = playerFrozen > 0;
+            const nowFrozen = turn.playerFrozen > 0;
+            playerFrozen = turn.playerFrozen;
+            
+            if (wasFrozen !== nowFrozen) {
+                const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
+                if (heroFrozenOverlay) {
+                    if (nowFrozen) {
+                        heroFrozenOverlay.classList.add('active');
+                    } else {
+                        heroFrozenOverlay.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        if (turn.enemyFrozen !== undefined) {
+            const wasFrozen = enemyFrozen > 0;
+            const nowFrozen = turn.enemyFrozen > 0;
+            enemyFrozen = turn.enemyFrozen;
+            
+            if (wasFrozen !== nowFrozen) {
+                const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
+                if (enemyFrozenOverlay) {
+                    if (nowFrozen) {
+                        enemyFrozenOverlay.classList.add('active');
+                    } else {
+                        enemyFrozenOverlay.classList.remove('active');
+                    }
+                }
+            }
+        }
+
         if (turn.playerShield !== undefined) playerShield = turn.playerShield;
         if (turn.enemyShield !== undefined) enemyShield = turn.enemyShield;
         if (turn.playerFreezeStacks !== undefined) playerFreezeStacks = turn.playerFreezeStacks;
@@ -539,28 +567,9 @@ function showBattleScreen(battleData) {
         if (turn.playerBurnStacks !== undefined) playerBurnStacks = turn.playerBurnStacks;
         if (turn.enemyBurnStacks !== undefined) enemyBurnStacks = turn.enemyBurnStacks;
 
-        // Управление оверлеем заморозки на аватаре
-        const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
-        const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
-        if (heroFrozenOverlay) {
-            if (playerFrozen) {
-                heroFrozenOverlay.classList.add('active');
-            } else {
-                heroFrozenOverlay.classList.remove('active');
-            }
-        }
-        if (enemyFrozenOverlay) {
-            if (enemyFrozen) {
-                enemyFrozenOverlay.classList.add('active');
-            } else {
-                enemyFrozenOverlay.classList.remove('active');
-            }
-        }
-
-        // Если это финальное сообщение (не ход)
+        // Если это финальное сообщение
         if (turn.turn === 'final') {
             const winner = battleData.result.winner;
-            // Принудительно обнуляем полоску и текст проигравшего
             if (winner === 'player') {
                 document.getElementById('enemyHp').style.width = '0%';
                 document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
@@ -568,27 +577,27 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
-            // Разнообразные финальные фразы, если сервер не прислал
+            
             let finalMessage = turn.action;
             if (!finalMessage) {
                 const victoryVariants = [
-                    'Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',
-                    'С последним ударом враг повержен. <span class="victory">ПОБЕДА</span>!',
-                    'Вы оказались сильнее! <span class="victory">ПОБЕДА</span>!',
-                    'Невероятная битва! <span class="victory">ПОБЕДА</span> за вами!'
+                    '🎉 Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',
+                    '⚔️ С последним ударом враг повержен. <span class="victory">ПОБЕДА</span>!',
+                    '🏆 Вы оказались сильнее! <span class="victory">ПОБЕДА</span>!',
+                    '✨ Невероятная битва! <span class="victory">ПОБЕДА</span> за вами!'
                 ];
                 const defeatVariants = [
-                    'В этой напряжённой схватке враг был сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>',
-                    'Ваши силы иссякли... <span class="defeat">ПОРАЖЕНИЕ</span>',
-                    'Увы, победа не ваша. <span class="defeat">ПОРАЖЕНИЕ</span>',
-                    'Соперник оказался сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>'
+                    '💔 В этой напряжённой схватке враг был сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>',
+                    '😵 Ваши силы иссякли... <span class="defeat">ПОРАЖЕНИЕ</span>',
+                    '😢 Увы, победа не ваша. <span class="defeat">ПОРАЖЕНИЕ</span>',
+                    '⚰️ Соперник оказался сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>'
                 ];
                 if (winner === 'player') {
                     finalMessage = victoryVariants[Math.floor(Math.random() * victoryVariants.length)];
                 } else if (winner === 'enemy') {
                     finalMessage = defeatVariants[Math.floor(Math.random() * defeatVariants.length)];
                 } else {
-                    finalMessage = 'Ничья!';
+                    finalMessage = '🤝 Ничья!';
                 }
             }
             const logEntry = document.createElement('div');
@@ -600,7 +609,7 @@ function showBattleScreen(battleData) {
             return;
         }
 
-        // Получаем текущие значения HP из DOM (старые)
+        // Получаем текущие значения HP
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -614,7 +623,7 @@ function showBattleScreen(battleData) {
         const heroMax = battleData.result.playerMaxHp;
         const enemyMax = battleData.result.enemyMaxHp;
 
-        // Анимация HP (текст)
+        // Анимация HP
         if (heroNew !== heroOld && heroHpText) {
             animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
         }
@@ -622,7 +631,7 @@ function showBattleScreen(battleData) {
             animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
-        // Устанавливаем ширину полосы - ИСПРАВЛЕНО
+        // Устанавливаем ширину полосы
         if (heroHpBar && heroMax) setBarWidth('heroHp', (heroNew / heroMax) * 100);
         if (enemyHpBar && enemyMax) setBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
@@ -631,9 +640,8 @@ function showBattleScreen(battleData) {
         document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
-        const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
-        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
+        // Анимация действия
         const actionLower = turn.action ? turn.action.toLowerCase() : '';
         const skipAnimation = actionLower.includes('пропускает ход');
 
@@ -642,7 +650,7 @@ function showBattleScreen(battleData) {
             showAnimation(target, anim);
         }
 
-               // Обновляем эффекты на основе всех текущих переменных
+        // Обновляем эффекты
         updateAllEffects();
 
         if (turn.action) {
@@ -653,7 +661,7 @@ function showBattleScreen(battleData) {
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        // Если после этого хода кто-то мёртв, немедленно применяем эффект поражения
+        // Проверка на смерть
         if (enemyNew <= 0) {
             applyDefeatEffect('enemy');
         }
@@ -664,7 +672,7 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
-    // --- Управление скоростью и таймер ---
+    // Управление скоростью и таймер
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         speed = (speed === 1) ? 2 : 1;
@@ -686,7 +694,7 @@ function showBattleScreen(battleData) {
             clearInterval(interval);
             if (finishTimeout) clearTimeout(finishTimeout);
             hideAnimations();
-            clearManaAnimations(); // очищаем все анимации маны при таймауте
+            clearManaAnimations();
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
             let winner;
@@ -792,16 +800,16 @@ async function showBattleResult(battleData, timeOut = false) {
     // Добавляем финальное сообщение, если его нет
     if (logArray.length === 0 || !logArray[logArray.length-1].includes('ПОБЕДА') && !logArray[logArray.length-1].includes('ПОРАЖЕНИЕ')) {
         const victoryFallback = [
-            'Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',
-            'С последним ударом враг повержен. <span class="victory">ПОБЕДА</span>!',
-            'Вы оказались сильнее! <span class="victory">ПОБЕДА</span>!',
-            'Невероятная битва! <span class="victory">ПОБЕДА</span> за вами!'
+            '🎉 Это была невероятная схватка! Вы одержали <span class="victory">ПОБЕДУ</span>!',
+            '⚔️ С последним ударом враг повержен. <span class="victory">ПОБЕДА</span>!',
+            '🏆 Вы оказались сильнее! <span class="victory">ПОБЕДА</span>!',
+            '✨ Невероятная битва! <span class="victory">ПОБЕДА</span> за вами!'
         ];
         const defeatFallback = [
-            'В этой напряжённой схватке враг был сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>',
-            'Ваши силы иссякли... <span class="defeat">ПОРАЖЕНИЕ</span>',
-            'Увы, победа не ваша. <span class="defeat">ПОРАЖЕНИЕ</span>',
-            'Соперник оказался сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>'
+            '💔 В этой напряжённой схватке враг был сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>',
+            '😵 Ваши силы иссякли... <span class="defeat">ПОРАЖЕНИЕ</span>',
+            '😢 Увы, победа не ваша. <span class="defeat">ПОРАЖЕНИЕ</span>',
+            '⚰️ Соперник оказался сильнее. <span class="defeat">ПОРАЖЕНИЕ</span>'
         ];
         let finalMsg;
         if (winner === 'player') {
@@ -809,7 +817,7 @@ async function showBattleResult(battleData, timeOut = false) {
         } else if (winner === 'enemy') {
             finalMsg = defeatFallback[Math.floor(Math.random() * defeatFallback.length)];
         } else {
-            finalMsg = 'Ничья!';
+            finalMsg = '🤝 Ничья!';
         }
         logArray.push(finalMsg);
     }

@@ -799,18 +799,18 @@ function renderShop(target = null) {
             </div>
             
             <div class="chest-card">
-                <div class="chest-icon">
-                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
-                </div>
-                <div class="chest-info">
-                    <div class="chest-name">Легендарный<br>сундук</div>
-                    <div class="chest-desc">Легендарное 65%<br>Эпическое 25%<br>Редкое 10%</div>
-                </div>
-                <button class="chest-btn" data-chest="legendary">
-                    <span class="chest-price">3500</span>
-                    <i class="fas fa-coins" style="color: white;"></i>
-                </button>
-            </div>
+    <div class="chest-icon">
+        <img src="/assets/leg-chess.png" alt="Легендарный сундук">
+    </div>
+    <div class="chest-info">
+        <div class="chest-name">Легендарный<br>сундук</div>
+        <div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div>
+    </div>
+    <button class="chest-btn" data-chest="legendary">
+        <span class="chest-price">3500</span>
+        <i class="fas fa-coins" style="color: white;"></i>
+    </button>
+</div>
         </div>
     `;
 

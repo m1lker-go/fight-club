@@ -38,7 +38,7 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.15; /* Прозрачность 15% - можно настроить */
+    opacity: 0.75; /* Прозрачность 15% - можно настроить */
     pointer-events: none; /* Чтобы фон не мешал кликам */
     z-index: 0;
 }

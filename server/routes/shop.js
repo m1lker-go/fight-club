@@ -30,11 +30,10 @@ function generateItemFromChest(chestType) {
         if (r < 0.65) rarity = 'epic';         // 65% эпическое
         else if (r < 0.90) rarity = 'rare';    // 25% редкое (65+25=90)
         else rarity = 'legendary';              // 10% легендарное
-    } else if (chestType === 'legendary') {
+   } else if (chestType === 'legendary') {
         const r = Math.random();
-        if (r < 0.65) rarity = 'legendary';    // 65% легендарное
-        else if (r < 0.90) rarity = 'epic';    // 25% эпическое (65+25=90)
-        else rarity = 'rare';                   // 10% редкое
+        if (r < 0.70) rarity = 'legendary';    // 70% легендарное
+        else rarity = 'epic';                   // 30% эпическое
     } else {
         rarity = 'common';
     }

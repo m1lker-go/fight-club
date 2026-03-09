@@ -135,7 +135,67 @@ function calculateStats(classData, inventory, subclass) {
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState) {
     let extraLogs = [];
 
-    // ... (начало функции без изменений: проверка на иллюзиониста, уворот, расчёт урона и т.д.)
+    if (defenderSubclass === 'illusionist' && rolePassives.illusionist?.mirageGuaranteed) {
+        defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
+        if (defenderState.mirageCounter >= 4) {
+            defenderState.mirageCounter = 0;
+            const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
+                .replace('%s', defenderName)
+                .replace('%s', attackerName);
+            return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs };
+        }
+    }
+
+    const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
+    const isDodge = Math.random() * 100 > hitChance;
+    if (isDodge) {
+        const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
+            .replace('%s', defenderName)
+            .replace('%s', attackerName);
+        return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
+    }
+
+    let damage = attackerStats.atk;
+
+    if (attackerClass === 'mage') {
+        damage += Math.floor(attackerStats.int / 5) * 2;
+    }
+
+    let berserkerBonus = 0;
+    if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
+        const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);
+        damage += bonus;
+        berserkerBonus = bonus;
+    }
+
+    let isCrit = false;
+    let critMultiplier = attackerStats.critDmg;
+
+    if (attackerSubclass === 'assassin' && rolePassives.assassin.critMultiplier) {
+        critMultiplier = rolePassives.assassin.critMultiplier;
+    }
+
+    if (Math.random() * 100 < attackerStats.crit) {
+        isCrit = true;
+        damage *= critMultiplier;
+    }
+
+    if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer.physReduction) {
+        damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
+    }
+
+    damage = damage * (1 - defenderStats.def / 100);
+    damage = Math.max(1, Math.floor(damage));
+
+    let vampHeal = 0;
+    if (attackerVamp > 0) {
+        vampHeal = Math.floor(damage * attackerVamp / 100);
+    }
+
+    let reflectDamage = 0;
+    if (defenderReflect > 0) {
+        reflectDamage = Math.floor(damage * defenderReflect / 100);
+    }
 
     // Накопление яда (venom_blade) - 1 стак за удар, максимум 5
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
@@ -173,7 +233,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             defenderState.freezeStacks++;
             
             if (defenderState.freezeStacks >= 3) {
-                defenderState.frozen = 2;
+                defenderState.frozen = 2; // заморозка на 2 хода
                 defenderState.freezeStacks = 0;
                 extraLogs.push(frozenPhrase.replace('%s', defenderName));
             } else {
@@ -252,14 +312,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             damage = applyIntBonus(attackerStats.atk * 3.5, attackerStats.int);
             log = ultPhrases.assassin.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
-        case 'venom_blade':
-            const stacks = defenderState.poisonStacks || 0;
-            damage = stacks * 5;
-            log = ultPhrases.venom_blade
-                .replace('%s', attackerName)
-                .replace('%d', damage);
-            defenderState.poisonStacks = 0; // сброс стаков
-            break;
+       case 'venom_blade':
+    const stacks = defenderState.poisonStacks || 0;
+    damage = stacks * 5;
+    log = ultPhrases.venom_blade
+        .replace('%s', attackerName)
+        .replace('%d', damage);
+    defenderState.poisonStacks = 0; // сброс стаков
+    break;
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;
@@ -267,14 +327,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
             break;
        case 'pyromancer':
-            const burnStacks = defenderState.burnStacks || 0;
-            damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
-            log = ultPhrases.pyromancer
-                .replace('%s', attackerName)
-                .replace('%s', defenderName)
-                .replace('%d', damage);
-            defenderState.burnStacks = 0; // сброс стаков
-            break;
+    const burnStacks = defenderState.burnStacks || 0;
+    damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
+    log = ultPhrases.pyromancer
+        .replace('%s', attackerName)
+        .replace('%s', defenderName)
+        .replace('%d', damage);
+    defenderState.burnStacks = 0; // сброс стаков
+    break;
         case 'cryomancer':
             // Если цель уже заморожена, урон ×3, иначе ×2
             const frozenBonus = defenderState.frozen ? 3 : 2;

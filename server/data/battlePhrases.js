@@ -47,30 +47,35 @@ const critPhrases = {
 
 const vampPhrase = '%s восстанавливает <span style="color:#2ecc71;">%d</span> очков здоровья благодаря вампиризму.';
 const reflectPhrase = '%s отражает <span style="color:#e74c3c;">%d</span> урона обратно в %s!';
-const poisonStackPhrase = '<span style="color:#27ae60;">Яд накапливается на %s (+%d стак, всего %d).</span>';
-const burnStackPhrase = '<span style="color:#e67e22;">Пламя усиливается на %s (+%d стак, всего %d).</span>';
+
+// Исправленные фразы для стаков с эмодзи и цветами
+const poisonStackPhrase = '<span style="color:#27ae60;">☠️ Яд накапливается на %s (+%d стак, всего %d).</span>';
+const burnStackPhrase = '<span style="color:#e67e22;">🔥 Пламя усиливается на %s (+%d стак, всего %d).</span>';
+const freezeStackPhrase = '<span style="color:#3498db;">❄️ Стак заморозки на %s (%d/3).</span>';
+const frozenPhrase = '<span style="color:#00aaff;">❄️❄️❄️ %s ЗАМОРОЖЕН на следующий ход!</span>';
+
 const poisonPhrases = [
-    '<span style="color:#27ae60;">Яд разъедает плоть %s, нанося %d урона.</span>',
-    '<span style="color:#27ae60;">%s страдает от яда, теряя %d HP.</span>',
-    '<span style="color:#27ae60;">Отравление усиливается: %s получает %d урона.</span>'
+    '<span style="color:#27ae60;">☠️ Яд разъедает плоть %s, нанося %d урона.</span>',
+    '<span style="color:#27ae60;">☠️ %s страдает от яда, теряя %d HP.</span>',
+    '<span style="color:#27ae60;">☠️ Отравление усиливается: %s получает %d урона.</span>'
 ];
 const burnPhrases = [
-    '<span style="color:#e67e22;">Пламя пожирает %s, нанося %d урона.</span>',
-    '<span style="color:#e67e22;">Огонь обжигает %s — %d единиц боли.</span>',
-    '<span style="color:#e67e22;">Горящие души терзают %s, отнимая %d HP.</span>'
+    '<span style="color:#e67e22;">🔥 Пламя пожирает %s, нанося %d урона.</span>',
+    '<span style="color:#e67e22;">🔥 Огонь обжигает %s — %d единиц боли.</span>',
+    '<span style="color:#e67e22;">🔥 Горящие души терзают %s, отнимая %d HP.</span>'
 ];
 const selfDamagePhrase = '<span style="color:#e74c3c;">%s жертвует частью своей жизни, теряя %d HP.</span>';
 
 const ultPhrases = {
-    guardian: '<span style="color:#3498db;">%s использует НЕСОКРУШИМОСТЬ и восстанавливает %d HP!</span>',
-    berserker: '<span style="color:#3498db;">%s применяет КРОВОПУСКАНИЕ, нанося %d урона ценой %d HP!</span>',
-    knight: '<span style="color:#3498db;">%s активирует ЩИТ ПРАВОСУДИЯ, увеличивая отражение на 50%% на 2 хода!</span>',
-    assassin: '<span style="color:#3498db;">%s наносит СМЕРТЕЛЬНЫЙ УДАР, критически поражая %s на %d урона!</span>',
-    venom_blade: '<span style="color:#3498db;">%s применяет ЯДОВИТУЮ ВОЛНУ, нанося %d урона ядом!</span>',
-    blood_hunter: '<span style="color:#3498db;">%s активирует КРОВАВУЮ ЖАТВУ, усиливая вампиризм и нанося %d урона!</span>',
-    pyromancer: '<span style="color:#3498db;">%s обрушивает ОГНЕННЫЙ ШТОРМ на %s, нанося %d урона!</span>',
-    cryomancer: '<span style="color:#3498db;">%s призывает ВЕЧНУЮ ЗИМУ, замораживая %s и нанося %d урона!</span>',
-    illusionist: '<span style="color:#3498db;">%s создаёт ЗАЗЕРКАЛЬЕ, заставляя %s атаковать себя, нанося %d урона!</span>'
+    guardian: '<span style="color:#3498db;">🛡️ %s использует НЕСОКРУШИМОСТЬ и восстанавливает %d HP!</span>',
+    berserker: '<span style="color:#3498db;">⚔️ %s применяет КРОВОПУСКАНИЕ, нанося %d урона ценой %d HP!</span>',
+    knight: '<span style="color:#3498db;">🛡️ %s активирует ЩИТ ПРАВОСУДИЯ, увеличивая отражение на 50%% на 2 хода!</span>',
+    assassin: '<span style="color:#3498db;">🗡️ %s наносит СМЕРТЕЛЬНЫЙ УДАР, критически поражая %s на %d урона!</span>',
+    venom_blade: '<span style="color:#3498db;">☠️ %s применяет ЯДОВИТУЮ ВОЛНУ, нанося %d урона ядом!</span>',
+    blood_hunter: '<span style="color:#3498db;">🩸 %s активирует КРОВАВУЮ ЖАТВУ, усиливая вампиризм и нанося %d урона!</span>',
+    pyromancer: '<span style="color:#3498db;">🔥 %s обрушивает ОГНЕННЫЙ ШТОРМ на %s, нанося %d урона!</span>',
+    cryomancer: '<span style="color:#3498db;">❄️ %s призывает ВЕЧНУЮ ЗИМУ, замораживая %s и нанося %d урона!</span>',
+    illusionist: '<span style="color:#3498db;">✨ %s создаёт ЗАЗЕРКАЛЬЕ, заставляя %s атаковать себя, нанося %d урона!</span>'
 };
 
 module.exports = {
@@ -81,6 +86,8 @@ module.exports = {
     reflectPhrase,
     poisonStackPhrase,
     burnStackPhrase,
+    freezeStackPhrase,
+    frozenPhrase,
     poisonPhrases,
     burnPhrases,
     selfDamagePhrase,

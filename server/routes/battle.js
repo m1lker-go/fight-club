@@ -306,11 +306,11 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.assassin.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         case 'venom_blade':
-            const stacks = defenderState.poisonStacks || 0;
-            damage = stacks * 5;
-            log = ultPhrases.venom_blade.replace('%s', attackerName).replace('%d', damage);
-            defenderState.poisonStacks = 0;
-            break;
+    const stacks = defenderState.poisonStacks || 0;
+    damage = stacks * 5; // урон от ультимейта
+    log = ultPhrases.venom_blade.replace('%s', attackerName).replace('%d', damage);
+    defenderState.poisonStacks = 0; // СБРАСЫВАЕМ стаки после ультимейта
+    break;
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;
@@ -318,12 +318,11 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
             break;
         case 'pyromancer':
-            // Урон = интеллект × 2.5 + текущие стаки × 2
-            const burnStacks = defenderState.burnStacks || 0;
-            damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
-            log = ultPhrases.pyromancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
-            defenderState.burnStacks = 0; // сброс стаков
-            break;
+    const burnStacks = defenderState.burnStacks || 0;
+    damage = Math.floor(attackerStats.int * 2.5) + (burnStacks * 2);
+    log = ultPhrases.pyromancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+    defenderState.burnStacks = 0; // СБРАСЫВАЕМ стаки после ультимейта
+    break;
         case 'cryomancer':
             // Если цель уже заморожена, урон ×3, иначе ×2
             const frozenBonus = defenderState.frozen ? 3 : 2;
@@ -351,22 +350,28 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
 
     // Урон от яда в конце хода цели
     if (defenderState.poisonStacks && defenderState.poisonStacks > 0) {
-        const poisonDamage = defenderState.poisonStacks * 2;
+        const poisonDamage = defenderState.poisonStacks * 2; // 2 урона за стак
         damageToDefender += poisonDamage;
         const phrase = poisonPhrases[Math.floor(Math.random() * poisonPhrases.length)]
             .replace('%s', defenderName)
             .replace('%d', poisonDamage);
         logEntries.push(phrase);
+        
+        // Яд НЕ уменьшается сам по себе, только при ультимейте
+        // defenderState.poisonStacks = 0; // НЕ УБИРАЕМ!
     }
 
     // Урон от огня в конце хода цели (игнорирует защиту)
     if (defenderState.burnStacks && defenderState.burnStacks > 0) {
-        const burnDamage = defenderState.burnStacks * 2;
+        const burnDamage = defenderState.burnStacks * 2; // 2 урона за стак
         damageToDefender += burnDamage;
         const phrase = burnPhrases[Math.floor(Math.random() * burnPhrases.length)]
             .replace('%s', defenderName)
             .replace('%d', burnDamage);
         logEntries.push(phrase);
+        
+        // Огонь НЕ уменьшается сам по себе, только при ультимейте
+        // defenderState.burnStacks = 0; // НЕ УБИРАЕМ!
     }
 
     // Урон берсерку от его же пассивки
@@ -380,7 +385,6 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
 
     return { damageToDefender, damageToSelf, logEntries };
 }
-
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;

@@ -48,37 +48,31 @@ const critPhrases = {
 const vampPhrase = '%s восстанавливает <span style="color:#2ecc71;">%d</span> очков здоровья благодаря вампиризму.';
 const reflectPhrase = '%s отражает <span style="color:#e74c3c;">%d</span> урона обратно в %s!';
 
-// Исправленные фразы для стаков с эмодзи и цветами
-const poisonStackPhrase = '<span style="color:#27ae60;">☠️ Яд накапливается на %s (+%d стак, всего %d).</span>';
-const burnStackPhrase = '<span style="color:#e67e22;">🔥 Пламя усиливается на %s (+%d стак, всего %d).</span>';
+// ===== ФРАЗЫ ДЛЯ СТАКОВ =====
+// Накопление стаков
+const poisonStackPhrase = '<span style="color:#27ae60;">☠️ %s отравлен! Яд накапливается (+%d стак, всего %d).</span>';
+const burnStackPhrase = '<span style="color:#e67e22;">🔥 %s горит! Пламя усиливается (+%d стак, всего %d).</span>';
+const freezeStackPhrase = '<span style="color:#3498db;">❄️ %s покрывается инеем! Накоплено льда: %d/3.</span>';
 
-// НОВЫЕ ФРАЗЫ ДЛЯ ЛЕДЯНОГО МАГА
-const freezeStackPhrase = '<span style="color:#3498db;">❄️ %s накапливает лёд (%d/3). Мороз усиливается...</span>';
-const frozenPhrase = '<span style="color:#00aaff; font-weight:bold;">❄️❄️❄️ %s ПРЕВРАЩАЕТСЯ В ЛЕДЯНУЮ ГЛЫБУ! Следующий ход будет пропущен! ❄️❄️❄️</span>';
-const frozenContinuePhrase = '<span style="color:#00aaff;">❄️ %s остаётся в ледяном плену. Осталось %d хода.</span>';
-const frozenEndPhrase = '<span style="color:#3498db;">❄️ Лёд тает! %s освобождается из ледяной тюрьмы.</span>';
-const frozenAlreadyPhrase = '<span style="color:#3498db;">❄️ %s уже в ледяной глыбе, стаки не накапливаются.</span>';
+// Урон от стаков в конце хода
+const poisonDamagePhrase = '<span style="color:#27ae60;">☠️ Яд разъедает %s, нанося %d урона.</span>';
+const burnDamagePhrase = '<span style="color:#e67e22;">🔥 Огонь пожирает %s, нанося %d урона.</span>';
 
-const poisonPhrases = [
-    '<span style="color:#27ae60;">☠️ Яд разъедает плоть %s, нанося %d урона.</span>',
-    '<span style="color:#27ae60;">☠️ %s страдает от яда, теряя %d HP.</span>',
-    '<span style="color:#27ae60;">☠️ Отравление усиливается: %s получает %d урона.</span>'
-];
-const burnPhrases = [
-    '<span style="color:#e67e22;">🔥 Пламя пожирает %s, нанося %d урона.</span>',
-    '<span style="color:#e67e22;">🔥 Огонь обжигает %s — %d единиц боли.</span>',
-    '<span style="color:#e67e22;">🔥 Горящие души терзают %s, отнимая %d HP.</span>'
-];
-const selfDamagePhrase = '<span style="color:#e74c3c;">%s жертвует частью своей жизни, теряя %d HP.</span>';
+// Заморозка
+const frozenPhrase = '<span style="color:#00aaff; font-weight:bold;">❄️❄️❄️ %s ЗАМОРОЖЕН! Пропускает следующий ход! ❄️❄️❄️</span>';
+const frozenContinuePhrase = '<span style="color:#00aaff;">❄️ %s остаётся в ледяной тюрьме. Осталось %d хода.</span>';
+const frozenEndPhrase = '<span style="color:#3498db;">❄️ %s освобождается ото льда!</span>';
+const frozenAlreadyPhrase = '<span style="color:#3498db;">❄️ %s уже заморожен, стаки не накапливаются.</span>';
 
+// (Опционально) фразы для ультимейтов уже должны быть, но можно добавить новые варианты
 const ultPhrases = {
     guardian: '<span style="color:#3498db;">🛡️ %s использует НЕСОКРУШИМОСТЬ и восстанавливает %d HP!</span>',
     berserker: '<span style="color:#3498db;">⚔️ %s применяет КРОВОПУСКАНИЕ, нанося %d урона ценой %d HP!</span>',
     knight: '<span style="color:#3498db;">🛡️ %s активирует ЩИТ ПРАВОСУДИЯ, увеличивая отражение на 50%% на 2 хода!</span>',
     assassin: '<span style="color:#3498db;">🗡️ %s наносит СМЕРТЕЛЬНЫЙ УДАР, критически поражая %s на %d урона!</span>',
-    venom_blade: '<span style="color:#3498db;">☠️ %s применяет ЯДОВИТУЮ ВОЛНУ, нанося %d урона ядом!</span>',
+    venom_blade: '<span style="color:#27ae60;">☠️ %s применяет ЯДОВИТУЮ ВОЛНУ, нанося %d урона ядом! Весь яд сожжён!</span>',
     blood_hunter: '<span style="color:#3498db;">🩸 %s активирует КРОВАВУЮ ЖАТВУ, усиливая вампиризм и нанося %d урона!</span>',
-    pyromancer: '<span style="color:#3498db;">🔥 %s обрушивает ОГНЕННЫЙ ШТОРМ на %s, нанося %d урона!</span>',
+    pyromancer: '<span style="color:#e67e22;">🔥 %s обрушивает ОГНЕННЫЙ ШТОРМ на %s, нанося %d урона! Пламя погашено!</span>',
     cryomancer: '<span style="color:#3498db;">❄️ %s призывает ВЕЧНУЮ ЗИМУ, замораживая %s и нанося %d урона!</span>',
     illusionist: '<span style="color:#3498db;">✨ %s создаёт ЗАЗЕРКАЛЬЕ, заставляя %s атаковать себя, нанося %d урона!</span>'
 };
@@ -92,12 +86,11 @@ module.exports = {
     poisonStackPhrase,
     burnStackPhrase,
     freezeStackPhrase,
+    poisonDamagePhrase,
+    burnDamagePhrase,
     frozenPhrase,
     frozenContinuePhrase,
     frozenEndPhrase,
     frozenAlreadyPhrase,
-    poisonPhrases,
-    burnPhrases,
-    selfDamagePhrase,
     ultPhrases
 };

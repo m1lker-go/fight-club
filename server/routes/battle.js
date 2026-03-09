@@ -1,3 +1,5 @@
+// server/routes/battle.js
+
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -13,6 +15,8 @@ const {
     reflectPhrase,
     poisonStackPhrase,
     burnStackPhrase,
+    freezeStackPhrase,
+    frozenPhrase,
     poisonPhrases,
     burnPhrases,
     selfDamagePhrase,
@@ -191,7 +195,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    // Накопление яда (venom_blade)
+    // Накопление яда (venom_blade) – исправлено: добавляем в extraLogs
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
@@ -204,7 +208,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Накопление огня (pyromancer) – максимум 5 стаков
+    // Накопление огня (pyromancer) – максимум 5 стаков – ИСПРАВЛЕНО: добавляем в extraLogs
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
@@ -218,15 +222,18 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     }
 
     // Накопление стаков заморозки (cryomancer) – каждая атака добавляет 1 стак, при 3 – заморозка
+    // ИСПРАВЛЕНО: добавляем в extraLogs для каждого стака
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         defenderState.freezeStacks++;
         if (defenderState.freezeStacks >= 3) {
             defenderState.frozen = 1; // заморозка на следующий ход
             defenderState.freezeStacks = 0; // сброс стаков
-            extraLogs.push(`<span style="color:#00aaff;">${defenderName} заморожен!</span>`);
+            extraLogs.push(frozenPhrase.replace('%s', defenderName));
         } else {
-            extraLogs.push(`<span style="color:#00aaff;">Стак заморозки на ${defenderName} (${defenderState.freezeStacks}/3)</span>`);
+            extraLogs.push(freezeStackPhrase
+                .replace('%s', defenderName)
+                .replace('%d', defenderState.freezeStacks));
         }
     }
 
@@ -324,7 +331,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             // Гарантированная заморозка на 1 ход
             defenderState.frozen = 1;
             defenderState.freezeStacks = 0;
-            log = `<span style="color:#3498db;">${attackerName} призывает ВЕЧНУЮ ЗИМУ, замораживая ${defenderName} и нанося ${damage} урона магией льда${frozenBonus === 3 ? ' (тройной урон!)' : ' (двойной урон!)'}!</span>`;
+            log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
         case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
@@ -427,7 +434,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyHp,
             playerMana,
             enemyMana,
-            // Добавляем поля для статусов
             playerFrozen: playerState.frozen,
             enemyFrozen: enemyState.frozen,
             playerShield: playerState.reflectBuff > 0 ? 1 : 0,
@@ -446,7 +452,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (playerState.frozen > 0) {
                 playerState.frozen = 0;
                 playerState.freezeStacks = 0;
-                const msg = `<span style="color:#00aaff;">${playerName} пропускает ход (заморожен).</span>`;
+                const msg = `<span style="color:#00aaff;">❄️ ${playerName} пропускает ход (заморожен).</span>`;
                 log.push(msg);
                 turnState.action = msg;
                 turnState.playerFrozen = 0;
@@ -468,7 +474,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (enemyHp <= 0) {
                     turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
@@ -490,7 +495,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (playerHp <= 0) {
                     turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
@@ -561,7 +565,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turnState.action = actionLog;
             turnState.playerHp = playerHp;
             turnState.enemyHp = enemyHp;
-            // Обновляем все поля
             turnState.playerPoisonStacks = playerState.poisonStacks;
             turnState.playerBurnStacks = playerState.burnStacks;
             turnState.playerFreezeStacks = playerState.freezeStacks;
@@ -585,7 +588,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (enemyState.frozen > 0) {
                 enemyState.frozen = 0;
                 enemyState.freezeStacks = 0; 
-                const msg = `<span style="color:#00aaff;">${enemyName} пропускает ход (заморожен).</span>`;
+                const msg = `<span style="color:#00aaff;">❄️ ${enemyName} пропускает ход (заморожен).</span>`;
                 log.push(msg);
                 turnState.action = msg;
                 turnState.enemyFrozen = 0;
@@ -607,7 +610,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (playerHp <= 0) {
                     turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
@@ -629,7 +631,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (enemyHp <= 0) {
                     turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    // Обновляем все поля
                     turnState.playerPoisonStacks = playerState.poisonStacks;
                     turnState.playerBurnStacks = playerState.burnStacks;
                     turnState.playerFreezeStacks = playerState.freezeStacks;
@@ -700,7 +701,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turnState.action = actionLog;
             turnState.playerHp = playerHp;
             turnState.enemyHp = enemyHp;
-            // Обновляем все поля
             turnState.playerPoisonStacks = playerState.poisonStacks;
             turnState.playerBurnStacks = playerState.burnStacks;
             turnState.playerFreezeStacks = playerState.freezeStacks;
@@ -722,7 +722,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         }
     }
 
-    // Определение победителя (уже с обнулёнными значениями)
+    // Определение победителя
     let winner = null;
     if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
     else if (playerHp <= 0) winner = 'enemy';
@@ -730,20 +730,20 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
     // Добавление финальной фразы
     const victoryPhrases = [
-        'Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
-        'С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
-        'Вы оказались сильнее! <span style="color:#2ecc71;">ПОБЕДА</span>!',
-        'Невероятная битва! <span style="color:#2ecc71;">ПОБЕДА</span> за вами!'
+        '🎉 Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
+        '⚔️ С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
+        '🏆 Вы оказались сильнее! <span style="color:#2ecc71;">ПОБЕДА</span>!',
+        '✨ Невероятная битва! <span style="color:#2ecc71;">ПОБЕДА</span> за вами!'
     ];
     const defeatPhrases = [
-        'В этой напряжённой схватке враг был сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
-        'Ваши силы иссякли... <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
-        'Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
-        'Соперник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>'
+        '💔 В этой напряжённой схватке враг был сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
+        '😵 Ваши силы иссякли... <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
+        '😢 Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
+        '⚰️ Соперник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>'
     ];
     const drawPhrases = [
-        'Оба бойца падают одновременно. Ничья!',
-        'Взаимный удар – никто не выжил. Ничья.'
+        '🤝 Оба бойца падают одновременно. Ничья!',
+        '💥 Взаимный удар – никто не выжил. Ничья.'
     ];
 
     let finalPhrase = '';
@@ -1031,7 +1031,7 @@ router.post('/start', async (req, res) => {
                 class: opponentData.class,
                 subclass: opponentData.subclass,
                 level: opponentData.level,
-                is_cybercat: opponentData.is_cybercat || false // Добавляем флаг для клиента
+                is_cybercat: opponentData.is_cybercat || false
             },
             result: {
                 winner: battleResult.winner,

@@ -22,6 +22,7 @@ const {
     frozenContinuePhrase,
     frozenEndPhrase,
     frozenAlreadyPhrase,
+    selfDamagePhrase,
     ultPhrases
 } = require('../data/battlePhrases');
 

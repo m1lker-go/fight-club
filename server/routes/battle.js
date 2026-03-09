@@ -195,31 +195,31 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    // Накопление яда (venom_blade) – исправлено: добавляем в extraLogs
-    if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
-        if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
-        const oldStacks = defenderState.poisonStacks;
-        defenderState.poisonStacks = Math.min(30, defenderState.poisonStacks + 1);
-        if (defenderState.poisonStacks > oldStacks) {
-            extraLogs.push(poisonStackPhrase
-                .replace('%s', defenderName)
-                .replace('%d', defenderState.poisonStacks - oldStacks)
-                .replace('%d', defenderState.poisonStacks));
-        }
+   // Накопление яда (venom_blade) - только 1 стак за удар
+if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
+    if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
+    const oldStacks = defenderState.poisonStacks;
+    defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1); // максимум 5, а не 30!
+    if (defenderState.poisonStacks > oldStacks) {
+        extraLogs.push(poisonStackPhrase
+            .replace('%s', defenderName)
+            .replace('%d', defenderState.poisonStacks - oldStacks)
+            .replace('%d', defenderState.poisonStacks));
     }
+}
 
-    // Накопление огня (pyromancer) – максимум 5 стаков – ИСПРАВЛЕНО: добавляем в extraLogs
-    if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
-        if (!defenderState.burnStacks) defenderState.burnStacks = 0;
-        const oldStacks = defenderState.burnStacks;
-        defenderState.burnStacks = Math.min(5, defenderState.burnStacks + 1);
-        if (defenderState.burnStacks > oldStacks) {
-            extraLogs.push(burnStackPhrase
-                .replace('%s', defenderName)
-                .replace('%d', defenderState.burnStacks - oldStacks)
-                .replace('%d', defenderState.burnStacks));
-        }
+// Накопление огня (pyromancer) - только 1 стак за удар
+if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
+    if (!defenderState.burnStacks) defenderState.burnStacks = 0;
+    const oldStacks = defenderState.burnStacks;
+    defenderState.burnStacks = Math.min(5, defenderState.burnStacks + 1); // +1 за удар
+    if (defenderState.burnStacks > oldStacks) {
+        extraLogs.push(burnStackPhrase
+            .replace('%s', defenderName)
+            .replace('%d', defenderState.burnStacks - oldStacks)
+            .replace('%d', defenderState.burnStacks));
     }
+}
 
     // Накопление стаков заморозки (cryomancer) – каждая атака добавляет 1 стак, при 3 – заморозка
     // ИСПРАВЛЕНО: добавляем в extraLogs для каждого стака

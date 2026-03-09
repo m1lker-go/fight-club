@@ -1,4 +1,4 @@
-// client/js/battleUI.js
+// battleUI.js
 
 // ==================== БОЙ ====================
 async function startBattle() {
@@ -267,10 +267,6 @@ function showBattleScreen(battleData) {
     let playerEffects = [];
     let enemyEffects = [];
 
-    // Текущие значения маны (для анимации)
-    let currentHeroMana = 0;
-    let currentEnemyMana = 0;
-
     // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
     function clearManaAnimations() {
         manaAnimationTimeouts.forEach(timeout => clearTimeout(timeout));
@@ -428,7 +424,6 @@ function showBattleScreen(battleData) {
     }
 
     function showAnimation(target, animationFile) {
-        console.log('showAnimation', target, animationFile);
         hideAnimations();
         const container = document.getElementById(target + '-animation');
         if (!container) return;
@@ -475,7 +470,7 @@ function showBattleScreen(battleData) {
             anim = 'poison.gif';
         } else if (action.includes('пламя пожирает') || action.includes('огонь обжигает') || action.includes('горящие души')) {
             anim = 'fire.gif';
-        } else if (action.includes('превращается в ледяную глыбу')) {
+        } else if (action.includes('превращается в ледяную глыбу') || action.includes('заморожен')) {
             anim = 'frozenx.gif';
             target = isPlayerTurn ? 'enemy' : 'hero';
         } else if (action.includes('остаётся в ледяном плену')) {
@@ -515,49 +510,35 @@ function showBattleScreen(battleData) {
             clearInterval(interval);
             if (timer) clearInterval(timer);
             if (finishTimeout) clearTimeout(finishTimeout);
-            
             finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
             return;
         }
 
         const turn = turns[turnIndex];
-        console.log('turn:', turn.turn, 'action:', turn.action);
 
         // Обновляем переменные из данных сервера
         if (turn.playerFrozen !== undefined) {
             const wasFrozen = playerFrozen > 0;
             const nowFrozen = turn.playerFrozen > 0;
             playerFrozen = turn.playerFrozen;
-            
             if (wasFrozen !== nowFrozen) {
                 const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
                 if (heroFrozenOverlay) {
-                    if (nowFrozen) {
-                        heroFrozenOverlay.classList.add('active');
-                    } else {
-                        heroFrozenOverlay.classList.remove('active');
-                    }
+                    heroFrozenOverlay.classList.toggle('active', nowFrozen);
                 }
             }
         }
-
         if (turn.enemyFrozen !== undefined) {
             const wasFrozen = enemyFrozen > 0;
             const nowFrozen = turn.enemyFrozen > 0;
             enemyFrozen = turn.enemyFrozen;
-            
             if (wasFrozen !== nowFrozen) {
                 const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
                 if (enemyFrozenOverlay) {
-                    if (nowFrozen) {
-                        enemyFrozenOverlay.classList.add('active');
-                    } else {
-                        enemyFrozenOverlay.classList.remove('active');
-                    }
+                    enemyFrozenOverlay.classList.toggle('active', nowFrozen);
                 }
             }
         }
-
         if (turn.playerShield !== undefined) playerShield = turn.playerShield;
         if (turn.enemyShield !== undefined) enemyShield = turn.enemyShield;
         if (turn.playerFreezeStacks !== undefined) playerFreezeStacks = turn.playerFreezeStacks;
@@ -577,7 +558,6 @@ function showBattleScreen(battleData) {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
             }
-            
             let finalMessage = turn.action;
             if (!finalMessage) {
                 const victoryVariants = [

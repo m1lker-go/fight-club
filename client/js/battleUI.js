@@ -642,54 +642,7 @@ function showBattleScreen(battleData) {
             showAnimation(target, anim);
         }
 
-        // ========== НОВАЯ ЛОГИКА ДЛЯ СТАКОВ ОГНЯ И ЯДА ==========
-        // Проверяем, является ли действие ультимейтом
-        const isUltimate = actionLower.includes('ядовитая волна') || 
-                          actionLower.includes('огненный шторм') || 
-                          actionLower.includes('вечная зима');
-
-        if (!isUltimate) {
-            // Обычная атака - накладываем стаки
-            if (attackerSubclass === 'pyromancer') {
-                if (isPlayerTurn) {
-                    enemyBurnStacks = Math.min(5, enemyBurnStacks + 1);
-                    console.log('🔥 Огонь на враге, стаков:', enemyBurnStacks);
-                } else {
-                    playerBurnStacks = Math.min(5, playerBurnStacks + 1);
-                    console.log('🔥 Огонь на игроке, стаков:', playerBurnStacks);
-                }
-            } else if (attackerSubclass === 'venom_blade') {
-                if (isPlayerTurn) {
-                    enemyPoisonStacks = Math.min(5, enemyPoisonStacks + 1);
-                    console.log('☠️ Яд на враге, стаков:', enemyPoisonStacks);
-                } else {
-                    playerPoisonStacks = Math.min(5, playerPoisonStacks + 1);
-                    console.log('☠️ Яд на игроке, стаков:', playerPoisonStacks);
-                }
-            }
-        } else {
-            // Ультимейт - сбрасываем стаки
-            if (attackerSubclass === 'pyromancer' && actionLower.includes('огненный шторм')) {
-                if (isPlayerTurn) {
-                    enemyBurnStacks = 0;
-                    console.log('🔥 Огненный шторм - стаки огня у врага сброшены');
-                } else {
-                    playerBurnStacks = 0;
-                    console.log('🔥 Огненный шторм - стаки огня у игрока сброшены');
-                }
-            } else if (attackerSubclass === 'venom_blade' && actionLower.includes('ядовитая волна')) {
-                if (isPlayerTurn) {
-                    enemyPoisonStacks = 0;
-                    console.log('☠️ Ядовитая волна - стаки яда у врага сброшены');
-                } else {
-                    playerPoisonStacks = 0;
-                    console.log('☠️ Ядовитая волна - стаки яда у игрока сброшены');
-                }
-            }
-        }
-        // ========================================================
-
-        // Обновляем эффекты на основе всех текущих переменных
+               // Обновляем эффекты на основе всех текущих переменных
         updateAllEffects();
 
         if (turn.action) {

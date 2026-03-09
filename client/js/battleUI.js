@@ -280,6 +280,11 @@ function showBattleScreen(battleData) {
         manaAnimationTimeouts = [];
     }
 
+    function setBarWidth(barId, percent) {
+        const bar = document.getElementById(barId);
+        if (bar) bar.style.width = percent + '%';
+    }
+
     function animateHpText(elementId, start, end, maxHp, duration = 300) {
         const element = document.getElementById(elementId);
         if (!element) return;
@@ -318,11 +323,6 @@ function showBattleScreen(battleData) {
         }, stepTime);
     }
 
-    function setBarWidth(barId, percent) {
-        const bar = document.getElementById(barId);
-        if (bar) bar.style.width = percent + '%';
-    }
-
     // Функция обновления всех слотов на основе списка эффектов
     function renderEffects(side) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
@@ -339,7 +339,7 @@ function showBattleScreen(battleData) {
         }
     }
 
-        function buildEffectsList(side) {
+    function buildEffectsList(side) {
         const effects = [];
         if (side === 'player') {
             // Яд - одна иконка за все стаки
@@ -622,9 +622,9 @@ function showBattleScreen(battleData) {
             animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
-        // Устанавливаем ширину полосы
-        if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
-        if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
+        // Устанавливаем ширину полосы - ИСПРАВЛЕНО
+        if (heroHpBar && heroMax) setBarWidth('heroHp', (heroNew / heroMax) * 100);
+        if (enemyHpBar && enemyMax) setBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
         // Обновление маны
         document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';

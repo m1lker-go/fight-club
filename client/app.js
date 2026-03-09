@@ -797,7 +797,7 @@ function renderShop(target = null) {
                     <img src="/assets/leg-chess.png" alt="Легендарный сундук">
                 </div>
                 <div class="chest-info">
-                    <div class="chest-name">Легендарный сундук</div>
+                    <div class="chest-name">Легендарный<br>сундук</div>
                     <div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div>
                 </div>
                 <button class="chest-btn" data-chest="legendary">

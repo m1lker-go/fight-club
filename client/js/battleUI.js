@@ -339,24 +339,46 @@ function showBattleScreen(battleData) {
         }
     }
 
-    function buildEffectsList(side) {
+        function buildEffectsList(side) {
         const effects = [];
         if (side === 'player') {
-            if (playerPoisonStacks > 0) effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            if (playerBurnStacks > 0) effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            // Яд - одна иконка за все стаки
+            if (playerPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            // Огонь - по одной иконке на стак
+            for (let i = 0; i < playerBurnStacks; i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            // Стаки заморозки (накопление перед заморозкой) - иконки льда
             for (let i = 0; i < playerFreezeStacks; i++) {
                 effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
             }
-            if (playerFrozen) effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            if (playerShield) effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            // Статус заморозки (иконка frozen)
+            if (playerFrozen) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            }
+            // Статус щита
+            if (playerShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
         } else {
-            if (enemyPoisonStacks > 0) effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            if (enemyBurnStacks > 0) effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            // Аналогично для врага
+            if (enemyPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < enemyBurnStacks; i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
             for (let i = 0; i < enemyFreezeStacks; i++) {
                 effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
             }
-            if (enemyFrozen) effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            if (enemyShield) effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            if (enemyFrozen) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            }
+            if (enemyShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
         }
         return effects;
     }
@@ -490,7 +512,7 @@ function showBattleScreen(battleData) {
     }
 
     // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
-    function playTurn() {
+   function playTurn() {
         if (turnIndex >= turns.length) {
             clearInterval(interval);
             if (timer) clearInterval(timer);
@@ -502,8 +524,10 @@ function showBattleScreen(battleData) {
 
         const turn = turns[turnIndex];
         console.log('turn:', turn.turn, 'isPlayerTurn:', (turn.turn === 'player'), 'action:', turn.action);
+        console.log('heroHp after:', turn.playerHp, 'enemyHp after:', turn.enemyHp);
+        console.log('enemyFreezeStacks:', turn.enemyFreezeStacks);
 
-        // Обновляем переменные из данных сервера (эффекты)
+        // Обновляем переменные из данных сервера
         if (turn.playerFrozen !== undefined) playerFrozen = turn.playerFrozen;
         if (turn.enemyFrozen !== undefined) enemyFrozen = turn.enemyFrozen;
         if (turn.playerShield !== undefined) playerShield = turn.playerShield;
@@ -515,33 +539,36 @@ function showBattleScreen(battleData) {
         if (turn.playerBurnStacks !== undefined) playerBurnStacks = turn.playerBurnStacks;
         if (turn.enemyBurnStacks !== undefined) enemyBurnStacks = turn.enemyBurnStacks;
 
-        // Управление оверлеем заморозки
+        // Управление оверлеем заморозки на аватаре
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) {
-            if (playerFrozen) heroFrozenOverlay.classList.add('active');
-            else heroFrozenOverlay.classList.remove('active');
+            if (playerFrozen) {
+                heroFrozenOverlay.classList.add('active');
+            } else {
+                heroFrozenOverlay.classList.remove('active');
+            }
         }
         if (enemyFrozenOverlay) {
-            if (enemyFrozen) enemyFrozenOverlay.classList.add('active');
-            else enemyFrozenOverlay.classList.remove('active');
+            if (enemyFrozen) {
+                enemyFrozenOverlay.classList.add('active');
+            } else {
+                enemyFrozenOverlay.classList.remove('active');
+            }
         }
 
-        // Если это финальное сообщение
+        // Если это финальное сообщение (не ход)
         if (turn.turn === 'final') {
             const winner = battleData.result.winner;
+            // Принудительно обнуляем полоску и текст проигравшего
             if (winner === 'player') {
                 document.getElementById('enemyHp').style.width = '0%';
                 document.getElementById('enemyHpText').innerText = `0/${battleData.result.enemyMaxHp}`;
-                document.getElementById('enemyMana').style.width = '0%';
             } else if (winner === 'enemy') {
                 document.getElementById('heroHp').style.width = '0%';
                 document.getElementById('heroHpText').innerText = `0/${battleData.result.playerMaxHp}`;
-                document.getElementById('heroMana').style.width = '0%';
             }
-            // Очищаем все анимации маны, так как бой закончен
-            clearManaAnimations();
-
+            // Разнообразные финальные фразы, если сервер не прислал
             let finalMessage = turn.action;
             if (!finalMessage) {
                 const victoryVariants = [
@@ -573,7 +600,7 @@ function showBattleScreen(battleData) {
             return;
         }
 
-        // --- Обработка HP (мгновенно, без задержки) ---
+        // Получаем текущие значения HP из DOM (старые)
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -582,135 +609,102 @@ function showBattleScreen(battleData) {
         const heroOld = heroHpText ? parseInt(heroHpText.innerText.split('/')[0]) : 0;
         const enemyOld = enemyHpText ? parseInt(enemyHpText.innerText.split('/')[0]) : 0;
 
-        const heroNewHp = turn.playerHp !== undefined ? turn.playerHp : heroOld;
-        const enemyNewHp = turn.enemyHp !== undefined ? turn.enemyHp : enemyOld;
+        const heroNew = turn.playerHp !== undefined ? turn.playerHp : heroOld;
+        const enemyNew = turn.enemyHp !== undefined ? turn.enemyHp : enemyOld;
         const heroMax = battleData.result.playerMaxHp;
         const enemyMax = battleData.result.enemyMaxHp;
 
-        if (heroNewHp !== heroOld && heroHpText) {
-            animateHpText('heroHpText', heroOld, heroNewHp, heroMax, 300);
+        // Анимация HP (текст)
+        if (heroNew !== heroOld && heroHpText) {
+            animateHpText('heroHpText', heroOld, heroNew, heroMax, 300);
         }
-        if (enemyNewHp !== enemyOld && enemyHpText) {
-            animateHpText('enemyHpText', enemyOld, enemyNewHp, enemyMax, 300);
+        if (enemyNew !== enemyOld && enemyHpText) {
+            animateHpText('enemyHpText', enemyOld, enemyNew, enemyMax, 300);
         }
 
-        if (heroHpBar && heroMax) setBarWidth('heroHp', (heroNewHp / heroMax) * 100);
-        if (enemyHpBar && enemyMax) setBarWidth('enemyHp', (enemyNewHp / enemyMax) * 100);
+        // Устанавливаем ширину полосы
+        if (heroHpBar && heroMax) setHpBarWidth('heroHp', (heroNew / heroMax) * 100);
+        if (enemyHpBar && enemyMax) setHpBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
-        // --- Получаем новые значения маны от сервера ---
-        const heroNewMana = turn.playerMana !== undefined ? turn.playerMana : currentHeroMana;
-        const enemyNewMana = turn.enemyMana !== undefined ? turn.enemyMana : currentEnemyMana;
+        // Обновление маны
+        document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
+        document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
 
         const isPlayerTurn = turn.turn === 'player';
-        const action = turn.action || '';
-        const isUlt = isUltimateAction(action);
+        const attackerSubclass = isPlayerTurn ? userData.subclass : battleData.opponent.subclass;
 
-        // Длительность хода в мс (зависит от скорости)
-        const turnDuration = 2500 / speed;
+        // Проверяем, нужно ли пропустить анимацию (только для пропуска хода)
+        const actionLower = turn.action ? turn.action.toLowerCase() : '';
+        const skipAnimation = actionLower.includes('пропускает ход');
 
-        // --- Анимация действия ---
-        const skipAnimation = action.toLowerCase().includes('пропускает ход');
-        if (!skipAnimation && action) {
-            const { target, anim } = getAnimationForAction(action, isPlayerTurn);
+        if (!skipAnimation && turn.action) {
+            const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
             showAnimation(target, anim);
         }
 
-        // Очищаем предыдущие анимации маны для этого хода, чтобы избежать наложения
-        clearManaAnimations();
+        // ========== НОВАЯ ЛОГИКА ДЛЯ СТАКОВ ОГНЯ И ЯДА ==========
+        // Проверяем, является ли действие ультимейтом
+        const isUltimate = actionLower.includes('ядовитая волна') || 
+                          actionLower.includes('огненный шторм') || 
+                          actionLower.includes('вечная зима');
 
-        // --- Планирование анимации маны ---
-        if (isUlt) {
-            // Для атакующей стороны двухфазная анимация (подъём до 100 и спад)
-            const attackerManaId = isPlayerTurn ? 'heroMana' : 'enemyMana';
-            const attackerManaTextId = isPlayerTurn ? 'heroManaText' : 'enemyManaText';
-            const startMana = isPlayerTurn ? currentHeroMana : currentEnemyMana;
-            const finalMana = isPlayerTurn ? heroNewMana : enemyNewMana;
-
-            // Проверяем, жив ли атакующий после применения ульты
-            const attackerAlive = isPlayerTurn ? (heroNewHp > 0) : (enemyNewHp > 0);
-            // Проверяем, жива ли цель
-            const targetAlive = isPlayerTurn ? (enemyNewHp > 0) : (heroNewHp > 0);
-
-            // Фаза 1: подъём до 100 (0 мс задержки) – показываем всегда, даже если кто-то умрёт
-            const timeout1 = setTimeout(() => {
-                setBarWidth(attackerManaId, 100);
-                animateManaText(attackerManaTextId, startMana, 100, 500);
-            }, 0);
-            manaAnimationTimeouts.push(timeout1);
-
-            // Фаза 2: спад до реального значения через 500 мс – только если атакующий и цель живы (или хотя бы атакующий жив, чтобы показать остаток маны)
-            if (attackerAlive && targetAlive) {
-                const timeout2 = setTimeout(() => {
-                    const finalPercent = (finalMana / 100) * 100;
-                    setBarWidth(attackerManaId, finalPercent);
-                    animateManaText(attackerManaTextId, 100, finalMana, 500);
-                }, 500);
-                manaAnimationTimeouts.push(timeout2);
-            } else {
-                // Если кто-то умер, сразу устанавливаем конечное значение маны без анимации
-                const finalPercent = (finalMana / 100) * 100;
-                setBarWidth(attackerManaId, finalPercent);
-                const manaText = document.getElementById(attackerManaTextId);
-                if (manaText) manaText.innerText = finalMana;
-            }
-
-            // Для противоположной стороны (если её мана изменилась) планируем обычную анимацию в конце хода
-            if (!isPlayerTurn) {
-                if (heroNewMana !== currentHeroMana && heroNewHp > 0) {
-                    const timeout = setTimeout(() => {
-                        setBarWidth('heroMana', (heroNewMana / 100) * 100);
-                        animateManaText('heroManaText', currentHeroMana, heroNewMana, 500);
-                    }, turnDuration - 500);
-                    manaAnimationTimeouts.push(timeout);
+        if (!isUltimate) {
+            // Обычная атака - накладываем стаки
+            if (attackerSubclass === 'pyromancer') {
+                if (isPlayerTurn) {
+                    enemyBurnStacks = Math.min(5, enemyBurnStacks + 1);
+                    console.log('🔥 Огонь на враге, стаков:', enemyBurnStacks);
+                } else {
+                    playerBurnStacks = Math.min(5, playerBurnStacks + 1);
+                    console.log('🔥 Огонь на игроке, стаков:', playerBurnStacks);
                 }
-            } else {
-                if (enemyNewMana !== currentEnemyMana && enemyNewHp > 0) {
-                    const timeout = setTimeout(() => {
-                        setBarWidth('enemyMana', (enemyNewMana / 100) * 100);
-                        animateManaText('enemyManaText', currentEnemyMana, enemyNewMana, 500);
-                    }, turnDuration - 500);
-                    manaAnimationTimeouts.push(timeout);
+            } else if (attackerSubclass === 'venom_blade') {
+                if (isPlayerTurn) {
+                    enemyPoisonStacks = Math.min(5, enemyPoisonStacks + 1);
+                    console.log('☠️ Яд на враге, стаков:', enemyPoisonStacks);
+                } else {
+                    playerPoisonStacks = Math.min(5, playerPoisonStacks + 1);
+                    console.log('☠️ Яд на игроке, стаков:', playerPoisonStacks);
                 }
             }
         } else {
-            // Обычный ход: анимируем ману обеих сторон в конце хода, только если они живы
-            if (heroNewMana !== currentHeroMana && heroNewHp > 0) {
-                const timeout = setTimeout(() => {
-                    setBarWidth('heroMana', (heroNewMana / 100) * 100);
-                    animateManaText('heroManaText', currentHeroMana, heroNewMana, 500);
-                }, turnDuration - 500);
-                manaAnimationTimeouts.push(timeout);
-            }
-            if (enemyNewMana !== currentEnemyMana && enemyNewHp > 0) {
-                const timeout = setTimeout(() => {
-                    setBarWidth('enemyMana', (enemyNewMana / 100) * 100);
-                    animateManaText('enemyManaText', currentEnemyMana, enemyNewMana, 500);
-                }, turnDuration - 500);
-                manaAnimationTimeouts.push(timeout);
+            // Ультимейт - сбрасываем стаки
+            if (attackerSubclass === 'pyromancer' && actionLower.includes('огненный шторм')) {
+                if (isPlayerTurn) {
+                    enemyBurnStacks = 0;
+                    console.log('🔥 Огненный шторм - стаки огня у врага сброшены');
+                } else {
+                    playerBurnStacks = 0;
+                    console.log('🔥 Огненный шторм - стаки огня у игрока сброшены');
+                }
+            } else if (attackerSubclass === 'venom_blade' && actionLower.includes('ядовитая волна')) {
+                if (isPlayerTurn) {
+                    enemyPoisonStacks = 0;
+                    console.log('☠️ Ядовитая волна - стаки яда у врага сброшены');
+                } else {
+                    playerPoisonStacks = 0;
+                    console.log('☠️ Ядовитая волна - стаки яда у игрока сброшены');
+                }
             }
         }
+        // ========================================================
 
-        // Обновляем текущие значения маны (для следующего хода)
-        currentHeroMana = heroNewMana;
-        currentEnemyMana = enemyNewMana;
-
-        // Обновляем эффекты
+        // Обновляем эффекты на основе всех текущих переменных
         updateAllEffects();
 
-        // Добавляем запись в лог
-        if (action) {
+        if (turn.action) {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.innerHTML = action;
+            logEntry.innerHTML = turn.action;
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        // Проверка смерти и применение эффекта поражения (очистит анимации маны через applyDefeatEffect)
-        if (enemyNewHp <= 0) {
+        // Если после этого хода кто-то мёртв, немедленно применяем эффект поражения
+        if (enemyNew <= 0) {
             applyDefeatEffect('enemy');
         }
-        if (heroNewHp <= 0) {
+        if (heroNew <= 0) {
             applyDefeatEffect('hero');
         }
 

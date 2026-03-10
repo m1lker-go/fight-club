@@ -16,7 +16,6 @@ const BattleLog = {
     enemyEffects: [],
 
     init(battleData, logContainer, onFinish) {
-        // Сброс всех глобальных статусов перед новым боем
         window.playerFrozen = 0;
         window.enemyFrozen = 0;
         window.playerShield = 0;
@@ -74,12 +73,6 @@ const BattleLog = {
         const enemyAnim = document.getElementById('enemy-animation');
         if (heroAnim) heroAnim.style.display = 'none';
         if (enemyAnim) enemyAnim.style.display = 'none';
-
-        // Скрываем оверлеи заморозки
-        const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
-        const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
-        if (heroFrozen) heroFrozen.classList.remove('active');
-        if (enemyFrozen) enemyFrozen.classList.remove('active');
     },
 
     applyState(state) {
@@ -112,11 +105,6 @@ const BattleLog = {
         window.enemyPoisonStacks = state.enemyPoisonStacks || 0;
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
-
-        const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
-        const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
-        if (heroFrozenOverlay) heroFrozenOverlay.classList.toggle('active', window.playerFrozen > 0);
-        if (enemyFrozenOverlay) enemyFrozenOverlay.classList.toggle('active', window.enemyFrozen > 0);
 
         this.updateAllEffects();
     },
@@ -280,8 +268,6 @@ const BattleLog = {
             anim = 'fire.gif';
             return { target, anim };
         }
-
-        // ЗАМОРОЗКА ПОЛНОСТЬЮ ОТКЛЮЧЕНА
 
         return { target: null, anim: null };
     },

@@ -16,6 +16,18 @@ const BattleLog = {
     enemyEffects: [],
 
     init(battleData, logContainer, onFinish) {
+        // Сброс всех глобальных статусов перед новым боем
+        window.playerFrozen = 0;
+        window.enemyFrozen = 0;
+        window.playerShield = 0;
+        window.enemyShield = 0;
+        window.playerFreezeStacks = 0;
+        window.enemyFreezeStacks = 0;
+        window.playerPoisonStacks = 0;
+        window.enemyPoisonStacks = 0;
+        window.playerBurnStacks = 0;
+        window.enemyBurnStacks = 0;
+
         this.messages = [];
         this.states = [];
         this.currentMsgIndex = 0;
@@ -62,7 +74,8 @@ const BattleLog = {
         const enemyAnim = document.getElementById('enemy-animation');
         if (heroAnim) heroAnim.style.display = 'none';
         if (enemyAnim) enemyAnim.style.display = 'none';
-        // также скрываем оверлеи заморозки
+
+        // Скрываем оверлеи заморозки
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozen) heroFrozen.classList.remove('active');
@@ -268,8 +281,7 @@ const BattleLog = {
             return { target, anim };
         }
 
-        // ЗАМОРОЗКА – ПОЛНОСТЬЮ УДАЛЕНА (никакая анимация не будет запускаться)
-        // Блок удалён
+        // ЗАМОРОЗКА ПОЛНОСТЬЮ ОТКЛЮЧЕНА
 
         return { target: null, anim: null };
     },

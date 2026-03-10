@@ -73,7 +73,6 @@ function showBattleScreen(battleData) {
                 <div class="hero-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
-                        <!-- <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div> --> <!-- удалено -->
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
@@ -115,7 +114,6 @@ function showBattleScreen(battleData) {
                 <div class="enemy-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
-                        <!-- <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div> --> <!-- удалено -->
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>

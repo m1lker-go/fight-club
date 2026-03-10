@@ -514,18 +514,34 @@ function showBattleScreen(battleData) {
             return;
         }
 
-        const turn = turns[turnIndex];
+        const entry = turns[turnIndex];
+        const isLogEntry = entry.type === 'log';  // определяем тип записи
 
-        // Обновляем переменные из данных сервера
+        // Если это просто лог (без изменения состояния)
+        if (isLogEntry) {
+            if (entry.action) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = entry.action;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+            turnIndex++;
+            // Не обновляем HP, ману и состояние, не меняем ход
+            return;
+        }
+
+        // Иначе это полноценный ход (type = 'turn' или отсутствует для обратной совместимости)
+        const turn = entry;
+
+        // Обновляем переменные из данных сервера (только если они есть)
         if (turn.playerFrozen !== undefined) {
             const wasFrozen = playerFrozen > 0;
             const nowFrozen = turn.playerFrozen > 0;
             playerFrozen = turn.playerFrozen;
             if (wasFrozen !== nowFrozen) {
                 const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
-                if (heroFrozenOverlay) {
-                    heroFrozenOverlay.classList.toggle('active', nowFrozen);
-                }
+                if (heroFrozenOverlay) heroFrozenOverlay.classList.toggle('active', nowFrozen);
             }
         }
         if (turn.enemyFrozen !== undefined) {
@@ -534,9 +550,7 @@ function showBattleScreen(battleData) {
             enemyFrozen = turn.enemyFrozen;
             if (wasFrozen !== nowFrozen) {
                 const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
-                if (enemyFrozenOverlay) {
-                    enemyFrozenOverlay.classList.toggle('active', nowFrozen);
-                }
+                if (enemyFrozenOverlay) enemyFrozenOverlay.classList.toggle('active', nowFrozen);
             }
         }
         if (turn.playerShield !== undefined) playerShield = turn.playerShield;
@@ -548,7 +562,7 @@ function showBattleScreen(battleData) {
         if (turn.playerBurnStacks !== undefined) playerBurnStacks = turn.playerBurnStacks;
         if (turn.enemyBurnStacks !== undefined) enemyBurnStacks = turn.enemyBurnStacks;
 
-        // Если это финальное сообщение
+        // Если это финальное сообщение (может быть и с type 'log', и с type 'turn')
         if (turn.turn === 'final') {
             const winner = battleData.result.winner;
             if (winner === 'player') {
@@ -616,23 +630,31 @@ function showBattleScreen(battleData) {
         if (enemyHpBar && enemyMax) setBarWidth('enemyHp', (enemyNew / enemyMax) * 100);
 
         // Обновление маны
-        document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
-        document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
+        if (turn.playerMana !== undefined) {
+            document.getElementById('heroMana').style.width = (turn.playerMana / 100) * 100 + '%';
+            document.getElementById('heroManaText').innerText = turn.playerMana;
+        }
+        if (turn.enemyMana !== undefined) {
+            document.getElementById('enemyMana').style.width = (turn.enemyMana / 100) * 100 + '%';
+            document.getElementById('enemyManaText').innerText = turn.enemyMana;
+        }
 
         const isPlayerTurn = turn.turn === 'player';
 
-        // Анимация действия
-        const actionLower = turn.action ? turn.action.toLowerCase() : '';
-        const skipAnimation = actionLower.includes('пропускает ход');
-
-        if (!skipAnimation && turn.action) {
-            const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
-            showAnimation(target, anim);
+        // Анимация действия (если есть)
+        if (turn.action) {
+            const actionLower = turn.action.toLowerCase();
+            const skipAnimation = actionLower.includes('пропускает ход');
+            if (!skipAnimation) {
+                const { target, anim } = getAnimationForAction(turn.action, isPlayerTurn);
+                showAnimation(target, anim);
+            }
         }
 
-        // Обновляем эффекты
+        // Обновляем эффекты (иконки статусов)
         updateAllEffects();
 
+        // Добавляем основное действие в лог (если оно ещё не было добавлено как отдельный лог)
         if (turn.action) {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
@@ -642,12 +664,8 @@ function showBattleScreen(battleData) {
         }
 
         // Проверка на смерть
-        if (enemyNew <= 0) {
-            applyDefeatEffect('enemy');
-        }
-        if (heroNew <= 0) {
-            applyDefeatEffect('hero');
-        }
+        if (enemyNew <= 0) applyDefeatEffect('enemy');
+        if (heroNew <= 0) applyDefeatEffect('hero');
 
         turnIndex++;
     }
@@ -772,7 +790,7 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     }
 
-    // Формируем лог из действий
+    // Формируем лог из действий (просто берём все action подряд, включая type: 'log')
     let logArray = battleData.result.turns
         .map(t => t.action)
         .filter(a => a && a.trim() !== '');

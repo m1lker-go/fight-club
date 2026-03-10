@@ -29,7 +29,6 @@ async function startBattle() {
     } catch (error) {
         console.error('Battle start error:', error);
         alert('Ошибка соединения с сервером');
-        return;
     }
 }
 
@@ -51,7 +50,6 @@ function showBattleScreen(battleData) {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
-            <!-- Верхняя панель с именами -->
             <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
                 <div style="text-align: left;">
                     <div>${userData.username}</div>
@@ -63,9 +61,7 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Основная арена -->
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 1px; padding: 5px;">
-                <!-- Колонка 1: аватар игрока -->
                 <div class="hero-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
@@ -83,7 +79,6 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Колонка 2: статусы игрока -->
                 <div class="player-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -92,13 +87,11 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-                <!-- Колонка 3: центральная -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-weight: bold; opacity: 0.8; font-size: 12px;">x1</button>
                 </div>
 
-                <!-- Колонка 4: статусы врага -->
                 <div class="enemy-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -107,7 +100,6 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <!-- Колонка 5: аватар противника -->
                 <div class="enemy-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
@@ -126,7 +118,6 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Лог боя -->
             <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
         </div>
     `;
@@ -161,12 +152,6 @@ function showBattleScreen(battleData) {
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);
-
-    // Сохраняем интервалы в замыкании для возможности остановки
-    const interval = null; // не используется, но можно сохранить ссылку
-    const finishTimeout = null;
-
-    // Обработчики кнопок будут добавлены в showBattleResult
 }
 
 function hideAnimations() {
@@ -232,19 +217,13 @@ async function showBattleResult(battleData, timeOut = false) {
     `;
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
-        // Остановить все процессы боя
-        if (typeof BattleLog !== 'undefined' && BattleLog.stop) {
-            BattleLog.stop();
-        }
+        if (typeof BattleLog !== 'undefined' && BattleLog.stop) BattleLog.stop();
         await refreshData();
         startBattle();
     });
 
     document.getElementById('backBtn').addEventListener('click', async () => {
-        // Остановить все процессы боя
-        if (typeof BattleLog !== 'undefined' && BattleLog.stop) {
-            BattleLog.stop();
-        }
+        if (typeof BattleLog !== 'undefined' && BattleLog.stop) BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';

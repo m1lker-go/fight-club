@@ -12,7 +12,9 @@ const BattleLog = {
     timer: null,
     finishTimeout: null,
     battleData: null,
-    onFinish: null, // callback при завершении боя
+    onFinish: null,
+    playerEffects: [],
+    enemyEffects: [],
 
     // Инициализация
     init(battleData, logContainer, onFinish) {
@@ -25,16 +27,13 @@ const BattleLog = {
         this.onFinish = onFinish;
         this.speed = 1;
 
-        // Очищаем контейнер лога
         this.logContainer.innerHTML = '';
 
-        // Применяем начальное состояние (если есть)
         if (this.states.length > 0) {
             this.applyState(this.states[0]);
             this.currentStateIndex = 1;
         }
 
-        // Запускаем проигрывание с задержкой
         setTimeout(() => {
             this.playNext();
         }, 500);
@@ -42,7 +41,6 @@ const BattleLog = {
 
     // Применить состояние (обновить HP, ману, иконки)
     applyState(state) {
-        // Обновляем HP
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -53,7 +51,6 @@ const BattleLog = {
         if (heroHpBar) this.setBarWidth('heroHp', (state.playerHp / this.battleData.result.playerMaxHp) * 100);
         if (enemyHpBar) this.setBarWidth('enemyHp', (state.enemyHp / this.battleData.result.enemyMaxHp) * 100);
 
-        // Обновляем ману
         if (state.playerMana !== undefined) {
             document.getElementById('heroMana').style.width = (state.playerMana / 100) * 100 + '%';
             document.getElementById('heroManaText').innerText = state.playerMana;
@@ -63,7 +60,7 @@ const BattleLog = {
             document.getElementById('enemyManaText').innerText = state.enemyMana;
         }
 
-        // Обновляем статусные переменные (они нужны для иконок)
+        // Обновляем глобальные переменные (для иконок)
         window.playerFrozen = state.playerFrozen || 0;
         window.enemyFrozen = state.enemyFrozen || 0;
         window.playerShield = state.playerShield || 0;
@@ -75,14 +72,14 @@ const BattleLog = {
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Обновляем оверлей заморозки
+        // Оверлей заморозки
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) heroFrozenOverlay.classList.toggle('active', window.playerFrozen > 0);
         if (enemyFrozenOverlay) enemyFrozenOverlay.classList.toggle('active', window.enemyFrozen > 0);
 
         // Обновляем иконки статусов
-        if (typeof updateAllEffects === 'function') updateAllEffects();
+        this.updateAllEffects();
     },
 
     setBarWidth(barId, percent) {
@@ -90,10 +87,74 @@ const BattleLog = {
         if (bar) bar.style.width = percent + '%';
     },
 
+    // Построение списка эффектов для одной стороны
+    buildEffectsList(side) {
+        const effects = [];
+        if (side === 'player') {
+            if (window.playerFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < (window.playerFreezeStacks || 0); i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (window.playerPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < (window.playerBurnStacks || 0); i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (window.playerShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        } else {
+            if (window.enemyFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < (window.enemyFreezeStacks || 0); i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (window.enemyPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < (window.enemyBurnStacks || 0); i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (window.enemyShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        }
+        return effects;
+    },
+
+    // Отрисовка эффектов в слоты
+    renderEffects(side) {
+        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+        const effects = side === 'player' ? this.playerEffects : this.enemyEffects;
+        slots.forEach(slot => slot.innerHTML = '');
+        for (let i = 0; i < Math.min(effects.length, 5); i++) {
+            const effect = effects[i];
+            const slot = slots[i];
+            if (!slot) continue;
+            const img = document.createElement('img');
+            img.src = effect.icon;
+            img.alt = effect.type;
+            slot.appendChild(img);
+        }
+    },
+
+    // Обновление всех иконок
+    updateAllEffects() {
+        this.playerEffects = this.buildEffectsList('player');
+        this.enemyEffects = this.buildEffectsList('enemy');
+        this.renderEffects('player');
+        this.renderEffects('enemy');
+    },
+
     // Показать следующее сообщение
     playNext() {
         if (this.currentMsgIndex >= this.messages.length) {
-            // Все сообщения показаны – завершаем бой
             this.finish();
             return;
         }
@@ -105,26 +166,23 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        // Анимация (если есть)
-        const isPlayerTurn = msg.includes(userData.username); // упрощённо
+        const isPlayerTurn = msg.includes(userData.username);
         const { target, anim } = this.getAnimationForAction(msg, isPlayerTurn);
         if (anim) this.showAnimation(target, anim);
 
         this.currentMsgIndex++;
 
-        // Применяем следующее состояние (если есть)
         if (this.currentStateIndex < this.states.length) {
             this.applyState(this.states[this.currentStateIndex]);
             this.currentStateIndex++;
         }
 
-        // Планируем следующее сообщение
         this.interval = setTimeout(() => {
             this.playNext();
         }, 1500 / this.speed);
     },
 
-    // Анимация действий (копия из старого battleUI)
+    // Анимация действий
     getAnimationForAction(action, isPlayerTurn) {
         action = action.toLowerCase();
         let target = isPlayerTurn ? 'enemy' : 'hero';
@@ -174,7 +232,7 @@ const BattleLog = {
         if (!container) return;
         const img = document.createElement('img');
         img.src = `/assets/fight/${animationFile}`;
-        container.innerHTML = ''; // очищаем
+        container.innerHTML = '';
         container.appendChild(img);
         container.style.display = 'flex';
         setTimeout(() => {
@@ -186,7 +244,6 @@ const BattleLog = {
     // Изменение скорости
     setSpeed(newSpeed) {
         this.speed = newSpeed;
-        // Перезапускаем интервал
         clearTimeout(this.interval);
         this.playNext();
     },

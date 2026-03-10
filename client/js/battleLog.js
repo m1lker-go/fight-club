@@ -10,6 +10,8 @@ const BattleLog = {
     interval: null,
     battleData: null,
     onFinish: null,
+    playerEffects: [],
+    enemyEffects: [],
 
     init(battleData, logContainer, onFinish) {
         this.messages = battleData.result.messages || [];
@@ -58,7 +60,6 @@ const BattleLog = {
             document.getElementById('enemyManaText').innerText = state.enemyMana;
         }
 
-        // Глобальные переменные для иконок статусов (нужны для функций в helpers)
         window.playerFrozen = state.playerFrozen || 0;
         window.enemyFrozen = state.enemyFrozen || 0;
         window.playerShield = state.playerShield || 0;
@@ -70,24 +71,84 @@ const BattleLog = {
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Оверлей заморозки
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) heroFrozenOverlay.classList.toggle('active', window.playerFrozen > 0);
         if (enemyFrozenOverlay) enemyFrozenOverlay.classList.toggle('active', window.enemyFrozen > 0);
 
-        // Класс смерти
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
         if (heroCard) heroCard.classList.toggle('defeated', state.playerHp <= 0);
         if (enemyCard) enemyCard.classList.toggle('defeated', state.enemyHp <= 0);
 
-        if (typeof updateAllEffects === 'function') updateAllEffects();
+        this.updateAllEffects();
     },
 
     setBarWidth(barId, percent) {
         const bar = document.getElementById(barId);
         if (bar) bar.style.width = percent + '%';
+    },
+
+    buildEffectsList(side) {
+        const effects = [];
+        if (side === 'player') {
+            if (window.playerFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < (window.playerFreezeStacks || 0); i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (window.playerPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < (window.playerBurnStacks || 0); i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (window.playerShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        } else {
+            if (window.enemyFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < (window.enemyFreezeStacks || 0); i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (window.enemyPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < (window.enemyBurnStacks || 0); i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (window.enemyShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        }
+        return effects;
+    },
+
+    renderEffects(side) {
+        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+        const effects = side === 'player' ? this.playerEffects : this.enemyEffects;
+        slots.forEach(slot => slot.innerHTML = '');
+        for (let i = 0; i < Math.min(effects.length, 5); i++) {
+            const effect = effects[i];
+            const slot = slots[i];
+            if (!slot) continue;
+            const img = document.createElement('img');
+            img.src = effect.icon;
+            img.alt = effect.type;
+            slot.appendChild(img);
+        }
+    },
+
+    updateAllEffects() {
+        this.playerEffects = this.buildEffectsList('player');
+        this.enemyEffects = this.buildEffectsList('enemy');
+        this.renderEffects('player');
+        this.renderEffects('enemy');
     },
 
     playNext() {
@@ -103,11 +164,8 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        // Простая анимация: если в сообщении есть имя игрока – атака игрока, анимация на врага
-        const isPlayerAction = userData && msg.includes(userData.username);
-        const target = isPlayerAction ? 'enemy' : 'hero';
-        const anim = 'shot.gif';
-        this.showAnimation(target, anim);
+        const { target, anim } = this.getAnimationForAction(msg);
+        if (anim) this.showAnimation(target, anim);
 
         this.currentMsgIndex++;
 
@@ -117,6 +175,69 @@ const BattleLog = {
         }
 
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+    },
+
+    getAnimationForAction(action) {
+        const lower = action.toLowerCase();
+        let target = null;
+        let anim = null;
+
+        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
+
+        const attackKeywords = [
+            'сокрушает', 'обрушивает топор', 'пробивает броню', 'яростно атакует', 'бьёт щитом',
+            'вонзает кинжал', 'бесшумно подкрадывается', 'отравляет клинок', 'делает выпад',
+            'исчезает в тени', 'выпускает огненный шар', 'читает заклинание', 'призывает молнию',
+            'создаёт магический взрыв', 'проклинает'
+        ];
+        for (let kw of attackKeywords) {
+            if (lower.includes(kw)) {
+                target = isPlayerAction ? 'enemy' : 'hero';
+                anim = 'shot.gif';
+                return { target, anim };
+            }
+        }
+
+        const ultKeywords = {
+            'несокрушимость': 'hill.gif',
+            'кровопускание': 'crit.gif',
+            'щит правосудия': 'shield.gif',
+            'смертельный удар': 'ultimate.gif',
+            'ядовитая волна': 'poison.gif',
+            'кровавая жатва': 'crit.gif',
+            'огненный шторм': 'fire.gif',
+            'вечная зима': 'ice.gif',
+            'зазеркалье': 'chara.gif'
+        };
+        for (let [kw, a] of Object.entries(ultKeywords)) {
+            if (lower.includes(kw)) {
+                target = isPlayerAction ? 'enemy' : 'hero';
+                anim = a;
+                return { target, anim };
+            }
+        }
+
+        const dodgeKeywords = ['уклоняется', 'уворачивается', 'использует неуловимый манёвр'];
+        for (let kw of dodgeKeywords) {
+            if (lower.includes(kw)) {
+                target = isPlayerAction ? 'hero' : 'enemy';
+                anim = 'missx.gif';
+                return { target, anim };
+            }
+        }
+
+        if (lower.includes('получает урона от яда') || lower.includes('яд разъедает')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'poison.gif';
+            return { target, anim };
+        }
+        if (lower.includes('получает урона от огня') || lower.includes('огонь пожирает')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'fire.gif';
+            return { target, anim };
+        }
+
+        return { target: null, anim: null };
     },
 
     showAnimation(target, animationFile) {

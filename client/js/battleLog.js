@@ -1,3 +1,4 @@
+```javascript
 // battleLog.js
 
 const BattleLog = {
@@ -178,12 +179,12 @@ const BattleLog = {
         }, 1500 / this.speed);
     },
 
-    // Исправленная функция: анимация только для значимых событий
     getAnimationForAction(action) {
         const lower = action.toLowerCase();
-        const isPlayer = lower.includes(userData.username.toLowerCase());
         let target = null;
         let anim = null;
+
+        const isPlayerAction = lower.includes(userData.username.toLowerCase());
 
         // Атаки
         const attackKeywords = [
@@ -194,7 +195,7 @@ const BattleLog = {
         ];
         for (let kw of attackKeywords) {
             if (lower.includes(kw)) {
-                target = isPlayer ? 'enemy' : 'hero';
+                target = isPlayerAction ? 'enemy' : 'hero';
                 anim = 'shot.gif';
                 return { target, anim };
             }
@@ -214,7 +215,7 @@ const BattleLog = {
         };
         for (let [kw, a] of Object.entries(ultKeywords)) {
             if (lower.includes(kw)) {
-                target = isPlayer ? 'enemy' : 'hero';
+                target = isPlayerAction ? 'enemy' : 'hero';
                 anim = a;
                 return { target, anim };
             }
@@ -224,37 +225,41 @@ const BattleLog = {
         const dodgeKeywords = ['уклоняется', 'уворачивается', 'использует неуловимый манёвр'];
         for (let kw of dodgeKeywords) {
             if (lower.includes(kw)) {
-                target = isPlayer ? 'hero' : 'enemy';
+                target = isPlayerAction ? 'hero' : 'enemy';
                 anim = 'missx.gif';
                 return { target, anim };
             }
         }
 
-        // Урон от стаков
-        const dotKeywords = ['яд разъедает', 'огонь пожирает', 'получает урона от яда', 'получает урона от огня'];
-        for (let kw of dotKeywords) {
-            if (lower.includes(kw)) {
-                target = isPlayer ? 'hero' : 'enemy';
-                anim = kw.includes('яд') ? 'poison.gif' : 'fire.gif';
-                return { target, anim };
-            }
+        // Урон от яда
+        if (lower.includes('получает урона от яда') || lower.includes('яд разъедает')) {
+            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
+            anim = 'poison.gif';
+            return { target, anim };
+        }
+        // Урон от огня
+        if (lower.includes('получает урона от огня') || lower.includes('огонь пожирает')) {
+            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
+            anim = 'fire.gif';
+            return { target, anim };
         }
 
         // Заморозка
         const freezeKeywords = ['превращается в ледяную глыбу', 'остаётся в ледяном плену', 'лёд тает', 'заморожен'];
         for (let kw of freezeKeywords) {
             if (lower.includes(kw)) {
-                target = isPlayer ? (kw.includes('лёд тает') ? 'hero' : 'enemy') : (kw.includes('лёд тает') ? 'enemy' : 'hero');
+                target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
                 anim = 'frozenx.gif';
                 return { target, anim };
             }
         }
 
-        // Ничего не подошло
         return { target: null, anim: null };
     },
 
     showAnimation(target, animationFile) {
+        this.hideAnimations();
+
         const container = document.getElementById(target + '-animation');
         if (!container) return;
         const img = document.createElement('img');
@@ -262,6 +267,7 @@ const BattleLog = {
         container.innerHTML = '';
         container.appendChild(img);
         container.style.display = 'flex';
+
         setTimeout(() => {
             container.style.display = 'none';
             container.innerHTML = '';
@@ -288,3 +294,4 @@ const BattleLog = {
         this.hideAnimations();
     }
 };
+```

@@ -7,19 +7,27 @@ async function startBattle() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
+
         if (!res.ok) {
-            const err = await res.text();
-            alert(`Ошибка сервера: ${res.status} — ${err}`);
+            const errorText = await res.text();
+            console.error('Server error:', res.status, errorText);
+            alert(`Ошибка сервера: ${res.status} — ${errorText || 'нет описания'}`);
             return;
         }
+
         const data = await res.json();
-        if (data.error) { alert(data.error); return; }
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
         if (!data.result || !data.result.messages || !data.result.states) {
+            console.error('Invalid battle data:', data);
             alert('Ошибка данных боя');
             return;
         }
         showBattleScreen(data);
     } catch (error) {
+        console.error('Battle start error:', error);
         alert('Ошибка соединения с сервером');
     }
 }
@@ -116,16 +124,18 @@ function showBattleScreen(battleData) {
 
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
-    document.getElementById('singleSpeedBtn').addEventListener('click', () => {
+    const speedBtn = document.getElementById('singleSpeedBtn');
+    speedBtn.addEventListener('click', () => {
         const newSpeed = BattleLog.speed === 1 ? 2 : 1;
-        document.getElementById('singleSpeedBtn').textContent = newSpeed === 1 ? 'x1' : 'x2';
+        speedBtn.textContent = newSpeed === 1 ? 'x1' : 'x2';
         BattleLog.setSpeed(newSpeed);
     });
 
     let timeLeft = 45;
+    const timerEl = document.getElementById('battleTimer');
     const timer = setInterval(() => {
         timeLeft--;
-        document.getElementById('battleTimer').innerText = timeLeft;
+        timerEl.innerText = timeLeft;
         if (timeLeft <= 0) {
             clearInterval(timer);
             BattleLog.stop();
@@ -137,7 +147,7 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-async function showBattleResult(battleData) {
+async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
         updateTopBar();
@@ -168,7 +178,8 @@ async function showBattleResult(battleData) {
         });
     } catch (err) { console.error(err); }
 
-    document.getElementById('content').innerHTML = `
+    const content = document.getElementById('content');
+    content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
             <h2 style="text-align:center;">${resultText}</h2>
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
@@ -187,12 +198,21 @@ async function showBattleResult(battleData) {
         </div>
     `;
 
-    document.getElementById('rematchBtn').addEventListener('click', () => { BattleLog.stop(); refreshData().then(startBattle); });
+    document.getElementById('rematchBtn').addEventListener('click', () => {
+        BattleLog.stop();
+        refreshData().then(startBattle);
+    });
+
     document.getElementById('backBtn').addEventListener('click', () => {
         BattleLog.stop();
-        document.querySelectorAll('.menu-item').forEach(i => { i.style.pointerEvents = 'auto'; i.style.opacity = '1'; });
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
         refreshData().then(() => showScreen('main'));
     });
 
-    if (leveledUp) refreshData().then(() => showLevelUpModal(userData.current_class));
+    if (leveledUp) {
+        refreshData().then(() => showLevelUpModal(userData.current_class));
+    }
 }

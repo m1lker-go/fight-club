@@ -1,40 +1,25 @@
 // battleUI.js
 
-let battleLog = null;
-
 async function startBattle() {
-    if (battleLog && typeof battleLog.stop === 'function') {
-        battleLog.stop();
-        battleLog = null;
-    }
-
     try {
         const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
-
         if (!res.ok) {
-            const errorText = await res.text();
-            console.error('Server error:', res.status, errorText);
-            alert(`Ошибка сервера: ${res.status} — ${errorText || 'нет описания'}`);
+            const err = await res.text();
+            alert(`Ошибка сервера: ${res.status} — ${err}`);
             return;
         }
-
         const data = await res.json();
-        if (data.error) {
-            alert(data.error);
-            return;
-        }
+        if (data.error) { alert(data.error); return; }
         if (!data.result || !data.result.messages || !data.result.states) {
-            console.error('Invalid battle data:', data);
             alert('Ошибка данных боя');
             return;
         }
         showBattleScreen(data);
     } catch (error) {
-        console.error('Battle start error:', error);
         alert('Ошибка соединения с сервером');
     }
 }
@@ -68,28 +53,24 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-            <!-- Основная арена с уменьшенными отступами -->
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
-                <!-- Колонка 1: аватар игрока -->
                 <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
-                        <!-- Оверлей заморозки (возвращён) -->
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto; position: relative;">
+                    <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                         <div class="stat-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
                     </div>
-                    <div class="stat-bar mana-bar" style="width: 100px; margin: 1px auto; position: relative;">
+                    <div class="stat-bar mana-bar" style="width: 100px; margin: 1px auto;">
                         <div class="stat-fill mana-fill" id="heroMana" style="width:0%"></div>
                         <div class="stat-text" id="heroManaText">0</div>
                     </div>
                 </div>
 
-                <!-- Колонка 2: статусы игрока (уменьшена ширина) -->
                 <div class="player-debuffs" style="flex: 0 0 20px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -98,13 +79,11 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-                <!-- Колонка 3: центральная (таймер и кнопка) -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 4px 8px; border-radius: 12px; cursor: pointer; font-weight: bold; opacity: 0.8; font-size: 12px;">x1</button>
                 </div>
 
-                <!-- Колонка 4: статусы врага -->
                 <div class="enemy-debuffs" style="flex: 0 0 20px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -113,7 +92,6 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <!-- Колонка 5: аватар противника -->
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
@@ -121,11 +99,11 @@ function showBattleScreen(battleData) {
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
                     </div>
-                    <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto; position: relative;">
+                    <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                         <div class="stat-text" id="enemyHpText">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
                     </div>
-                    <div class="stat-bar mana-bar" style="width: 100px; margin: 1px auto; position: relative;">
+                    <div class="stat-bar mana-bar" style="width: 100px; margin: 1px auto;">
                         <div class="stat-fill mana-fill" id="enemyMana" style="width:0%"></div>
                         <div class="stat-text" id="enemyManaText">0</div>
                     </div>
@@ -136,74 +114,38 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    const logContainer = document.getElementById('battleLog');
-    battleLog = BattleLog;
-    BattleLog.init(battleData, logContainer, (finishedData) => {
-        showBattleResult(finishedData);
-    });
+    BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
-    const speedBtn = document.getElementById('singleSpeedBtn');
-    speedBtn.addEventListener('click', () => {
+    document.getElementById('singleSpeedBtn').addEventListener('click', () => {
         const newSpeed = BattleLog.speed === 1 ? 2 : 1;
-        speedBtn.textContent = newSpeed === 1 ? 'x1' : 'x2';
+        document.getElementById('singleSpeedBtn').textContent = newSpeed === 1 ? 'x1' : 'x2';
         BattleLog.setSpeed(newSpeed);
     });
 
     let timeLeft = 45;
-    const timerEl = document.getElementById('battleTimer');
     const timer = setInterval(() => {
         timeLeft--;
-        timerEl.innerText = timeLeft;
+        document.getElementById('battleTimer').innerText = timeLeft;
         if (timeLeft <= 0) {
             clearInterval(timer);
             BattleLog.stop();
-            hideAnimations();
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
-            let winner;
-            if (playerPercent > enemyPercent) winner = 'player';
-            else if (enemyPercent > playerPercent) winner = 'enemy';
-            else winner = 'draw';
+            let winner = playerPercent > enemyPercent ? 'player' : (enemyPercent > playerPercent ? 'enemy' : 'draw');
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);
 }
 
-function hideAnimations() {
-    const heroAnim = document.getElementById('hero-animation');
-    const enemyAnim = document.getElementById('enemy-animation');
-    if (heroAnim) heroAnim.style.display = 'none';
-    if (enemyAnim) enemyAnim.style.display = 'none';
-}
-
-function applyDefeatEffect(side) {
-    const card = document.querySelector(`.${side}-card`);
-    if (card) {
-        card.classList.add('defeated');
-    }
-    if (side === 'hero') {
-        const manaBar = document.getElementById('heroMana');
-        if (manaBar) manaBar.style.width = '0%';
-        const manaText = document.getElementById('heroManaText');
-        if (manaText) manaText.innerText = '0';
-    } else if (side === 'enemy') {
-        const manaBar = document.getElementById('enemyMana');
-        if (manaBar) manaBar.style.width = '0%';
-        const manaText = document.getElementById('enemyManaText');
-        if (manaText) manaText.innerText = '0';
-    }
-}
-
-async function showBattleResult(battleData, timeOut = false) {
+async function showBattleResult(battleData) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
         updateTopBar();
     }
 
     const winner = battleData.result.winner;
-    const isVictory = (winner === 'player');
+    const isVictory = winner === 'player';
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
-
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
@@ -226,47 +168,31 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    const content = document.getElementById('content');
-    content.innerHTML = `
+    document.getElementById('content').innerHTML = `
         <div class="battle-result" style="padding: 10px;">
-            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
+            <h2 style="text-align:center;">${resultText}</h2>
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
             ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
-                <button class="btn" id="rematchBtn" style="flex: 1;">В бой</button>
-                <button class="btn" id="backBtn" style="flex: 1;">Назад</button>
+            <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
+                <button class="btn" id="rematchBtn">В бой</button>
+                <button class="btn" id="backBtn">Назад</button>
             </div>
-            
             <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
-                <button class="btn result-tab active" id="tabLog" style="flex: 1;">Лог боя</button>
-                <button class="btn result-tab" id="tabStats" style="flex: 1;">Статистика</button>
+                <button class="btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="btn result-tab" id="tabStats">Статистика</button>
             </div>
-            
-            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+            <div id="resultContent" style="max-height:300px; overflow-y:auto; background:#232833; padding:10px; border-radius:8px;">
                 ${battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
             </div>
         </div>
     `;
 
-    document.getElementById('rematchBtn').addEventListener('click', async () => {
-        if (battleLog && typeof battleLog.stop === 'function') battleLog.stop();
-        await refreshData();
-        startBattle();
+    document.getElementById('rematchBtn').addEventListener('click', () => { BattleLog.stop(); refreshData().then(startBattle); });
+    document.getElementById('backBtn').addEventListener('click', () => {
+        BattleLog.stop();
+        document.querySelectorAll('.menu-item').forEach(i => { i.style.pointerEvents = 'auto'; i.style.opacity = '1'; });
+        refreshData().then(() => showScreen('main'));
     });
 
-    document.getElementById('backBtn').addEventListener('click', async () => {
-        if (battleLog && typeof battleLog.stop === 'function') battleLog.stop();
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.pointerEvents = 'auto';
-            item.style.opacity = '1';
-        });
-        await refreshData();
-        showScreen('main');
-    });
-
-    if (leveledUp) {
-        await refreshData();
-        showLevelUpModal(userData.current_class);
-    }
+    if (leveledUp) refreshData().then(() => showLevelUpModal(userData.current_class));
 }

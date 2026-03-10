@@ -132,11 +132,6 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Стили (можно вынести в отдельный файл или оставить здесь)
-    const style = document.createElement('style');
-    style.innerHTML = ` /* все стили из предыдущих версий */ `;
-    document.head.appendChild(style);
-
     // Инициализируем лог
     const logContainer = document.getElementById('battleLog');
     BattleLog.init(battleData, logContainer, (finishedData) => {
@@ -170,6 +165,14 @@ function showBattleScreen(battleData) {
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);
+}
+
+// Добавляем недостающую функцию hideAnimations
+function hideAnimations() {
+    const heroAnim = document.getElementById('hero-animation');
+    const enemyAnim = document.getElementById('enemy-animation');
+    if (heroAnim) heroAnim.style.display = 'none';
+    if (enemyAnim) enemyAnim.style.display = 'none';
 }
 
 // ==================== ПОКАЗ РЕЗУЛЬТАТА БОЯ ====================

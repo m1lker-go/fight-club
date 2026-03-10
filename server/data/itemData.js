@@ -677,23 +677,23 @@ const itemNames = {
 
 const fixedBonuses = {
     common: {
-        atk: 1, def: 1, hp: 2, spd: 1,
+        atk: 1, def: 1, hp: 5, spd: 1,
         crit: 2, crit_dmg: 5, agi: 2, int: 2, vamp: 2, reflect: 2
     },
     uncommon: {
-        atk: 2, def: 2, hp: 4, spd: 2,
+        atk: 2, def: 2, hp: 10, spd: 2,
         crit: 4, crit_dmg: 10, agi: 4, int: 4, vamp: 4, reflect: 4
     },
     rare: {
-        atk: 3, def: 3, hp: 6, spd: 3,
+        atk: 3, def: 3, hp: 15, spd: 3,
         crit: 6, crit_dmg: 15, agi: 6, int: 6, vamp: 6, reflect: 6
     },
     epic: {
-        atk: 5, def: 5, hp: 10, spd: 4,
+        atk: 5, def: 5, hp: 25, spd: 4,
         crit: 10, crit_dmg: 25, agi: 10, int: 10, vamp: 10, reflect: 10
     },
     legendary: {
-        atk: 10, def: 10, hp: 20, spd: 5,
+        atk: 10, def: 10, hp: 35, spd: 5,
         crit: 15, crit_dmg: 40, agi: 15, int: 15, vamp: 15, reflect: 15
     }
 };

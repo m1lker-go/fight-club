@@ -6,7 +6,6 @@ const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
 
-// Импорт фраз
 const {
     attackPhrases,
     dodgePhrases,
@@ -26,14 +25,12 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
-// Базовые характеристики
 const baseStats = {
     warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
     assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// Пассивные бонусы подклассов
 const rolePassives = {
     guardian: { damageReduction: 10, blockChance: 20 },
     berserker: { rage: true },
@@ -97,7 +94,6 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // Классовые особенности
     if (classData.class === 'warrior') {
         stats.hp += Math.floor(stats.def / 5) * 5;
     }
@@ -109,12 +105,10 @@ function calculateStats(classData, inventory, subclass) {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
-    // Пассивные бонусы подклассов
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
-    // Классовые бонусы (умножение)
     if (classData.class === 'warrior') {
         stats.def = Math.min(70, stats.def * 1.5);
         stats.hp = Math.floor(stats.hp * 1.1);
@@ -137,7 +131,6 @@ function calculateStats(classData, inventory, subclass) {
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState) {
     let extraLogs = [];
 
-    // Иллюзионист
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist?.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
         if (defenderState.mirageCounter >= 4) {
@@ -149,7 +142,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Уворот
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
     const isDodge = Math.random() * 100 > hitChance;
     if (isDodge) {
@@ -161,12 +153,10 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     let damage = attackerStats.atk;
 
-    // Бонус мага
     if (attackerClass === 'mage') {
         damage += Math.floor(attackerStats.int / 5) * 2;
     }
 
-    // Берсерк
     let berserkerBonus = 0;
     if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
         const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);
@@ -174,7 +164,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         berserkerBonus = bonus;
     }
 
-    // Крит
     let isCrit = false;
     let critMultiplier = attackerStats.critDmg;
     if (attackerSubclass === 'assassin' && rolePassives.assassin.critMultiplier) {
@@ -185,28 +174,24 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage *= critMultiplier;
     }
 
-    // Защита криоманта
     if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer.physReduction) {
         damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
     }
 
-    // Защита цели
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
-    // Вампиризм
     let vampHeal = 0;
     if (attackerVamp > 0) {
         vampHeal = Math.floor(damage * attackerVamp / 100);
     }
 
-    // Отражение
     let reflectDamage = 0;
     if (defenderReflect > 0) {
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    // Накопление яда (venom_blade)
+    // Накопление яда
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
@@ -216,7 +201,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Накопление огня (pyromancer)
+    // Накопление огня
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
@@ -226,7 +211,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Накопление стаков заморозки (cryomancer)
+    // Накопление заморозки
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
@@ -245,7 +230,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Фраза атаки
     let attackPhrase;
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
@@ -510,13 +494,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     actionLog = attackResult.log;
                 }
 
-                // Сначала добавляем основное действие, потом стаки
+                // Сначала удар
                 messages.push(actionLog);
                 pushState();
 
+                // Потом накопление стаков
                 if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
                     attackResult.extraLogs.forEach(extra => messages.push(extra));
-                    pushState(); // обновляем состояние после стаков
+                    pushState();
                 }
 
                 if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
@@ -760,7 +745,6 @@ async function selectPvPOpponent(client, currentUserId, currentPosition, allPlay
     return candidates[randomIndex];
 }
 
-// Основной маршрут начала боя
 router.post('/start', async (req, res) => {
     const { tg_id } = req.body;
     const client = await pool.connect();

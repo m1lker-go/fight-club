@@ -184,6 +184,7 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
+        // Запускаем анимацию, только если это значимое действие
         const { target, anim } = this.getAnimationForAction(msg);
         if (anim) this.showAnimation(target, anim);
 
@@ -264,7 +265,7 @@ const BattleLog = {
             return { target, anim };
         }
 
-        // Заморозка – ТОЛЬКО начало и конец, НЕ каждый ход
+        // Заморозка – ТОЛЬКО ВХОД И ВЫХОД
         if (lower.includes('превращается в ледяную глыбу') || lower.includes('лёд тает') || lower.includes('освобождается')) {
             target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'frozenx.gif';

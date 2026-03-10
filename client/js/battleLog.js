@@ -16,16 +16,37 @@ const BattleLog = {
     enemyEffects: [],
 
     init(battleData, logContainer, onFinish) {
-        this.messages = battleData.result.messages || [];
-        this.states = battleData.result.states || [];
+        // Полный сброс перед новым боем
+        this.messages = [];
+        this.states = [];
         this.currentMsgIndex = 0;
         this.currentStateIndex = 0;
+        
+        if (this.interval) {
+            clearTimeout(this.interval);
+            this.interval = null;
+        }
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        if (this.finishTimeout) {
+            clearTimeout(this.finishTimeout);
+            this.finishTimeout = null;
+        }
+        
+        this.hideAnimations();
+        
+        if (this.logContainer) {
+            this.logContainer.innerHTML = '';
+        }
+
+        this.messages = battleData.result.messages || [];
+        this.states = battleData.result.states || [];
         this.logContainer = logContainer;
         this.battleData = battleData;
         this.onFinish = onFinish;
         this.speed = 1;
-
-        this.logContainer.innerHTML = '';
 
         if (this.states.length > 0) {
             this.applyState(this.states[0]);
@@ -183,7 +204,7 @@ const BattleLog = {
         let target = null;
         let anim = null;
 
-        const isPlayerAction = lower.includes(userData.username.toLowerCase());
+        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
 
         // Атаки
         const attackKeywords = [
@@ -232,20 +253,20 @@ const BattleLog = {
 
         // Урон от яда
         if (lower.includes('получает урона от яда') || lower.includes('яд разъедает')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
+            target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'poison.gif';
             return { target, anim };
         }
         // Урон от огня
         if (lower.includes('получает урона от огня') || lower.includes('огонь пожирает')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
+            target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'fire.gif';
             return { target, anim };
         }
 
-        // Заморозка – только начало и конец (не каждый ход)
+        // Заморозка – только начало и конец
         if (lower.includes('превращается в ледяную глыбу') || lower.includes('лёд тает') || lower.includes('освобождается')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
+            target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'frozenx.gif';
             return { target, anim };
         }

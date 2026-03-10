@@ -13,10 +13,16 @@ async function startBattle() {
             alert(data.error);
             return;
         }
+        if (!data.result || !data.result.turns) {
+            console.error('Invalid battle data:', data);
+            alert('Ошибка данных боя');
+            return;
+        }
         showBattleScreen(data);
     } catch (error) {
         console.error('Battle start error:', error);
         alert('Ошибка соединения с сервером');
+        return; // обязательно выходим
     }
 }
 
@@ -504,45 +510,43 @@ function showBattleScreen(battleData) {
         }
     }
 
-   // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
-let firstTurn = true;
-
-function playTurn() {
-    if (turnIndex >= turns.length) {
-        clearInterval(interval);
-        if (timer) clearInterval(timer);
-        if (finishTimeout) clearTimeout(finishTimeout);
-        finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
-        return;
-    }
-
-    // Обрабатываем все последовательные логи без паузы
-    let hasTurn = false;
-    while (turnIndex < turns.length && !hasTurn) {
-        const entry = turns[turnIndex];
-        const isLogEntry = entry.type === 'log';
-
-        if (isLogEntry) {
-            if (entry.action) {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
-                logEntry.innerHTML = entry.action;
-                logContainer.appendChild(logEntry);
-                logContainer.scrollTop = logContainer.scrollHeight;
-            }
-            turnIndex++;
-        } else {
-            hasTurn = true;
+    // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
+    function playTurn() {
+        if (turnIndex >= turns.length) {
+            clearInterval(interval);
+            if (timer) clearInterval(timer);
+            if (finishTimeout) clearTimeout(finishTimeout);
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
+            return;
         }
-    }
 
-    if (turnIndex >= turns.length) {
-        clearInterval(interval);
-        if (timer) clearInterval(timer);
-        if (finishTimeout) clearTimeout(finishTimeout);
-        finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
-        return;
-    }
+        // Обрабатываем все последовательные логи без паузы
+        let hasTurn = false;
+        while (turnIndex < turns.length && !hasTurn) {
+            const entry = turns[turnIndex];
+            const isLogEntry = entry.type === 'log';
+
+            if (isLogEntry) {
+                if (entry.action) {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.innerHTML = entry.action;
+                    logContainer.appendChild(logEntry);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+                turnIndex++;
+            } else {
+                hasTurn = true;
+            }
+        }
+
+        if (turnIndex >= turns.length) {
+            clearInterval(interval);
+            if (timer) clearInterval(timer);
+            if (finishTimeout) clearTimeout(finishTimeout);
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
+            return;
+        }
 
         // Обрабатываем полноценный ход
         const turn = turns[turnIndex];
@@ -683,12 +687,6 @@ function playTurn() {
         turnIndex++;
     }
 
-// --- Запуск с задержкой ---
-setTimeout(() => {
-    playTurn();
-    interval = setInterval(playTurn, 2500 / speed);
-}, 500);
-    
     // Управление скоростью и таймер
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
@@ -698,8 +696,11 @@ setTimeout(() => {
         interval = setInterval(playTurn, 2500 / speed);
     });
 
-    playTurn();
-    interval = setInterval(playTurn, 2500 / speed);
+    // Задержка перед первым ходом (0.5 сек)
+    setTimeout(() => {
+        playTurn();
+        interval = setInterval(playTurn, 2500 / speed);
+    }, 500);
 
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');

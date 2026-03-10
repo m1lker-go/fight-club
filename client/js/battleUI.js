@@ -22,7 +22,7 @@ async function startBattle() {
     } catch (error) {
         console.error('Battle start error:', error);
         alert('Ошибка соединения с сервером');
-        return; // обязательно выходим
+        return;
     }
 }
 

@@ -6,7 +6,7 @@ const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
 
-// Импорт фраз из отдельного файла
+// Импорт фраз
 const {
     attackPhrases,
     dodgePhrases,
@@ -26,14 +26,14 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
-// === БАЗОВЫЕ ХАРАКТЕРИСТИКИ ===
+// Базовые характеристики
 const baseStats = {
     warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
     assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// === ПАССИВНЫЕ БОНУСЫ ПОДКЛАССОВ ===
+// Пассивные бонусы подклассов
 const rolePassives = {
     guardian: { damageReduction: 10, blockChance: 20 },
     berserker: { rage: true },
@@ -353,35 +353,24 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     return { damage, heal, log, selfDamage, stateChanges };
 }
 
-function applyTurnStartEffects(attackerStats, defenderState, attackerName, defenderName, attackerSubclass, attackerState) {
-    let damageToDefender = 0;
-    let damageToSelf = 0;
-    let logEntries = [];
+function applyDotDamage(state, name) {
+    // Рассчитывает урон от яда и огня для одной цели, возвращает объект с уроном и логами
+    let totalDamage = 0;
+    let logs = [];
 
-    // Урон от яда
-    if (defenderState.poisonStacks && defenderState.poisonStacks > 0) {
-        const poisonDamage = defenderState.poisonStacks * 2;
-        damageToDefender += poisonDamage;
-        logEntries.push(poisonDamagePhrase.replace('%d', poisonDamage));
+    if (state.poisonStacks && state.poisonStacks > 0) {
+        const poisonDamage = state.poisonStacks * 2;
+        totalDamage += poisonDamage;
+        logs.push(poisonDamagePhrase.replace('%d', poisonDamage));
+        // Не сбрасываем стаки – они сбрасываются только ультимейтом
+    }
+    if (state.burnStacks && state.burnStacks > 0) {
+        const burnDamage = state.burnStacks * 2;
+        totalDamage += burnDamage;
+        logs.push(burnDamagePhrase.replace('%d', burnDamage));
     }
 
-    // Урон от огня
-    if (defenderState.burnStacks && defenderState.burnStacks > 0) {
-        const burnDamage = defenderState.burnStacks * 2;
-        damageToDefender += burnDamage;
-        logEntries.push(burnDamagePhrase.replace('%d', burnDamage));
-    }
-
-    // Урон берсерку
-    if (attackerSubclass === 'berserker' && attackerState.hp > 1) {
-        const rageDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
-        damageToSelf = Math.min(rageDamage, attackerState.hp - 1);
-        if (damageToSelf > 0) {
-            logEntries.push(selfDamagePhrase.replace('%s', attackerName).replace('%d', damageToSelf));
-        }
-    }
-
-    return { damageToDefender, damageToSelf, logEntries };
+    return { damage: totalDamage, logs };
 }
 
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
@@ -389,8 +378,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let enemyHp = enemyStats.hp;
     let playerMana = 0;
     let enemyMana = 0;
-    const log = [];          // для реального времени (дублирует turns, но можно использовать)
-    const turns = [];        // массив для воспроизведения после боя
+    const log = [];
+    const turns = [];
 
     let playerState = {
         poisonStacks: 0,
@@ -428,12 +417,215 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
     let maxTurns = 100;
     let t = 0;
+    let round = 0;
 
     while (playerHp > 0 && enemyHp > 0 && t < maxTurns) {
         t++;
-        // Создаём объект состояния хода (будет заполнен позже)
+        round++;
+        const roundStartState = {
+            playerHp,
+            enemyHp,
+            playerMana,
+            enemyMana,
+            playerFrozen: playerState.frozen,
+            enemyFrozen: enemyState.frozen,
+            playerShield: playerState.reflectBuff > 0 ? 1 : 0,
+            enemyShield: enemyState.reflectBuff > 0 ? 1 : 0,
+            playerPoisonStacks: playerState.poisonStacks,
+            playerBurnStacks: playerState.burnStacks,
+            playerFreezeStacks: playerState.freezeStacks,
+            enemyPoisonStacks: enemyState.poisonStacks,
+            enemyBurnStacks: enemyState.burnStacks,
+            enemyFreezeStacks: enemyState.freezeStacks
+        };
+
+        // --- ХОД ИГРОКА ---
+        if (turn === 'player') {
+            if (playerState.frozen > 0) {
+                const frozenLeft = playerState.frozen;
+                playerState.frozen--;
+                let msg;
+                if (playerState.frozen === 0) {
+                    msg = frozenEndPhrase.replace('%s', playerName);
+                } else {
+                    msg = frozenContinuePhrase.replace('%s', playerName).replace('%d', frozenLeft);
+                }
+                log.push(msg);
+                turns.push({ type: 'log', turn: 'player', action: msg });
+                // Игрок пропускает ход, стаки не накапливаются, mana не восстанавливается?
+                // Пока оставим без изменений: mana не восстанавливается в пропущенный ход.
+            } else {
+                playerState.hp = playerHp;
+                enemyState.hp = enemyHp;
+
+                playerMana = Math.min(100, playerMana + playerStats.manaRegen);
+                let actionLog = '';
+
+                if (playerMana >= 100) {
+                    const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
+                    if (skill.damage > 0) {
+                        enemyHp -= skill.damage;
+                        if (enemyHp < 0) enemyHp = 0;
+                    }
+                    if (skill.heal > 0) playerHp += skill.heal;
+                    if (skill.selfDamage > 0) {
+                        playerHp -= skill.selfDamage;
+                        if (playerHp < 0) playerHp = 0;
+                    }
+                    actionLog = skill.log;
+                    playerMana -= 100;
+                    if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
+                } else {
+                    const attackResult = performAttack(
+                        playerStats, enemyStats,
+                        playerStats.vamp + (playerState.vampBuff > 0 ? playerState.vampBonus : 0),
+                        enemyStats.reflect + (enemyState.reflectBuff > 0 ? enemyState.reflectBonus : 0),
+                        playerName, enemyName,
+                        playerClass, playerSubclass, enemySubclass,
+                        playerState, enemyState
+                    );
+                    if (attackResult.hit) {
+                        enemyHp -= attackResult.damage;
+                        if (enemyHp < 0) enemyHp = 0;
+                        playerHp += attackResult.vampHeal;
+                        playerHp -= attackResult.reflectDamage;
+                        if (playerHp < 0) playerHp = 0;
+                        actionLog = attackResult.log;
+                        if (attackResult.berserkerBonus > 0) {
+                            actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                        }
+                        if (attackResult.vampHeal > 0) {
+                            actionLog += ' ' + vampPhrase.replace('%s', playerName).replace('%d', attackResult.vampHeal);
+                        }
+                        if (attackResult.reflectDamage > 0) {
+                            actionLog += ' ' + reflectPhrase.replace('%s', enemyName).replace('%d', attackResult.reflectDamage).replace('%s', playerName);
+                        }
+                    } else {
+                        actionLog = attackResult.log;
+                    }
+                    // Добавляем extraLogs (накопление стаков) как отдельные логи
+                    if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                        attackResult.extraLogs.forEach(extra => {
+                            log.push(extra);
+                            turns.push({ type: 'log', turn: 'player', action: extra });
+                        });
+                    }
+                    if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+                }
+
+                // Лог основного действия игрока
+                log.push(actionLog);
+                turns.push({ type: 'log', turn: 'player', action: actionLog });
+
+                // Сохраняем состояние после хода игрока (для полноценного хода в массиве turns, но мы добавим его после обоих действий)
+                // Для простоты добавим полноценный ход после окончания раунда, а пока сохраним в turnState.
+            }
+        }
+
+        // --- ХОД ПРОТИВНИКА ---
+        // В текущей реализации порядок ходов фиксирован для всего боя, поэтому после хода игрока всегда ходит противник.
+        // Но если игрок заморожен, мы уже обработали это и перешли к ходу противника.
+        // Поэтому здесь просто обрабатываем ход противника, независимо от того, был ли заморожен игрок.
+
+        if (turn === 'enemy') {
+            if (enemyState.frozen > 0) {
+                const frozenLeft = enemyState.frozen;
+                enemyState.frozen--;
+                let msg;
+                if (enemyState.frozen === 0) {
+                    msg = frozenEndPhrase.replace('%s', enemyName);
+                } else {
+                    msg = frozenContinuePhrase.replace('%s', enemyName).replace('%d', frozenLeft);
+                }
+                log.push(msg);
+                turns.push({ type: 'log', turn: 'enemy', action: msg });
+            } else {
+                playerState.hp = playerHp;
+                enemyState.hp = enemyHp;
+
+                enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
+                let actionLog = '';
+
+                if (enemyMana >= 100) {
+                    const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
+                    if (skill.damage > 0) {
+                        playerHp -= skill.damage;
+                        if (playerHp < 0) playerHp = 0;
+                    }
+                    if (skill.heal > 0) enemyHp += skill.heal;
+                    if (skill.selfDamage > 0) {
+                        enemyHp -= skill.selfDamage;
+                        if (enemyHp < 0) enemyHp = 0;
+                    }
+                    actionLog = skill.log;
+                    enemyMana -= 100;
+                    if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
+                } else {
+                    const attackResult = performAttack(
+                        enemyStats, playerStats,
+                        enemyStats.vamp + (enemyState.vampBuff > 0 ? enemyState.vampBonus : 0),
+                        playerStats.reflect + (playerState.reflectBuff > 0 ? playerState.reflectBonus : 0),
+                        enemyName, playerName,
+                        enemyClass, enemySubclass, playerSubclass,
+                        enemyState, playerState
+                    );
+                    if (attackResult.hit) {
+                        playerHp -= attackResult.damage;
+                        if (playerHp < 0) playerHp = 0;
+                        enemyHp += attackResult.vampHeal;
+                        enemyHp -= attackResult.reflectDamage;
+                        if (enemyHp < 0) enemyHp = 0;
+                        actionLog = attackResult.log;
+                        if (attackResult.berserkerBonus > 0) {
+                            actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                        }
+                        if (attackResult.vampHeal > 0) {
+                            actionLog += ' ' + vampPhrase.replace('%s', enemyName).replace('%d', attackResult.vampHeal);
+                        }
+                        if (attackResult.reflectDamage > 0) {
+                            actionLog += ' ' + reflectPhrase.replace('%s', playerName).replace('%d', attackResult.reflectDamage).replace('%s', enemyName);
+                        }
+                    } else {
+                        actionLog = attackResult.log;
+                    }
+                    if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                        attackResult.extraLogs.forEach(extra => {
+                            log.push(extra);
+                            turns.push({ type: 'log', turn: 'enemy', action: extra });
+                        });
+                    }
+                    if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
+                }
+
+                log.push(actionLog);
+                turns.push({ type: 'log', turn: 'enemy', action: actionLog });
+            }
+        }
+
+        // --- КОНЕЦ РАУНДА: применяем урон от стаков на обе стороны ---
+        const playerDot = applyDotDamage(playerState, playerName);
+        const enemyDot = applyDotDamage(enemyState, enemyName);
+
+        if (playerDot.damage > 0) {
+            playerHp -= playerDot.damage;
+            if (playerHp < 0) playerHp = 0;
+            playerDot.logs.forEach(entry => {
+                log.push(entry);
+                turns.push({ type: 'log', turn: 'dot', action: entry });
+            });
+        }
+        if (enemyDot.damage > 0) {
+            enemyHp -= enemyDot.damage;
+            if (enemyHp < 0) enemyHp = 0;
+            enemyDot.logs.forEach(entry => {
+                log.push(entry);
+                turns.push({ type: 'log', turn: 'dot', action: entry });
+            });
+        }
+
+        // Добавляем полноценный ход (с типом 'turn') для клиента, содержащий состояние после раунда
         const turnState = {
-            turn,
+            turn: 'round', // можно указать round или оставить предыдущий turn? Для клиента лучше сохранить понятие хода, но мы уже добавили все логи. Добавим один объект с состоянием после раунда.
             playerHp,
             enemyHp,
             playerMana,
@@ -448,267 +640,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyPoisonStacks: enemyState.poisonStacks,
             enemyBurnStacks: enemyState.burnStacks,
             enemyFreezeStacks: enemyState.freezeStacks,
-            action: null,
-            extraLogs: []      // будем складывать сюда дополнительные логи этого хода
+            action: null // основное действие уже добавлено как лог
         };
+        turns.push({ type: 'turn', ...turnState });
 
-        if (turn === 'player') {
-            // --- Заморозка ---
-            if (playerState.frozen > 0) {
-                const frozenLeft = playerState.frozen;
-                playerState.frozen--;
-                let msg;
-                if (playerState.frozen === 0) {
-                    msg = frozenEndPhrase.replace('%s', playerName);
-                } else {
-                    msg = frozenContinuePhrase.replace('%s', playerName).replace('%d', frozenLeft);
-                }
-                log.push(msg);
-                turnState.action = msg;
-                // Добавляем в turns как отдельную запись с типом 'log' (чтобы клиент не путал с ходом)
-                turns.push({ type: 'log', turn: 'player', action: msg });
-                // Завершаем обработку этого хода (игрок пропускает)
-                turn = 'enemy';
-                continue;
-            }
+        // Проверка смерти после урона от стаков
+        if (playerHp <= 0 || enemyHp <= 0) break;
 
-            playerState.hp = playerHp;
-            enemyState.hp = enemyHp;
-
-            // --- Эффекты начала хода (яд, огонь) ---
-            const startEffects = applyTurnStartEffects(playerStats, enemyState, playerName, enemyName, playerSubclass, playerState);
-            if (startEffects.damageToDefender > 0) {
-                enemyHp -= startEffects.damageToDefender;
-                if (enemyHp < 0) enemyHp = 0;
-                startEffects.logEntries.forEach(entry => {
-                    log.push(entry);
-                    turnState.extraLogs.push(entry);
-                });
-            }
-            if (startEffects.damageToSelf > 0) {
-                playerHp -= startEffects.damageToSelf;
-                if (playerHp < 0) playerHp = 0;
-                startEffects.logEntries.forEach(entry => {
-                    log.push(entry);
-                    turnState.extraLogs.push(entry);
-                });
-            }
-
-            // --- Мана и действие ---
-            playerMana = Math.min(100, playerMana + playerStats.manaRegen);
-            let actionLog = '';
-
-            if (playerMana >= 100) {
-                const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
-                if (skill.damage > 0) {
-                    enemyHp -= skill.damage;
-                    if (enemyHp < 0) enemyHp = 0;
-                }
-                if (skill.heal > 0) playerHp += skill.heal;
-                if (skill.selfDamage > 0) {
-                    playerHp -= skill.selfDamage;
-                    if (playerHp < 0) playerHp = 0;
-                }
-                actionLog = skill.log;
-                playerMana -= 100;
-                if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
-            } else {
-                const attackResult = performAttack(
-                    playerStats, enemyStats,
-                    playerStats.vamp + (playerState.vampBuff > 0 ? playerState.vampBonus : 0),
-                    enemyStats.reflect + (enemyState.reflectBuff > 0 ? enemyState.reflectBonus : 0),
-                    playerName, enemyName,
-                    playerClass, playerSubclass, enemySubclass,
-                    playerState, enemyState
-                );
-                if (attackResult.hit) {
-                    enemyHp -= attackResult.damage;
-                    if (enemyHp < 0) enemyHp = 0;
-                    playerHp += attackResult.vampHeal;
-                    playerHp -= attackResult.reflectDamage;
-                    if (playerHp < 0) playerHp = 0;
-                    actionLog = attackResult.log;
-                    if (attackResult.berserkerBonus > 0) {
-                        actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-                    }
-                    if (attackResult.vampHeal > 0) {
-                        actionLog += ' ' + vampPhrase.replace('%s', playerName).replace('%d', attackResult.vampHeal);
-                    }
-                    if (attackResult.reflectDamage > 0) {
-                        actionLog += ' ' + reflectPhrase.replace('%s', enemyName).replace('%d', attackResult.reflectDamage).replace('%s', playerName);
-                    }
-                } else {
-                    actionLog = attackResult.log;
-                }
-                // Сохраняем дополнительные логи от атаки (накопление стаков)
-                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-                    attackResult.extraLogs.forEach(extra => {
-                        log.push(extra);
-                        turnState.extraLogs.push(extra);
-                    });
-                }
-                if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
-            }
-
-            // --- Добавляем все логи этого хода в turns как отдельные записи (с типом 'log') ---
-            turnState.extraLogs.forEach(extra => {
-                turns.push({ type: 'log', turn: 'player', action: extra });
-            });
-
-            // --- Основное действие ---
-            log.push(actionLog);
-            turnState.action = actionLog;
-
-            // Обновляем остальные поля turnState
-            turnState.playerHp = playerHp;
-            turnState.enemyHp = enemyHp;
-            turnState.playerMana = playerMana;
-            turnState.enemyMana = enemyMana;
-            turnState.playerPoisonStacks = playerState.poisonStacks;
-            turnState.playerBurnStacks = playerState.burnStacks;
-            turnState.playerFreezeStacks = playerState.freezeStacks;
-            turnState.enemyPoisonStacks = enemyState.poisonStacks;
-            turnState.enemyBurnStacks = enemyState.burnStacks;
-            turnState.enemyFreezeStacks = enemyState.freezeStacks;
-            turnState.playerFrozen = playerState.frozen;
-            turnState.enemyFrozen = enemyState.frozen;
-            turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
-            turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
-
-            // Добавляем полноценный ход (с типом 'turn')
-            turns.push({ type: 'turn', ...turnState });
-
-            if (enemyHp <= 0 || playerHp <= 0) break;
-
-            // Обновление баффов
-            if (playerState.reflectBuff > 0) playerState.reflectBuff--;
-            if (playerState.vampBuff > 0) playerState.vampBuff--;
-
-            turn = 'enemy';
-        } else {
-            // --- Ход врага (полностью симметрично) ---
-            if (enemyState.frozen > 0) {
-                const frozenLeft = enemyState.frozen;
-                enemyState.frozen--;
-                let msg;
-                if (enemyState.frozen === 0) {
-                    msg = frozenEndPhrase.replace('%s', enemyName);
-                } else {
-                    msg = frozenContinuePhrase.replace('%s', enemyName).replace('%d', frozenLeft);
-                }
-                log.push(msg);
-                turnState.action = msg;
-                turns.push({ type: 'log', turn: 'enemy', action: msg });
-                turn = 'player';
-                continue;
-            }
-
-            playerState.hp = playerHp;
-            enemyState.hp = enemyHp;
-
-            const startEffects = applyTurnStartEffects(enemyStats, playerState, enemyName, playerName, enemySubclass, enemyState);
-            if (startEffects.damageToDefender > 0) {
-                playerHp -= startEffects.damageToDefender;
-                if (playerHp < 0) playerHp = 0;
-                startEffects.logEntries.forEach(entry => {
-                    log.push(entry);
-                    turnState.extraLogs.push(entry);
-                });
-            }
-            if (startEffects.damageToSelf > 0) {
-                enemyHp -= startEffects.damageToSelf;
-                if (enemyHp < 0) enemyHp = 0;
-                startEffects.logEntries.forEach(entry => {
-                    log.push(entry);
-                    turnState.extraLogs.push(entry);
-                });
-            }
-
-            enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
-            let actionLog = '';
-
-            if (enemyMana >= 100) {
-                const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
-                if (skill.damage > 0) {
-                    playerHp -= skill.damage;
-                    if (playerHp < 0) playerHp = 0;
-                }
-                if (skill.heal > 0) enemyHp += skill.heal;
-                if (skill.selfDamage > 0) {
-                    enemyHp -= skill.selfDamage;
-                    if (enemyHp < 0) enemyHp = 0;
-                }
-                actionLog = skill.log;
-                enemyMana -= 100;
-                if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
-            } else {
-                const attackResult = performAttack(
-                    enemyStats, playerStats,
-                    enemyStats.vamp + (enemyState.vampBuff > 0 ? enemyState.vampBonus : 0),
-                    playerStats.reflect + (playerState.reflectBuff > 0 ? playerState.reflectBonus : 0),
-                    enemyName, playerName,
-                    enemyClass, enemySubclass, playerSubclass,
-                    enemyState, playerState
-                );
-                if (attackResult.hit) {
-                    playerHp -= attackResult.damage;
-                    if (playerHp < 0) playerHp = 0;
-                    enemyHp += attackResult.vampHeal;
-                    enemyHp -= attackResult.reflectDamage;
-                    if (enemyHp < 0) enemyHp = 0;
-                    actionLog = attackResult.log;
-                    if (attackResult.berserkerBonus > 0) {
-                        actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-                    }
-                    if (attackResult.vampHeal > 0) {
-                        actionLog += ' ' + vampPhrase.replace('%s', enemyName).replace('%d', attackResult.vampHeal);
-                    }
-                    if (attackResult.reflectDamage > 0) {
-                        actionLog += ' ' + reflectPhrase.replace('%s', playerName).replace('%d', attackResult.reflectDamage).replace('%s', enemyName);
-                    }
-                } else {
-                    actionLog = attackResult.log;
-                }
-                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-                    attackResult.extraLogs.forEach(extra => {
-                        log.push(extra);
-                        turnState.extraLogs.push(extra);
-                    });
-                }
-                if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
-            }
-
-            turnState.extraLogs.forEach(extra => {
-                turns.push({ type: 'log', turn: 'enemy', action: extra });
-            });
-
-            log.push(actionLog);
-            turnState.action = actionLog;
-
-            turnState.playerHp = playerHp;
-            turnState.enemyHp = enemyHp;
-            turnState.playerMana = playerMana;
-            turnState.enemyMana = enemyMana;
-            turnState.playerPoisonStacks = playerState.poisonStacks;
-            turnState.playerBurnStacks = playerState.burnStacks;
-            turnState.playerFreezeStacks = playerState.freezeStacks;
-            turnState.enemyPoisonStacks = enemyState.poisonStacks;
-            turnState.enemyBurnStacks = enemyState.burnStacks;
-            turnState.enemyFreezeStacks = enemyState.freezeStacks;
-            turnState.playerFrozen = playerState.frozen;
-            turnState.enemyFrozen = enemyState.frozen;
-            turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
-            turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
-
-            turns.push({ type: 'turn', ...turnState });
-
-            if (playerHp <= 0 || enemyHp <= 0) break;
-
-            if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
-            if (enemyState.vampBuff > 0) enemyState.vampBuff--;
-
-            turn = 'player';
-        }
+        // Переключение хода для следующего раунда (если нужно менять очерёдность – оставляем как есть)
+        turn = (turn === 'player') ? 'enemy' : 'player';
     }
 
     // Определение победителя

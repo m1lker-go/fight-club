@@ -201,11 +201,11 @@ const BattleLog = {
     },
 
     getAnimationForAction(action) {
-        const lower = action.toLowerCase();
-        let target = null;
-        let anim = null;
+    const lower = action.toLowerCase();
+    let target = null;
+    let anim = null;
 
-        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
+    const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
 
         // Атаки
         const attackKeywords = [
@@ -265,15 +265,22 @@ const BattleLog = {
             return { target, anim };
         }
 
-        // Заморозка – ТОЛЬКО ВХОД И ВЫХОД
-        if (lower.includes('превращается в ледяную глыбу') || lower.includes('лёд тает') || lower.includes('освобождается')) {
-            target = isPlayerAction ? 'hero' : 'enemy';
-            anim = 'frozenx.gif';
-            return { target, anim };
-        }
+        // ЗАМОРОЗКА – ТОЛЬКО ВХОД И ВЫХОД
+    // Сообщение о входе в заморозку: содержит "ЗАМОРОЖЕН"
+    if (lower.includes('заморожен')) {
+        target = isPlayerAction ? 'hero' : 'enemy';
+        anim = 'frozenx.gif';
+        return { target, anim };
+    }
+    // Сообщение о выходе из заморозки: содержит "освобождается"
+    if (lower.includes('освобождается')) {
+        target = isPlayerAction ? 'hero' : 'enemy';
+        anim = 'frozenx.gif';
+        return { target, anim };
+    }
 
-        return { target: null, anim: null };
-    },
+    return { target: null, anim: null };
+},
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

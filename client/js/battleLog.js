@@ -16,6 +16,7 @@ const BattleLog = {
     enemyEffects: [],
 
     init(battleData, logContainer, onFinish) {
+        // Сброс глобальных статусов
         window.playerFrozen = 0;
         window.enemyFrozen = 0;
         window.playerShield = 0;

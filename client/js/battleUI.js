@@ -767,46 +767,48 @@ async function showBattleResult(battleData, timeOut = false) {
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
     if (battleData.result.turns && Array.isArray(battleData.result.turns)) {
-        battleData.result.turns.forEach(turn => {
-            if (turn.turn === 'final') return;
-            const action = turn.action;
-            const isPlayerTurn = turn.turn === 'player';
-            const attackerStats = isPlayerTurn ? playerStats : enemyStats;
-            const defenderStats = isPlayerTurn ? enemyStats : playerStats;
+    battleData.result.turns.forEach(turn => {
+        if (turn.turn === 'final') return;
+        const action = turn.action;
+        if (!action) return; // добавить эту проверку!
 
-            const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
-            if (dmgMatch) {
-                const dmg = parseInt(dmgMatch[1]);
-                attackerStats.hits++;
-                attackerStats.totalDamage += dmg;
-                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                    attackerStats.crits++;
-                }
-            }
+        const isPlayerTurn = turn.turn === 'player';
+        const attackerStats = isPlayerTurn ? playerStats : enemyStats;
+        const defenderStats = isPlayerTurn ? enemyStats : playerStats;
 
-            const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
-            if (dodgeMatch) {
-                const dodgerName = dodgeMatch[1].trim();
-                if (dodgerName === userData.username) {
-                    playerStats.dodges++;
-                } else {
-                    enemyStats.dodges++;
-                }
+        const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
+        if (dmgMatch) {
+            const dmg = parseInt(dmgMatch[1]);
+            attackerStats.hits++;
+            attackerStats.totalDamage += dmg;
+            if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                attackerStats.crits++;
             }
+        }
 
-            const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
-            if (healMatch) {
-                const heal = parseInt(healMatch[1]);
-                attackerStats.heal += heal;
+        const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
+        if (dodgeMatch) {
+            const dodgerName = dodgeMatch[1].trim();
+            if (dodgerName === userData.username) {
+                playerStats.dodges++;
+            } else {
+                enemyStats.dodges++;
             }
+        }
 
-            const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
-            if (reflectMatch) {
-                const reflect = parseInt(reflectMatch[1]);
-                defenderStats.reflect += reflect;
-            }
-        });
-    }
+        const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
+        if (healMatch) {
+            const heal = parseInt(healMatch[1]);
+            attackerStats.heal += heal;
+        }
+
+        const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
+        if (reflectMatch) {
+            const reflect = parseInt(reflectMatch[1]);
+            defenderStats.reflect += reflect;
+        }
+    });
+}
 
     // Формируем лог из действий
     let logArray = battleData.result.turns

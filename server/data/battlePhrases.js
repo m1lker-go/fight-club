@@ -55,8 +55,8 @@ const burnStackPhrase = 'Огонь разгорается +1. Уровень г
 const freezeStackPhrase = '<span style="color:#3498db;">❄️ %s покрывается инеем! Накоплено льда: %d/3.</span>';
 
 // Урон от стаков в конце хода
-const poisonDamagePhrase = 'Яд наносит %d урона.';
-const burnDamagePhrase = 'Огонь наносит %d урона.';
+const poisonDamagePhrase = '<span style="color:#27ae60;">☠️ %s получает %d урона от яда.</span>';
+const burnDamagePhrase = '<span style="color:#e67e22;">🔥 %s получает %d урона от огня.</span>';
 
 // Заморозка
 const frozenPhrase = '<span style="color:#00aaff; font-weight:bold;">❄️❄️❄️ %s ЗАМОРОЖЕН! Пропускает следующий ход! ❄️❄️❄️</span>';

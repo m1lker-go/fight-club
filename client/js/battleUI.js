@@ -1,6 +1,14 @@
 // battleUI.js
 
+let battleLog = null; // ссылка на текущий экземпляр BattleLog (не обязательно, но для удобства)
+
 async function startBattle() {
+    // Останавливаем предыдущий бой, если он ещё идёт
+    if (battleLog && typeof battleLog.stop === 'function') {
+        battleLog.stop();
+        battleLog = null;
+    }
+
     try {
         const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
             method: 'POST',
@@ -123,7 +131,9 @@ function showBattleScreen(battleData) {
     `;
 
     const logContainer = document.getElementById('battleLog');
+    battleLog = BattleLog; // сохраняем ссылку на объект
     BattleLog.init(battleData, logContainer, (finishedData) => {
+        // После завершения боя показываем результат, передавая свежие данные
         showBattleResult(finishedData);
     });
 
@@ -193,9 +203,6 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    // Сохраняем лог последнего боя в глобальную переменную
-    window.lastBattleLog = battleData.result.messages || [];
-
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
@@ -214,19 +221,19 @@ async function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${window.lastBattleLog.map(m => `<div class="log-entry">${m}</div>`).join('')}
+                ${battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
             </div>
         </div>
     `;
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
-        if (typeof BattleLog !== 'undefined' && BattleLog.stop) BattleLog.stop();
+        if (battleLog && typeof battleLog.stop === 'function') battleLog.stop();
         await refreshData();
         startBattle();
     });
 
     document.getElementById('backBtn').addEventListener('click', async () => {
-        if (typeof BattleLog !== 'undefined' && BattleLog.stop) BattleLog.stop();
+        if (battleLog && typeof battleLog.stop === 'function') battleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';

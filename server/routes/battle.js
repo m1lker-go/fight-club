@@ -372,6 +372,11 @@ function applyDotDamage(state, name) {
 }
 
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
+    // Защита от undefined
+    if (!playerStats || !enemyStats) {
+        throw new Error('playerStats or enemyStats is undefined');
+    }
+
     let playerHp = playerStats.hp;
     let enemyHp = enemyStats.hp;
     let playerMana = 0;
@@ -404,7 +409,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         mirageCounter: 0
     };
 
-    // Функция для сохранения текущего состояния (HP, мана, стаки) в массив states
+    // Функция для сохранения текущего состояния
     function pushState() {
         states.push({
             playerHp,
@@ -659,7 +664,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         finalPhrase = drawPhrases[Math.floor(Math.random() * drawPhrases.length)];
     }
     messages.push(finalPhrase);
-    pushState(); // финальное состояние (может быть не нужно, но добавим)
+    pushState(); // финальное состояние
 
     return {
         winner,
@@ -673,13 +678,95 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 }
 
 // --- Вспомогательные функции для опыта, энергии и генерации бота ---
-function expNeeded(level) { return Math.floor(80 * Math.pow(level, 1.5)); }
-async function addExp(client, userId, className, expGain) { /* ... */ }
-function getCoinReward(streak) { /* ... */ }
-function getRatingChange(streak) { /* ... */ }
-async function rechargeEnergy(client, userId) { /* ... */ }
-async function getPlayerRatingPosition(client, userId) { /* ... */ }
-async function selectPvPOpponent(client, currentUserId, currentPosition, allPlayers) { /* ... */ }
+function expNeeded(level) {
+    return Math.floor(80 * Math.pow(level, 1.5));
+}
+
+async function addExp(client, userId, className, expGain) {
+    const classRes = await client.query(
+        'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+        [userId, className]
+    );
+    let { level, exp } = classRes.rows[0];
+    exp += expGain;
+    let leveledUp = false;
+    while (exp >= expNeeded(level)) {
+        exp -= expNeeded(level);
+        level++;
+        leveledUp = true;
+        await client.query(
+            'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
+            [userId, className]
+        );
+    }
+    await client.query(
+        'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
+        [level, exp, userId, className]
+    );
+    return leveledUp;
+}
+
+function getCoinReward(streak) {
+    if (streak >= 25) return 20;
+    if (streak >= 10) return 10;
+    if (streak >= 5) return 7;
+    return 5;
+}
+
+function getRatingChange(streak) {
+    if (streak >= 20) return 30;
+    if (streak >= 10) return 25;
+    if (streak >= 5) return 20;
+    return 15;
+}
+
+async function rechargeEnergy(client, userId) {
+    const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
+    if (user.rows.length === 0) return;
+    const last = new Date(user.rows[0].last_energy);
+    const now = new Date();
+    const diffMinutes = Math.floor((now - last) / (1000 * 60));
+    const intervals = Math.floor(diffMinutes / 15);
+    if (intervals > 0) {
+        const newEnergy = Math.min(20, user.rows[0].energy + intervals);
+        await client.query(
+            'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
+            [newEnergy, now, userId]
+        );
+    }
+}
+
+async function getPlayerRatingPosition(client, userId) {
+    const res = await client.query(`
+        SELECT id, rating FROM users 
+        WHERE (SELECT COUNT(*) FROM battles WHERE player1_id = id OR player2_id = id) > 0
+        ORDER BY rating DESC
+    `);
+    const players = res.rows;
+    return players.findIndex(p => p.id === userId);
+}
+
+async function selectPvPOpponent(client, currentUserId, currentPosition, allPlayers) {
+    const total = allPlayers.length;
+    const minPos = Math.max(0, currentPosition - 50);
+    const maxPos = Math.min(total - 1, currentPosition + 50);
+    const candidates = [];
+    for (let i = minPos; i <= maxPos; i++) {
+        if (allPlayers[i].id !== currentUserId) {
+            const recent = await client.query(
+                `SELECT 1 FROM users WHERE id = $1 AND last_pvp_opponent_id = $2 
+                 AND last_pvp_time > NOW() - INTERVAL '15 minutes'`,
+                [currentUserId, allPlayers[i].id]
+            );
+            if (recent.rowCount === 0) {
+                candidates.push(allPlayers[i]);
+            }
+        }
+    }
+    if (candidates.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    return candidates[randomIndex];
+}
 
 // Основной маршрут начала боя
 router.post('/start', async (req, res) => {
@@ -687,11 +774,177 @@ router.post('/start', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // ... (получение данных пользователя, проверка энергии, инвентаря) ...
-        const battleResult = simulateBattle(/* ... */);
-        // ... (начисление наград) ...
+
+        const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
+        if (user.rows.length === 0) throw new Error('User not found');
+        const userData = user.rows[0];
+
+        await rechargeEnergy(client, userData.id);
+
+        const energyResult = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
+        const currentEnergy = energyResult.rows[0].energy;
+        if (currentEnergy < 1) throw new Error('Недостаточно энергии');
+
+        const classData = await client.query(
+            'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
+            [userData.id, userData.current_class]
+        );
+        if (classData.rows.length === 0) throw new Error('Class data not found');
+
+        const inv = await client.query(
+            `SELECT id, name, type, rarity, class_restriction, owner_class,
+                    atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
+                    crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus
+             FROM inventory
+             WHERE user_id = $1 AND equipped = true`,
+            [userData.id]
+        );
+        const playerInventory = inv.rows;
+
+        const playerStats = calculateStats(classData.rows[0], playerInventory, userData.subclass);
+
+        const rand = Math.random();
+        let opponentData = null;
+
+        if (rand < 0.25) {
+            // 25% - КИБЕРКОТ
+            const cybercatLevel = Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1);
+            opponentData = generateBot(cybercatLevel, true);
+        } else if (rand < 0.70) {
+            // 45% - обычный бот
+            opponentData = generateBot(classData.rows[0].level, false);
+        } else {
+            // 30% - тень игрока (PvP)
+            try {
+                const playersRes = await client.query(`
+                    SELECT id, rating FROM users 
+                    WHERE (SELECT COUNT(*) FROM battles WHERE player1_id = id OR player2_id = id) > 0
+                    ORDER BY rating DESC
+                `);
+                const allPlayers = playersRes.rows;
+                const currentPos = allPlayers.findIndex(p => p.id === userData.id);
+                if (currentPos !== -1) {
+                    const opponent = await selectPvPOpponent(client, userData.id, currentPos, allPlayers);
+                    if (opponent) {
+                        const opponentUser = await client.query('SELECT * FROM users WHERE id = $1', [opponent.id]);
+                        const opponentUserId = opponentUser.rows[0].id;
+                        const powerRes = await client.query(`
+                            SELECT class, power FROM user_classes WHERE user_id = $1 ORDER BY power DESC LIMIT 1
+                        `, [opponentUserId]);
+                        if (powerRes.rows.length > 0) {
+                            const bestClass = powerRes.rows[0].class;
+                            await updatePlayerPower(client, opponentUserId, bestClass);
+                            const classDataRes = await client.query(
+                                'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
+                                [opponentUserId, bestClass]
+                            );
+                            const opponentClassData = classDataRes.rows[0];
+
+                            const subclassOptions = {
+                                warrior: ['guardian', 'berserker', 'knight'],
+                                assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+                                mage: ['pyromancer', 'cryomancer', 'illusionist']
+                            };
+                            const options = subclassOptions[bestClass] || subclassOptions.warrior;
+                            const randomSubclass = options[Math.floor(Math.random() * options.length)];
+
+                            const invRes = await client.query(`
+                                SELECT i.*, it.* FROM inventory i
+                                JOIN items it ON i.item_id = it.id
+                                WHERE i.user_id = $1 AND i.equipped = true AND it.owner_class = $2
+                            `, [opponentUserId, bestClass]);
+                            const opponentInventory = invRes.rows;
+                            const opponentStats = calculateStats(opponentClassData, opponentInventory, randomSubclass);
+                            opponentData = {
+                                id: opponentUserId,
+                                username: opponentUser.rows[0].username,
+                                avatar_id: opponentUser.rows[0].avatar_id,
+                                class: bestClass,
+                                subclass: randomSubclass,
+                                level: opponentClassData.level,
+                                stats: opponentStats
+                            };
+                            await client.query(
+                                `UPDATE users SET last_pvp_opponent_id = $1, last_pvp_time = NOW() WHERE id = $2`,
+                                [opponentUserId, userData.id]
+                            );
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error selecting PvP opponent:', e);
+            }
+            
+            // Если PvP не удался, создаём обычного бота как запасной вариант
+            if (!opponentData) {
+                opponentData = generateBot(classData.rows[0].level, false);
+            }
+        }
+
+        // Проверка, что opponentData и его stats существуют
+        if (!opponentData || !opponentData.stats) {
+            throw new Error('Failed to generate opponent');
+        }
+
+        const battleResult = simulateBattle(
+            playerStats,
+            opponentData.stats,
+            userData.current_class,
+            opponentData.class,
+            userData.username,
+            opponentData.username,
+            userData.subclass,
+            opponentData.subclass
+        );
+
+        let isVictory = false;
+        if (battleResult.winner === 'player') isVictory = true;
+        else if (battleResult.winner === 'enemy') isVictory = false;
+        else isVictory = false;
+
+        let expGain = isVictory ? 10 : 3;
+        let coinReward = 0;
+        let newStreak = userData.win_streak || 0;
+
+        let ratingChange = -15;
+        if (isVictory) {
+            newStreak++;
+            coinReward = getCoinReward(newStreak);
+            const ratingGain = getRatingChange(newStreak);
+            ratingChange = ratingGain;
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
+            await client.query('UPDATE users SET rating = rating + $1 WHERE id = $2', [ratingGain, userData.id]);
+            await client.query('UPDATE users SET season_rating = season_rating + $1 WHERE id = $2', [ratingGain, userData.id]);
+        } else {
+            newStreak = 0;
+            await client.query('UPDATE users SET rating = GREATEST(0, rating - 15) WHERE id = $1', [userData.id]);
+            await client.query('UPDATE users SET season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [userData.id]);
+        }
+       
+        await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
+
+        const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
+
+        if (leveledUp) {
+            await updatePlayerPower(client, userData.id, userData.current_class);
+        }
+
+        await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
+
+        await client.query('COMMIT');
+
+        const energyQuery = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
+        const updatedEnergy = energyQuery.rows[0].energy;
+
         res.json({
-            opponent: { /* ... */ },
+            opponent: {
+                username: opponentData.username,
+                avatar_id: opponentData.avatar_id,
+                class: opponentData.class,
+                subclass: opponentData.subclass,
+                level: opponentData.level,
+                is_cybercat: opponentData.is_cybercat || false
+            },
             result: {
                 winner: battleResult.winner,
                 playerHpRemain: battleResult.playerHpRemain,
@@ -701,10 +954,16 @@ router.post('/start', async (req, res) => {
                 messages: battleResult.messages,
                 states: battleResult.states
             },
-            reward: { /* ... */ },
-            ratingChange,
+            reward: {
+                exp: expGain,
+                coins: coinReward,
+                leveledUp,
+                newStreak
+            },
+            ratingChange: ratingChange,
             newEnergy: updatedEnergy
         });
+
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

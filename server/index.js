@@ -25,6 +25,50 @@ app.use('/avatars', require('./routes/avatars'));
 app.use('/forge', require('./routes/forge-server'));
 app.use('/rank', require('./routes/rank'));
 
+// Временный маршрут для обновления бонусов здоровья предметов
+app.get('/admin/update-item-hp', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        // Новые значения hp по редкостям
+        const newHp = { common: 5, uncommon: 10, rare: 15, epic: 25, legendary: 35 };
+
+        // Обновляем items
+        await client.query(`
+            UPDATE items 
+            SET hp_bonus = CASE rarity
+                WHEN 'common' THEN 5
+                WHEN 'uncommon' THEN 10
+                WHEN 'rare' THEN 15
+                WHEN 'epic' THEN 25
+                WHEN 'legendary' THEN 35
+                ELSE hp_bonus
+            END
+            WHERE hp_bonus > 0
+        `);
+
+        // Обновляем inventory
+        await client.query(`
+            UPDATE inventory 
+            SET hp_bonus = CASE rarity
+                WHEN 'common' THEN 5
+                WHEN 'uncommon' THEN 10
+                WHEN 'rare' THEN 15
+                WHEN 'epic' THEN 25
+                WHEN 'legendary' THEN 35
+                ELSE hp_bonus
+            END
+            WHERE hp_bonus > 0
+        `);
+
+        res.send('Бонусы здоровья предметов обновлены');
+    } catch (e) {
+        console.error(e);
+        res.status(500).send('Ошибка: ' + e.message);
+    } finally {
+        client.release();
+    }
+});
+
 // Webhook для Telegram
 app.post('/webhook', async (req, res) => {
     const { message } = req.body;

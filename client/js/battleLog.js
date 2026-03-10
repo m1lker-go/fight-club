@@ -1,4 +1,3 @@
-```javascript
 // battleLog.js
 
 const BattleLog = {
@@ -244,14 +243,11 @@ const BattleLog = {
             return { target, anim };
         }
 
-        // Заморозка
-        const freezeKeywords = ['превращается в ледяную глыбу', 'остаётся в ледяном плену', 'лёд тает', 'заморожен'];
-        for (let kw of freezeKeywords) {
-            if (lower.includes(kw)) {
-                target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
-                anim = 'frozenx.gif';
-                return { target, anim };
-            }
+        // Заморозка – только начало и конец (не каждый ход)
+        if (lower.includes('превращается в ледяную глыбу') || lower.includes('лёд тает') || lower.includes('освобождается')) {
+            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
+            anim = 'frozenx.gif';
+            return { target, anim };
         }
 
         return { target: null, anim: null };
@@ -294,4 +290,3 @@ const BattleLog = {
         this.hideAnimations();
     }
 };
-```

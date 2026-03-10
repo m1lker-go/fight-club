@@ -50,13 +50,13 @@ const reflectPhrase = '%s отражает <span style="color:#e74c3c;">%d</span
 
 // ========== ФРАЗЫ ДЛЯ СТАКОВ ==========
 // Накопление стаков
-const poisonStackPhrase = '<span style="color:#27ae60;">☠️ %s отравлен! Яд накапливается (+%d стак, всего %d).</span>';
-const burnStackPhrase = '<span style="color:#e67e22;">🔥 %s горит! Пламя усиливается (+%d стак, всего %d).</span>';
+const poisonStackPhrase = 'Яд накапливается +1. Уровень яда %d.';
+const burnStackPhrase = 'Огонь разгорается +1. Уровень горения %d.';
 const freezeStackPhrase = '<span style="color:#3498db;">❄️ %s покрывается инеем! Накоплено льда: %d/3.</span>';
 
 // Урон от стаков в конце хода
-const poisonDamagePhrase = '<span style="color:#27ae60;">☠️ Яд разъедает %s, нанося %d урона.</span>';
-const burnDamagePhrase = '<span style="color:#e67e22;">🔥 Огонь пожирает %s, нанося %d урона.</span>';
+const poisonDamagePhrase = 'Яд наносит %d урона.';
+const burnDamagePhrase = 'Огонь наносит %d урона.';
 
 // Заморозка
 const frozenPhrase = '<span style="color:#00aaff; font-weight:bold;">❄️❄️❄️ %s ЗАМОРОЖЕН! Пропускает следующий ход! ❄️❄️❄️</span>';

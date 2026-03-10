@@ -62,12 +62,7 @@ const BattleLog = {
         const enemyAnim = document.getElementById('enemy-animation');
         if (heroAnim) heroAnim.style.display = 'none';
         if (enemyAnim) enemyAnim.style.display = 'none';
-        // также скрываем оверлеи заморозки
-        const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
-        const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
-        if (heroFrozen) heroFrozen.classList.remove('active');
-        if (enemyFrozen) enemyFrozen.classList.remove('active');
-    },
+      },
 
     applyState(state) {
         const heroHpText = document.getElementById('heroHpText');
@@ -266,17 +261,7 @@ const BattleLog = {
             target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'fire.gif';
             return { target, anim };
-        }
-
-        // ЗАМОРОЗКА – ТОЛЬКО ВХОД (замораживает) и выход
-        if (lower.includes('замораживая') || lower.includes('заморожен') || lower.includes('освобождается')) {
-            target = isPlayerAction ? 'hero' : 'enemy';
-            anim = 'frozenx.gif';
-            return { target, anim };
-        }
-
-        return { target: null, anim: null };
-    },
+        },
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

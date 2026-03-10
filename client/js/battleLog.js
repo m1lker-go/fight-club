@@ -264,7 +264,7 @@ const BattleLog = {
             return { target, anim };
         }
 
-        // Заморозка – только начало и конец
+        // Заморозка – ТОЛЬКО начало и конец, НЕ каждый ход
         if (lower.includes('превращается в ледяную глыбу') || lower.includes('лёд тает') || lower.includes('освобождается')) {
             target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'frozenx.gif';

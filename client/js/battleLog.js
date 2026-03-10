@@ -16,12 +16,11 @@ const BattleLog = {
     enemyEffects: [],
 
     init(battleData, logContainer, onFinish) {
-        // Полный сброс перед новым боем
         this.messages = [];
         this.states = [];
         this.currentMsgIndex = 0;
         this.currentStateIndex = 0;
-        
+
         if (this.interval) {
             clearTimeout(this.interval);
             this.interval = null;
@@ -34,9 +33,9 @@ const BattleLog = {
             clearTimeout(this.finishTimeout);
             this.finishTimeout = null;
         }
-        
+
         this.hideAnimations();
-        
+
         if (this.logContainer) {
             this.logContainer.innerHTML = '';
         }
@@ -184,7 +183,6 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        // Запускаем анимацию, только если это значимое действие
         const { target, anim } = this.getAnimationForAction(msg);
         if (anim) this.showAnimation(target, anim);
 
@@ -201,11 +199,11 @@ const BattleLog = {
     },
 
     getAnimationForAction(action) {
-    const lower = action.toLowerCase();
-    let target = null;
-    let anim = null;
+        const lower = action.toLowerCase();
+        let target = null;
+        let anim = null;
 
-    const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
+        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
 
         // Атаки
         const attackKeywords = [
@@ -265,22 +263,15 @@ const BattleLog = {
             return { target, anim };
         }
 
-        // ЗАМОРОЗКА – ТОЛЬКО ВХОД И ВЫХОД
-    // Сообщение о входе в заморозку: содержит "ЗАМОРОЖЕН"
-    if (lower.includes('заморожен')) {
-        target = isPlayerAction ? 'hero' : 'enemy';
-        anim = 'frozenx.gif';
-        return { target, anim };
-    }
-    // Сообщение о выходе из заморозки: содержит "освобождается"
-    if (lower.includes('освобождается')) {
-        target = isPlayerAction ? 'hero' : 'enemy';
-        anim = 'frozenx.gif';
-        return { target, anim };
-    }
+        // ЗАМОРОЗКА – только при входе (ЗАМОРОЖЕН) и выходе (освобождается)
+        if (lower.includes('заморожен') || lower.includes('освобождается')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'frozenx.gif';
+            return { target, anim };
+        }
 
-    return { target: null, anim: null };
-},
+        return { target: null, anim: null };
+    },
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

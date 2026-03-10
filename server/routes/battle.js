@@ -354,20 +354,18 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
 }
 
 function applyDotDamage(state, name) {
-    // Рассчитывает урон от яда и огня для одной цели, возвращает объект с уроном и логами
     let totalDamage = 0;
     let logs = [];
 
     if (state.poisonStacks && state.poisonStacks > 0) {
         const poisonDamage = state.poisonStacks * 2;
         totalDamage += poisonDamage;
-        logs.push(poisonDamagePhrase.replace('%d', poisonDamage));
-        // Не сбрасываем стаки – они сбрасываются только ультимейтом
+        logs.push(poisonDamagePhrase.replace('%s', name).replace('%d', poisonDamage));
     }
     if (state.burnStacks && state.burnStacks > 0) {
         const burnDamage = state.burnStacks * 2;
         totalDamage += burnDamage;
-        logs.push(burnDamagePhrase.replace('%d', burnDamage));
+        logs.push(burnDamagePhrase.replace('%s', name).replace('%d', burnDamage));
     }
 
     return { damage: totalDamage, logs };
@@ -380,7 +378,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let enemyMana = 0;
     const log = [];
     const turns = [];
-
+const playerDot = applyDotDamage(playerState, playerName);
+const enemyDot = applyDotDamage(enemyState, enemyName);
+    
     let playerState = {
         poisonStacks: 0,
         burnStacks: 0,

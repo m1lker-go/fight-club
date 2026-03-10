@@ -1,311 +1,250 @@
-// battleLog.js
+// battleUI.js
 
-const BattleLog = {
-    messages: [],
-    states: [],
-    currentMsgIndex: 0,
-    currentStateIndex: 0,
-    logContainer: null,
-    speed: 1,
-    interval: null,
-    timer: null,
-    finishTimeout: null,
-    battleData: null,
-    onFinish: null,
-    playerEffects: [],
-    enemyEffects: [],
+let battleLog = null;
 
-    init(battleData, logContainer, onFinish) {
-        window.playerFrozen = 0;
-        window.enemyFrozen = 0;
-        window.playerShield = 0;
-        window.enemyShield = 0;
-        window.playerFreezeStacks = 0;
-        window.enemyFreezeStacks = 0;
-        window.playerPoisonStacks = 0;
-        window.enemyPoisonStacks = 0;
-        window.playerBurnStacks = 0;
-        window.enemyBurnStacks = 0;
+async function startBattle() {
+    if (battleLog && typeof battleLog.stop === 'function') {
+        battleLog.stop();
+        battleLog = null;
+    }
 
-        this.messages = [];
-        this.states = [];
-        this.currentMsgIndex = 0;
-        this.currentStateIndex = 0;
+    try {
+        const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id })
+        });
 
-        if (this.interval) {
-            clearTimeout(this.interval);
-            this.interval = null;
-        }
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
-        if (this.finishTimeout) {
-            clearTimeout(this.finishTimeout);
-            this.finishTimeout = null;
-        }
-
-        this.hideAnimations();
-
-        if (this.logContainer) {
-            this.logContainer.innerHTML = '';
-        }
-
-        this.messages = battleData.result.messages || [];
-        this.states = battleData.result.states || [];
-        this.logContainer = logContainer;
-        this.battleData = battleData;
-        this.onFinish = onFinish;
-        this.speed = 1;
-
-        if (this.states.length > 0) {
-            this.applyState(this.states[0]);
-            this.currentStateIndex = 1;
-        }
-
-        setTimeout(() => {
-            this.playNext();
-        }, 500);
-    },
-
-    hideAnimations() {
-        const heroAnim = document.getElementById('hero-animation');
-        const enemyAnim = document.getElementById('enemy-animation');
-        if (heroAnim) heroAnim.style.display = 'none';
-        if (enemyAnim) enemyAnim.style.display = 'none';
-    },
-
-    applyState(state) {
-        const heroHpText = document.getElementById('heroHpText');
-        const enemyHpText = document.getElementById('enemyHpText');
-        const heroHpBar = document.getElementById('heroHp');
-        const enemyHpBar = document.getElementById('enemyHp');
-
-        if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
-        if (enemyHpText) enemyHpText.innerText = `${state.enemyHp}/${this.battleData.result.enemyMaxHp}`;
-        if (heroHpBar) this.setBarWidth('heroHp', (state.playerHp / this.battleData.result.playerMaxHp) * 100);
-        if (enemyHpBar) this.setBarWidth('enemyHp', (state.enemyHp / this.battleData.result.enemyMaxHp) * 100);
-
-        if (state.playerMana !== undefined) {
-            document.getElementById('heroMana').style.width = (state.playerMana / 100) * 100 + '%';
-            document.getElementById('heroManaText').innerText = state.playerMana;
-        }
-        if (state.enemyMana !== undefined) {
-            document.getElementById('enemyMana').style.width = (state.enemyMana / 100) * 100 + '%';
-            document.getElementById('enemyManaText').innerText = state.enemyMana;
-        }
-
-        window.playerFrozen = state.playerFrozen || 0;
-        window.enemyFrozen = state.enemyFrozen || 0;
-        window.playerShield = state.playerShield || 0;
-        window.enemyShield = state.enemyShield || 0;
-        window.playerFreezeStacks = state.playerFreezeStacks || 0;
-        window.enemyFreezeStacks = state.enemyFreezeStacks || 0;
-        window.playerPoisonStacks = state.playerPoisonStacks || 0;
-        window.enemyPoisonStacks = state.enemyPoisonStacks || 0;
-        window.playerBurnStacks = state.playerBurnStacks || 0;
-        window.enemyBurnStacks = state.enemyBurnStacks || 0;
-
-        this.updateAllEffects();
-    },
-
-    setBarWidth(barId, percent) {
-        const bar = document.getElementById(barId);
-        if (bar) bar.style.width = percent + '%';
-    },
-
-    buildEffectsList(side) {
-        const effects = [];
-        if (side === 'player') {
-            if (window.playerFrozen > 0) {
-                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            } else {
-                for (let i = 0; i < (window.playerFreezeStacks || 0); i++) {
-                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-                }
-            }
-            if (window.playerPoisonStacks > 0) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
-            for (let i = 0; i < (window.playerBurnStacks || 0); i++) {
-                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-            }
-            if (window.playerShield) {
-                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-            }
-        } else {
-            if (window.enemyFrozen > 0) {
-                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            } else {
-                for (let i = 0; i < (window.enemyFreezeStacks || 0); i++) {
-                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-                }
-            }
-            if (window.enemyPoisonStacks > 0) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
-            for (let i = 0; i < (window.enemyBurnStacks || 0); i++) {
-                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-            }
-            if (window.enemyShield) {
-                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-            }
-        }
-        return effects;
-    },
-
-    renderEffects(side) {
-        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-        const effects = side === 'player' ? this.playerEffects : this.enemyEffects;
-        slots.forEach(slot => slot.innerHTML = '');
-        for (let i = 0; i < Math.min(effects.length, 5); i++) {
-            const effect = effects[i];
-            const slot = slots[i];
-            if (!slot) continue;
-            const img = document.createElement('img');
-            img.src = effect.icon;
-            img.alt = effect.type;
-            slot.appendChild(img);
-        }
-    },
-
-    updateAllEffects() {
-        this.playerEffects = this.buildEffectsList('player');
-        this.enemyEffects = this.buildEffectsList('enemy');
-        this.renderEffects('player');
-        this.renderEffects('enemy');
-    },
-
-    playNext() {
-        if (this.currentMsgIndex >= this.messages.length) {
-            this.finish();
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Server error:', res.status, errorText);
+            alert(`Ошибка сервера: ${res.status} — ${errorText || 'нет описания'}`);
             return;
         }
 
-        const msg = this.messages[this.currentMsgIndex];
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = msg;
-        this.logContainer.appendChild(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
-        const { target, anim } = this.getAnimationForAction(msg);
-        if (anim) this.showAnimation(target, anim);
-
-        this.currentMsgIndex++;
-
-        if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
-            this.currentStateIndex++;
+        const data = await res.json();
+        if (data.error) {
+            alert(data.error);
+            return;
         }
-
-        this.interval = setTimeout(() => {
-            this.playNext();
-        }, 1500 / this.speed);
-    },
-
-    getAnimationForAction(action) {
-        const lower = action.toLowerCase();
-        let target = null;
-        let anim = null;
-
-        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
-
-        // Атаки
-        const attackKeywords = [
-            'сокрушает', 'обрушивает топор', 'пробивает броню', 'яростно атакует', 'бьёт щитом',
-            'вонзает кинжал', 'бесшумно подкрадывается', 'отравляет клинок', 'делает выпад',
-            'исчезает в тени', 'выпускает огненный шар', 'читает заклинание', 'призывает молнию',
-            'создаёт магический взрыв', 'проклинает'
-        ];
-        for (let kw of attackKeywords) {
-            if (lower.includes(kw)) {
-                target = isPlayerAction ? 'enemy' : 'hero';
-                anim = 'shot.gif';
-                return { target, anim };
-            }
+        if (!data.result || !data.result.messages || !data.result.states) {
+            console.error('Invalid battle data:', data);
+            alert('Ошибка данных боя');
+            return;
         }
-
-        // Ультимейты
-        const ultKeywords = {
-            'несокрушимость': 'hill.gif',
-            'кровопускание': 'crit.gif',
-            'щит правосудия': 'shield.gif',
-            'смертельный удар': 'ultimate.gif',
-            'ядовитая волна': 'poison.gif',
-            'кровавая жатва': 'crit.gif',
-            'огненный шторм': 'fire.gif',
-            'вечная зима': 'ice.gif',
-            'зазеркалье': 'chara.gif'
-        };
-        for (let [kw, a] of Object.entries(ultKeywords)) {
-            if (lower.includes(kw)) {
-                target = isPlayerAction ? 'enemy' : 'hero';
-                anim = a;
-                return { target, anim };
-            }
-        }
-
-        // Уклонение
-        const dodgeKeywords = ['уклоняется', 'уворачивается', 'использует неуловимый манёвр'];
-        for (let kw of dodgeKeywords) {
-            if (lower.includes(kw)) {
-                target = isPlayerAction ? 'hero' : 'enemy';
-                anim = 'missx.gif';
-                return { target, anim };
-            }
-        }
-
-        // Урон от яда
-        if (lower.includes('получает урона от яда') || lower.includes('яд разъедает')) {
-            target = isPlayerAction ? 'hero' : 'enemy';
-            anim = 'poison.gif';
-            return { target, anim };
-        }
-        // Урон от огня
-        if (lower.includes('получает урона от огня') || lower.includes('огонь пожирает')) {
-            target = isPlayerAction ? 'hero' : 'enemy';
-            anim = 'fire.gif';
-            return { target, anim };
-        }
-
-        return { target: null, anim: null };
-    },
-
-    showAnimation(target, animationFile) {
-        this.hideAnimations();
-
-        const container = document.getElementById(target + '-animation');
-        if (!container) return;
-        const img = document.createElement('img');
-        img.src = `/assets/fight/${animationFile}`;
-        container.innerHTML = '';
-        container.appendChild(img);
-        container.style.display = 'flex';
-
-        setTimeout(() => {
-            container.style.display = 'none';
-            container.innerHTML = '';
-        }, 1000);
-    },
-
-    setSpeed(newSpeed) {
-        this.speed = newSpeed;
-        clearTimeout(this.interval);
-        this.playNext();
-    },
-
-    finish() {
-        clearTimeout(this.interval);
-        if (this.timer) clearInterval(this.timer);
-        if (this.finishTimeout) clearTimeout(this.finishTimeout);
-        this.hideAnimations();
-        if (this.onFinish) this.onFinish(this.battleData);
-    },
-
-    stop() {
-        clearTimeout(this.interval);
-        clearInterval(this.timer);
-        this.hideAnimations();
+        showBattleScreen(data);
+    } catch (error) {
+        console.error('Battle start error:', error);
+        alert('Ошибка соединения с сервером');
     }
-};
+}
+
+function showBattleScreen(battleData) {
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'none';
+        item.style.opacity = '0.5';
+    });
+
+    const getRoleNameRu = (role) => {
+        const roles = {
+            guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
+            assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
+            pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
+        };
+        return roles[role] || role;
+    };
+
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="battle-screen">
+            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                <div style="text-align: left;">
+                    <div>${userData.username}</div>
+                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
+                </div>
+                <div style="text-align: right;">
+                    <div>${battleData.opponent.username}</div>
+                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
+                </div>
+            </div>
+
+            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 1px; padding: 5px;">
+                <!-- Колонка 1: аватар игрока -->
+                <div class="hero-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                    </div>
+                    <div class="stat-bar hp-bar" style="width: 120px; margin: 5px auto; position: relative;">
+                        <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
+                        <div class="stat-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
+                    </div>
+                    <div class="stat-bar mana-bar" style="width: 120px; margin: 2px auto; position: relative;">
+                        <div class="stat-fill mana-fill" id="heroMana" style="width:0%"></div>
+                        <div class="stat-text" id="heroManaText">0</div>
+                    </div>
+                </div>
+
+                <!-- Колонка 2: статусы игрока -->
+                <div class="player-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
+                    <div class="debuff-slot" data-side="player" data-slot="0"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="1"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="2"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="3"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="4"></div>
+                </div>
+
+                <!-- Колонка 3: центральная -->
+                <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
+                    <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
+                    <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 4px 10px; border-radius: 12px; cursor: pointer; font-weight: bold; opacity: 0.8; font-size: 12px;">x1</button>
+                </div>
+
+                <!-- Колонка 4: статусы врага -->
+                <div class="enemy-debuffs" style="flex: 0 0 25px; display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;">
+                    <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="2"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="3"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
+                </div>
+
+                <!-- Колонка 5: аватар противника -->
+                <div class="enemy-card" style="flex: 0 0 160px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 120px; height: 180px; margin: 0 auto;">
+                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                    </div>
+                    <div class="stat-bar hp-bar" style="width: 120px; margin: 5px auto; position: relative;">
+                        <div class="stat-fill hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
+                        <div class="stat-text" id="enemyHpText">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
+                    </div>
+                    <div class="stat-bar mana-bar" style="width: 120px; margin: 2px auto; position: relative;">
+                        <div class="stat-fill mana-fill" id="enemyMana" style="width:0%"></div>
+                        <div class="stat-text" id="enemyManaText">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
+        </div>
+    `;
+
+    const logContainer = document.getElementById('battleLog');
+    battleLog = BattleLog;
+    BattleLog.init(battleData, logContainer, (finishedData) => {
+        showBattleResult(finishedData);
+    });
+
+    const speedBtn = document.getElementById('singleSpeedBtn');
+    speedBtn.addEventListener('click', () => {
+        const newSpeed = BattleLog.speed === 1 ? 2 : 1;
+        speedBtn.textContent = newSpeed === 1 ? 'x1' : 'x2';
+        BattleLog.setSpeed(newSpeed);
+    });
+
+    let timeLeft = 45;
+    const timerEl = document.getElementById('battleTimer');
+    const timer = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            BattleLog.stop();
+            hideAnimations();
+            const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
+            const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
+            let winner;
+            if (playerPercent > enemyPercent) winner = 'player';
+            else if (enemyPercent > playerPercent) winner = 'enemy';
+            else winner = 'draw';
+            showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
+        }
+    }, 1000);
+}
+
+function hideAnimations() {
+    const heroAnim = document.getElementById('hero-animation');
+    const enemyAnim = document.getElementById('enemy-animation');
+    if (heroAnim) heroAnim.style.display = 'none';
+    if (enemyAnim) enemyAnim.style.display = 'none';
+}
+
+async function showBattleResult(battleData, timeOut = false) {
+    if (battleData.newEnergy !== undefined) {
+        userData.energy = battleData.newEnergy;
+        updateTopBar();
+    }
+
+    const winner = battleData.result.winner;
+    const isVictory = (winner === 'player');
+    const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
+
+    const expGain = battleData.reward?.exp || 0;
+    const coinGain = battleData.reward?.coins || 0;
+    const leveledUp = battleData.reward?.leveledUp || false;
+    const newStreak = battleData.reward?.newStreak || 0;
+    const ratingChange = battleData.ratingChange || 0;
+
+    try {
+        await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, class_played: userData.current_class, is_victory: isVictory })
+        });
+    } catch (err) { console.error(err); }
+
+    try {
+        await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
+        });
+    } catch (err) { console.error(err); }
+
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="battle-result" style="padding: 10px;">
+            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
+            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
+            ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                <button class="btn" id="rematchBtn" style="flex: 1;">В бой</button>
+                <button class="btn" id="backBtn" style="flex: 1;">Назад</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
+                <button class="btn result-tab active" id="tabLog" style="flex: 1;">Лог боя</button>
+                <button class="btn result-tab" id="tabStats" style="flex: 1;">Статистика</button>
+            </div>
+            
+            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+                ${battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
+            </div>
+        </div>
+    `;
+
+    document.getElementById('rematchBtn').addEventListener('click', async () => {
+        if (battleLog && typeof battleLog.stop === 'function') battleLog.stop();
+        await refreshData();
+        startBattle();
+    });
+
+    document.getElementById('backBtn').addEventListener('click', async () => {
+        if (battleLog && typeof battleLog.stop === 'function') battleLog.stop();
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
+        await refreshData();
+        showScreen('main');
+    });
+
+    if (leveledUp) {
+        await refreshData();
+        showLevelUpModal(userData.current_class);
+    }
+}

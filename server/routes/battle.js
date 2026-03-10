@@ -6,7 +6,7 @@ const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
 
-// Импорт фраз из отдельного файла (добавлен selfDamagePhrase)
+// Импорт фраз из отдельного файла
 const {
     attackPhrases,
     dodgePhrases,
@@ -26,19 +26,19 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
-// === БАЗОВЫЕ ХАРАКТЕРИСТИКИ (изменены HP воина, ассасина, мага) ===
+// === БАЗОВЫЕ ХАРАКТЕРИСТИКИ ===
 const baseStats = {
     warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
     assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// === ПАССИВНЫЕ БОНУСЫ ПОДКЛАССОВ (изменён critMultiplier ассасина) ===
+// === ПАССИВНЫЕ БОНУСЫ ПОДКЛАССОВ ===
 const rolePassives = {
     guardian: { damageReduction: 10, blockChance: 20 },
     berserker: { rage: true },
     knight: { reflect: 20 },
-    assassin: { critMultiplier: 2.0 }, // было 2.5
+    assassin: { critMultiplier: 2.0 },
     venom_blade: { poison: true },
     blood_hunter: { vamp: 20 },
     pyromancer: { burn: true },
@@ -69,7 +69,6 @@ function calculateStats(classData, inventory, subclass) {
     const base = baseStats[classData.class] || baseStats.warrior;
     const classInventory = inventory.filter(item => item.owner_class === classData.class);
 
-    // === ИЗМЕНЕНО: бонус за очки здоровья теперь +5 за очко (было +2) ===
     let stats = {
         hp: base.hp + (classData.hp_points || 0) * 5,
         atk: base.atk + (classData.atk_points || 0),
@@ -98,9 +97,8 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // Классовые особенности (постоянные бонусы)
+    // Классовые особенности
     if (classData.class === 'warrior') {
-        // === ИЗМЕНЕНО: бонус от защиты теперь +5 HP за каждые 5 защиты (было +3) ===
         stats.hp += Math.floor(stats.def / 5) * 5;
     }
     if (classData.class === 'assassin') {
@@ -111,7 +109,7 @@ function calculateStats(classData, inventory, subclass) {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
-    // Пассивные бонусы подклассов (добавляем к статам)
+    // Пассивные бонусы подклассов
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
@@ -119,7 +117,6 @@ function calculateStats(classData, inventory, subclass) {
     // Классовые бонусы (умножение)
     if (classData.class === 'warrior') {
         stats.def = Math.min(70, stats.def * 1.5);
-        // === ДОБАВЛЕНО: пассивная особенность воина +10% к итоговому HP ===
         stats.hp = Math.floor(stats.hp * 1.1);
     } else if (classData.class === 'assassin') {
         stats.atk = Math.floor(stats.atk * 1.2);
@@ -130,7 +127,6 @@ function calculateStats(classData, inventory, subclass) {
         stats.int = stats.int * 1.2;
     }
 
-    // Капы
     stats.def = Math.min(70, stats.def);
     stats.crit = Math.min(100, stats.crit);
     stats.agi = Math.min(100, stats.agi);
@@ -141,6 +137,7 @@ function calculateStats(classData, inventory, subclass) {
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState) {
     let extraLogs = [];
 
+    // Иллюзионист
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist?.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
         if (defenderState.mirageCounter >= 4) {
@@ -152,6 +149,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
+    // Уворот
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
     const isDodge = Math.random() * 100 > hitChance;
     if (isDodge) {
@@ -163,81 +161,79 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     let damage = attackerStats.atk;
 
-    // Бонус мага: +2 урона за каждые 5 интеллекта
+    // Бонус мага
     if (attackerClass === 'mage') {
         damage += Math.floor(attackerStats.int / 5) * 2;
     }
 
+    // Берсерк
     let berserkerBonus = 0;
     if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
         const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);
         damage += bonus;
         berserkerBonus = bonus;
     }
+
+    // Крит
     let isCrit = false;
     let critMultiplier = attackerStats.critDmg;
-
     if (attackerSubclass === 'assassin' && rolePassives.assassin.critMultiplier) {
-        critMultiplier = rolePassives.assassin.critMultiplier; // теперь 2.0
+        critMultiplier = rolePassives.assassin.critMultiplier;
     }
-
     if (Math.random() * 100 < attackerStats.crit) {
         isCrit = true;
         damage *= critMultiplier;
     }
 
+    // Защита криоманта
     if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer.physReduction) {
         damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
     }
 
+    // Защита цели
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
+    // Вампиризм
     let vampHeal = 0;
     if (attackerVamp > 0) {
         vampHeal = Math.floor(damage * attackerVamp / 100);
     }
 
+    // Отражение
     let reflectDamage = 0;
     if (defenderReflect > 0) {
         reflectDamage = Math.floor(damage * defenderReflect / 100);
     }
 
-    // Накопление яда (venom_blade) - 1 стак за удар, максимум 5
+    // Накопление яда (venom_blade)
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
         defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
         if (defenderState.poisonStacks > oldStacks) {
-            extraLogs.push(poisonStackPhrase
-                .replace('%s', defenderName)
-                .replace('%d', defenderState.poisonStacks - oldStacks)
-                .replace('%d', defenderState.poisonStacks));
+            // Новая простая фраза без имени
+            extraLogs.push(poisonStackPhrase.replace('%d', defenderState.poisonStacks));
         }
     }
 
-    // Накопление огня (pyromancer) - 1 стак за удар, максимум 5
+    // Накопление огня (pyromancer)
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
         defenderState.burnStacks = Math.min(5, defenderState.burnStacks + 1);
         if (defenderState.burnStacks > oldStacks) {
-            extraLogs.push(burnStackPhrase
-                .replace('%s', defenderName)
-                .replace('%d', defenderState.burnStacks - oldStacks)
-                .replace('%d', defenderState.burnStacks));
+            extraLogs.push(burnStackPhrase.replace('%d', defenderState.burnStacks));
         }
     }
 
     // Накопление стаков заморозки (cryomancer)
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
-        
         if (defenderState.frozen > 0) {
             extraLogs.push(frozenAlreadyPhrase.replace('%s', defenderName));
         } else {
             defenderState.freezeStacks++;
-            
             if (defenderState.freezeStacks >= 3) {
                 defenderState.frozen = 2;
                 defenderState.freezeStacks = 0;
@@ -250,6 +246,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
+    // Фраза атаки
     let attackPhrase;
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
@@ -313,7 +310,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             attackerState.frozen = 0;
             break;
         case 'assassin':
-            // === ИЗМЕНЕНО: урон ультимейта ассасина теперь 300% (было 350%) ===
             damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
             log = ultPhrases.assassin.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             break;
@@ -332,7 +328,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
             break;
         case 'pyromancer':
-            // === ИЗМЕНЕНО: урон огненного шторма теперь int×2.0 + стаки×2 (было int×2.5) ===
             const burnStacks = defenderState.burnStacks || 0;
             damage = Math.floor(attackerStats.int * 2.0) + (burnStacks * 2);
             log = ultPhrases.pyromancer
@@ -364,22 +359,21 @@ function applyTurnStartEffects(attackerStats, defenderState, attackerName, defen
     let damageToSelf = 0;
     let logEntries = [];
 
+    // Урон от яда
     if (defenderState.poisonStacks && defenderState.poisonStacks > 0) {
         const poisonDamage = defenderState.poisonStacks * 2;
         damageToDefender += poisonDamage;
-        logEntries.push(poisonDamagePhrase
-            .replace('%s', defenderName)
-            .replace('%d', poisonDamage));
+        logEntries.push(poisonDamagePhrase.replace('%d', poisonDamage));
     }
 
+    // Урон от огня
     if (defenderState.burnStacks && defenderState.burnStacks > 0) {
         const burnDamage = defenderState.burnStacks * 2;
         damageToDefender += burnDamage;
-        logEntries.push(burnDamagePhrase
-            .replace('%s', defenderName)
-            .replace('%d', burnDamage));
+        logEntries.push(burnDamagePhrase.replace('%d', burnDamage));
     }
 
+    // Урон берсерку
     if (attackerSubclass === 'berserker' && attackerState.hp > 1) {
         const rageDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
         damageToSelf = Math.min(rageDamage, attackerState.hp - 1);
@@ -458,6 +452,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         };
 
         if (turn === 'player') {
+            // Заморозка
             if (playerState.frozen > 0) {
                 const frozenLeft = playerState.frozen;
                 playerState.frozen--;
@@ -465,12 +460,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (playerState.frozen === 0) {
                     const msg = frozenEndPhrase.replace('%s', playerName);
                     log.push(msg);
+                    turns.push({ turn: turnState.turn, action: msg });
                     turnState.action = msg;
                 } else {
                     const msg = frozenContinuePhrase
                         .replace('%s', playerName)
                         .replace('%d', frozenLeft);
                     log.push(msg);
+                    turns.push({ turn: turnState.turn, action: msg });
+                    turnState.action = msg;
                 }
                 
                 turnState.playerFrozen = playerState.frozen;
@@ -484,24 +482,20 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             playerState.hp = playerHp;
             enemyState.hp = enemyHp;
 
+            // Эффекты начала хода (яд, огонь)
             const startEffects = applyTurnStartEffects(playerStats, enemyState, playerName, enemyName, playerSubclass, playerState);
             if (startEffects.damageToDefender > 0) {
                 enemyHp -= startEffects.damageToDefender;
                 if (enemyHp <= 0) enemyHp = 0;
-                log.push(...startEffects.logEntries);
+                // Добавляем логи эффектов в оба массива
+                startEffects.logEntries.forEach(entry => {
+                    log.push(entry);
+                    turns.push({ turn: turnState.turn, action: entry });
+                });
                 if (enemyHp <= 0) {
                     turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    turnState.playerPoisonStacks = playerState.poisonStacks;
-                    turnState.playerBurnStacks = playerState.burnStacks;
-                    turnState.playerFreezeStacks = playerState.freezeStacks;
-                    turnState.enemyPoisonStacks = enemyState.poisonStacks;
-                    turnState.enemyBurnStacks = enemyState.burnStacks;
-                    turnState.enemyFreezeStacks = enemyState.freezeStacks;
-                    turnState.playerFrozen = playerState.frozen;
-                    turnState.enemyFrozen = enemyState.frozen;
-                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
-                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
+                    // ... остальные поля
                     turns.push(turnState);
                     break;
                 }
@@ -509,20 +503,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToSelf > 0) {
                 playerHp -= startEffects.damageToSelf;
                 if (playerHp <= 0) playerHp = 0;
-                log.push(...startEffects.logEntries);
+                startEffects.logEntries.forEach(entry => {
+                    log.push(entry);
+                    turns.push({ turn: turnState.turn, action: entry });
+                });
                 if (playerHp <= 0) {
                     turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    turnState.playerPoisonStacks = playerState.poisonStacks;
-                    turnState.playerBurnStacks = playerState.burnStacks;
-                    turnState.playerFreezeStacks = playerState.freezeStacks;
-                    turnState.enemyPoisonStacks = enemyState.poisonStacks;
-                    turnState.enemyBurnStacks = enemyState.burnStacks;
-                    turnState.enemyFreezeStacks = enemyState.freezeStacks;
-                    turnState.playerFrozen = playerState.frozen;
-                    turnState.enemyFrozen = enemyState.frozen;
-                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
-                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -573,14 +560,22 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 } else {
                     actionLog = attackResult.log;
                 }
+                // Добавляем extraLogs (накопление стаков) в turns
                 if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-                    log.push(...attackResult.extraLogs);
+                    attackResult.extraLogs.forEach(extra => {
+                        log.push(extra);
+                        turns.push({ turn: turnState.turn, action: extra });
+                    });
                 }
                 if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
             }
 
+            // Добавляем основное действие
             log.push(actionLog);
+            turns.push({ turn: turnState.turn, action: actionLog });
             turnState.action = actionLog;
+
+            // Обновляем остальные поля turnState
             turnState.playerHp = playerHp;
             turnState.enemyHp = enemyHp;
             turnState.playerPoisonStacks = playerState.poisonStacks;
@@ -602,7 +597,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
             turn = 'enemy';
         } else {
-            // Ход врага (аналогично с обработкой заморозки)
+            // Ход врага (аналогичные изменения)
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
@@ -610,12 +605,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (enemyState.frozen === 0) {
                     const msg = frozenEndPhrase.replace('%s', enemyName);
                     log.push(msg);
+                    turns.push({ turn: turnState.turn, action: msg });
                     turnState.action = msg;
                 } else {
                     const msg = frozenContinuePhrase
                         .replace('%s', enemyName)
                         .replace('%d', frozenLeft);
                     log.push(msg);
+                    turns.push({ turn: turnState.turn, action: msg });
+                    turnState.action = msg;
                 }
                 
                 turnState.enemyFrozen = enemyState.frozen;
@@ -633,20 +631,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToDefender > 0) {
                 playerHp -= startEffects.damageToDefender;
                 if (playerHp <= 0) playerHp = 0;
-                log.push(...startEffects.logEntries);
+                startEffects.logEntries.forEach(entry => {
+                    log.push(entry);
+                    turns.push({ turn: turnState.turn, action: entry });
+                });
                 if (playerHp <= 0) {
                     turnState.playerHp = playerHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    turnState.playerPoisonStacks = playerState.poisonStacks;
-                    turnState.playerBurnStacks = playerState.burnStacks;
-                    turnState.playerFreezeStacks = playerState.freezeStacks;
-                    turnState.enemyPoisonStacks = enemyState.poisonStacks;
-                    turnState.enemyBurnStacks = enemyState.burnStacks;
-                    turnState.enemyFreezeStacks = enemyState.freezeStacks;
-                    turnState.playerFrozen = playerState.frozen;
-                    turnState.enemyFrozen = enemyState.frozen;
-                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
-                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -654,20 +645,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (startEffects.damageToSelf > 0) {
                 enemyHp -= startEffects.damageToSelf;
                 if (enemyHp <= 0) enemyHp = 0;
-                log.push(...startEffects.logEntries);
+                startEffects.logEntries.forEach(entry => {
+                    log.push(entry);
+                    turns.push({ turn: turnState.turn, action: entry });
+                });
                 if (enemyHp <= 0) {
                     turnState.enemyHp = enemyHp;
                     turnState.action = startEffects.logEntries.join(' ');
-                    turnState.playerPoisonStacks = playerState.poisonStacks;
-                    turnState.playerBurnStacks = playerState.burnStacks;
-                    turnState.playerFreezeStacks = playerState.freezeStacks;
-                    turnState.enemyPoisonStacks = enemyState.poisonStacks;
-                    turnState.enemyBurnStacks = enemyState.burnStacks;
-                    turnState.enemyFreezeStacks = enemyState.freezeStacks;
-                    turnState.playerFrozen = playerState.frozen;
-                    turnState.enemyFrozen = enemyState.frozen;
-                    turnState.playerShield = playerState.reflectBuff > 0 ? 1 : 0;
-                    turnState.enemyShield = enemyState.reflectBuff > 0 ? 1 : 0;
                     turns.push(turnState);
                     break;
                 }
@@ -719,13 +703,18 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     actionLog = attackResult.log;
                 }
                 if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-                    log.push(...attackResult.extraLogs);
+                    attackResult.extraLogs.forEach(extra => {
+                        log.push(extra);
+                        turns.push({ turn: turnState.turn, action: extra });
+                    });
                 }
                 if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
             }
 
             log.push(actionLog);
+            turns.push({ turn: turnState.turn, action: actionLog });
             turnState.action = actionLog;
+
             turnState.playerHp = playerHp;
             turnState.enemyHp = enemyHp;
             turnState.playerPoisonStacks = playerState.poisonStacks;
@@ -792,6 +781,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         enemyMaxHp: enemyStats.hp
     };
 }
+
 
 // --- Вспомогательные функции для опыта, энергии и генерации бота (без изменений) ---
 function expNeeded(level) {

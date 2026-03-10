@@ -504,45 +504,45 @@ function showBattleScreen(battleData) {
         }
     }
 
-    // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
-    function playTurn() {
-        if (turnIndex >= turns.length) {
-            clearInterval(interval);
-            if (timer) clearInterval(timer);
-            if (finishTimeout) clearTimeout(finishTimeout);
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
-            return;
-        }
+   // ==================== ОСНОВНАЯ ЛОГИКА ХОДА ====================
+let firstTurn = true;
 
-        // Обрабатываем все последовательные логи без паузы
-        let hasTurn = false;
-        while (turnIndex < turns.length && !hasTurn) {
-            const entry = turns[turnIndex];
-            const isLogEntry = entry.type === 'log';
+function playTurn() {
+    if (turnIndex >= turns.length) {
+        clearInterval(interval);
+        if (timer) clearInterval(timer);
+        if (finishTimeout) clearTimeout(finishTimeout);
+        finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
+        return;
+    }
 
-            if (isLogEntry) {
-                if (entry.action) {
-                    const logEntry = document.createElement('div');
-                    logEntry.className = 'log-entry';
-                    logEntry.innerHTML = entry.action;
-                    logContainer.appendChild(logEntry);
-                    logContainer.scrollTop = logContainer.scrollHeight;
-                }
-                turnIndex++;
-            } else {
-                // Это полноценный ход (type = 'turn') – выходим из цикла, чтобы обработать его с паузой
-                hasTurn = true;
+    // Обрабатываем все последовательные логи без паузы
+    let hasTurn = false;
+    while (turnIndex < turns.length && !hasTurn) {
+        const entry = turns[turnIndex];
+        const isLogEntry = entry.type === 'log';
+
+        if (isLogEntry) {
+            if (entry.action) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = entry.action;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
             }
+            turnIndex++;
+        } else {
+            hasTurn = true;
         }
+    }
 
-        if (turnIndex >= turns.length) {
-            // Если после обработки логов дошли до конца, завершаем
-            clearInterval(interval);
-            if (timer) clearInterval(timer);
-            if (finishTimeout) clearTimeout(finishTimeout);
-            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
-            return;
-        }
+    if (turnIndex >= turns.length) {
+        clearInterval(interval);
+        if (timer) clearInterval(timer);
+        if (finishTimeout) clearTimeout(finishTimeout);
+        finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
+        return;
+    }
 
         // Обрабатываем полноценный ход
         const turn = turns[turnIndex];
@@ -683,6 +683,12 @@ function showBattleScreen(battleData) {
         turnIndex++;
     }
 
+// --- Запуск с задержкой ---
+setTimeout(() => {
+    playTurn();
+    interval = setInterval(playTurn, 2500 / speed);
+}, 500);
+    
     // Управление скоростью и таймер
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {

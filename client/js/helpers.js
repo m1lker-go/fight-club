@@ -17,8 +17,9 @@ function getCurrentClassData() {
 function calculateClassStats(className, classData, inventory, subclass) {
     const base = baseStats[className] || baseStats.warrior;
 
+    // Базовые статы с учётом очков навыков (ИЗМЕНЕНО: *5 вместо *2)
     let baseStatsWithSkills = {
-        hp: base.hp + (classData.hp_points || 0) * 2,
+        hp: base.hp + (classData.hp_points || 0) * 5,
         atk: base.atk + (classData.atk_points || 0),
         def: base.def + (classData.def_points || 0),
         agi: base.agi + (classData.dodge_points || 0),
@@ -65,7 +66,8 @@ function calculateClassStats(className, classData, inventory, subclass) {
     let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
 
     if (className === 'warrior') {
-        const bonusHp = Math.floor(final.def / 5) * 3;
+        // ИЗМЕНЕНО: +5 HP за каждые 5 защиты (было +3)
+        const bonusHp = Math.floor(final.def / 5) * 5;
         classBonus.hp = bonusHp;
         final.hp += bonusHp;
     }
@@ -80,6 +82,11 @@ function calculateClassStats(className, classData, inventory, subclass) {
         const bonusAgi = Math.floor(final.int / 5);
         classBonus.agi = bonusAgi;
         final.agi += bonusAgi;
+    }
+
+    // ДОБАВЛЕНО: пассивная особенность воина +10% к итоговому HP
+    if (className === 'warrior') {
+        final.hp = Math.floor(final.hp * 1.1);
     }
 
     final.def = Math.min(100, final.def);

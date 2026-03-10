@@ -106,6 +106,18 @@ const BattleLog = {
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
 
+        // Управление оверлеем заморозки (активен, если frozen > 0)
+        const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
+        const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
+        if (heroFrozenOverlay) heroFrozenOverlay.classList.toggle('active', window.playerFrozen > 0);
+        if (enemyFrozenOverlay) enemyFrozenOverlay.classList.toggle('active', window.enemyFrozen > 0);
+
+        // Управление надписью "ПРОИГРАЛ" через класс defeated
+        const heroCard = document.querySelector('.hero-card');
+        const enemyCard = document.querySelector('.enemy-card');
+        if (heroCard) heroCard.classList.toggle('defeated', state.playerHp <= 0);
+        if (enemyCard) enemyCard.classList.toggle('defeated', state.enemyHp <= 0);
+
         this.updateAllEffects();
     },
 

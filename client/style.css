@@ -1203,3 +1203,57 @@ td {
     height: 100%;
     object-fit: contain;
 }
+
+
+/* Оверлей "ПРОИГРАЛ" */
+.defeat-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e74c3c;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    background-color: rgba(0,0,0,0.3);
+    opacity: 0; /* скрыт по умолчанию */
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    z-index: 20;
+    text-align: center;
+    line-height: 1.2;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.hero-card.defeated .defeat-overlay,
+.enemy-card.defeated .defeat-overlay {
+    opacity: 1; /* показываем, когда родитель имеет класс defeated */
+}
+
+/* Анимационные контейнеры (для вспышек ударов и т.д.) */
+.animation-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+}
+
+.animation-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Оверлей заморозки удалён, но если остался где-то, скроем его */
+.frozen-overlay {
+    display: none !important;
+}

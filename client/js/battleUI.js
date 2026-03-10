@@ -514,25 +514,38 @@ function showBattleScreen(battleData) {
             return;
         }
 
-        const entry = turns[turnIndex];
-        const isLogEntry = entry.type === 'log';  // определяем тип записи
+        // Обрабатываем все последовательные логи без паузы
+        let hasTurn = false;
+        while (turnIndex < turns.length && !hasTurn) {
+            const entry = turns[turnIndex];
+            const isLogEntry = entry.type === 'log';
 
-        // Если это просто лог (без изменения состояния)
-        if (isLogEntry) {
-            if (entry.action) {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
-                logEntry.innerHTML = entry.action;
-                logContainer.appendChild(logEntry);
-                logContainer.scrollTop = logContainer.scrollHeight;
+            if (isLogEntry) {
+                if (entry.action) {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.innerHTML = entry.action;
+                    logContainer.appendChild(logEntry);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+                turnIndex++;
+            } else {
+                // Это полноценный ход (type = 'turn') – выходим из цикла, чтобы обработать его с паузой
+                hasTurn = true;
             }
-            turnIndex++;
-            // Не обновляем HP, ману и состояние, не меняем ход
+        }
+
+        if (turnIndex >= turns.length) {
+            // Если после обработки логов дошли до конца, завершаем
+            clearInterval(interval);
+            if (timer) clearInterval(timer);
+            if (finishTimeout) clearTimeout(finishTimeout);
+            finishTimeout = setTimeout(() => showBattleResult(battleData), 1000);
             return;
         }
 
-        // Иначе это полноценный ход (type = 'turn' или отсутствует для обратной совместимости)
-        const turn = entry;
+        // Обрабатываем полноценный ход
+        const turn = turns[turnIndex];
 
         // Обновляем переменные из данных сервера (только если они есть)
         if (turn.playerFrozen !== undefined) {

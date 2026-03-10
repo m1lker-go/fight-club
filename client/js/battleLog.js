@@ -39,6 +39,14 @@ const BattleLog = {
         }, 500);
     },
 
+    // Скрыть анимации
+    hideAnimations() {
+        const heroAnim = document.getElementById('hero-animation');
+        const enemyAnim = document.getElementById('enemy-animation');
+        if (heroAnim) heroAnim.style.display = 'none';
+        if (enemyAnim) enemyAnim.style.display = 'none';
+    },
+
     // Применить состояние (обновить HP, ману, иконки)
     applyState(state) {
         const heroHpText = document.getElementById('heroHpText');
@@ -253,7 +261,7 @@ const BattleLog = {
         clearTimeout(this.interval);
         if (this.timer) clearInterval(this.timer);
         if (this.finishTimeout) clearTimeout(this.finishTimeout);
-        hideAnimations(); // скрываем все анимации
+        this.hideAnimations(); // скрываем все анимации
         if (this.onFinish) this.onFinish(this.battleData);
     },
 
@@ -261,5 +269,6 @@ const BattleLog = {
     stop() {
         clearTimeout(this.interval);
         clearInterval(this.timer);
+        this.hideAnimations();
     }
 };

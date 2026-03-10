@@ -372,7 +372,6 @@ function applyDotDamage(state, name) {
 }
 
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
-    // Защита от undefined
     if (!playerStats || !enemyStats) {
         throw new Error('playerStats or enemyStats is undefined');
     }
@@ -428,7 +427,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         });
     }
 
-    pushState(); // начальное состояние
+    pushState();
 
     let turn;
     if (playerStats.spd > enemyStats.spd) {
@@ -510,13 +509,18 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 } else {
                     actionLog = attackResult.log;
                 }
-               messages.push(actionLog);
-pushState();
-if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-    attackResult.extraLogs.forEach(extra => messages.push(extra));
-    pushState(); // обновляем состояние после стаков (иконки)
-}
-if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+
+                // Сначала добавляем основное действие, потом стаки
+                messages.push(actionLog);
+                pushState();
+
+                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                    attackResult.extraLogs.forEach(extra => messages.push(extra));
+                    pushState(); // обновляем состояние после стаков
+                }
+
+                if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+            }
 
             turn = 'enemy';
         }
@@ -586,19 +590,17 @@ if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChang
                 } else {
                     actionLog = attackResult.log;
                 }
-               messages.push(actionLog);
-pushState();
-messages.push(actionLog);
-pushState();
-if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-    attackResult.extraLogs.forEach(extra => messages.push(extra));
-    pushState();
-}
-if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
-            }
 
-            messages.push(actionLog);
-            pushState();
+                messages.push(actionLog);
+                pushState();
+
+                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                    attackResult.extraLogs.forEach(extra => messages.push(extra));
+                    pushState();
+                }
+
+                if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
+            }
 
             turn = 'player';
         }
@@ -623,7 +625,6 @@ if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChan
         if (playerHp <= 0 || enemyHp <= 0) break;
     }
 
-    // Определение победителя
     let winner = null;
     if (playerHp <= 0 && enemyHp <= 0) winner = 'draw';
     else if (playerHp <= 0) winner = 'enemy';
@@ -668,7 +669,7 @@ if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChan
     };
 }
 
-// --- Вспомогательные функции для опыта, энергии и генерации бота ---
+// --- Вспомогательные функции ---
 function expNeeded(level) {
     return Math.floor(80 * Math.pow(level, 1.5));
 }

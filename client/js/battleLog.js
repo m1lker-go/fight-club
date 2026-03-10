@@ -213,7 +213,7 @@ const BattleLog = {
 
         this.interval = setTimeout(() => {
             this.playNext();
-        }, 1500 / this.speed);
+        }, 2500 / this.speed);
     },
 
     getAnimationForAction(action) {

@@ -1,4 +1,4 @@
-// battleLog.js
+// battleLog.js (исправленный)
 
 const BattleLog = {
     messages: [],
@@ -62,6 +62,11 @@ const BattleLog = {
         const enemyAnim = document.getElementById('enemy-animation');
         if (heroAnim) heroAnim.style.display = 'none';
         if (enemyAnim) enemyAnim.style.display = 'none';
+        // также скрываем оверлеи заморозки
+        const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
+        const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
+        if (heroFrozen) heroFrozen.classList.remove('active');
+        if (enemyFrozen) enemyFrozen.classList.remove('active');
     },
 
     applyState(state) {
@@ -198,80 +203,80 @@ const BattleLog = {
         }, 1500 / this.speed);
     },
 
-getAnimationForAction(action) {
-    const lower = action.toLowerCase();
-    let target = null;
-    let anim = null;
+    getAnimationForAction(action) {
+        const lower = action.toLowerCase();
+        let target = null;
+        let anim = null;
 
-    const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
+        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
 
-    // Атаки (без изменений)
-    const attackKeywords = [
-        'сокрушает', 'обрушивает топор', 'пробивает броню', 'яростно атакует', 'бьёт щитом',
-        'вонзает кинжал', 'бесшумно подкрадывается', 'отравляет клинок', 'делает выпад',
-        'исчезает в тени', 'выпускает огненный шар', 'читает заклинание', 'призывает молнию',
-        'создаёт магический взрыв', 'проклинает'
-    ];
-    for (let kw of attackKeywords) {
-        if (lower.includes(kw)) {
-            target = isPlayerAction ? 'enemy' : 'hero';
-            anim = 'shot.gif';
-            return { target, anim };
+        // Атаки
+        const attackKeywords = [
+            'сокрушает', 'обрушивает топор', 'пробивает броню', 'яростно атакует', 'бьёт щитом',
+            'вонзает кинжал', 'бесшумно подкрадывается', 'отравляет клинок', 'делает выпад',
+            'исчезает в тени', 'выпускает огненный шар', 'читает заклинание', 'призывает молнию',
+            'создаёт магический взрыв', 'проклинает'
+        ];
+        for (let kw of attackKeywords) {
+            if (lower.includes(kw)) {
+                target = isPlayerAction ? 'enemy' : 'hero';
+                anim = 'shot.gif';
+                return { target, anim };
+            }
         }
-    }
 
-    // Ультимейты
-    const ultKeywords = {
-        'несокрушимость': 'hill.gif',
-        'кровопускание': 'crit.gif',
-        'щит правосудия': 'shield.gif',
-        'смертельный удар': 'ultimate.gif',
-        'ядовитая волна': 'poison.gif',
-        'кровавая жатва': 'crit.gif',
-        'огненный шторм': 'fire.gif',
-        'вечная зима': 'ice.gif',
-        'зазеркалье': 'chara.gif'
-    };
-    for (let [kw, a] of Object.entries(ultKeywords)) {
-        if (lower.includes(kw)) {
-            target = isPlayerAction ? 'enemy' : 'hero';
-            anim = a;
-            return { target, anim };
+        // Ультимейты
+        const ultKeywords = {
+            'несокрушимость': 'hill.gif',
+            'кровопускание': 'crit.gif',
+            'щит правосудия': 'shield.gif',
+            'смертельный удар': 'ultimate.gif',
+            'ядовитая волна': 'poison.gif',
+            'кровавая жатва': 'crit.gif',
+            'огненный шторм': 'fire.gif',
+            'вечная зима': 'ice.gif',
+            'зазеркалье': 'chara.gif'
+        };
+        for (let [kw, a] of Object.entries(ultKeywords)) {
+            if (lower.includes(kw)) {
+                target = isPlayerAction ? 'enemy' : 'hero';
+                anim = a;
+                return { target, anim };
+            }
         }
-    }
 
-    // Уклонение
-    const dodgeKeywords = ['уклоняется', 'уворачивается', 'использует неуловимый манёвр'];
-    for (let kw of dodgeKeywords) {
-        if (lower.includes(kw)) {
+        // Уклонение
+        const dodgeKeywords = ['уклоняется', 'уворачивается', 'использует неуловимый манёвр'];
+        for (let kw of dodgeKeywords) {
+            if (lower.includes(kw)) {
+                target = isPlayerAction ? 'hero' : 'enemy';
+                anim = 'missx.gif';
+                return { target, anim };
+            }
+        }
+
+        // Урон от яда
+        if (lower.includes('получает урона от яда') || lower.includes('яд разъедает')) {
             target = isPlayerAction ? 'hero' : 'enemy';
-            anim = 'missx.gif';
+            anim = 'poison.gif';
             return { target, anim };
         }
-    }
+        // Урон от огня
+        if (lower.includes('получает урона от огня') || lower.includes('огонь пожирает')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'fire.gif';
+            return { target, anim };
+        }
 
-    // Урон от яда
-    if (lower.includes('получает урона от яда') || lower.includes('яд разъедает')) {
-        target = isPlayerAction ? 'hero' : 'enemy';
-        anim = 'poison.gif';
-        return { target, anim };
-    }
-    // Урон от огня
-    if (lower.includes('получает урона от огня') || lower.includes('огонь пожирает')) {
-        target = isPlayerAction ? 'hero' : 'enemy';
-        anim = 'fire.gif';
-        return { target, anim };
-    }
+        // ЗАМОРОЗКА – ТОЛЬКО ВХОД (замораживает) и выход
+        if (lower.includes('замораживая') || lower.includes('заморожен') || lower.includes('освобождается')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'frozenx.gif';
+            return { target, anim };
+        }
 
-    // ЗАМОРОЗКА – только при входе (❄️❄️❄️) и выходе (освобождается)
-    if (lower.includes('❄️❄️❄️') || lower.includes('освобождается')) {
-        target = isPlayerAction ? 'hero' : 'enemy';
-        anim = 'frozenx.gif';
-        return { target, anim };
-    }
-
-    return { target: null, anim: null };
-},
+        return { target: null, anim: null };
+    },
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

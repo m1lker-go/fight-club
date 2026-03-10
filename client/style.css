@@ -1239,3 +1239,8 @@ td {
 .frozen-overlay.active {
     opacity: 1;
 }
+
+
+.hero-card, .enemy-card, .battle-arena {
+    background: none !important;
+}

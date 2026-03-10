@@ -193,6 +193,9 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
+    // Сохраняем лог последнего боя в глобальную переменную
+    window.lastBattleLog = battleData.result.messages || [];
+
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
@@ -211,7 +214,7 @@ async function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
+                ${window.lastBattleLog.map(m => `<div class="log-entry">${m}</div>`).join('')}
             </div>
         </div>
     `;

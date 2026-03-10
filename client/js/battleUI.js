@@ -8,6 +8,15 @@ async function startBattle() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
+
+        // Если статус не 2xx, пытаемся прочитать текст ошибки
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Server error:', res.status, errorText);
+            alert(`Ошибка сервера: ${res.status} — ${errorText || 'нет описания'}`);
+            return;
+        }
+
         const data = await res.json();
         if (data.error) {
             alert(data.error);

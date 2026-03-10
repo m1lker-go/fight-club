@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Game</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <title>Cat Fighting</title>
+    <link rel="stylesheet" href="style.css?v=6">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <!-- Экран загрузки (виден до полной инициализации игры) -->
-<div id="splash-screen">
-    <div class="splash-content">
-        <h1 class="splash-title">Загрузка</h1>
-        <p class="splash-subtitle">Пожалуйста, подождите</p>
-        <div class="spinner"></div>
+    <div id="splash-screen">
+        <div class="splash-content">
+            <h1 class="splash-title">Загрузка</h1>
+            <p class="splash-subtitle">Пожалуйста, подождите</p>
+            <div class="spinner"></div>
+        </div>
     </div>
-</div>
+
     <div id="app">
         <!-- Верхняя панель -->
         <div class="top-bar">
             <div class="power"><i class="fas fa-fist-raised"></i> <span id="power">0</span></div>
-             <div class="rating"><i class="fas fa-trophy"></i> <span id="rating">1000</span></div>
+            <div class="rating"><i class="fas fa-trophy"></i> <span id="rating">1000</span></div>
             <div class="coins"><i class="fas fa-coins"></i> <span id="coinCount">0</span></div>
             <div class="diamonds"><i class="fas fa-gem"></i> <span id="diamondCount">0</span></div>
             <div class="energy"><i class="fas fa-bolt"></i> <span id="energy">20</span></div>
         </div>
 
         <!-- Основной контент (меняется динамически) -->
-        <div id="content" class="content">
-            <!-- Здесь будет рендериться активный экран -->
-        </div>
+        <div id="content" class="content"></div>
 
         <!-- Нижнее меню -->
         <div class="bottom-menu">
@@ -40,16 +39,16 @@
         </div>
     </div>
 
-    
-<script src="js/constants.js?v=5"></script>
-<script src="js/helpers.js?v=5"></script>
-<script src="app.js?v=5"></script>
-<script src="js/battleLog.js?v=5"></script>  
-<script src="js/battleUI.js?v=5"></script> 
-<script src="js/task-up.js?v=5"></script>
-<script src="js/profile.js?v=5"></script>
-<script src="js/forge.js?v=5"></script>
-    
+    <!-- Скрипты -->
+    <script src="js/constants.js?v=6"></script>
+    <script src="js/helpers.js?v=6"></script>
+    <script src="app.js?v=6"></script>
+    <script src="js/battleLog.js?v=6"></script>
+    <script src="js/battleUI.js?v=6"></script>
+    <script src="js/task-up.js?v=6"></script>
+    <script src="js/profile.js?v=6"></script>
+    <script src="js/forge.js?v=6"></script>
+
     <!-- Модальное окно для описания ролей -->
     <div id="roleModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -57,11 +56,9 @@
                 <h2 id="modalTitle">Роли класса</h2>
                 <span class="close">&times;</span>
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- сюда будет вставлен контент -->
-            </div>
+            <div class="modal-body" id="modalBody"></div>
         </div>
-    </div> 
+    </div>
 
     <!-- Модальное окно для результата покупки сундука -->
     <div id="chestResultModal" class="modal" style="display: none;">
@@ -70,47 +67,37 @@
                 <h2>Поздравляем!</h2>
                 <span class="close" onclick="document.getElementById('chestResultModal').style.display='none'">&times;</span>
             </div>
-            <div class="modal-body" id="chestResultBody">
-                <!-- сюда будет вставлен контент -->
-            </div>
+            <div class="modal-body" id="chestResultBody"></div>
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn" onclick="document.getElementById('chestResultModal').style.display='none'">ОК</button>
             </div>
         </div>
     </div>
-<!-- Модальное окно для повышения уровня -->
-<div id="levelUpModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Поздравляем!</h2>
-            <span class="close">&times;</span>
-        </div>
-        <div class="modal-body" id="levelUpBody">
-            <!-- контент будет вставлен динамически -->
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-            <button class="btn" id="levelUpUpgradeBtn">Улучшить</button>
-            <button class="btn" id="levelUpLaterBtn">Потом</button>
-        </div>
-    </div>
-</div>
 
-<!-- Модальное окно для сравнения предметов -->
-<div id="equipCompareModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-            <h2>Сравнение предметов</h2>
-            <span class="close">&times;</span>
-        </div>
-        <div class="modal-body" id="equipCompareBody" style="display: flex; gap: 20px; justify-content: center;">
-            <!-- левая колонка (текущий) -->
-            <div id="oldItemColumn" style="flex: 1; text-align: center;"></div>
-            <!-- правая колонка (новый) -->
-            <div id="newItemColumn" style="flex: 1; text-align: center;"></div>
+    <!-- Модальное окно для повышения уровня -->
+    <div id="levelUpModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Поздравляем!</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="levelUpBody"></div>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="btn" id="levelUpUpgradeBtn">Улучшить</button>
+                <button class="btn" id="levelUpLaterBtn">Потом</button>
+            </div>
         </div>
     </div>
-</div>
-    
-  
+
+    <!-- Модальное окно для сравнения предметов -->
+    <div id="equipCompareModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Сравнение предметов</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="equipCompareBody" style="display: flex; gap: 20px; justify-content: center;"></div>
+        </div>
+    </div>
 </body>
 </html>

@@ -10,6 +10,7 @@ let currentScreen = 'main';
 let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
+let lastBattleLog = null;
 
 let profileTab = 'bonuses';
 let tradeTab = 'shop';

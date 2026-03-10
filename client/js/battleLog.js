@@ -253,6 +253,7 @@ const BattleLog = {
         clearTimeout(this.interval);
         if (this.timer) clearInterval(this.timer);
         if (this.finishTimeout) clearTimeout(this.finishTimeout);
+        hideAnimations(); // скрываем все анимации
         if (this.onFinish) this.onFinish(this.battleData);
     },
 

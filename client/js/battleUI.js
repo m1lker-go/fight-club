@@ -156,12 +156,14 @@ async function showBattleResult(battleData, timeOut = false) {
     const winner = battleData.result.winner;
     const isVictory = winner === 'player';
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
+
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const leveledUp = battleData.reward?.leveledUp || false;
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
 
+    // Обновление заданий
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -178,26 +180,161 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
+    // --- ПОДСЧЁТ СТАТИСТИКИ ---
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+
+    const messages = battleData.result.messages || [];
+    messages.forEach(msg => {
+        const action = msg;
+        const isPlayerAction = action.includes(userData.username);
+
+        // Определяем, чьё действие (атакующий)
+        let attackerStats, defenderStats;
+        if (isPlayerAction) {
+            attackerStats = playerStats;
+            defenderStats = enemyStats;
+        } else {
+            attackerStats = enemyStats;
+            defenderStats = playerStats;
+        }
+
+        // Урон
+        const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
+        if (dmgMatch) {
+            const dmg = parseInt(dmgMatch[1]);
+            attackerStats.hits++;
+            attackerStats.totalDamage += dmg;
+            if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                attackerStats.crits++;
+            }
+        }
+
+        // Уклонение
+        const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
+        if (dodgeMatch) {
+            const dodgerName = dodgeMatch[1].trim();
+            if (dodgerName === userData.username) {
+                playerStats.dodges++;
+            } else {
+                enemyStats.dodges++;
+            }
+        }
+
+        // Исцеление (вампиризм)
+        const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
+        if (healMatch) {
+            const heal = parseInt(healMatch[1]);
+            // Исцеление всегда у того, кто восстанавливает (в сообщении есть имя)
+            if (action.includes(userData.username)) {
+                playerStats.heal += heal;
+            } else {
+                enemyStats.heal += heal;
+            }
+        }
+
+        // Отражение
+        const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
+        if (reflectMatch) {
+            const reflect = parseInt(reflectMatch[1]);
+            // Кто отражает – имя перед "отражает"
+            const reflectWhoMatch = action.match(/([^\s]+)\s+отражает/i);
+            if (reflectWhoMatch) {
+                const reflectName = reflectWhoMatch[1].trim();
+                if (reflectName === userData.username) {
+                    playerStats.reflect += reflect;
+                } else {
+                    enemyStats.reflect += reflect;
+                }
+            }
+        }
+    });
+
+    // --- ОТОБРАЖЕНИЕ РЕЗУЛЬТАТА ---
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
-            <h2 style="text-align:center;">${resultText}</h2>
+            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
             <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
             ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
-            <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
-                <button class="btn" id="rematchBtn">В бой</button>
-                <button class="btn" id="backBtn">Назад</button>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                <button class="btn" id="rematchBtn" style="flex: 1;">В бой</button>
+                <button class="btn" id="backBtn" style="flex: 1;">Назад</button>
             </div>
+            
             <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
-                <button class="btn result-tab active" id="tabLog">Лог боя</button>
-                <button class="btn result-tab" id="tabStats">Статистика</button>
+                <button class="btn result-tab active" id="tabLog" style="flex: 1;">Лог боя</button>
+                <button class="btn result-tab" id="tabStats" style="flex: 1;">Статистика</button>
             </div>
-            <div id="resultContent" style="max-height:300px; overflow-y:auto; background:#232833; padding:10px; border-radius:8px;">
-                ${battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
+            
+            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+                ${messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
             </div>
         </div>
     `;
 
+    // --- ОБРАБОТЧИКИ ВКЛАДОК ---
+    const resultDiv = document.getElementById('resultContent');
+    const tabLog = document.getElementById('tabLog');
+    const tabStats = document.getElementById('tabStats');
+
+    tabLog.addEventListener('click', () => {
+        tabLog.classList.add('active');
+        tabStats.classList.remove('active');
+        resultDiv.innerHTML = messages.map(m => `<div class="log-entry">${m}</div>`).join('');
+    });
+
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultDiv.innerHTML = `
+            <style>
+                .stats-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: center;
+                    font-size: 14px;
+                }
+                .stats-table th {
+                    color: #00aaff;
+                    font-weight: bold;
+                    padding-bottom: 8px;
+                }
+                .stats-table td {
+                    padding: 4px 0;
+                    border-bottom: 1px solid #2f3542;
+                }
+                .stats-table .player-col {
+                    color: #00aaff;
+                    font-weight: bold;
+                }
+                .stats-table .enemy-col {
+                    color: #e74c3c;
+                    font-weight: bold;
+                }
+            </style>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Игрок</th>
+                        <th>Параметр</th>
+                        <th>Соперник</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                </tbody>
+            </table>
+        `;
+    });
+
+    // --- КНОПКИ ---
     document.getElementById('rematchBtn').addEventListener('click', () => {
         BattleLog.stop();
         refreshData().then(startBattle);

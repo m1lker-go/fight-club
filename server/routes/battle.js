@@ -510,14 +510,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 } else {
                     actionLog = attackResult.log;
                 }
-                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-                    attackResult.extraLogs.forEach(extra => messages.push(extra));
-                }
-                if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
-            }
-
-            messages.push(actionLog);
-            pushState();
+               messages.push(actionLog);
+pushState();
+if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+    attackResult.extraLogs.forEach(extra => messages.push(extra));
+    pushState(); // обновляем состояние после стаков (иконки)
+}
+if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
 
             turn = 'enemy';
         }
@@ -587,10 +586,15 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 } else {
                     actionLog = attackResult.log;
                 }
-                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
-                    attackResult.extraLogs.forEach(extra => messages.push(extra));
-                }
-                if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
+               messages.push(actionLog);
+pushState();
+messages.push(actionLog);
+pushState();
+if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+    attackResult.extraLogs.forEach(extra => messages.push(extra));
+    pushState();
+}
+if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
             }
 
             messages.push(actionLog);

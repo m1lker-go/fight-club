@@ -1241,6 +1241,12 @@ td {
 }
 
 
-.hero-card, .enemy-card, .battle-arena {
+/* Убираем фон у аватаров и баров */
+.hero-card, .enemy-card,
+.hero-card > div:first-child, .enemy-card > div:first-child,
+.hp-bar, .mana-bar {
     background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
 }

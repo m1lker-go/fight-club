@@ -1,4 +1,4 @@
-// battleLog.js (исправленный)
+// battleLog.js
 
 const BattleLog = {
     messages: [],
@@ -62,7 +62,12 @@ const BattleLog = {
         const enemyAnim = document.getElementById('enemy-animation');
         if (heroAnim) heroAnim.style.display = 'none';
         if (enemyAnim) enemyAnim.style.display = 'none';
-      },
+        // также скрываем оверлеи заморозки
+        const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
+        const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
+        if (heroFrozen) heroFrozen.classList.remove('active');
+        if (enemyFrozen) enemyFrozen.classList.remove('active');
+    },
 
     applyState(state) {
         const heroHpText = document.getElementById('heroHpText');
@@ -261,7 +266,13 @@ const BattleLog = {
             target = isPlayerAction ? 'hero' : 'enemy';
             anim = 'fire.gif';
             return { target, anim };
-        },
+        }
+
+        // ЗАМОРОЗКА – ПОЛНОСТЬЮ УДАЛЕНА (никакая анимация не будет запускаться)
+        // Блок удалён
+
+        return { target: null, anim: null };
+    },
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

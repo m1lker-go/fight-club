@@ -378,9 +378,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let enemyMana = 0;
     const log = [];
     const turns = [];
-const playerDot = applyDotDamage(playerState, playerName);
-const enemyDot = applyDotDamage(enemyState, enemyName);
-    
+
     let playerState = {
         poisonStacks: 0,
         burnStacks: 0,
@@ -452,8 +450,7 @@ const enemyDot = applyDotDamage(enemyState, enemyName);
                 }
                 log.push(msg);
                 turns.push({ type: 'log', turn: 'player', action: msg });
-                // Игрок пропускает ход, стаки не накапливаются, mana не восстанавливается?
-                // Пока оставим без изменений: mana не восстанавливается в пропущенный ход.
+                // Игрок пропускает ход, мана не восстанавливается
             } else {
                 playerState.hp = playerHp;
                 enemyState.hp = enemyHp;
@@ -516,17 +513,10 @@ const enemyDot = applyDotDamage(enemyState, enemyName);
                 // Лог основного действия игрока
                 log.push(actionLog);
                 turns.push({ type: 'log', turn: 'player', action: actionLog });
-
-                // Сохраняем состояние после хода игрока (для полноценного хода в массиве turns, но мы добавим его после обоих действий)
-                // Для простоты добавим полноценный ход после окончания раунда, а пока сохраним в turnState.
             }
         }
 
         // --- ХОД ПРОТИВНИКА ---
-        // В текущей реализации порядок ходов фиксирован для всего боя, поэтому после хода игрока всегда ходит противник.
-        // Но если игрок заморожен, мы уже обработали это и перешли к ходу противника.
-        // Поэтому здесь просто обрабатываем ход противника, независимо от того, был ли заморожен игрок.
-
         if (turn === 'enemy') {
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
@@ -625,7 +615,7 @@ const enemyDot = applyDotDamage(enemyState, enemyName);
 
         // Добавляем полноценный ход (с типом 'turn') для клиента, содержащий состояние после раунда
         const turnState = {
-            turn: 'round', // можно указать round или оставить предыдущий turn? Для клиента лучше сохранить понятие хода, но мы уже добавили все логи. Добавим один объект с состоянием после раунда.
+            turn: 'round',
             playerHp,
             enemyHp,
             playerMana,
@@ -640,14 +630,14 @@ const enemyDot = applyDotDamage(enemyState, enemyName);
             enemyPoisonStacks: enemyState.poisonStacks,
             enemyBurnStacks: enemyState.burnStacks,
             enemyFreezeStacks: enemyState.freezeStacks,
-            action: null // основное действие уже добавлено как лог
+            action: null
         };
         turns.push({ type: 'turn', ...turnState });
 
         // Проверка смерти после урона от стаков
         if (playerHp <= 0 || enemyHp <= 0) break;
 
-        // Переключение хода для следующего раунда (если нужно менять очерёдность – оставляем как есть)
+        // Переключение хода для следующего раунда
         turn = (turn === 'player') ? 'enemy' : 'player';
     }
 

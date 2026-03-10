@@ -62,6 +62,7 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
+                <!-- Колонка 1: аватар игрока -->
                 <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
@@ -79,6 +80,7 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
+                <!-- Колонка 2: статусы игрока -->
                 <div class="player-debuffs" style="flex: 0 0 20px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -87,11 +89,13 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
+                <!-- Колонка 3: центральная -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 4px 8px; border-radius: 12px; cursor: pointer; font-weight: bold; opacity: 0.8; font-size: 12px;">x1</button>
                 </div>
 
+                <!-- Колонка 4: статусы врага -->
                 <div class="enemy-debuffs" style="flex: 0 0 20px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -100,6 +104,7 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
+                <!-- Колонка 5: аватар противника -->
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
@@ -147,6 +152,60 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
+// Функция для парсинга статистики (точная копия из рабочей версии)
+function calculateBattleStats(turns, playerName) {
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+
+    if (!turns || !Array.isArray(turns)) return { playerStats, enemyStats };
+
+    turns.forEach(turn => {
+        if (turn.turn === 'final' || !turn.action) return;
+        const action = turn.action;
+        const isPlayerTurn = turn.turn === 'player';
+        const attackerStats = isPlayerTurn ? playerStats : enemyStats;
+        const defenderStats = isPlayerTurn ? enemyStats : playerStats;
+
+        // Поиск урона
+        const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
+        if (dmgMatch) {
+            const dmg = parseInt(dmgMatch[1]);
+            attackerStats.hits++;
+            attackerStats.totalDamage += dmg;
+            if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                attackerStats.crits++;
+            }
+        }
+
+        // Поиск уворота
+        const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
+        if (dodgeMatch) {
+            const dodgerName = dodgeMatch[1].trim();
+            if (dodgerName === playerName) {
+                playerStats.dodges++;
+            } else {
+                enemyStats.dodges++;
+            }
+        }
+
+        // Поиск исцеления
+        const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
+        if (healMatch) {
+            const heal = parseInt(healMatch[1]);
+            attackerStats.heal += heal;
+        }
+
+        // Поиск отражения
+        const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
+        if (reflectMatch) {
+            const reflect = parseInt(reflectMatch[1]);
+            defenderStats.reflect += reflect;
+        }
+    });
+
+    return { playerStats, enemyStats };
+}
+
 async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
@@ -154,7 +213,7 @@ async function showBattleResult(battleData, timeOut = false) {
     }
 
     const winner = battleData.result.winner;
-    const isVictory = winner === 'player';
+    const isVictory = (winner === 'player');
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
 
     const expGain = battleData.reward?.exp || 0;
@@ -180,77 +239,12 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    // --- ПОДСЧЁТ СТАТИСТИКИ ---
-    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    // Расчёт статистики
+    const { playerStats, enemyStats } = calculateBattleStats(battleData.result.turns || [], userData.username);
 
-    const messages = battleData.result.messages || [];
-    messages.forEach(msg => {
-        const action = msg;
-        const isPlayerAction = action.includes(userData.username);
+    // Формируем лог для отображения
+    const logArray = battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('');
 
-        // Определяем, чьё действие (атакующий)
-        let attackerStats, defenderStats;
-        if (isPlayerAction) {
-            attackerStats = playerStats;
-            defenderStats = enemyStats;
-        } else {
-            attackerStats = enemyStats;
-            defenderStats = playerStats;
-        }
-
-        // Урон
-        const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
-        if (dmgMatch) {
-            const dmg = parseInt(dmgMatch[1]);
-            attackerStats.hits++;
-            attackerStats.totalDamage += dmg;
-            if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                attackerStats.crits++;
-            }
-        }
-
-        // Уклонение
-        const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
-        if (dodgeMatch) {
-            const dodgerName = dodgeMatch[1].trim();
-            if (dodgerName === userData.username) {
-                playerStats.dodges++;
-            } else {
-                enemyStats.dodges++;
-            }
-        }
-
-        // Исцеление (вампиризм)
-        const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
-        if (healMatch) {
-            const heal = parseInt(healMatch[1]);
-            // Исцеление всегда у того, кто восстанавливает (в сообщении есть имя)
-            if (action.includes(userData.username)) {
-                playerStats.heal += heal;
-            } else {
-                enemyStats.heal += heal;
-            }
-        }
-
-        // Отражение
-        const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
-        if (reflectMatch) {
-            const reflect = parseInt(reflectMatch[1]);
-            // Кто отражает – имя перед "отражает"
-            const reflectWhoMatch = action.match(/([^\s]+)\s+отражает/i);
-            if (reflectWhoMatch) {
-                const reflectName = reflectWhoMatch[1].trim();
-                if (reflectName === userData.username) {
-                    playerStats.reflect += reflect;
-                } else {
-                    enemyStats.reflect += reflect;
-                }
-            }
-        }
-    });
-
-    // --- ОТОБРАЖЕНИЕ РЕЗУЛЬТАТА ---
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
@@ -269,12 +263,11 @@ async function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${messages.map(m => `<div class="log-entry">${m}</div>`).join('')}
+                ${logArray}
             </div>
         </div>
     `;
 
-    // --- ОБРАБОТЧИКИ ВКЛАДОК ---
     const resultDiv = document.getElementById('resultContent');
     const tabLog = document.getElementById('tabLog');
     const tabStats = document.getElementById('tabStats');
@@ -282,7 +275,7 @@ async function showBattleResult(battleData, timeOut = false) {
     tabLog.addEventListener('click', () => {
         tabLog.classList.add('active');
         tabStats.classList.remove('active');
-        resultDiv.innerHTML = messages.map(m => `<div class="log-entry">${m}</div>`).join('');
+        resultDiv.innerHTML = logArray;
     });
 
     tabStats.addEventListener('click', () => {
@@ -334,22 +327,24 @@ async function showBattleResult(battleData, timeOut = false) {
         `;
     });
 
-    // --- КНОПКИ ---
-    document.getElementById('rematchBtn').addEventListener('click', () => {
+    document.getElementById('rematchBtn').addEventListener('click', async () => {
         BattleLog.stop();
-        refreshData().then(startBattle);
+        await refreshData();
+        startBattle();
     });
 
-    document.getElementById('backBtn').addEventListener('click', () => {
+    document.getElementById('backBtn').addEventListener('click', async () => {
         BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';
         });
-        refreshData().then(() => showScreen('main'));
+        await refreshData();
+        showScreen('main');
     });
 
     if (leveledUp) {
-        refreshData().then(() => showLevelUpModal(userData.current_class));
+        await refreshData();
+        showLevelUpModal(userData.current_class);
     }
 }

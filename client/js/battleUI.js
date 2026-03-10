@@ -1,6 +1,5 @@
 // battleUI.js
 
-// ==================== БОЙ ====================
 async function startBattle() {
     try {
         const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
@@ -132,13 +131,11 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // Инициализируем лог
     const logContainer = document.getElementById('battleLog');
     BattleLog.init(battleData, logContainer, (finishedData) => {
         showBattleResult(finishedData);
     });
 
-    // Кнопка скорости
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         const newSpeed = BattleLog.speed === 1 ? 2 : 1;
@@ -146,7 +143,6 @@ function showBattleScreen(battleData) {
         BattleLog.setSpeed(newSpeed);
     });
 
-    // Таймер боя
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
     const timer = setInterval(() => {
@@ -165,9 +161,14 @@ function showBattleScreen(battleData) {
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);
+
+    // Сохраняем интервалы в замыкании для возможности остановки
+    const interval = null; // не используется, но можно сохранить ссылку
+    const finishTimeout = null;
+
+    // Обработчики кнопок будут добавлены в showBattleResult
 }
 
-// Добавляем недостающую функцию hideAnimations
 function hideAnimations() {
     const heroAnim = document.getElementById('hero-animation');
     const enemyAnim = document.getElementById('enemy-animation');
@@ -175,7 +176,6 @@ function hideAnimations() {
     if (enemyAnim) enemyAnim.style.display = 'none';
 }
 
-// ==================== ПОКАЗ РЕЗУЛЬТАТА БОЯ ====================
 async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
@@ -192,7 +192,6 @@ async function showBattleResult(battleData, timeOut = false) {
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
 
-    // Обновление заданий (без изменений)
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -208,11 +207,6 @@ async function showBattleResult(battleData, timeOut = false) {
             body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
         });
     } catch (err) { console.error(err); }
-
-    // Статистика (можно оставить как есть или упростить)
-    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-    // ... (парсинг лога, если нужен)
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -237,13 +231,20 @@ async function showBattleResult(battleData, timeOut = false) {
         </div>
     `;
 
-    // Обработчики кнопок
     document.getElementById('rematchBtn').addEventListener('click', async () => {
+        // Остановить все процессы боя
+        if (typeof BattleLog !== 'undefined' && BattleLog.stop) {
+            BattleLog.stop();
+        }
         await refreshData();
         startBattle();
     });
 
     document.getElementById('backBtn').addEventListener('click', async () => {
+        // Остановить все процессы боя
+        if (typeof BattleLog !== 'undefined' && BattleLog.stop) {
+            BattleLog.stop();
+        }
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';

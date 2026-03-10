@@ -38,8 +38,8 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.5; /* Прозрачность 15% - можно настроить */
-    pointer-events: none; /* Чтобы фон не мешал кликам */
+    opacity: 0.5;
+    pointer-events: none;
     z-index: 0;
 }
 
@@ -1102,7 +1102,7 @@ td {
 .round-button,
 .class-btn,
 .btn {
-    background-color: rgba(35, 40, 51, 0.9); /* Лёгкая полупрозрачность, чтобы фон просвечивал */
+    background-color: rgba(35, 40, 51, 0.9);
     backdrop-filter: blur(2px);
     transition: background-color 0.2s;
 }
@@ -1130,7 +1130,6 @@ td {
     background-color: rgba(35, 40, 51, 0.9);
     backdrop-filter: blur(2px);
 }
-
 
 /* ===== БОЙ ===== */
 .battle-screen {
@@ -1188,7 +1187,7 @@ td {
     font-weight: bold;
 }
 
-
+/* Слоты для иконок статусов */
 .debuff-slot {
     width: 22px;
     height: 22px;
@@ -1203,7 +1202,6 @@ td {
     height: 100%;
     object-fit: contain;
 }
-
 
 /* Оверлей "ПРОИГРАЛ" */
 .defeat-overlay {
@@ -1220,7 +1218,7 @@ td {
     font-size: 14px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
     background-color: rgba(0,0,0,0.3);
-    opacity: 0; /* скрыт по умолчанию */
+    opacity: 0;
     transition: opacity 0.5s ease;
     pointer-events: none;
     z-index: 20;
@@ -1232,7 +1230,7 @@ td {
 
 .hero-card.defeated .defeat-overlay,
 .enemy-card.defeated .defeat-overlay {
-    opacity: 1; /* показываем, когда родитель имеет класс defeated */
+    opacity: 1;
 }
 
 /* Анимационные контейнеры (для вспышек ударов и т.д.) */

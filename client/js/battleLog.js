@@ -106,13 +106,13 @@ const BattleLog = {
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Управление оверлеем заморозки (активен, если frozen > 0)
+        // Оверлей заморозки
         const heroFrozenOverlay = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozenOverlay = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozenOverlay) heroFrozenOverlay.classList.toggle('active', window.playerFrozen > 0);
         if (enemyFrozenOverlay) enemyFrozenOverlay.classList.toggle('active', window.enemyFrozen > 0);
 
-        // Управление надписью "ПРОИГРАЛ" через класс defeated
+        // Класс смерти
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
         if (heroCard) heroCard.classList.toggle('defeated', state.playerHp <= 0);
@@ -211,9 +211,10 @@ const BattleLog = {
             this.currentStateIndex++;
         }
 
+        // Задержка 2000 мс на сообщение (2 секунды)
         this.interval = setTimeout(() => {
             this.playNext();
-        }, 2500 / this.speed);
+        }, 2000 / this.speed);
     },
 
     getAnimationForAction(action) {
@@ -221,6 +222,7 @@ const BattleLog = {
         let target = null;
         let anim = null;
 
+        // Проверяем, содержит ли сообщение имя игрока
         const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
 
         // Атаки

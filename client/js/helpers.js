@@ -143,7 +143,7 @@ function showRoleInfoModal(className) {
         classFeatureHtml = `
             <div class="role-card" style="border-left-color: #f39c12;">
                 <h3>Особенность класса</h3>
-                <p><strong>Стойкость:</strong> за каждые 5 единиц защиты получает +3 к максимальному здоровью.</p>
+                <p><strong>Стойкость:</strong> за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</p>
             </div>
         `;
     } else if (className === 'assassin') {

@@ -198,6 +198,21 @@ const BattleLog = {
         if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
     },
 
+    formatLogText(text) {
+    // Урон (обычный, критический, от стихий, отражение)
+    text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+    text = text.replace(/(Крит\. урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+    text = text.replace(/(Урон от огня -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+    text = text.replace(/(Урон от яда -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+    text = text.replace(/(Отражение -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+    
+    // Лечение, вампиризм
+    text = text.replace(/(Вампиризм \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
+    text = text.replace(/(Здоровье \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
+    
+    return text;
+},
+    
     playNext() {
         if (this.currentMsgIndex >= this.messages.length) {
             console.log('[BattleLog] All messages shown, finishing');

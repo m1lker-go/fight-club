@@ -215,7 +215,11 @@ async function showBattleResult(battleData, timeOut = false) {
     }
 
     // Используем сообщения напрямую для отображения лога
-    const logArray = battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('');
+   const logArray = battleData.result.messages.map(m => {
+    // m — объект с полем text
+    const text = m.text || JSON.stringify(m); // на всякий случай fallback
+    return `<div class="log-entry">${text}</div>`;
+}).join('');
 
     const content = document.getElementById('content');
     content.innerHTML = `

@@ -68,7 +68,6 @@ function showBattleScreen(battleData) {
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
-                        <!-- Контейнер для всплывающих чисел (добавлено) -->
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">

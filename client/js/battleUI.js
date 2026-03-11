@@ -13,7 +13,7 @@ async function startBattle() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 tg_id: userData.tg_id,
-                playerName: window.playerName || userData.username || 'Player'
+                playerName: window.playerName || userData.username || 'Player'  // ← добавляем playerName
             })
         });
 

@@ -215,6 +215,13 @@ body {
     font-weight: bold;
 }
 
+.ice-text { 
+    color: #00aaff; 
+    font-weight: bold;
+}
+    
+
+
 .log-entry .heal-number {
     color: #44ff44;
     font-weight: bold;

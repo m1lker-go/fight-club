@@ -1,7 +1,6 @@
 // battleUI.js
 
 async function startBattle() {
-    // Проверяем наличие tg_id
     if (!userData || !userData.tg_id) {
         console.error('tg_id не определён!');
         alert('Ошибка: не удалось идентифицировать пользователя');
@@ -12,7 +11,10 @@ async function startBattle() {
         const response = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id })
+            body: JSON.stringify({ 
+                tg_id: userData.tg_id,
+                playerName: window.playerName || userData.username || 'Player'
+            })
         });
 
         const data = await response.json();
@@ -23,7 +25,6 @@ async function startBattle() {
             return;
         }
 
-        // Успешный ответ – показываем экран боя
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);

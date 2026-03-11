@@ -147,60 +147,6 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-// Функция для подсчёта статистики (на основе сообщений)
-function calculateBattleStats(messages, playerName) {
-    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-
-    if (!messages || !Array.isArray(messages)) return { playerStats, enemyStats };
-
-    messages.forEach(msg => {
-        const text = msg.text || msg;
-        if (typeof text !== 'string') return;
-
-        const isPlayerAction = text.includes(playerName);
-        const attackerStats = isPlayerAction ? playerStats : enemyStats;
-        const defenderStats = isPlayerAction ? enemyStats : playerStats;
-
-        // Поиск урона
-        const dmgMatch = text.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
-        if (dmgMatch) {
-            const dmg = parseInt(dmgMatch[1]);
-            attackerStats.hits++;
-            attackerStats.totalDamage += dmg;
-            if (text.includes('КРИТИЧЕСКОГО') || text.includes('крита') || text.includes('крит')) {
-                attackerStats.crits++;
-            }
-        }
-
-        // Уворот
-        if (text.includes('уклоняется') || text.includes('уворачивается') || text.includes('неуловимый манёвр')) {
-            const match = text.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
-            if (match) {
-                const dodger = match[1].trim();
-                if (dodger === playerName) playerStats.dodges++;
-                else enemyStats.dodges++;
-            }
-        }
-
-        // Исцеление
-        const healMatch = text.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
-        if (healMatch) {
-            const heal = parseInt(healMatch[1]);
-            attackerStats.heal += heal;
-        }
-
-        // Отражение
-        const reflectMatch = text.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
-        if (reflectMatch) {
-            const reflect = parseInt(reflectMatch[1]);
-            defenderStats.reflect += reflect;
-        }
-    });
-
-    return { playerStats, enemyStats };
-}
-
 async function showBattleResult(battleData, timeOut = false) {
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
@@ -217,7 +163,6 @@ async function showBattleResult(battleData, timeOut = false) {
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
 
-    // Обновление заданий
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -234,14 +179,51 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    // Подсчёт статистики
-    const { playerStats, enemyStats } = calculateBattleStats(battleData.result.messages || [], userData.username);
+    // Подсчёт статистики (как в старом коде)
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
-    // Формируем HTML для лога (просто текст)
-    const logHtml = battleData.result.messages.map(m => {
-        const text = m.text || m;
-        return `<div class="log-entry">${text}</div>`;
-    }).join('');
+    if (battleData.result.turns && Array.isArray(battleData.result.turns)) {
+        battleData.result.turns.forEach(turn => {
+            if (turn.turn === 'final') return;
+            const action = turn.action;
+            const isPlayerTurn = turn.turn === 'player';
+            const attackerStats = isPlayerTurn ? playerStats : enemyStats;
+            const defenderStats = isPlayerTurn ? enemyStats : playerStats;
+
+            const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
+            if (dmgMatch) {
+                const dmg = parseInt(dmgMatch[1]);
+                attackerStats.hits++;
+                attackerStats.totalDamage += dmg;
+                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
+                    attackerStats.crits++;
+                }
+            }
+
+            const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
+            if (dodgeMatch) {
+                const dodgerName = dodgeMatch[1].trim();
+                if (dodgerName === userData.username) playerStats.dodges++;
+                else enemyStats.dodges++;
+            }
+
+            const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
+            if (healMatch) {
+                const heal = parseInt(healMatch[1]);
+                attackerStats.heal += heal;
+            }
+
+            const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
+            if (reflectMatch) {
+                const reflect = parseInt(reflectMatch[1]);
+                defenderStats.reflect += reflect;
+            }
+        });
+    }
+
+    // Используем сообщения напрямую для отображения лога
+    const logArray = battleData.result.messages.map(m => `<div class="log-entry">${m}</div>`).join('');
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -261,7 +243,7 @@ async function showBattleResult(battleData, timeOut = false) {
             </div>
             
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
-                ${logHtml}
+                ${logArray}
             </div>
         </div>
     `;
@@ -273,7 +255,7 @@ async function showBattleResult(battleData, timeOut = false) {
     tabLog.addEventListener('click', () => {
         tabLog.classList.add('active');
         tabStats.classList.remove('active');
-        resultDiv.innerHTML = logHtml;
+        resultDiv.innerHTML = logArray;
     });
 
     tabStats.addEventListener('click', () => {

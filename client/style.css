@@ -1362,3 +1362,22 @@ td {
     margin-left: 2px;
     /* Если иконки цветные и не требуют изменения цвета, больше ничего не нужно */
 }
+
+.battle-log {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    word-wrap: break-word;
+}
+
+.battle-log .log-entry {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;  /* гарантирует перенос длинных строк */
+    max-width: 100%;
+    padding: 2px 0;
+    line-height: 1.4;
+    margin-bottom: 2px;
+    border-bottom: 1px solid #2f3542;
+}

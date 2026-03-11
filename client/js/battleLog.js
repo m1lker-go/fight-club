@@ -223,36 +223,117 @@ const BattleLog = {
             this.logContainer.appendChild(logEntry);
             this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-            // --- Определяем анимацию ТОЛЬКО для отображаемых сообщений ---
+            // --- Определяем анимацию и всплывающее число ---
             let animTarget = null;
             let animFile = null;
+            let numberValue = null;
+            let icon = null;
+            let colorClass = null;
+            let numberTarget = null;
 
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-                // Атакующий бьёт по противнику
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 animFile = 'shot.gif';
+
+                // Поиск обычного урона
+                const dmgMatch = msgText.match(/Урон -(\d+)/);
+                if (dmgMatch) {
+                    numberValue = -parseInt(dmgMatch[1]);
+                    icon = '⚔️';
+                    colorClass = 'red';
+                    numberTarget = animTarget;
+                }
+
+                // Поиск критического урона (если есть)
+                const critMatch = msgText.match(/Крит\. урон -(\d+)/);
+                if (critMatch) {
+                    numberValue = -parseInt(critMatch[1]);
+                    icon = '⚔️';
+                    colorClass = 'red';
+                    numberTarget = animTarget;
+                    // Можно добавить жирное начертание через CSS, но оставим как есть
+                }
+
+                // Вампиризм (отдельная строка)
+                const vampMatch = msgText.match(/Вампиризм \+(\d+)/);
+                if (vampMatch) {
+                    const vampValue = parseInt(vampMatch[1]);
+                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                }
+
+                // Отражение (отдельная строка)
+                const reflectMatch = msgText.match(/Отражение -(\d+)/);
+                if (reflectMatch) {
+                    const reflectValue = -parseInt(reflectMatch[1]);
+                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
+                }
+
             } else if (type === 'dodge') {
-                // Уклонение на того, кто уклоняется (он же attacker)
                 animTarget = (attacker === 'player') ? 'hero' : 'enemy';
                 animFile = 'missx.gif';
+                // Для уклонения число не показываем
             } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 if (type === 'fire_ult') animFile = 'fire.gif';
                 else if (type === 'ice_ult') animFile = 'ice.gif';
                 else if (type === 'poison_ult') animFile = 'poison.gif';
                 else animFile = 'ultimate.gif';
-            } else if (type === 'heal' || type === 'buff') {
+
+                // Поиск урона
+                const dmgMatch = msgText.match(/Урон -(\d+)/);
+                if (dmgMatch) {
+                    numberValue = -parseInt(dmgMatch[1]);
+                    if (type === 'fire_ult') icon = '🔥';
+                    else if (type === 'ice_ult') icon = '❄️';
+                    else if (type === 'poison_ult') icon = '💧';
+                    else icon = '⚔️';
+                    colorClass = 'red';
+                    numberTarget = animTarget;
+                }
+
+                // Поиск лечения
+                const healMatch = msgText.match(/Здоровье \+(\d+)/);
+                if (healMatch) {
+                    numberValue = parseInt(healMatch[1]);
+                    icon = '❤️';
+                    colorClass = 'green';
+                    numberTarget = attacker === 'player' ? 'hero' : 'enemy'; // лечение на себе
+                }
+
+                // Поиск самоповреждения
+                const selfMatch = msgText.match(/самоповреждение -(\d+)/);
+                if (selfMatch) {
+                    const selfValue = -parseInt(selfMatch[1]);
+                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', selfValue, '💔', 'red');
+                }
+            } else if (type === 'heal') {
                 animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+                animFile = 'hill.gif';
+                const healMatch = msgText.match(/Здоровье \+(\d+)/);
+                if (healMatch) {
+                    numberValue = parseInt(healMatch[1]);
+                    icon = '❤️';
+                    colorClass = 'green';
+                    numberTarget = animTarget;
+                }
+            } else if (type === 'buff') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = 'shield.gif';
+                // Для баффа число не показываем
             } else if (type === 'frozen_enter' || type === 'frozen_end') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy'; // заморозка на того, кто получает эффект
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
                 animFile = 'frozenx.gif';
             }
-            // Убраны типы 'poison_dot' и 'burn_dot', так как они не должны показываться
 
+            // Запускаем анимацию
             if (animTarget && animFile) {
                 console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
                 this.showAnimation(animTarget, animFile);
+            }
+
+            // Показываем основное всплывающее число (урон/лечение)
+            if (numberValue !== null && numberTarget) {
+                this.showFloatingNumber(numberTarget, numberValue, icon, colorClass);
             }
         }
 
@@ -282,6 +363,22 @@ const BattleLog = {
             container.style.display = 'none';
             container.innerHTML = '';
         }, 1000);
+    },
+
+    showFloatingNumber(target, value, icon, colorClass) {
+        const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const numDiv = document.createElement('div');
+        numDiv.className = `floating-number ${colorClass}`;
+        const sign = value > 0 ? '+' : '';
+        numDiv.innerHTML = `${sign}${value} ${icon}`;
+        container.appendChild(numDiv);
+
+        setTimeout(() => {
+            numDiv.remove();
+        }, 2000);
     },
 
     setSpeed(newSpeed) {

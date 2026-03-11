@@ -195,62 +195,78 @@ const BattleLog = {
         this.renderEffects('enemy');
     },
 
-    playNext() {
-        if (this.currentMsgIndex >= this.messages.length) {
-            this.finish();
-            return;
-        }
+   playNext() {
+    if (this.currentMsgIndex >= this.messages.length) {
+        this.finish();
+        return;
+    }
 
-        const entry = this.messages[this.currentMsgIndex];
-        const msgText = entry.text || entry;
-        const msgType = entry.type || 'unknown';
-        const target = entry.target || 'defender';
+    const entry = this.messages[this.currentMsgIndex];
+    const msgText = entry.text || entry;
+    const msgType = entry.type || 'unknown';
 
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = msgText;
-        this.logContainer.appendChild(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
+    // Выводим сообщение в лог (текст)
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    logEntry.innerHTML = msgText;
+    this.logContainer.appendChild(logEntry);
+    this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        let animTarget = null;
-        let animFile = null;
+    // Определяем, чьё это действие (игрока или противника)
+    const isPlayerAction = userData && msgText.includes(userData.username);
+    console.log(`[BattleLog] Текст: "${msgText.substring(0,50)}..." -> isPlayerAction = ${isPlayerAction}`);
 
-        if (msgType === 'attack' || msgType === 'crit' || msgType === 'damage') {
-            animTarget = (target === 'defender') ? 'enemy' : 'hero';
-            animFile = 'shot.gif';
-        } else if (msgType === 'dodge') {
-            animTarget = (target === 'defender') ? 'hero' : 'enemy';
-            animFile = 'missx.gif';
-        } else if (msgType === 'ult' || msgType === 'damage_self' || msgType === 'fire_ult' || msgType === 'ice_ult' || msgType === 'poison_ult') {
-            animTarget = (target === 'defender') ? 'enemy' : 'hero';
-            if (msgType === 'fire_ult') animFile = 'fire.gif';
-            else if (msgType === 'ice_ult') animFile = 'ice.gif';
-            else if (msgType === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        } else if (msgType === 'heal' || msgType === 'buff') {
-            animTarget = (target === 'attacker') ? 'hero' : 'enemy';
-            animFile = (msgType === 'heal') ? 'hill.gif' : 'shield.gif';
-        } else if (msgType === 'frozen_enter' || msgType === 'frozen_end') {
-            animTarget = (target === 'defender') ? 'enemy' : 'hero';
-            animFile = 'frozenx.gif';
-        } else if (msgType === 'poison_dot' || msgType === 'burn_dot') {
-            animTarget = (target === 'defender') ? 'enemy' : 'hero';
-            animFile = (msgType === 'poison_dot') ? 'poison.gif' : 'fire.gif';
-        }
+    let animTarget = null;
+    let animFile = null;
 
-        if (animTarget && animFile) {
-            this.showAnimation(animTarget, animFile);
-        }
+    // Атаки (обычные и критические) – анимация на цель
+    if (msgType === 'attack' || msgType === 'crit' || msgType === 'damage') {
+        animTarget = isPlayerAction ? 'enemy' : 'hero';
+        animFile = 'shot.gif';
+    }
+    // Уклонение – анимация на того, кто уклоняется
+    else if (msgType === 'dodge') {
+        animTarget = isPlayerAction ? 'hero' : 'enemy';
+        animFile = 'missx.gif';
+    }
+    // Ультимейты, наносящие урон – на цель
+    else if (msgType === 'ult' || msgType === 'damage_self' || msgType === 'fire_ult' || msgType === 'ice_ult' || msgType === 'poison_ult') {
+        animTarget = isPlayerAction ? 'enemy' : 'hero';
+        if (msgType === 'fire_ult') animFile = 'fire.gif';
+        else if (msgType === 'ice_ult') animFile = 'ice.gif';
+        else if (msgType === 'poison_ult') animFile = 'poison.gif';
+        else animFile = 'ultimate.gif';
+    }
+    // Лечение и баффы – на себя
+    else if (msgType === 'heal' || msgType === 'buff') {
+        animTarget = isPlayerAction ? 'hero' : 'enemy';
+        animFile = (msgType === 'heal') ? 'hill.gif' : 'shield.gif';
+    }
+    // Заморозка/разморозка – на цель
+    else if (msgType === 'frozen_enter' || msgType === 'frozen_end') {
+        animTarget = isPlayerAction ? 'enemy' : 'hero';
+        animFile = 'frozenx.gif';
+    }
+    // Урон от яда/огня – на цель (получает урон)
+    else if (msgType === 'poison_dot' || msgType === 'burn_dot') {
+        animTarget = isPlayerAction ? 'hero' : 'enemy';
+        animFile = (msgType === 'poison_dot') ? 'poison.gif' : 'fire.gif';
+    }
 
-        this.currentMsgIndex++;
+    if (animTarget && animFile) {
+        console.log(`[BattleLog] Показываем ${animFile} на ${animTarget}`);
+        this.showAnimation(animTarget, animFile);
+    }
 
-        if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
-            this.currentStateIndex++;
-        }
+    this.currentMsgIndex++;
 
-        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-    },
+    if (this.currentStateIndex < this.states.length) {
+        this.applyState(this.states[this.currentStateIndex]);
+        this.currentStateIndex++;
+    }
+
+    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+}
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

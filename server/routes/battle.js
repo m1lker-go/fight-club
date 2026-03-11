@@ -193,7 +193,7 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
             extraLogs.push({
                 text: burnStackPhrase.replace('%d', defenderState.burnStacks),
                 type: 'burn_stack',
-                attacker: (attackerName === playerName) ? 'player' : 'enemy'
+                attacker: isPlayerAttacker ? 'player' : 'enemy' 
             });
         }
     }
@@ -205,7 +205,7 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
             extraLogs.push({
                 text: frozenAlreadyPhrase.replace('%s', defenderName),
                 type: 'frozen_already',
-                attacker: (attackerName === playerName) ? 'player' : 'enemy'
+                attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
         } else {
             defenderState.freezeStacks++;
@@ -215,13 +215,13 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
                 extraLogs.push({
                     text: frozenPhrase.replace('%s', defenderName),
                     type: 'frozen_enter',
-                    attacker: (attackerName === playerName) ? 'player' : 'enemy'
+                   attacker: isPlayerAttacker ? 'player' : 'enemy'
                 });
             } else {
                 extraLogs.push({
                     text: freezeStackPhrase.replace('%s', defenderName).replace('%d', defenderState.freezeStacks),
                     type: 'freeze_stack',
-                    attacker: (attackerName === playerName) ? 'player' : 'enemy'
+                   attacker: isPlayerAttacker ? 'player' : 'enemy'
                 });
             }
         }

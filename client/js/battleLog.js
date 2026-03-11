@@ -235,7 +235,7 @@ const BattleLog = {
             // Добавляем запись в лог
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.innerHTML = msgText;
+            logEntry.innerHTML = this.formatLogText(msgText);
             this.logContainer.appendChild(logEntry);
             this.logContainer.scrollTop = this.logContainer.scrollHeight;
 

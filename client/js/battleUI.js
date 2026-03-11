@@ -250,10 +250,12 @@ if (match) {
 });
 
        // Используем сообщения напрямую для отображения лога
-  const logArray = battleData.result.messages.map(m => {
+ const logArray = battleData.result.messages.map(m => {
     const text = m.text || JSON.stringify(m);
-    // Применяем ту же функцию форматирования, что и во время боя
-    const formattedText = BattleLog.formatLogText ? BattleLog.formatLogText(text) : text;
+    // Применяем форматирование цветов из BattleLog
+    const formattedText = typeof BattleLog.formatLogText === 'function' 
+        ? BattleLog.formatLogText(text) 
+        : text;
     return `<div class="log-entry">${formattedText}</div>`;
 }).join('');
 

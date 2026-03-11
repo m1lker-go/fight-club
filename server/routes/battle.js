@@ -344,6 +344,8 @@ function applyDotDamage(state, name) {
     return { damage: totalDamage, logs };
 }
 
+
+
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     if (!playerStats || !enemyStats) throw new Error('playerStats or enemyStats is undefined');
 
@@ -410,14 +412,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 console.log(`[ULT] ${skill.log}`);
             } else {
                 const attackResult = performAttack(
-    playerStats, enemyStats,
-    playerStats.vamp + (playerState.vampBuff>0 ? playerState.vampBonus : 0),
-    enemyStats.reflect + (enemyState.reflectBuff>0 ? enemyState.reflectBonus : 0),
-    playerName, enemyName,
-    playerClass, playerSubclass, enemySubclass,
-    playerState, enemyState,
-    true // ← attackerIsPlayer = true
-);
+                    playerStats, enemyStats,
+                    playerStats.vamp + (playerState.vampBuff>0 ? playerState.vampBonus : 0),
+                    enemyStats.reflect + (enemyState.reflectBuff>0 ? enemyState.reflectBonus : 0),
+                    playerName, enemyName,
+                    playerClass, playerSubclass, enemySubclass,
+                    playerState, enemyState,
+                    true // ← attackerIsPlayer = true
+                );
                 if (attackResult.hit) {
                     enemyHp -= attackResult.damage;
                     playerHp += attackResult.vampHeal;
@@ -440,7 +442,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 // Стаки (не показываем в логе, но сохраняем для финала)
                 if (attackResult.extraLogs && attackResult.extraLogs.length>0) {
                     attackResult.extraLogs.forEach(extra => {
-                        extra.attacker = 'player';
+                        // extra.attacker уже установлен внутри performAttack на основе isPlayerAttacker
                         messages.push(extra);
                         console.log(`[STACK] ${extra.text}`);
                     });
@@ -485,14 +487,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 console.log(`[ULT] ${skill.log}`);
             } else {
                 const attackResult = performAttack(
-    enemyStats, playerStats,
-    enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),
-    playerStats.reflect + (playerState.reflectBuff>0 ? playerState.reflectBonus : 0),
-    enemyName, playerName,
-    enemyClass, enemySubclass, playerSubclass,
-    enemyState, playerState,
-    false // ← attackerIsPlayer = false
-);
+                    enemyStats, playerStats,
+                    enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),
+                    playerStats.reflect + (playerState.reflectBuff>0 ? playerState.reflectBonus : 0),
+                    enemyName, playerName,
+                    enemyClass, enemySubclass, playerSubclass,
+                    enemyState, playerState,
+                    false // ← attackerIsPlayer = false
+                );
                 if (attackResult.hit) {
                     playerHp -= attackResult.damage;
                     enemyHp += attackResult.vampHeal;
@@ -514,7 +516,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
                 if (attackResult.extraLogs && attackResult.extraLogs.length>0) {
                     attackResult.extraLogs.forEach(extra => {
-                        extra.attacker = 'enemy';
                         messages.push(extra);
                         console.log(`[STACK] ${extra.text}`);
                     });

@@ -594,7 +594,34 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
 // --- Вспомогательные функции (полные) ---
 function expNeeded(level) { return Math.floor(80 * Math.pow(level, 1.5)); }
-async function addExp(client, userId, className, expGain) { /* ... (полная версия) */ }
+async function addExp(client, userId, className, expGain) {
+    // Получаем текущие данные класса
+    const classRes = await client.query(
+        'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
+        [userId, className]
+    );
+    if (classRes.rows.length === 0) return false;
+
+    let { level, exp, skill_points } = classRes.rows[0];
+    exp += expGain;
+
+    const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
+    let leveledUp = false;
+
+    while (exp >= expNeeded(level)) {
+        exp -= expNeeded(level);
+        level++;
+        skill_points = (skill_points || 0) + 1;
+        leveledUp = true;
+    }
+
+    await client.query(
+        'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
+        [level, exp, skill_points, userId, className]
+    );
+
+    return leveledUp;
+}
 function getCoinReward(streak) { return streak>=25 ? 20 : streak>=10 ? 10 : streak>=5 ? 7 : 5; }
 function getRatingChange(streak) { return streak>=20 ? 30 : streak>=10 ? 25 : streak>=5 ? 20 : 15; }
 async function rechargeEnergy(client, userId) { /* ... */ }

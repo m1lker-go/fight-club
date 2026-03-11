@@ -1333,3 +1333,11 @@ td {
 .floating-number.green i {
     color: inherit;
 }
+
+.floating-icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    margin-left: 2px;
+    /* Если иконки цветные и не требуют изменения цвета, больше ничего не нужно */
+}

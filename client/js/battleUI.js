@@ -68,6 +68,8 @@ function showBattleScreen(battleData) {
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <!-- Контейнер для всплывающих чисел (добавлено) -->
+                        <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
@@ -106,6 +108,8 @@ function showBattleScreen(battleData) {
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <!-- Контейнер для всплывающих чисел (добавлено) -->
+                        <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>

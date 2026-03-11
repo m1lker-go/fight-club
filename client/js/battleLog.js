@@ -13,27 +13,38 @@ const BattleLog = {
     deathTimerHero: null,
     deathTimerEnemy: null,
 
+    // Локальные переменные для состояния (как в старом коде)
+    playerFrozen: 0,
+    enemyFrozen: 0,
+    playerShield: 0,
+    enemyShield: 0,
+    playerFreezeStacks: 0,
+    enemyFreezeStacks: 0,
+    playerPoisonStacks: 0,
+    enemyPoisonStacks: 0,
+    playerBurnStacks: 0,
+    enemyBurnStacks: 0,
+
     init(battleData, logContainer, onFinish) {
-        // Полная остановка и очистка предыдущего боя
+        console.log('[BattleLog] init');
         if (this.interval) clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        
-        // Сброс глобальных статусов
-        window.playerFrozen = 0;
-        window.enemyFrozen = 0;
-        window.playerShield = 0;
-        window.enemyShield = 0;
-        window.playerFreezeStacks = 0;
-        window.enemyFreezeStacks = 0;
-        window.playerPoisonStacks = 0;
-        window.enemyPoisonStacks = 0;
-        window.playerBurnStacks = 0;
-        window.enemyBurnStacks = 0;
 
-        // Очистка массивов
-        this.messages = [];
-        this.states = [];
+        // Сброс состояния
+        this.playerFrozen = 0;
+        this.enemyFrozen = 0;
+        this.playerShield = 0;
+        this.enemyShield = 0;
+        this.playerFreezeStacks = 0;
+        this.enemyFreezeStacks = 0;
+        this.playerPoisonStacks = 0;
+        this.enemyPoisonStacks = 0;
+        this.playerBurnStacks = 0;
+        this.enemyBurnStacks = 0;
+
+        this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
+        this.states = battleData.result.states ? [...battleData.result.states] : [];
         this.currentMsgIndex = 0;
         this.currentStateIndex = 0;
         this.logContainer = logContainer;
@@ -41,21 +52,14 @@ const BattleLog = {
         this.onFinish = onFinish;
         this.speed = 1;
 
-        this.hideAnimations();
-        if (this.logContainer) this.logContainer.innerHTML = '';
+        this.logContainer.innerHTML = '';
 
-        // Копируем свежие данные
-        this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
-        this.states = battleData.result.states ? [...battleData.result.states] : [];
+        if (this.states.length > 0) {
+            this.applyState(this.states[0]);
+            this.currentStateIndex = 1;
+        }
 
-        // Применяем начальное состояние с задержкой, чтобы DOM точно отрисовался
-        setTimeout(() => {
-            if (this.states.length > 0) {
-                this.applyState(this.states[0]);
-                this.currentStateIndex = 1;
-            }
-            this.playNext();
-        }, 100);
+        setTimeout(() => this.playNext(), 500);
     },
 
     hideAnimations() {
@@ -66,7 +70,6 @@ const BattleLog = {
     },
 
     applyState(state) {
-        // Проверяем, что все необходимые элементы существуют
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -90,28 +93,32 @@ const BattleLog = {
             if (enemyManaText) enemyManaText.innerText = state.enemyMana;
         }
 
-        window.playerFrozen = state.playerFrozen || 0;
-        window.enemyFrozen = state.enemyFrozen || 0;
-        window.playerShield = state.playerShield || 0;
-        window.enemyShield = state.enemyShield || 0;
-        window.playerFreezeStacks = state.playerFreezeStacks || 0;
-        window.enemyFreezeStacks = state.enemyFreezeStacks || 0;
-        window.playerPoisonStacks = state.playerPoisonStacks || 0;
-        window.enemyPoisonStacks = state.enemyPoisonStacks || 0;
-        window.playerBurnStacks = state.playerBurnStacks || 0;
-        window.enemyBurnStacks = state.enemyBurnStacks || 0;
+        // Обновляем внутренние переменные
+        this.playerFrozen = state.playerFrozen || 0;
+        this.enemyFrozen = state.enemyFrozen || 0;
+        this.playerShield = state.playerShield || 0;
+        this.enemyShield = state.enemyShield || 0;
+        this.playerFreezeStacks = state.playerFreezeStacks || 0;
+        this.enemyFreezeStacks = state.enemyFreezeStacks || 0;
+        this.playerPoisonStacks = state.playerPoisonStacks || 0;
+        this.enemyPoisonStacks = state.enemyPoisonStacks || 0;
+        this.playerBurnStacks = state.playerBurnStacks || 0;
+        this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
+        // Оверлей заморозки
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
-        if (heroFrozen) heroFrozen.classList.toggle('active', window.playerFrozen > 0);
-        if (enemyFrozen) enemyFrozen.classList.toggle('active', window.enemyFrozen > 0);
+        if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
+        if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
 
-        this.updateAllEffects();
+        // Обновление иконок статусов
+        this.renderEffects('player');
+        this.renderEffects('enemy');
 
+        // Смерть с задержкой 2 секунды
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
-        // Смерть с задержкой 2 секунды
         if (state.playerHp <= 0 && heroCard && !heroCard.classList.contains('defeated')) {
             if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
             this.deathTimerHero = setTimeout(() => {
@@ -135,45 +142,41 @@ const BattleLog = {
         }
     },
 
-    setBarWidth(barId, percent) {
-        const bar = document.getElementById(barId);
-        if (bar) bar.style.width = percent + '%';
-    },
-
+    // Построение списка эффектов (как в старом коде)
     buildEffectsList(side) {
         const effects = [];
         if (side === 'player') {
-            if (window.playerFrozen > 0) {
+            if (this.playerFrozen > 0) {
                 effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
             } else {
-                for (let i = 0; i < (window.playerFreezeStacks || 0); i++) {
+                for (let i = 0; i < this.playerFreezeStacks; i++) {
                     effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
                 }
             }
-            if (window.playerPoisonStacks > 0) {
+            if (this.playerPoisonStacks > 0) {
                 effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
             }
-            for (let i = 0; i < (window.playerBurnStacks || 0); i++) {
+            for (let i = 0; i < this.playerBurnStacks; i++) {
                 effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
             }
-            if (window.playerShield) {
+            if (this.playerShield) {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
         } else {
-            if (window.enemyFrozen > 0) {
+            if (this.enemyFrozen > 0) {
                 effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
             } else {
-                for (let i = 0; i < (window.enemyFreezeStacks || 0); i++) {
+                for (let i = 0; i < this.enemyFreezeStacks; i++) {
                     effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
                 }
             }
-            if (window.enemyPoisonStacks > 0) {
+            if (this.enemyPoisonStacks > 0) {
                 effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
             }
-            for (let i = 0; i < (window.enemyBurnStacks || 0); i++) {
+            for (let i = 0; i < this.enemyBurnStacks; i++) {
                 effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
             }
-            if (window.enemyShield) {
+            if (this.enemyShield) {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
         }
@@ -182,7 +185,7 @@ const BattleLog = {
 
     renderEffects(side) {
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-        const effects = side === 'player' ? this.playerEffects : this.enemyEffects;
+        const effects = this.buildEffectsList(side);
         slots.forEach(slot => slot.innerHTML = '');
         for (let i = 0; i < Math.min(effects.length, 5); i++) {
             const effect = effects[i];
@@ -195,75 +198,93 @@ const BattleLog = {
         }
     },
 
-    updateAllEffects() {
-        this.playerEffects = this.buildEffectsList('player');
-        this.enemyEffects = this.buildEffectsList('enemy');
-        this.renderEffects('player');
-        this.renderEffects('enemy');
-    },
-
     playNext() {
         if (this.currentMsgIndex >= this.messages.length) {
+            console.log('[BattleLog] finish');
             this.finish();
             return;
         }
 
-        const entry = this.messages[this.currentMsgIndex];
-        const msgText = entry.text || entry;
-        const msgType = entry.type || 'unknown';
+        // Получаем текущее сообщение (это просто строка)
+        const msg = this.messages[this.currentMsgIndex];
 
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
-        logEntry.innerHTML = msgText;
+        logEntry.innerHTML = msg;
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
+        // Анимация – берём из старой функции getAnimationForAction
+        const lower = msg.toLowerCase();
+        let target = null;
+        let anim = null;
+
         // Определяем, чьё это действие (игрока или противника)
-        const isPlayerAction = userData && msgText.includes(userData.username);
+        const isPlayerAction = userData && lower.includes(userData.username.toLowerCase());
 
-        let animTarget = null;
-        let animFile = null;
+        if (lower.includes('уклоняется') || lower.includes('уворачивается') || lower.includes('использует неуловимый манёвр')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'missx.gif';
+        } else if (lower.includes('несокрушимость')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'hill.gif';
+        } else if (lower.includes('кровопускание')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'crit.gif';
+        } else if (lower.includes('щит правосудия')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'shield.gif';
+        } else if (lower.includes('смертельный удар')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'ultimate.gif';
+        } else if (lower.includes('ядовитая волна')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'poison.gif';
+        } else if (lower.includes('кровавая жатва')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'crit.gif';
+        } else if (lower.includes('огненный шторм')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'fire.gif';
+        } else if (lower.includes('вечная зима')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'ice.gif';
+        } else if (lower.includes('зазеркалье')) {
+            target = isPlayerAction ? 'enemy' : 'hero';
+            anim = 'chara.gif';
+        } else if (lower.includes('яд разъедает') || lower.includes('получает урона от яда')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'poison.gif';
+        } else if (lower.includes('огонь пожирает') || lower.includes('получает урона от огня')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'fire.gif';
+        } else if (lower.includes('заморожен') || lower.includes('освобождается')) {
+            target = isPlayerAction ? 'hero' : 'enemy';
+            anim = 'frozenx.gif';
+        } else {
+            // Обычные атаки – по наличию ключевых слов
+            const attackKeywords = [
+                'сокрушает', 'обрушивает топор', 'пробивает броню', 'яростно атакует', 'бьёт щитом',
+                'вонзает кинжал', 'бесшумно подкрадывается', 'отравляет клинок', 'делает выпад',
+                'исчезает в тени', 'выпускает огненный шар', 'читает заклинание', 'призывает молнию',
+                'создаёт магический взрыв', 'проклинает'
+            ];
+            for (let kw of attackKeywords) {
+                if (lower.includes(kw)) {
+                    target = isPlayerAction ? 'enemy' : 'hero';
+                    anim = 'shot.gif';
+                    break;
+                }
+            }
+        }
 
-        // Атаки (обычные и критические) – анимация на цель
-        if (msgType === 'attack' || msgType === 'crit' || msgType === 'damage') {
-            animTarget = isPlayerAction ? 'enemy' : 'hero';
-            animFile = 'shot.gif';
-        }
-        // Уклонение – анимация на того, кто уклоняется
-        else if (msgType === 'dodge') {
-            animTarget = isPlayerAction ? 'hero' : 'enemy';
-            animFile = 'missx.gif';
-        }
-        // Ультимейты, наносящие урон – на цель
-        else if (msgType === 'ult' || msgType === 'damage_self' || msgType === 'fire_ult' || msgType === 'ice_ult' || msgType === 'poison_ult') {
-            animTarget = isPlayerAction ? 'enemy' : 'hero';
-            if (msgType === 'fire_ult') animFile = 'fire.gif';
-            else if (msgType === 'ice_ult') animFile = 'ice.gif';
-            else if (msgType === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        }
-        // Лечение и баффы – на себя
-        else if (msgType === 'heal' || msgType === 'buff') {
-            animTarget = isPlayerAction ? 'hero' : 'enemy';
-            animFile = (msgType === 'heal') ? 'hill.gif' : 'shield.gif';
-        }
-        // Заморозка/разморозка – на цель
-        else if (msgType === 'frozen_enter' || msgType === 'frozen_end') {
-            animTarget = isPlayerAction ? 'enemy' : 'hero';
-            animFile = 'frozenx.gif';
-        }
-        // Урон от яда/огня – на цель (получает урон)
-        else if (msgType === 'poison_dot' || msgType === 'burn_dot') {
-            animTarget = isPlayerAction ? 'hero' : 'enemy';
-            animFile = (msgType === 'poison_dot') ? 'poison.gif' : 'fire.gif';
-        }
-
-        if (animTarget && animFile) {
-            this.showAnimation(animTarget, animFile);
+        if (target && anim) {
+            this.showAnimation(target, anim);
         }
 
         this.currentMsgIndex++;
 
+        // Применяем следующее состояние (если есть)
         if (this.currentStateIndex < this.states.length) {
             this.applyState(this.states[this.currentStateIndex]);
             this.currentStateIndex++;

@@ -1275,15 +1275,15 @@ td {
     opacity: 1;
     animation: floatFade 2s ease-out forwards;
 }
-
 /* Красный цвет для урона */
 .floating-number.red {
-    color: #ff4444;
+    color: #ff4444 !important; /* гарантированно красный */
 }
 
 /* Зелёный цвет для лечения */
-.floating-number.green {
-    color: #44ff44;
+.floating-number.red i, .floating-number.green i {
+    /* Иконки Font Awesome наследуют цвет, но на всякий случай */
+    color: inherit;
 }
 
 /* Анимация */

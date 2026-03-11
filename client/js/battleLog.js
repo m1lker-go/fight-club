@@ -48,12 +48,14 @@ const BattleLog = {
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
 
-        if (this.states.length > 0) {
-            this.applyState(this.states[0]);
-            this.currentStateIndex = 1;
-        }
-
-        setTimeout(() => this.playNext(), 500);
+        // Применяем начальное состояние с задержкой, чтобы DOM точно отрисовался
+        setTimeout(() => {
+            if (this.states.length > 0) {
+                this.applyState(this.states[0]);
+                this.currentStateIndex = 1;
+            }
+            this.playNext();
+        }, 100);
     },
 
     hideAnimations() {
@@ -64,10 +66,15 @@ const BattleLog = {
     },
 
     applyState(state) {
+        // Проверяем, что все необходимые элементы существуют
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
         const enemyHpBar = document.getElementById('enemyHp');
+        const heroMana = document.getElementById('heroMana');
+        const enemyMana = document.getElementById('enemyMana');
+        const heroManaText = document.getElementById('heroManaText');
+        const enemyManaText = document.getElementById('enemyManaText');
 
         if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
         if (enemyHpText) enemyHpText.innerText = `${state.enemyHp}/${this.battleData.result.enemyMaxHp}`;
@@ -75,12 +82,12 @@ const BattleLog = {
         if (enemyHpBar) enemyHpBar.style.width = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
 
         if (state.playerMana !== undefined) {
-            document.getElementById('heroMana').style.width = (state.playerMana / 100) * 100 + '%';
-            document.getElementById('heroManaText').innerText = state.playerMana;
+            if (heroMana) heroMana.style.width = (state.playerMana / 100) * 100 + '%';
+            if (heroManaText) heroManaText.innerText = state.playerMana;
         }
         if (state.enemyMana !== undefined) {
-            document.getElementById('enemyMana').style.width = (state.enemyMana / 100) * 100 + '%';
-            document.getElementById('enemyManaText').innerText = state.enemyMana;
+            if (enemyMana) enemyMana.style.width = (state.enemyMana / 100) * 100 + '%';
+            if (enemyManaText) enemyManaText.innerText = state.enemyMana;
         }
 
         window.playerFrozen = state.playerFrozen || 0;
@@ -108,7 +115,7 @@ const BattleLog = {
         if (state.playerHp <= 0 && heroCard && !heroCard.classList.contains('defeated')) {
             if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
             this.deathTimerHero = setTimeout(() => {
-                heroCard.classList.add('defeated');
+                if (heroCard) heroCard.classList.add('defeated');
             }, 2000);
         }
         if (state.playerHp > 0 && heroCard && heroCard.classList.contains('defeated')) {
@@ -119,7 +126,7 @@ const BattleLog = {
         if (state.enemyHp <= 0 && enemyCard && !enemyCard.classList.contains('defeated')) {
             if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
             this.deathTimerEnemy = setTimeout(() => {
-                enemyCard.classList.add('defeated');
+                if (enemyCard) enemyCard.classList.add('defeated');
             }, 2000);
         }
         if (state.enemyHp > 0 && enemyCard && enemyCard.classList.contains('defeated')) {

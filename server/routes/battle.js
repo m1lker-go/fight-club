@@ -611,7 +611,14 @@ async function addExp(client, userId, className, expGain) {
     while (exp >= expNeeded(level)) {
         exp -= expNeeded(level);
         level++;
-        skill_points = (skill_points || 0) + 1;
+        // Определяем количество очков за новый уровень
+        let pointsToAdd = 1; // по умолчанию, но переопределим
+        if (level <= 14) {
+            pointsToAdd = 3;
+        } else {
+            pointsToAdd = 5;
+        }
+        skill_points = (skill_points || 0) + pointsToAdd;
         leveledUp = true;
     }
 

@@ -263,7 +263,8 @@ function showLevelUpModal(className) {
     const modal = document.getElementById('levelUpModal');
     const body = document.getElementById('levelUpBody');
     const classNameRu = getClassNameRu(className);
-    body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны 3 очка навыков!</p>`;
+    // Убрали конкретное число очков, оставили общую фразу
+    body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.</p>`;
 
     modal.style.display = 'block';
 

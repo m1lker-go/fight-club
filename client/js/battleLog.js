@@ -212,74 +212,59 @@ const BattleLog = {
 
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        // НЕ выводим в лог сообщения о стаках во время боя
-    playNext() {
-    if (this.currentMsgIndex >= this.messages.length) {
-        console.log('[BattleLog] All messages shown, finishing');
-        this.finish();
-        return;
-    }
+        // Не выводим в лог и не показываем анимацию для сообщений о стаках
+        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
 
-    const entry = this.messages[this.currentMsgIndex];
-    const msgText = entry.text;
-    const type = entry.type;
-    const attacker = entry.attacker; // 'player' или 'enemy'
+        if (!isStackMessage) {
+            // Добавляем запись в лог
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = msgText;
+            this.logContainer.appendChild(logEntry);
+            this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
+            // --- Определяем анимацию ТОЛЬКО для отображаемых сообщений ---
+            let animTarget = null;
+            let animFile = null;
 
-    // Не выводим в лог и не показываем анимацию для сообщений о стаках
-    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+            if (type === 'attack' || type === 'crit' || type === 'damage') {
+                // Атакующий бьёт по противнику
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'shot.gif';
+            } else if (type === 'dodge') {
+                // Уклонение на того, кто уклоняется (он же attacker)
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = 'missx.gif';
+            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                if (type === 'fire_ult') animFile = 'fire.gif';
+                else if (type === 'ice_ult') animFile = 'ice.gif';
+                else if (type === 'poison_ult') animFile = 'poison.gif';
+                else animFile = 'ultimate.gif';
+            } else if (type === 'heal' || type === 'buff') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+            } else if (type === 'frozen_enter' || type === 'frozen_end') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy'; // заморозка на того, кто получает эффект
+                animFile = 'frozenx.gif';
+            }
+            // Убраны типы 'poison_dot' и 'burn_dot', так как они не должны показываться
 
-    if (!isStackMessage) {
-        // Добавляем запись в лог
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.innerHTML = msgText;
-        this.logContainer.appendChild(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
-        // --- Определяем анимацию ТОЛЬКО для отображаемых сообщений ---
-        let animTarget = null;
-        let animFile = null;
-
-        if (type === 'attack' || type === 'crit' || type === 'damage') {
-            // Атакующий бьёт по противнику
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'shot.gif';
-        } else if (type === 'dodge') {
-            // Уклонение на того, кто уклоняется (он же attacker)
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = 'missx.gif';
-        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            if (type === 'fire_ult') animFile = 'fire.gif';
-            else if (type === 'ice_ult') animFile = 'ice.gif';
-            else if (type === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        } else if (type === 'heal' || type === 'buff') {
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-        } else if (type === 'frozen_enter' || type === 'frozen_end') {
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy'; // заморозка на того, кто получает эффект
-            animFile = 'frozenx.gif';
+            if (animTarget && animFile) {
+                console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
+                this.showAnimation(animTarget, animFile);
+            }
         }
-        // Убраны типы 'poison_dot' и 'burn_dot', так как они не должны показываться
 
-        if (animTarget && animFile) {
-            console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
-            this.showAnimation(animTarget, animFile);
+        this.currentMsgIndex++;
+
+        if (this.currentStateIndex < this.states.length) {
+            this.applyState(this.states[this.currentStateIndex]);
+            this.currentStateIndex++;
         }
-    }
 
-    this.currentMsgIndex++;
-
-    if (this.currentStateIndex < this.states.length) {
-        this.applyState(this.states[this.currentStateIndex]);
-        this.currentStateIndex++;
-    }
-
-    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-}
+        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+    },
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

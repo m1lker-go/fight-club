@@ -1,4 +1,4 @@
-// battleLog.js – упрощённая версия с анимациями и базовым выводом
+// battleLog.js
 
 const BattleLog = {
     messages: [],
@@ -12,8 +12,10 @@ const BattleLog = {
     onFinish: null,
 
     init(battleData, logContainer, onFinish) {
-        this.messages = battleData.result.messages || [];
-        this.states = battleData.result.states || [];
+        // Полная очистка
+        if (this.interval) clearTimeout(this.interval);
+        this.messages = [];
+        this.states = [];
         this.currentMsgIndex = 0;
         this.currentStateIndex = 0;
         this.logContainer = logContainer;
@@ -21,7 +23,11 @@ const BattleLog = {
         this.onFinish = onFinish;
         this.speed = 1;
 
-        this.logContainer.innerHTML = '';
+        this.hideAnimations();
+        if (this.logContainer) this.logContainer.innerHTML = '';
+
+        this.messages = battleData.result.messages || [];
+        this.states = battleData.result.states || [];
 
         if (this.states.length > 0) {
             this.applyState(this.states[0]);
@@ -86,48 +92,58 @@ const BattleLog = {
             return;
         }
 
-        const msg = this.messages[this.currentMsgIndex];
+        const entry = this.messages[this.currentMsgIndex];
+        // Ожидаем, что entry – объект { text, type, target }
+        const msgText = entry.text || entry;
+        const msgType = entry.type || 'unknown';
+        const target = entry.target || 'defender'; // 'attacker' или 'defender' или 'hero'/'enemy'
+
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
-        logEntry.innerHTML = msg;
+        logEntry.innerHTML = msgText;
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        const lower = msg.toLowerCase();
-        let target = null;
-        let anim = null;
+        // Определяем анимацию по типу и цели
+        let animTarget = null;
+        let animFile = null;
 
-        if (lower.includes('уклоняется') || lower.includes('уворачивается') || lower.includes('использует неуловимый манёвр')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
-            anim = 'missx.gif';
-        } else if (lower.includes('сокрушает') || lower.includes('обрушивает') || lower.includes('пробивает') ||
-                   lower.includes('яростно') || lower.includes('бьёт') || lower.includes('вонзает') ||
-                   lower.includes('бесшумно') || lower.includes('отравляет') || lower.includes('делает выпад') ||
-                   lower.includes('исчезает') || lower.includes('выпускает') || lower.includes('читает') ||
-                   lower.includes('призывает') || lower.includes('создаёт') || lower.includes('проклинает')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'enemy' : 'hero';
-            anim = 'shot.gif';
-        } else if (lower.includes('огненный шторм') || lower.includes('вечная зима') || lower.includes('смертельный удар') ||
-                   lower.includes('ядовитая волна') || lower.includes('кровавая жатва') || lower.includes('несокрушимость') ||
-                   lower.includes('кровопускание') || lower.includes('щит правосудия') || lower.includes('зазеркалье')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'enemy' : 'hero';
-            if (lower.includes('огненный шторм')) anim = 'fire.gif';
-            else if (lower.includes('вечная зима')) anim = 'ice.gif';
-            else if (lower.includes('несокрушимость')) anim = 'hill.gif';
-            else if (lower.includes('кровопускание') || lower.includes('кровавая жатва')) anim = 'crit.gif';
-            else if (lower.includes('щит правосудия')) anim = 'shield.gif';
-            else if (lower.includes('смертельный удар')) anim = 'ultimate.gif';
-            else if (lower.includes('ядовитая волна')) anim = 'poison.gif';
-            else if (lower.includes('зазеркалье')) anim = 'chara.gif';
-        } else if (lower.includes('яд разъедает') || lower.includes('получает урона от яда')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
-            anim = 'poison.gif';
-        } else if (lower.includes('огонь пожирает') || lower.includes('получает урона от огня')) {
-            target = lower.includes(userData.username.toLowerCase()) ? 'hero' : 'enemy';
-            anim = 'fire.gif';
+        if (msgType === 'attack' || msgType === 'crit' || msgType === 'damage') {
+            // Обычная атака – на цель
+            animTarget = (target === 'defender') ? 'enemy' : 'hero';
+            animFile = 'shot.gif';
+        } else if (msgType === 'dodge') {
+            // Уклонение – на того, кто уклоняется (target = defender)
+            animTarget = (target === 'defender') ? 'hero' : 'enemy'; // defender – это защитник, на него анимация уворота
+            animFile = 'missx.gif';
+        } else if (msgType === 'ult' || msgType === 'damage_self' || msgType === 'fire_ult' || msgType === 'ice_ult' || msgType === 'poison_ult') {
+            // Ультимейты, наносящие урон – на противника
+            animTarget = (target === 'defender') ? 'enemy' : 'hero';
+            // Определяем файл по подтипу
+            if (msgType === 'fire_ult') animFile = 'fire.gif';
+            else if (msgType === 'ice_ult') animFile = 'ice.gif';
+            else if (msgType === 'poison_ult') animFile = 'poison.gif';
+            else animFile = 'ultimate.gif';
+        } else if (msgType === 'heal' || msgType === 'buff') {
+            // Лечение/бафф – на себя
+            animTarget = (target === 'attacker') ? 'hero' : 'enemy';
+            animFile = (msgType === 'heal') ? 'hill.gif' : 'shield.gif';
+        } else if (msgType === 'frozen_enter' || msgType === 'frozen_end') {
+            // Заморозка/разморозка – на цель
+            animTarget = (target === 'defender') ? 'enemy' : 'hero';
+            animFile = 'frozenx.gif';
+        } else if (msgType === 'poison_dot' || msgType === 'burn_dot') {
+            // Урон от яда/огня – на цель
+            animTarget = (target === 'defender') ? 'enemy' : 'hero';
+            animFile = (msgType === 'poison_dot') ? 'poison.gif' : 'fire.gif';
+        } else if (msgType === 'poison_stack' || msgType === 'burn_stack' || msgType === 'freeze_stack') {
+            // Накопление стаков – без анимации
+            animTarget = null;
         }
 
-        if (anim) this.showAnimation(target, anim);
+        if (animTarget && animFile) {
+            this.showAnimation(animTarget, animFile);
+        }
 
         this.currentMsgIndex++;
 
@@ -136,6 +152,7 @@ const BattleLog = {
             this.currentStateIndex++;
         }
 
+        // Длительность показа – 2 секунды на сообщение (как и просили)
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
     },
 
@@ -151,7 +168,7 @@ const BattleLog = {
         setTimeout(() => {
             container.style.display = 'none';
             container.innerHTML = '';
-        }, 1000);
+        }, 1000); // анимация длится 1 секунду, потом гаснет
     },
 
     setSpeed(newSpeed) {

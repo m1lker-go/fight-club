@@ -118,7 +118,7 @@ function calculateStats(classData, inventory, subclass) {
     return stats;
 }
 
-function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState) {
+function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
     let extraLogs = [];
 
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist?.mirageGuaranteed) {
@@ -170,18 +170,19 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
 
     // Накопление яда
-    if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
-        if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
-        const oldStacks = defenderState.poisonStacks;
-        defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
-        if (defenderState.poisonStacks > oldStacks) {
-            extraLogs.push({
-                text: poisonStackPhrase.replace('%d', defenderState.poisonStacks),
-                type: 'poison_stack',
-                attacker: (attackerName === playerName) ? 'player' : 'enemy' // будет определено позже
-            });
-        }
+   // Добавляем новый параметр в функцию performAttack:
+if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
+    if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
+    const oldStacks = defenderState.poisonStacks;
+    defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
+    if (defenderState.poisonStacks > oldStacks) {
+        extraLogs.push({
+            text: poisonStackPhrase.replace('%d', defenderState.poisonStacks),
+            type: 'poison_stack',
+            attacker: isPlayerAttacker ? 'player' : 'enemy' // ← используем флаг
+        });
     }
+}
 
     // Накопление огня
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer.burn) {
@@ -409,13 +410,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 console.log(`[ULT] ${skill.log}`);
             } else {
                 const attackResult = performAttack(
-                    playerStats, enemyStats,
-                    playerStats.vamp + (playerState.vampBuff>0 ? playerState.vampBonus : 0),
-                    enemyStats.reflect + (enemyState.reflectBuff>0 ? enemyState.reflectBonus : 0),
-                    playerName, enemyName,
-                    playerClass, playerSubclass, enemySubclass,
-                    playerState, enemyState
-                );
+    playerStats, enemyStats,
+    playerStats.vamp + (playerState.vampBuff>0 ? playerState.vampBonus : 0),
+    enemyStats.reflect + (enemyState.reflectBuff>0 ? enemyState.reflectBonus : 0),
+    playerName, enemyName,
+    playerClass, playerSubclass, enemySubclass,
+    playerState, enemyState,
+    true // ← attackerIsPlayer = true
+);
                 if (attackResult.hit) {
                     enemyHp -= attackResult.damage;
                     playerHp += attackResult.vampHeal;
@@ -483,13 +485,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 console.log(`[ULT] ${skill.log}`);
             } else {
                 const attackResult = performAttack(
-                    enemyStats, playerStats,
-                    enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),
-                    playerStats.reflect + (playerState.reflectBuff>0 ? playerState.reflectBonus : 0),
-                    enemyName, playerName,
-                    enemyClass, enemySubclass, playerSubclass,
-                    enemyState, playerState
-                );
+    enemyStats, playerStats,
+    enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),
+    playerStats.reflect + (playerState.reflectBuff>0 ? playerState.reflectBonus : 0),
+    enemyName, playerName,
+    enemyClass, enemySubclass, playerSubclass,
+    enemyState, playerState,
+    false // ← attackerIsPlayer = false
+);
                 if (attackResult.hit) {
                     playerHp -= attackResult.damage;
                     enemyHp += attackResult.vampHeal;

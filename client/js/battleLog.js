@@ -223,14 +223,15 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
 },
     
     playNext() {
-        if (this.stopped) {
+    if (this.stopped) {
         console.log('[BattleLog] stopped, ignoring');
-        return; }
-        if (this.currentMsgIndex >= this.messages.length) {
-            console.log('[BattleLog] All messages shown, finishing');
-            this.finish();
-            return;
-        }
+        return;
+    }
+    if (this.currentMsgIndex >= this.messages.length) {
+        console.log('[BattleLog] All messages shown, finishing');
+        this.finish();
+        return;
+    }
 
         const entry = this.messages[this.currentMsgIndex];
         const msgText = entry.text;
@@ -459,11 +460,15 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
         if (this.onFinish) this.onFinish(this.battleData);
     },
 
-    stop() {
-        clearTimeout(this.interval);
-        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        this.hideAnimations();
-         this.stopped = true;
-    }
+   stop() {
+    clearTimeout(this.interval);
+    if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+    if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+    this.hideAnimations();
+    this.stopped = true;
+    this.messages = [];
+    this.states = [];
+    this.currentMsgIndex = 0;
+    this.currentStateIndex = 0;
+}
 };

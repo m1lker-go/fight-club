@@ -1,35 +1,29 @@
 // battleUI.js
 
 async function startBattle() {
-    try {
-        const res = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id })
-        });
-
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error('Server error:', res.status, errorText);
-            alert(`Ошибка сервера: ${res.status} — ${errorText || 'нет описания'}`);
-            return;
-        }
-
-        const data = await res.json();
-        if (data.error) {
-            alert(data.error);
-            return;
-        }
-        if (!data.result || !data.result.messages || !data.result.states) {
-            console.error('Invalid battle data:', data);
-            alert('Ошибка данных боя');
-            return;
-        }
-        showBattleScreen(data);
-    } catch (error) {
-        console.error('Battle start error:', error);
-        alert('Ошибка соединения с сервером');
+    // --- ДОБАВЛЯЕМ ПРОВЕРКУ ---
+    if (!window.playerName) {
+        console.error('playerName не определён!');
+        alert('Ошибка: не удалось определить имя пользователя');
+        return;
     }
+    // --- КОНЕЦ ПРОВЕРКИ ---
+
+    fetch('https://fight-club-api-4och.onrender.com/battle/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            playerName: window.playerName,   // ← используем глобальную переменную
+            // другие параметры (например, класс, оружие и т.д.)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // обработка ответа
+    })
+    .catch(error => {
+        console.error('Ошибка запроса:', error);
+    });
 }
 
 function showBattleScreen(battleData) {

@@ -10,10 +10,14 @@ const BattleLog = {
     interval: null,
     battleData: null,
     onFinish: null,
+    deathTimerHero: null,
+    deathTimerEnemy: null,
 
     init(battleData, logContainer, onFinish) {
         // Полная очистка
         if (this.interval) clearTimeout(this.interval);
+        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
         this.messages = [];
         this.states = [];
         this.currentMsgIndex = 0;
@@ -64,8 +68,11 @@ const BattleLog = {
             document.getElementById('enemyManaText').innerText = state.enemyMana;
         }
 
+        // Обновляем глобальные переменные для статусов
         window.playerFrozen = state.playerFrozen || 0;
         window.enemyFrozen = state.enemyFrozen || 0;
+        window.playerShield = state.playerShield || 0;
+        window.enemyShield = state.enemyShield || 0;
         window.playerFreezeStacks = state.playerFreezeStacks || 0;
         window.enemyFreezeStacks = state.enemyFreezeStacks || 0;
         window.playerPoisonStacks = state.playerPoisonStacks || 0;
@@ -73,17 +80,110 @@ const BattleLog = {
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
 
+        // Оверлей заморозки
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozen) heroFrozen.classList.toggle('active', window.playerFrozen > 0);
         if (enemyFrozen) enemyFrozen.classList.toggle('active', window.enemyFrozen > 0);
 
+        // Обновляем иконки статусов
+        this.updateAllEffects();
+
+        // Обработка смерти с задержкой 2 секунды
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
-        if (heroCard) heroCard.classList.toggle('defeated', state.playerHp <= 0);
-        if (enemyCard) enemyCard.classList.toggle('defeated', state.enemyHp <= 0);
 
-        if (typeof updateAllEffects === 'function') updateAllEffects();
+        if (state.playerHp <= 0 && heroCard && !heroCard.classList.contains('defeated')) {
+            if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+            this.deathTimerHero = setTimeout(() => {
+                heroCard.classList.add('defeated');
+            }, 2000);
+        }
+        if (state.playerHp > 0 && heroCard && heroCard.classList.contains('defeated')) {
+            if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+            heroCard.classList.remove('defeated');
+        }
+
+        if (state.enemyHp <= 0 && enemyCard && !enemyCard.classList.contains('defeated')) {
+            if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+            this.deathTimerEnemy = setTimeout(() => {
+                enemyCard.classList.add('defeated');
+            }, 2000);
+        }
+        if (state.enemyHp > 0 && enemyCard && enemyCard.classList.contains('defeated')) {
+            if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+            enemyCard.classList.remove('defeated');
+        }
+    },
+
+    setBarWidth(barId, percent) {
+        const bar = document.getElementById(barId);
+        if (bar) bar.style.width = percent + '%';
+    },
+
+    buildEffectsList(side) {
+        const effects = [];
+        if (side === 'player') {
+            if (window.playerFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < (window.playerFreezeStacks || 0); i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (window.playerPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < (window.playerBurnStacks || 0); i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (window.playerShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        } else {
+            if (window.enemyFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < (window.enemyFreezeStacks || 0); i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (window.enemyPoisonStacks > 0) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+            for (let i = 0; i < (window.enemyBurnStacks || 0); i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (window.enemyShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+        }
+        // Отладка: выводим в консоль, если есть эффекты
+        if (effects.length > 0) console.log(`[BattleLog] Эффекты для ${side}:`, effects);
+        return effects;
+    },
+
+    renderEffects(side) {
+        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+        const effects = side === 'player' ? this.playerEffects : this.enemyEffects;
+        slots.forEach(slot => slot.innerHTML = '');
+        for (let i = 0; i < Math.min(effects.length, 5); i++) {
+            const effect = effects[i];
+            const slot = slots[i];
+            if (!slot) continue;
+            const img = document.createElement('img');
+            img.src = effect.icon;
+            img.alt = effect.type;
+            slot.appendChild(img);
+        }
+        if (effects.length > 0) console.log(`[BattleLog] Отрисовано ${effects.length} иконок для ${side}`);
+    },
+
+    updateAllEffects() {
+        this.playerEffects = this.buildEffectsList('player');
+        this.enemyEffects = this.buildEffectsList('enemy');
+        this.renderEffects('player');
+        this.renderEffects('enemy');
     },
 
     playNext() {
@@ -93,10 +193,9 @@ const BattleLog = {
         }
 
         const entry = this.messages[this.currentMsgIndex];
-        // Ожидаем, что entry – объект { text, type, target }
         const msgText = entry.text || entry;
         const msgType = entry.type || 'unknown';
-        const target = entry.target || 'defender'; // 'attacker' или 'defender' или 'hero'/'enemy'
+        const target = entry.target || 'defender';
 
         const logEntry = document.createElement('div');
         logEntry.className = 'log-entry';
@@ -104,41 +203,30 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        // Определяем анимацию по типу и цели
         let animTarget = null;
         let animFile = null;
 
         if (msgType === 'attack' || msgType === 'crit' || msgType === 'damage') {
-            // Обычная атака – на цель
             animTarget = (target === 'defender') ? 'enemy' : 'hero';
             animFile = 'shot.gif';
         } else if (msgType === 'dodge') {
-            // Уклонение – на того, кто уклоняется (target = defender)
-            animTarget = (target === 'defender') ? 'hero' : 'enemy'; // defender – это защитник, на него анимация уворота
+            animTarget = (target === 'defender') ? 'hero' : 'enemy';
             animFile = 'missx.gif';
         } else if (msgType === 'ult' || msgType === 'damage_self' || msgType === 'fire_ult' || msgType === 'ice_ult' || msgType === 'poison_ult') {
-            // Ультимейты, наносящие урон – на противника
             animTarget = (target === 'defender') ? 'enemy' : 'hero';
-            // Определяем файл по подтипу
             if (msgType === 'fire_ult') animFile = 'fire.gif';
             else if (msgType === 'ice_ult') animFile = 'ice.gif';
             else if (msgType === 'poison_ult') animFile = 'poison.gif';
             else animFile = 'ultimate.gif';
         } else if (msgType === 'heal' || msgType === 'buff') {
-            // Лечение/бафф – на себя
             animTarget = (target === 'attacker') ? 'hero' : 'enemy';
             animFile = (msgType === 'heal') ? 'hill.gif' : 'shield.gif';
         } else if (msgType === 'frozen_enter' || msgType === 'frozen_end') {
-            // Заморозка/разморозка – на цель
             animTarget = (target === 'defender') ? 'enemy' : 'hero';
             animFile = 'frozenx.gif';
         } else if (msgType === 'poison_dot' || msgType === 'burn_dot') {
-            // Урон от яда/огня – на цель
             animTarget = (target === 'defender') ? 'enemy' : 'hero';
             animFile = (msgType === 'poison_dot') ? 'poison.gif' : 'fire.gif';
-        } else if (msgType === 'poison_stack' || msgType === 'burn_stack' || msgType === 'freeze_stack') {
-            // Накопление стаков – без анимации
-            animTarget = null;
         }
 
         if (animTarget && animFile) {
@@ -152,7 +240,6 @@ const BattleLog = {
             this.currentStateIndex++;
         }
 
-        // Длительность показа – 2 секунды на сообщение (как и просили)
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
     },
 
@@ -168,7 +255,7 @@ const BattleLog = {
         setTimeout(() => {
             container.style.display = 'none';
             container.innerHTML = '';
-        }, 1000); // анимация длится 1 секунду, потом гаснет
+        }, 1000);
     },
 
     setSpeed(newSpeed) {
@@ -179,12 +266,16 @@ const BattleLog = {
 
     finish() {
         clearTimeout(this.interval);
+        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
         this.hideAnimations();
         if (this.onFinish) this.onFinish(this.battleData);
     },
 
     stop() {
         clearTimeout(this.interval);
+        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
         this.hideAnimations();
     }
 };

@@ -200,39 +200,57 @@ battleData.result.messages.forEach(msg => {
     const targetStats = attacker === 'player' ? playerStats : enemyStats;
     const opponentStats = attacker === 'player' ? enemyStats : playerStats;
 
-    // Поиск чисел в тексте (урон, лечение и т.д.)
-    const damageMatch = text.match(/(?:наносит|нанося|выбивая|отнимая|—)\s*(\d+)\s*(?:урона|жизней|HP|здоровья)?/i);
-    if (damageMatch) {
-        const dmg = parseInt(damageMatch[1]);
+    // --- Обычный урон ---
+    let match = text.match(/Урон -(\d+)/);
+    if (match) {
+        const dmg = parseInt(match[1]);
         targetStats.hits++;
         targetStats.totalDamage += dmg;
-        if (text.includes('КРИТ') || text.includes('крит')) {
-            targetStats.crits++;
-        }
     }
 
-    const dodgeMatch = text.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается)/i);
-    if (dodgeMatch) {
-        // Уклонение засчитывается тому, кто уклонился (attacker)
+    // --- Критический урон ---
+    match = text.match(/Крит\. урон -(\d+)/);
+    if (match) {
+        const dmg = parseInt(match[1]);
+        targetStats.hits++;
+        targetStats.crits++;
+        targetStats.totalDamage += dmg;
+    }
+
+    // --- Урон от стихий (яд, огонь) – идёт в общий урон и hits ---
+    match = text.match(/Урон от (?:яда|огня) -(\d+)/);
+    if (match) {
+        const dmg = parseInt(match[1]);
+        targetStats.hits++;
+        targetStats.totalDamage += dmg;
+    }
+
+    // --- Уклонение ---
+    if (text.includes('Уворот')) {
         targetStats.dodges++;
     }
 
-    const healMatch = text.match(/восстанавлива(?:ет|я)\s*(\d+)\s*очков? здоровья/i);
-    if (healMatch) {
-        const heal = parseInt(healMatch[1]);
+    // --- Лечение (вампиризм и активное) ---
+    match = text.match(/Вампиризм \+(\d+)/);
+    if (match) {
+        const heal = parseInt(match[1]);
+        targetStats.heal += heal; // лечение получает атакующий
+    }
+    match = text.match(/Здоровье \+(\d+)/);
+    if (match) {
+        const heal = parseInt(match[1]);
         targetStats.heal += heal;
     }
 
-    const reflectMatch = text.match(/отражает\s*(\d+)\s*урона/i);
-    if (reflectMatch) {
-        const reflect = parseInt(reflectMatch[1]);
-        // Отражение наносит урон атакующему, значит записываем в opponentStats? Или в targetStats? 
-        // По логике: отражает защищающийся, значит урон получает атакующий. Будем считать, что отразивший (защитник) добавляет себе reflect.
-        // Но для простоты будем считать, что отразил тот, кто защищался (opponentStats).
-        opponentStats.reflect += reflect;
+    // --- Отражение ---
+    match = text.match(/Отражение -(\d+)/);
+    if (match) {
+        const reflect = parseInt(match[1]);
+        opponentStats.reflect += reflect; // отразил защитник (урон по атакующему)
     }
 });
-    // Используем сообщения напрямую для отображения лога
+
+       // Используем сообщения напрямую для отображения лога
    const logArray = battleData.result.messages.map(m => {
     // m — объект с полем text
     const text = m.text || JSON.stringify(m); // на всякий случай fallback

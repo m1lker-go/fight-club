@@ -217,13 +217,12 @@ battleData.result.messages.forEach(msg => {
         targetStats.totalDamage += dmg;
     }
 
-    // --- Урон от стихий (яд, огонь) – идёт в общий урон и hits ---
-    match = text.match(/Урон от (?:яда|огня) -(\d+)/);
-    if (match) {
-        const dmg = parseInt(match[1]);
-        targetStats.hits++;
-        targetStats.totalDamage += dmg;
-    }
+    // --- Урон от стихий (яд, огонь) – идёт в общий урон, но не в hits ---
+match = text.match(/Урон от (?:яда|огня) -(\d+)/);
+if (match) {
+    const dmg = parseInt(match[1]);
+    targetStats.totalDamage += dmg; // hits не увеличиваем
+}
 
     // --- Уклонение ---
     if (text.includes('Уворот')) {

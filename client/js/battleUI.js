@@ -1,20 +1,18 @@
 // battleUI.js
 
 async function startBattle() {
-    // --- ДОБАВЛЯЕМ ПРОВЕРКУ ---
-    if (!window.playerName) {
-        console.error('playerName не определён!');
-        alert('Ошибка: не удалось определить имя пользователя');
+    // Проверяем наличие tg_id (он должен быть в глобальном userData)
+    if (!userData || !userData.tg_id) {
+        console.error('tg_id не определён!');
+        alert('Ошибка: не удалось идентифицировать пользователя');
         return;
     }
-    // --- КОНЕЦ ПРОВЕРКИ ---
 
     fetch('https://fight-club-api-4och.onrender.com/battle/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            playerName: window.playerName,   // ← используем глобальную переменную
-            // другие параметры (например, класс, оружие и т.д.)
+            tg_id: userData.tg_id   // ← правильно: отправляем tg_id
         })
     })
     .then(response => response.json())

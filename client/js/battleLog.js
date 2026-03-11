@@ -12,6 +12,7 @@ const BattleLog = {
     onFinish: null,
     deathTimerHero: null,
     deathTimerEnemy: null,
+    stopped: false,
 
     // Локальные переменные для иконок статусов
     playerFrozen: 0,
@@ -27,6 +28,8 @@ const BattleLog = {
 
     init(battleData, logContainer, onFinish) {
         console.log('[BattleLog] init');
+         this.stop(); 
+         this.stopped = false; 
         if (this.interval) clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
@@ -214,6 +217,9 @@ const BattleLog = {
 },
     
     playNext() {
+        if (this.stopped) {
+        console.log('[BattleLog] stopped, ignoring');
+        return;
         if (this.currentMsgIndex >= this.messages.length) {
             console.log('[BattleLog] All messages shown, finishing');
             this.finish();
@@ -452,5 +458,6 @@ const BattleLog = {
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
         this.hideAnimations();
+         this.stopped = true;
     }
 };

@@ -219,7 +219,7 @@ const BattleLog = {
     playNext() {
         if (this.stopped) {
         console.log('[BattleLog] stopped, ignoring');
-        return;
+        return; }
         if (this.currentMsgIndex >= this.messages.length) {
             console.log('[BattleLog] All messages shown, finishing');
             this.finish();

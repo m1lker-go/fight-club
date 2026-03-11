@@ -1272,6 +1272,7 @@ td {
 }
 
 .floating-number {
+     font-family: 'Titillium Web', sans-serif;
     position: absolute;
     top: 50%;
     left: 50%;

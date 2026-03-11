@@ -344,21 +344,34 @@ const BattleLog = {
         }
     },
 
-    showFloatingNumber(target, value, icon, colorClass) {
-        const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
-        const container = document.getElementById(containerId);
-        if (!container) return;
+  showFloatingNumber(target, value, icon, colorClass) {
+    const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-        const numDiv = document.createElement('div');
-        numDiv.className = `floating-number ${colorClass}`;
-        const sign = value > 0 ? '+' : '';
-        numDiv.innerHTML = `${sign}${value} ${icon}`;
-        container.appendChild(numDiv);
+    const numDiv = document.createElement('div');
+    numDiv.className = `floating-number ${colorClass}`;
+    const sign = value > 0 ? '+' : '';
 
-        setTimeout(() => {
-            numDiv.remove();
-        }, 2000);
-    },
+    // Преобразуем текстовые иконки в иконки Font Awesome
+    let iconHtml = '';
+    switch (icon) {
+        case '⚔️': iconHtml = '<i class="fas fa-fist-raised"></i>'; break;
+        case '🔥': iconHtml = '<i class="fas fa-fire"></i>'; break;
+        case '💧': iconHtml = '<i class="fas fa-tint"></i>'; break;
+        case '❄️': iconHtml = '<i class="fas fa-snowflake"></i>'; break;
+        case '❤️': iconHtml = '<i class="fas fa-heart"></i>'; break;
+        case '🛡️': iconHtml = '<i class="fas fa-shield-alt"></i>'; break;
+        default: iconHtml = icon; // на случай, если попадётся неизвестный символ
+    }
+
+    numDiv.innerHTML = `${sign}${value} ${iconHtml}`;
+    container.appendChild(numDiv);
+
+    setTimeout(() => {
+        numDiv.remove();
+    }, 2000);
+},
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

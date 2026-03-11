@@ -14,10 +14,24 @@ const BattleLog = {
     deathTimerEnemy: null,
 
     init(battleData, logContainer, onFinish) {
-        // Полная очистка
+        // Полная остановка и очистка предыдущего боя
         if (this.interval) clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+        
+        // Сброс глобальных статусов
+        window.playerFrozen = 0;
+        window.enemyFrozen = 0;
+        window.playerShield = 0;
+        window.enemyShield = 0;
+        window.playerFreezeStacks = 0;
+        window.enemyFreezeStacks = 0;
+        window.playerPoisonStacks = 0;
+        window.enemyPoisonStacks = 0;
+        window.playerBurnStacks = 0;
+        window.enemyBurnStacks = 0;
+
+        // Очистка массивов
         this.messages = [];
         this.states = [];
         this.currentMsgIndex = 0;
@@ -30,8 +44,9 @@ const BattleLog = {
         this.hideAnimations();
         if (this.logContainer) this.logContainer.innerHTML = '';
 
-        this.messages = battleData.result.messages || [];
-        this.states = battleData.result.states || [];
+        // Копируем свежие данные
+        this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
+        this.states = battleData.result.states ? [...battleData.result.states] : [];
 
         if (this.states.length > 0) {
             this.applyState(this.states[0]);
@@ -68,7 +83,6 @@ const BattleLog = {
             document.getElementById('enemyManaText').innerText = state.enemyMana;
         }
 
-        // Обновляем глобальные переменные для статусов
         window.playerFrozen = state.playerFrozen || 0;
         window.enemyFrozen = state.enemyFrozen || 0;
         window.playerShield = state.playerShield || 0;
@@ -80,19 +94,17 @@ const BattleLog = {
         window.playerBurnStacks = state.playerBurnStacks || 0;
         window.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Оверлей заморозки
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozen) heroFrozen.classList.toggle('active', window.playerFrozen > 0);
         if (enemyFrozen) enemyFrozen.classList.toggle('active', window.enemyFrozen > 0);
 
-        // Обновляем иконки статусов
         this.updateAllEffects();
 
-        // Обработка смерти с задержкой 2 секунды
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
+        // Смерть с задержкой 2 секунды
         if (state.playerHp <= 0 && heroCard && !heroCard.classList.contains('defeated')) {
             if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
             this.deathTimerHero = setTimeout(() => {
@@ -158,8 +170,6 @@ const BattleLog = {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
         }
-        // Отладка: выводим в консоль, если есть эффекты
-        if (effects.length > 0) console.log(`[BattleLog] Эффекты для ${side}:`, effects);
         return effects;
     },
 
@@ -176,7 +186,6 @@ const BattleLog = {
             img.alt = effect.type;
             slot.appendChild(img);
         }
-        if (effects.length > 0) console.log(`[BattleLog] Отрисовано ${effects.length} иконок для ${side}`);
     },
 
     updateAllEffects() {

@@ -1,7 +1,19 @@
 let tg = window.Telegram.WebApp;
 if (tg) {
     tg.expand();
+    tg.ready(); // рекомендуется для полной инициализации
 }
+
+// Получаем данные пользователя Telegram
+const user = tg.initDataUnsafe?.user;
+if (user) {
+    window.playerName = user.username || user.first_name || 'Игрок';
+} else {
+    // Если пользователь не определён (например, при локальной разработке)
+    window.playerName = 'Игрок';
+}
+console.log('playerName:', window.playerName); // для отладки
+
 
 let userData = null;
 let userClasses = [];

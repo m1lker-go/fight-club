@@ -166,11 +166,11 @@ async function showBattleResult(battleData, timeOut = false) {
     const isVictory = (winner === 'player');
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
 
-    const expGain = battleData.reward?.exp || 0;
-    const coinGain = battleData.reward?.coins || 0;
-    const leveledUp = battleData.reward?.leveledUp || false;
-    const newStreak = battleData.reward?.newStreak || 0;
-    const ratingChange = battleData.ratingChange || 0;
+   const expGain = battleData.reward?.exp || 0;
+const coinGain = battleData.reward?.coins || 0;
+const newStreak = battleData.reward?.newStreak || 0;
+const ratingChange = battleData.ratingChange || 0;
+const leveledUp = addExpToCurrentClass(expGain);
 
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {

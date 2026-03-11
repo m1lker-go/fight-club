@@ -1301,3 +1301,25 @@ td {
         transform: translate(-50%, -100%) scale(1);
     }
 }
+
+/* Блок лога */
+.battle-log {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden; /* предотвращает горизонтальный скролл */
+}
+
+/* Записи лога */
+.battle-log .log-entry {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    max-width: 100%;
+    padding: 2px 0;
+    line-height: 1.4;
+}
+
+.battle-log {
+    margin-top: 15px;
+    clear: both;
+}

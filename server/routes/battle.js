@@ -127,8 +127,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             defenderState.mirageCounter = 0;
             const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
                 .replace('%s', defenderName).replace('%s', attackerName);
-            // Уклонение – тип dodge, цель – защитник
-            return { hit: false, damage: 0, isCrit: false, log: { text: phrase, type: 'dodge', target: 'defender' }, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs: [] };
+            return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs };
         }
     }
 
@@ -137,7 +136,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     if (isDodge) {
         const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
             .replace('%s', defenderName).replace('%s', attackerName);
-        return { hit: false, damage: 0, isCrit: false, log: { text: phrase, type: 'dodge', target: 'defender' }, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs: [] };
+        return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
     }
 
     let damage = attackerStats.atk;
@@ -176,7 +175,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         const oldStacks = defenderState.poisonStacks;
         defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
         if (defenderState.poisonStacks > oldStacks) {
-            extraLogs.push({ text: poisonStackPhrase.replace('%d', defenderState.poisonStacks), type: 'poison_stack', target: 'defender' });
+            extraLogs.push(poisonStackPhrase.replace('%d', defenderState.poisonStacks));
         }
     }
 
@@ -186,7 +185,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         const oldStacks = defenderState.burnStacks;
         defenderState.burnStacks = Math.min(5, defenderState.burnStacks + 1);
         if (defenderState.burnStacks > oldStacks) {
-            extraLogs.push({ text: burnStackPhrase.replace('%d', defenderState.burnStacks), type: 'burn_stack', target: 'defender' });
+            extraLogs.push(burnStackPhrase.replace('%d', defenderState.burnStacks));
         }
     }
 
@@ -194,21 +193,20 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
-            extraLogs.push({ text: frozenAlreadyPhrase.replace('%s', defenderName), type: 'frozen_already', target: 'defender' });
+            extraLogs.push(frozenAlreadyPhrase.replace('%s', defenderName));
         } else {
             defenderState.freezeStacks++;
             if (defenderState.freezeStacks >= 3) {
                 defenderState.frozen = 2;
                 defenderState.freezeStacks = 0;
-                extraLogs.push({ text: frozenPhrase.replace('%s', defenderName), type: 'frozen_enter', target: 'defender' });
+                extraLogs.push(frozenPhrase.replace('%s', defenderName));
             } else {
-                extraLogs.push({ text: freezeStackPhrase.replace('%s', defenderName).replace('%d', defenderState.freezeStacks), type: 'freeze_stack', target: 'defender' });
+                extraLogs.push(freezeStackPhrase.replace('%s', defenderName).replace('%d', defenderState.freezeStacks));
             }
         }
     }
 
     let attackPhrase;
-    let attackType = isCrit ? 'crit' : 'attack';
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
         attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)]
@@ -223,10 +221,15 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         hit: true,
         damage,
         isCrit,
-        log: { text: attackPhrase, type: attackType, target: 'defender' },
+        log: attackPhrase,
         reflectDamage,
         vampHeal,
-        stateChanges: { poisonStacks: defenderState.poisonStacks, burnStacks: defenderState.burnStacks, freezeStacks: defenderState.freezeStacks, frozen: defenderState.frozen },
+        stateChanges: { 
+            poisonStacks: defenderState.poisonStacks, 
+            burnStacks: defenderState.burnStacks,
+            freezeStacks: defenderState.freezeStacks,
+            frozen: defenderState.frozen
+        },
         berserkerBonus,
         extraLogs
     };
@@ -235,79 +238,58 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass) {
     let damage = 0, selfDamage = 0, heal = 0, log = '', stateChanges = {};
     const intBonus = 1 + attackerStats.int / 100;
-    let type = 'ult';
-    let target = 'defender'; // по умолчанию на противника
 
     switch (attackerSubclass) {
         case 'guardian':
             heal = Math.floor(attackerStats.hp * 0.2);
             log = ultPhrases.guardian.replace('%s', attackerName).replace('%d', heal);
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
-            type = 'heal';
-            target = 'attacker'; // на себя
             break;
         case 'berserker':
             selfDamage = Math.floor(attackerStats.hp * 0.3);
             selfDamage = Math.min(selfDamage, attackerState.hp - 1);
             damage = applyIntBonus(attackerStats.atk * 3, attackerStats.int);
             log = ultPhrases.berserker.replace('%s', attackerName).replace('%d', damage).replace('%d', selfDamage);
-            type = 'damage_self'; // и урон по врагу, и себе
-            target = 'defender';
             break;
         case 'knight':
             attackerState.reflectBuff = 2;
             attackerState.reflectBonus = 50;
             log = ultPhrases.knight.replace('%s', attackerName);
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
-            type = 'buff';
-            target = 'attacker';
             break;
         case 'assassin':
             damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
             log = ultPhrases.assassin.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
-            type = 'damage';
-            target = 'defender';
             break;
         case 'venom_blade':
             damage = (defenderState.poisonStacks || 0) * 5;
             log = ultPhrases.venom_blade.replace('%s', attackerName).replace('%d', damage);
             defenderState.poisonStacks = 0;
-            type = 'poison_ult';
-            target = 'defender';
             break;
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;
             attackerState.vampBonus = 50;
             log = ultPhrases.blood_hunter.replace('%s', attackerName).replace('%d', damage);
-            type = 'damage';
-            target = 'defender';
             break;
         case 'pyromancer':
             damage = Math.floor(attackerStats.int * 2.0) + ((defenderState.burnStacks || 0) * 2);
             log = ultPhrases.pyromancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
             defenderState.burnStacks = 0;
-            type = 'fire_ult';
-            target = 'defender';
             break;
         case 'cryomancer':
             damage = Math.round(attackerStats.int * (defenderState.frozen ? 3 : 2));
             defenderState.frozen = 2;
             defenderState.freezeStacks = 0;
             log = ultPhrases.cryomancer.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
-            type = 'ice_ult';
-            target = 'defender';
             break;
         case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
             log = ultPhrases.illusionist.replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
-            type = 'damage';
-            target = 'defender';
             break;
-        default:
-            return { damage:0, heal:0, log: { text: 'ничего не произошло', type: 'none', target: 'none' }, selfDamage:0, stateChanges:{} };
+        default: return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{} };
     }
-    return { damage, heal, log: { text: log, type, target }, selfDamage, stateChanges };
+    return { damage, heal, log, selfDamage, stateChanges };
 }
 
 function applyDotDamage(state, name) {
@@ -315,12 +297,12 @@ function applyDotDamage(state, name) {
     if (state.poisonStacks > 0) {
         const dmg = state.poisonStacks * 2;
         totalDamage += dmg;
-        logs.push({ text: poisonDamagePhrase.replace('%s', name).replace('%d', dmg), type: 'poison_dot', target: 'defender' });
+        logs.push(poisonDamagePhrase.replace('%s', name).replace('%d', dmg));
     }
     if (state.burnStacks > 0) {
         const dmg = state.burnStacks * 2;
         totalDamage += dmg;
-        logs.push({ text: burnDamagePhrase.replace('%s', name).replace('%d', dmg), type: 'burn_dot', target: 'defender' });
+        logs.push(burnDamagePhrase.replace('%s', name).replace('%d', dmg));
     }
     return { damage: totalDamage, logs };
 }
@@ -330,7 +312,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
     let playerHp = playerStats.hp, enemyHp = enemyStats.hp;
     let playerMana = 0, enemyMana = 0;
-    const messages = []; // теперь массив объектов { text, type, target }
+    const messages = []; // теперь массив строк (потом клиент сам разберёт анимации)
     const states = [];
 
     let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0 };
@@ -356,18 +338,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         // Ход игрока
         if (turn === 'player') {
             if (playerState.frozen > 0) {
+                const frozenLeft = playerState.frozen;
                 playerState.frozen--;
                 let msg;
-                if (playerState.frozen === 0) {
-                    msg = { text: frozenEndPhrase.replace('%s', playerName), type: 'frozen_end', target: 'attacker' };
-                } else {
-                    msg = { text: frozenContinuePhrase.replace('%s', playerName).replace('%d', playerState.frozen+1), type: 'frozen_continue', target: 'attacker' };
-                }
-                messages.push(msg); pushState(); turn = 'enemy'; continue;
+                if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', playerName);
+                else msg = frozenContinuePhrase.replace('%s', playerName).replace('%d', frozenLeft);
+                messages.push(msg);
+                pushState();
+                turn = 'enemy';
+                continue;
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
             playerMana = Math.min(100, playerMana + playerStats.manaRegen);
-            let actionLog = null;
+            let actionLog = '';
 
             if (playerMana >= 100) {
                 const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
@@ -375,7 +358,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (skill.heal) playerHp += skill.heal;
                 if (skill.selfDamage) playerHp -= skill.selfDamage;
                 if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                actionLog = skill.log; // объект
+                actionLog = skill.log;
                 playerMana -= 100;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
             } else {
@@ -392,23 +375,18 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     playerHp += attackResult.vampHeal;
                     playerHp -= attackResult.reflectDamage;
                     if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                    actionLog = attackResult.log; // объект
-                    if (attackResult.berserkerBonus>0) {
-                        actionLog.text += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-                    }
-                    if (attackResult.vampHeal>0) {
-                        actionLog.text += ' ' + vampPhrase.replace('%s', playerName).replace('%d', attackResult.vampHeal);
-                    }
-                    if (attackResult.reflectDamage>0) {
-                        actionLog.text += ' ' + reflectPhrase.replace('%s', enemyName).replace('%d', attackResult.reflectDamage).replace('%s', playerName);
-                    }
+                    actionLog = attackResult.log;
+                    if (attackResult.berserkerBonus>0) actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                    if (attackResult.vampHeal>0) actionLog += ' ' + vampPhrase.replace('%s', playerName).replace('%d', attackResult.vampHeal);
+                    if (attackResult.reflectDamage>0) actionLog += ' ' + reflectPhrase.replace('%s', enemyName).replace('%d', attackResult.reflectDamage).replace('%s', playerName);
                 } else {
-                    actionLog = attackResult.log; // объект (уворот)
+                    actionLog = attackResult.log;
                 }
-
+                // Основное действие
                 messages.push(actionLog);
                 pushState();
 
+                // Стаки
                 if (attackResult.extraLogs && attackResult.extraLogs.length>0) {
                     attackResult.extraLogs.forEach(extra => messages.push(extra));
                     pushState();
@@ -421,18 +399,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         // Ход противника
         else {
             if (enemyState.frozen > 0) {
+                const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
                 let msg;
-                if (enemyState.frozen === 0) {
-                    msg = { text: frozenEndPhrase.replace('%s', enemyName), type: 'frozen_end', target: 'enemy' };
-                } else {
-                    msg = { text: frozenContinuePhrase.replace('%s', enemyName).replace('%d', enemyState.frozen+1), type: 'frozen_continue', target: 'enemy' };
-                }
-                messages.push(msg); pushState(); turn = 'player'; continue;
+                if (enemyState.frozen === 0) msg = frozenEndPhrase.replace('%s', enemyName);
+                else msg = frozenContinuePhrase.replace('%s', enemyName).replace('%d', frozenLeft);
+                messages.push(msg);
+                pushState();
+                turn = 'player';
+                continue;
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
             enemyMana = Math.min(100, enemyMana + enemyStats.manaRegen);
-            let actionLog = null;
+            let actionLog = '';
 
             if (enemyMana >= 100) {
                 const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
@@ -458,15 +437,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     enemyHp -= attackResult.reflectDamage;
                     if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
                     actionLog = attackResult.log;
-                    if (attackResult.berserkerBonus>0) {
-                        actionLog.text += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-                    }
-                    if (attackResult.vampHeal>0) {
-                        actionLog.text += ' ' + vampPhrase.replace('%s', enemyName).replace('%d', attackResult.vampHeal);
-                    }
-                    if (attackResult.reflectDamage>0) {
-                        actionLog.text += ' ' + reflectPhrase.replace('%s', playerName).replace('%d', attackResult.reflectDamage).replace('%s', enemyName);
-                    }
+                    if (attackResult.berserkerBonus>0) actionLog += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                    if (attackResult.vampHeal>0) actionLog += ' ' + vampPhrase.replace('%s', enemyName).replace('%d', attackResult.vampHeal);
+                    if (attackResult.reflectDamage>0) actionLog += ' ' + reflectPhrase.replace('%s', playerName).replace('%d', attackResult.reflectDamage).replace('%s', enemyName);
                 } else {
                     actionLog = attackResult.log;
                 }
@@ -518,11 +491,12 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         '🤝 Оба бойца падают одновременно. Ничья!',
         '💥 Взаимный удар – никто не выжил. Ничья.'
     ];
+
     let finalPhrase = '';
     if (winner === 'player') finalPhrase = victoryPhrases[Math.floor(Math.random()*victoryPhrases.length)];
     else if (winner === 'enemy') finalPhrase = defeatPhrases[Math.floor(Math.random()*defeatPhrases.length)];
     else finalPhrase = drawPhrases[Math.floor(Math.random()*drawPhrases.length)];
-    messages.push({ text: finalPhrase, type: 'final', target: 'none' });
+    messages.push(finalPhrase);
     pushState();
 
     return {
@@ -536,9 +510,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     };
 }
 
-// --- Вспомогательные функции (без изменений) ---
+// --- Вспомогательные функции ---
 function expNeeded(level) { return Math.floor(80 * Math.pow(level, 1.5)); }
-async function addExp(client, userId, className, expGain) { /* ... */ }
+async function addExp(client, userId, className, expGain) { /* ... (полная версия из предыдущих файлов) */ }
 function getCoinReward(streak) { return streak>=25 ? 20 : streak>=10 ? 10 : streak>=5 ? 7 : 5; }
 function getRatingChange(streak) { return streak>=20 ? 30 : streak>=10 ? 25 : streak>=5 ? 20 : 15; }
 async function rechargeEnergy(client, userId) { /* ... */ }
@@ -565,7 +539,7 @@ router.post('/start', async (req, res) => {
         let opponentData = null;
         if (rand < 0.25) opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random()*3)+1), true);
         else if (rand < 0.70) opponentData = generateBot(classData.rows[0].level, false);
-        else { /* PvP логика */ if (!opponentData) opponentData = generateBot(classData.rows[0].level, false); }
+        else { /* PvP logic */ if (!opponentData) opponentData = generateBot(classData.rows[0].level, false); }
 
         if (!opponentData || !opponentData.stats) throw new Error('Failed to generate opponent');
 

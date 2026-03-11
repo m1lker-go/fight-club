@@ -1262,7 +1262,6 @@ td {
     width: 100%;
     height: 100%;
 }
-
 /* Само всплывающее число */
 .floating-number {
     position: absolute;
@@ -1282,7 +1281,7 @@ td {
     color: #ff4444;
 }
 
-/* Зелёный цвет для лечения/вампиризма */
+/* Зелёный цвет для лечения */
 .floating-number.green {
     color: #44ff44;
 }

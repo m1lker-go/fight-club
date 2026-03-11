@@ -213,16 +213,32 @@ const BattleLog = {
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
         // НЕ выводим в лог сообщения о стаках во время боя
-        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
-        if (!isStackMessage) {
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.innerHTML = msgText;
-            this.logContainer.appendChild(logEntry);
-            this.logContainer.scrollTop = this.logContainer.scrollHeight;
-        }
+    playNext() {
+    if (this.currentMsgIndex >= this.messages.length) {
+        console.log('[BattleLog] All messages shown, finishing');
+        this.finish();
+        return;
+    }
 
-        // Определяем анимацию
+    const entry = this.messages[this.currentMsgIndex];
+    const msgText = entry.text;
+    const type = entry.type;
+    const attacker = entry.attacker; // 'player' или 'enemy'
+
+    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
+
+    // Не выводим в лог и не показываем анимацию для сообщений о стаках
+    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+
+    if (!isStackMessage) {
+        // Добавляем запись в лог
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.innerHTML = msgText;
+        this.logContainer.appendChild(logEntry);
+        this.logContainer.scrollTop = this.logContainer.scrollHeight;
+
+        // --- Определяем анимацию ТОЛЬКО для отображаемых сообщений ---
         let animTarget = null;
         let animFile = null;
 
@@ -246,26 +262,24 @@ const BattleLog = {
         } else if (type === 'frozen_enter' || type === 'frozen_end') {
             animTarget = (attacker === 'player') ? 'hero' : 'enemy'; // заморозка на того, кто получает эффект
             animFile = 'frozenx.gif';
-        } else if (type === 'poison_dot' || type === 'burn_dot') {
-            // Урон от стаков – на цель (attacker – тот, кто получает урон)
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = (type === 'poison_dot') ? 'poison.gif' : 'fire.gif';
         }
+        // Убраны типы 'poison_dot' и 'burn_dot', так как они не должны показываться
 
         if (animTarget && animFile) {
             console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
             this.showAnimation(animTarget, animFile);
         }
+    }
 
-        this.currentMsgIndex++;
+    this.currentMsgIndex++;
 
-        if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
-            this.currentStateIndex++;
-        }
+    if (this.currentStateIndex < this.states.length) {
+        this.applyState(this.states[this.currentStateIndex]);
+        this.currentStateIndex++;
+    }
 
-        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-    },
+    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+}
 
     showAnimation(target, animationFile) {
         this.hideAnimations();

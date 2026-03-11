@@ -171,49 +171,50 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    // Подсчёт статистики (как в старом коде)
-    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+   // Подсчёт статистики из messages
+let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
-    if (battleData.result.turns && Array.isArray(battleData.result.turns)) {
-        battleData.result.turns.forEach(turn => {
-            if (turn.turn === 'final') return;
-            const action = turn.action;
-            const isPlayerTurn = turn.turn === 'player';
-            const attackerStats = isPlayerTurn ? playerStats : enemyStats;
-            const defenderStats = isPlayerTurn ? enemyStats : playerStats;
+battleData.result.messages.forEach(msg => {
+    const text = msg.text;
+    const attacker = msg.attacker; // 'player' или 'enemy'
+    if (!attacker || attacker === 'none') return;
 
-            const dmgMatch = action.match(/(?:нанос(?:ит|я)|забирая|выбивая|отнимая|—)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*(?:урона|жизней|HP|здоровья)?/i);
-            if (dmgMatch) {
-                const dmg = parseInt(dmgMatch[1]);
-                attackerStats.hits++;
-                attackerStats.totalDamage += dmg;
-                if (action.includes('КРИТИЧЕСКОГО') || action.includes('крита') || action.includes('крит')) {
-                    attackerStats.crits++;
-                }
-            }
+    const targetStats = attacker === 'player' ? playerStats : enemyStats;
+    const opponentStats = attacker === 'player' ? enemyStats : playerStats;
 
-            const dodgeMatch = action.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается|использует неуловимый манёвр)/i);
-            if (dodgeMatch) {
-                const dodgerName = dodgeMatch[1].trim();
-                if (dodgerName === userData.username) playerStats.dodges++;
-                else enemyStats.dodges++;
-            }
-
-            const healMatch = action.match(/восстанавлива(?:ет|я)\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*очков? здоровья/i);
-            if (healMatch) {
-                const heal = parseInt(healMatch[1]);
-                attackerStats.heal += heal;
-            }
-
-            const reflectMatch = action.match(/отражает\s*(?:<span[^>]*>)?(\d+)(?:<\/span>)?\s*урона/i);
-            if (reflectMatch) {
-                const reflect = parseInt(reflectMatch[1]);
-                defenderStats.reflect += reflect;
-            }
-        });
+    // Поиск чисел в тексте (урон, лечение и т.д.)
+    const damageMatch = text.match(/(?:наносит|нанося|выбивая|отнимая|—)\s*(\d+)\s*(?:урона|жизней|HP|здоровья)?/i);
+    if (damageMatch) {
+        const dmg = parseInt(damageMatch[1]);
+        targetStats.hits++;
+        targetStats.totalDamage += dmg;
+        if (text.includes('КРИТ') || text.includes('крит')) {
+            targetStats.crits++;
+        }
     }
 
+    const dodgeMatch = text.match(/([^\s]+)\s+(?:ловко\s+)?(?:уклоняется|уворачивается)/i);
+    if (dodgeMatch) {
+        // Уклонение засчитывается тому, кто уклонился (attacker)
+        targetStats.dodges++;
+    }
+
+    const healMatch = text.match(/восстанавлива(?:ет|я)\s*(\d+)\s*очков? здоровья/i);
+    if (healMatch) {
+        const heal = parseInt(healMatch[1]);
+        targetStats.heal += heal;
+    }
+
+    const reflectMatch = text.match(/отражает\s*(\d+)\s*урона/i);
+    if (reflectMatch) {
+        const reflect = parseInt(reflectMatch[1]);
+        // Отражение наносит урон атакующему, значит записываем в opponentStats? Или в targetStats? 
+        // По логике: отражает защищающийся, значит урон получает атакующий. Будем считать, что отразивший (защитник) добавляет себе reflect.
+        // Но для простоты будем считать, что отразил тот, кто защищался (opponentStats).
+        opponentStats.reflect += reflect;
+    }
+});
     // Используем сообщения напрямую для отображения лога
    const logArray = battleData.result.messages.map(m => {
     // m — объект с полем text

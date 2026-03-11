@@ -40,7 +40,14 @@ function addExpToCurrentClass(expGain) {
     while (classData.exp >= expNeeded(classData.level)) {
         classData.exp -= expNeeded(classData.level);
         classData.level++;
-        classData.skill_points = (classData.skill_points || 0) + 1;
+        // Определяем количество очков за новый уровень
+        let pointsToAdd = 1;
+        if (classData.level <= 14) {
+            pointsToAdd = 3;
+        } else {
+            pointsToAdd = 5;
+        }
+        classData.skill_points = (classData.skill_points || 0) + pointsToAdd;
         leveledUp = true;
     }
 

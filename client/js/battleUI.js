@@ -12,9 +12,9 @@ async function startBattle() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                tg_id: userData.tg_id,
-                playerName: window.playerName || userData.username || 'Player'  // ← добавляем playerName
-            })
+    tg_id: userData.tg_id,
+    playerName: window.playerName || userData.username || 'Player'
+})
         });
 
         const data = await response.json();

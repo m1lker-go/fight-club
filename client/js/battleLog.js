@@ -212,7 +212,13 @@ const BattleLog = {
     // Лечение, вампиризм
     text = text.replace(/(Вампиризм \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
     text = text.replace(/(Здоровье \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
-    
+    // Ледяные сообщения
+text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
+text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
+text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
+text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
+text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
+        
     return text;
 },
     

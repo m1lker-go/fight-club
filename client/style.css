@@ -1250,3 +1250,55 @@ td {
     box-shadow: none !important;
     border: none !important;
 }
+
+/* Контейнер для всплывающих чисел */
+.floating-numbers-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 20;
+    width: 100%;
+    height: 100%;
+}
+
+/* Само всплывающее число */
+.floating-number {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: bold;
+    white-space: nowrap;
+    text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
+    opacity: 1;
+    animation: floatFade 2s ease-out forwards;
+}
+
+/* Красный цвет для урона */
+.floating-number.red {
+    color: #ff4444;
+}
+
+/* Зелёный цвет для лечения/вампиризма */
+.floating-number.green {
+    color: #44ff44;
+}
+
+/* Анимация */
+@keyframes floatFade {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -70%) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -100%) scale(1);
+    }
+}

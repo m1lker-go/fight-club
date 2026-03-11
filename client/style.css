@@ -1254,19 +1254,18 @@ td {
 /* Контейнер для всплывающих чисел */
 .floating-numbers-container {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 20;
-    width: 100%;
-    height: 100%;
-}
-/* Само всплывающее число */
-.floating-number {
-    position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.floating-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     font-size: 28px;
     font-weight: bold;
@@ -1322,4 +1321,15 @@ td {
 .battle-log {
     margin-top: 15px;
     clear: both;
+}
+
+.floating-number.red {
+    color: #ff4444 !important;
+}
+.floating-number.green {
+    color: #44ff44 !important;
+}
+.floating-number.red i,
+.floating-number.green i {
+    color: inherit;
 }

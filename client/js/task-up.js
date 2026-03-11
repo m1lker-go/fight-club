@@ -141,6 +141,15 @@ function renderTasks() {
 }
 
 async function loadDailyTasks() {
+    // Проверяем, что мы на экране задач
+    if (currentScreen !== 'tasks') return;
+
+    const tasksList = document.getElementById('tasksList');
+    if (!tasksList) {
+        console.warn('tasksList not found, skipping loadDailyTasks');
+        return;
+    }
+
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -149,7 +158,6 @@ async function loadDailyTasks() {
             console.error('Ответ не является массивом:', tasksData);
             return;
         }
-        const tasksList = document.getElementById('tasksList');
         tasksList.innerHTML = '';
 
         tasksData.forEach(task => {

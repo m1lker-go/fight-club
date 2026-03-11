@@ -1323,6 +1323,8 @@ td {
     word-wrap: break-word;
     overflow-wrap: break-word;
     white-space: normal;
+    line-height: 1.4;
+     margin-bottom: 2px;
     max-width: 100%;
     padding: 2px 0;
     line-height: 1.4;
@@ -1331,6 +1333,8 @@ td {
 .battle-log {
     margin-top: 15px;
     clear: both;
+       overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .floating-number.red {

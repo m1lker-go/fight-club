@@ -350,22 +350,49 @@ const BattleLog = {
     if (!container) return;
 
     const numDiv = document.createElement('div');
-    numDiv.className = `floating-number ${colorClass}`;
+    numDiv.className = `floating-number ${colorClass}`; // colorClass может остаться для цвета текста (числа)
     const sign = value > 0 ? '+' : '';
 
-    // Преобразуем текстовые иконки в иконки Font Awesome
-    let iconHtml = '';
+    // Определяем путь к иконке в зависимости от типа (icon)
+    let iconPath = '';
     switch (icon) {
-        case '⚔️': iconHtml = '<i class="fas fa-fist-raised"></i>'; break;
-        case '🔥': iconHtml = '<i class="fas fa-fire"></i>'; break;
-        case '💧': iconHtml = '<i class="fas fa-tint"></i>'; break;
-        case '❄️': iconHtml = '<i class="fas fa-snowflake"></i>'; break;
-        case '❤️': iconHtml = '<i class="fas fa-heart"></i>'; break;
-        case '🛡️': iconHtml = '<i class="fas fa-shield-alt"></i>'; break;
-        default: iconHtml = icon; // на случай, если попадётся неизвестный символ
+        case '⚔️':
+        case 'damage':
+            iconPath = '/assets/icon-log/icon-damage.png';
+            break;
+        case '🔥':
+        case 'fire':
+            iconPath = '/assets/icon-log/icon-fire.png';
+            break;
+        case '💧':
+        case 'poison':
+            iconPath = '/assets/icon-log/icon-poison.png';
+            break;
+        case '❄️':
+        case 'ice':
+            iconPath = '/assets/icon-log/icon-ice.png';
+            break;
+        case '❤️':
+        case 'heal':
+            iconPath = '/assets/icon-log/icon-heal.png';
+            break;
+        case '🛡️':
+        case 'shield':
+            iconPath = '/assets/icon-log/icon-shield.png';
+            break;
+        case 'crit':
+            iconPath = '/assets/icon-log/icon-crit.png';
+            break;
+        case 'reflect':
+            iconPath = '/assets/icon-log/icon-reflect.png';
+            break;
+        default:
+            // Если тип не распознан, используем иконку урона
+            iconPath = '/assets/icon-log/icon-damage.png';
     }
 
-    numDiv.innerHTML = `${sign}${value} ${iconHtml}`;
+    // Формируем HTML: число + иконка
+    numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
     container.appendChild(numDiv);
 
     setTimeout(() => {

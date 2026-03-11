@@ -61,15 +61,16 @@ function showBattleScreen(battleData) {
                 </div>
             </div>
 
-          <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
-    <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
-        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
-        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-        <div class="defeat-overlay">ПРОИГРАЛ</div>
-        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
-        <!-- Контейнер для чисел должен быть внутри этого же блока -->
-        <div class="floating-numbers-container" id="hero-floating"></div>
-    </div>
+            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
+                <!-- Карточка героя -->
+                <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <!-- Контейнер для чисел -->
+                        <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
@@ -81,6 +82,7 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
+                <!-- Дебаффы игрока (колонка слева от центра) -->
                 <div class="player-debuffs" style="flex: 0 0 20px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -89,11 +91,13 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
+                <!-- Центральная часть с таймером и кнопкой скорости -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 4px 8px; border-radius: 12px; cursor: pointer; font-weight: bold; opacity: 0.8; font-size: 12px;">x1</button>
                 </div>
 
+                <!-- Дебаффы противника (колонка справа от центра) -->
                 <div class="enemy-debuffs" style="flex: 0 0 20px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -102,13 +106,14 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
+                <!-- Карточка противника -->
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
-                        <!-- Контейнер для всплывающих чисел (добавлено) -->
+                        <!-- Контейнер для чисел -->
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">

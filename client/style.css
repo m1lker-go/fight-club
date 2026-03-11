@@ -209,6 +209,13 @@ body {
 .log-entry {
     padding: 2px 0;
     border-bottom: 1px solid #2f3542;
+     color: #ff4444;
+    font-weight: bold;
+}
+
+.log-entry .heal-number {
+    color: #44ff44;
+    font-weight: bold;
 }
 
 .battle-controls {

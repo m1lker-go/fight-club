@@ -28,6 +28,31 @@ let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
 
+// Добавляет полученный опыт текущему классу, пересчитывает уровень и возвращает true, если был повышение уровня
+function addExpToCurrentClass(expGain) {
+    const classData = getCurrentClassData();
+    if (!classData) return false;
+
+    classData.exp += expGain;
+    const expNeeded = (level) => Math.floor(80 * Math.pow(level, 1.5));
+    let leveledUp = false;
+
+    while (classData.exp >= expNeeded(classData.level)) {
+        classData.exp -= expNeeded(classData.level);
+        classData.level++;
+        classData.skill_points = (classData.skill_points || 0) + 1;
+        leveledUp = true;
+    }
+
+    // Пересчитываем силу и обновляем топ-бар
+    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
+    currentPower = calculatePower(userData.current_class, stats.final, classData.level);
+    updateTopBar();
+
+    return leveledUp;
+}
+
+
 // ===== УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ =====
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');

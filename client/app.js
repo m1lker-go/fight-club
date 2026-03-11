@@ -1304,7 +1304,7 @@ function renderSkills(container) {
             Доступно очков навыков: <strong>${skillPoints}</strong>
         </div>
         <div class="skills-list">
-            ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 2', base.hp + (classData.hp_points || 0) * 2, classData.hp_points || 0, skillPoints)}
+           ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 5', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
             ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
             ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
             ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 100%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}

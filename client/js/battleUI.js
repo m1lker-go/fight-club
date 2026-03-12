@@ -7,6 +7,12 @@ async function startBattle() {
         return;
     }
 
+    // Очищаем предыдущий таймер боя, если он был
+    if (window.battleTimer) {
+        clearInterval(window.battleTimer);
+        window.battleTimer = null;
+    }
+
     try {
         const response = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
             method: 'POST',
@@ -144,11 +150,13 @@ function showBattleScreen(battleData) {
 
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
-    const timer = setInterval(() => {
+    // Сохраняем таймер в глобальной переменной, чтобы можно было очистить при выходе
+    window.battleTimer = setInterval(() => {
         timeLeft--;
         timerEl.innerText = timeLeft;
         if (timeLeft <= 0) {
-            clearInterval(timer);
+            clearInterval(window.battleTimer);
+            window.battleTimer = null;
             BattleLog.stop();
             const playerPercent = battleData.result.playerHpRemain / battleData.result.playerMaxHp;
             const enemyPercent = battleData.result.enemyHpRemain / battleData.result.enemyMaxHp;
@@ -159,6 +167,12 @@ function showBattleScreen(battleData) {
 }
 
 async function showBattleResult(battleData, timeOut = false) {
+    // Очищаем таймер боя, если он ещё работает
+    if (window.battleTimer) {
+        clearInterval(window.battleTimer);
+        window.battleTimer = null;
+    }
+
     if (battleData.newEnergy !== undefined) {
         userData.energy = battleData.newEnergy;
         updateTopBar();
@@ -168,11 +182,11 @@ async function showBattleResult(battleData, timeOut = false) {
     const isVictory = (winner === 'player');
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
 
-   const expGain = battleData.reward?.exp || 0;
-const coinGain = battleData.reward?.coins || 0;
-const newStreak = battleData.reward?.newStreak || 0;
-const ratingChange = battleData.ratingChange || 0;
-const leveledUp = addExpToCurrentClass(expGain);
+    const expGain = battleData.reward?.exp || 0;
+    const coinGain = battleData.reward?.coins || 0;
+    const newStreak = battleData.reward?.newStreak || 0;
+    const ratingChange = battleData.ratingChange || 0;
+    const leveledUp = addExpToCurrentClass(expGain);
 
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
@@ -190,76 +204,76 @@ const leveledUp = addExpToCurrentClass(expGain);
         });
     } catch (err) { console.error(err); }
 
-   // Подсчёт статистики из messages
-let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    // Подсчёт статистики из messages
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
-battleData.result.messages.forEach(msg => {
-    const text = msg.text;
-    const attacker = msg.attacker; // 'player' или 'enemy'
-    if (!attacker || attacker === 'none') return;
+    battleData.result.messages.forEach(msg => {
+        const text = msg.text;
+        const attacker = msg.attacker; // 'player' или 'enemy'
+        if (!attacker || attacker === 'none') return;
 
-    const targetStats = attacker === 'player' ? playerStats : enemyStats;
-    const opponentStats = attacker === 'player' ? enemyStats : playerStats;
+        const targetStats = attacker === 'player' ? playerStats : enemyStats;
+        const opponentStats = attacker === 'player' ? enemyStats : playerStats;
 
-    // --- Обычный урон ---
-    let match = text.match(/Урон -(\d+)/);
-    if (match) {
-        const dmg = parseInt(match[1]);
-        targetStats.hits++;
-        targetStats.totalDamage += dmg;
-    }
+        // --- Обычный урон ---
+        let match = text.match(/Урон -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.hits++;
+            targetStats.totalDamage += dmg;
+        }
 
-    // --- Критический урон ---
-    match = text.match(/Крит\. урон -(\d+)/);
-    if (match) {
-        const dmg = parseInt(match[1]);
-        targetStats.hits++;
-        targetStats.crits++;
-        targetStats.totalDamage += dmg;
-    }
+        // --- Критический урон ---
+        match = text.match(/Крит\. урон -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.hits++;
+            targetStats.crits++;
+            targetStats.totalDamage += dmg;
+        }
 
-    // --- Урон от стихий (яд, огонь) – идёт в общий урон, но не в hits ---
-match = text.match(/Урон от (?:яда|огня) -(\d+)/);
-if (match) {
-    const dmg = parseInt(match[1]);
-    targetStats.totalDamage += dmg; // hits не увеличиваем
-}
+        // --- Урон от стихий (яд, огонь) – идёт в общий урон, но не в hits ---
+        match = text.match(/Урон от (?:яда|огня) -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.totalDamage += dmg; // hits не увеличиваем
+        }
 
-    // --- Уклонение ---
-    if (text.includes('Уворот')) {
-        targetStats.dodges++;
-    }
+        // --- Уклонение ---
+        if (text.includes('Уворот')) {
+            targetStats.dodges++;
+        }
 
-    // --- Лечение (вампиризм и активное) ---
-    match = text.match(/Вампиризм \+(\d+)/);
-    if (match) {
-        const heal = parseInt(match[1]);
-        targetStats.heal += heal; // лечение получает атакующий
-    }
-    match = text.match(/Здоровье \+(\d+)/);
-    if (match) {
-        const heal = parseInt(match[1]);
-        targetStats.heal += heal;
-    }
+        // --- Лечение (вампиризм и активное) ---
+        match = text.match(/Вампиризм \+(\d+)/);
+        if (match) {
+            const heal = parseInt(match[1]);
+            targetStats.heal += heal; // лечение получает атакующий
+        }
+        match = text.match(/Здоровье \+(\d+)/);
+        if (match) {
+            const heal = parseInt(match[1]);
+            targetStats.heal += heal;
+        }
 
-    // --- Отражение ---
-    match = text.match(/Отражение -(\d+)/);
-    if (match) {
-        const reflect = parseInt(match[1]);
-        opponentStats.reflect += reflect; // отразил защитник (урон по атакующему)
-    }
-});
+        // --- Отражение ---
+        match = text.match(/Отражение -(\d+)/);
+        if (match) {
+            const reflect = parseInt(match[1]);
+            opponentStats.reflect += reflect; // отразил защитник (урон по атакующему)
+        }
+    });
 
-       // Используем сообщения напрямую для отображения лога
- const logArray = battleData.result.messages.map(m => {
-    const text = m.text || JSON.stringify(m);
-    // Применяем форматирование цветов из BattleLog
-    const formattedText = typeof BattleLog.formatLogText === 'function' 
-        ? BattleLog.formatLogText(text) 
-        : text;
-    return `<div class="log-entry">${formattedText}</div>`;
-}).join('');
+    // Используем сообщения напрямую для отображения лога
+    const logArray = battleData.result.messages.map(m => {
+        const text = m.text || JSON.stringify(m);
+        // Применяем форматирование цветов из BattleLog
+        const formattedText = typeof BattleLog.formatLogText === 'function' 
+            ? BattleLog.formatLogText(text) 
+            : text;
+        return `<div class="log-entry">${formattedText}</div>`;
+    }).join('');
 
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -344,12 +358,20 @@ if (match) {
     });
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
+        if (window.battleTimer) {
+            clearInterval(window.battleTimer);
+            window.battleTimer = null;
+        }
         BattleLog.stop();
         await refreshData();
         startBattle();
     });
 
     document.getElementById('backBtn').addEventListener('click', async () => {
+        if (window.battleTimer) {
+            clearInterval(window.battleTimer);
+            window.battleTimer = null;
+        }
         BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';

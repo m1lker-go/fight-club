@@ -910,55 +910,159 @@ function renderShop(target = null) {
 
 async function renderMarket(target = null) {
     const container = target || document.getElementById('content');
+    // Текущие значения фильтров
+    let currentClass = 'any';
+    let currentRarity = 'any';
+    let currentStat = 'any';
+
+    // Состояние открытых панелей (только одна может быть открыта)
+    let openPanel = null;
+
+    // Функция закрытия всех панелей
+    function closeAllPanels() {
+        if (openPanel) {
+            const panel = document.getElementById(openPanel);
+            if (panel) panel.style.display = 'none';
+            openPanel = null;
+        }
+    }
+
+    // Функция открытия панели
+    function togglePanel(panelId) {
+        if (openPanel === panelId) {
+            // Закрыть текущую
+            closeAllPanels();
+        } else {
+            // Закрыть предыдущую, открыть новую
+            closeAllPanels();
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.style.display = 'block';
+                openPanel = panelId;
+            }
+        }
+    }
+
+    // Обработчик клика вне фильтров (закрывает панель)
+    function handleClickOutside(e) {
+        if (!e.target.closest('.filter-group')) {
+            closeAllPanels();
+        }
+    }
+
     container.innerHTML = `
-        <div class="filters">
-            <select id="classFilter">
-                <option value="any">Любой класс</option>
-                <option value="warrior">Воин</option>
-                <option value="assassin">Ассасин</option>
-                <option value="mage">Маг</option>
-            </select>
-            <select id="rarityFilter">
-                <option value="any">Любая редкость</option>
-                <option value="common">Обычное</option>
-                <option value="uncommon">Необычное</option>
-                <option value="rare">Редкое</option>
-                <option value="epic">Эпическое</option>
-                <option value="legendary">Легендарное</option>
-            </select>
+        <div class="market-filters-container">
+            <div class="filters-row">
+                <!-- Фильтр класса -->
+                <div class="filter-group" id="filter-class-group">
+                    <button class="filter-button" id="classFilterBtn">
+                        <span id="classFilterText">Любой класс</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="classPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любой класс</div>
+                        <div class="filter-option" data-value="warrior">Воин</div>
+                        <div class="filter-option" data-value="assassin">Ассасин</div>
+                        <div class="filter-option" data-value="mage">Маг</div>
+                    </div>
+                </div>
+
+                <!-- Фильтр редкости -->
+                <div class="filter-group" id="filter-rarity-group">
+                    <button class="filter-button" id="rarityFilterBtn">
+                        <span id="rarityFilterText">Любая редкость</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="rarityPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любая редкость</div>
+                        <div class="filter-option" data-value="common">Обычное</div>
+                        <div class="filter-option" data-value="uncommon">Необычное</div>
+                        <div class="filter-option" data-value="rare">Редкое</div>
+                        <div class="filter-option" data-value="epic">Эпическое</div>
+                        <div class="filter-option" data-value="legendary">Легендарное</div>
+                    </div>
+                </div>
+
+                <!-- Фильтр характеристики -->
+                <div class="filter-group" id="filter-stat-group">
+                    <button class="filter-button" id="statFilterBtn">
+                        <span id="statFilterText">Любая характеристика</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="statPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любая характеристика</div>
+                        <div class="filter-option" data-value="atk_bonus">АТК</div>
+                        <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
+                        <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
+                        <div class="filter-option" data-value="spd_bonus">СКОР</div>
+                        <div class="filter-option" data-value="crit_bonus">КРИТ</div>
+                        <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
+                        <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
+                        <div class="filter-option" data-value="int_bonus">ИНТ</div>
+                        <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
+                        <div class="filter-option" data-value="reflect_bonus">ОТР</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" id="applyFiltersBtn" style="width:100%; margin-bottom:15px;">Применить</button>
         </div>
-        <div style="margin: 10px 0;">
-            <select id="statFilterSelect" style="width:100%; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
-                <option value="any">Любая характеристика</option>
-                <option value="atk_bonus">АТК</option>
-                <option value="def_bonus">ЗАЩ</option>
-                <option value="hp_bonus">ЗДОР</option>
-                <option value="spd_bonus">СКОР</option>
-                <option value="crit_bonus">КРИТ</option>
-                <option value="crit_dmg_bonus">КР.УРОН</option>
-                <option value="agi_bonus">ЛОВ</option>
-                <option value="int_bonus">ИНТ</option>
-                <option value="vamp_bonus">ВАМП</option>
-                <option value="reflect_bonus">ОТР</option>
-            </select>
-        </div>
-        <button class="btn" id="applyFilters" style="width:100%; margin-bottom:15px;">Применить</button>
+
         <div class="market-container">
             <div id="marketItems" class="market-grid"></div>
         </div>
     `;
 
-    const statSelect = container.querySelector('#statFilterSelect');
-    container.querySelector('#applyFilters').addEventListener('click', () => {
-        loadMarketItems(statSelect.value, container);
+    // Добавляем обработчики для кнопок фильтров
+    document.getElementById('classFilterBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePanel('classPanel');
     });
 
-    await loadMarketItems(statSelect.value, container);
+    document.getElementById('rarityFilterBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePanel('rarityPanel');
+    });
+
+    document.getElementById('statFilterBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePanel('statPanel');
+    });
+
+    // Обработчики для опций в панелях
+    document.querySelectorAll('.filter-option').forEach(opt => {
+        opt.addEventListener('click', (e) => {
+            const value = e.target.dataset.value;
+            const panelId = e.target.closest('.filter-panel').id;
+            // Обновляем соответствующий фильтр
+            if (panelId === 'classPanel') {
+                currentClass = value;
+                document.getElementById('classFilterText').innerText = e.target.innerText;
+            } else if (panelId === 'rarityPanel') {
+                currentRarity = value;
+                document.getElementById('rarityFilterText').innerText = e.target.innerText;
+            } else if (panelId === 'statPanel') {
+                currentStat = value;
+                document.getElementById('statFilterText').innerText = e.target.innerText;
+            }
+            closeAllPanels();
+        });
+    });
+
+    // Закрытие панелей при клике вне
+    document.addEventListener('click', handleClickOutside);
+
+    // Кнопка "Применить"
+    document.getElementById('applyFiltersBtn').addEventListener('click', () => {
+        loadMarketItems(currentStat, container, currentClass, currentRarity);
+    });
+
+    // Первоначальная загрузка
+    await loadMarketItems(currentStat, container, currentClass, currentRarity);
 }
 
-async function loadMarketItems(statFilter = 'any', container) {
-    const classFilter = container.querySelector('#classFilter').value;
-    const rarityFilter = container.querySelector('#rarityFilter').value;
+// Обновлённая функция loadMarketItems с параметрами
+async function loadMarketItems(statFilter = 'any', container, classFilter = 'any', rarityFilter = 'any') {
     const params = new URLSearchParams({ class: classFilter, rarity: rarityFilter });
     if (statFilter !== 'any') {
         params.append('stat', statFilter);

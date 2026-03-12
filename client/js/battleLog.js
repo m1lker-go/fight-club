@@ -375,13 +375,21 @@ const BattleLog = {
     },
 
     showFloatingNumber(target, value, icon, colorClass) {
-        const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
-        const container = document.getElementById(containerId);
-        if (!container) return;
+    const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-        const numDiv = document.createElement('div');
-        numDiv.className = `floating-number ${colorClass}`; // colorClass может остаться для цвета текста (числа)
-        const sign = value > 0 ? '+' : '';
+    // Определяем, сколько уже чисел в контейнере
+    const existing = container.children.length;
+    const baseTop = 50; // базовое смещение в % (50% = центр)
+    const offset = existing * 20; // смещение в пикселях (каждое следующее число ниже на 20px)
+
+    const numDiv = document.createElement('div');
+    numDiv.className = `floating-number ${colorClass}`;
+    // Добавляем индивидуальное смещение через стиль
+    numDiv.style.top = `calc(50% + ${offset}px)`;
+    const sign = value > 0 ? '+' : '';
+
 
         // Определяем путь к иконке в зависимости от типа (icon)
         let iconPath = '';
@@ -423,13 +431,12 @@ const BattleLog = {
 
         // Формируем HTML: число + иконка
         numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
-        container.appendChild(numDiv);
+    container.appendChild(numDiv);
 
-        setTimeout(() => {
-            numDiv.remove();
-        }, 2000);
-    },
-
+    setTimeout(() => {
+        numDiv.remove();
+    }, 2000);
+},
     showAnimation(target, animationFile) {
         this.hideAnimations();
         const container = document.getElementById(target + '-animation');

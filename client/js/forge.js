@@ -125,6 +125,9 @@ function renderForgeInventory(items) {
     const container = document.getElementById('forgeInventory');
     container.innerHTML = '';
     items.forEach(item => {
+        const statsArray = buildStatsArray(item);
+        const statsString = statsArray.join(' • ');
+
         const itemDiv = document.createElement('div');
         itemDiv.className = `inventory-item rarity-${item.rarity}`;
         itemDiv.dataset.itemId = item.id;
@@ -132,6 +135,7 @@ function renderForgeInventory(items) {
             <div class="item-icon" style="background-image: url('${getItemIconPath(item)}'); background-size: cover; background-position: center;"></div>
             <div class="item-content">
                 <div class="item-name" style="font-size:12px;">${itemNameTranslations[item.name] || item.name}</div>
+                <div class="item-stats" style="font-size:10px; color:#aaa;">${statsString}</div>
                 <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
             </div>
         `;

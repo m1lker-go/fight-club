@@ -259,9 +259,11 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
             if (type === 'attack' || type === 'crit' || type === 'damage') {
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 animFile = 'shot.gif';
-            } else if (type === 'dodge') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = 'missx.gif';
+           else if (type === 'dodge') {
+    // Уклоняется тот, кого атакуют (противник атакующего)
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    animFile = 'missx.gif';
+}
             } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 if (type === 'fire_ult') animFile = 'fire.gif';

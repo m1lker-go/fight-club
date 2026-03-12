@@ -470,5 +470,7 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
     this.states = [];
     this.currentMsgIndex = 0;
     this.currentStateIndex = 0;
+    this.battleData = null; // дополнительно обнуляем данные
+    this.onFinish = null;
 }
 };

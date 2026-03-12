@@ -1490,3 +1490,29 @@ td {
     position: relative;
     z-index: 1;
 }
+
+.filters-row {
+    position: relative; /* для позиционирования панелей */
+}
+
+.filter-group {
+    position: static; /* важно: сбрасываем relative, чтобы панель могла позиционироваться относительно окна */
+}
+
+.filter-panel {
+    position: fixed; /* фиксированное позиционирование относительно окна */
+    left: 10px;
+    right: 10px;
+    width: auto; /* ширина автоматически подстроится под left/right */
+    top: auto; /* сбросим top, будем управлять через JS или через calc */
+    background-color: #1a1f2b;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    z-index: 1000; /* выше всего */
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,170,255,0.2);
+    display: none; /* по умолчанию скрыто */
+}
+
+/* При открытии панели будем задавать top через JS */

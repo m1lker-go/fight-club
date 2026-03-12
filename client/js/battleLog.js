@@ -26,10 +26,10 @@ const BattleLog = {
     playerBurnStacks: 0,
     enemyBurnStacks: 0,
 
-    init(battleData, logContainer, onFinish) {
-        console.log('[BattleLog] init');
-         this.stop(); 
-         this.stopped = false; 
+  init(battleData, logContainer, onFinish) {
+    console.log('[BattleLog] init');
+    this.stop(); // останавливает и очищает всё
+    this.stopped = false; // теперь разрешаем новый лог
         if (this.interval) clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
@@ -73,6 +73,7 @@ const BattleLog = {
     },
 
     applyState(state) {
+         if (this.stopped) return; // не применяем состояние, если лог остановлен
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -463,7 +464,10 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
     },
 
    stop() {
-    clearTimeout(this.interval);
+    if (this.interval) {
+        clearTimeout(this.interval);
+        this.interval = null;
+    }
     if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
     if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
     this.hideAnimations();
@@ -472,7 +476,7 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
     this.states = [];
     this.currentMsgIndex = 0;
     this.currentStateIndex = 0;
-    this.battleData = null; // дополнительно обнуляем данные
+    this.battleData = null;
     this.onFinish = null;
 }
 };

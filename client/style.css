@@ -1381,3 +1381,13 @@ td {
     margin-bottom: 2px;
     border-bottom: 1px solid #2f3542;
 }
+
+.claim-task-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+.claim-task-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

@@ -137,9 +137,6 @@ function renderTasks() {
             });
     });
 
-    loadDailyTasks();
-}
-
 async function loadDailyTasks() {
     // Проверяем, что мы на экране задач
     if (currentScreen !== 'tasks') return;
@@ -173,6 +170,11 @@ async function loadDailyTasks() {
             const displayName = translated.name || task.name;
             const displayDesc = translated.description || task.description;
 
+            // Определяем, выполнено ли задание
+            const isCompleted = clampedProgress >= task.target_value;
+            const buttonClass = isCompleted ? 'btn claim-task-btn active' : 'btn claim-task-btn';
+            const buttonDisabled = !isCompleted ? 'disabled' : '';
+
             const taskCard = document.createElement('div');
             taskCard.className = 'task-card';
             taskCard.style.display = 'flex';
@@ -198,7 +200,7 @@ async function loadDailyTasks() {
                     <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
                 </div>
                 <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="btn claim-task-btn" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОЛУЧИТЬ</button>
+                    <button class="${buttonClass}" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}" style="padding: 8px 12px; font-size: 12px; width: 100%;" ${buttonDisabled}>ПОЛУЧИТЬ</button>
                 </div>
             `;
             tasksList.appendChild(taskCard);
@@ -206,6 +208,9 @@ async function loadDailyTasks() {
 
         document.querySelectorAll('.claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
+                // Если кнопка disabled, событие не должно срабатывать, но добавим защиту
+                if (btn.disabled) return;
+
                 const taskId = btn.dataset.taskId;
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);

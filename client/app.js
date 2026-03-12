@@ -1168,29 +1168,6 @@ async function loadRatingData(type) {
     }
 }
 
-// ==================== КУЗНИЦА ====================
-function renderForge() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div class="forge-container">
-            <div class="forge-banner">
-                <img src="/assets/banner_forge.png" alt="Кузница" style="width: 100%; height: auto; display: block;">
-            </div>
-            <div style="display: flex; gap: 10px; margin: 20px 0;">
-                <button class="btn forge-tab active" data-forge-tab="forge">Ковать</button>
-                <button class="btn forge-tab" data-forge-tab="smelt">Расплавить</button>
-            </div>
-            <div id="forgeContent"></div>
-        </div>
-    `;
-
-    document.querySelectorAll('.forge-tab').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.forge-tab').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        });
-    });
-}
 
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {

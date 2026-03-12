@@ -781,6 +781,26 @@ function renderTrade() {
     }
 }
 
+function togglePanel(panelId) {
+    closeAllPanels();
+    const panel = document.getElementById(panelId);
+    if (panel) {
+        // Определяем, какая кнопка вызвала панель
+        let btn;
+        if (panelId === 'classPanel') btn = document.getElementById('classFilterBtn');
+        else if (panelId === 'rarityPanel') btn = document.getElementById('rarityFilterBtn');
+        else if (panelId === 'statPanel') btn = document.getElementById('statFilterBtn');
+
+        if (btn) {
+            const rect = btn.getBoundingClientRect();
+            // Устанавливаем top панели сразу под кнопкой (с учётом прокрутки)
+            panel.style.top = (rect.bottom + window.scrollY) + 'px';
+        }
+        panel.style.display = 'block';
+        openPanel = panelId;
+    }
+}
+
 // client/app.js (функция renderShop)
 
 function renderShop(target = null) {

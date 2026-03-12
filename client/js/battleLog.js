@@ -26,10 +26,10 @@ const BattleLog = {
     playerBurnStacks: 0,
     enemyBurnStacks: 0,
 
-  init(battleData, logContainer, onFinish) {
-    console.log('[BattleLog] init');
-    this.stop(); // останавливает и очищает всё
-    this.stopped = false; // теперь разрешаем новый лог
+    init(battleData, logContainer, onFinish) {
+        console.log('[BattleLog] init');
+        this.stop(); // останавливает и очищает всё
+        this.stopped = false; // теперь разрешаем новый лог
         if (this.interval) clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
@@ -73,7 +73,7 @@ const BattleLog = {
     },
 
     applyState(state) {
-         if (this.stopped) return; // не применяем состояние, если лог остановлен
+        if (this.stopped) return; // не применяем состояние, если лог остановлен
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -203,36 +203,36 @@ const BattleLog = {
     },
 
     formatLogText(text) {
-    // Урон (обычный, критический, от стихий, отражение)
-    text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-    text = text.replace(/(Крит\. урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-    text = text.replace(/(Урон от огня -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-    text = text.replace(/(Урон от яда -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-    text = text.replace(/(Отражение -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-    
-    // Лечение, вампиризм
-    text = text.replace(/(Вампиризм \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
-    text = text.replace(/(Здоровье \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
-    // Ледяные сообщения
-text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
-text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
-text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
-text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
-text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
-        
-    return text;
-},
-    
+        // Урон (обычный, критический, от стихий, отражение)
+        text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+        text = text.replace(/(Крит\. урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+        text = text.replace(/(Урон от огня -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+        text = text.replace(/(Урон от яда -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+        text = text.replace(/(Отражение -)(\d+)/g, '$1<span class="damage-number">$2</span>');
+
+        // Лечение, вампиризм
+        text = text.replace(/(Вампиризм \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
+        text = text.replace(/(Здоровье \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
+        // Ледяные сообщения
+        text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
+
+        return text;
+    },
+
     playNext() {
-    if (this.stopped) {
-        console.log('[BattleLog] stopped, ignoring');
-        return;
-    }
-    if (this.currentMsgIndex >= this.messages.length) {
-        console.log('[BattleLog] All messages shown, finishing');
-        this.finish();
-        return;
-    }
+        if (this.stopped) {
+            console.log('[BattleLog] stopped, ignoring');
+            return;
+        }
+        if (this.currentMsgIndex >= this.messages.length) {
+            console.log('[BattleLog] All messages shown, finishing');
+            this.finish();
+            return;
+        }
 
         const entry = this.messages[this.currentMsgIndex];
         const msgText = entry.text;
@@ -260,11 +260,10 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
             if (type === 'attack' || type === 'crit' || type === 'damage') {
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 animFile = 'shot.gif';
-           else if (type === 'dodge') {
-    // Уклоняется тот, кого атакуют (противник атакующего)
-    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-    animFile = 'missx.gif';
-}
+            } else if (type === 'dodge') {
+                // Уклоняется тот, кого атакуют (противник атакующего)
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'missx.gif';
             } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 if (type === 'fire_ult') animFile = 'fire.gif';
@@ -298,7 +297,7 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
     },
 
-    // Новый метод для парсинга и отображения чисел
+    // Метод для парсинга и отображения чисел
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;
         const type = entry.type;
@@ -375,61 +374,61 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
         }
     },
 
-  showFloatingNumber(target, value, icon, colorClass) {
-    const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
-    const container = document.getElementById(containerId);
-    if (!container) return;
+    showFloatingNumber(target, value, icon, colorClass) {
+        const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-    const numDiv = document.createElement('div');
-    numDiv.className = `floating-number ${colorClass}`; // colorClass может остаться для цвета текста (числа)
-    const sign = value > 0 ? '+' : '';
+        const numDiv = document.createElement('div');
+        numDiv.className = `floating-number ${colorClass}`; // colorClass может остаться для цвета текста (числа)
+        const sign = value > 0 ? '+' : '';
 
-    // Определяем путь к иконке в зависимости от типа (icon)
-    let iconPath = '';
-    switch (icon) {
-        case '⚔️':
-        case 'damage':
-            iconPath = '/assets/icon-log/icon-damage.png';
-            break;
-        case '🔥':
-        case 'fire':
-            iconPath = '/assets/icon-log/icon-fire.png';
-            break;
-        case '💧':
-        case 'poison':
-            iconPath = '/assets/icon-log/icon-poison.png';
-            break;
-        case '❄️':
-        case 'ice':
-            iconPath = '/assets/icon-log/icon-ice.png';
-            break;
-        case '❤️':
-        case 'heal':
-            iconPath = '/assets/icon-log/icon-heal.png';
-            break;
-        case '🛡️':
-        case 'shield':
-            iconPath = '/assets/icon-log/icon-shield.png';
-            break;
-        case 'crit':
-            iconPath = '/assets/icon-log/icon-crit.png';
-            break;
-        case 'reflect':
-            iconPath = '/assets/icon-log/icon-reflect.png';
-            break;
-        default:
-            // Если тип не распознан, используем иконку урона
-            iconPath = '/assets/icon-log/icon-damage.png';
-    }
+        // Определяем путь к иконке в зависимости от типа (icon)
+        let iconPath = '';
+        switch (icon) {
+            case '⚔️':
+            case 'damage':
+                iconPath = '/assets/icon-log/icon-damage.png';
+                break;
+            case '🔥':
+            case 'fire':
+                iconPath = '/assets/icon-log/icon-fire.png';
+                break;
+            case '💧':
+            case 'poison':
+                iconPath = '/assets/icon-log/icon-poison.png';
+                break;
+            case '❄️':
+            case 'ice':
+                iconPath = '/assets/icon-log/icon-ice.png';
+                break;
+            case '❤️':
+            case 'heal':
+                iconPath = '/assets/icon-log/icon-heal.png';
+                break;
+            case '🛡️':
+            case 'shield':
+                iconPath = '/assets/icon-log/icon-shield.png';
+                break;
+            case 'crit':
+                iconPath = '/assets/icon-log/icon-crit.png';
+                break;
+            case 'reflect':
+                iconPath = '/assets/icon-log/icon-reflect.png';
+                break;
+            default:
+                // Если тип не распознан, используем иконку урона
+                iconPath = '/assets/icon-log/icon-damage.png';
+        }
 
-    // Формируем HTML: число + иконка
-    numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
-    container.appendChild(numDiv);
+        // Формируем HTML: число + иконка
+        numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
+        container.appendChild(numDiv);
 
-    setTimeout(() => {
-        numDiv.remove();
-    }, 2000);
-},
+        setTimeout(() => {
+            numDiv.remove();
+        }, 2000);
+    },
 
     showAnimation(target, animationFile) {
         this.hideAnimations();
@@ -463,20 +462,20 @@ text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-t
         if (this.onFinish) this.onFinish(this.battleData);
     },
 
-   stop() {
-    if (this.interval) {
-        clearTimeout(this.interval);
-        this.interval = null;
+    stop() {
+        if (this.interval) {
+            clearTimeout(this.interval);
+            this.interval = null;
+        }
+        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+        this.hideAnimations();
+        this.stopped = true;
+        this.messages = [];
+        this.states = [];
+        this.currentMsgIndex = 0;
+        this.currentStateIndex = 0;
+        this.battleData = null;
+        this.onFinish = null;
     }
-    if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-    if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-    this.hideAnimations();
-    this.stopped = true;
-    this.messages = [];
-    this.states = [];
-    this.currentMsgIndex = 0;
-    this.currentStateIndex = 0;
-    this.battleData = null;
-    this.onFinish = null;
-}
 };

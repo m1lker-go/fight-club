@@ -12,9 +12,9 @@ async function startBattle() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-    tg_id: userData.tg_id,
-    playerName: window.playerName || userData.username || 'Player'
-})
+                tg_id: userData.tg_id,
+                playerName: window.playerName || userData.username || 'Player'
+            })
         });
 
         const data = await response.json();
@@ -25,6 +25,8 @@ async function startBattle() {
             return;
         }
 
+        // Полная остановка предыдущего лога перед показом нового экрана
+        BattleLog.stop();
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);

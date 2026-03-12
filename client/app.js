@@ -1010,6 +1010,106 @@ async function renderMarket(target = null) {
 
         <div class="market-container">
             <div id="marketItems" class="market-grid"></div>
+async function renderMarket(target = null) {
+    const container = target || document.getElementById('content');
+    // Текущие значения фильтров
+    let currentClass = 'any';
+    let currentRarity = 'any';
+    let currentStat = 'any';
+
+    // Состояние открытых панелей (только одна может быть открыта)
+    let openPanel = null;
+
+    // Функция закрытия всех панелей
+    function closeAllPanels() {
+        if (openPanel) {
+            const panel = document.getElementById(openPanel);
+            if (panel) panel.style.display = 'none';
+            openPanel = null;
+        }
+    }
+
+    // Функция открытия панели
+    function togglePanel(panelId) {
+        if (openPanel === panelId) {
+            closeAllPanels();
+        } else {
+            closeAllPanels();
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.style.display = 'block';
+                openPanel = panelId;
+            }
+        }
+    }
+
+    // Обработчик клика вне фильтров (закрывает панель)
+    function handleClickOutside(e) {
+        if (!e.target.closest('.filter-group')) {
+            closeAllPanels();
+        }
+    }
+
+    container.innerHTML = `
+        <div class="market-filters-container">
+            <div class="filters-row">
+                <!-- Фильтр класса -->
+                <div class="filter-group" id="filter-class-group">
+                    <button class="filter-button" id="classFilterBtn">
+                        <span id="classFilterText">Класс</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="classPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любой класс</div>
+                        <div class="filter-option" data-value="warrior">Воин</div>
+                        <div class="filter-option" data-value="assassin">Ассасин</div>
+                        <div class="filter-option" data-value="mage">Маг</div>
+                    </div>
+                </div>
+
+                <!-- Фильтр редкости -->
+                <div class="filter-group" id="filter-rarity-group">
+                    <button class="filter-button" id="rarityFilterBtn">
+                        <span id="rarityFilterText">Редкость</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="rarityPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любая редкость</div>
+                        <div class="filter-option" data-value="common">Обычное</div>
+                        <div class="filter-option" data-value="uncommon">Необычное</div>
+                        <div class="filter-option" data-value="rare">Редкое</div>
+                        <div class="filter-option" data-value="epic">Эпическое</div>
+                        <div class="filter-option" data-value="legendary">Легендарное</div>
+                    </div>
+                </div>
+
+                <!-- Фильтр характеристики -->
+                <div class="filter-group" id="filter-stat-group">
+                    <button class="filter-button" id="statFilterBtn">
+                        <span id="statFilterText">Характеристика</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="statPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любая характеристика</div>
+                        <div class="filter-option" data-value="atk_bonus">АТК</div>
+                        <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
+                        <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
+                        <div class="filter-option" data-value="spd_bonus">СКОР</div>
+                        <div class="filter-option" data-value="crit_bonus">КРИТ</div>
+                        <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
+                        <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
+                        <div class="filter-option" data-value="int_bonus">ИНТ</div>
+                        <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
+                        <div class="filter-option" data-value="reflect_bonus">ОТР</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" id="applyFiltersBtn" style="width:100%; margin-bottom:15px;">Применить</button>
+        </div>
+
+        <div class="market-container">
+            <div id="marketItems" class="market-grid"></div>
         </div>
     `;
 
@@ -1034,16 +1134,17 @@ async function renderMarket(target = null) {
         opt.addEventListener('click', (e) => {
             const value = e.target.dataset.value;
             const panelId = e.target.closest('.filter-panel').id;
-            // Обновляем соответствующий фильтр
+            const optionText = e.target.innerText;
+
             if (panelId === 'classPanel') {
                 currentClass = value;
-                document.getElementById('classFilterText').innerText = e.target.innerText;
+                document.getElementById('classFilterText').innerText = value === 'any' ? 'Класс' : optionText;
             } else if (panelId === 'rarityPanel') {
                 currentRarity = value;
-                document.getElementById('rarityFilterText').innerText = e.target.innerText;
+                document.getElementById('rarityFilterText').innerText = value === 'any' ? 'Редкость' : optionText;
             } else if (panelId === 'statPanel') {
                 currentStat = value;
-                document.getElementById('statFilterText').innerText = e.target.innerText;
+                document.getElementById('statFilterText').innerText = value === 'any' ? 'Характеристика' : optionText;
             }
             closeAllPanels();
         });

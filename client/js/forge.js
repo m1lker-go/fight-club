@@ -53,16 +53,19 @@ async function renderForge() {
 
 // Загрузка с сервера списка предметов в указанной вкладке
 async function loadCurrentForgeItems(tab) {
+    console.log('[Forge] loadCurrentForgeItems called with tab =', tab);
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/forge/current?tg_id=${userData.tg_id}&tab=${tab}`);
+        console.log('[Forge] fetch response status:', res.status);
         if (res.ok) {
-            forgeItems = await res.json(); // массив ID
+            forgeItems = await res.json();
+            console.log('[Forge] received items:', forgeItems);
         } else {
-            console.error('Failed to load current forge items');
+            console.error('[Forge] failed to load, status', res.status);
             forgeItems = [];
         }
     } catch (e) {
-        console.error('Error loading current forge items:', e);
+        console.error('[Forge] error loading items:', e);
         forgeItems = [];
     }
 }

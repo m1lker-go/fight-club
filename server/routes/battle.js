@@ -169,6 +169,22 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let reflectDamage = 0;
     if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
 
+// В функции performAttack после расчета урона и перед возвратом результата
+// Добавляем самоповреждение для берсерка (если атакующий — берсерк)
+if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
+    // 10% от текущей атаки, но не менее 1
+    let selfDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
+    // Наносим урон атакующему (уменьшаем его HP в состоянии)
+    attackerState.hp -= selfDamage;
+    if (attackerState.hp < 0) attackerState.hp = 0;
+    // Добавляем запись в лог
+    extraLogs.push({
+        text: selfDamagePhrase.replace('%s', attackerName).replace('%d', selfDamage),
+        type: 'damage_self',
+        attacker: isPlayerAttacker ? 'player' : 'enemy'
+    });
+}
+    
     // Накопление яда
    // Добавляем новый параметр в функцию performAttack:
 if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {

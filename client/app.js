@@ -844,18 +844,18 @@ function renderShop(target = null) {
             </div>
             
             <div class="chest-card">
-    <div class="chest-icon">
-        <img src="/assets/leg-chess.png" alt="Легендарный сундук">
-    </div>
-    <div class="chest-info">
-        <div class="chest-name">Легендарный<br>сундук</div>
-        <div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div>
-    </div>
-    <button class="chest-btn" data-chest="legendary">
-        <span class="chest-price">3500</span>
-        <i class="fas fa-coins" style="color: white;"></i>
-    </button>
-</div>
+                <div class="chest-icon">
+                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
+                </div>
+                <div class="chest-info">
+                    <div class="chest-name">Легендарный<br>сундук</div>
+                    <div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div>
+                </div>
+                <button class="chest-btn" data-chest="legendary">
+                    <span class="chest-price">3500</span>
+                    <i class="fas fa-coins" style="color: white;"></i>
+                </button>
+            </div>
         </div>
     `;
 
@@ -908,108 +908,7 @@ function renderShop(target = null) {
     });
 }
 
-async function renderMarket(target = null) {
-    const container = target || document.getElementById('content');
-    // Текущие значения фильтров
-    let currentClass = 'any';
-    let currentRarity = 'any';
-    let currentStat = 'any';
-
-    // Состояние открытых панелей (только одна может быть открыта)
-    let openPanel = null;
-
-    // Функция закрытия всех панелей
-    function closeAllPanels() {
-        if (openPanel) {
-            const panel = document.getElementById(openPanel);
-            if (panel) panel.style.display = 'none';
-            openPanel = null;
-        }
-    }
-
-    // Функция открытия панели
-    function togglePanel(panelId) {
-        if (openPanel === panelId) {
-            // Закрыть текущую
-            closeAllPanels();
-        } else {
-            // Закрыть предыдущую, открыть новую
-            closeAllPanels();
-            const panel = document.getElementById(panelId);
-            if (panel) {
-                panel.style.display = 'block';
-                openPanel = panelId;
-            }
-        }
-    }
-
-    // Обработчик клика вне фильтров (закрывает панель)
-    function handleClickOutside(e) {
-        if (!e.target.closest('.filter-group')) {
-            closeAllPanels();
-        }
-    }
-
-    container.innerHTML = `
-        <div class="market-filters-container">
-            <div class="filters-row">
-                <!-- Фильтр класса -->
-                <div class="filter-group" id="filter-class-group">
-                    <button class="filter-button" id="classFilterBtn">
-                        <span id="classFilterText">Любой класс</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="filter-panel" id="classPanel" style="display: none;">
-                        <div class="filter-option" data-value="any">Любой класс</div>
-                        <div class="filter-option" data-value="warrior">Воин</div>
-                        <div class="filter-option" data-value="assassin">Ассасин</div>
-                        <div class="filter-option" data-value="mage">Маг</div>
-                    </div>
-                </div>
-
-                <!-- Фильтр редкости -->
-                <div class="filter-group" id="filter-rarity-group">
-                    <button class="filter-button" id="rarityFilterBtn">
-                        <span id="rarityFilterText">Любая редкость</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="filter-panel" id="rarityPanel" style="display: none;">
-                        <div class="filter-option" data-value="any">Любая редкость</div>
-                        <div class="filter-option" data-value="common">Обычное</div>
-                        <div class="filter-option" data-value="uncommon">Необычное</div>
-                        <div class="filter-option" data-value="rare">Редкое</div>
-                        <div class="filter-option" data-value="epic">Эпическое</div>
-                        <div class="filter-option" data-value="legendary">Легендарное</div>
-                    </div>
-                </div>
-
-                <!-- Фильтр характеристики -->
-                <div class="filter-group" id="filter-stat-group">
-                    <button class="filter-button" id="statFilterBtn">
-                        <span id="statFilterText">Любая характеристика</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="filter-panel" id="statPanel" style="display: none;">
-                        <div class="filter-option" data-value="any">Любая характеристика</div>
-                        <div class="filter-option" data-value="atk_bonus">АТК</div>
-                        <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
-                        <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
-                        <div class="filter-option" data-value="spd_bonus">СКОР</div>
-                        <div class="filter-option" data-value="crit_bonus">КРИТ</div>
-                        <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
-                        <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
-                        <div class="filter-option" data-value="int_bonus">ИНТ</div>
-                        <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
-                        <div class="filter-option" data-value="reflect_bonus">ОТР</div>
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn" id="applyFiltersBtn" style="width:100%; margin-bottom:15px;">Применить</button>
-        </div>
-
-        <div class="market-container">
-            <div id="marketItems" class="market-grid"></div>
+// ==================== АКТУАЛЬНАЯ ВЕРСИЯ renderMarket ====================
 async function renderMarket(target = null) {
     const container = target || document.getElementById('content');
     // Текущие значения фильтров
@@ -1372,7 +1271,6 @@ async function loadRatingData(type) {
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>';
     }
 }
-
 
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {

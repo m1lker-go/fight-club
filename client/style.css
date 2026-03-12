@@ -1391,3 +1391,80 @@ td {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.market-filters-container {
+    margin-bottom: 20px;
+}
+
+.filters-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.filter-group {
+    flex: 1;
+    position: relative;
+}
+
+.filter-button {
+    width: 100%;
+    padding: 12px 10px;
+    background-color: #232833;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.filter-button:hover {
+    background-color: #2f3542;
+}
+
+.filter-button i {
+    color: #00aaff;
+    font-size: 12px;
+}
+
+.filter-panel {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background-color: #1a1f2b;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,170,255,0.2);
+}
+
+.filter-option {
+    padding: 12px 15px;
+    color: white;
+    cursor: pointer;
+    border-bottom: 1px solid #2f3542;
+    transition: background-color 0.2s;
+}
+
+.filter-option:last-child {
+    border-bottom: none;
+}
+
+.filter-option:hover {
+    background-color: #00aaff;
+    color: white;
+}
+
+/* Убедитесь, что контейнер маркета не перекрывается панелями */
+.market-container {
+    position: relative;
+    z-index: 1;
+}

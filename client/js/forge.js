@@ -75,8 +75,7 @@ async function loadCurrentForgeItems(tab) {
 function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    // Определяем размер слота в зависимости от вкладки
-    const slotSize = currentForgeTab === 'forge' ? 70 : 63; // 63px = 70 - 10%
+    const slotSize = 63; // одинаковый размер для всех слотов
 
     slotsContainer.style.display = 'grid';
     slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, ${slotSize}px)`;
@@ -90,7 +89,7 @@ function renderForgeSlots() {
         const item = inventory.find(it => it.id === itemId);
         html += `
             <div class="forge-slot" data-slot-index="${i}" style="width:${slotSize}px; height:${slotSize}px; background-color:#2f3542; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid #00aaff; cursor:pointer; overflow:hidden;">
-                ${item ? `<img src="${getItemIconPath(item)}" style="max-width:100%; max-height:100%;" title="${item.name}">` : '<span style="color:#aaa; font-size:12px;">Пусто</span>'}
+                ${item ? `<img src="${getItemIconPath(item)}" style="max-width:100%; max-height:100%;" title="${item.name}">` : '<span style="color:#aaa; font-size:11px;">Пусто</span>'}
             </div>
         `;
     }
@@ -115,7 +114,6 @@ function renderForgeSlots() {
     }
     actionBtn.onclick = performForgeAction;
 }
-
 // Загрузка инвентаря для кузницы (предметы, которые можно добавить)
 async function loadForgeInventory() {
      console.log('[Forge] loadForgeInventory started');

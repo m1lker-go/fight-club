@@ -75,8 +75,11 @@ async function loadCurrentForgeItems(tab) {
 function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
+    // Определяем размер слота в зависимости от вкладки
+    const slotSize = currentForgeTab === 'forge' ? 70 : 63; // 63px = 70 - 10%
+
     slotsContainer.style.display = 'grid';
-    slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, 70px)`;
+    slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, ${slotSize}px)`;
     slotsContainer.style.gap = '10px';
     slotsContainer.style.justifyContent = 'center';
     slotsContainer.style.margin = '0 auto';
@@ -86,8 +89,8 @@ function renderForgeSlots() {
         const itemId = forgeItems[i];
         const item = inventory.find(it => it.id === itemId);
         html += `
-            <div class="forge-slot" data-slot-index="${i}" style="width:70px; height:70px; background-color:#2f3542; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid #00aaff; cursor:pointer; overflow:hidden;">
-                ${item ? `<img src="${getItemIconPath(item)}" style="max-width:100%; max-height:100%;" title="${item.name}">` : '<span style="color:#aaa;">Пусто</span>'}
+            <div class="forge-slot" data-slot-index="${i}" style="width:${slotSize}px; height:${slotSize}px; background-color:#2f3542; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid #00aaff; cursor:pointer; overflow:hidden;">
+                ${item ? `<img src="${getItemIconPath(item)}" style="max-width:100%; max-height:100%;" title="${item.name}">` : '<span style="color:#aaa; font-size:12px;">Пусто</span>'}
             </div>
         `;
     }

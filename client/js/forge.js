@@ -4,6 +4,7 @@ let currentForgeTab = 'forge'; // 'forge' или 'smelt'
 
 // Рендер главной страницы кузницы
 async function renderForge() {
+    console.log('[Forge] renderForgeSlots started');
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="forge-container">
@@ -114,6 +115,7 @@ function renderForgeSlots() {
 
 // Загрузка инвентаря для кузницы (предметы, которые можно добавить)
 async function loadForgeInventory() {
+     console.log('[Forge] loadForgeInventory started');
     const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
     renderForgeInventory(availableItems);
 }

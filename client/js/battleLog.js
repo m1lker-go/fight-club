@@ -157,11 +157,10 @@ const BattleLog = {
                 }
             }
             if (this.playerPoisonStacks > 0) {
-    for (let i = 0; i < this.playerPoisonStacks; i++) {
-        effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-    }
-}
-            
+                for (let i = 0; i < this.playerPoisonStacks; i++) {
+                    effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+                }
+            }
             for (let i = 0; i < this.playerBurnStacks; i++) {
                 effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
             }
@@ -177,10 +176,10 @@ const BattleLog = {
                 }
             }
             if (this.enemyPoisonStacks > 0) {
-    for (let i = 0; i < this.enemyPoisonStacks; i++) {
-        effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-    }
-}
+                for (let i = 0; i < this.enemyPoisonStacks; i++) {
+                    effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+                }
+            }
             for (let i = 0; i < this.enemyBurnStacks; i++) {
                 effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
             }
@@ -263,29 +262,29 @@ const BattleLog = {
             let animFile = null;
 
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-    animFile = 'shot.gif';
-} else if (type === 'dodge') {
-    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-    animFile = 'missx.gif';
-} else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-    if (type === 'fire_ult') animFile = 'fire.gif';
-    else if (type === 'ice_ult') animFile = 'ice.gif';
-    else if (type === 'poison_ult') animFile = 'poison.gif';
-    else animFile = 'ultimate.gif';
-} else if (type === 'damage_self') {
-    // Самоповреждение – анимацию не показываем, только всплывающее число
-    // Можно добавить отдельную анимацию, если есть
-    animTarget = null;
-    animFile = null;
-} else if (type === 'heal' || type === 'buff') {
-    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-    animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-} else if (type === 'frozen_enter' || type === 'frozen_end') {
-    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-    animFile = 'frozenx.gif';
-}
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'shot.gif';
+            } else if (type === 'dodge') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'missx.gif';
+            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                if (type === 'fire_ult') animFile = 'fire.gif';
+                else if (type === 'ice_ult') animFile = 'ice.gif';
+                else if (type === 'poison_ult') animFile = 'poison.gif';
+                else animFile = 'ultimate.gif';
+            } else if (type === 'damage_self') {
+                // Самоповреждение – анимацию не показываем, только всплывающее число
+                animTarget = null;
+                animFile = null;
+            } else if (type === 'heal' || type === 'buff') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+            } else if (type === 'frozen_enter' || type === 'frozen_end') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = 'frozenx.gif';
+            }
+
             if (animTarget && animFile) {
                 console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
                 this.showAnimation(animTarget, animFile);
@@ -316,108 +315,94 @@ const BattleLog = {
         let colorClass = null;
         let numberTarget = null;
 
-        // --- Обработка различных типов сообщений ---
+        // --- Атаки, криты, ульты (кроме самоповреждения) ---
+        if (type === 'attack' || type === 'crit' || type === 'damage' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            const match = msgText.match(/урон -(\d+)/i) || msgText.match(/крит\. урон -(\d+)/i);
+            if (match) {
+                numberValue = -parseInt(match[1]);
+                icon = '⚔️';
+                if (type === 'fire_ult') icon = '🔥';
+                else if (type === 'ice_ult') icon = '❄️';
+                else if (type === 'poison_ult') icon = '💧';
+                colorClass = 'red';
+                numberTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            }
+        }
+        // --- Самоповреждение ---
+        else if (type === 'damage_self') {
+            const match = msgText.match(/урон -(\d+)/i);
+            if (match) {
+                numberValue = -parseInt(match[1]);
+                icon = '⚔️';
+                colorClass = 'red';
+                numberTarget = (attacker === 'player') ? 'hero' : 'enemy'; // цель – сам атакующий
+            }
+        }
+        // --- Урон от яда ---
+        else if (type === 'poison_dot') {
+            const match = msgText.match(/урон от яда -(\d+)/i);
+            if (match) {
+                numberValue = -parseInt(match[1]);
+                icon = '💧';
+                colorClass = 'red';
+                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            }
+        }
+        // --- Урон от огня ---
+        else if (type === 'burn_dot') {
+            const match = msgText.match(/урон от огня -(\d+)/i);
+            if (match) {
+                numberValue = -parseInt(match[1]);
+                icon = '🔥';
+                colorClass = 'red';
+                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            }
+        }
+        // --- Лечение ---
+        else if (type === 'heal') {
+            const match = msgText.match(/здоровье \+(\d+)/i);
+            if (match) {
+                numberValue = parseInt(match[1]);
+                icon = '❤️';
+                colorClass = 'green';
+                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            }
+        }
 
-    parseAndShowFloatingNumber(entry) {
-    const msgText = entry.text;
-    const type = entry.type;
-    const attacker = entry.attacker;
+        // Дополнительные эффекты, которые могут быть в том же сообщении (вампиризм, отражение)
+        if (type === 'attack' || type === 'crit') {
+            const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
+            if (vampMatch) {
+                const vampValue = parseInt(vampMatch[1]);
+                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+            }
+            const reflectMatch = msgText.match(/отражение -(\d+)/i);
+            if (reflectMatch) {
+                const reflectValue = -parseInt(reflectMatch[1]);
+                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
+            }
+        }
 
-    let numberValue = null;
-    let icon = null;
-    let colorClass = null;
-    let numberTarget = null;
-
-    // --- Атаки, криты, ульты (кроме самоповреждения) ---
-    if (type === 'attack' || type === 'crit' || type === 'damage' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-        const match = msgText.match(/урон -(\d+)/i) || msgText.match(/крит\. урон -(\d+)/i);
-        if (match) {
-            numberValue = -parseInt(match[1]);
-            icon = '⚔️';
-            if (type === 'fire_ult') icon = '🔥';
-            else if (type === 'ice_ult') icon = '❄️';
-            else if (type === 'poison_ult') icon = '💧';
-            colorClass = 'red';
-            numberTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        // Если есть основное число, показываем его
+        if (numberValue !== null && numberTarget) {
+            this.showFloatingNumber(numberTarget, numberValue, icon, colorClass);
         }
-    }
-    // --- Самоповреждение ---
-    else if (type === 'damage_self') {
-        const match = msgText.match(/урон -(\d+)/i);
-        if (match) {
-            numberValue = -parseInt(match[1]);
-            icon = '⚔️';
-            colorClass = 'red';
-            numberTarget = (attacker === 'player') ? 'hero' : 'enemy'; // цель – сам атакующий
-        }
-    }
-    // --- Урон от яда ---
-    else if (type === 'poison_dot') {
-        const match = msgText.match(/урон от яда -(\d+)/i);
-        if (match) {
-            numberValue = -parseInt(match[1]);
-            icon = '💧';
-            colorClass = 'red';
-            numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
-        }
-    }
-    // --- Урон от огня ---
-    else if (type === 'burn_dot') {
-        const match = msgText.match(/урон от огня -(\d+)/i);
-        if (match) {
-            numberValue = -parseInt(match[1]);
-            icon = '🔥';
-            colorClass = 'red';
-            numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
-        }
-    }
-    // --- Лечение ---
-    else if (type === 'heal') {
-        const match = msgText.match(/здоровье \+(\d+)/i);
-        if (match) {
-            numberValue = parseInt(match[1]);
-            icon = '❤️';
-            colorClass = 'green';
-            numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
-        }
-    }
-
-    // Дополнительные эффекты, которые могут быть в том же сообщении (вампиризм, отражение)
-    if (type === 'attack' || type === 'crit') {
-        const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
-        if (vampMatch) {
-            const vampValue = parseInt(vampMatch[1]);
-            this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
-        }
-        const reflectMatch = msgText.match(/отражение -(\d+)/i);
-        if (reflectMatch) {
-            const reflectValue = -parseInt(reflectMatch[1]);
-            this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
-        }
-    }
-
-    // Если есть основное число, показываем его
-    if (numberValue !== null && numberTarget) {
-        this.showFloatingNumber(numberTarget, numberValue, icon, colorClass);
-    }
-},
+    },
 
     showFloatingNumber(target, value, icon, colorClass) {
-    const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
-    const container = document.getElementById(containerId);
-    if (!container) return;
+        const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-    // Определяем, сколько уже чисел в контейнере
-    const existing = container.children.length;
-    const baseTop = 50; // базовое смещение в % (50% = центр)
-    const offset = existing * 20; // смещение в пикселях (каждое следующее число ниже на 20px)
+        // Определяем, сколько уже чисел в контейнере
+        const existing = container.children.length;
+        const offset = existing * 20; // смещение в пикселях (каждое следующее число ниже на 20px)
 
-    const numDiv = document.createElement('div');
-    numDiv.className = `floating-number ${colorClass}`;
-    // Добавляем индивидуальное смещение через стиль
-    numDiv.style.top = `calc(50% + ${offset}px)`;
-    const sign = value > 0 ? '+' : '';
-
+        const numDiv = document.createElement('div');
+        numDiv.className = `floating-number ${colorClass}`;
+        // Добавляем индивидуальное смещение через стиль
+        numDiv.style.top = `calc(50% + ${offset}px)`;
+        const sign = value > 0 ? '+' : '';
 
         // Определяем путь к иконке в зависимости от типа (icon)
         let iconPath = '';
@@ -459,12 +444,13 @@ const BattleLog = {
 
         // Формируем HTML: число + иконка
         numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
-    container.appendChild(numDiv);
+        container.appendChild(numDiv);
 
-    setTimeout(() => {
-        numDiv.remove();
-    }, 2000);
-},
+        setTimeout(() => {
+            numDiv.remove();
+        }, 2000);
+    },
+
     showAnimation(target, animationFile) {
         this.hideAnimations();
         const container = document.getElementById(target + '-animation');

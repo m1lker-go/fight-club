@@ -258,26 +258,29 @@ const BattleLog = {
             let animFile = null;
 
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'shot.gif';
-            } else if (type === 'dodge') {
-                // Уклоняется тот, кого атакуют (противник атакующего)
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'missx.gif';
-            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                if (type === 'fire_ult') animFile = 'fire.gif';
-                else if (type === 'ice_ult') animFile = 'ice.gif';
-                else if (type === 'poison_ult') animFile = 'poison.gif';
-                else animFile = 'ultimate.gif';
-            } else if (type === 'heal' || type === 'buff') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-            } else if (type === 'frozen_enter' || type === 'frozen_end') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = 'frozenx.gif';
-            }
-
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    animFile = 'shot.gif';
+} else if (type === 'dodge') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    animFile = 'missx.gif';
+} else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    if (type === 'fire_ult') animFile = 'fire.gif';
+    else if (type === 'ice_ult') animFile = 'ice.gif';
+    else if (type === 'poison_ult') animFile = 'poison.gif';
+    else animFile = 'ultimate.gif';
+} else if (type === 'damage_self') {
+    // Самоповреждение – анимацию не показываем, только всплывающее число
+    // Можно добавить отдельную анимацию, если есть
+    animTarget = null;
+    animFile = null;
+} else if (type === 'heal' || type === 'buff') {
+    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+    animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+} else if (type === 'frozen_enter' || type === 'frozen_end') {
+    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+    animFile = 'frozenx.gif';
+}
             if (animTarget && animFile) {
                 console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
                 this.showAnimation(animTarget, animFile);

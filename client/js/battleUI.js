@@ -251,8 +251,8 @@ async function showBattleResult(battleData, timeOut = false) {
         }
 
         // --- Уклонение ---
-       if (text.includes('Уворот')) {
-    opponentStats.dodges++; // уклонение засчитывается защитнику (противнику атакующего)
+      if (text.includes('Уворот')) {
+    opponentStats.dodges++; // уклонение засчитывается защитнику
 }
 
         // --- Лечение (вампиризм и активное) ---

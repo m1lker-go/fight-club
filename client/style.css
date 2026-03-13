@@ -1532,3 +1532,39 @@ td {
 .log-entry.dodge-text .damage-number {
     /* числа внутри уже имеют свои цвета, но если нужно переопределить – можно */
 }
+
+/* Контейнер для кнопок классов в рюкзаке (можно использовать существующий класс .class-selector) */
+.class-selector {
+    display: flex;
+    background-color: #2f3542;  /* фон как у нижних кнопок */
+    border-radius: 30px;
+    overflow: hidden;           /* чтобы кнопки не выходили за скругление */
+    width: 100%;                /* растягиваем на всю ширину */
+    margin-bottom: 20px;
+}
+
+/* Сами кнопки классов */
+.class-selector .class-btn {
+    flex: 1;                    /* равная ширина */
+    padding: 12px 0;            /* вертикальные отступы как у .btn */
+    border: none;
+    background-color: transparent; /* прозрачный фон – виден фон родителя */
+    color: #aaa;
+    font-size: 16px;            /* размер шрифта как у .btn */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    text-align: center;
+    outline: none;
+}
+
+/* Активная кнопка */
+.class-selector .class-btn.active {
+    background-color: #00aaff;  /* голубая подсветка */
+    color: white;
+}
+
+/* Эффект при наведении на неактивные кнопки */
+.class-selector .class-btn:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}

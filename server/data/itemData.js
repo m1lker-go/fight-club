@@ -677,25 +677,70 @@ const itemNames = {
 
 const fixedBonuses = {
     common: {
-        atk: 1, def: 1, hp: 5, spd: 1,
-        crit: 2, crit_dmg: 5, agi: 2, int: 2, vamp: 2, reflect: 2
+        atk: 2,
+        def: 2,
+        hp: 5,
+        spd: 2,
+        crit: 3,
+        crit_dmg: 10,
+        agi: 2,
+        int: 2,
+        vamp: 5,
+        reflect: 5
     },
     uncommon: {
-        atk: 2, def: 2, hp: 10, spd: 2,
-        crit: 4, crit_dmg: 10, agi: 4, int: 4, vamp: 4, reflect: 4
+        atk: 4,
+        def: 5,
+        hp: 10,
+        spd: 4,
+        crit: 5,
+        crit_dmg: 15,
+        agi: 4,
+        int: 3,
+        vamp: 8,
+        reflect: 8
     },
     rare: {
-        atk: 3, def: 3, hp: 15, spd: 3,
-        crit: 6, crit_dmg: 15, agi: 6, int: 6, vamp: 6, reflect: 6
+        atk: 6,
+        def: 8,
+        hp: 15,
+        spd: 6,
+        crit: 8,
+        crit_dmg: 25,
+        agi: 6,
+        int: 4,
+        vamp: 12,
+        reflect: 12
     },
     epic: {
-        atk: 5, def: 5, hp: 25, spd: 4,
-        crit: 10, crit_dmg: 25, agi: 10, int: 10, vamp: 10, reflect: 10
+        atk: 10,
+        def: 10,
+        hp: 20,
+        spd: 10,
+        crit: 10,
+        crit_dmg: 35,
+        agi: 8,
+        int: 6,
+        vamp: 16,
+        reflect: 16
     },
     legendary: {
-        atk: 10, def: 10, hp: 35, spd: 5,
-        crit: 15, crit_dmg: 40, agi: 15, int: 15, vamp: 15, reflect: 15
+        atk: 15,
+        def: 15,
+        hp: 35,
+        spd: 15,
+        crit: 15,
+        crit_dmg: 50,
+        agi: 10,
+        int: 8,
+        vamp: 20,
+        reflect: 20
     }
+};
+
+module.exports = {
+    itemNames,
+    fixedBonuses
 };
 
 module.exports = { itemNames, fixedBonuses };

@@ -510,31 +510,28 @@ function renderEquip() {
         `;
 
         slotConfig.left.forEach(slot => {
-            const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? getItemIconPath(item) : slot.icon;
-            html += `
-                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
-                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
-                </div>
-            `;
-        });
+    const item = equipped.find(i => i.type === slot.type);
+    const icon = item ? getItemIconPath(item) : slot.icon;
+    // Определяем фон слота: если есть предмет, берём картинку по его редкости, иначе обычный slot.png
+    const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
+    html += `
+        <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover; background-position: center;">
+            <div class="slot-icon" style="background-image: url('${icon}');"></div>
+        </div>
+    `;
+});
 
-        html += `</div>
-                <div class="hero-center">
-                    <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
-                </div>
-                <div class="equip-column">
-        `;
-
-        slotConfig.right.forEach(slot => {
-            const item = equipped.find(i => i.type === slot.type);
-            const icon = item ? getItemIconPath(item) : slot.icon;
-            html += `
-                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}">
-                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
-                </div>
-            `;
-        });
+// Аналогично для правой колонки
+slotConfig.right.forEach(slot => {
+    const item = equipped.find(i => i.type === slot.type);
+    const icon = item ? getItemIconPath(item) : slot.icon;
+    const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
+    html += `
+        <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover; background-position: center;">
+            <div class="slot-icon" style="background-image: url('${icon}');"></div>
+        </div>
+    `;
+});
 
         html += `</div>
                 </div>

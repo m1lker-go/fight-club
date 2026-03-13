@@ -755,11 +755,11 @@ function renderTrade() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="margin-top: 10px;"></div>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn ${tradeTab === 'shop' ? 'active' : ''}" id="tradeShopBtn" style="flex:1;">МАГАЗИН</button>
-            <button class="btn ${tradeTab === 'market' ? 'active' : ''}" id="tradeMarketBtn" style="flex:1;">МАРКЕТ</button>
-        </div>
-        <div id="tradeContent"></div>
+       <div class="profile-tabs-container">
+    <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
+    <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
+    <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">Улучшить</button>
+</div>
     `;
 
     const tradeContent = document.getElementById('tradeContent');

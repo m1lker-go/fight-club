@@ -89,8 +89,8 @@ function calculateClassStats(className, classData, inventory, subclass) {
         final.hp = Math.floor(final.hp * 1.1);
     }
 
-    final.def = Math.min(100, final.def);
-    final.agi = Math.min(100, final.agi);
+    final.def = Math.min(70, final.def);
+    final.agi = Math.min(70, final.agi);
     final.crit = Math.min(100, final.crit);
 
     final.hp = Math.round(final.hp);

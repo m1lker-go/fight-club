@@ -136,6 +136,8 @@ function renderTasks() {
                 alert('Ошибка загрузки календаря');
             });
     });
+       // Загружаем задания после отрисовки
+    loadDailyTasks();
 }
 
 async function loadDailyTasks() {

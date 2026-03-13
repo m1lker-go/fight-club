@@ -1598,3 +1598,20 @@ td {
 .profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
+
+.hero-center {
+    width: 110px;
+    height: 165px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+}
+
+.hero-center img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #00aaff;
+}

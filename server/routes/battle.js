@@ -191,6 +191,7 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
     if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
     const oldStacks = defenderState.poisonStacks;
     defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
+    console.log(`[DEBUG] poisonStacks now = ${defenderState.poisonStacks}`);
     if (defenderState.poisonStacks > oldStacks) {
         extraLogs.push({
             text: poisonStackPhrase.replace('%d', defenderState.poisonStacks),

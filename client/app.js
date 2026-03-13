@@ -483,7 +483,7 @@ function renderEquip() {
             (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
         );
         const equipped = classItems.filter(item => item.equipped);
-        const unequipped = classItems.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
+        const unequipped = classItems.filter(item => !item.equipped && !item.in_forge);
 
         const slotConfig = {
             left: [

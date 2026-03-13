@@ -374,6 +374,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0 };
     let enemyState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: enemyHp, mirageCounter:0 };
 
+    // Флаги для отслеживания совершённых ходов в текущем раунде
+    let playerActedThisRound = false;
+    let enemyActedThisRound = false;
+
     function pushState() {
         states.push({
             playerHp, enemyHp, playerMana, enemyMana,
@@ -411,6 +415,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 pushState();
                 console.log(`[FROZEN] ${msg}`);
                 turn = 'enemy';
+                playerActedThisRound = true; // всё равно считается ходом?
                 continue;
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
@@ -468,6 +473,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
             }
             turn = 'enemy';
+            playerActedThisRound = true;
         }
 
         // --- Ход противника ---
@@ -486,6 +492,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 pushState();
                 console.log(`[FROZEN] ${msg}`);
                 turn = 'player';
+                enemyActedThisRound = true;
                 continue;
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
@@ -541,32 +548,39 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
             }
             turn = 'player';
+            enemyActedThisRound = true;
         }
 
-        // Урон от стаков в конце раунда
-        const playerDot = applyDotDamage(playerState, playerName);
-        const enemyDot = applyDotDamage(enemyState, enemyName);
-        if (playerDot.damage>0) {
-            playerHp -= playerDot.damage;
-            if (playerHp<0) playerHp=0;
-            playerDot.logs.forEach(entry => {
-                entry.attacker = 'player';
-                messages.push(entry);
-                console.log(`[DOT] ${entry.text}`);
-            });
-            pushState();
+        // --- Применение урона от стаков в конце полного раунда ---
+        if (playerActedThisRound && enemyActedThisRound) {
+            const playerDot = applyDotDamage(playerState, playerName);
+            const enemyDot = applyDotDamage(enemyState, enemyName);
+            if (playerDot.damage > 0) {
+                playerHp -= playerDot.damage;
+                if (playerHp < 0) playerHp = 0;
+                playerDot.logs.forEach(entry => {
+                    entry.attacker = 'player';
+                    messages.push(entry);
+                    console.log(`[DOT] ${entry.text}`);
+                });
+                pushState();
+            }
+            if (enemyDot.damage > 0) {
+                enemyHp -= enemyDot.damage;
+                if (enemyHp < 0) enemyHp = 0;
+                enemyDot.logs.forEach(entry => {
+                    entry.attacker = 'enemy';
+                    messages.push(entry);
+                    console.log(`[DOT] ${entry.text}`);
+                });
+                pushState();
+            }
+            // Сбрасываем флаги для следующего раунда
+            playerActedThisRound = false;
+            enemyActedThisRound = false;
         }
-        if (enemyDot.damage>0) {
-            enemyHp -= enemyDot.damage;
-            if (enemyHp<0) enemyHp=0;
-            enemyDot.logs.forEach(entry => {
-                entry.attacker = 'enemy';
-                messages.push(entry);
-                console.log(`[DOT] ${entry.text}`);
-            });
-            pushState();
-        }
-        if (playerHp<=0 || enemyHp<=0) break;
+
+        if (playerHp <= 0 || enemyHp <= 0) break;
     }
 
     let winner = (playerHp<=0 && enemyHp<=0) ? 'draw' : (playerHp<=0) ? 'enemy' : (enemyHp<=0) ? 'player' : null;

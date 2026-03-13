@@ -4,6 +4,7 @@ async function startBattle() {
     if (!userData || !userData.tg_id) {
         console.error('tg_id не определён!');
         alert('Ошибка: не удалось идентифицировать пользователя');
+        unlockMenu(); // разблокируем меню
         return;
     }
 
@@ -28,6 +29,7 @@ async function startBattle() {
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
             alert('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'));
+            unlockMenu(); // разблокируем меню
             return;
         }
 
@@ -37,7 +39,15 @@ async function startBattle() {
     } catch (error) {
         console.error('Ошибка запроса:', error);
         alert('Ошибка соединения с сервером');
+        unlockMenu(); // разблокируем меню
     }
+}
+
+function unlockMenu() {
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'auto';
+        item.style.opacity = '1';
+    });
 }
 
 function showBattleScreen(battleData) {

@@ -251,12 +251,17 @@ const BattleLog = {
         // --- Лог и анимация для не-стековых сообщений ---
         if (!isStackMessage) {
             // Добавляем запись в лог
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.innerHTML = this.formatLogText(msgText);
-            this.logContainer.appendChild(logEntry);
-            this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
+           const logEntry = document.createElement('div');
+let entryClass = 'log-entry';
+if (type === 'dodge') {
+    entryClass += ' dodge-text';
+} else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+    entryClass += ' ult-text';
+}
+logEntry.className = entryClass;
+logEntry.innerHTML = this.formatLogText(msgText);
+this.logContainer.appendChild(logEntry);
+this.logContainer.scrollTop = this.logContainer.scrollHeight;
             // --- Определяем анимацию ---
             let animTarget = null;
             let animFile = null;

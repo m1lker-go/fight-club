@@ -1599,6 +1599,7 @@ td {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Контейнер для аватара в экипировке */
 .hero-center {
     width: 110px;
     height: 165px;
@@ -1614,4 +1615,37 @@ td {
     object-fit: cover;
     border-radius: 8px;
     border: 2px solid #00aaff;
+}
+
+/* Стили для переключателя классов в экипировке (как в профиле) */
+.equip-layout .class-selector {
+    display: flex;
+    background-color: #2f3542;
+    border-radius: 30px;
+    overflow: hidden;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.equip-layout .class-selector .class-btn {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    background-color: transparent;
+    color: #aaa;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    text-align: center;
+    outline: none;
+}
+
+.equip-layout .class-selector .class-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+.equip-layout .class-selector .class-btn:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }

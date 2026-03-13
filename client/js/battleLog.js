@@ -318,69 +318,89 @@ const BattleLog = {
 
         // --- Обработка различных типов сообщений ---
 
-        // Атаки, криты, ульты (урон)
-        if (type === 'attack' || type === 'crit' || type === 'damage' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult' || type === 'damage_self') {
-            const match = msgText.match(/Урон -(\d+)/) || msgText.match(/Крит\. урон -(\d+)/);
-            if (match) {
-                numberValue = -parseInt(match[1]);
-                icon = '⚔️';
-                if (type === 'fire_ult') icon = '🔥';
-                else if (type === 'ice_ult') icon = '❄️';
-                else if (type === 'poison_ult') icon = '💧';
-                colorClass = 'red';
-                numberTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            }
-        }
-        // Урон от яда
-        else if (type === 'poison_dot') {
-            const match = msgText.match(/Урон от яда -(\d+)/);
-            if (match) {
-                numberValue = -parseInt(match[1]);
-                icon = '💧';
-                colorClass = 'red';
-                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            }
-        }
-        // Урон от огня
-        else if (type === 'burn_dot') {
-            const match = msgText.match(/Урон от огня -(\d+)/);
-            if (match) {
-                numberValue = -parseInt(match[1]);
-                icon = '🔥';
-                colorClass = 'red';
-                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            }
-        }
-        // Лечение
-        else if (type === 'heal') {
-            const match = msgText.match(/Здоровье \+(\d+)/);
-            if (match) {
-                numberValue = parseInt(match[1]);
-                icon = '❤️';
-                colorClass = 'green';
-                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            }
-        }
+    parseAndShowFloatingNumber(entry) {
+    const msgText = entry.text;
+    const type = entry.type;
+    const attacker = entry.attacker;
 
-        // Дополнительные эффекты, которые могут быть в том же сообщении (вампиризм, отражение)
-        if (type === 'attack' || type === 'crit') {
-            const vampMatch = msgText.match(/Вампиризм \+(\d+)/);
-            if (vampMatch) {
-                const vampValue = parseInt(vampMatch[1]);
-                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
-            }
-            const reflectMatch = msgText.match(/Отражение -(\d+)/);
-            if (reflectMatch) {
-                const reflectValue = -parseInt(reflectMatch[1]);
-                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
-            }
-        }
+    let numberValue = null;
+    let icon = null;
+    let colorClass = null;
+    let numberTarget = null;
 
-        // Если есть основное число, показываем его
-        if (numberValue !== null && numberTarget) {
-            this.showFloatingNumber(numberTarget, numberValue, icon, colorClass);
+    // --- Атаки, криты, ульты (кроме самоповреждения) ---
+    if (type === 'attack' || type === 'crit' || type === 'damage' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+        const match = msgText.match(/урон -(\d+)/i) || msgText.match(/крит\. урон -(\d+)/i);
+        if (match) {
+            numberValue = -parseInt(match[1]);
+            icon = '⚔️';
+            if (type === 'fire_ult') icon = '🔥';
+            else if (type === 'ice_ult') icon = '❄️';
+            else if (type === 'poison_ult') icon = '💧';
+            colorClass = 'red';
+            numberTarget = (attacker === 'player') ? 'enemy' : 'hero';
         }
-    },
+    }
+    // --- Самоповреждение ---
+    else if (type === 'damage_self') {
+        const match = msgText.match(/урон -(\d+)/i);
+        if (match) {
+            numberValue = -parseInt(match[1]);
+            icon = '⚔️';
+            colorClass = 'red';
+            numberTarget = (attacker === 'player') ? 'hero' : 'enemy'; // цель – сам атакующий
+        }
+    }
+    // --- Урон от яда ---
+    else if (type === 'poison_dot') {
+        const match = msgText.match(/урон от яда -(\d+)/i);
+        if (match) {
+            numberValue = -parseInt(match[1]);
+            icon = '💧';
+            colorClass = 'red';
+            numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
+        }
+    }
+    // --- Урон от огня ---
+    else if (type === 'burn_dot') {
+        const match = msgText.match(/урон от огня -(\d+)/i);
+        if (match) {
+            numberValue = -parseInt(match[1]);
+            icon = '🔥';
+            colorClass = 'red';
+            numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
+        }
+    }
+    // --- Лечение ---
+    else if (type === 'heal') {
+        const match = msgText.match(/здоровье \+(\d+)/i);
+        if (match) {
+            numberValue = parseInt(match[1]);
+            icon = '❤️';
+            colorClass = 'green';
+            numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
+        }
+    }
+
+    // Дополнительные эффекты, которые могут быть в том же сообщении (вампиризм, отражение)
+    if (type === 'attack' || type === 'crit') {
+        const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
+        if (vampMatch) {
+            const vampValue = parseInt(vampMatch[1]);
+            this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+        }
+        const reflectMatch = msgText.match(/отражение -(\d+)/i);
+        if (reflectMatch) {
+            const reflectValue = -parseInt(reflectMatch[1]);
+            this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
+        }
+    }
+
+    // Если есть основное число, показываем его
+    if (numberValue !== null && numberTarget) {
+        this.showFloatingNumber(numberTarget, numberValue, icon, colorClass);
+    }
+},
 
     showFloatingNumber(target, value, icon, colorClass) {
     const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';

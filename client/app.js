@@ -750,15 +750,6 @@ slotConfig.right.forEach(slot => {
 // ==================== ТОРГОВЛЯ ====================
 function renderTrade() {
     const content = document.getElementById('content');
-    content.innerHTML = `
-        <div style="margin-top: 10px;"></div>
-       <div class="profile-tabs-container">
-    <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
-    <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
-    <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">Улучшить</button>
-</div>
-    `;
-
     const tradeContent = document.getElementById('tradeContent');
 
     document.getElementById('tradeShopBtn').addEventListener('click', () => {
@@ -1300,7 +1291,7 @@ function renderProfile() {
     }).catch(err => console.error('Failed to update profile task', err));
 
     content.innerHTML = `
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <div class="profile-tabs-container">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
             <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
             <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">Улучшить</button>

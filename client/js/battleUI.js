@@ -254,6 +254,9 @@ async function showBattleResult(battleData, timeOut = false) {
       if (text.includes('Уворот')) {
     opponentStats.dodges++; // уклонение засчитывается защитнику
 }
+        if (text.toLowerCase().includes('уворот')) {
+    opponentStats.dodges++;
+}
 
         // --- Лечение (вампиризм и активное) ---
         match = text.match(/Вампиризм \+(\d+)/);

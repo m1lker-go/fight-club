@@ -1533,8 +1533,8 @@ td {
     /* числа внутри уже имеют свои цвета, но если нужно переопределить – можно */
 }
 
-/* Контейнер для кнопок классов в рюкзаке (можно использовать существующий класс .class-selector) */
-.class-selector {
+/* Стили для переключателя классов в профиле (вкладка Бонусы) */
+#profileContent .class-selector {
     display: flex;
     background-color: #2f3542;
     border-radius: 30px;
@@ -1542,7 +1542,8 @@ td {
     width: 100%;
     margin-bottom: 20px;
 }
-.class-selector .class-btn {
+
+#profileContent .class-selector .class-btn {
     flex: 1;
     padding: 12px 0;
     border: none;
@@ -1555,10 +1556,12 @@ td {
     text-align: center;
     outline: none;
 }
-.class-selector .class-btn.active {
+
+#profileContent .class-selector .class-btn.active {
     background-color: #00aaff;
     color: white;
 }
-.class-selector .class-btn:not(.active):hover {
+
+#profileContent .class-selector .class-btn:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }

@@ -157,8 +157,11 @@ const BattleLog = {
                 }
             }
             if (this.playerPoisonStacks > 0) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
+    for (let i = 0; i < this.playerPoisonStacks; i++) {
+        effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+    }
+}
+            
             for (let i = 0; i < this.playerBurnStacks; i++) {
                 effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
             }
@@ -174,8 +177,10 @@ const BattleLog = {
                 }
             }
             if (this.enemyPoisonStacks > 0) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
+    for (let i = 0; i < this.enemyPoisonStacks; i++) {
+        effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+    }
+}
             for (let i = 0; i < this.enemyBurnStacks; i++) {
                 effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
             }

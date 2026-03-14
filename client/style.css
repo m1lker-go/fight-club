@@ -487,24 +487,36 @@ body {
     align-items: center;
     padding: 15px;
 }
-.equip-main {
+/* Контейнер для аватара в экипировке */
+.hero-center {
+    width: 110px;
+    height: 164px; /* было 165px */
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 20px;
-    width: 100%;
-    margin-bottom: 20px;
+    justify-content: center;
+    background: none;
 }
+.hero-center img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #00aaff;
+}
+
+/* Колонки со слотами */
 .equip-column {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    width: 80px;
+    gap: 7px; /* было 10px */
+    width: 50px; /* было 80px */
 }
+
+/* Слоты */
 .equip-slot {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 50px;  /* было 80px */
+    height: 50px; /* было 80px */
     background-image: url('/assets/slot.png');
     background-size: cover;
     background-position: center;
@@ -518,28 +530,22 @@ body {
     transform: scale(1.05);
 }
 .slot-icon {
-    width: 40px;
-    height: 40px;
+    width: 40px;  /* было 60px */
+    height: 40px; /* было 60px */
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
-/* Контейнер аватара в экипировке */
-.hero-center {
-    width: 110px;
-    height: 165px;
+
+/* Расстояние между колонками и аватаром */
+.equip-main {
     display: flex;
-    align-items: center;
     justify-content: center;
-    background: none;
-}
-.hero-center img {
+    align-items: center;
+    gap: 10px; /* было 20px */
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #00aaff;
+    margin-bottom: 20px;
 }
 
 /* ========== КОНТЕЙНЕР РЮКЗАКА ========== */

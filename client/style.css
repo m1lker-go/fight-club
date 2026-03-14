@@ -482,7 +482,7 @@ body {
 
 /* ========== ЭКРАН ЭКИПИРОВКИ ========== */
 .hero-center {
-    width: 180px;
+    width: 160px;
     height: 240px;
     display: flex;
     align-items: center;

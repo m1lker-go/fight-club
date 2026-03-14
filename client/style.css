@@ -481,21 +481,15 @@ body {
 }
 
 /* ========== ЭКРАН ЭКИПИРОВКИ ========== */
-.equip-layout {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 15px;
-}
-/* Контейнер для аватара в экипировке */
 .hero-center {
-    width: 110px;
-    height: 164px; /* было 165px */
+    width: 180px;
+    height: 270px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: none;
 }
+
 .hero-center img {
     width: 100%;
     height: 100%;
@@ -504,19 +498,17 @@ body {
     border: 2px solid #00aaff;
 }
 
-/* Колонки со слотами */
 .equip-column {
     display: flex;
     flex-direction: column;
-    gap: 7px; /* было 10px */
-    width: 50px; /* было 80px */
+    gap: 8px; /* отступ между слотами */
+    width: 88px;
 }
 
-/* Слоты */
 .equip-slot {
     position: relative;
-    width: 50px;  /* было 80px */
-    height: 50px; /* было 80px */
+    width: 88px;
+    height: 88px;
     background-image: url('/assets/slot.png');
     background-size: cover;
     background-position: center;
@@ -526,24 +518,25 @@ body {
     cursor: pointer;
     transition: transform 0.2s;
 }
+
 .equip-slot:hover {
     transform: scale(1.05);
 }
+
 .slot-icon {
-    width: 40px;  /* было 60px */
-    height: 40px; /* было 60px */
+    width: 68px;  /* чуть меньше слота */
+    height: 68px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
-/* Расстояние между колонками и аватаром */
 .equip-main {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px; /* было 20px */
+    gap: 10px; /* расстояние между колонками и аватаром */
     width: 100%;
     margin-bottom: 20px;
 }

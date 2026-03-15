@@ -227,87 +227,88 @@ const BattleLog = {
         return text;
     },
 
-    playNext() {
-        if (this.stopped) {
-            console.log('[BattleLog] stopped, ignoring');
-            return;
+  playNext() {
+    if (this.stopped) {
+        console.log('[BattleLog] stopped, ignoring');
+        return;
+    }
+    if (this.currentMsgIndex >= this.messages.length) {
+        console.log('[BattleLog] All messages shown, finishing');
+        this.finish();
+        return;
+    }
+
+    const entry = this.messages[this.currentMsgIndex];
+    const msgText = entry.text;
+    const type = entry.type;
+    const attacker = entry.attacker; // 'player' или 'enemy'
+
+    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
+
+    // Сообщения о стаках не выводим в лог (но числа показываем)
+    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+
+    // --- Лог и анимация для не-стековых сообщений ---
+    if (!isStackMessage) {
+        // Добавляем запись в лог
+        const logEntry = document.createElement('div');
+        let entryClass = 'log-entry';
+        if (type === 'dodge') {
+            entryClass += ' dodge-text';
+        } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            entryClass += ' ult-text';
         }
-        if (this.currentMsgIndex >= this.messages.length) {
-            console.log('[BattleLog] All messages shown, finishing');
-            this.finish();
-            return;
-        }
+        logEntry.className = entryClass;
+        logEntry.innerHTML = this.formatLogText(msgText);
+        this.logContainer.appendChild(logEntry);
+        this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        const entry = this.messages[this.currentMsgIndex];
-        const msgText = entry.text;
-        const type = entry.type;
-        const attacker = entry.attacker; // 'player' или 'enemy'
+        // --- Определяем анимацию ---
+        let animTarget = null;
+        let animFile = null;
 
-        console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
-
-        // Сообщения о стаках не выводим в лог (но числа показываем)
-        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
-
-        // --- Лог и анимация для не-стековых сообщений ---
-        if (!isStackMessage) {
-            // Добавляем запись в лог
-           const logEntry = document.createElement('div');
-let entryClass = 'log-entry';
-if (type === 'dodge') {
-    entryClass += ' dodge-text';
-} else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-    entryClass += ' ult-text';
-}
-logEntry.className = entryClass;
-logEntry.innerHTML = this.formatLogText(msgText);
-this.logContainer.appendChild(logEntry);
-this.logContainer.scrollTop = this.logContainer.scrollHeight;
-            // --- Определяем анимацию ---
-            let animTarget = null;
-            let animFile = null;
-
-            if (type === 'attack' || type === 'crit' || type === 'damage') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'shot.gif';
-            } else if (type === 'dodge') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'missx.gif';
-            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                if (type === 'fire_ult') animFile = 'fire.gif';
-                else if (type === 'ice_ult') animFile = 'ice.gif';
-                else if (type === 'poison_ult') animFile = 'poison.gif';
-                else animFile = 'ultimate.gif';
-            } else if (type === 'damage_self') {
-                // Самоповреждение – анимацию не показываем, только всплывающее число
-                animTarget = null;
-                animFile = null;
-           } else if (type === 'heal' || type === 'buff') {
-    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-    animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-else if (type === 'frozen_enter' || type === 'frozen_end') {
-    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-    animFile = 'frozenx.gif';
-}
-
-            if (animTarget && animFile) {
-                console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
-                this.showAnimation(animTarget, animFile);
-            }
+        if (type === 'attack' || type === 'crit' || type === 'damage') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'shot.gif';
+        } else if (type === 'dodge') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'missx.gif';
+        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            if (type === 'fire_ult') animFile = 'fire.gif';
+            else if (type === 'ice_ult') animFile = 'ice.gif';
+            else if (type === 'poison_ult') animFile = 'poison.gif';
+            else animFile = 'ultimate.gif';
+        } else if (type === 'damage_self') {
+            // Самоповреждение – анимацию не показываем
+            animTarget = null;
+            animFile = null;
+        } else if (type === 'heal' || type === 'buff') {
+            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+        } else if (type === 'frozen_enter' || type === 'frozen_end') {
+            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            animFile = 'frozenx.gif';
         }
 
-        // --- ВСЕГДА парсим число и показываем всплывающее сообщение (включая стаки) ---
-        this.parseAndShowFloatingNumber(entry);
-
-        this.currentMsgIndex++;
-
-        if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
-            this.currentStateIndex++;
+        if (animTarget && animFile) {
+            console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
+            this.showAnimation(animTarget, animFile);
         }
+    }
 
-        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-    },
+    // --- ВСЕГДА парсим число и показываем всплывающее сообщение (включая стаки) ---
+    this.parseAndShowFloatingNumber(entry);
+
+    this.currentMsgIndex++;
+
+    if (this.currentStateIndex < this.states.length) {
+        this.applyState(this.states[this.currentStateIndex]);
+        this.currentStateIndex++;
+    }
+
+    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+},
 
     // Метод для парсинга и отображения чисел
     parseAndShowFloatingNumber(entry) {

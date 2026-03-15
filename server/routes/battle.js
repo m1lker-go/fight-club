@@ -350,14 +350,22 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'fire_ult';
             break;
         case 'cryomancer':
-    damage = Math.round(attackerStats.int * (defenderState.frozen ? 3 : 2));
-    // Выбираем фразу в зависимости от состояния цели
-    const phraseKey = defenderState.frozen ? 'frozen' : 'normal';
+    // Расчёт урона (x3 если цель уже заморожена, иначе x2)
+    const isTargetFrozen = defenderState.frozen > 0;
+    damage = Math.round(attackerStats.int * (isTargetFrozen ? 3 : 2));
+    
+    // Выбор фразы
+    const phraseKey = isTargetFrozen ? 'frozen' : 'normal';
     log = ultPhrases.cryomancer[phraseKey];
     log = log.replace('%s', `<strong>${attackerName}</strong>`)
              .replace('%s', `<strong>${defenderName}</strong>`)
              .replace('%d', damage);
-    defenderState.frozen = 2;
+    
+    // Применяем заморозку только если цель ещё жива (урон ещё не нанесён)
+    // и не была заморожена ранее (чтобы не продлевать заморозку бесконечно)
+    if (!isTargetFrozen) {
+        defenderState.frozen = 2;
+    }
     defenderState.freezeStacks = 0;
     type = 'ice_ult';
     break;

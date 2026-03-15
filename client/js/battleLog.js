@@ -227,7 +227,7 @@ const BattleLog = {
         return text;
     },
 
-  playNext() {
+ playNext() {
     if (this.stopped) {
         console.log('[BattleLog] stopped, ignoring');
         return;

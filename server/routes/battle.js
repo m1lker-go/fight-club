@@ -350,12 +350,17 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'fire_ult';
             break;
         case 'cryomancer':
-            damage = Math.round(attackerStats.int * (defenderState.frozen ? 3 : 2));
-            defenderState.frozen = 2;
-            defenderState.freezeStacks = 0;
-            log = ultPhrases.cryomancer.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);
-            type = 'ice_ult';
-            break;
+    damage = Math.round(attackerStats.int * (defenderState.frozen ? 3 : 2));
+    // Выбираем фразу в зависимости от состояния цели
+    const phraseKey = defenderState.frozen ? 'frozen' : 'normal';
+    log = ultPhrases.cryomancer[phraseKey];
+    log = log.replace('%s', `<strong>${attackerName}</strong>`)
+             .replace('%s', `<strong>${defenderName}</strong>`)
+             .replace('%d', damage);
+    defenderState.frozen = 2;
+    defenderState.freezeStacks = 0;
+    type = 'ice_ult';
+    break;
         case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
             log = ultPhrases.illusionist.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);

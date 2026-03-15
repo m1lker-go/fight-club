@@ -43,6 +43,17 @@ const rolePassives = {
     illusionist: { mirageGuaranteed: true }
 };
 
+// Хранилище последних 10 противников для каждого игрока (чтобы избежать частых повторов)
+const recentOpponents = new Map(); // key: userId, value: array of opponentId (max 10)
+
+// Функция для получения опыта в зависимости от серии побед
+function getExpReward(streak) {
+    if (streak >= 21) return 18;
+    if (streak >= 11) return 15;
+    if (streak >= 6) return 12;
+    return 10;
+}
+
 function applyIntBonus(damage, int) {
     return Math.floor(damage * (1 + int / 100));
 }
@@ -361,8 +372,6 @@ function applyDotDamage(state, name) {
     return { damage: totalDamage, logs };
 }
 
-
-
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     if (!playerStats || !enemyStats) throw new Error('playerStats or enemyStats is undefined');
 
@@ -664,7 +673,78 @@ function getCoinReward(streak) { return streak>=25 ? 20 : streak>=10 ? 10 : stre
 function getRatingChange(streak) { return streak>=20 ? 30 : streak>=10 ? 25 : streak>=5 ? 20 : 15; }
 async function rechargeEnergy(client, userId) { /* ... */ }
 async function getPlayerRatingPosition(client, userId) { /* ... */ }
-async function selectPvPOpponent(client, currentUserId, currentPosition, allPlayers) { /* ... */ }
+
+async function selectPvPOpponent(client, currentUserId, currentLevel) {
+    // Получаем всех игроков с рейтингом > 0, сортированных по убыванию рейтинга
+    const ratingRes = await client.query(
+        'SELECT id, rating FROM users WHERE rating > 0 ORDER BY rating DESC'
+    );
+    const allPlayers = ratingRes.rows;
+    const currentIndex = allPlayers.findIndex(p => p.id === currentUserId);
+    if (currentIndex === -1) return null; // игрок не в рейтинге
+
+    // Определяем диапазон: ±50 позиций, с учётом границ
+    const minIndex = Math.max(0, currentIndex - 50);
+    const maxIndex = Math.min(allPlayers.length - 1, currentIndex + 50);
+
+    // Кандидаты в этом диапазоне (исключая себя)
+    let candidates = allPlayers.slice(minIndex, maxIndex + 1).filter(p => p.id !== currentUserId);
+    if (candidates.length === 0) return null;
+
+    // Проверяем историю встреч для текущего игрока
+    let history = recentOpponents.get(currentUserId) || [];
+    // Оставляем только тех кандидатов, которых не было в последних 10 боях
+    let availableCandidates = candidates.filter(c => !history.includes(c.id));
+    if (availableCandidates.length === 0) {
+        // Если все кандидаты уже встречались, сбрасываем историю (или разрешаем любого)
+        availableCandidates = candidates;
+        history = []; // можно сбросить
+    }
+
+    // Выбираем случайного противника из доступных
+    const randomIndex = Math.floor(Math.random() * availableCandidates.length);
+    const opponentId = availableCandidates[randomIndex].id;
+
+    // Обновляем историю: добавляем нового противника, ограничиваем до 10
+    history.push(opponentId);
+    if (history.length > 10) history.shift();
+    recentOpponents.set(currentUserId, history);
+
+    // Получаем полные данные противника
+    const opponentUser = await client.query('SELECT * FROM users WHERE id = $1', [opponentId]);
+    if (opponentUser.rows.length === 0) return null;
+    const oppData = opponentUser.rows[0];
+
+    // Получаем данные его текущего класса
+    const oppClass = await client.query(
+        'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
+        [opponentId, oppData.current_class]
+    );
+    if (oppClass.rows.length === 0) return null;
+
+    // Получаем его экипировку
+    const oppInv = await client.query(
+        `SELECT id, name, type, rarity, class_restriction, owner_class,
+                atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
+                crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus
+         FROM inventory WHERE user_id = $1 AND equipped = true`,
+        [opponentId]
+    );
+
+    // Вычисляем статы противника (используем ту же функцию calculateStats)
+    const stats = calculateStats(oppClass.rows[0], oppInv.rows, oppData.subclass);
+
+    // Формируем объект, аналогичный боту
+    return {
+        username: oppData.username,
+        avatar_id: oppData.avatar_id || 1,
+        class: oppData.current_class,
+        subclass: oppData.subclass,
+        level: oppClass.rows[0].level,
+        is_cybercat: false,
+        stats: stats
+    };
+}
 
 router.post('/start', async (req, res) => {
     const { tg_id } = req.body;
@@ -684,11 +764,22 @@ router.post('/start', async (req, res) => {
 
         const rand = Math.random();
         let opponentData = null;
-        if (rand < 0.25) opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random()*3)+1), true);
-        else if (rand < 0.70) opponentData = generateBot(classData.rows[0].level, false);
-        else { /* PvP logic */ if (!opponentData) opponentData = generateBot(classData.rows[0].level, false); }
 
-        if (!opponentData || !opponentData.stats) throw new Error('Failed to generate opponent');
+        if (rand < 0.3) {
+            // PvP – реальный игрок из рейтинга
+            opponentData = await selectPvPOpponent(client, userData.id, classData.rows[0].level);
+        } else if (rand < 0.8) {
+            // Обычный бот (50% от общего числа)
+            opponentData = generateBot(classData.rows[0].level, false);
+        } else {
+            // Киберкот (20%)
+            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random()*3)+1), true);
+        }
+
+        // Если по какой-то причине противник не сгенерировался (например, нет подходящих PvP-игроков), подставляем обычного бота
+        if (!opponentData || !opponentData.stats) {
+            opponentData = generateBot(classData.rows[0].level, false);
+        }
 
         const battleResult = simulateBattle(
             playerStats, opponentData.stats,
@@ -698,7 +789,6 @@ router.post('/start', async (req, res) => {
         );
 
         let isVictory = battleResult.winner === 'player';
-        let expGain = isVictory ? 10 : 3;
         let newStreak = userData.win_streak || 0;
         let ratingChange = -15;
         if (isVictory) {
@@ -713,6 +803,7 @@ router.post('/start', async (req, res) => {
             await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [userData.id]);
         }
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
+        const expGain = isVictory ? getExpReward(newStreak) : 3;
         const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
         if (leveledUp) await updatePlayerPower(client, userData.id, userData.current_class);
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);

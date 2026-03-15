@@ -50,8 +50,8 @@ const poisonStackPhrase = "Яд накапливается. Уровень %d.";
 const burnStackPhrase = "Огонь разгорается. Уровень %d.";
 const freezeStackPhrase = "Лед накапливается. Уровень %d.";
 
-const poisonDamagePhrase = "Урон от яда -%d.";
-const burnDamagePhrase = "Урон от огня -%d.";
+const poisonDamagePhrase = "%s получает %d урона от яда.";
+const burnDamagePhrase = "%s получает %d урона от огня.";
 
 const frozenPhrase = "%s застывает во льду! Заморозка.";
 const frozenContinuePhrase = "%s скован льдом ещё %d хода.";

@@ -286,9 +286,9 @@ this.logContainer.scrollTop = this.logContainer.scrollHeight;
                 animTarget = (attacker === 'player') ? 'hero' : 'enemy';
                 animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
             } else if (type === 'frozen_enter' || type === 'frozen_end') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = 'frozenx.gif';
-            }
+           animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+           animFile = 'frozenx.gif';
+}
 
             if (animTarget && animFile) {
                 console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);

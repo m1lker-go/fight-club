@@ -84,7 +84,7 @@ function calculateStats(classData, inventory, subclass) {
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,
-        manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 18 : 30)
+        manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 15 : 20)
     };
 
     classInventory.forEach(item => {
@@ -151,8 +151,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     }
 
     let damage = attackerStats.atk;
-    if (attackerClass === 'mage') damage += Math.floor(attackerStats.int / 5) * 2;
-
+   
     let berserkerBonus = 0;
     if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
         const bonus = getBerserkerAtkBonus(attackerState.hp, attackerStats.hp, attackerStats.atk);

@@ -251,10 +251,7 @@ async function showBattleResult(battleData, timeOut = false) {
         }
 
         // --- Уклонение ---
-      if (text.includes('Уворот')) {
-    opponentStats.dodges++; // уклонение засчитывается защитнику
-}
-        if (text.toLowerCase().includes('уворот')) {
+     if (text.toLowerCase().includes('уворот')) {
     opponentStats.dodges++;
 }
 

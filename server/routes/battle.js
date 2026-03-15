@@ -315,11 +315,21 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'damage';
             break;
         case 'venom_blade':
-            damage = (defenderState.poisonStacks || 0) * 5;
-            log = ultPhrases.venom_blade.replace('%s', attackerName).replace('%d', damage);
-            defenderState.poisonStacks = 0;
-            type = 'poison_ult';
-            break;
+    // Обычный урон атаки (как в performAttack, без уворота)
+    let baseDamage = attackerStats.atk;
+    let isCrit = Math.random() * 100 < attackerStats.crit;
+    if (isCrit) baseDamage *= attackerStats.critDmg;
+    // Применяем защиту цели
+    baseDamage = baseDamage * (1 - defenderStats.def / 100);
+    baseDamage = Math.max(1, Math.floor(baseDamage));
+    // Урон от яда (игнорирует защиту)
+    let poisonDamage = (defenderState.poisonStacks || 0) * 5;
+    damage = baseDamage + poisonDamage;
+    // Лог ультимейта (используем существующую фразу, но урон теперь суммарный)
+    log = ultPhrases.venom_blade.replace('%s', attackerName).replace('%d', damage);
+    defenderState.poisonStacks = 0; // сбрасываем стаки
+    type = 'poison_ult';
+    break;
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;

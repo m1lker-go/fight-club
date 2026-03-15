@@ -384,8 +384,7 @@ function applyDotDamage(state, name) {
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     if (!playerStats || !enemyStats) throw new Error('playerStats or enemyStats is undefined');
 
-    console.log('=== MESSAGES SENT ===');
-messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
+   
     
     let playerHp = playerStats.hp, enemyHp = enemyStats.hp;
     let playerMana = 0, enemyMana = 0;
@@ -416,6 +415,8 @@ messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
     console.log('=== BATTLE START ===');
     console.log(`Player: ${playerName}, Enemy: ${enemyName}`);
     console.log(`First turn: ${turn}`);
+     console.log('=== MESSAGES SENT ===');
+messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
 
     while (playerHp>0 && enemyHp>0 && t<maxTurns) {
         t++;

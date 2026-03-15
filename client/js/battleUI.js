@@ -278,6 +278,9 @@ async function showBattleResult(battleData, timeOut = false) {
         }
     });
 
+console.log('=== MESSAGES FROM SERVER ===');
+battleData.result.messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
+    
     // Используем сообщения напрямую для отображения лога
     const logArray = battleData.result.messages.map(m => {
         const text = m.text || JSON.stringify(m);
@@ -285,9 +288,7 @@ async function showBattleResult(battleData, timeOut = false) {
         const formattedText = typeof BattleLog.formatLogText === 'function' 
             ? BattleLog.formatLogText(text) 
             : text;
-console.log('=== MESSAGES SENT ===');
-messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
-        
+       
         return `<div class="log-entry">${formattedText}</div>`;
     }).join('');
 

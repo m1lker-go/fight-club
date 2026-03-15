@@ -415,8 +415,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     console.log('=== BATTLE START ===');
     console.log(`Player: ${playerName}, Enemy: ${enemyName}`);
     console.log(`First turn: ${turn}`);
-     console.log('=== MESSAGES SENT ===');
-messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
+   
 
     while (playerHp>0 && enemyHp>0 && t<maxTurns) {
         t++;
@@ -633,7 +632,10 @@ messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
     console.log(`\n=== BATTLE END ===`);
     console.log(`Winner: ${winner}, final HP: player=${playerHp}, enemy=${enemyHp}`);
     console.log(`Total messages: ${messages.length}`);
+  console.log('=== MESSAGES SENT ===');
+messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
 
+    
     return {
         winner,
         playerHpRemain: Math.max(0,playerHp),

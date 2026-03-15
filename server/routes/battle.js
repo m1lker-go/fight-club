@@ -257,12 +257,16 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
     let attackPhrase;
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
-        attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)]
-            .replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+       attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)]
+    .replace('%s', `<strong>${attackerName}</strong>`)
+    .replace('%s', `<strong>${defenderName}</strong>`)
+    .replace('%d', damage);
     } else {
         const classPhrases = attackPhrases[attackerClass] || attackPhrases.warrior;
         attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)]
-            .replace('%s', attackerName).replace('%s', defenderName).replace('%d', damage);
+    .replace('%s', `<strong>${attackerName}</strong>`)
+    .replace('%s', `<strong>${defenderName}</strong>`)
+    .replace('%d', damage);
     }
 
     return {

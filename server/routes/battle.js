@@ -384,6 +384,9 @@ function applyDotDamage(state, name) {
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     if (!playerStats || !enemyStats) throw new Error('playerStats or enemyStats is undefined');
 
+    console.log('=== MESSAGES SENT ===');
+messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
+    
     let playerHp = playerStats.hp, enemyHp = enemyStats.hp;
     let playerMana = 0, enemyMana = 0;
     const messages = []; // массив объектов { text, type, attacker }

@@ -285,9 +285,9 @@ this.logContainer.scrollTop = this.logContainer.scrollHeight;
             } else if (type === 'heal' || type === 'buff') {
                 animTarget = (attacker === 'player') ? 'hero' : 'enemy';
                 animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-            } else if (type === 'frozen_enter' || type === 'frozen_end') {
-           animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-           animFile = 'frozenx.gif';
+          else if (type === 'frozen_enter' || type === 'frozen_end') {
+    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+    animFile = 'frozenx.gif';
 }
 
             if (animTarget && animFile) {

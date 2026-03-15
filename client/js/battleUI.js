@@ -285,6 +285,9 @@ async function showBattleResult(battleData, timeOut = false) {
         const formattedText = typeof BattleLog.formatLogText === 'function' 
             ? BattleLog.formatLogText(text) 
             : text;
+console.log('=== MESSAGES SENT ===');
+messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
+        
         return `<div class="log-entry">${formattedText}</div>`;
     }).join('');
 

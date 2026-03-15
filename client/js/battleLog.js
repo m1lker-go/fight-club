@@ -282,10 +282,10 @@ this.logContainer.scrollTop = this.logContainer.scrollHeight;
                 // Самоповреждение – анимацию не показываем, только всплывающее число
                 animTarget = null;
                 animFile = null;
-            } else if (type === 'heal' || type === 'buff') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-          else if (type === 'frozen_enter' || type === 'frozen_end') {
+           } else if (type === 'heal' || type === 'buff') {
+    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+    animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+else if (type === 'frozen_enter' || type === 'frozen_end') {
     animTarget = (attacker === 'player') ? 'hero' : 'enemy';
     animFile = 'frozenx.gif';
 }

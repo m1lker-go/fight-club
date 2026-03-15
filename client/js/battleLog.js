@@ -109,6 +109,14 @@ const BattleLog = {
         this.playerBurnStacks = state.playerBurnStacks || 0;
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
+// Оверлей заморозки (с проверкой на смерть)
+if (state.playerHp <= 0) this.playerFrozen = 0;
+if (state.enemyHp <= 0) this.enemyFrozen = 0;
+const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
+const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
+if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
+if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
+        
         // Оверлей заморозки
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');

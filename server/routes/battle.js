@@ -150,7 +150,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (defenderState.mirageCounter >= 4) {
             defenderState.mirageCounter = 0;
             const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
-                .replace('%s', `<strong>${defenderName}</strong>`)
+               .replace('%s', '<strong>' + defenderName + '</strong>')
                 .replace('%s', `<strong>${attackerName}</strong>`);
             return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs };
         }

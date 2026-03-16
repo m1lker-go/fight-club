@@ -1243,24 +1243,23 @@ td {
 
 
 
-/* Иконки ярости (тоже справа, но со смещением) */
+/* Иконки ярости (без наложения, позиционируются как обычные позитивные) */
 .rage-icon {
     position: absolute;
     width: 25px;
     height: 25px;
     object-fit: contain;
     top: 50%;
-    z-index: calc(20 + var(--rage-index));
+    transform: translateY(-50%);
+    z-index: 10;
 }
 
 .debuff-slot[data-side="player"] .rage-icon {
     right: 0;
-    transform: translate(calc(-20px * var(--rage-index)), -50%);
 }
 
 .debuff-slot[data-side="enemy"] .rage-icon {
     left: 0;
-    transform: translate(calc(20px * var(--rage-index)), -50%);
 }
 
 /* Экран боя */

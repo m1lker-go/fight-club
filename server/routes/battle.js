@@ -186,9 +186,8 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 if (attackerSubclass === 'berserker' && rolePassives.berserker?.rage) {
     // 10% от текущей атаки, но не менее 1
     let selfDamage = Math.max(1, Math.floor(attackerStats.atk * 0.1));
-    // Наносим урон атакующему (уменьшаем его HP в состоянии)
-    attackerState.hp -= selfDamage;
-    if (attackerState.hp < 0) attackerState.hp = 0;
+    // Наносим урон атакующему, но оставляем минимум 1 HP
+    attackerState.hp = Math.max(1, attackerState.hp - selfDamage);
     // Добавляем запись в лог
     extraLogs.push({
         text: selfDamagePhrase.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', selfDamage),
@@ -301,13 +300,13 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
             type = 'heal';
             break;
-        case 'berserker':
-            selfDamage = Math.floor(attackerStats.hp * 0.3);
-            selfDamage = Math.min(selfDamage, attackerState.hp - 1);
-            damage = applyIntBonus(attackerStats.atk * 3, attackerStats.int);
-            log = ultPhrases.berserker.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', damage).replace('%d', selfDamage);
-            type = 'damage_self';
-            break;
+      case 'berserker':
+    selfDamage = Math.floor(attackerStats.hp * 0.3);
+    selfDamage = Math.min(selfDamage, attackerState.hp - 1);
+    damage = applyIntBonus(attackerStats.atk * 3, attackerStats.int);
+    log = ultPhrases.berserker.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', damage).replace('%d', selfDamage);
+    type = 'damage_self';
+    break;
         case 'knight':
             attackerState.reflectBuff = 2;
             attackerState.reflectBonus = 50;

@@ -466,6 +466,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (skill.heal) playerHp += skill.heal;
                 if (skill.selfDamage) playerHp -= skill.selfDamage;
                 if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
+                console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
                 actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
                 playerMana -= 100;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
@@ -543,6 +544,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (skill.heal) enemyHp += skill.heal;
                 if (skill.selfDamage) enemyHp -= skill.selfDamage;
                 if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
+                console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
                 actionLog = { text: skill.log, type: skill.type, attacker: 'enemy' };
                 enemyMana -= 100;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
@@ -596,6 +598,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (playerDot.damage > 0) {
                 playerHp -= playerDot.damage;
                 if (playerHp < 0) playerHp = 0;
+                console.log(`[HP after DOT] player=${playerHp}`);
                 playerDot.logs.forEach(entry => {
                     entry.attacker = 'player';
                     messages.push(entry);
@@ -606,6 +609,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (enemyDot.damage > 0) {
                 enemyHp -= enemyDot.damage;
                 if (enemyHp < 0) enemyHp = 0;
+                console.log(`[HP after DOT] enemy=${enemyHp}`);
                 enemyDot.logs.forEach(entry => {
                     entry.attacker = 'enemy';
                     messages.push(entry);

@@ -56,7 +56,7 @@ const burnDamagePhrase = "%s получает %d урона от огня.";
 const frozenPhrase = "%s застывает во льду! Заморозка.";
 const frozenContinuePhrase = "%s скован льдом ещё %d хода.";
 const frozenEndPhrase = "%s освобождается ото льда.";
-const frozenAlreadyPhrase = "%s уже заморожен.";
+const frozenAlreadyPhrase = "%s заморожен и пропускает ход.";
 
 const selfDamagePhrase = "%s наносит себе урон -%d.";
 

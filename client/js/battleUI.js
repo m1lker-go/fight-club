@@ -104,8 +104,8 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-               <!-- Дебаффы игрока (колонка слева от центра) -->
-<div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
+            <!-- Дебаффы игрока (колонка слева от центра) -->
+<div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
     <div class="debuff-slot" data-side="player" data-slot="0"></div>
     <div class="debuff-slot" data-side="player" data-slot="1"></div>
     <div class="debuff-slot" data-side="player" data-slot="2"></div>
@@ -120,7 +120,8 @@ function showBattleScreen(battleData) {
                 </div>
 
                <!-- Дебаффы противника (колонка справа от центра) -->
-<div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
+<!-- Дебаффы противника (колонка справа от центра) -->
+<div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
     <div class="debuff-slot" data-side="enemy" data-slot="2"></div>

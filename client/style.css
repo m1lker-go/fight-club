@@ -1241,36 +1241,26 @@ td {
 }
 
 
-/* Для игрока обычная иконка прижата к левому краю */
-.debuff-slot[data-side="player"] img:not(.rage-icon) {
-    left: 0;
-}
 
-/* Для противника обычная иконка прижата к правому краю */
-.debuff-slot[data-side="enemy"] img:not(.rage-icon) {
-    right: 0;
-}
 
 /* Иконки ярости (тоже справа, но со смещением) */
 .rage-icon {
     position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translate(calc(-20px * var(--rage-index)), -50%);
     width: 25px;
     height: 25px;
     object-fit: contain;
+    top: 50%;
     z-index: calc(20 + var(--rage-index));
 }
 
-/* Для игрока иконки ярости смещаются влево от правого края */
 .debuff-slot[data-side="player"] .rage-icon {
-    right: calc(20px * var(--rage-index));
+    right: 0;
+    transform: translate(calc(-20px * var(--rage-index)), -50%);
 }
 
-/* Для противника иконки ярости смещаются вправо от левого края */
 .debuff-slot[data-side="enemy"] .rage-icon {
-    left: calc(20px * var(--rage-index));
+    left: 0;
+    transform: translate(calc(20px * var(--rage-index)), -50%);
 }
 
 /* Экран боя */

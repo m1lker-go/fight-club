@@ -303,22 +303,23 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
     .replace('%d', damage);
     }
 
-    return {
-        hit: true,
-        damage,
-        isCrit,
-        log: attackPhrase,
-        reflectDamage,
-        vampHeal,
-        stateChanges: { 
-            poisonStacks: defenderState.poisonStacks, 
-            burnStacks: defenderState.burnStacks,
-            freezeStacks: defenderState.freezeStacks,
-            frozen: defenderState.frozen
-        },
-        berserkerBonus,
-        extraLogs
-    };
+   return {
+    hit: true,
+    damage,
+    isCrit,
+    log: attackPhrase,
+    reflectDamage,
+    vampHeal,
+    stateChanges: { 
+        poisonStacks: defenderState.poisonStacks, 
+        burnStacks: defenderState.burnStacks,
+        freezeStacks: defenderState.freezeStacks,
+        frozen: defenderState.frozen
+    },
+    berserkerBonus,
+    extraLogs,
+    rageInfo: rageInfo   // ← добавляем эту строку
+};
 }
 
 function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass) {
@@ -524,21 +525,35 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     playerState, enemyState,
                     true // ← attackerIsPlayer = true
                 );
-                if (attackResult.hit) {
-                    enemyHp -= attackResult.damage;
-                    playerHp += attackResult.vampHeal;
-                    playerHp -= attackResult.reflectDamage;
-                    if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                    let logText = attackResult.log;
-                    if (attackResult.berserkerBonus>0) logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-                    if (attackResult.vampHeal>0) logText += ' ' + vampPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.vampHeal);
-                    if (attackResult.reflectDamage>0) logText += ' ' + reflectPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${playerName}</strong>`);
-                    actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
-                    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
-                } else {
-                    actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
-                    console.log(`[DODGE] enemy dodged`);
-                }
+               if (attackResult.hit) {
+    enemyHp -= attackResult.damage;
+    playerHp += attackResult.vampHeal;
+    playerHp -= attackResult.reflectDamage;
+    if (playerHp < 0) playerHp = 0;
+    if (enemyHp < 0) enemyHp = 0;
+    let logText = attackResult.log;
+
+    // Информация о ярости
+    if (attackResult.rageInfo) {
+        logText += ` <span style="color:#f39c12;">Уровень ярости ${attackResult.rageInfo.level}. Доп. урон +${attackResult.rageInfo.added}</span>`;
+    } else if (attackResult.berserkerBonus > 0) {
+        logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+    }
+
+    // Вампиризм и отражение
+    if (attackResult.vampHeal > 0) {
+        logText += ' ' + vampPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.vampHeal);
+    }
+    if (attackResult.reflectDamage > 0) {
+        logText += ' ' + reflectPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${playerName}</strong>`);
+    }
+
+    actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
+    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
+} else {
+    actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
+    console.log(`[DODGE] enemy dodged`);
+}
                 // Основное действие
                 messages.push(actionLog);
                 pushState();
@@ -602,21 +617,35 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     enemyState, playerState,
                     false // ← attackerIsPlayer = false
                 );
-                if (attackResult.hit) {
-                    playerHp -= attackResult.damage;
-                    enemyHp += attackResult.vampHeal;
-                    enemyHp -= attackResult.reflectDamage;
-                    if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                    let logText = attackResult.log;
-                    if (attackResult.berserkerBonus>0) logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-                    if (attackResult.vampHeal>0) logText += ' ' + vampPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.vampHeal);
-                    if (attackResult.reflectDamage>0) logText += ' ' + reflectPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${enemyName}</strong>`);
-                    actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'enemy' };
-                    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
-                } else {
-                    actionLog = { text: attackResult.log, type: 'dodge', attacker: 'enemy' };
-                    console.log(`[DODGE] player dodged`);
-                }
+               if (attackResult.hit) {
+    playerHp -= attackResult.damage;
+    enemyHp += attackResult.vampHeal;
+    enemyHp -= attackResult.reflectDamage;
+    if (playerHp < 0) playerHp = 0;
+    if (enemyHp < 0) enemyHp = 0;
+    let logText = attackResult.log;
+
+    // Информация о ярости
+    if (attackResult.rageInfo) {
+        logText += ` <span style="color:#f39c12;">Уровень ярости ${attackResult.rageInfo.level}. Доп. урон +${attackResult.rageInfo.added}</span>`;
+    } else if (attackResult.berserkerBonus > 0) {
+        logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+    }
+
+    // Вампиризм и отражение
+    if (attackResult.vampHeal > 0) {
+        logText += ' ' + vampPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.vampHeal);
+    }
+    if (attackResult.reflectDamage > 0) {
+        logText += ' ' + reflectPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${enemyName}</strong>`);
+    }
+
+    actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'enemy' };
+    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
+} else {
+    actionLog = { text: attackResult.log, type: 'dodge', attacker: 'enemy' };
+    console.log(`[DODGE] player dodged`);
+}
 
                if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
     attackResult.extraLogs.forEach(extra => {

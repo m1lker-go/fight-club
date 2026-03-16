@@ -1188,8 +1188,8 @@ td {
 }
 /* Слоты для иконок статусов */
 .debuff-slot {
-    width: 20px;
-    height: 20px;
+    width: 30px;        /* увеличили ширину */
+    height: 30px;       /* увеличили высоту */
     margin: 0 auto;
     display: flex;
     align-items: center;

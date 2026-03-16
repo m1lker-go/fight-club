@@ -121,7 +121,7 @@ battleData.enemySubclass = battleData.opponent.subclass;
                 <!-- Центральная часть с таймером и кнопкой скорости -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
-                   <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 2px solid #aaa; color: black; padding: 0; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;">x1</button>
+                   <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 0; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;">x1</button>
                 </div>
 
                <!-- Дебаффы противника (колонка справа от центра) -->

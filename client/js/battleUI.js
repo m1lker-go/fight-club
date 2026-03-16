@@ -59,7 +59,6 @@ function showBattleScreen(battleData) {
     // Добавляем классы для корректного расчёта ярости в BattleLog
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
-}
 
     const getRoleNameRu = (role) => {
         const roles = {
@@ -69,7 +68,7 @@ function showBattleScreen(battleData) {
         };
         return roles[role] || role;
     };
-
+    
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">

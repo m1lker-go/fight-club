@@ -279,15 +279,16 @@ console.log('=== MESSAGES FROM SERVER ===');
 battleData.result.messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
     
     // Используем сообщения напрямую для отображения лога
-    const logArray = battleData.result.messages.map(m => {
-        const text = m.text || JSON.stringify(m);
-        // Применяем форматирование цветов из BattleLog
-        const formattedText = typeof BattleLog.formatLogText === 'function' 
-            ? BattleLog.formatLogText(text) 
-            : text;
-       
-        return `<div class="log-entry">${formattedText}</div>`;
-    }).join('');
+    const logArray = battleData.result.messages.map((m, index) => {
+    const text = m.text || JSON.stringify(m);
+    const formattedText = typeof BattleLog.formatLogText === 'function' 
+        ? BattleLog.formatLogText(text) 
+        : text;
+    if (!formattedText) {
+        console.warn(`[WARNING] Empty formatted text for message ${index}:`, m);
+    }
+    return `<div class="log-entry">${formattedText}</div>`;
+}).join('');
 
     const content = document.getElementById('content');
     content.innerHTML = `

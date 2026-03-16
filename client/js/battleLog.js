@@ -117,13 +117,7 @@ const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
 if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
 if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
         
-        // Оверлей заморозки
-        const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
-        const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
-        if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
-        if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
-
-        // Обновление иконок статусов
+         // Обновление иконок статусов
         this.renderEffects('player');
         this.renderEffects('enemy');
 

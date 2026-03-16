@@ -120,18 +120,19 @@ const BattleLog = {
         this.playerBurnStacks = state.playerBurnStacks || 0;
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        if (this.battleData.playerClass === 'berserker') {
-            const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
-            this.playerRage = this.getRageLevelFromPercent(playerPercent);
-        } else {
-            this.playerRage = 0;
-        }
-        if (this.battleData.enemyClass === 'berserker') {
-            const enemyPercent = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100;
-            this.enemyRage = this.getRageLevelFromPercent(enemyPercent);
-        } else {
-            this.enemyRage = 0;
-        }
+        // Расчёт уровня ярости (если подкласс берсерк)
+if (this.battleData.playerSubclass === 'berserker') {
+    const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
+    this.playerRage = this.getRageLevelFromPercent(playerPercent);
+} else {
+    this.playerRage = 0;
+}
+if (this.battleData.enemySubclass === 'berserker') {
+    const enemyPercent = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100;
+    this.enemyRage = this.getRageLevelFromPercent(enemyPercent);
+} else {
+    this.enemyRage = 0;
+}
 
         if (state.playerHp <= 0) this.playerFrozen = 0;
         if (state.enemyHp <= 0) this.enemyFrozen = 0;

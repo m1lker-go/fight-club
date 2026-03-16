@@ -228,43 +228,16 @@ const BattleLog = {
     return effects;
 },
 
-   renderEffects(side) {
+  renderEffects(side) {
     const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
     const effects = this.buildEffectsList(side);
-
-    // Разделяем на негативные и позитивные
-    const negativeEffects = [];
-    const positiveEffects = [];
-    for (let effect of effects) {
-        // Позитивные: ярость, щит (и другие баффы, если появятся)
-        if (effect.type === 'rage' || effect.type === 'shield') {
-            positiveEffects.push(effect);
-        } else {
-            negativeEffects.push(effect);
-        }
-    }
-
-    // Очищаем слоты
     slots.forEach(slot => slot.innerHTML = '');
-
-    // Заполняем левые подслоты (негативные) – до 5 штук
-    for (let i = 0; i < Math.min(negativeEffects.length, 5); i++) {
+    for (let i = 0; i < Math.min(effects.length, 5); i++) {
+        const effect = effects[i];
         const slot = slots[i];
         if (!slot) continue;
-        const effect = negativeEffects[i];
-        const img = document.createElement('img');
-        img.src = effect.icon;
-        img.alt = effect.type;
-        img.className = 'negative-icon';
-        slot.appendChild(img);
-    }
-
-    // Заполняем правые подслоты (позитивные) – до 5 штук
-    for (let i = 0; i < Math.min(positiveEffects.length, 5); i++) {
-        const slot = slots[i];
-        if (!slot) continue;
-        const effect = positiveEffects[i];
         if (effect.type === 'rage') {
+            // Рендерим несколько иконок ярости с перекрытием
             const count = effect.count || 1;
             for (let j = 0; j < count; j++) {
                 const img = document.createElement('img');
@@ -275,15 +248,18 @@ const BattleLog = {
                 slot.appendChild(img);
             }
         } else {
-            // Для других позитивных эффектов (щит и т.д.)
             const img = document.createElement('img');
             img.src = effect.icon;
             img.alt = effect.type;
-            img.className = 'positive-icon';
+            // Определяем класс: позитивные эффекты (щит и т.п.) - справа, негативные - слева
+            if (effect.type === 'shield') { // при необходимости добавьте другие позитивные эффекты
+                img.className = 'positive-icon';
+            } else {
+                img.className = 'negative-icon';
+            }
             slot.appendChild(img);
         }
     }
-
     if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
 },
 

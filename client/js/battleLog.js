@@ -229,20 +229,21 @@ const BattleLog = {
     },
 
     renderEffects(side) {
-        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-        const effects = this.buildEffectsList(side);
-        slots.forEach(slot => slot.innerHTML = '');
-        for (let i = 0; i < Math.min(effects.length, 5); i++) {
-            const effect = effects[i];
-            const slot = slots[i];
-            if (!slot) continue;
-            const img = document.createElement('img');
-            img.src = effect.icon;
-            img.alt = effect.type;
-            slot.appendChild(img);
-        }
-        if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
-    },
+    const container = document.querySelector(`.effects-container[data-side="${side}"]`);
+    if (!container) return;
+    container.innerHTML = '';
+    const effects = this.buildEffectsList(side);
+    effects.forEach((effect, index) => {
+        const img = document.createElement('img');
+        img.src = effect.icon;
+        img.alt = effect.type;
+        img.className = 'effect-icon';
+        // Устанавливаем CSS-переменную --index для управления смещением
+        img.style.setProperty('--index', index);
+        container.appendChild(img);
+    });
+    if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
+},
 
     formatLogText(text) {
         // Урон (обычный, критический, от стихий, отражение)

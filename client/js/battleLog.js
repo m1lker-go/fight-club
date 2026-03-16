@@ -258,6 +258,7 @@ const BattleLog = {
                 img.className = 'negative-icon';
             }
             slot.appendChild(img);
+             console.log(`[BattleLog] Added rage icon ${j} for ${side}, src: ${effect.icon}`);
         }
     }
     if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);

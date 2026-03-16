@@ -1,3 +1,4 @@
+```javascript
 // server/routes/battle.js
 
 const express = require('express');
@@ -550,24 +551,25 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
     actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
     console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
+
+    // Сначала добавляем extraLogs (самоповреждение), потом actionLog
+    if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+        attackResult.extraLogs.forEach(extra => {
+            messages.push(extra);
+            console.log('[STACK] ' + extra.text);
+        });
+        pushState();
+    }
+    messages.push(actionLog);
+    pushState();
+    if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
 } else {
     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
+    messages.push(actionLog);
+    pushState();
     console.log(`[DODGE] enemy dodged`);
 }
-                // Основное действие
-                messages.push(actionLog);
-                pushState();
-
-                // Стаки (не показываем в логе, но сохраняем для финала)
-                if (attackResult.extraLogs && attackResult.extraLogs.length>0) {
-                    attackResult.extraLogs.forEach(extra => {
-                        // extra.attacker уже установлен внутри performAttack на основе isPlayerAttacker
-                        messages.push(extra);
-                        console.log(`[STACK] ${extra.text}`);
-                    });
-                    pushState();
-                }
-                if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+                // Удалён старый дублирующий код
             }
             turn = 'enemy';
             playerActedThisRound = true;
@@ -952,3 +954,4 @@ router.post('/start', async (req, res) => {
 });
 
 module.exports = router;
+```

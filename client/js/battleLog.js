@@ -228,20 +228,32 @@ const BattleLog = {
         return effects;
     },
 
-    renderEffects(side) {
-    const container = document.querySelector(`.effects-container[data-side="${side}"]`);
-    if (!container) return;
-    container.innerHTML = '';
+   renderEffects(side) {
+    const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
     const effects = this.buildEffectsList(side);
-    effects.forEach((effect, index) => {
-        const img = document.createElement('img');
-        img.src = effect.icon;
-        img.alt = effect.type;
-        img.className = 'effect-icon';
-        // Устанавливаем CSS-переменную --index для управления смещением
-        img.style.setProperty('--index', index);
-        container.appendChild(img);
-    });
+    slots.forEach(slot => slot.innerHTML = '');
+    for (let i = 0; i < Math.min(effects.length, 5); i++) {
+        const effect = effects[i];
+        const slot = slots[i];
+        if (!slot) continue;
+        if (effect.type === 'rage') {
+            // Рендерим несколько иконок ярости с перекрытием
+            const count = effect.count || 1;
+            for (let j = 0; j < count; j++) {
+                const img = document.createElement('img');
+                img.src = effect.icon;
+                img.alt = effect.type;
+                img.className = 'rage-icon';
+                img.style.setProperty('--rage-index', j);
+                slot.appendChild(img);
+            }
+        } else {
+            const img = document.createElement('img');
+            img.src = effect.icon;
+            img.alt = effect.type;
+            slot.appendChild(img);
+        }
+    }
     if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
 },
 

@@ -258,10 +258,10 @@ body {
     height: 30px;
     object-fit: contain;
     pointer-events: none;
-    transition: transform 0.2s;
-    /* Начальное смещение — иконки будут накладываться друг на друга */
-    transform: translate(calc(5px * var(--index)), calc(5px * var(--index)));
-    z-index: calc(100 - var(--index));
+    /* Горизонтальное смещение на 20px * index, вертикальное смещение отсутствует */
+    transform: translateX(calc(20px * var(--index)));
+    /* Более новые иконки (с большим index) будут выше */
+    z-index: calc(100 + var(--index));
 }
 
 /* ========== КНОПКА СКОРОСТИ В БОЮ ========== */

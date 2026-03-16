@@ -56,6 +56,11 @@ function showBattleScreen(battleData) {
         item.style.opacity = '0.5';
     });
 
+    // Добавляем классы для корректного расчёта ярости в BattleLog
+    battleData.playerClass = userData.current_class;
+    battleData.enemyClass = battleData.opponent.class;
+}
+
     const getRoleNameRu = (role) => {
         const roles = {
             guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',

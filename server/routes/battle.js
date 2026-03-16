@@ -150,8 +150,8 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (defenderState.mirageCounter >= 4) {
             defenderState.mirageCounter = 0;
             const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
-               .replace('%s', '<strong>' + defenderName + '</strong>')
-                .replace('%s', `<strong>${attackerName}</strong>`);
+                .replace('%s', '<strong>' + defenderName + '</strong>')
+                .replace('%s', '<strong>' + attackerName + '</strong>');
             return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs };
         }
     }
@@ -160,8 +160,8 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     const isDodge = Math.random() * 100 > hitChance;
     if (isDodge) {
         const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
-            .replace('%s', `<strong>${defenderName}</strong>`)
-            .replace('%s', `<strong>${attackerName}</strong>`);
+            .replace('%s', '<strong>' + defenderName + '</strong>')
+            .replace('%s', '<strong>' + attackerName + '</strong>');
         return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
     }
 
@@ -186,7 +186,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         
         // 4. Добавляем запись о самоповреждении
         extraLogs.push({
-            text: selfDamagePhrase.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', selfDamage),
+            text: selfDamagePhrase.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', selfDamage),
             type: 'damage_self',
             attacker: isPlayerAttacker ? 'player' : 'enemy'
         });
@@ -234,7 +234,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
         defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
-        console.log(`[DEBUG] poisonStacks now = ${defenderState.poisonStacks}`);
+        console.log('[DEBUG] poisonStacks now = ' + defenderState.poisonStacks);
         if (defenderState.poisonStacks > oldStacks) {
             extraLogs.push({
                 text: poisonStackPhrase.replace('%d', defenderState.poisonStacks),
@@ -263,7 +263,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
             extraLogs.push({
-                text: frozenAlreadyPhrase.replace('%s', `<strong>${defenderName}</strong>`),
+                text: frozenAlreadyPhrase.replace('%s', '<strong>' + defenderName + '</strong>'),
                 type: 'frozen_already',
                 attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
@@ -273,13 +273,13 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
                 defenderState.frozen = 2;
                 defenderState.freezeStacks = 0;
                 extraLogs.push({
-                    text: frozenPhrase.replace('%s', `<strong>${defenderName}</strong>`),
+                    text: frozenPhrase.replace('%s', '<strong>' + defenderName + '</strong>'),
                     type: 'frozen_enter',
                    attacker: isPlayerAttacker ? 'player' : 'enemy'
                 });
             } else {
                 extraLogs.push({
-                    text: freezeStackPhrase.replace('%s', `<strong>${defenderName}</strong>`).replace('%d', defenderState.freezeStacks),
+                    text: freezeStackPhrase.replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', defenderState.freezeStacks),
                     type: 'freeze_stack',
                    attacker: isPlayerAttacker ? 'player' : 'enemy'
                 });
@@ -291,14 +291,14 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;
         attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)]
-            .replace('%s', `<strong>${attackerName}</strong>`)
-            .replace('%s', `<strong>${defenderName}</strong>`)
+            .replace('%s', '<strong>' + attackerName + '</strong>')
+            .replace('%s', '<strong>' + defenderName + '</strong>')
             .replace('%d', damage);
     } else {
         const classPhrases = attackPhrases[attackerClass] || attackPhrases.warrior;
         attackPhrase = classPhrases[Math.floor(Math.random() * classPhrases.length)]
-            .replace('%s', `<strong>${attackerName}</strong>`)
-            .replace('%s', `<strong>${defenderName}</strong>`)
+            .replace('%s', '<strong>' + attackerName + '</strong>')
+            .replace('%s', '<strong>' + defenderName + '</strong>')
             .replace('%d', damage);
     }
 
@@ -329,7 +329,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     switch (attackerSubclass) {
         case 'guardian':
             heal = Math.floor(attackerStats.hp * 0.2);
-            log = ultPhrases.guardian.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', heal);
+            log = ultPhrases.guardian.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', heal);
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
             type = 'heal';
             break;
@@ -344,7 +344,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             damage = attackerStats.atk * 2;
             
             // Лог
-            log = ultPhrases.berserker.replace('%s', `<strong>${attackerName}</strong>`)
+            log = ultPhrases.berserker.replace('%s', '<strong>' + attackerName + '</strong>')
                                       .replace('%d', damage)
                                       .replace('%d', selfDamage);
             type = 'damage_self';
@@ -352,13 +352,13 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         case 'knight':
             attackerState.reflectBuff = 2;
             attackerState.reflectBonus = 50;
-            log = ultPhrases.knight.replace('%s', `<strong>${attackerName}</strong>`);
+            log = ultPhrases.knight.replace('%s', '<strong>' + attackerName + '</strong>');
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
             type = 'buff';
             break;
         case 'assassin':
             damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
-            log = ultPhrases.assassin.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);
+            log = ultPhrases.assassin.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             type = 'damage';
             break;
         case 'venom_blade':
@@ -373,7 +373,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             let poisonDamage = (defenderState.poisonStacks || 0) * 5;
             damage = baseDamage + poisonDamage;
             // Лог ультимейта (используем существующую фразу, но урон теперь суммарный)
-            log = ultPhrases.venom_blade.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', damage);
+            log = ultPhrases.venom_blade.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', damage);
             defenderState.poisonStacks = 0; // сбрасываем стаки
             type = 'poison_ult';
             break;
@@ -381,12 +381,12 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;
             attackerState.vampBonus = 50;
-            log = ultPhrases.blood_hunter.replace('%s', `<strong>${attackerName}</strong>`).replace('%d', damage);
+            log = ultPhrases.blood_hunter.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', damage);
             type = 'damage';
             break;
         case 'pyromancer':
             damage = Math.floor(attackerStats.int * 2.0) + ((defenderState.burnStacks || 0) * 2);
-            log = ultPhrases.pyromancer.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);
+            log = ultPhrases.pyromancer.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             defenderState.burnStacks = 0;
             type = 'fire_ult';
             break;
@@ -398,9 +398,9 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             // Выбор фразы
             const phraseKey = isTargetFrozen ? 'frozen' : 'normal';
             log = ultPhrases.cryomancer[phraseKey];
-            console.log(`[DEBUG] cryomancer: phraseKey=${phraseKey}, log=${log}, damage=${damage}`);
-            log = log.replace('%s', `<strong>${attackerName}</strong>`)
-                     .replace('%s', `<strong>${defenderName}</strong>`)
+            console.log('[DEBUG] cryomancer: phraseKey=' + phraseKey + ', log=' + log + ', damage=' + damage);
+            log = log.replace('%s', '<strong>' + attackerName + '</strong>')
+                     .replace('%s', '<strong>' + defenderName + '</strong>')
                      .replace('%d', damage);
             
             // Применяем заморозку только если цель ещё жива и не была заморожена ранее
@@ -412,7 +412,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
         case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
-            log = ultPhrases.illusionist.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);
+            log = ultPhrases.illusionist.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             type = 'damage';
             break;
         default: return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
@@ -426,7 +426,7 @@ function applyDotDamage(state, name) {
         const dmg = state.poisonStacks * 2;
         totalDamage += dmg;
         logs.push({
-            text: poisonDamagePhrase.replace('%s', `<strong>${name}</strong>`).replace('%d', dmg),
+            text: poisonDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg),
             type: 'poison_dot'
         });
     }
@@ -434,7 +434,7 @@ function applyDotDamage(state, name) {
         const dmg = state.burnStacks * 2;
         totalDamage += dmg;
         logs.push({
-            text: burnDamagePhrase.replace('%s', `<strong>${name}</strong>`).replace('%d', dmg),
+            text: burnDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg),
             type: 'burn_dot'
         });
     }
@@ -471,27 +471,27 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     let maxTurns = 100, t = 0;
 
     console.log('=== BATTLE START ===');
-    console.log(`Player: ${playerName}, Enemy: ${enemyName}`);
-    console.log(`First turn: ${turn}`);
+    console.log('Player: ' + playerName + ', Enemy: ' + enemyName);
+    console.log('First turn: ' + turn);
 
     while (playerHp>0 && enemyHp>0 && t<maxTurns) {
         t++;
 
         // --- Ход игрока ---
         if (turn === 'player') {
-            console.log(`\n--- TURN ${t} (PLAYER) ---`);
-            console.log(`Player HP: ${playerHp}, Mana: ${playerMana}, Stacks: poison ${playerState.poisonStacks}, burn ${playerState.burnStacks}, freeze ${playerState.freezeStacks}, frozen ${playerState.frozen}`);
-            console.log(`Enemy HP: ${enemyHp}, Mana: ${enemyMana}, Stacks: poison ${enemyState.poisonStacks}, burn ${enemyState.burnStacks}, freeze ${enemyState.freezeStacks}, frozen ${enemyState.frozen}`);
+            console.log('\n--- TURN ' + t + ' (PLAYER) ---');
+            console.log('Player HP: ' + playerHp + ', Mana: ' + playerMana + ', Stacks: poison ' + playerState.poisonStacks + ', burn ' + playerState.burnStacks + ', freeze ' + playerState.freezeStacks + ', frozen ' + playerState.frozen);
+            console.log('Enemy HP: ' + enemyHp + ', Mana: ' + enemyMana + ', Stacks: poison ' + enemyState.poisonStacks + ', burn ' + enemyState.burnStacks + ', freeze ' + enemyState.freezeStacks + ', frozen ' + enemyState.frozen);
 
             if (playerState.frozen > 0) {
                 const frozenLeft = playerState.frozen;
                 playerState.frozen--;
                 let msg;
-                if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', `<strong>${playerName}</strong>`);
-                else msg = frozenContinuePhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', frozenLeft);
+                if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', '<strong>' + playerName + '</strong>');
+                else msg = frozenContinuePhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', frozenLeft);
                 messages.push({ text: msg, type: 'frozen_end', attacker: 'enemy' });
                 pushState();
-                console.log(`[FROZEN] ${msg}`);
+                console.log('[FROZEN] ' + msg);
                 turn = 'enemy';
                 playerActedThisRound = true;
                 continue;
@@ -506,11 +506,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (skill.heal) playerHp += skill.heal;
                 if (skill.selfDamage) playerHp -= skill.selfDamage;
                 if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
+                console.log('[HP] player=' + playerHp + ', enemy=' + enemyHp);
                 actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
                 playerMana -= 100;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
-                console.log(`[ULT] ${skill.log}`);
+                console.log('[ULT] ' + skill.log);
             } else {
                 const attackResult = performAttack(
                     playerStats, enemyStats,
@@ -528,19 +528,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
                     let logText = attackResult.log;
                     if (attackResult.berserkerBonus > 0) {
-                        logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                        logText += ' <span style="color:#f39c12;">(Ярость +' + attackResult.berserkerBonus + ')</span>';
                     }
                     if (attackResult.vampHeal > 0) {
-                        logText += ' ' + vampPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.vampHeal);
+                        logText += ' ' + vampPhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', attackResult.vampHeal);
                     }
                     if (attackResult.reflectDamage > 0) {
-                        logText += ' ' + reflectPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${playerName}</strong>`);
+                        logText += ' ' + reflectPhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', attackResult.reflectDamage).replace('%s', '<strong>' + playerName + '</strong>');
                     }
                     actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
-                    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
+                    console.log('[ATTACK] damage=' + attackResult.damage + ', crit=' + attackResult.isCrit + ', vamp=' + attackResult.vampHeal + ', reflect=' + attackResult.reflectDamage);
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
-                    console.log(`[DODGE] enemy dodged`);
+                    console.log('[DODGE] enemy dodged');
                 }
                 // Основное действие
                 messages.push(actionLog);
@@ -550,7 +550,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
                     attackResult.extraLogs.forEach(extra => {
                         messages.push(extra);
-                        console.log(`[STACK] ${extra.text}`);
+                        console.log('[STACK] ' + extra.text);
                     });
                     pushState();
                 }
@@ -562,19 +562,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 
         // --- Ход противника ---
         else {
-            console.log(`\n--- TURN ${t} (ENEMY) ---`);
-            console.log(`Player HP: ${playerHp}, Mana: ${playerMana}, Stacks: poison ${playerState.poisonStacks}, burn ${playerState.burnStacks}, freeze ${playerState.freezeStacks}, frozen ${playerState.frozen}`);
-            console.log(`Enemy HP: ${enemyHp}, Mana: ${enemyMana}, Stacks: poison ${enemyState.poisonStacks}, burn ${enemyState.burnStacks}, freeze ${enemyState.freezeStacks}, frozen ${enemyState.frozen}`);
+            console.log('\n--- TURN ' + t + ' (ENEMY) ---');
+            console.log('Player HP: ' + playerHp + ', Mana: ' + playerMana + ', Stacks: poison ' + playerState.poisonStacks + ', burn ' + playerState.burnStacks + ', freeze ' + playerState.freezeStacks + ', frozen ' + playerState.frozen);
+            console.log('Enemy HP: ' + enemyHp + ', Mana: ' + enemyMana + ', Stacks: poison ' + enemyState.poisonStacks + ', burn ' + enemyState.burnStacks + ', freeze ' + enemyState.freezeStacks + ', frozen ' + enemyState.frozen);
 
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
                 let msg;
-                if (enemyState.frozen === 0) msg = frozenEndPhrase.replace('%s', `<strong>${enemyName}</strong>`);
-                else msg = frozenContinuePhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', frozenLeft);
+                if (enemyState.frozen === 0) msg = frozenEndPhrase.replace('%s', '<strong>' + enemyName + '</strong>');
+                else msg = frozenContinuePhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', frozenLeft);
                 messages.push({ text: msg, type: 'frozen_end', attacker: 'player' });
                 pushState();
-                console.log(`[FROZEN] ${msg}`);
+                console.log('[FROZEN] ' + msg);
                 turn = 'player';
                 enemyActedThisRound = true;
                 continue;
@@ -589,11 +589,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (skill.heal) enemyHp += skill.heal;
                 if (skill.selfDamage) enemyHp -= skill.selfDamage;
                 if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
+                console.log('[HP] player=' + playerHp + ', enemy=' + enemyHp);
                 actionLog = { text: skill.log, type: skill.type, attacker: 'enemy' };
                 enemyMana -= 100;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
-                console.log(`[ULT] ${skill.log}`);
+                console.log('[ULT] ' + skill.log);
             } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,
@@ -611,19 +611,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
                     let logText = attackResult.log;
                     if (attackResult.berserkerBonus>0) {
-                        logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
+                        logText += ' <span style="color:#f39c12;">(Ярость +' + attackResult.berserkerBonus + ')</span>';
                     }
                     if (attackResult.vampHeal>0) {
-                        logText += ' ' + vampPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.vampHeal);
+                        logText += ' ' + vampPhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', attackResult.vampHeal);
                     }
                     if (attackResult.reflectDamage>0) {
-                        logText += ' ' + reflectPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${enemyName}</strong>`);
+                        logText += ' ' + reflectPhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', attackResult.reflectDamage).replace('%s', '<strong>' + enemyName + '</strong>');
                     }
                     actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'enemy' };
-                    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
+                    console.log('[ATTACK] damage=' + attackResult.damage + ', crit=' + attackResult.isCrit + ', vamp=' + attackResult.vampHeal + ', reflect=' + attackResult.reflectDamage);
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'enemy' };
-                    console.log(`[DODGE] player dodged`);
+                    console.log('[DODGE] player dodged');
                 }
 
                 messages.push(actionLog);
@@ -632,7 +632,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.extraLogs && attackResult.extraLogs.length>0) {
                     attackResult.extraLogs.forEach(extra => {
                         messages.push(extra);
-                        console.log(`[STACK] ${extra.text}`);
+                        console.log('[STACK] ' + extra.text);
                     });
                     pushState();
                 }
@@ -649,22 +649,22 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             if (playerDot.damage > 0) {
                 playerHp -= playerDot.damage;
                 if (playerHp < 0) playerHp = 0;
-                console.log(`[HP after DOT] player=${playerHp}`);
+                console.log('[HP after DOT] player=' + playerHp);
                 playerDot.logs.forEach(entry => {
                     entry.attacker = 'player';
                     messages.push(entry);
-                    console.log(`[DOT] ${entry.text}`);
+                    console.log('[DOT] ' + entry.text);
                 });
                 pushState();
             }
             if (enemyDot.damage > 0) {
                 enemyHp -= enemyDot.damage;
                 if (enemyHp < 0) enemyHp = 0;
-                console.log(`[HP after DOT] enemy=${enemyHp}`);
+                console.log('[HP after DOT] enemy=' + enemyHp);
                 enemyDot.logs.forEach(entry => {
                     entry.attacker = 'enemy';
                     messages.push(entry);
-                    console.log(`[DOT] ${entry.text}`);
+                    console.log('[DOT] ' + entry.text);
                 });
                 pushState();
             }
@@ -701,11 +701,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     messages.push({ text: finalPhrase, type: 'final', attacker: 'none' });
     pushState();
 
-    console.log(`\n=== BATTLE END ===`);
-    console.log(`Winner: ${winner}, final HP: player=${playerHp}, enemy=${enemyHp}`);
-    console.log(`Total messages: ${messages.length}`);
+    console.log('\n=== BATTLE END ===');
+    console.log('Winner: ' + winner + ', final HP: player=' + playerHp + ', enemy=' + enemyHp);
+    console.log('Total messages: ' + messages.length);
     console.log('=== MESSAGES SENT ===');
-    messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
+    messages.forEach((m, i) => console.log(i + ': ' + m.text));
 
     return {
         winner,

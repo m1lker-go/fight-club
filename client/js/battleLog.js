@@ -289,9 +289,9 @@ if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
             animTarget = (attacker === 'player') ? 'hero' : 'enemy';
             animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
         } else if (type === 'frozen_enter' || type === 'frozen_end') {
-    // Заморозка применяется к защитнику (противоположность атакующему)
-    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-    animFile = 'frozenx.gif';
+        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        animFile = 'frozenx.gif';
+        console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);       
 }
         if (animTarget && animFile) {
             console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);

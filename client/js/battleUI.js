@@ -104,14 +104,10 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Дебаффы игрока (колонка слева от центра) -->
-                <div class="player-debuffs" style="flex: 0 0 32px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
-                    <div class="debuff-slot" data-side="player" data-slot="0"></div>
-                    <div class="debuff-slot" data-side="player" data-slot="1"></div>
-                    <div class="debuff-slot" data-side="player" data-slot="2"></div>
-                    <div class="debuff-slot" data-side="player" data-slot="3"></div>
-                    <div class="debuff-slot" data-side="player" data-slot="4"></div>
-                </div>
+                <!-- Эффекты игрока (колонка слева от центра) -->
+<div class="player-effects" style="flex: 0 0 32px; position: relative; height: 165px;">
+    <div class="effects-container" data-side="player" id="player-effects"></div>
+</div>
 
                 <!-- Центральная часть с таймером и кнопкой скорости -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
@@ -119,14 +115,10 @@ function showBattleScreen(battleData) {
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #2f3542; border: 1px solid #7f8c8d; color: white; padding: 4px 8px; border-radius: 12px; cursor: pointer; font-weight: bold; opacity: 0.8; font-size: 12px;">x1</button>
                 </div>
 
-                <!-- Дебаффы противника (колонка справа от центра) -->
-                <div class="enemy-debuffs" style="flex: 0 0 32px; display: flex; flex-direction: column; justify-content: flex-start; gap: 1px;">
-                    <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
-                    <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
-                    <div class="debuff-slot" data-side="enemy" data-slot="2"></div>
-                    <div class="debuff-slot" data-side="enemy" data-slot="3"></div>
-                    <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
-                </div>
+                <!-- Эффекты противника (колонка справа от центра) -->
+<div class="enemy-effects" style="flex: 0 0 32px; position: relative; height: 165px;">
+    <div class="effects-container" data-side="enemy" id="enemy-effects"></div>
+</div>
 
                 <!-- Карточка противника -->
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">

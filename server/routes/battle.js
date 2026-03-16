@@ -442,13 +442,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             console.log(`Player HP: ${playerHp}, Mana: ${playerMana}, Stacks: poison ${playerState.poisonStacks}, burn ${playerState.burnStacks}, freeze ${playerState.freezeStacks}, frozen ${playerState.frozen}`);
             console.log(`Enemy HP: ${enemyHp}, Mana: ${enemyMana}, Stacks: poison ${enemyState.poisonStacks}, burn ${enemyState.burnStacks}, freeze ${enemyState.freezeStacks}, frozen ${enemyState.frozen}`);
 
-            if (playerState.frozen > 0) {
-                const frozenLeft = playerState.frozen;
-                playerState.frozen--;
-                let msg;
-                if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', `<strong>${playerName}</strong>`);
-                else msg = frozenContinuePhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', frozenLeft);
-                messages.push({ text: msg, type: 'frozen_end', attacker: 'player' });
+           if (enemyState.frozen > 0) {
+    const frozenLeft = enemyState.frozen;
+    enemyState.frozen--;
+    let msg;
+    if (enemyState.frozen === 0) msg = frozenEndPhrase.replace('%s', `<strong>${enemyName}</strong>`);
+    else msg = frozenContinuePhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', frozenLeft);
+    messages.push({ text: msg, type: 'frozen_end', attacker: 'enemy' }); 
                 pushState();
                 console.log(`[FROZEN] ${msg}`);
                 turn = 'enemy';

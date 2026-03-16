@@ -221,64 +221,67 @@ if (this.battleData.enemySubclass === 'berserker') {
     },
 
     renderEffects(side) {
-        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-        const effects = this.buildEffectsList(side);
+    const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+    const effects = this.buildEffectsList(side);
 
-        // Разделяем на негативные и позитивные
-        const negativeEffects = [];
-        const positiveEffects = [];
-        for (let effect of effects) {
-            // Позитивные: ярость, щит (и другие баффы, если появятся)
-            if (effect.type === 'rage' || effect.type === 'shield') {
-                positiveEffects.push(effect);
-            } else {
-                negativeEffects.push(effect);
+    // Разворачиваем ярость: каждый уровень ярости становится отдельным эффектом
+    const expandedEffects = [];
+    for (let effect of effects) {
+        if (effect.type === 'rage') {
+            const count = effect.count || 1;
+            for (let j = 0; j < count; j++) {
+                expandedEffects.push({ type: 'rage', icon: effect.icon });
             }
+        } else {
+            expandedEffects.push(effect);
         }
+    }
 
-        // Очищаем слоты
-        slots.forEach(slot => slot.innerHTML = '');
-
-        // Заполняем левые подслоты (негативные) – до 5 штук
-        for (let i = 0; i < Math.min(negativeEffects.length, 5); i++) {
-            const slot = slots[i];
-            if (!slot) continue;
-            const effect = negativeEffects[i];
-            const img = document.createElement('img');
-            img.src = effect.icon;
-            img.alt = effect.type;
-            img.className = 'negative-icon';
-            slot.appendChild(img);
+    // Разделяем на негативные и позитивные
+    const negativeEffects = [];
+    const positiveEffects = [];
+    for (let effect of expandedEffects) {
+        if (effect.type === 'rage' || effect.type === 'shield') {
+            positiveEffects.push(effect);
+        } else {
+            negativeEffects.push(effect);
         }
+    }
 
-        // Заполняем правые подслоты (позитивные) – до 5 штук
-        for (let i = 0; i < Math.min(positiveEffects.length, 5); i++) {
-            const slot = slots[i];
-            if (!slot) continue;
-            const effect = positiveEffects[i];
-            if (effect.type === 'rage') {
-                const count = effect.count || 1;
-                for (let j = 0; j < count; j++) {
-                    const img = document.createElement('img');
-                    img.src = effect.icon;
-                    img.alt = effect.type;
-                    img.className = 'rage-icon';
-                    img.style.setProperty('--rage-index', j);
-                    slot.appendChild(img);
-                    // Опционально: лог для отладки
-                    // console.log(`[BattleLog] Added rage icon ${j} for ${side}, src: ${effect.icon}`);
-                }
-            } else {
-                const img = document.createElement('img');
-                img.src = effect.icon;
-                img.alt = effect.type;
-                img.className = 'positive-icon';
-                slot.appendChild(img);
-            }
+    // Очищаем слоты
+    slots.forEach(slot => slot.innerHTML = '');
+
+    // Заполняем левые подслоты (негативные) – до 5 штук
+    for (let i = 0; i < Math.min(negativeEffects.length, 5); i++) {
+        const slot = slots[i];
+        if (!slot) continue;
+        const effect = negativeEffects[i];
+        const img = document.createElement('img');
+        img.src = effect.icon;
+        img.alt = effect.type;
+        img.className = 'negative-icon';
+        slot.appendChild(img);
+    }
+
+    // Заполняем правые подслоты (позитивные) – до 5 штук
+    for (let i = 0; i < Math.min(positiveEffects.length, 5); i++) {
+        const slot = slots[i];
+        if (!slot) continue;
+        const effect = positiveEffects[i];
+        // Для ярости используем класс rage-icon, для щита – positive-icon
+        const img = document.createElement('img');
+        img.src = effect.icon;
+        img.alt = effect.type;
+        if (effect.type === 'rage') {
+            img.className = 'rage-icon';
+        } else {
+            img.className = 'positive-icon';
         }
+        slot.appendChild(img);
+    }
 
-        if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
-    },
+    if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
+},
 
     formatLogText(text) {
         text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');

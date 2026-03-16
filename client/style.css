@@ -1209,29 +1209,53 @@ td {
 /* Слоты для иконок статусов */
 .debuff-slot {
     position: relative;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 33px;          /* 165px / 5 */
     margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: none;
 }
+
+/* Обычные иконки (яд, огонь, лёд, щит) – позиционируются абсолютно */
+.debuff-slot img:not(.rage-icon) {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    object-fit: contain;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Для игрока обычная иконка прижата к левому краю */
+.debuff-slot[data-side="player"] img:not(.rage-icon) {
+    left: 0;
+}
+
+/* Для противника обычная иконка прижата к правому краю */
+.debuff-slot[data-side="enemy"] img:not(.rage-icon) {
+    right: 0;
+}
+
+/* Иконки ярости */
 .rage-icon {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    width: 25px;
+    height: 25px;
     object-fit: contain;
-    left: 0;
-    top: 0;
-    transform: translateX(calc(20px * var(--rage-index))); /* смещение только вправо на 20px */
+    top: 50%;
+    transform: translateY(-50%);
     z-index: calc(10 + var(--rage-index));
 }
-.debuff-slot img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+
+/* Для игрока иконки ярости смещаются влево от правого края */
+.debuff-slot[data-side="player"] .rage-icon {
+    right: calc(20px * var(--rage-index));
 }
+
+/* Для противника иконки ярости смещаются вправо от левого края */
+.debuff-slot[data-side="enemy"] .rage-icon {
+    left: calc(20px * var(--rage-index));
+}
+
 /* Экран боя */
 .battle-screen {
     display: flex;

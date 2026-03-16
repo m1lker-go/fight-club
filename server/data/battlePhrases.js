@@ -58,7 +58,7 @@ const frozenContinuePhrase = "%s скован льдом ещё %d хода.";
 const frozenEndPhrase = "%s освобождается ото льда.";
 const frozenAlreadyPhrase = "%s заморожен и пропускает ход.";
 
-const selfDamagePhrase = "%s наносит себе урон -%d.";
+const selfDamagePhrase = "%s наносит порез себе. Урон -%d .";
 
 const ultPhrases = {
     guardian: "%s активирует божественную защиту. Здоровье +%d.",

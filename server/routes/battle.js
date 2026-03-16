@@ -481,97 +481,101 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     while (playerHp>0 && enemyHp>0 && t<maxTurns) {
         t++;
 
-        // --- Ход игрока ---
-        if (turn === 'player') {
-            console.log(`\n--- TURN ${t} (PLAYER) ---`);
-            console.log(`Player HP: ${playerHp}, Mana: ${playerMana}, Stacks: poison ${playerState.poisonStacks}, burn ${playerState.burnStacks}, freeze ${playerState.freezeStacks}, frozen ${playerState.frozen}`);
-            console.log(`Enemy HP: ${enemyHp}, Mana: ${enemyMana}, Stacks: poison ${enemyState.poisonStacks}, burn ${enemyState.burnStacks}, freeze ${enemyState.freezeStacks}, frozen ${enemyState.frozen}`);
+     // --- Ход игрока ---
+if (turn === 'player') {
+    console.log(`\n--- TURN ${t} (PLAYER) ---`);
+    console.log(`Player HP: ${playerHp}, Mana: ${playerMana}, Stacks: poison ${playerState.poisonStacks}, burn ${playerState.burnStacks}, freeze ${playerState.freezeStacks}, frozen ${playerState.frozen}`);
+    console.log(`Enemy HP: ${enemyHp}, Mana: ${enemyMana}, Stacks: poison ${enemyState.poisonStacks}, burn ${enemyState.burnStacks}, freeze ${enemyState.freezeStacks}, frozen ${enemyState.frozen}`);
 
-          if (playerState.frozen > 0) {
-    const frozenLeft = playerState.frozen;
-    playerState.frozen--;
-    let msg;
-    if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', `<strong>${playerName}</strong>`);
-    else msg = frozenContinuePhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', frozenLeft);
-    messages.push({ text: msg, type: 'frozen_end', attacker: 'enemy' });
-                pushState();
-                console.log(`[FROZEN] ${msg}`);
-                turn = 'enemy';
-                playerActedThisRound = true;
-                continue;
+    if (playerState.frozen > 0) {
+        const frozenLeft = playerState.frozen;
+        playerState.frozen--;
+        let msg;
+        if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', `<strong>${playerName}</strong>`);
+        else msg = frozenContinuePhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', frozenLeft);
+        messages.push({ text: msg, type: 'frozen_end', attacker: 'enemy' });
+        pushState();
+        console.log(`[FROZEN] ${msg}`);
+        turn = 'enemy';
+        playerActedThisRound = true;
+        continue;
+    }
+    playerState.hp = playerHp; enemyState.hp = enemyHp;
+    playerMana = Math.min(100, playerMana + playerStats.manaRegen);
+    let actionLog = null;
+
+    if (playerMana >= 100) {
+        const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
+        if (skill.damage) enemyHp -= skill.damage;
+        if (skill.heal) playerHp += skill.heal;
+        if (skill.selfDamage) playerHp -= skill.selfDamage;
+        if (playerHp < 0) playerHp = 0; if (enemyHp < 0) enemyHp = 0;
+        console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
+        actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
+        playerMana -= 100;
+        if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
+        console.log(`[ULT] ${skill.log}`);
+    } else {
+        const attackResult = performAttack(
+            playerStats, enemyStats,
+            playerStats.vamp + (playerState.vampBuff > 0 ? playerState.vampBonus : 0),
+            enemyStats.reflect + (enemyState.reflectBuff > 0 ? enemyState.reflectBonus : 0),
+            playerName, enemyName,
+            playerClass, playerSubclass, enemySubclass,
+            playerState, enemyState,
+            true // attackerIsPlayer = true
+        );
+
+        if (attackResult.hit) {
+            enemyHp -= attackResult.damage;
+            playerHp += attackResult.vampHeal;
+            playerHp -= attackResult.reflectDamage;
+            if (playerHp < 0) playerHp = 0;
+            if (enemyHp < 0) enemyHp = 0;
+            let logText = attackResult.log;
+
+            // Информация о ярости
+            if (attackResult.rageInfo) {
+                logText += ` <span style="color:#f39c12;">Уровень ярости ${attackResult.rageInfo.level}. Доп. урон +${attackResult.rageInfo.added}</span>`;
+            } else if (attackResult.berserkerBonus > 0) {
+                logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
             }
-            playerState.hp = playerHp; enemyState.hp = enemyHp;
-            playerMana = Math.min(100, playerMana + playerStats.manaRegen);
-            let actionLog = null;
 
-            if (playerMana >= 100) {
-                const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
-                if (skill.damage) enemyHp -= skill.damage;
-                if (skill.heal) playerHp += skill.heal;
-                if (skill.selfDamage) playerHp -= skill.selfDamage;
-                if (playerHp<0) playerHp=0; if (enemyHp<0) enemyHp=0;
-                console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
-                actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
-                playerMana -= 100;
-                if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
-                console.log(`[ULT] ${skill.log}`);
-            } else {
-                const attackResult = performAttack(
-                    playerStats, enemyStats,
-                    playerStats.vamp + (playerState.vampBuff>0 ? playerState.vampBonus : 0),
-                    enemyStats.reflect + (enemyState.reflectBuff>0 ? enemyState.reflectBonus : 0),
-                    playerName, enemyName,
-                    playerClass, playerSubclass, enemySubclass,
-                    playerState, enemyState,
-                    true // ← attackerIsPlayer = true
-                );
-               if (attackResult.hit) {
-    enemyHp -= attackResult.damage;
-    playerHp += attackResult.vampHeal;
-    playerHp -= attackResult.reflectDamage;
-    if (playerHp < 0) playerHp = 0;
-    if (enemyHp < 0) enemyHp = 0;
-    let logText = attackResult.log;
-
-    // Информация о ярости
-    if (attackResult.rageInfo) {
-        logText += ` <span style="color:#f39c12;">Уровень ярости ${attackResult.rageInfo.level}. Доп. урон +${attackResult.rageInfo.added}</span>`;
-    } else if (attackResult.berserkerBonus > 0) {
-        logText += ` <span style="color:#f39c12;">(Ярость +${attackResult.berserkerBonus})</span>`;
-    }
-
-    // Вампиризм и отражение
-    if (attackResult.vampHeal > 0) {
-        logText += ' ' + vampPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.vampHeal);
-    }
-    if (attackResult.reflectDamage > 0) {
-        logText += ' ' + reflectPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${playerName}</strong>`);
-    }
-
-    actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
-    console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
-} else {
-    actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
-    console.log(`[DODGE] enemy dodged`);
-}
-                // Основное действие
-                messages.push(actionLog);
-                pushState();
-
-                // Стаки (не показываем в логе, но сохраняем для финала)
-                if (attackResult.extraLogs && attackResult.extraLogs.length>0) {
-                    attackResult.extraLogs.forEach(extra => {
-                        // extra.attacker уже установлен внутри performAttack на основе isPlayerAttacker
-                        messages.push(extra);
-                        console.log(`[STACK] ${extra.text}`);
-                    });
-                    pushState();
-                }
-                if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+            // Вампиризм и отражение
+            if (attackResult.vampHeal > 0) {
+                logText += ' ' + vampPhrase.replace('%s', `<strong>${playerName}</strong>`).replace('%d', attackResult.vampHeal);
             }
-            turn = 'enemy';
-            playerActedThisRound = true;
+            if (attackResult.reflectDamage > 0) {
+                logText += ' ' + reflectPhrase.replace('%s', `<strong>${enemyName}</strong>`).replace('%d', attackResult.reflectDamage).replace('%s', `<strong>${playerName}</strong>`);
+            }
+
+            actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
+
+            // Сначала добавляем extraLogs (самоповреждение), потом actionLog
+            if (attackResult.extraLogs && attackResult.extraLogs.length > 0) {
+                attackResult.extraLogs.forEach(extra => {
+                    messages.push(extra);
+                    console.log('[STACK] ' + extra.text);
+                });
+                pushState();
+            }
+            messages.push(actionLog);
+            pushState();
+            console.log(`[ATTACK] damage=${attackResult.damage}, crit=${attackResult.isCrit}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}`);
+        } else {
+            actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
+            messages.push(actionLog);
+            pushState();
+            console.log(`[DODGE] enemy dodged`);
         }
+
+        // Обновляем состояние после атаки (например, стаки)
+        if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+    }
+
+    turn = 'enemy';
+    playerActedThisRound = true;
+}
 
         // --- Ход противника ---
         else {

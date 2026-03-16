@@ -60,6 +60,11 @@ function showBattleScreen(battleData) {
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
 
+    // 👇 Добавьте эти строки
+battleData.playerSubclass = userData.subclass;
+battleData.enemySubclass = battleData.opponent.subclass;
+    
+
     const getRoleNameRu = (role) => {
         const roles = {
             guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',

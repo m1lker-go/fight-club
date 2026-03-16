@@ -25,10 +25,9 @@ const BattleLog = {
     enemyPoisonStacks: 0,
     playerBurnStacks: 0,
     enemyBurnStacks: 0,
-    playerRage: 0,        // уровень ярости для игрока (0-5)
-    enemyRage: 0,         // уровень ярости для противника (0-5)
+    playerRage: 0,
+    enemyRage: 0,
 
-    // Вспомогательная функция для расчёта уровня ярости
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
         if (percent < 35) return 4;
@@ -40,13 +39,12 @@ const BattleLog = {
 
     init(battleData, logContainer, onFinish) {
         console.log('[BattleLog] init');
-        this.stop(); // останавливает и очищает всё
-        this.stopped = false; // теперь разрешаем новый лог
+        this.stop();
+        this.stopped = false;
         if (this.interval) clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
 
-        // Сброс состояния
         this.playerFrozen = 0;
         this.enemyFrozen = 0;
         this.playerShield = 0;
@@ -87,7 +85,7 @@ const BattleLog = {
     },
 
     applyState(state) {
-        if (this.stopped) return; // не применяем состояние, если лог остановлен
+        if (this.stopped) return;
         const heroHpText = document.getElementById('heroHpText');
         const enemyHpText = document.getElementById('enemyHpText');
         const heroHpBar = document.getElementById('heroHp');
@@ -111,7 +109,6 @@ const BattleLog = {
             if (enemyManaText) enemyManaText.innerText = state.enemyMana;
         }
 
-        // Обновляем внутренние переменные
         this.playerFrozen = state.playerFrozen || 0;
         this.enemyFrozen = state.enemyFrozen || 0;
         this.playerShield = state.playerShield || 0;
@@ -123,7 +120,6 @@ const BattleLog = {
         this.playerBurnStacks = state.playerBurnStacks || 0;
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Расчёт уровня ярости (если класс берсерк)
         if (this.battleData.playerClass === 'berserker') {
             const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
             this.playerRage = this.getRageLevelFromPercent(playerPercent);
@@ -137,19 +133,16 @@ const BattleLog = {
             this.enemyRage = 0;
         }
 
-        // Оверлей заморозки (с проверкой на смерть)
         if (state.playerHp <= 0) this.playerFrozen = 0;
         if (state.enemyHp <= 0) this.enemyFrozen = 0;
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
         const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
         if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
         if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
-        
-        // Обновление иконок статусов
+
         this.renderEffects('player');
         this.renderEffects('enemy');
 
-        // Смерть с задержкой 2 секунды
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
@@ -176,112 +169,129 @@ const BattleLog = {
         }
     },
 
-   buildEffectsList(side) {
-    const effects = [];
-    if (side === 'player') {
-        if (this.playerFrozen > 0) {
-            effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+    buildEffectsList(side) {
+        const effects = [];
+        if (side === 'player') {
+            if (this.playerFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < this.playerFreezeStacks; i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (this.playerPoisonStacks > 0) {
+                for (let i = 0; i < this.playerPoisonStacks; i++) {
+                    effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+                }
+            }
+            for (let i = 0; i < this.playerBurnStacks; i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (this.playerShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+            if (this.playerRage > 0) {
+                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.playerRage });
+            }
         } else {
-            for (let i = 0; i < this.playerFreezeStacks; i++) {
-                effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+            if (this.enemyFrozen > 0) {
+                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+            } else {
+                for (let i = 0; i < this.enemyFreezeStacks; i++) {
+                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+                }
+            }
+            if (this.enemyPoisonStacks > 0) {
+                for (let i = 0; i < this.enemyPoisonStacks; i++) {
+                    effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+                }
+            }
+            for (let i = 0; i < this.enemyBurnStacks; i++) {
+                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+            }
+            if (this.enemyShield) {
+                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+            if (this.enemyRage > 0) {
+                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.enemyRage });
             }
         }
-        if (this.playerPoisonStacks > 0) {
-            for (let i = 0; i < this.playerPoisonStacks; i++) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
-        }
-        for (let i = 0; i < this.playerBurnStacks; i++) {
-            effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-        }
-        if (this.playerShield) {
-            effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-        }
-        // Иконки ярости
-        if (this.playerRage > 0) {
-            effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.playerRage });
-        }
-    } else {
-        if (this.enemyFrozen > 0) {
-            effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-        } else {
-            for (let i = 0; i < this.enemyFreezeStacks; i++) {
-                effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-            }
-        }
-        if (this.enemyPoisonStacks > 0) {
-            for (let i = 0; i < this.enemyPoisonStacks; i++) {
-                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-            }
-        }
-        for (let i = 0; i < this.enemyBurnStacks; i++) {
-            effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-        }
-        if (this.enemyShield) {
-            effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-        }
-        // Иконки ярости для противника
-        if (this.enemyRage > 0) {
-            effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.enemyRage });
-        }
-    }
-    return effects;
-},
+        return effects;
+    },
 
-  renderEffects(side) {
-    const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-    const effects = this.buildEffectsList(side);
-    slots.forEach(slot => slot.innerHTML = '');
-    for (let i = 0; i < Math.min(effects.length, 5); i++) {
-        const effect = effects[i];
-        const slot = slots[i];
-        if (!slot) continue;
-        if (effect.type === 'rage') {
-            // Рендерим несколько иконок ярости с перекрытием
-            const count = effect.count || 1;
-            for (let j = 0; j < count; j++) {
-                const img = document.createElement('img');
-                img.src = effect.icon;
-                img.alt = effect.type;
-                img.className = 'rage-icon';
-                img.style.setProperty('--rage-index', j);
-                slot.appendChild(img);
+    renderEffects(side) {
+        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+        const effects = this.buildEffectsList(side);
+
+        // Разделяем на негативные и позитивные
+        const negativeEffects = [];
+        const positiveEffects = [];
+        for (let effect of effects) {
+            // Позитивные: ярость, щит (и другие баффы, если появятся)
+            if (effect.type === 'rage' || effect.type === 'shield') {
+                positiveEffects.push(effect);
+            } else {
+                negativeEffects.push(effect);
             }
-        } else {
+        }
+
+        // Очищаем слоты
+        slots.forEach(slot => slot.innerHTML = '');
+
+        // Заполняем левые подслоты (негативные) – до 5 штук
+        for (let i = 0; i < Math.min(negativeEffects.length, 5); i++) {
+            const slot = slots[i];
+            if (!slot) continue;
+            const effect = negativeEffects[i];
             const img = document.createElement('img');
             img.src = effect.icon;
             img.alt = effect.type;
-            // Определяем класс: позитивные эффекты (щит и т.п.) - справа, негативные - слева
-            if (effect.type === 'shield') { // при необходимости добавьте другие позитивные эффекты
-                img.className = 'positive-icon';
-            } else {
-                img.className = 'negative-icon';
-            }
+            img.className = 'negative-icon';
             slot.appendChild(img);
-             console.log(`[BattleLog] Added rage icon ${j} for ${side}, src: ${effect.icon}`);
         }
-    }
-    if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
-},
+
+        // Заполняем правые подслоты (позитивные) – до 5 штук
+        for (let i = 0; i < Math.min(positiveEffects.length, 5); i++) {
+            const slot = slots[i];
+            if (!slot) continue;
+            const effect = positiveEffects[i];
+            if (effect.type === 'rage') {
+                const count = effect.count || 1;
+                for (let j = 0; j < count; j++) {
+                    const img = document.createElement('img');
+                    img.src = effect.icon;
+                    img.alt = effect.type;
+                    img.className = 'rage-icon';
+                    img.style.setProperty('--rage-index', j);
+                    slot.appendChild(img);
+                    // Опционально: лог для отладки
+                    // console.log(`[BattleLog] Added rage icon ${j} for ${side}, src: ${effect.icon}`);
+                }
+            } else {
+                const img = document.createElement('img');
+                img.src = effect.icon;
+                img.alt = effect.type;
+                img.className = 'positive-icon';
+                slot.appendChild(img);
+            }
+        }
+
+        if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
+    },
 
     formatLogText(text) {
-        // Урон (обычный, критический, от стихий, отражение)
         text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
         text = text.replace(/(Крит\. урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
         text = text.replace(/(Урон от огня -)(\d+)/g, '$1<span class="damage-number">$2</span>');
         text = text.replace(/(Урон от яда -)(\d+)/g, '$1<span class="damage-number">$2</span>');
         text = text.replace(/(Отражение -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-
-        // Лечение, вампиризм
         text = text.replace(/(Вампиризм \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
         text = text.replace(/(Здоровье \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
-        // Ледяные сообщения
         text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
         text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
         text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
         text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
         text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
-
         return text;
     },
 
@@ -299,16 +309,13 @@ const BattleLog = {
         const entry = this.messages[this.currentMsgIndex];
         const msgText = entry.text;
         const type = entry.type;
-        const attacker = entry.attacker; // 'player' или 'enemy'
+        const attacker = entry.attacker;
 
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        // Сообщения о стаках не выводим в лог (но числа показываем)
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
 
-        // --- Лог и анимация для не-стековых сообщений ---
         if (!isStackMessage) {
-            // Добавляем запись в лог
             const logEntry = document.createElement('div');
             let entryClass = 'log-entry';
             if (type === 'dodge') {
@@ -321,7 +328,6 @@ const BattleLog = {
             this.logContainer.appendChild(logEntry);
             this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-            // --- Определяем анимацию ---
             let animTarget = null;
             let animFile = null;
 
@@ -338,7 +344,6 @@ const BattleLog = {
                 else if (type === 'poison_ult') animFile = 'poison.gif';
                 else animFile = 'ultimate.gif';
             } else if (type === 'damage_self') {
-                // Самоповреждение – анимацию не показываем
                 animTarget = null;
                 animFile = null;
             } else if (type === 'heal' || type === 'buff') {
@@ -356,9 +361,7 @@ const BattleLog = {
             }
         }
 
-        // --- ВСЕГДА парсим число и показываем всплывающее сообщение (включая стаки) ---
         this.parseAndShowFloatingNumber(entry);
-
         this.currentMsgIndex++;
 
         if (this.currentStateIndex < this.states.length) {
@@ -369,7 +372,6 @@ const BattleLog = {
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
     },
 
-    // Метод для парсинга и отображения чисел
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;
         const type = entry.type;
@@ -380,7 +382,6 @@ const BattleLog = {
         let colorClass = null;
         let numberTarget = null;
 
-        // --- Атаки, криты, ульты (кроме самоповреждения) ---
         if (type === 'attack' || type === 'crit' || type === 'damage' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
             const match = msgText.match(/урон -(\d+)/i) || msgText.match(/крит\. урон -(\d+)/i);
             if (match) {
@@ -392,19 +393,15 @@ const BattleLog = {
                 colorClass = 'red';
                 numberTarget = (attacker === 'player') ? 'enemy' : 'hero';
             }
-        }
-        // --- Самоповреждение ---
-        else if (type === 'damage_self') {
+        } else if (type === 'damage_self') {
             const match = msgText.match(/урон -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
                 icon = '⚔️';
                 colorClass = 'red';
-                numberTarget = (attacker === 'player') ? 'hero' : 'enemy'; // цель – сам атакующий
+                numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
             }
-        }
-        // --- Урон от яда ---
-        else if (type === 'poison_dot') {
+        } else if (type === 'poison_dot') {
             const match = msgText.match(/урон от яда -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
@@ -412,9 +409,7 @@ const BattleLog = {
                 colorClass = 'red';
                 numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
             }
-        }
-        // --- Урон от огня ---
-        else if (type === 'burn_dot') {
+        } else if (type === 'burn_dot') {
             const match = msgText.match(/урон от огня -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
@@ -422,9 +417,7 @@ const BattleLog = {
                 colorClass = 'red';
                 numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
             }
-        }
-        // --- Лечение ---
-        else if (type === 'heal') {
+        } else if (type === 'heal') {
             const match = msgText.match(/здоровье \+(\d+)/i);
             if (match) {
                 numberValue = parseInt(match[1]);
@@ -434,7 +427,6 @@ const BattleLog = {
             }
         }
 
-        // Дополнительные эффекты, которые могут быть в том же сообщении (вампиризм, отражение)
         if (type === 'attack' || type === 'crit') {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
@@ -448,7 +440,6 @@ const BattleLog = {
             }
         }
 
-        // Если есть основное число, показываем его
         if (numberValue !== null && numberTarget) {
             this.showFloatingNumber(numberTarget, numberValue, icon, colorClass);
         }
@@ -459,17 +450,14 @@ const BattleLog = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        // Определяем, сколько уже чисел в контейнере
         const existing = container.children.length;
-        const offset = existing * 20; // смещение в пикселях (каждое следующее число ниже на 20px)
+        const offset = existing * 20;
 
         const numDiv = document.createElement('div');
         numDiv.className = `floating-number ${colorClass}`;
-        // Добавляем индивидуальное смещение через стиль
         numDiv.style.top = `calc(50% + ${offset}px)`;
         const sign = value > 0 ? '+' : '';
 
-        // Определяем путь к иконке в зависимости от типа (icon)
         let iconPath = '';
         switch (icon) {
             case '⚔️':
@@ -503,11 +491,9 @@ const BattleLog = {
                 iconPath = '/assets/icon-log/icon-reflect.png';
                 break;
             default:
-                // Если тип не распознан, используем иконку урона
                 iconPath = '/assets/icon-log/icon-damage.png';
         }
 
-        // Формируем HTML: число + иконка
         numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
         container.appendChild(numDiv);
 

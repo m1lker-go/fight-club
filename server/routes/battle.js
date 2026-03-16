@@ -357,6 +357,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     // Выбор фразы
     const phraseKey = isTargetFrozen ? 'frozen' : 'normal';
     log = ultPhrases.cryomancer[phraseKey];
+     console.log(`[DEBUG] cryomancer: phraseKey=${phraseKey}, log=${log}, damage=${damage}`);       
     log = log.replace('%s', `<strong>${attackerName}</strong>`)
              .replace('%s', `<strong>${defenderName}</strong>`)
              .replace('%d', damage);

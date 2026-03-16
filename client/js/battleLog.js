@@ -176,57 +176,57 @@ const BattleLog = {
         }
     },
 
-    buildEffectsList(side) {
-        const effects = [];
-        if (side === 'player') {
-            if (this.playerFrozen > 0) {
-                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            } else {
-                for (let i = 0; i < this.playerFreezeStacks; i++) {
-                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-                }
-            }
-            if (this.playerPoisonStacks > 0) {
-                for (let i = 0; i < this.playerPoisonStacks; i++) {
-                    effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-                }
-            }
-            for (let i = 0; i < this.playerBurnStacks; i++) {
-                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-            }
-            if (this.playerShield) {
-                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-            }
-            // Иконки ярости
-           if (this.playerRage > 0) {
-    effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.playerRage });
-}
+   buildEffectsList(side) {
+    const effects = [];
+    if (side === 'player') {
+        if (this.playerFrozen > 0) {
+            effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
         } else {
-            if (this.enemyFrozen > 0) {
-                effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
-            } else {
-                for (let i = 0; i < this.enemyFreezeStacks; i++) {
-                    effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
-                }
-            }
-            if (this.enemyPoisonStacks > 0) {
-                for (let i = 0; i < this.enemyPoisonStacks; i++) {
-                    effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
-                }
-            }
-            for (let i = 0; i < this.enemyBurnStacks; i++) {
-                effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
-            }
-            if (this.enemyShield) {
-                effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
-            }
-            // Иконки ярости
-            for (let i = 0; i < this.enemyRage; i++) {
-                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
+            for (let i = 0; i < this.playerFreezeStacks; i++) {
+                effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
             }
         }
-        return effects;
-    },
+        if (this.playerPoisonStacks > 0) {
+            for (let i = 0; i < this.playerPoisonStacks; i++) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+        }
+        for (let i = 0; i < this.playerBurnStacks; i++) {
+            effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+        }
+        if (this.playerShield) {
+            effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+        }
+        // Иконки ярости
+        if (this.playerRage > 0) {
+            effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.playerRage });
+        }
+    } else {
+        if (this.enemyFrozen > 0) {
+            effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
+        } else {
+            for (let i = 0; i < this.enemyFreezeStacks; i++) {
+                effects.push({ type: 'ice', icon: '/assets/icons/icon_ice.png' });
+            }
+        }
+        if (this.enemyPoisonStacks > 0) {
+            for (let i = 0; i < this.enemyPoisonStacks; i++) {
+                effects.push({ type: 'poison', icon: '/assets/icons/icon_poison.png' });
+            }
+        }
+        for (let i = 0; i < this.enemyBurnStacks; i++) {
+            effects.push({ type: 'burn', icon: '/assets/icons/icon_fire.png' });
+        }
+        if (this.enemyShield) {
+            effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+        }
+        // Иконки ярости для противника
+        if (this.enemyRage > 0) {
+            effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.enemyRage });
+        }
+    }
+    return effects;
+},
 
    renderEffects(side) {
     const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);

@@ -198,9 +198,9 @@ const BattleLog = {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
             // Иконки ярости
-            for (let i = 0; i < this.playerRage; i++) {
-                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
-            }
+           if (this.playerRage > 0) {
+    effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.playerRage });
+}
         } else {
             if (this.enemyFrozen > 0) {
                 effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });

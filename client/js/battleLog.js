@@ -25,6 +25,18 @@ const BattleLog = {
     enemyPoisonStacks: 0,
     playerBurnStacks: 0,
     enemyBurnStacks: 0,
+    playerRage: 0,        // уровень ярости для игрока (0-5)
+    enemyRage: 0,         // уровень ярости для противника (0-5)
+
+    // Вспомогательная функция для расчёта уровня ярости
+    getRageLevelFromPercent(percent) {
+        if (percent < 20) return 5;
+        if (percent < 35) return 4;
+        if (percent < 50) return 3;
+        if (percent < 65) return 2;
+        if (percent < 80) return 1;
+        return 0;
+    },
 
     init(battleData, logContainer, onFinish) {
         console.log('[BattleLog] init');
@@ -45,6 +57,8 @@ const BattleLog = {
         this.enemyPoisonStacks = 0;
         this.playerBurnStacks = 0;
         this.enemyBurnStacks = 0;
+        this.playerRage = 0;
+        this.enemyRage = 0;
 
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
@@ -109,15 +123,29 @@ const BattleLog = {
         this.playerBurnStacks = state.playerBurnStacks || 0;
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-// Оверлей заморозки (с проверкой на смерть)
-if (state.playerHp <= 0) this.playerFrozen = 0;
-if (state.enemyHp <= 0) this.enemyFrozen = 0;
-const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
-const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
-if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
-if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
+        // Расчёт уровня ярости (если класс берсерк)
+        if (this.battleData.playerClass === 'berserker') {
+            const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
+            this.playerRage = this.getRageLevelFromPercent(playerPercent);
+        } else {
+            this.playerRage = 0;
+        }
+        if (this.battleData.enemyClass === 'berserker') {
+            const enemyPercent = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100;
+            this.enemyRage = this.getRageLevelFromPercent(enemyPercent);
+        } else {
+            this.enemyRage = 0;
+        }
+
+        // Оверлей заморозки (с проверкой на смерть)
+        if (state.playerHp <= 0) this.playerFrozen = 0;
+        if (state.enemyHp <= 0) this.enemyFrozen = 0;
+        const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
+        const enemyFrozen = document.querySelector('.enemy-card .frozen-overlay');
+        if (heroFrozen) heroFrozen.classList.toggle('active', this.playerFrozen > 0);
+        if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
         
-         // Обновление иконок статусов
+        // Обновление иконок статусов
         this.renderEffects('player');
         this.renderEffects('enemy');
 
@@ -169,6 +197,10 @@ if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
             if (this.playerShield) {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
+            // Иконки ярости
+            for (let i = 0; i < this.playerRage; i++) {
+                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
+            }
         } else {
             if (this.enemyFrozen > 0) {
                 effects.push({ type: 'frozen', icon: '/assets/icons/icon_frozen.png' });
@@ -187,6 +219,10 @@ if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
             }
             if (this.enemyShield) {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
+            }
+            // Иконки ярости
+            for (let i = 0; i < this.enemyRage; i++) {
+                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
             }
         }
         return effects;
@@ -229,88 +265,89 @@ if (enemyFrozen) enemyFrozen.classList.toggle('active', this.enemyFrozen > 0);
         return text;
     },
 
- playNext() {
-    if (this.stopped) {
-        console.log('[BattleLog] stopped, ignoring');
-        return;
-    }
-    if (this.currentMsgIndex >= this.messages.length) {
-        console.log('[BattleLog] All messages shown, finishing');
-        this.finish();
-        return;
-    }
-
-    const entry = this.messages[this.currentMsgIndex];
-    const msgText = entry.text;
-    const type = entry.type;
-    const attacker = entry.attacker; // 'player' или 'enemy'
-
-    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
-
-    // Сообщения о стаках не выводим в лог (но числа показываем)
-    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
-
-    // --- Лог и анимация для не-стековых сообщений ---
-    if (!isStackMessage) {
-        // Добавляем запись в лог
-        const logEntry = document.createElement('div');
-        let entryClass = 'log-entry';
-        if (type === 'dodge') {
-            entryClass += ' dodge-text';
-        } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            entryClass += ' ult-text';
+    playNext() {
+        if (this.stopped) {
+            console.log('[BattleLog] stopped, ignoring');
+            return;
         }
-        logEntry.className = entryClass;
-        logEntry.innerHTML = this.formatLogText(msgText);
-        this.logContainer.appendChild(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
-        // --- Определяем анимацию ---
-        let animTarget = null;
-        let animFile = null;
-
-        if (type === 'attack' || type === 'crit' || type === 'damage') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'shot.gif';
-        } else if (type === 'dodge') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'missx.gif';
-        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            if (type === 'fire_ult') animFile = 'fire.gif';
-            else if (type === 'ice_ult') animFile = 'ice.gif';
-            else if (type === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        } else if (type === 'damage_self') {
-            // Самоповреждение – анимацию не показываем
-            animTarget = null;
-            animFile = null;
-        } else if (type === 'heal' || type === 'buff') {
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-        } else if (type === 'frozen_enter' || type === 'frozen_end') {
-        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-        animFile = 'frozenx.gif';
-        console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);       
-}
-        if (animTarget && animFile) {
-            console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
-            this.showAnimation(animTarget, animFile);
+        if (this.currentMsgIndex >= this.messages.length) {
+            console.log('[BattleLog] All messages shown, finishing');
+            this.finish();
+            return;
         }
-    }
 
-    // --- ВСЕГДА парсим число и показываем всплывающее сообщение (включая стаки) ---
-    this.parseAndShowFloatingNumber(entry);
+        const entry = this.messages[this.currentMsgIndex];
+        const msgText = entry.text;
+        const type = entry.type;
+        const attacker = entry.attacker; // 'player' или 'enemy'
 
-    this.currentMsgIndex++;
+        console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-    if (this.currentStateIndex < this.states.length) {
-        this.applyState(this.states[this.currentStateIndex]);
-        this.currentStateIndex++;
-    }
+        // Сообщения о стаках не выводим в лог (но числа показываем)
+        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
 
-    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-},
+        // --- Лог и анимация для не-стековых сообщений ---
+        if (!isStackMessage) {
+            // Добавляем запись в лог
+            const logEntry = document.createElement('div');
+            let entryClass = 'log-entry';
+            if (type === 'dodge') {
+                entryClass += ' dodge-text';
+            } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+                entryClass += ' ult-text';
+            }
+            logEntry.className = entryClass;
+            logEntry.innerHTML = this.formatLogText(msgText);
+            this.logContainer.appendChild(logEntry);
+            this.logContainer.scrollTop = this.logContainer.scrollHeight;
+
+            // --- Определяем анимацию ---
+            let animTarget = null;
+            let animFile = null;
+
+            if (type === 'attack' || type === 'crit' || type === 'damage') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'shot.gif';
+            } else if (type === 'dodge') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'missx.gif';
+            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                if (type === 'fire_ult') animFile = 'fire.gif';
+                else if (type === 'ice_ult') animFile = 'ice.gif';
+                else if (type === 'poison_ult') animFile = 'poison.gif';
+                else animFile = 'ultimate.gif';
+            } else if (type === 'damage_self') {
+                // Самоповреждение – анимацию не показываем
+                animTarget = null;
+                animFile = null;
+            } else if (type === 'heal' || type === 'buff') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+            } else if (type === 'frozen_enter' || type === 'frozen_end') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'frozenx.gif';
+                console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);
+            }
+
+            if (animTarget && animFile) {
+                console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
+                this.showAnimation(animTarget, animFile);
+            }
+        }
+
+        // --- ВСЕГДА парсим число и показываем всплывающее сообщение (включая стаки) ---
+        this.parseAndShowFloatingNumber(entry);
+
+        this.currentMsgIndex++;
+
+        if (this.currentStateIndex < this.states.length) {
+            this.applyState(this.states[this.currentStateIndex]);
+            this.currentStateIndex++;
+        }
+
+        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+    },
 
     // Метод для парсинга и отображения чисел
     parseAndShowFloatingNumber(entry) {

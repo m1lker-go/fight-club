@@ -220,7 +220,7 @@ if (this.battleData.enemySubclass === 'berserker') {
         return effects;
     },
 
-    renderEffects(side) {
+   renderEffects(side) {
     const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
     const effects = this.buildEffectsList(side);
 
@@ -272,11 +272,7 @@ if (this.battleData.enemySubclass === 'berserker') {
         const img = document.createElement('img');
         img.src = effect.icon;
         img.alt = effect.type;
-        if (effect.type === 'rage') {
-            img.className = 'rage-icon';
-        } else {
-            img.className = 'positive-icon';
-        }
+        img.className = effect.type === 'rage' ? 'rage-icon' : 'positive-icon';
         slot.appendChild(img);
     }
 

@@ -1,12 +1,14 @@
 // js/tower.js
 
-let towerStatus = null; // { currentFloor, maxFloor, attemptsLeft, chosenClass, chosenSubclass }
-let claimedFloors = new Set(); // можно загрузить с сервера, но пока будем считать, что награда получается сразу после боя
+const API_BASE = 'https://fight-club-api-4och.onrender.com';
+
+let towerStatus = null;
+let claimedFloors = new Set();
 
 // Загрузка статуса башни
 async function loadTowerStatus() {
     try {
-        const res = await fetch(`/tower/status?tg_id=${userData.tg_id}`);
+        const res = await fetch(`${API_BASE}/tower/status?tg_id=${userData.tg_id}`);
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
         renderTower();
@@ -27,7 +29,7 @@ function renderTower() {
                     <span>Билеты: <span id="ticketsDisplay">${towerStatus.attemptsLeft}/10</span></span>
                 </div>
                 <div class="tower-class-info">
-                    Класс: ${getClassNameRu(towerStatus.chosenClass)} (${getRoleNameRu(towerStatus.chosenSubclass)})
+                    Класс: ${window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass} (${getRoleNameRu(towerStatus.chosenSubclass)})
                 </div>
             </div>
             <div class="tower-floors" id="towerFloors"></div>
@@ -35,46 +37,43 @@ function renderTower() {
     `;
 
     const floorsContainer = document.getElementById('towerFloors');
-    floorsContainer.innerHTML = ''; // очищаем
+    floorsContainer.innerHTML = '';
 
-    // Генерируем 100 этажей
-   for (let i = 1; i <= 100; i++) {
-    const floorDiv = document.createElement('div');
-    floorDiv.className = 'tower-floor';
-    if (i === 1) floorDiv.classList.add('first-floor');
-    if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
-    if (i < towerStatus.currentFloor) floorDiv.classList.add('passed');
+    for (let i = 1; i <= 100; i++) {
+        const floorDiv = document.createElement('div');
+        floorDiv.className = 'tower-floor';
+        if (i === 1) floorDiv.classList.add('first-floor');
+        if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
+        if (i < towerStatus.currentFloor) floorDiv.classList.add('passed');
 
-    // Выбор иконки
-    let iconSrc;
-    if (i === 1) {
-        iconSrc = '/assets/tower/floor1.png';
-    } else if (i % 2 === 0) {
-        iconSrc = '/assets/tower/floor_even.png';
-    } else {
-        iconSrc = '/assets/tower/floor_odd.png';
+        let iconSrc;
+        if (i === 1) {
+            iconSrc = '/assets/tower/floor1.png';
+        } else if (i % 2 === 0) {
+            iconSrc = '/assets/tower/floor_even.png';
+        } else {
+            iconSrc = '/assets/tower/floor_odd.png';
+        }
+
+        const showClaimButton = i < towerStatus.currentFloor && !claimedFloors.has(i);
+
+        floorDiv.innerHTML = `
+            <div class="floor-left">
+                <span class="floor-number">${i}</span>
+                <span class="floor-text">этаж</span>
+            </div>
+            <div class="floor-center">
+                <img src="${iconSrc}" alt="floor ${i}" onerror="this.src='/assets/tower/default.png'">
+            </div>
+            <div class="floor-right">
+                ${showClaimButton ? 
+                    `<button class="claim-btn" data-floor="${i}"><i class="fas fa-coins"></i></button>` : 
+                    (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
+            </div>
+        `;
+        floorsContainer.appendChild(floorDiv);
     }
 
-    const showClaimButton = i < towerStatus.currentFloor && !claimedFloors.has(i);
-
-    floorDiv.innerHTML = `
-        <div class="floor-left">
-            <span class="floor-number">${i}</span>
-            <span class="floor-text">этаж</span>
-        </div>
-        <div class="floor-center">
-            <img src="${iconSrc}" alt="floor ${i}" onerror="this.src='/assets/tower/default.png'">
-        </div>
-        <div class="floor-right">
-            ${showClaimButton ? 
-                `<button class="claim-btn" data-floor="${i}"><i class="fas fa-coins"></i></button>` : 
-                (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
-        </div>
-    `;
-    floorsContainer.appendChild(floorDiv);
-}
-
-    // Плавная прокрутка к активному этажу
     setTimeout(() => {
         const active = document.querySelector('.tower-floor.active');
         if (active) {
@@ -82,7 +81,6 @@ function renderTower() {
         }
     }, 100);
 
-    // Обработчики кнопок получения награды
     document.querySelectorAll('.claim-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -91,7 +89,6 @@ function renderTower() {
         });
     });
 
-    // Можно добавить обработчик нажатия на этаж для начала боя (если это текущий этаж)
     document.querySelectorAll('.tower-floor').forEach(floorDiv => {
         floorDiv.addEventListener('click', () => {
             const floor = parseInt(floorDiv.querySelector('.floor-number').innerText);
@@ -102,10 +99,10 @@ function renderTower() {
     });
 }
 
-// Запрос на получение награды за этаж
+// Получение награды за этаж
 async function claimFloorReward(floor) {
     try {
-        const res = await fetch('/tower/claim-floor', {
+        const res = await fetch(`${API_BASE}/tower/claim-floor`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id, floor })
@@ -113,12 +110,8 @@ async function claimFloorReward(floor) {
         const data = await res.json();
         if (data.success) {
             claimedFloors.add(parseInt(floor));
-            // Обновляем отображение кнопки
             const btn = document.querySelector(`.claim-btn[data-floor="${floor}"]`);
-            if (btn) {
-                btn.remove(); // убираем кнопку
-            }
-            // Обновляем баланс монет в топбаре
+            if (btn) btn.remove();
             userData.coins += 10;
             updateTopBar();
         } else {
@@ -138,7 +131,7 @@ async function startTowerBattle() {
     }
 
     try {
-        const res = await fetch('/tower/battle', {
+        const res = await fetch(`${API_BASE}/tower/battle`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
@@ -148,9 +141,6 @@ async function startTowerBattle() {
             alert('Ошибка: ' + data.error);
             return;
         }
-
-        // Здесь data содержит battleResult, victory, newFloor, reward, attemptsLeft
-        // Показываем экран боя, используя существующий BattleLog
         showTowerBattleScreen(data);
     } catch (e) {
         console.error(e);
@@ -158,21 +148,18 @@ async function startTowerBattle() {
     }
 }
 
-// Функция показа боя для башни (адаптация showBattleScreen)
+// Показать экран боя (адаптировано из battleUI)
 function showTowerBattleScreen(battleData) {
-    // Скрываем меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';
     });
 
-    // Добавляем классы для ярости (как в обычном бою)
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
     battleData.playerSubclass = userData.subclass;
     battleData.enemySubclass = battleData.opponent.subclass;
 
-    // Формируем HTML боя (можно скопировать из showBattleScreen, но с небольшими изменениями)
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
@@ -186,51 +173,41 @@ function showTowerBattleScreen(battleData) {
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
                 </div>
             </div>
-            <!-- здесь остальная разметка арены, как в showBattleScreen, но без таймера? Можно оставить для атмосферы -->
-            <!-- ... -->
+            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
+                <!-- Карточка героя (можно скопировать из battleUI) -->
+                <!-- ... для краткости я оставлю как есть, но вы можете вставить полную разметку из battleUI.js -->
+                <!-- Здесь должна быть полная копия боевого экрана -->
+            </div>
             <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
         </div>
     `;
 
-    // Инициализируем BattleLog с колбэком, который после завершения боя вызовет обработку результата
-    BattleLog.init(battleData.battleResult, document.getElementById('battleLog'), (finishedData) => {
-        // finishedData - это те же battleData.result, но можно использовать battleData напрямую
+    BattleLog.init(battleData.battleResult, document.getElementById('battleLog'), () => {
         handleTowerBattleEnd(battleData);
     });
-
-    // Добавляем кнопку скорости, если нужно (можно скопировать из showBattleScreen)
-    // ...
 }
 
-// Обработка завершения боя в башне
+// Обработка завершения боя
 function handleTowerBattleEnd(battleData) {
-    // Возвращаем меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'auto';
         item.style.opacity = '1';
     });
 
     if (battleData.victory) {
-        // Показываем сообщение о победе и награде
         alert(`Победа! Вы получили ${battleData.reward.coins} монет.`);
-        // Обновляем статус башни (новый этаж, билеты)
         towerStatus.currentFloor = battleData.newFloor;
         towerStatus.attemptsLeft = battleData.attemptsLeft;
-        // Если награда не была автоматически зачислена, можно добавить её в claimedFloors
-        // Но мы уже получили монеты на сервере, поэтому просто обновим баланс
         userData.coins += battleData.reward.coins;
         updateTopBar();
     } else {
         alert('Поражение...');
-        // Обновляем только билеты
         towerStatus.attemptsLeft = battleData.attemptsLeft;
     }
-
-    // Возвращаемся к экрану башни
     renderTower();
 }
 
-// Вспомогательная функция для получения русского названия подкласса (можно взять из constants.js)
+// Вспомогательная функция для перевода ролей
 function getRoleNameRu(role) {
     const roles = {
         guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',

@@ -271,33 +271,32 @@ if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade.poison) {
         }
     }
 
-    // Накопление заморозки
-    if (attackerSubclass === 'cryomancer') {
-        if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
-        if (defenderState.frozen > 0) {
-            extraLogs.push({
-                text: frozenAlreadyPhrase.replace('%s', `<strong>${defenderName}</strong>`),
-                type: 'frozen_already',
-                attacker: isPlayerAttacker ? 'player' : 'enemy'
-            });
+   // Накопление заморозки
+if (attackerSubclass === 'cryomancer') {
+    if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
+    if (defenderState.frozen > 0) {
+        extraLogs.push({
+            text: `<strong>${defenderName}</strong> уже заморожен и пропускает ход.`,
+            type: 'frozen_already',
+            attacker: isPlayerAttacker ? 'player' : 'enemy'
+        });
+    } else {
+        defenderState.freezeStacks++;
+        let stackText;
+        if (defenderState.freezeStacks >= 3) {
+            defenderState.frozen = 2; // заморозка на 2 хода
+            defenderState.freezeStacks = 0;
+            stackText = `Лед накапливается 3/3. <strong>${defenderName}</strong> замораживается и пропускает 1 ход.`;
         } else {
-            defenderState.freezeStacks++;
-            if (defenderState.freezeStacks >= 3) {
-                defenderState.frozen = 2;
-                defenderState.freezeStacks = 0;
-                extraLogs.push({
-                    text: frozenPhrase.replace('%s', `<strong>${defenderName}</strong>`),
-                    type: 'frozen_enter',
-                   attacker: isPlayerAttacker ? 'player' : 'enemy'
-                });
-            } else {
-                extraLogs.push({
-                    text: freezeStackPhrase.replace('%s', `<strong>${defenderName}</strong>`).replace('%d', defenderState.freezeStacks),
-                    type: 'freeze_stack',
-                   attacker: isPlayerAttacker ? 'player' : 'enemy'
-                });
-            }
+            stackText = `Лед накапливается ${defenderState.freezeStacks}/3.`;
         }
+        extraLogs.push({
+            text: stackText,
+            type: 'freeze_stack',
+            attacker: isPlayerAttacker ? 'player' : 'enemy'
+        });
+    }
+}
     }
 
     let attackPhrase;

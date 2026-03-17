@@ -1510,7 +1510,8 @@ td {
 }
 
 
-/* Башня */
+/* ========== БАШНЯ ========== */
+
 .tower-container {
     display: flex;
     flex-direction: column;
@@ -1533,23 +1534,31 @@ td {
     margin-right: 15px;
 }
 
+/* Контейнер для списка этажей (снизу вверх) */
 .tower-floors {
     display: flex;
-    flex-direction: column-reverse;
-    gap: 0;
+    flex-direction: column-reverse; /* первый этаж внизу */
+    gap: 0;                         /* без отступов между этажами */
     width: 100%;
 }
 
+/* Строка одного этажа */
 .tower-floor {
     display: flex;
     align-items: stretch;
     width: 100%;
-    min-height: 70px;
+    min-height: 70px;               /* базовая высота для всех этажей */
     background-color: rgba(35,40,51,0.9);
     border: none;
     margin: 0;
     padding: 0;
 }
+
+/* Первый этаж – увеличенная высота */
+.tower-floor.first-floor {
+    min-height: 117px;
+}
+
 /* Левая колонка (номер этажа) */
 .floor-left {
     width: 50px;
@@ -1557,7 +1566,7 @@ td {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0,0,0,0.2); /* для отладки, потом убрать */
+    /* background-color: rgba(0,0,0,0.2); */ /* убираем отладочный фон */
 }
 
 .floor-number {
@@ -1578,23 +1587,18 @@ td {
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden; /* чтобы картинка не вылезала */
+    overflow: hidden;
+    background-color: #2f3542;      /* временный фон вместо иконки */
+    height: 100%;                   /* растягиваем по высоте строки */
+    width: 100%;                    /* занимает всю ширину колонки */
 }
 
+/* Скрываем реальные изображения, пока они не готовы */
 .floor-center img {
     display: none;
 }
-.floor-center {
-    background-color: #2f3542;
-    height: 100%;
-    width: 100%;
-}
-/* Для первого этажа можно задать особую высоту через контейнер */
-.tower-floor.first-floor {
-    min-height: 117px; /* высота строки под картинку */
-}
 
-/* Правая колонка (кнопка/маркер) */
+/* Правая колонка (кнопка награды / маркер) */
 .floor-right {
     width: 50px;
     display: flex;
@@ -1602,6 +1606,7 @@ td {
     justify-content: center;
 }
 
+/* Кнопка получения награды */
 .claim-btn {
     width: 40px;
     height: 40px;
@@ -1621,7 +1626,18 @@ td {
     margin: 0;
 }
 
+/* Маркер текущего этажа (▶) */
 .current-marker {
     color: #00aaff;
     font-size: 24px;
+}
+
+/* Состояния этажей */
+.tower-floor.active {
+    border: 1px solid #00aaff;      /* или другой визуальный акцент */
+    background-color: rgba(0,170,255,0.1);
+}
+
+.tower-floor.passed {
+    opacity: 0.8;
 }

@@ -1206,20 +1206,19 @@ td {
     background-color: transparent !important;
     border: none !important;
 }
-/* Слоты для иконок статусов */
+
+/* СЛОТЫ ДЛЯ ИКОНОК В СТАТУС */
 .debuff-slot {
-     position: relative;
+    position: relative;
     width: 40px;
     height: 33px;          /* 165px / 5 */
     margin: 0 auto;
     background: none;
 }
 
-
-/* Негативные иконки (слева) */
+/* Негативные иконки (для игрока слева, для противника справа) */
 .negative-icon {
     position: absolute;
-    left: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 25px;
@@ -1227,8 +1226,14 @@ td {
     object-fit: contain;
     z-index: 5;
 }
+.debuff-slot[data-side="player"] .negative-icon {
+    left: 0;
+}
+.debuff-slot[data-side="enemy"] .negative-icon {
+    right: 0;
+}
 
-/* Позитивные иконки (справа для игрока, слева для противника) */
+/* Позитивные иконки (для игрока справа, для противника слева) */
 .positive-icon,
 .rage-icon {
     position: absolute;
@@ -1237,14 +1242,12 @@ td {
     width: 25px;
     height: 25px;
     object-fit: contain;
-    z-index: 10;
+    z-index: 10; /* выше негативных */
 }
-
 .debuff-slot[data-side="player"] .positive-icon,
 .debuff-slot[data-side="player"] .rage-icon {
     right: 0;
 }
-
 .debuff-slot[data-side="enemy"] .positive-icon,
 .debuff-slot[data-side="enemy"] .rage-icon {
     left: 0;

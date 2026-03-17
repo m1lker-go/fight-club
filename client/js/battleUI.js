@@ -294,10 +294,20 @@ battleData.result.messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
     const formattedText = typeof BattleLog.formatLogText === 'function' 
         ? BattleLog.formatLogText(text) 
         : text;
-    if (!formattedText) {
-        console.warn(`[WARNING] Empty formatted text for message ${index}:`, m);
+    let entryClass = 'log-entry';
+    const type = m.type;
+    if (type === 'dodge') {
+        entryClass += ' dodge-message';
+    } else if (type && (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) {
+        entryClass += ' ult-message';
+    } else if (type === 'poison_stack' || type === 'poison_dot') {
+        entryClass += ' poison-message';
+    } else if (type === 'burn_stack' || type === 'burn_dot') {
+        entryClass += ' fire-message';
+    } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
+        entryClass += ' ice-message';
     }
-    return `<div class="log-entry">${formattedText}</div>`;
+    return `<div class="${entryClass}">${formattedText}</div>`;
 }).join('');
 
     const content = document.getElementById('content');

@@ -38,31 +38,41 @@ function renderTower() {
     floorsContainer.innerHTML = ''; // очищаем
 
     // Генерируем 100 этажей
-    for (let i = 1; i <= 100; i++) {
-        const floorDiv = document.createElement('div');
-        floorDiv.className = 'tower-floor';
-        if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
-        if (i < towerStatus.currentFloor) floorDiv.classList.add('passed'); // пройденные
+   for (let i = 1; i <= 100; i++) {
+    const floorDiv = document.createElement('div');
+    floorDiv.className = 'tower-floor';
+    if (i === 1) floorDiv.classList.add('first-floor');
+    if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
+    if (i < towerStatus.currentFloor) floorDiv.classList.add('passed');
 
-        // Проверяем, получена ли награда за этот этаж (упрощённо: если этаж пройден, но ещё не текущий, то кнопка должна быть)
-        const showClaimButton = i < towerStatus.currentFloor && !claimedFloors.has(i);
-
-        floorDiv.innerHTML = `
-            <div class="floor-left">
-                <span class="floor-number">${i}</span>
-                <span class="floor-text">этаж</span>
-            </div>
-            <div class="floor-center">
-                <img src="/assets/tower/floor-icon.png" alt="floor" onerror="this.src='/assets/tower/default.png'">
-            </div>
-            <div class="floor-right">
-                ${showClaimButton ? 
-                    `<button class="btn claim-btn" data-floor="${i}">10 <i class="fas fa-coins"></i></button>` : 
-                    (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
-            </div>
-        `;
-        floorsContainer.appendChild(floorDiv);
+    // Выбор иконки
+    let iconSrc;
+    if (i === 1) {
+        iconSrc = '/assets/tower/floor1.png';
+    } else if (i % 2 === 0) {
+        iconSrc = '/assets/tower/floor_even.png';
+    } else {
+        iconSrc = '/assets/tower/floor_odd.png';
     }
+
+    const showClaimButton = i < towerStatus.currentFloor && !claimedFloors.has(i);
+
+    floorDiv.innerHTML = `
+        <div class="floor-left">
+            <span class="floor-number">${i}</span>
+            <span class="floor-text">этаж</span>
+        </div>
+        <div class="floor-center">
+            <img src="${iconSrc}" alt="floor ${i}" onerror="this.src='/assets/tower/default.png'">
+        </div>
+        <div class="floor-right">
+            ${showClaimButton ? 
+                `<button class="claim-btn" data-floor="${i}"><i class="fas fa-coins"></i></button>` : 
+                (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
+        </div>
+    `;
+    floorsContainer.appendChild(floorDiv);
+}
 
     // Плавная прокрутка к активному этажу
     setTimeout(() => {

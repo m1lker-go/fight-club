@@ -3,7 +3,6 @@
 let towerStatus = null; // { currentFloor, maxFloor, attemptsLeft, chosenClass, chosenSubclass }
 let claimedFloors = new Set(); // можно загрузить с сервера, но пока будем считать, что награда получается сразу после боя
 
-const { getClassNameRu } = window;
 // Загрузка статуса башни
 async function loadTowerStatus() {
     try {

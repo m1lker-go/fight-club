@@ -231,6 +231,18 @@ function showScreen(screen) {
         case 'tasks': renderTasks(); break;
         case 'rating': renderRating(); break;
         case 'profile': renderProfile(); break;
+        case 'tower': 
+            // Загружаем скрипт tower.js, если ещё не загружен, и вызываем loadTowerStatus
+            if (typeof loadTowerStatus === 'function') {
+                loadTowerStatus();
+            } else {
+                // Динамическая загрузка (если нужно)
+                const script = document.createElement('script');
+                script.src = 'js/tower.js?v=1';
+                script.onload = () => loadTowerStatus();
+                document.head.appendChild(script);
+            }
+            break;
         default: renderMain();
     }
 }

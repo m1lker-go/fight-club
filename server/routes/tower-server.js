@@ -102,7 +102,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне (объединяет старт, симуляцию и завершение)
+// Эндпоинт для боя в башне
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -132,8 +132,7 @@ router.post('/battle', async (req, res) => {
         const botLevel = Math.min(60, progress.current_floor);
         const bot = generateBot(botLevel, false);
 
-        // Вместо реальной симуляции возвращаем тестовый результат
-        // TODO: заменить на настоящую симуляцию после вынесения функций calculateStats и simulateBattle
+        // ВРЕМЕННО: тестовый результат (без реальной симуляции)
         const battleResult = {
             winner: 'player',
             playerHpRemain: 50,
@@ -176,7 +175,7 @@ router.post('/battle', async (req, res) => {
     }
 });
 
-// Получить награду за уже пройденный этаж (если не получена автоматически)
+// Получить награду за уже пройденный этаж
 router.post('/claim-floor', async (req, res) => {
     const { tg_id, floor } = req.body;
     if (!tg_id || !floor) return res.status(400).json({ error: 'Missing data' });

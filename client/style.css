@@ -1508,3 +1508,122 @@ td {
     box-shadow: none !important;
     border: none !important;
 }
+
+
+/* Башня */
+.tower-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 10px;
+}
+
+.tower-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(35,40,51,0.9);
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.tower-stats span {
+    margin-right: 15px;
+}
+
+.tower-floors {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 5px;
+}
+
+.tower-floor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(35,40,51,0.9);
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+}
+
+.tower-floor.active {
+    border-color: #00aaff;
+    background-color: rgba(0,170,255,0.1);
+}
+
+.tower-floor.passed {
+    opacity: 0.8;
+}
+
+.tower-floor:hover {
+    background-color: rgba(45,50,61,0.95);
+}
+
+.floor-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+
+.floor-number {
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.floor-text {
+    font-size: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+}
+
+.floor-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.floor-center img {
+    max-width: 60px;
+    max-height: 40px;
+    object-fit: contain;
+}
+
+.floor-right {
+    min-width: 70px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.claim-btn {
+    background-color: #00aaff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.claim-btn i {
+    color: white;
+}
+
+.current-marker {
+    color: #00aaff;
+    font-size: 20px;
+}

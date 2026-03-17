@@ -523,7 +523,6 @@ if (turn === 'player') {
     playerMana -= 100;
     if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
     console.log(`[ULT] ${skill.log}`);
-}
     } else {
         const attackResult = performAttack(
             playerStats, enemyStats,
@@ -622,7 +621,6 @@ if (turn === 'player') {
     enemyMana -= 100;
     if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
     console.log(`[ULT] ${skill.log}`);
-}
             } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,

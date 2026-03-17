@@ -25,6 +25,18 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
+const subclassOptions = {
+    warrior: ['guardian', 'berserker', 'knight'],
+    assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+    mage: ['pyromancer', 'cryomancer', 'illusionist']
+};
+
+function getRandomSubclass(className) {
+    const options = subclassOptions[className];
+    if (!options || options.length === 0) return 'guardian'; // запасной вариант
+    return options[Math.floor(Math.random() * options.length)];
+}
+
 const baseStats = {
     warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
     assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
@@ -791,66 +803,66 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
     );
     const allPlayers = ratingRes.rows;
     const currentIndex = allPlayers.findIndex(p => p.id === currentUserId);
-    if (currentIndex === -1) return null; // игрок не в рейтинге
+    if (currentIndex === -1) return null;
 
-    // Определяем диапазон: ±50 позиций, с учётом границ
     const minIndex = Math.max(0, currentIndex - 50);
     const maxIndex = Math.min(allPlayers.length - 1, currentIndex + 50);
-
-    // Кандидаты в этом диапазоне (исключая себя)
     let candidates = allPlayers.slice(minIndex, maxIndex + 1).filter(p => p.id !== currentUserId);
     if (candidates.length === 0) return null;
 
-    // Проверяем историю встреч для текущего игрока
+    // Проверяем историю встреч
     let history = recentOpponents.get(currentUserId) || [];
-    // Оставляем только тех кандидатов, которых не было в последних 10 боях
     let availableCandidates = candidates.filter(c => !history.includes(c.id));
     if (availableCandidates.length === 0) {
-        // Если все кандидаты уже встречались, сбрасываем историю (или разрешаем любого)
         availableCandidates = candidates;
-        history = []; // можно сбросить
+        history = [];
     }
 
-    // Выбираем случайного противника из доступных
     const randomIndex = Math.floor(Math.random() * availableCandidates.length);
     const opponentId = availableCandidates[randomIndex].id;
 
-    // Обновляем историю: добавляем нового противника, ограничиваем до 10
     history.push(opponentId);
     if (history.length > 10) history.shift();
     recentOpponents.set(currentUserId, history);
 
-    // Получаем полные данные противника
-    const opponentUser = await client.query('SELECT * FROM users WHERE id = $1', [opponentId]);
+    // Получаем данные противника (имя, аватар и т.д.)
+    const opponentUser = await client.query('SELECT id, username, avatar_id FROM users WHERE id = $1', [opponentId]);
     if (opponentUser.rows.length === 0) return null;
     const oppData = opponentUser.rows[0];
 
-    // Получаем данные его текущего класса
-    const oppClass = await client.query(
-        'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
-        [opponentId, oppData.current_class]
+    // Определяем самый сильный класс противника
+    const strongestClassRes = await client.query(
+        `SELECT class, level, hp_points, atk_points, def_points, dodge_points, int_points, spd_points, 
+                crit_points, crit_dmg_points, vamp_points, reflect_points, power
+         FROM user_classes 
+         WHERE user_id = $1 
+         ORDER BY power DESC 
+         LIMIT 1`,
+        [opponentId]
     );
-    if (oppClass.rows.length === 0) return null;
+    if (strongestClassRes.rows.length === 0) return null;
+    const strongestClass = strongestClassRes.rows[0];
 
-    // Получаем его экипировку
-   const oppInv = await client.query(
-    'SELECT id, name, type, rarity, class_restriction, owner_class, ' +
-    'atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus, ' +
-    'crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus ' +
-    'FROM inventory WHERE user_id = $1 AND equipped = true',
-    [opponentId]
-);
+    // Случайный подкласс для этого класса
+    const subclass = getRandomSubclass(strongestClass.class);
 
-    // Вычисляем статы противника (используем ту же функцию calculateStats)
-    const stats = calculateStats(oppClass.rows[0], oppInv.rows, oppData.subclass);
+    // Получаем инвентарь противника для этого класса (только надетые предметы)
+    const invRes = await client.query(
+        `SELECT i.*, it.* FROM inventory i
+         JOIN items it ON i.item_id = it.id
+         WHERE i.user_id = $1 AND i.equipped = true AND it.owner_class = $2`,
+        [opponentId, strongestClass.class]
+    );
 
-    // Формируем объект, аналогичный боту
+    // Вычисляем статы
+    const stats = calculateStats(strongestClass, invRes.rows, subclass);
+
     return {
         username: oppData.username,
         avatar_id: oppData.avatar_id || 1,
-        class: oppData.current_class,
-        subclass: oppData.subclass,
-        level: oppClass.rows[0].level,
+        class: strongestClass.class,
+        subclass: subclass,
+        level: strongestClass.level,
         is_cybercat: false,
         stats: stats
     };

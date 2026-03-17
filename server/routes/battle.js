@@ -297,8 +297,8 @@ if (attackerSubclass === 'cryomancer') {
         });
     }
 }
-    }
 
+    
     let attackPhrase;
     if (isCrit) {
         const classPhrases = critPhrases[attackerClass] || critPhrases.warrior;

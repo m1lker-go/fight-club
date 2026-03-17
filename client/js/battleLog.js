@@ -109,6 +109,11 @@ const BattleLog = {
             if (enemyManaText) enemyManaText.innerText = state.enemyMana;
         }
 
+        // Отладка маны
+console.log(`[MANA] player: ${state.playerMana}, enemy: ${state.enemyMana}`);
+if (state.playerMana >= 100) console.log('[MANA] Player ULT ready!');
+if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
+
         this.playerFrozen = state.playerFrozen || 0;
         this.enemyFrozen = state.enemyFrozen || 0;
         this.playerShield = state.playerShield || 0;
@@ -373,6 +378,11 @@ const BattleLog = {
         this.applyState(this.states[this.currentStateIndex]);
         this.currentStateIndex++;
     }
+        // Отладка ультимейта в текущем сообщении
+    if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
+        console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
+    }
+}
 
     this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
 }

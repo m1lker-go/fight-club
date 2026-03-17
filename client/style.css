@@ -1582,12 +1582,13 @@ td {
 }
 
 .floor-center img {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: cover; /* чтобы заполнить всю область, но сохранить пропорции */
+    display: none;
 }
-
+.floor-center {
+    background-color: #2f3542;
+    height: 100%;
+    width: 100%;
+}
 /* Для первого этажа можно задать особую высоту через контейнер */
 .tower-floor.first-floor {
     min-height: 117px; /* высота строки под картинку */

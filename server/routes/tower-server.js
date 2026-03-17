@@ -104,7 +104,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне
+// Эндпоинт для боя в башне (с тестовым результатом)
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -143,18 +143,18 @@ router.post('/battle', async (req, res) => {
             is_cybercat: false
         };
 
-        // Тестовый результат боя (потом заменить на реальный)
+        // Тестовый результат боя (позже заменим на реальный)
         const battleResult = {
             winner: 'player',
             playerHpRemain: 50,
             enemyHpRemain: 0,
-            playerMaxHp: 100,          // заглушка
-            enemyMaxHp: 100,            // заглушка
+            playerMaxHp: 100,
+            enemyMaxHp: 100,
             messages: [{ text: 'Тестовый бой (башня в разработке)', type: 'test' }],
             states: []
         };
 
-        const isVictory = true; // тестовая победа
+        const isVictory = true; // для теста всегда победа
 
         if (isVictory) {
             await client.query(
@@ -169,7 +169,7 @@ router.post('/battle', async (req, res) => {
 
         await client.query('COMMIT');
 
-        // Возвращаем данные в формате, совместимом с BattleLog
+        // Возвращаем данные в формате, который ожидает клиент
         res.json({
             success: true,
             opponent: opponent,

@@ -32,38 +32,8 @@ async function checkAndResetAttempts(client, userId, progress) {
     }
 }
 
-// Получить состояние башни
-router.get('/status', async (req, res) => {
-    const { tg_id } = req.query;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
-
-    const client = await pool.connect();
-    try {
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const userId = user.rows[0].id;
-
-        let progress = await getOrCreateProgress(client, userId);
-        await checkAndResetAttempts(client, userId, progress);
-
-        const userClass = await client.query(
-            'SELECT current_class, subclass FROM users WHERE id = $1',
-            [userId]
-        );
-
-        res.json({
-            currentFloor: progress.current_floor,
-            maxFloor: progress.max_floor,
-            attemptsLeft: 10 - progress.attempts_today,
-            chosenClass: progress.chosen_class || userClass.rows[0].current_class,
-            chosenSubclass: progress.chosen_subclass || userClass.rows[0].subclass
-        });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Database error' });
-    } finally {
-        client.release();
-    }
+router.get('/status', (req, res) => {
+    res.json({ test: 'ok' });
 });
 
 // Выбор класса на сезон

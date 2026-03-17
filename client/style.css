@@ -244,6 +244,32 @@ body {
     font-weight: bold;
 }
 
+/* Цветные сообщения в логе */
+.log-entry.ice-message {
+    color: #00aaff !important; /* голубой */
+}
+.log-entry.fire-message {
+    color: #ff4444 !important; /* красный */
+}
+.log-entry.poison-message {
+    color: #88ff88 !important; /* светло-зелёный */
+}
+.log-entry.ult-message {
+    color: #ffaa00 !important; /* тёплый жёлтый */
+}
+.log-entry.dodge-message {
+    color: #2ecc71 !important; /* зелёный */
+}
+/* Если нужно сохранить подсветку чисел внутри, можно оставить как есть */
+.log-entry .damage-number {
+    /* можно добавить жирность, но цвет не переопределяем */
+    font-weight: bold;
+}
+.log-entry .heal-number {
+    font-weight: bold;
+}
+
+
 /* ========== ЭФФЕКТЫ ПЕРЕКРЫТИЯ БАФФОВ ========== */
 
 .effects-container {

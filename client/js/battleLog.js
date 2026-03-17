@@ -121,18 +121,18 @@ const BattleLog = {
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
         // Расчёт уровня ярости (если подкласс берсерк)
-if (this.battleData.playerSubclass === 'berserker') {
-    const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
-    this.playerRage = this.getRageLevelFromPercent(playerPercent);
-} else {
-    this.playerRage = 0;
-}
-if (this.battleData.enemySubclass === 'berserker') {
-    const enemyPercent = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100;
-    this.enemyRage = this.getRageLevelFromPercent(enemyPercent);
-} else {
-    this.enemyRage = 0;
-}
+        if (this.battleData.playerSubclass === 'berserker') {
+            const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
+            this.playerRage = this.getRageLevelFromPercent(playerPercent);
+        } else {
+            this.playerRage = 0;
+        }
+        if (this.battleData.enemySubclass === 'berserker') {
+            const enemyPercent = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100;
+            this.enemyRage = this.getRageLevelFromPercent(enemyPercent);
+        } else {
+            this.enemyRage = 0;
+        }
 
         if (state.playerHp <= 0) this.playerFrozen = 0;
         if (state.enemyHp <= 0) this.enemyFrozen = 0;
@@ -192,7 +192,10 @@ if (this.battleData.enemySubclass === 'berserker') {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
             if (this.playerRage > 0) {
-                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.playerRage });
+                // Каждый уровень ярости – отдельный эффект
+                for (let i = 0; i < this.playerRage; i++) {
+                    effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
+                }
             }
         } else {
             if (this.enemyFrozen > 0) {
@@ -214,70 +217,61 @@ if (this.battleData.enemySubclass === 'berserker') {
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
             if (this.enemyRage > 0) {
-                effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png', count: this.enemyRage });
+                for (let i = 0; i < this.enemyRage; i++) {
+                    effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
+                }
             }
         }
         return effects;
     },
 
-   renderEffects(side) {
-    const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
-    const effects = this.buildEffectsList(side);
+    renderEffects(side) {
+        const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
+        const effects = this.buildEffectsList(side);
 
-    // Разворачиваем ярость: каждый уровень ярости становится отдельным эффектом
-    const expandedEffects = [];
-    for (let effect of effects) {
-        if (effect.type === 'rage') {
-            const count = effect.count || 1;
-            for (let j = 0; j < count; j++) {
-                expandedEffects.push({ type: 'rage', icon: effect.icon });
+        // Разделяем на негативные и позитивные
+        const negativeEffects = [];
+        const positiveEffects = [];
+        for (let effect of effects) {
+            if (effect.type === 'rage' || effect.type === 'shield') {
+                positiveEffects.push(effect);
+            } else {
+                negativeEffects.push(effect);
             }
-        } else {
-            expandedEffects.push(effect);
         }
-    }
 
-    // Разделяем на негативные и позитивные
-    const negativeEffects = [];
-    const positiveEffects = [];
-    for (let effect of expandedEffects) {
-        if (effect.type === 'rage' || effect.type === 'shield') {
-            positiveEffects.push(effect);
-        } else {
-            negativeEffects.push(effect);
+        // Очищаем слоты
+        slots.forEach(slot => slot.innerHTML = '');
+
+        // Заполняем слоты: максимум один негативный и один позитивный на слот
+        for (let i = 0; i < 5; i++) {
+            const slot = slots[i];
+            if (!slot) continue;
+
+            // Негативный эффект для этого слота
+            if (i < negativeEffects.length) {
+                const effect = negativeEffects[i];
+                const img = document.createElement('img');
+                img.src = effect.icon;
+                img.alt = effect.type;
+                img.className = 'negative-icon';
+                slot.appendChild(img);
+            }
+
+            // Позитивный эффект для этого слота
+            if (i < positiveEffects.length) {
+                const effect = positiveEffects[i];
+                const img = document.createElement('img');
+                img.src = effect.icon;
+                img.alt = effect.type;
+                img.className = effect.type === 'rage' ? 'rage-icon' : 'positive-icon';
+                slot.appendChild(img);
+            }
         }
-    }
 
-    // Очищаем слоты
-    slots.forEach(slot => slot.innerHTML = '');
+        if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
+    },
 
-    // Заполняем левые подслоты (негативные) – до 5 штук
-    for (let i = 0; i < Math.min(negativeEffects.length, 5); i++) {
-        const slot = slots[i];
-        if (!slot) continue;
-        const effect = negativeEffects[i];
-        const img = document.createElement('img');
-        img.src = effect.icon;
-        img.alt = effect.type;
-        img.className = 'negative-icon';
-        slot.appendChild(img);
-    }
-
-    // Заполняем правые подслоты (позитивные) – до 5 штук
-    for (let i = 0; i < Math.min(positiveEffects.length, 5); i++) {
-        const slot = slots[i];
-        if (!slot) continue;
-        const effect = positiveEffects[i];
-        // Для ярости используем класс rage-icon, для щита – positive-icon
-        const img = document.createElement('img');
-        img.src = effect.icon;
-        img.alt = effect.type;
-        img.className = effect.type === 'rage' ? 'rage-icon' : 'positive-icon';
-        slot.appendChild(img);
-    }
-
-    if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
-},
 
     formatLogText(text) {
         text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');

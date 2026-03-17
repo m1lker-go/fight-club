@@ -294,7 +294,7 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         return text;
     },
 
-    playNext() {
+   playNext() {
     if (this.stopped) {
         console.log('[BattleLog] stopped, ignoring');
         return;
@@ -312,15 +312,14 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
 
     console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-    // Всегда добавляем запись в лог (включая стековые сообщения)
+    // Всегда добавляем запись в лог
     const logEntry = document.createElement('div');
     let entryClass = 'log-entry';
 
-    // Определяем класс на основе типа сообщения
     if (type === 'dodge') {
-        entryClass += ' dodge-message'; // используем новый класс
+        entryClass += ' dodge-message';
     } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-        entryClass += ' ult-message'; // новый класс для ультимейтов
+        entryClass += ' ult-message';
     } else if (type === 'poison_stack' || type === 'poison_dot') {
         entryClass += ' poison-message';
     } else if (type === 'burn_stack' || type === 'burn_dot') {
@@ -328,14 +327,13 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
     } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
         entryClass += ' ice-message';
     }
-    // Для остальных типов остаётся только log-entry
 
     logEntry.className = entryClass;
     logEntry.innerHTML = this.formatLogText(msgText);
     this.logContainer.appendChild(logEntry);
     this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-    // Анимацию показываем только для не-стековых сообщений (как и раньше)
+    // Анимация (только для не-стековых сообщений)
     const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
     if (!isStackMessage) {
         let animTarget = null;
@@ -378,15 +376,14 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         this.applyState(this.states[this.currentStateIndex]);
         this.currentStateIndex++;
     }
-        // Отладка ультимейта в текущем сообщении
+
+    // Отладка ультимейта
     if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
         console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
     }
-}
 
     this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-}
-,
+},
 
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;

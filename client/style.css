@@ -1538,6 +1538,12 @@ td {
     flex-direction: column-reverse;
     gap: 0;
     width: 100%;
+    font-size: 0;         /* убирает лишние пробелы между inline-элементами */
+    line-height: 0;       /* аналогично */
+}
+.tower-floor * {
+    font-size: initial;
+    line-height: normal;
 }
 
 .tower-floor {

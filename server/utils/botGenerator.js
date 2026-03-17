@@ -2,8 +2,8 @@
 
 const baseStats = {
     warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-    assassin: { hp: 18, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-    mage: { hp: 18, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+    assassin: { hp: 15, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 15, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
 const rolePassives = {
@@ -18,12 +18,47 @@ const rolePassives = {
     illusionist: { mirageGuaranteed: true }
 };
 
-// Лучшие характеристики для каждого класса (по 6)
-const bestStatsByClass = {
-    warrior: ['hp', 'atk', 'def', 'crit', 'reflect', 'critDmg'],
-    assassin: ['atk', 'agi', 'vamp', 'hp', 'crit', 'critDmg'],
-    mage: ['atk', 'int', 'agi', 'hp', 'crit', 'critDmg']
+// Веса характеристик для каждого класса (чем выше вес, тем чаще очки будут вкладываться)
+const statWeights = {
+    warrior: {
+        hp: 10,
+        atk: 8,
+        def: 10,
+        agi: 3,
+        int: 1,
+        spd: 5,
+        crit: 6,
+        critDmg: 6,
+        vamp: 4,
+        reflect: 7
+    },
+    assassin: {
+        hp: 6,
+        atk: 10,
+        def: 2,
+        agi: 10,
+        int: 1,
+        spd: 8,
+        crit: 9,
+        critDmg: 9,
+        vamp: 8,
+        reflect: 3
+    },
+    mage: {
+        hp: 5,
+        atk: 6,
+        def: 3,
+        agi: 7,
+        int: 10,
+        spd: 7,
+        crit: 8,
+        critDmg: 8,
+        vamp: 4,
+        reflect: 3
+    }
 };
+
+const statKeys = ['hp', 'atk', 'def', 'agi', 'int', 'spd', 'crit', 'critDmg', 'vamp', 'reflect'];
 
 // Имена для обычных ботов
 const botTemplates = [
@@ -39,151 +74,150 @@ const botTemplates = [
 ];
 
 /**
- * Генерация обычного бота
- * @param {number} playerLevel - уровень игрока
- * @returns {object} - данные бота
+ * Вычисляет общее количество очков навыков для бота заданного уровня
  */
-function generateNormalBot(playerLevel) {
-    // Диапазон уровня бота: от playerLevel-3 до playerLevel+3, но не меньше 1 и не больше 60
-    const level = Math.max(1, Math.min(60, playerLevel - 3 + Math.floor(Math.random() * 7))); // 7 вариантов: -3,-2,-1,0,+1,+2,+3
+function getSkillPointsForLevel(level) {
+    let total = 0;
+    for (let lvl = 1; lvl <= level; lvl++) {
+        if (lvl <= 5) total += 5;
+        else if (lvl <= 39) total += 7;
+        else total += 8;
+    }
+    return total;
+}
 
-    // Выбор шаблона бота
-    const template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
-
-    // Базовые характеристики
-    const base = baseStats[template.class] || baseStats.warrior;
-    let stats = {
-        hp: base.hp,
-        atk: base.atk,
-        def: base.def,
-        agi: base.agi,
-        int: base.int,
-        spd: base.spd,
-        crit: base.crit,
-        critDmg: 1.5,
-        vamp: 0,
-        reflect: 0,
-        manaMax: 100,
-        manaRegen: template.class === 'warrior' ? 15 : (template.class === 'assassin' ? 18 : 30)
+/**
+ * Распределяет очки навыков случайно, но с учётом весов характеристик для класса.
+ * Возвращает объект с количеством очков в каждой характеристике.
+ */
+function distributeSkillPoints(totalPoints, className) {
+    const weights = statWeights[className] || statWeights.warrior;
+    // Преобразуем веса в массив для удобства выбора
+    const statList = [];
+    for (const stat of statKeys) {
+        const weight = weights[stat];
+        for (let i = 0; i < weight; i++) {
+            statList.push(stat);
+        }
+    }
+    const distribution = {
+        hp_points: 0,
+        atk_points: 0,
+        def_points: 0,
+        agi_points: 0,
+        int_points: 0,
+        spd_points: 0,
+        crit_points: 0,
+        crit_dmg_points: 0,
+        vamp_points: 0,
+        reflect_points: 0
     };
-
-    // --- Расчёт очков навыков бота ---
-    let totalSkillPoints = 0;
-    for (let lvl = 1; lvl < level; lvl++) {
-        if (lvl <= 3) totalSkillPoints += 2;
-        else if (lvl <= 6) totalSkillPoints += 3;
-        else if (lvl <= 25) totalSkillPoints += 4;
-        else totalSkillPoints += 5;
+    for (let i = 0; i < totalPoints; i++) {
+        const randomIndex = Math.floor(Math.random() * statList.length);
+        const stat = statList[randomIndex];
+        distribution[stat + '_points']++;
     }
-    // Для 1 уровня добавляем случайные 1-3 очка (чтобы новички не были совсем нулевыми)
-    if (level === 1) {
-        totalSkillPoints += Math.floor(Math.random() * 3) + 1; // 1-3
-    }
+    return distribution;
+}
 
-    // Определяем лучшие и остальные характеристики для этого класса
-    const bestStats = bestStatsByClass[template.class] || bestStatsByClass.warrior;
-    const allStats = ['hp', 'atk', 'def', 'agi', 'int', 'spd', 'crit', 'critDmg', 'vamp', 'reflect'];
-    const otherStats = allStats.filter(stat => !bestStats.includes(stat));
+/**
+ * Применяет бонусы от очков навыков к базовым статам
+ */
+function applySkillBonuses(base, dist) {
+    return {
+        hp: base.hp + (dist.hp_points || 0) * 5,
+        atk: base.atk + (dist.atk_points || 0),
+        def: base.def + (dist.def_points || 0),
+        agi: base.agi + (dist.agi_points || 0),
+        int: base.int + (dist.int_points || 0),
+        spd: base.spd + (dist.spd_points || 0),
+        crit: base.crit + (dist.crit_points || 0),
+        critDmg: base.critDmg + ((dist.crit_dmg_points || 0) / 100),
+        vamp: base.vamp + (dist.vamp_points || 0),
+        reflect: base.reflect + (dist.reflect_points || 0)
+    };
+}
 
-    // Распределяем очки: 60-70% в лучшие, остальное в остальные
-    const percentToBest = 0.6 + Math.random() * 0.1; // 0.6-0.7
-    const pointsToBest = Math.floor(totalSkillPoints * percentToBest);
-    const pointsToOther = totalSkillPoints - pointsToBest;
+/**
+ * Применяет классовые и подклассовые бонусы (как у игроков)
+ */
+function applyClassBonuses(stats, className, subclass) {
+    let result = { ...stats };
 
-    // Функция для случайного распределения очков по массиву характеристик
-    function distributePoints(points, statArray) {
-        const dist = {};
-        statArray.forEach(stat => dist[stat] = 0);
-        for (let i = 0; i < points; i++) {
-            const stat = statArray[Math.floor(Math.random() * statArray.length)];
-            dist[stat]++;
-        }
-        return dist;
-    }
+    const roleBonus = rolePassives[subclass] || {};
+    if (roleBonus.vamp) result.vamp += roleBonus.vamp;
+    if (roleBonus.reflect) result.reflect += roleBonus.reflect;
 
-    const bestDist = distributePoints(pointsToBest, bestStats);
-    const otherDist = distributePoints(pointsToOther, otherStats);
-
-    // Объединяем распределения
-    const totalDist = { ...bestDist };
-    for (let stat in otherDist) {
-        totalDist[stat] = (totalDist[stat] || 0) + otherDist[stat];
-    }
-
-    // Применяем бонусы от навыков
-    for (let stat in totalDist) {
-        const points = totalDist[stat];
-        switch (stat) {
-            case 'hp':
-                stats.hp += points * 2;
-                break;
-            case 'atk':
-                stats.atk += points;
-                break;
-            case 'def':
-                stats.def += points;
-                break;
-            case 'agi':
-                stats.agi += points;
-                break;
-            case 'int':
-                stats.int += points;
-                break;
-            case 'spd':
-                stats.spd += points;
-                break;
-            case 'crit':
-                stats.crit += points;
-                break;
-            case 'critDmg':
-                stats.critDmg += points / 100;
-                break;
-            case 'vamp':
-                stats.vamp += points;
-                break;
-            case 'reflect':
-                stats.reflect += points;
-                break;
-        }
+    // Классовые особенности
+    if (className === 'warrior') {
+        result.hp += Math.floor(result.def / 5) * 5;
+    } else if (className === 'assassin') {
+        result.spd += Math.floor(result.agi / 5);
+    } else if (className === 'mage') {
+        result.agi += Math.floor(result.int / 5);
+        // manaRegen будет добавлен позже
     }
 
-    // Пассивные бонусы подкласса
-    const roleBonus = rolePassives[template.subclass] || {};
-    if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
-    if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
-
-    // Классовые особенности (постоянные бонусы)
-    if (template.class === 'warrior') {
-        stats.hp += Math.floor(stats.def / 5) * 3;
-    } else if (template.class === 'assassin') {
-        stats.spd += Math.floor(stats.agi / 5);
-    } else if (template.class === 'mage') {
-        stats.agi += Math.floor(stats.int / 5);
-        stats.manaRegen += Math.floor(stats.int / 5) * 2;
-    }
-
-    // Классовые бонусы (умножение)
-    if (template.class === 'warrior') {
-        stats.def = Math.min(70, stats.def * 1.5);
-    } else if (template.class === 'assassin') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = Math.min(100, stats.crit * 1.25);
-        stats.agi = Math.min(100, stats.agi * 1.1);
-    } else if (template.class === 'mage') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.int = stats.int * 1.2;
+    // Классовые множители
+    if (className === 'warrior') {
+        result.def = Math.min(70, result.def * 1.5);
+        result.hp = Math.floor(result.hp * 1.1);
+    } else if (className === 'assassin') {
+        result.atk = Math.floor(result.atk * 1.2);
+        result.crit = Math.min(100, result.crit * 1.25);
+        result.agi = Math.min(100, result.agi * 1.1);
+    } else if (className === 'mage') {
+        result.atk = Math.floor(result.atk * 1.2);
+        result.int = result.int * 1.2;
     }
 
     // Капы
-    stats.def = Math.min(70, stats.def);
-    stats.crit = Math.min(100, stats.crit);
-    stats.agi = Math.min(100, stats.agi);
+    result.def = Math.min(70, result.def);
+    result.crit = Math.min(100, result.crit);
+    result.agi = Math.min(100, result.agi);
+
+    // Округления
+    result.hp = Math.round(result.hp);
+    result.atk = Math.round(result.atk);
+    result.spd = Math.round(result.spd);
+    result.def = Math.round(result.def * 10) / 10;
+    result.agi = Math.round(result.agi * 10) / 10;
+    result.int = Math.round(result.int * 10) / 10;
+    result.crit = Math.round(result.crit * 10) / 10;
+    result.critDmg = Math.round(result.critDmg * 100) / 100;
+    result.vamp = Math.round(result.vamp * 10) / 10;
+    result.reflect = Math.round(result.reflect * 10) / 10;
+
+    return result;
+}
+
+/**
+ * Генерация обычного бота
+ */
+function generateNormalBot(playerLevel) {
+    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
+    const template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
+    const className = template.class;
+    const subclass = template.subclass;
+
+    const base = baseStats[className] || baseStats.warrior;
+    const totalSkillPoints = getSkillPointsForLevel(level);
+    const distribution = distributeSkillPoints(totalSkillPoints, className);
+    let stats = applySkillBonuses(base, distribution);
+    stats = applyClassBonuses(stats, className, subclass);
+
+    // Мана и регенерация
+    stats.manaMax = 100;
+    stats.manaRegen = className === 'warrior' ? 15 : (className === 'assassin' ? 18 : 30);
+    if (className === 'mage') {
+        stats.manaRegen += Math.floor(stats.int / 5) * 2;
+    }
 
     return {
         username: template.name,
         avatar_id: null,
-        class: template.class,
-        subclass: template.subclass,
+        class: className,
+        subclass: subclass,
         level: level,
         stats: stats,
         is_cybercat: false
@@ -192,18 +226,11 @@ function generateNormalBot(playerLevel) {
 
 /**
  * Генерация киберкота
- * @param {number} playerLevel - уровень игрока
- * @returns {object} - данные киберкота
  */
 function generateCybercat(playerLevel) {
-    // Киберкот: уровень +1-3 (но не больше 60)
-    const cybercatLevel = Math.min(60, playerLevel + Math.floor(Math.random() * 3) + 1);
-    
-    // Случайный класс
+    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
     const classes = ['warrior', 'assassin', 'mage'];
     const randomClass = classes[Math.floor(Math.random() * classes.length)];
-    
-    // Случайный подкласс для этого класса
     const subclassOptions = {
         warrior: ['guardian', 'berserker', 'knight'],
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
@@ -211,36 +238,51 @@ function generateCybercat(playerLevel) {
     };
     const options = subclassOptions[randomClass];
     const randomSubclass = options[Math.floor(Math.random() * options.length)];
-    
-    // Базовые характеристики для этого уровня (используем ту же логику, что и для обычного бота)
-    // Но нам нужно сгенерировать обычного бота этого уровня, чтобы получить нормальные статы
-    const baseBot = generateNormalBot(cybercatLevel);
-    
-    // Добавляем бонусы киберкота
-    const cybercatStats = {
-        ...baseBot.stats,
-        hp: baseBot.stats.hp + 10,
-        atk: baseBot.stats.atk + 3,
-        def: baseBot.stats.def + 2
-    };
-    
+
+    const base = baseStats[randomClass] || baseStats.warrior;
+    const totalSkillPoints = getSkillPointsForLevel(level);
+    const distribution = distributeSkillPoints(totalSkillPoints, randomClass);
+    let stats = applySkillBonuses(base, distribution);
+    stats = applyClassBonuses(stats, randomClass, randomSubclass);
+
+    // Бонусы киберкота
+    stats.hp += 10;
+    stats.atk += 5;
+    stats.def += 5;
+    stats.int += 5;
+
+    // Повторные капы и округления после добавления бонусов
+    stats.def = Math.min(70, stats.def);
+    stats.agi = Math.min(100, stats.agi);
+    stats.crit = Math.min(100, stats.crit);
+    stats.hp = Math.round(stats.hp);
+    stats.atk = Math.round(stats.atk);
+    stats.spd = Math.round(stats.spd);
+    stats.def = Math.round(stats.def * 10) / 10;
+    stats.agi = Math.round(stats.agi * 10) / 10;
+    stats.int = Math.round(stats.int * 10) / 10;
+    stats.crit = Math.round(stats.crit * 10) / 10;
+    stats.critDmg = Math.round(stats.critDmg * 100) / 100;
+    stats.vamp = Math.round(stats.vamp * 10) / 10;
+    stats.reflect = Math.round(stats.reflect * 10) / 10;
+
+    stats.manaMax = 100;
+    stats.manaRegen = randomClass === 'warrior' ? 15 : (randomClass === 'assassin' ? 18 : 30);
+    if (randomClass === 'mage') {
+        stats.manaRegen += Math.floor(stats.int / 5) * 2;
+    }
+
     return {
         username: 'Киберкот',
         avatar_id: null,
         class: randomClass,
         subclass: randomSubclass,
-        level: cybercatLevel,
-        stats: cybercatStats,
+        level: level,
+        stats: stats,
         is_cybercat: true
     };
 }
 
-/**
- * Основная функция генерации бота
- * @param {number} playerLevel - уровень игрока
- * @param {boolean} isCybercat - true для киберкота, false для обычного бота
- * @returns {object} - данные бота
- */
 function generateBot(playerLevel, isCybercat = false) {
     if (isCybercat) {
         return generateCybercat(playerLevel);

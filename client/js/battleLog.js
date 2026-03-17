@@ -101,11 +101,11 @@ const BattleLog = {
         if (enemyHpBar) enemyHpBar.style.width = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
 
         if (state.playerMana !== undefined) {
-            if (heroMana) heroMana.style.width = (state.playerMana / 100) * 100 + '%';
+           if (heroMana) heroMana.style.width = Math.min(100, (state.playerMana / 100) * 100) + '%';
             if (heroManaText) heroManaText.innerText = state.playerMana;
         }
         if (state.enemyMana !== undefined) {
-            if (enemyMana) enemyMana.style.width = (state.enemyMana / 100) * 100 + '%';
+           if (enemyMana) enemyMana.style.width = Math.min(100, (state.enemyMana / 100) * 100) + '%';
             if (enemyManaText) enemyManaText.innerText = state.enemyMana;
         }
 

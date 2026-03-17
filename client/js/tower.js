@@ -1,0 +1,231 @@
+// js/tower.js
+
+let towerStatus = null; // { currentFloor, maxFloor, attemptsLeft, chosenClass, chosenSubclass }
+let claimedFloors = new Set(); // можно загрузить с сервера, но пока будем считать, что награда получается сразу после боя
+
+// Загрузка статуса башни
+async function loadTowerStatus() {
+    try {
+        const res = await fetch(`/tower/status?tg_id=${userData.tg_id}`);
+        if (!res.ok) throw new Error('Failed to load tower status');
+        towerStatus = await res.json();
+        renderTower();
+    } catch (e) {
+        console.error(e);
+        alert('Ошибка загрузки башни');
+    }
+}
+
+// Отрисовка экрана башни
+function renderTower() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="tower-container">
+            <div class="tower-header">
+                <div class="tower-stats">
+                    <span>Этаж: <span id="currentFloorDisplay">${towerStatus.currentFloor}</span></span>
+                    <span>Билеты: <span id="ticketsDisplay">${towerStatus.attemptsLeft}/10</span></span>
+                </div>
+                <div class="tower-class-info">
+                    Класс: ${getClassNameRu(towerStatus.chosenClass)} (${getRoleNameRu(towerStatus.chosenSubclass)})
+                </div>
+            </div>
+            <div class="tower-floors" id="towerFloors"></div>
+        </div>
+    `;
+
+    const floorsContainer = document.getElementById('towerFloors');
+    floorsContainer.innerHTML = ''; // очищаем
+
+    // Генерируем 100 этажей
+    for (let i = 1; i <= 100; i++) {
+        const floorDiv = document.createElement('div');
+        floorDiv.className = 'tower-floor';
+        if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
+        if (i < towerStatus.currentFloor) floorDiv.classList.add('passed'); // пройденные
+
+        // Проверяем, получена ли награда за этот этаж (упрощённо: если этаж пройден, но ещё не текущий, то кнопка должна быть)
+        const showClaimButton = i < towerStatus.currentFloor && !claimedFloors.has(i);
+
+        floorDiv.innerHTML = `
+            <div class="floor-left">
+                <span class="floor-number">${i}</span>
+                <span class="floor-text">этаж</span>
+            </div>
+            <div class="floor-center">
+                <img src="/assets/tower/floor-icon.png" alt="floor" onerror="this.src='/assets/tower/default.png'">
+            </div>
+            <div class="floor-right">
+                ${showClaimButton ? 
+                    `<button class="btn claim-btn" data-floor="${i}">10 <i class="fas fa-coins"></i></button>` : 
+                    (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
+            </div>
+        `;
+        floorsContainer.appendChild(floorDiv);
+    }
+
+    // Плавная прокрутка к активному этажу
+    setTimeout(() => {
+        const active = document.querySelector('.tower-floor.active');
+        if (active) {
+            active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+    }, 100);
+
+    // Обработчики кнопок получения награды
+    document.querySelectorAll('.claim-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const floor = btn.dataset.floor;
+            claimFloorReward(floor);
+        });
+    });
+
+    // Можно добавить обработчик нажатия на этаж для начала боя (если это текущий этаж)
+    document.querySelectorAll('.tower-floor').forEach(floorDiv => {
+        floorDiv.addEventListener('click', () => {
+            const floor = parseInt(floorDiv.querySelector('.floor-number').innerText);
+            if (floor === towerStatus.currentFloor) {
+                startTowerBattle();
+            }
+        });
+    });
+}
+
+// Запрос на получение награды за этаж
+async function claimFloorReward(floor) {
+    try {
+        const res = await fetch('/tower/claim-floor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, floor })
+        });
+        const data = await res.json();
+        if (data.success) {
+            claimedFloors.add(parseInt(floor));
+            // Обновляем отображение кнопки
+            const btn = document.querySelector(`.claim-btn[data-floor="${floor}"]`);
+            if (btn) {
+                btn.remove(); // убираем кнопку
+            }
+            // Обновляем баланс монет в топбаре
+            userData.coins += 10;
+            updateTopBar();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Ошибка соединения');
+    }
+}
+
+// Начать бой на текущем этаже
+async function startTowerBattle() {
+    if (towerStatus.attemptsLeft <= 0) {
+        alert('У вас не осталось билетов на сегодня');
+        return;
+    }
+
+    try {
+        const res = await fetch('/tower/battle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert('Ошибка: ' + data.error);
+            return;
+        }
+
+        // Здесь data содержит battleResult, victory, newFloor, reward, attemptsLeft
+        // Показываем экран боя, используя существующий BattleLog
+        showTowerBattleScreen(data);
+    } catch (e) {
+        console.error(e);
+        alert('Ошибка соединения');
+    }
+}
+
+// Функция показа боя для башни (адаптация showBattleScreen)
+function showTowerBattleScreen(battleData) {
+    // Скрываем меню
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'none';
+        item.style.opacity = '0.5';
+    });
+
+    // Добавляем классы для ярости (как в обычном бою)
+    battleData.playerClass = userData.current_class;
+    battleData.enemyClass = battleData.opponent.class;
+    battleData.playerSubclass = userData.subclass;
+    battleData.enemySubclass = battleData.opponent.subclass;
+
+    // Формируем HTML боя (можно скопировать из showBattleScreen, но с небольшими изменениями)
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="battle-screen">
+            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+                <div style="text-align: left;">
+                    <div>${userData.username}</div>
+                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
+                </div>
+                <div style="text-align: right;">
+                    <div>${battleData.opponent.username}</div>
+                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
+                </div>
+            </div>
+            <!-- здесь остальная разметка арены, как в showBattleScreen, но без таймера? Можно оставить для атмосферы -->
+            <!-- ... -->
+            <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
+        </div>
+    `;
+
+    // Инициализируем BattleLog с колбэком, который после завершения боя вызовет обработку результата
+    BattleLog.init(battleData.battleResult, document.getElementById('battleLog'), (finishedData) => {
+        // finishedData - это те же battleData.result, но можно использовать battleData напрямую
+        handleTowerBattleEnd(battleData);
+    });
+
+    // Добавляем кнопку скорости, если нужно (можно скопировать из showBattleScreen)
+    // ...
+}
+
+// Обработка завершения боя в башне
+function handleTowerBattleEnd(battleData) {
+    // Возвращаем меню
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'auto';
+        item.style.opacity = '1';
+    });
+
+    if (battleData.victory) {
+        // Показываем сообщение о победе и награде
+        alert(`Победа! Вы получили ${battleData.reward.coins} монет.`);
+        // Обновляем статус башни (новый этаж, билеты)
+        towerStatus.currentFloor = battleData.newFloor;
+        towerStatus.attemptsLeft = battleData.attemptsLeft;
+        // Если награда не была автоматически зачислена, можно добавить её в claimedFloors
+        // Но мы уже получили монеты на сервере, поэтому просто обновим баланс
+        userData.coins += battleData.reward.coins;
+        updateTopBar();
+    } else {
+        alert('Поражение...');
+        // Обновляем только билеты
+        towerStatus.attemptsLeft = battleData.attemptsLeft;
+    }
+
+    // Возвращаемся к экрану башни
+    renderTower();
+}
+
+// Вспомогательная функция для получения русского названия подкласса (можно взять из constants.js)
+function getRoleNameRu(role) {
+    const roles = {
+        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
+        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
+        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
+    };
+    return roles[role] || role;
+}

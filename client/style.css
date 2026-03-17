@@ -1228,10 +1228,10 @@ td {
     z-index: 5;
 }
 
-/* Позитивные иконки (справа), кроме ярости */
-.positive-icon {
+/* Позитивные иконки (справа для игрока, слева для противника) */
+.positive-icon,
+.rage-icon {
     position: absolute;
-    right: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 25px;
@@ -1240,27 +1240,14 @@ td {
     z-index: 10;
 }
 
-
-
-
-/* Иконки ярости (без наложения, каждая в своём правом подслоте) */
-.rage-icon {
-    position: absolute;
-    width: 25px;
-    height: 25px;
-    object-fit: contain;
-    top: 50%;
-    z-index: calc(20 + var(--rage-index));
-}
-
+.debuff-slot[data-side="player"] .positive-icon,
 .debuff-slot[data-side="player"] .rage-icon {
     right: 0;
-    transform: translate(calc(-20px * var(--rage-index)), -50%);
 }
 
+.debuff-slot[data-side="enemy"] .positive-icon,
 .debuff-slot[data-side="enemy"] .rage-icon {
     left: 0;
-    transform: translate(calc(20px * var(--rage-index)), -50%);
 }
 
 

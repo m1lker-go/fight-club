@@ -133,6 +133,7 @@ async function startTowerBattle() {
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
         const data = await res.json();
+        console.log('Ответ от /tower/battle:', data); // <-- переместили сюда
         if (!res.ok) {
             alert('Ошибка: ' + data.error);
             return;

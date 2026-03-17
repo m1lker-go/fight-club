@@ -290,81 +290,93 @@ const BattleLog = {
     },
 
     playNext() {
-        if (this.stopped) {
-            console.log('[BattleLog] stopped, ignoring');
-            return;
-        }
-        if (this.currentMsgIndex >= this.messages.length) {
-            console.log('[BattleLog] All messages shown, finishing');
-            this.finish();
-            return;
-        }
+    if (this.stopped) {
+        console.log('[BattleLog] stopped, ignoring');
+        return;
+    }
+    if (this.currentMsgIndex >= this.messages.length) {
+        console.log('[BattleLog] All messages shown, finishing');
+        this.finish();
+        return;
+    }
 
-        const entry = this.messages[this.currentMsgIndex];
-        const msgText = entry.text;
-        const type = entry.type;
-        const attacker = entry.attacker;
+    const entry = this.messages[this.currentMsgIndex];
+    const msgText = entry.text;
+    const type = entry.type;
+    const attacker = entry.attacker;
 
-        console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
+    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+    // Всегда добавляем запись в лог (включая стековые сообщения)
+    const logEntry = document.createElement('div');
+    let entryClass = 'log-entry';
 
-        if (!isStackMessage) {
-            const logEntry = document.createElement('div');
-            let entryClass = 'log-entry';
-            if (type === 'dodge') {
-                entryClass += ' dodge-text';
-            } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                entryClass += ' ult-text';
-            }
-            logEntry.className = entryClass;
-            logEntry.innerHTML = this.formatLogText(msgText);
-            this.logContainer.appendChild(logEntry);
-            this.logContainer.scrollTop = this.logContainer.scrollHeight;
+    // Определяем класс на основе типа сообщения
+    if (type === 'dodge') {
+        entryClass += ' dodge-message'; // используем новый класс
+    } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+        entryClass += ' ult-message'; // новый класс для ультимейтов
+    } else if (type === 'poison_stack' || type === 'poison_dot') {
+        entryClass += ' poison-message';
+    } else if (type === 'burn_stack' || type === 'burn_dot') {
+        entryClass += ' fire-message';
+    } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
+        entryClass += ' ice-message';
+    }
+    // Для остальных типов остаётся только log-entry
 
-            let animTarget = null;
-            let animFile = null;
+    logEntry.className = entryClass;
+    logEntry.innerHTML = this.formatLogText(msgText);
+    this.logContainer.appendChild(logEntry);
+    this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-            if (type === 'attack' || type === 'crit' || type === 'damage') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'shot.gif';
-            } else if (type === 'dodge') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'missx.gif';
-            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                if (type === 'fire_ult') animFile = 'fire.gif';
-                else if (type === 'ice_ult') animFile = 'ice.gif';
-                else if (type === 'poison_ult') animFile = 'poison.gif';
-                else animFile = 'ultimate.gif';
-            } else if (type === 'damage_self') {
-                animTarget = null;
-                animFile = null;
-            } else if (type === 'heal' || type === 'buff') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-            } else if (type === 'frozen_enter' || type === 'frozen_end') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'frozenx.gif';
-                console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);
-            }
+    // Анимацию показываем только для не-стековых сообщений (как и раньше)
+    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+    if (!isStackMessage) {
+        let animTarget = null;
+        let animFile = null;
 
-            if (animTarget && animFile) {
-                console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
-                this.showAnimation(animTarget, animFile);
-            }
-        }
-
-        this.parseAndShowFloatingNumber(entry);
-        this.currentMsgIndex++;
-
-        if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
-            this.currentStateIndex++;
+        if (type === 'attack' || type === 'crit' || type === 'damage') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'shot.gif';
+        } else if (type === 'dodge') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'missx.gif';
+        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            if (type === 'fire_ult') animFile = 'fire.gif';
+            else if (type === 'ice_ult') animFile = 'ice.gif';
+            else if (type === 'poison_ult') animFile = 'poison.gif';
+            else animFile = 'ultimate.gif';
+        } else if (type === 'damage_self') {
+            animTarget = null;
+            animFile = null;
+        } else if (type === 'heal' || type === 'buff') {
+            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+        } else if (type === 'frozen_enter' || type === 'frozen_end') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'frozenx.gif';
+            console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);
         }
 
-        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-    },
+        if (animTarget && animFile) {
+            console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
+            this.showAnimation(animTarget, animFile);
+        }
+    }
+
+    this.parseAndShowFloatingNumber(entry);
+    this.currentMsgIndex++;
+
+    if (this.currentStateIndex < this.states.length) {
+        this.applyState(this.states[this.currentStateIndex]);
+        this.currentStateIndex++;
+    }
+
+    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+}
+,
 
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;

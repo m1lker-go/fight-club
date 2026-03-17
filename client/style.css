@@ -1535,22 +1535,21 @@ td {
 
 .tower-floors {
     display: flex;
-    flex-direction: column;
-    gap: 0; /* убираем промежутки между этажами */
+    flex-direction: column-reverse;
+    gap: 0;
     width: 100%;
 }
 
 .tower-floor {
     display: flex;
-    align-items: stretch; /* чтобы все колонки были одной высоты */
+    align-items: stretch;
     width: 100%;
-    min-height: 70px; /* минимальная высота строки, подстроится под контент */
+    min-height: 70px;
     background-color: rgba(35,40,51,0.9);
-    border: none; /* убираем рамки, если они есть */
+    border: none;
     margin: 0;
     padding: 0;
 }
-
 /* Левая колонка (номер этажа) */
 .floor-left {
     width: 50px;

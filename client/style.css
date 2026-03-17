@@ -1534,44 +1534,31 @@ td {
 }
 
 .tower-floors {
-    flex: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-right: 5px;
+    gap: 0; /* убираем промежутки между этажами */
+    width: 100%;
 }
 
 .tower-floor {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    align-items: stretch; /* чтобы все колонки были одной высоты */
+    width: 100%;
+    min-height: 70px; /* минимальная высота строки, подстроится под контент */
     background-color: rgba(35,40,51,0.9);
-    border-radius: 10px;
-    padding: 10px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    border: 1px solid transparent;
+    border: none; /* убираем рамки, если они есть */
+    margin: 0;
+    padding: 0;
 }
 
-.tower-floor.active {
-    border-color: #00aaff;
-    background-color: rgba(0,170,255,0.1);
-}
-
-.tower-floor.passed {
-    opacity: 0.8;
-}
-
-.tower-floor:hover {
-    background-color: rgba(45,50,61,0.95);
-}
-
+/* Левая колонка (номер этажа) */
 .floor-left {
+    width: 50px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 60px;
+    justify-content: center;
+    background-color: rgba(0,0,0,0.2); /* для отладки, потом убрать */
 }
 
 .floor-number {
@@ -1586,44 +1573,55 @@ td {
     text-transform: uppercase;
 }
 
+/* Центральная колонка (иконка) */
 .floor-center {
-    flex: 1;
+    width: 300px;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    overflow: hidden; /* чтобы картинка не вылезала */
 }
 
 .floor-center img {
-    max-width: 60px;
-    max-height: 40px;
-    object-fit: contain;
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover; /* чтобы заполнить всю область, но сохранить пропорции */
 }
 
+/* Для первого этажа можно задать особую высоту через контейнер */
+.tower-floor.first-floor {
+    min-height: 117px; /* высота строки под картинку */
+}
+
+/* Правая колонка (кнопка/маркер) */
 .floor-right {
-    min-width: 70px;
+    width: 50px;
     display: flex;
-    justify-content: flex-end;
     align-items: center;
+    justify-content: center;
 }
 
 .claim-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background-color: #00aaff;
     color: white;
     border: none;
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 5px;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
 }
 
 .claim-btn i {
-    color: white;
+    margin: 0;
 }
 
 .current-marker {
     color: #00aaff;
-    font-size: 20px;
+    font-size: 24px;
 }

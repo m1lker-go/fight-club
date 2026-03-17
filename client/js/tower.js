@@ -5,7 +5,6 @@ const API_BASE = 'https://fight-club-api-4och.onrender.com';
 let towerStatus = null;
 let claimedFloors = new Set();
 
-// Загрузка статуса башни
 async function loadTowerStatus() {
     try {
         const res = await fetch(`${API_BASE}/tower/status?tg_id=${userData.tg_id}`);
@@ -18,7 +17,6 @@ async function loadTowerStatus() {
     }
 }
 
-// Отрисовка экрана башни
 function renderTower() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -99,7 +97,6 @@ function renderTower() {
     });
 }
 
-// Получение награды за этаж
 async function claimFloorReward(floor) {
     try {
         const res = await fetch(`${API_BASE}/tower/claim-floor`, {
@@ -123,7 +120,6 @@ async function claimFloorReward(floor) {
     }
 }
 
-// Начать бой на текущем этаже
 async function startTowerBattle() {
     if (towerStatus.attemptsLeft <= 0) {
         alert('У вас не осталось билетов на сегодня');
@@ -148,7 +144,6 @@ async function startTowerBattle() {
     }
 }
 
-// Показать экран боя (адаптировано из battleUI)
 function showTowerBattleScreen(battleData) {
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
@@ -174,9 +169,8 @@ function showTowerBattleScreen(battleData) {
                 </div>
             </div>
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
-                <!-- Карточка героя (можно скопировать из battleUI) -->
-                <!-- ... для краткости я оставлю как есть, но вы можете вставить полную разметку из battleUI.js -->
-                <!-- Здесь должна быть полная копия боевого экрана -->
+                <!-- Здесь нужно вставить полную разметку арены из battleUI.js -->
+                <!-- Для теста можно оставить пустым, но лучше скопировать -->
             </div>
             <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
         </div>
@@ -187,7 +181,6 @@ function showTowerBattleScreen(battleData) {
     });
 }
 
-// Обработка завершения боя
 function handleTowerBattleEnd(battleData) {
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'auto';
@@ -207,7 +200,6 @@ function handleTowerBattleEnd(battleData) {
     renderTower();
 }
 
-// Вспомогательная функция для перевода ролей
 function getRoleNameRu(role) {
     const roles = {
         guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',

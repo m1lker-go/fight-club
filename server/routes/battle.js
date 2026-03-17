@@ -405,27 +405,22 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             defenderState.burnStacks = 0;
             type = 'fire_ult';
             break;
+      
         case 'cryomancer':
-    // Расчёт урона (x3 если цель уже заморожена, иначе x2)
     const isTargetFrozen = defenderState.frozen > 0;
     damage = Math.round(attackerStats.int * (isTargetFrozen ? 3 : 2));
-    
-    // Выбор фразы
     const phraseKey = isTargetFrozen ? 'frozen' : 'normal';
     log = ultPhrases.cryomancer[phraseKey];
-     console.log(`[DEBUG] cryomancer: phraseKey=${phraseKey}, log=${log}, damage=${damage}`);       
     log = log.replace('%s', `<strong>${attackerName}</strong>`)
              .replace('%s', `<strong>${defenderName}</strong>`)
              .replace('%d', damage);
-    
-    // Применяем заморозку только если цель ещё жива (урон ещё не нанесён)
-    // и не была заморожена ранее (чтобы не продлевать заморозку бесконечно)
     if (!isTargetFrozen) {
         defenderState.frozen = 2;
     }
     defenderState.freezeStacks = 0;
     type = 'ice_ult';
     break;
+            
         case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
             log = ultPhrases.illusionist.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);

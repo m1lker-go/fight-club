@@ -3,6 +3,8 @@ const router = express.Router();
 const { pool } = require('../db');
 const { generateBot } = require('../utils/botGenerator');
 
+console.log('✅ tower-server.js loaded');
+
 // Вспомогательная функция для получения или создания записи прогресса
 async function getOrCreateProgress(client, userId) {
     const res = await client.query(

@@ -507,7 +507,7 @@ if (turn === 'player') {
         continue;
     }
     playerState.hp = playerHp; enemyState.hp = enemyHp;
-    playerMana = Math.min(100, playerMana + playerStats.manaRegen);
+    playerMana += playerStats.manaRegen;
     let actionLog = null;
 
     if (playerMana >= 100) {

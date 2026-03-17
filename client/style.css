@@ -1548,9 +1548,9 @@ td {
 
 .tower-floor {
     display: flex;
-    align-items: stretch;
+    align-items: stretch;      /* все колонки растянутся на высоту строки */
     width: 100%;
-    min-height: 70px;
+    height: 70px;              /* фиксированная высота для всех этажей, кроме первого */
     background-color: rgba(35,40,51,0.9);
     border: none;
     margin: 0;
@@ -1564,7 +1564,7 @@ td {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0,0,0,0.2); /* для отладки, потом убрать */
+    height: 100%;              /* занимает всю высоту строки */
 }
 
 .floor-number {
@@ -1582,22 +1582,22 @@ td {
 /* Центральная колонка (иконка) */
 .floor-center {
     width: 300px;
+    height: 100%;              /* занимает всю высоту строки */
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
 }
-
 .floor-center img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;         /* картинка заполнит всю область, при необходимости обрежется */
     display: block;
-    object-fit: cover;
 }
 
 /* Для первого этажа большая высота */
 .tower-floor.first-floor {
-    min-height: 117px;
+    height: 117px;             /* высота первого этажа */
 }
 
 /* Правая колонка (кнопка/маркер) */
@@ -1606,6 +1606,7 @@ td {
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;
 }
 
 .claim-btn {

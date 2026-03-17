@@ -34,7 +34,7 @@ async function checkAndResetAttempts(client, userId, progress) {
     }
 }
 
-// Получить состояние башни (реальные данные из БД)
+// Получить состояние башни
 router.get('/status', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -104,7 +104,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне (пока заглушка)
+// Эндпоинт для боя в башне
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -134,7 +134,6 @@ router.post('/battle', async (req, res) => {
         const botLevel = Math.min(60, progress.current_floor);
         const bot = generateBot(botLevel, false);
 
-        // Формируем объект противника (как в обычном бою)
         const opponent = {
             username: bot.username,
             avatar_id: bot.avatar_id,
@@ -144,16 +143,18 @@ router.post('/battle', async (req, res) => {
             is_cybercat: false
         };
 
-        // ВРЕМЕННО: тестовый результат (без реальной симуляции)
+        // Тестовый результат боя (потом заменить на реальный)
         const battleResult = {
             winner: 'player',
             playerHpRemain: 50,
             enemyHpRemain: 0,
+            playerMaxHp: 100,          // заглушка
+            enemyMaxHp: 100,            // заглушка
             messages: [{ text: 'Тестовый бой (башня в разработке)', type: 'test' }],
             states: []
         };
 
-        const isVictory = true; // для теста всегда победа
+        const isVictory = true; // тестовая победа
 
         if (isVictory) {
             await client.query(
@@ -168,11 +169,19 @@ router.post('/battle', async (req, res) => {
 
         await client.query('COMMIT');
 
-        // Возвращаем все необходимые поля
+        // Возвращаем данные в формате, совместимом с BattleLog
         res.json({
             success: true,
-            battleResult: battleResult,
-            opponent: opponent,           // <-- добавили
+            opponent: opponent,
+            result: {
+                winner: battleResult.winner,
+                playerHpRemain: battleResult.playerHpRemain,
+                enemyHpRemain: battleResult.enemyHpRemain,
+                playerMaxHp: battleResult.playerMaxHp,
+                enemyMaxHp: battleResult.enemyMaxHp,
+                messages: battleResult.messages,
+                states: battleResult.states
+            },
             floor: progress.current_floor,
             newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
             victory: isVictory,

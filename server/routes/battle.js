@@ -520,11 +520,12 @@ if (playerMana >= 100) {
     if (playerHp < 0) playerHp = 0; if (enemyHp < 0) enemyHp = 0;
     console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
     actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
+    messages.push(actionLog);      // <-- ДОБАВЛЕНО
+    pushState();                   // <-- ДОБАВЛЕНО (сохранить состояние после ульты)
     playerMana -= 100;
     if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
     console.log(`[ULT] ${skill.log}`);
-       
-    } else {
+} else {
         const attackResult = performAttack(
             playerStats, enemyStats,
             playerStats.vamp + (playerState.vampBuff > 0 ? playerState.vampBonus : 0),
@@ -609,23 +610,23 @@ if (playerMana >= 100) {
             enemyMana += enemyStats.manaRegen;
             let actionLog = null;
 
-          if (playerMana >= 100) {
-    console.log(`[SERVER] Player ULT triggered, mana before: ${playerMana}`);
-    const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
+          if (enemyMana >= 100) {
+    console.log(`[SERVER] Enemy ULT triggered, mana before: ${enemyMana}`);
+    const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
     console.log(`[SERVER] ULT log: ${skill.log}, type: ${skill.type}`);
-    if (skill.damage) enemyHp -= skill.damage;
-    if (skill.heal) playerHp += skill.heal;
-    if (skill.selfDamage) playerHp -= skill.selfDamage;
+    if (skill.damage) playerHp -= skill.damage;
+    if (skill.heal) enemyHp += skill.heal;
+    if (skill.selfDamage) enemyHp -= skill.selfDamage;
     if (playerHp < 0) playerHp = 0; if (enemyHp < 0) enemyHp = 0;
     console.log(`[HP] player=${playerHp}, enemy=${enemyHp}`);
-    actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
+    actionLog = { text: skill.log, type: skill.type, attacker: 'enemy' };
     messages.push(actionLog);      // <-- ДОБАВЛЕНО
-    pushState();                   // <-- добавить, если нужно сохранить состояние
-    playerMana -= 100;
-    if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
+    pushState();                   // <-- ДОБАВЛЕНО
+    enemyMana -= 100;
+    if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
     console.log(`[ULT] ${skill.log}`);
+} else {
               
-            } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,
                     enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),

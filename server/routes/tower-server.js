@@ -134,6 +134,16 @@ router.post('/battle', async (req, res) => {
         const botLevel = Math.min(60, progress.current_floor);
         const bot = generateBot(botLevel, false);
 
+        // Формируем объект противника (как в обычном бою)
+        const opponent = {
+            username: bot.username,
+            avatar_id: bot.avatar_id,
+            class: bot.class,
+            subclass: bot.subclass,
+            level: bot.level,
+            is_cybercat: false
+        };
+
         // ВРЕМЕННО: тестовый результат (без реальной симуляции)
         const battleResult = {
             winner: 'player',
@@ -158,9 +168,11 @@ router.post('/battle', async (req, res) => {
 
         await client.query('COMMIT');
 
+        // Возвращаем все необходимые поля
         res.json({
             success: true,
             battleResult: battleResult,
+            opponent: opponent,           // <-- добавили
             floor: progress.current_floor,
             newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
             victory: isVictory,

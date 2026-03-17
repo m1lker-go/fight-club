@@ -23,7 +23,9 @@ app.use('/battle', require('./routes/battle'));
 app.use('/tasks', require('./routes/tasks'));
 app.use('/avatars', require('./routes/avatars'));
 app.use('/forge', require('./routes/forge-server'));
+app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
+
 
 
 // Webhook для Telegram

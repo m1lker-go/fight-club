@@ -2,8 +2,26 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { generateBot } = require('../utils/botGenerator');
+const floorEnemyTypes = [
+    { class: 'warrior', subclass: 'guardian' },
+    { class: 'warrior', subclass: 'berserker' },
+    { class: 'warrior', subclass: 'knight' },
+    { class: 'assassin', subclass: 'assassin' },
+    { class: 'assassin', subclass: 'venom_blade' },
+    { class: 'assassin', subclass: 'blood_hunter' },
+    { class: 'mage', subclass: 'pyromancer' },
+    { class: 'mage', subclass: 'cryomancer' },
+    { class: 'mage', subclass: 'illusionist' }
+];
 
 console.log('✅ tower-server.js loaded (full version)');
+
+
+function getFloorEnemyType(floor) {
+    const index = (floor - 1) % 9;
+    return floorEnemyTypes[index];
+}
+
 
 // Вспомогательная функция для получения или создания записи прогресса
 async function getOrCreateProgress(client, userId) {

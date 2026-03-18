@@ -1519,14 +1519,69 @@ td {
 }
 
 .tower-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: rgba(35,40,51,0.9);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: rgba(35, 40, 51, 0.95);
+    backdrop-filter: blur(5px);
     padding: 10px;
     border-radius: 10px;
     margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.header-row:last-child {
+    margin-bottom: 0;
+}
+.header-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.header-item.center {
+    justify-content: center;
+    flex: 1;
+    text-align: center;
+}
+
+.header-item.left {
+    justify-content: flex-start;
+    flex: 1;
+    text-align: left;
+}
+
+.header-label {
     font-size: 14px;
+    color: #aaa;
+}
+
+.header-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-left: 5px;
+}
+
+.ticket-icon {
+    font-size: 20px;
+    margin-left: 5px;
+}
+
+/* Для мобильных устройств – если нужно уменьшить отступы */
+@media (max-width: 400px) {
+    .header-row {
+        flex-wrap: wrap;
+    }
+    .header-item {
+        min-width: 120px;
+    }
 }
 
 .tower-stats span {

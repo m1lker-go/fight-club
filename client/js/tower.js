@@ -37,30 +37,35 @@ function renderTower() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="tower-container">
-          <div class="tower-header">
-    <div class="header-grid">
-        <div class="grid-item">
-            <span class="header-label">Этаж:</span>
-            <span class="header-value">${towerStatus.currentFloor}</span>
-        </div>
-        <div class="grid-item">
-            <span class="header-label">Класс:</span>
-            <span class="header-value">${window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass}</span>
-        </div>
-        <div class="grid-item">
-            <span class="header-label">Билеты:</span>
-            <span class="header-value">${towerStatus.attemptsLeft}</span>
-            <span class="ticket-icon">🎟</span>
-        </div>
-        <div class="grid-item">
-            <span class="header-label">Роль:</span>
-            <span class="header-value">${getRoleNameRu(towerStatus.chosenSubclass)}</span>
-        </div>
-    </div>
-</div>
+            <div class="tower-header">
+                <div class="header-grid">
+                    <div class="grid-left">
+                        <div class="grid-item">
+                            <span class="header-label">Этаж:</span>
+                            <span class="header-value">${towerStatus.currentFloor}</span>
+                        </div>
+                        <div class="grid-item">
+                            <span class="header-label">Билеты:</span>
+                            <span class="header-value">${towerStatus.attemptsLeft}</span>
+                            <span class="ticket-icon">🎟</span>
+                        </div>
+                    </div>
+                    <div class="grid-right">
+                        <div class="grid-item">
+                            <span class="header-label">Класс:</span>
+                            <span class="header-value">${window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass}</span>
+                        </div>
+                        <div class="grid-item">
+                            <span class="header-label">Роль:</span>
+                            <span class="header-value">${getRoleNameRu(towerStatus.chosenSubclass)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="tower-floors" id="towerFloors"></div>
         </div>
     `;
+}
 
     const floorsContainer = document.getElementById('towerFloors');
     floorsContainer.innerHTML = '';

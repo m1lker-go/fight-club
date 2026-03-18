@@ -1632,3 +1632,16 @@ td {
     color: #00aaff;
     font-size: 24px;
 }
+
+/* Все неактивные этажи – чёрно-белые и слегка затемнённые */
+.tower-floor:not(.active) .floor-center img {
+    filter: grayscale(1);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* Активный этаж – цветной и яркий */
+.tower-floor.active .floor-center img {
+    filter: none;
+    opacity: 1;
+}

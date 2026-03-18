@@ -971,3 +971,5 @@ router.post('/start', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.simulateBattle = simulateBattle;
+module.exports.calculateStats = calculateStats;

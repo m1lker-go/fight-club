@@ -104,7 +104,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне (с тестовым результатом)
+// Эндпоинт для боя в башне (реальная симуляция)
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -143,19 +143,44 @@ router.post('/battle', async (req, res) => {
             is_cybercat: false
         };
 
-        // Тестовый результат боя (позже заменим на реальный)
-        const battleResult = {
-            winner: 'player',
-            playerHpRemain: 50,
-            enemyHpRemain: 0,
-            playerMaxHp: 100,
-            enemyMaxHp: 100,
-            messages: [{ text: 'Тестовый бой (башня в разработке)', type: 'test' }],
-            states: []
-        };
+        // Получаем данные игрока (инвентарь, статы)
+        const classData = await client.query(
+            'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
+            [userId, userClass]
+        );
+        if (classData.rows.length === 0) throw new Error('Class data not found');
 
-        const isVictory = true; // для теста всегда победа
+        const inv = await client.query(
+            `SELECT id, name, type, rarity, class_restriction, owner_class, 
+                    atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
+                    crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus
+             FROM inventory WHERE user_id = $1 AND equipped = true`,
+            [userId]
+        );
 
+        // Импортируем функции из battle.js
+        const battleModule = require('./battle');
+        const simulateBattle = battleModule.simulateBattle;
+        const calculateStats = battleModule.calculateStats;
+
+        const playerStats = calculateStats(classData.rows[0], inv.rows, userSubclass);
+        const enemyStats = bot.stats; // бот уже содержит stats
+
+        // Симулируем бой
+        const battleResult = simulateBattle(
+            playerStats,
+            enemyStats,
+            userClass,
+            bot.class,
+            userRes.rows[0].username || 'Player',
+            bot.username,
+            userSubclass,
+            bot.subclass
+        );
+
+        const isVictory = battleResult.winner === 'player';
+
+        // Если победа, увеличиваем этаж и записываем награду
         if (isVictory) {
             await client.query(
                 `UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1`,
@@ -169,7 +194,7 @@ router.post('/battle', async (req, res) => {
 
         await client.query('COMMIT');
 
-        // Возвращаем данные в формате, который ожидает клиент
+        // Возвращаем результат
         res.json({
             success: true,
             opponent: opponent,

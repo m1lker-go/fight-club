@@ -2,29 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { generateBot } = require('../utils/botGenerator');
-const floorEnemyTypes = [
-    { class: 'warrior', subclass: 'guardian' },
-    { class: 'warrior', subclass: 'berserker' },
-    { class: 'warrior', subclass: 'knight' },
-    { class: 'assassin', subclass: 'assassin' },
-    { class: 'assassin', subclass: 'venom_blade' },
-    { class: 'assassin', subclass: 'blood_hunter' },
-    { class: 'mage', subclass: 'pyromancer' },
-    { class: 'mage', subclass: 'cryomancer' },
-    { class: 'mage', subclass: 'illusionist' }
-];
 
 console.log('✅ tower-server.js loaded (full version)');
 
-
-// server/routes/tower-server.js — замените существующую функцию getFloorEnemyType
-
+// Группы классов для циклического перебора (9 комбинаций)
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
     { class: 'assassin', subclasses: ['assassin', 'venom_blade', 'blood_hunter'] },
     { class: 'mage', subclasses: ['pyromancer', 'cryomancer', 'illusionist'] }
 ];
 
+// Определяем тип врага для каждого этажа (цикл 1..9)
 function getFloorEnemyType(floor) {
     const pos = (floor - 1) % 9;               // 0..8
     const groupIndex = Math.floor(pos / 3);    // 0,1,2
@@ -35,7 +23,6 @@ function getFloorEnemyType(floor) {
         subclass: group.subclasses[subIndex]
     };
 }
-
 
 // Вспомогательная функция для получения или создания записи прогресса
 async function getOrCreateProgress(client, userId) {
@@ -64,6 +51,30 @@ async function checkAndResetAttempts(client, userId, progress) {
         );
         progress.attempts_today = 0;
     }
+}
+
+// Функция для получения случайного аватара (без учёта дефолтного и алмазных)
+async function getRandomAvatar(client) {
+    const res = await client.query(
+        'SELECT id FROM avatars WHERE price_diamonds = 0 AND id != 1'
+    );
+    if (res.rows.length === 0) return null;
+    const avatars = res.rows;
+    const randomIndex = Math.floor(Math.random() * avatars.length);
+    return avatars[randomIndex].id;
+}
+
+// Функция уровня бота в зависимости от этажа
+function getBotLevel(floor) {
+    if (floor <= 20) return floor;
+    if (floor <= 76) {
+        // Плавный рост с 20 до 57 на этажах 21–76
+        return 20 + Math.round((floor - 20) * (57 - 20) / (76 - 20));
+    }
+    if (floor <= 80) return 57;   // 77–80: 57
+    if (floor <= 86) return 58;   // 81–86: 58
+    if (floor <= 91) return 59;   // 87–91: 59
+    return 60;                     // 92–100: 60
 }
 
 // Получить состояние башни
@@ -163,21 +174,7 @@ router.post('/battle', async (req, res) => {
             [new Date().toISOString().split('T')[0], userId]
         );
 
-        function getBotLevel(floor) {
-    if (floor <= 20) return floor;
-    if (floor <= 76) {
-        // Плавный рост с 20 до 57 на этажах 21–76
-        return 20 + Math.round((floor - 20) * (57 - 20) / (76 - 20));
-    }
-    if (floor <= 80) return 57;   // 77–80: 57
-    if (floor <= 86) return 58;   // 81–86: 58
-    if (floor <= 91) return 59;   // 87–91: 59
-    return 60;                     // 92–100: 60
-}
-
-const botLevel = getBotLevel(progress.current_floor);
-        
-        // Получаем тип врага для текущего этажа
+        const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
 
         // Проверяем, есть ли уже сохранённый бот для этого этажа
@@ -245,19 +242,84 @@ const botLevel = getBotLevel(progress.current_floor);
 
         const isVictory = battleResult.winner === 'player';
 
+        // Переменные для награды
+        let coinsReward = 0;
+        let avatarReward = null;
+        let rewardType = 'coins';
+        let rewardAmount = 0;
+
         if (isVictory) {
+            const floor = progress.current_floor;
+
+            // Определяем награду в зависимости от этажа
+            if (floor % 20 === 0) { // 20,40,60,80,100
+                const avatarId = await getRandomAvatar(client);
+                if (avatarId) {
+                    // Проверяем, есть ли уже у пользователя
+                    const owned = await client.query(
+                        'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
+                        [userId, avatarId]
+                    );
+                    if (owned.rows.length > 0) {
+                        // Уже есть – выдаём 1500 монет
+                        coinsReward = 1500;
+                        rewardType = 'coins';
+                        rewardAmount = 1500;
+                    } else {
+                        // Выдаём аватар
+                        await client.query(
+                            'INSERT INTO user_avatars (user_id, avatar_id) VALUES ($1, $2)',
+                            [userId, avatarId]
+                        );
+                        avatarReward = avatarId;
+                        rewardType = 'avatar';
+                        rewardAmount = avatarId;
+                    }
+                } else {
+                    // Если аватары отсутствуют (маловероятно), выдаём монеты
+                    coinsReward = 1500;
+                    rewardType = 'coins';
+                    rewardAmount = 1500;
+                }
+            } else {
+                // Обычные этажи – монеты по таблице
+                if (floor <= 5) coinsReward = 30;
+                else if (floor <= 10) coinsReward = 40;
+                else if (floor <= 40) coinsReward = 50;
+                else if (floor <= 60) coinsReward = 100;
+                else if (floor <= 80) coinsReward = 250;
+                else if (floor <= 99) coinsReward = 500;
+                else if (floor === 100) coinsReward = 2000; // на случай, если 100 не особый
+                rewardType = 'coins';
+                rewardAmount = coinsReward;
+            }
+
+            // Начисляем монеты, если есть
+            if (coinsReward > 0) {
+                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
+                // Записываем награду в tower_rewards
+                await client.query(
+                    `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)`,
+                    [userId, floor, 'coins', coinsReward]
+                );
+            } else if (avatarReward) {
+                // Записываем награду-аватар
+                await client.query(
+                    `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)`,
+                    [userId, floor, 'avatar', avatarReward]
+                );
+            }
+
+            // Обновляем прогресс этажа
             await client.query(
                 `UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1`,
                 [userId]
-            );
-            await client.query(
-                `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, 'coins', $3)`,
-                [userId, progress.current_floor, 10]
             );
         }
 
         await client.query('COMMIT');
 
+        // Формируем ответ
         res.json({
             success: true,
             opponent: opponent,
@@ -273,148 +335,12 @@ const botLevel = getBotLevel(progress.current_floor);
             floor: progress.current_floor,
             newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
             victory: isVictory,
-            reward: isVictory ? { coins: 10 } : null,
+            reward: rewardType === 'coins' 
+                ? { type: 'coins', amount: rewardAmount } 
+                : { type: 'avatar', avatarId: rewardAmount },
             attemptsLeft: 10 - (progress.attempts_today + 1)
         });
 
-    } catch (e) {
-        await client.query('ROLLBACK');
-        console.error(e);
-        res.status(400).json({ error: e.message });
-    } finally {
-        client.release();
-    }
-});
-
-
-// Вспомогательная функция для получения случайного аватара (без учёта дефолтного и алмазных)
-async function getRandomAvatar(client) {
-    const res = await client.query(
-        'SELECT id FROM avatars WHERE price_diamonds = 0 AND id != 1'
-    );
-    if (res.rows.length === 0) return null;
-    const avatars = res.rows;
-    const randomIndex = Math.floor(Math.random() * avatars.length);
-    return avatars[randomIndex].id;
-}
-
-// В обработчике POST /battle после симуляции боя, при isVictory:
-if (isVictory) {
-    const floor = progress.current_floor;
-    let coinsReward = 0;
-    let avatarReward = null;
-    let rewardType = 'coins';
-    let rewardAmount = 0;
-
-    // Определяем награду в зависимости от этажа
-    if (floor % 20 === 0) { // 20,40,60,80,100
-        const avatarId = await getRandomAvatar(client);
-        if (avatarId) {
-            // Проверяем, есть ли уже у пользователя
-            const owned = await client.query(
-                'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
-                [userId, avatarId]
-            );
-            if (owned.rows.length > 0) {
-                // Уже есть – выдаём 1500 монет
-                coinsReward = 1500;
-                rewardType = 'coins';
-                rewardAmount = 1500;
-            } else {
-                // Выдаём аватар
-                await client.query(
-                    'INSERT INTO user_avatars (user_id, avatar_id) VALUES ($1, $2)',
-                    [userId, avatarId]
-                );
-                avatarReward = avatarId;
-                rewardType = 'avatar';
-                rewardAmount = avatarId;
-            }
-        } else {
-            // Если аватары отсутствуют (маловероятно), выдаём монеты
-            coinsReward = 1500;
-            rewardType = 'coins';
-            rewardAmount = 1500;
-        }
-    } else {
-        // Обычные этажи – монеты по таблице
-        if (floor <= 5) coinsReward = 30;
-        else if (floor <= 10) coinsReward = 40;
-        else if (floor <= 40) coinsReward = 50;
-        else if (floor <= 60) coinsReward = 100;
-        else if (floor <= 80) coinsReward = 250;
-        else if (floor <= 99) coinsReward = 500;
-        else if (floor === 100) coinsReward = 2000; // на случай, если 100 не особый
-        rewardType = 'coins';
-        rewardAmount = coinsReward;
-    }
-
-    // Начисляем монеты, если есть
-    if (coinsReward > 0) {
-        await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
-        // Записываем награду в tower_rewards
-        await client.query(
-            `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)`,
-            [userId, floor, 'coins', coinsReward]
-        );
-    } else if (avatarReward) {
-        // Записываем награду-аватар
-        await client.query(
-            `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)`,
-            [userId, floor, 'avatar', avatarReward]
-        );
-    }
-
-    // Обновляем прогресс этажа
-    await client.query(
-        `UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1`,
-        [userId]
-    );
-}
-
-// В ответе добавляем поле reward
-res.json({
-    success: true,
-    opponent: opponent,
-    result: { ... },
-    floor: progress.current_floor,
-    newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
-    victory: isVictory,
-    reward: rewardType === 'coins' ? { type: 'coins', amount: coinsReward } : { type: 'avatar', avatarId: avatarReward },
-    attemptsLeft: 10 - (progress.attempts_today + 1)
-});
-
-
-// Получить награду за уже пройденный этаж
-router.post('/claim-floor', async (req, res) => {
-    const { tg_id, floor } = req.body;
-    if (!tg_id || !floor) return res.status(400).json({ error: 'Missing data' });
-
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-
-        const progress = await client.query('SELECT max_floor FROM tower_progress WHERE user_id = $1', [userId]);
-        if (progress.rows.length === 0) throw new Error('Progress not found');
-        if (progress.rows[0].max_floor < floor) throw new Error('Floor not passed');
-
-        const rewardCheck = await client.query(
-            'SELECT id FROM tower_rewards WHERE user_id = $1 AND floor = $2',
-            [userId, floor]
-        );
-        if (rewardCheck.rows.length > 0) throw new Error('Reward already claimed');
-
-        await client.query(
-            `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, 'coins', $3)`,
-            [userId, floor, 10]
-        );
-        await client.query('UPDATE users SET coins = coins + 10 WHERE id = $1', [userId]);
-
-        await client.query('COMMIT');
-        res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

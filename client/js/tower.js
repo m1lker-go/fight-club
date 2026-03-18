@@ -66,7 +66,7 @@ function renderTower() {
         </div>
     `;
 }
-
+;
     const floorsContainer = document.getElementById('towerFloors');
     floorsContainer.innerHTML = '';
 

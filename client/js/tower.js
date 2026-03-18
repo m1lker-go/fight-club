@@ -16,6 +16,23 @@ async function loadTowerStatus() {
     }
 }
 
+function getFloorRewardInfo(floor) {
+    // Особые этажи (аватар)
+    if (floor % 20 === 0) {
+        return { type: 'skin', icon: '🃏', label: 'скин' };
+    }
+    // Обычные этажи – монеты
+    let amount;
+    if (floor <= 5) amount = 30;
+    else if (floor <= 10) amount = 40;
+    else if (floor <= 40) amount = 50;
+    else if (floor <= 60) amount = 100;
+    else if (floor <= 80) amount = 250;
+    else if (floor <= 99) amount = 500;
+    else amount = 2000; // 100 этаж (хотя он особый)
+    return { type: 'coins', amount: amount, icon: '💰', label: 'монет' };
+}
+
 function renderTower() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -52,8 +69,29 @@ function renderTower() {
             iconSrc = '/assets/tower/floor_odd.png';
         }
 
-        // Показываем награду для пройденных этажей (статичная информация)
-        const showReward = i < towerStatus.currentFloor;
+        const rewardInfo = getFloorRewardInfo(i);
+        let rightHtml;
+
+        if (i === towerStatus.currentFloor) {
+            rightHtml = '<span class="current-marker">▶</span>';
+        } else {
+            if (rewardInfo.type === 'coins') {
+                rightHtml = `
+                    <div class="floor-reward">
+                        <span class="reward-amount">${rewardInfo.amount}</span>
+                        <i class="fas fa-coins"></i>
+                        <span class="reward-label">монет</span>
+                    </div>
+                `;
+            } else {
+                rightHtml = `
+                    <div class="floor-reward skin-reward">
+                        <span class="reward-icon">${rewardInfo.icon}</span>
+                        <span class="reward-label">скин</span>
+                    </div>
+                `;
+            }
+        }
 
         floorDiv.innerHTML = `
             <div class="floor-left">
@@ -64,19 +102,12 @@ function renderTower() {
                 <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
             </div>
             <div class="floor-right">
-                ${showReward ? 
-                    `<div class="floor-reward">
-                        <span class="reward-amount">10</span>
-                        <i class="fas fa-coins"></i>
-                        <span class="reward-label">монет</span>
-                    </div>` : 
-                    (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
+                ${rightHtml}
             </div>
         `;
         floorsContainer.appendChild(floorDiv);
     }
 
-    // Плавная прокрутка к активному этажу
     setTimeout(() => {
         const active = document.querySelector('.tower-floor.active');
         if (active) {
@@ -84,7 +115,6 @@ function renderTower() {
         }
     }, 100);
 
-    // Обработчик клика по этажу – начинаем бой, если этаж активен
     document.querySelectorAll('.tower-floor').forEach(floorDiv => {
         floorDiv.addEventListener('click', () => {
             const floor = parseInt(floorDiv.querySelector('.floor-number').innerText);
@@ -112,7 +142,6 @@ async function startTowerBattle() {
             alert('Ошибка: ' + data.error);
             return;
         }
-        // Проверяем наличие result (на случай, если сервер вернул что-то не то)
         if (!data.result) {
             console.error('Ответ сервера не содержит result:', data);
             alert('Ошибка данных боя');
@@ -126,19 +155,16 @@ async function startTowerBattle() {
 }
 
 function showTowerBattleScreen(battleData) {
-    // Скрываем меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';
     });
 
-    // Добавляем классы для ярости (как в обычном бою)
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
     battleData.playerSubclass = userData.subclass;
     battleData.enemySubclass = battleData.opponent.subclass;
 
-    // Формируем HTML боя (скопировано из battleUI.js)
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
@@ -172,7 +198,6 @@ function showTowerBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Дебаффы игрока -->
                 <div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -181,13 +206,11 @@ function showTowerBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-                <!-- Центральная часть с таймером и кнопкой скорости -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 0; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;">x1</button>
                 </div>
 
-                <!-- Дебаффы противника -->
                 <div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -196,7 +219,6 @@ function showTowerBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <!-- Карточка противника -->
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
@@ -220,12 +242,10 @@ function showTowerBattleScreen(battleData) {
         </div>
     `;
 
-    // Инициализируем BattleLog
-    BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => {
+    BattleLog.init(battleData, document.getElementById('battleLog'), () => {
         handleTowerBattleEnd(battleData);
     });
 
-    // Обработчик кнопки скорости
     const speedBtn = document.getElementById('singleSpeedBtn');
     if (speedBtn) {
         speedBtn.addEventListener('click', () => {
@@ -236,37 +256,55 @@ function showTowerBattleScreen(battleData) {
     }
 }
 
-function getFloorRewardInfo(floor) {
-    // Особые этажи (аватар)
-    if (floor % 20 === 0) {
-        return { type: 'skin', icon: '🃏', label: 'скин' }; // можно заменить на кастомную иконку
+function showRewardModal(reward) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    if (reward.type === 'coins') {
+        modalTitle.innerText = 'Награда';
+        modalBody.innerHTML = `<p style="text-align:center;">Вы получили ${reward.amount} монет!</p>`;
+    } else {
+        // Аватар
+        modalTitle.innerText = 'Новый скин!';
+        // Загружаем информацию об аватаре
+        fetch(`/avatars/${reward.avatarId}`)
+            .then(res => res.json())
+            .then(avatar => {
+                modalBody.innerHTML = `
+                    <div style="text-align: center;">
+                        <img src="/assets/${avatar.filename}" style="max-width: 100px; border-radius: 8px; margin-bottom: 10px;">
+                        <p>Вы получили скин «${translateSkinName(avatar.name)}»!</p>
+                    </div>
+                `;
+            })
+            .catch(() => {
+                modalBody.innerHTML = '<p style="text-align:center;">Вы получили новый скин!</p>';
+            });
     }
-    // Обычные этажи – монеты
-    let amount;
-    if (floor <= 5) amount = 30;
-    else if (floor <= 10) amount = 40;
-    else if (floor <= 40) amount = 50;
-    else if (floor <= 60) amount = 100;
-    else if (floor <= 80) amount = 250;
-    else if (floor <= 99) amount = 500;
-    else amount = 2000; // 100 этаж (хотя он особый)
-    return { type: 'coins', amount: amount, icon: '💰', label: 'монет' };
+    modal.style.display = 'block';
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
 }
 
-
 function handleTowerBattleEnd(battleData) {
-    // Возвращаем меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'auto';
         item.style.opacity = '1';
     });
 
     if (battleData.victory) {
-        alert(`Победа! Вы получили ${battleData.reward.coins} монет.`);
+        showRewardModal(battleData.reward);
         towerStatus.currentFloor = battleData.newFloor;
         towerStatus.attemptsLeft = battleData.attemptsLeft;
-        userData.coins += battleData.reward.coins;
-        updateTopBar();
+        if (battleData.reward.type === 'coins') {
+            userData.coins += battleData.reward.amount;
+            updateTopBar();
+        }
     } else {
         alert('Поражение...');
         towerStatus.attemptsLeft = battleData.attemptsLeft;

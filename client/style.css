@@ -1692,13 +1692,11 @@ td {
     transform: translate(-50%, -50%);
     color: white;
     font-weight: bold;
-    font-size: 18px;
-    text-shadow: 0 0 5px rgba(0,0,0,0.7);
-    background-color: rgba(0, 170, 255, 0.7);
-    padding: 4px 8px;
-    border-radius: 20px;
-    pointer-events: none; /* чтобы не перехватывать клики */
+    font-size: 24px;         /* крупнее */
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
     z-index: 2;
+    white-space: nowrap;
 }
 
 /* Все награды белым цветом */

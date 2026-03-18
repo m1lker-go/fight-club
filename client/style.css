@@ -1511,13 +1511,18 @@ td {
 
 
 /* ========== БАШНЯ ========== */
+
+
+/* Контейнер башни */
 .tower-container {
     display: flex;
     flex-direction: column;
     height: 100%;
     padding: 10px;
+    overflow: hidden;
 }
 
+/* Шапка (sticky) */
 .tower-header {
     position: sticky;
     top: 0;
@@ -1529,87 +1534,66 @@ td {
     margin-bottom: 15px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
-.header-row {
+
+/* Сетка 2×2 */
+.header-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.grid-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.4;
 }
 
-.header-row:last-child {
-    margin-bottom: 0;
-}
-.header-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.header-item.center {
-    justify-content: center;
-    flex: 1;
-    text-align: center;
-}
-
-.header-item.left {
-    justify-content: flex-start;
-    flex: 1;
-    text-align: left;
-}
-
-.header-label {
-    font-size: 14px;
+.grid-item .header-label {
+    font-size: 12px;
     color: #aaa;
+    text-transform: uppercase;
+    margin-bottom: 2px;
 }
 
-.header-value {
+.grid-item .header-value {
     font-size: 18px;
     font-weight: bold;
     color: white;
-    margin-left: 5px;
 }
 
 .ticket-icon {
-    font-size: 20px;
+    font-size: 16px;
     margin-left: 5px;
 }
 
-/* Для мобильных устройств – если нужно уменьшить отступы */
-@media (max-width: 400px) {
-    .header-row {
-        flex-wrap: wrap;
-    }
-    .header-item {
-        min-width: 120px;
-    }
-}
-
-.tower-stats span {
-    margin-right: 15px;
-}
-
+/* Список этажей (прокрутка) */
 .tower-floors {
+    flex: 1;
+    overflow-y: auto;
     display: flex;
     flex-direction: column-reverse;
     gap: 0;
     width: 100%;
-    font-size: 0;         /* убирает лишние пробелы между inline-элементами */
-    line-height: 0;       /* аналогично */
-}
-.tower-floor * {
-    font-size: initial;
-    line-height: normal;
+    font-size: 0;
+    line-height: 0;
 }
 
+/* Одна строка этажа */
 .tower-floor {
     display: flex;
-    align-items: stretch;      /* все колонки растянутся на высоту строки */
+    align-items: stretch;
     width: 100%;
-    height: 70px;              /* фиксированная высота для всех этажей, кроме первого */
+    height: 70px;
     background-color: rgba(35,40,51,0.9);
     border: none;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
+}
+
+.tower-floor.first-floor {
+    height: 117px;
 }
 
 /* Левая колонка (номер этажа) */
@@ -1619,13 +1603,14 @@ td {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;              /* занимает всю высоту строки */
+    height: 100%;
 }
 
 .floor-number {
     font-size: 24px;
     font-weight: bold;
     line-height: 1;
+    color: white;
 }
 
 .floor-text {
@@ -1634,28 +1619,57 @@ td {
     text-transform: uppercase;
 }
 
-/* Центральная колонка (иконка) */
+/* Центральная колонка (картинка) */
 .floor-center {
     width: 300px;
-    height: 100%;              /* занимает всю высоту строки */
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
 }
+
 .floor-center img {
     width: 100%;
     height: 100%;
-    object-fit: cover;         /* картинка заполнит всю область, при необходимости обрежется */
+    object-fit: cover;
     display: block;
 }
 
-/* Для первого этажа большая высота */
-.tower-floor.first-floor {
-    height: 117px;             /* высота первого этажа */
+/* Активный этаж – цветной, с голубой рамкой */
+.tower-floor.active {
+    border: 2px solid #00aaff;
 }
 
-/* Правая колонка (кнопка/маркер) */
+.tower-floor.active .floor-center img {
+    filter: none;
+    opacity: 1;
+}
+
+/* Неактивные этажи – ч/б, затемнены */
+.tower-floor:not(.active) .floor-center img {
+    filter: grayscale(1);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* Надпись СТАРТ на активном этаже */
+.start-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+/* Правая колонка (награда) */
 .floor-right {
     width: 50px;
     display: flex;
@@ -1664,44 +1678,7 @@ td {
     height: 100%;
 }
 
-.claim-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    padding: 0;
-}
-
-.claim-btn i {
-    margin: 0;
-}
-
-.current-marker {
-    color: #00aaff;
-    font-size: 24px;
-}
-
-/* Все неактивные этажи – чёрно-белые и слегка затемнённые */
-.tower-floor:not(.active) .floor-center img {
-    filter: grayscale(1);
-    opacity: 0.7;
-    transition: filter 0.3s ease, opacity 0.3s ease;
-}
-
-/* Активный этаж – цветной и яркий */
-.tower-floor.active .floor-center img {
-    filter: none;
-    opacity: 1;
-}
-
-
+/* Общий контейнер награды */
 .floor-reward {
     display: flex;
     flex-direction: column;
@@ -1709,85 +1686,58 @@ td {
     justify-content: center;
     width: 100%;
     height: 100%;
-    color: #ffd700; /* золотой */
-}
-.reward-amount {
-    font-size: 20px;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.reward-label {
-    font-size: 8px;
-    color: #aaa;
-    text-transform: uppercase;
-    margin-top: 2px;
-}
-
-.floor-reward i {
-    font-size: 16px;
-    margin: 2px 0;
-}
-
-/* Активный этаж – голубая обводка */
-.tower-floor.active {
-    border: 2px solid #00aaff;
-    box-sizing: border-box; /* чтобы обводка не меняла размер */
-}
-
-/* Центральная колонка активного этажа для размещения надписи */
-.floor-center.start-floor {
-    position: relative;
-}
-
-.start-label {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     color: white;
-    font-weight: bold;
-    font-size: 24px;         /* крупнее */
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    pointer-events: none;
-    z-index: 2;
-    white-space: nowrap;
 }
 
-/* Все награды белым цветом */
-.floor-reward {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    color: white; /* изменено с #ffd700 на белый */
-}
-
-.reward-amount {
+/* Награда монетами */
+.coins-reward i {
     font-size: 20px;
-    font-weight: bold;
+    margin-bottom: 2px;
+    color: white;
+}
+
+.coins-reward .reward-amount {
+    font-size: 12px;
+    font-weight: normal;
     line-height: 1;
     color: white;
 }
 
-.reward-label {
-    font-size: 8px;
-    color: white; /* было #aaa */
-    text-transform: uppercase;
-    margin-top: 2px;
-}
-
-.floor-reward i {
-    font-size: 16px;
-    margin: 2px 0;
-    color: white;
-}
-
-/* Иконка скина тоже белая */
+/* Награда скином */
 .skin-reward .reward-icon {
     font-size: 24px;
     line-height: 1;
+    margin-bottom: 2px;
     color: white;
+}
+
+.skin-reward .reward-label {
+    font-size: 9px;
+    color: white;
+    text-transform: uppercase;
+}
+
+/* Адаптивность для очень узких экранов */
+@media (max-width: 400px) {
+    .header-grid {
+        gap: 5px;
+    }
+    .grid-item .header-label {
+        font-size: 10px;
+    }
+    .grid-item .header-value {
+        font-size: 16px;
+    }
+    .floor-left {
+        width: 40px;
+    }
+    .floor-center {
+        width: 260px;
+    }
+    .floor-right {
+        width: 40px;
+    }
+    .floor-number {
+        font-size: 20px;
+    }
 }

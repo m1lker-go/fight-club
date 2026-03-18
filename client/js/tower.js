@@ -236,6 +236,24 @@ function showTowerBattleScreen(battleData) {
     }
 }
 
+function getFloorRewardInfo(floor) {
+    // Особые этажи (аватар)
+    if (floor % 20 === 0) {
+        return { type: 'skin', icon: '🃏', label: 'скин' }; // можно заменить на кастомную иконку
+    }
+    // Обычные этажи – монеты
+    let amount;
+    if (floor <= 5) amount = 30;
+    else if (floor <= 10) amount = 40;
+    else if (floor <= 40) amount = 50;
+    else if (floor <= 60) amount = 100;
+    else if (floor <= 80) amount = 250;
+    else if (floor <= 99) amount = 500;
+    else amount = 2000; // 100 этаж (хотя он особый)
+    return { type: 'coins', amount: amount, icon: '💰', label: 'монет' };
+}
+
+
 function handleTowerBattleEnd(battleData) {
     // Возвращаем меню
     document.querySelectorAll('.menu-item').forEach(item => {

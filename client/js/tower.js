@@ -3,7 +3,6 @@
 const API_BASE = 'https://fight-club-api-4och.onrender.com';
 
 let towerStatus = null;
-let claimedFloors = new Set();
 
 async function loadTowerStatus() {
     try {
@@ -53,7 +52,8 @@ function renderTower() {
             iconSrc = '/assets/tower/floor_odd.png';
         }
 
-        const showClaimButton = i < towerStatus.currentFloor && !claimedFloors.has(i);
+        // Показываем награду для пройденных этажей (статичная информация)
+        const showReward = i < towerStatus.currentFloor;
 
         floorDiv.innerHTML = `
             <div class="floor-left">
@@ -64,14 +64,19 @@ function renderTower() {
                 <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
             </div>
             <div class="floor-right">
-                ${showClaimButton ? 
-                    `<button class="claim-btn" data-floor="${i}"><i class="fas fa-coins"></i></button>` : 
+                ${showReward ? 
+                    `<div class="floor-reward">
+                        <span class="reward-amount">10</span>
+                        <i class="fas fa-coins"></i>
+                        <span class="reward-label">монет</span>
+                    </div>` : 
                     (i === towerStatus.currentFloor ? '<span class="current-marker">▶</span>' : '')}
             </div>
         `;
         floorsContainer.appendChild(floorDiv);
     }
 
+    // Плавная прокрутка к активному этажу
     setTimeout(() => {
         const active = document.querySelector('.tower-floor.active');
         if (active) {
@@ -79,14 +84,7 @@ function renderTower() {
         }
     }, 100);
 
-    document.querySelectorAll('.claim-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const floor = btn.dataset.floor;
-            claimFloorReward(floor);
-        });
-    });
-
+    // Обработчик клика по этажу – начинаем бой, если этаж активен
     document.querySelectorAll('.tower-floor').forEach(floorDiv => {
         floorDiv.addEventListener('click', () => {
             const floor = parseInt(floorDiv.querySelector('.floor-number').innerText);
@@ -95,29 +93,6 @@ function renderTower() {
             }
         });
     });
-}
-
-async function claimFloorReward(floor) {
-    try {
-        const res = await fetch(`${API_BASE}/tower/claim-floor`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, floor })
-        });
-        const data = await res.json();
-        if (data.success) {
-            claimedFloors.add(parseInt(floor));
-            const btn = document.querySelector(`.claim-btn[data-floor="${floor}"]`);
-            if (btn) btn.remove();
-            userData.coins += 10;
-            updateTopBar();
-        } else {
-            alert('Ошибка: ' + data.error);
-        }
-    } catch (e) {
-        console.error('Ошибка получения награды:', e);
-        alert('Ошибка соединения');
-    }
 }
 
 async function startTowerBattle() {
@@ -163,7 +138,7 @@ function showTowerBattleScreen(battleData) {
     battleData.playerSubclass = userData.subclass;
     battleData.enemySubclass = battleData.opponent.subclass;
 
-    // Формируем HTML боя (можно скопировать из battleUI.js, но без таймера)
+    // Формируем HTML боя (скопировано из battleUI.js)
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
@@ -178,7 +153,7 @@ function showTowerBattleScreen(battleData) {
                 </div>
             </div>
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
-                <!-- Карточка героя (копия из battleUI.js) -->
+                <!-- Карточка героя -->
                 <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
@@ -245,7 +220,7 @@ function showTowerBattleScreen(battleData) {
         </div>
     `;
 
-    // Инициализируем BattleLog с переданными данными боя
+    // Инициализируем BattleLog
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => {
         handleTowerBattleEnd(battleData);
     });

@@ -149,7 +149,19 @@ router.post('/battle', async (req, res) => {
             [new Date().toISOString().split('T')[0], userId]
         );
 
-        const botLevel = Math.min(60, progress.current_floor);
+        function getBotLevel(floor) {
+    if (floor <= 20) return floor;
+    if (floor <= 76) {
+        // Плавный рост с 20 до 57 на этажах 21–76
+        return 20 + Math.round((floor - 20) * (57 - 20) / (76 - 20));
+    }
+    if (floor <= 80) return 57;   // 77–80: 57
+    if (floor <= 86) return 58;   // 81–86: 58
+    if (floor <= 91) return 59;   // 87–91: 59
+    return 60;                     // 92–100: 60
+}
+
+const botLevel = getBotLevel(progress.current_floor);
         
         // Получаем тип врага для текущего этажа
         const enemyType = getFloorEnemyType(progress.current_floor);

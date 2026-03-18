@@ -77,6 +77,8 @@ function renderTower() {
     if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
     if (i < towerStatus.currentFloor) floorDiv.classList.add('passed');
 
+const floorNumberClass = i === 100 ? 'floor-number small' : 'floor-number';
+        
     let iconSrc;
     if (i === 1) {
         iconSrc = '/assets/tower/floor1.png';
@@ -118,7 +120,7 @@ function renderTower() {
 
     floorDiv.innerHTML = `
         <div class="floor-left">
-            <span class="floor-number">${i}</span>
+            <span class="${floorNumberClass}">${i}</span>
             <span class="floor-text">этаж</span>
         </div>
         ${centerContent}

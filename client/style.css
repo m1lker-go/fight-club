@@ -1673,3 +1673,68 @@ td {
     font-size: 16px;
     margin: 2px 0;
 }
+
+/* Активный этаж – голубая обводка */
+.tower-floor.active {
+    border: 2px solid #00aaff;
+    box-sizing: border-box; /* чтобы обводка не меняла размер */
+}
+
+/* Центральная колонка активного этажа для размещения надписи */
+.floor-center.start-floor {
+    position: relative;
+}
+
+.start-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 0 0 5px rgba(0,0,0,0.7);
+    background-color: rgba(0, 170, 255, 0.7);
+    padding: 4px 8px;
+    border-radius: 20px;
+    pointer-events: none; /* чтобы не перехватывать клики */
+    z-index: 2;
+}
+
+/* Все награды белым цветом */
+.floor-reward {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: white; /* изменено с #ffd700 на белый */
+}
+
+.reward-amount {
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1;
+    color: white;
+}
+
+.reward-label {
+    font-size: 8px;
+    color: white; /* было #aaa */
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.floor-reward i {
+    font-size: 16px;
+    margin: 2px 0;
+    color: white;
+}
+
+/* Иконка скина тоже белая */
+.skin-reward .reward-icon {
+    font-size: 24px;
+    line-height: 1;
+    color: white;
+}

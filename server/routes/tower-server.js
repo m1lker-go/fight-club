@@ -17,9 +17,23 @@ const floorEnemyTypes = [
 console.log('✅ tower-server.js loaded (full version)');
 
 
+// server/routes/tower-server.js — замените существующую функцию getFloorEnemyType
+
+const classGroups = [
+    { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
+    { class: 'assassin', subclasses: ['assassin', 'venom_blade', 'blood_hunter'] },
+    { class: 'mage', subclasses: ['pyromancer', 'cryomancer', 'illusionist'] }
+];
+
 function getFloorEnemyType(floor) {
-    const index = (floor - 1) % 9;
-    return floorEnemyTypes[index];
+    const pos = (floor - 1) % 9;               // 0..8
+    const groupIndex = Math.floor(pos / 3);    // 0,1,2
+    const subIndex = pos % 3;                  // 0,1,2
+    const group = classGroups[groupIndex];
+    return {
+        class: group.class,
+        subclass: group.subclasses[subIndex]
+    };
 }
 
 

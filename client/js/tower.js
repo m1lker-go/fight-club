@@ -65,8 +65,7 @@ function renderTower() {
             <div class="tower-floors" id="towerFloors"></div>
         </div>
     `;
-}
-;
+    
     const floorsContainer = document.getElementById('towerFloors');
     floorsContainer.innerHTML = '';
 

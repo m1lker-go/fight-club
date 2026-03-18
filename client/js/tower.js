@@ -38,12 +38,26 @@ function renderTower() {
     content.innerHTML = `
         <div class="tower-container">
             <div class="tower-header">
-                <div class="tower-stats">
-                    <span>Этаж: <span id="currentFloorDisplay">${towerStatus.currentFloor}</span></span>
-                    <span>Билеты: <span id="ticketsDisplay">${towerStatus.attemptsLeft}/10</span></span>
+                <div class="header-row header-row-top">
+                    <div class="header-item center">
+                        <span class="header-label">Этаж:</span>
+                        <span class="header-value">${towerStatus.currentFloor}</span>
+                    </div>
+                    <div class="header-item center">
+                        <span class="header-label">Билеты:</span>
+                        <span class="header-value">${towerStatus.attemptsLeft}</span>
+                        <span class="ticket-icon">🎟</span>
+                    </div>
                 </div>
-                <div class="tower-class-info">
-                    Класс: ${window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass} (${getRoleNameRu(towerStatus.chosenSubclass)})
+                <div class="header-row header-row-bottom">
+                    <div class="header-item left">
+                        <span class="header-label">Класс:</span>
+                        <span class="header-value">${window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass}</span>
+                    </div>
+                    <div class="header-item left">
+                        <span class="header-label">Роль:</span>
+                        <span class="header-value">${getRoleNameRu(towerStatus.chosenSubclass)}</span>
+                    </div>
                 </div>
             </div>
             <div class="tower-floors" id="towerFloors"></div>

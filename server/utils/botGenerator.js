@@ -73,6 +73,25 @@ const botTemplates = [
     { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' }
 ];
 
+// Русские названия для подклассов (для генерации имени при принудительном классе)
+const roleNames = {
+    warrior: {
+        guardian: 'Страж',
+        berserker: 'Берсерк',
+        knight: 'Рыцарь'
+    },
+    assassin: {
+        assassin: 'Убийца',
+        venom_blade: 'Ядовитый клинок',
+        blood_hunter: 'Кровавый охотник'
+    },
+    mage: {
+        pyromancer: 'Поджигатель',
+        cryomancer: 'Ледяной маг',
+        illusionist: 'Иллюзионист'
+    }
+};
+
 /**
  * Вычисляет общее количество очков навыков для бота заданного уровня
  */
@@ -193,12 +212,28 @@ function applyClassBonuses(stats, className, subclass) {
 
 /**
  * Генерация обычного бота
+ * @param {number} playerLevel - уровень игрока (или желаемый уровень)
+ * @param {string|null} forcedClass - принудительный класс (для башни)
+ * @param {string|null} forcedSubclass - принудительный подкласс
+ * @returns {object} - данные бота
  */
-function generateNormalBot(playerLevel) {
-    const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
-    const template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
-    const className = template.class;
-    const subclass = template.subclass;
+function generateNormalBot(playerLevel, forcedClass = null, forcedSubclass = null) {
+    let level;
+    let className, subclass;
+    let template = null;
+
+    if (forcedClass && forcedSubclass) {
+        // Для башни: уровень точно равен переданному (без случайного отклонения)
+        level = playerLevel;
+        className = forcedClass;
+        subclass = forcedSubclass;
+    } else {
+        // Обычный бот: уровень с небольшим отклонением (±2) для разнообразия
+        level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
+        template = botTemplates[Math.floor(Math.random() * botTemplates.length)];
+        className = template.class;
+        subclass = template.subclass;
+    }
 
     const base = baseStats[className] || baseStats.warrior;
     const totalSkillPoints = getSkillPointsForLevel(level);
@@ -213,8 +248,17 @@ function generateNormalBot(playerLevel) {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
+    // Определяем имя бота
+    let username;
+    if (template) {
+        username = template.name;
+    } else {
+        // Используем русские названия из словаря
+        username = roleNames[className]?.[subclass] || `${className} ${subclass}`;
+    }
+
     return {
-        username: template.name,
+        username: username,
         avatar_id: null,
         class: className,
         subclass: subclass,
@@ -225,7 +269,7 @@ function generateNormalBot(playerLevel) {
 }
 
 /**
- * Генерация киберкота
+ * Генерация киберкота (без изменений)
  */
 function generateCybercat(playerLevel) {
     const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
@@ -283,11 +327,19 @@ function generateCybercat(playerLevel) {
     };
 }
 
-function generateBot(playerLevel, isCybercat = false) {
+/**
+ * Основная функция генерации бота
+ * @param {number} playerLevel - уровень игрока (или желаемый уровень)
+ * @param {boolean} isCybercat - true для киберкота
+ * @param {string|null} forcedClass - принудительный класс (для башни)
+ * @param {string|null} forcedSubclass - принудительный подкласс
+ * @returns {object} - данные бота
+ */
+function generateBot(playerLevel, isCybercat = false, forcedClass = null, forcedSubclass = null) {
     if (isCybercat) {
         return generateCybercat(playerLevel);
     } else {
-        return generateNormalBot(playerLevel);
+        return generateNormalBot(playerLevel, forcedClass, forcedSubclass);
     }
 }
 

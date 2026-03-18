@@ -122,7 +122,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне (реальная симуляция)
+// Эндпоинт для боя в башне (реальная симуляция, фиксированные враги)
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -150,7 +150,28 @@ router.post('/battle', async (req, res) => {
         );
 
         const botLevel = Math.min(60, progress.current_floor);
-        const bot = generateBot(botLevel, false);
+        
+        // Получаем тип врага для текущего этажа
+        const enemyType = getFloorEnemyType(progress.current_floor);
+
+        // Проверяем, есть ли уже сохранённый бот для этого этажа
+        const botRes = await client.query(
+            'SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2',
+            [userId, progress.current_floor]
+        );
+
+        let bot;
+        if (botRes.rows.length > 0) {
+            bot = botRes.rows[0].bot_data;
+        } else {
+            // Генерируем нового бота с фиксированным классом и подклассом
+            bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
+            // Сохраняем в БД
+            await client.query(
+                `INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)`,
+                [userId, progress.current_floor, bot]
+            );
+        }
 
         const opponent = {
             username: bot.username,
@@ -161,7 +182,7 @@ router.post('/battle', async (req, res) => {
             is_cybercat: false
         };
 
-        // Получаем данные игрока (инвентарь, статы)
+        // Получаем данные игрока
         const classData = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
             [userId, userClass]
@@ -182,7 +203,7 @@ router.post('/battle', async (req, res) => {
         const calculateStats = battleModule.calculateStats;
 
         const playerStats = calculateStats(classData.rows[0], inv.rows, userSubclass);
-        const enemyStats = bot.stats; // бот уже содержит stats
+        const enemyStats = bot.stats;
 
         // Симулируем бой
         const battleResult = simulateBattle(
@@ -198,7 +219,6 @@ router.post('/battle', async (req, res) => {
 
         const isVictory = battleResult.winner === 'player';
 
-        // Если победа, увеличиваем этаж и записываем награду
         if (isVictory) {
             await client.query(
                 `UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1`,
@@ -212,7 +232,6 @@ router.post('/battle', async (req, res) => {
 
         await client.query('COMMIT');
 
-        // Возвращаем результат
         res.json({
             success: true,
             opponent: opponent,

@@ -85,22 +85,21 @@ function renderTower() {
     let rightHtml;
 
     // Для всех этажей показываем награду (будущую или полученную)
-    if (rewardInfo.type === 'coins') {
-        rightHtml = `
-            <div class="floor-reward">
-                <span class="reward-amount">${rewardInfo.amount}</span>
-                <i class="fas fa-coins"></i>
-                <span class="reward-label">монет</span>
-            </div>
-        `;
-    } else {
-        rightHtml = `
-            <div class="floor-reward skin-reward">
-                <span class="reward-icon">${rewardInfo.icon}</span>
-                <span class="reward-label">скин</span>
-            </div>
-        `;
-    }
+ if (rewardInfo.type === 'coins') {
+    rightHtml = `
+        <div class="floor-reward coins-reward">
+            <i class="fas fa-coins"></i>
+            <span class="reward-amount">${rewardInfo.amount}</span>
+        </div>
+    `;
+} else {
+    rightHtml = `
+        <div class="floor-reward skin-reward">
+            <span class="reward-icon">${rewardInfo.icon}</span>
+            <span class="reward-label">скин</span>
+        </div>
+    `;
+}
 
     // Добавляем надпись СТАРТ на центральную картинку активного этажа
     const centerContent = i === towerStatus.currentFloor

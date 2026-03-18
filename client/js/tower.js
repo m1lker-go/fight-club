@@ -12,7 +12,7 @@ async function loadTowerStatus() {
         towerStatus = await res.json();
         renderTower();
     } catch (e) {
-        console.error(e);
+        console.error('Ошибка загрузки башни:', e);
         alert('Ошибка загрузки башни');
     }
 }
@@ -61,7 +61,7 @@ function renderTower() {
                 <span class="floor-text">этаж</span>
             </div>
             <div class="floor-center">
-                <img src="${iconSrc}" alt="floor ${i}" onerror="this.src='/assets/tower/default.png'">
+                <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
             </div>
             <div class="floor-right">
                 ${showClaimButton ? 
@@ -115,7 +115,7 @@ async function claimFloorReward(floor) {
             alert('Ошибка: ' + data.error);
         }
     } catch (e) {
-        console.error(e);
+        console.error('Ошибка получения награды:', e);
         alert('Ошибка соединения');
     }
 }
@@ -133,29 +133,37 @@ async function startTowerBattle() {
             body: JSON.stringify({ tg_id: userData.tg_id })
         });
         const data = await res.json();
-        console.log('Ответ от /tower/battle:', data); // <-- переместили сюда
         if (!res.ok) {
             alert('Ошибка: ' + data.error);
             return;
         }
+        // Проверяем наличие result (на случай, если сервер вернул что-то не то)
+        if (!data.result) {
+            console.error('Ответ сервера не содержит result:', data);
+            alert('Ошибка данных боя');
+            return;
+        }
         showTowerBattleScreen(data);
     } catch (e) {
-        console.error(e);
+        console.error('Ошибка при старте боя:', e);
         alert('Ошибка соединения');
     }
 }
 
 function showTowerBattleScreen(battleData) {
+    // Скрываем меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';
     });
 
+    // Добавляем классы для ярости (как в обычном бою)
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
     battleData.playerSubclass = userData.subclass;
     battleData.enemySubclass = battleData.opponent.subclass;
 
+    // Формируем HTML боя (можно скопировать из battleUI.js, но без таймера)
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
@@ -170,19 +178,91 @@ function showTowerBattleScreen(battleData) {
                 </div>
             </div>
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
-                <!-- Здесь нужно вставить полную разметку арены из battleUI.js -->
-                <!-- Для теста можно оставить пустым, но лучше скопировать -->
+                <!-- Карточка героя (копия из battleUI.js) -->
+                <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <div class="floating-numbers-container" id="hero-floating"></div>
+                    </div>
+                    <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
+                        <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
+                        <div class="stat-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
+                    </div>
+                    <div class="stat-bar mana-bar" style="width: 100px; margin: 1px auto;">
+                        <div class="stat-fill mana-fill" id="heroMana" style="width:0%"></div>
+                        <div class="stat-text" id="heroManaText">0</div>
+                    </div>
+                </div>
+
+                <!-- Дебаффы игрока -->
+                <div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
+                    <div class="debuff-slot" data-side="player" data-slot="0"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="1"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="2"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="3"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="4"></div>
+                </div>
+
+                <!-- Центральная часть с таймером и кнопкой скорости -->
+                <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
+                    <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
+                    <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 0; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;">x1</button>
+                </div>
+
+                <!-- Дебаффы противника -->
+                <div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
+                    <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="2"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="3"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
+                </div>
+
+                <!-- Карточка противника -->
+                <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                    <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
+                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
+                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <div class="floating-numbers-container" id="enemy-floating"></div>
+                    </div>
+                    <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
+                        <div class="stat-fill hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
+                        <div class="stat-text" id="enemyHpText">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
+                    </div>
+                    <div class="stat-bar mana-bar" style="width: 100px; margin: 1px auto;">
+                        <div class="stat-fill mana-fill" id="enemyMana" style="width:0%"></div>
+                        <div class="stat-text" id="enemyManaText">0</div>
+                    </div>
+                </div>
             </div>
+
             <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
         </div>
     `;
 
-    BattleLog.init(battleData.battleResult, document.getElementById('battleLog'), () => {
+    // Инициализируем BattleLog с переданными данными боя
+    BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => {
         handleTowerBattleEnd(battleData);
     });
+
+    // Обработчик кнопки скорости
+    const speedBtn = document.getElementById('singleSpeedBtn');
+    if (speedBtn) {
+        speedBtn.addEventListener('click', () => {
+            const newSpeed = BattleLog.speed === 1 ? 2 : 1;
+            speedBtn.textContent = newSpeed === 1 ? 'x1' : 'x2';
+            BattleLog.setSpeed(newSpeed);
+        });
+    }
 }
 
 function handleTowerBattleEnd(battleData) {
+    // Возвращаем меню
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'auto';
         item.style.opacity = '1';
@@ -198,6 +278,7 @@ function handleTowerBattleEnd(battleData) {
         alert('Поражение...');
         towerStatus.attemptsLeft = battleData.attemptsLeft;
     }
+
     renderTower();
 }
 

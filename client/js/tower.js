@@ -54,59 +54,64 @@ function renderTower() {
     floorsContainer.innerHTML = '';
 
     for (let i = 1; i <= 100; i++) {
-        const floorDiv = document.createElement('div');
-        floorDiv.className = 'tower-floor';
-        if (i === 1) floorDiv.classList.add('first-floor');
-        if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
-        if (i < towerStatus.currentFloor) floorDiv.classList.add('passed');
+    const floorDiv = document.createElement('div');
+    floorDiv.className = 'tower-floor';
+    if (i === 1) floorDiv.classList.add('first-floor');
+    if (i === towerStatus.currentFloor) floorDiv.classList.add('active');
+    if (i < towerStatus.currentFloor) floorDiv.classList.add('passed');
 
-        let iconSrc;
-        if (i === 1) {
-            iconSrc = '/assets/tower/floor1.png';
-        } else if (i % 2 === 0) {
-            iconSrc = '/assets/tower/floor_even.png';
-        } else {
-            iconSrc = '/assets/tower/floor_odd.png';
-        }
+    let iconSrc;
+    if (i === 1) {
+        iconSrc = '/assets/tower/floor1.png';
+    } else if (i % 2 === 0) {
+        iconSrc = '/assets/tower/floor_even.png';
+    } else {
+        iconSrc = '/assets/tower/floor_odd.png';
+    }
 
-        const rewardInfo = getFloorRewardInfo(i);
-        let rightHtml;
+    const rewardInfo = getFloorRewardInfo(i);
+    let rightHtml;
 
-        if (i === towerStatus.currentFloor) {
-            rightHtml = '<span class="current-marker">▶</span>';
-        } else {
-            if (rewardInfo.type === 'coins') {
-                rightHtml = `
-                    <div class="floor-reward">
-                        <span class="reward-amount">${rewardInfo.amount}</span>
-                        <i class="fas fa-coins"></i>
-                        <span class="reward-label">монет</span>
-                    </div>
-                `;
-            } else {
-                rightHtml = `
-                    <div class="floor-reward skin-reward">
-                        <span class="reward-icon">${rewardInfo.icon}</span>
-                        <span class="reward-label">скин</span>
-                    </div>
-                `;
-            }
-        }
-
-        floorDiv.innerHTML = `
-            <div class="floor-left">
-                <span class="floor-number">${i}</span>
-                <span class="floor-text">этаж</span>
-            </div>
-            <div class="floor-center">
-                <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
-            </div>
-            <div class="floor-right">
-                ${rightHtml}
+    // Для всех этажей показываем награду (будущую или полученную)
+    if (rewardInfo.type === 'coins') {
+        rightHtml = `
+            <div class="floor-reward">
+                <span class="reward-amount">${rewardInfo.amount}</span>
+                <i class="fas fa-coins"></i>
+                <span class="reward-label">монет</span>
             </div>
         `;
-        floorsContainer.appendChild(floorDiv);
+    } else {
+        rightHtml = `
+            <div class="floor-reward skin-reward">
+                <span class="reward-icon">${rewardInfo.icon}</span>
+                <span class="reward-label">скин</span>
+            </div>
+        `;
     }
+
+    // Добавляем надпись СТАРТ на центральную картинку активного этажа
+    const centerContent = i === towerStatus.currentFloor
+        ? `<div class="floor-center start-floor">
+            <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
+            <span class="start-label">СТАРТ</span>
+           </div>`
+        : `<div class="floor-center">
+            <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
+           </div>`;
+
+    floorDiv.innerHTML = `
+        <div class="floor-left">
+            <span class="floor-number">${i}</span>
+            <span class="floor-text">этаж</span>
+        </div>
+        ${centerContent}
+        <div class="floor-right">
+            ${rightHtml}
+        </div>
+    `;
+    floorsContainer.appendChild(floorDiv);
+}
 
     setTimeout(() => {
         const active = document.querySelector('.tower-floor.active');

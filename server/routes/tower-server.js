@@ -77,7 +77,7 @@ function getBotLevel(floor) {
     return 60;                     // 92–100: 60
 }
 
-// Получить состояние башни
+// Получить состояние башни ЭНДПОИНТ здесь
 router.get('/status', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -91,17 +91,13 @@ router.get('/status', async (req, res) => {
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
 
-        const userClass = await client.query(
-            'SELECT current_class, subclass FROM users WHERE id = $1',
-            [userId]
-        );
-
+        // Убираем запрос userClass и возвращаем только то, что есть в progress
         res.json({
             currentFloor: progress.current_floor,
             maxFloor: progress.max_floor,
             attemptsLeft: 10 - progress.attempts_today,
-            chosenClass: progress.chosen_class || userClass.rows[0].current_class,
-            chosenSubclass: progress.chosen_subclass || userClass.rows[0].subclass
+            chosenClass: progress.chosen_class,        // теперь null, если не выбран
+            chosenSubclass: progress.chosen_subclass   // null, если не выбран
         });
     } catch (e) {
         console.error('ERROR in /status:', e);

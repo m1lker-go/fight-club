@@ -162,16 +162,21 @@ router.post('/battle', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Добавлено поле username в SELECT
-        const userRes = await client.query('SELECT id, current_class, subclass, username FROM users WHERE tg_id = $1', [tg_id]);
+        const userRes = await client.query('SELECT id, username FROM users WHERE tg_id = $1', [tg_id]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const userId = userRes.rows[0].id;
-        const userClass = userRes.rows[0].current_class;
-        const userSubclass = userRes.rows[0].subclass;
         const username = userRes.rows[0].username || 'Player';
 
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
+
+        // Проверяем, что класс для башни выбран
+        if (!progress.chosen_class || !progress.chosen_subclass) {
+            throw new Error('Class not selected for tower. Please select a class first.');
+        }
+
+        const chosenClass = progress.chosen_class;
+        const chosenSubclass = progress.chosen_subclass;
 
         const today = getMoscowDate();
         console.log(`[BATTLE] before update: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
@@ -185,10 +190,9 @@ router.post('/battle', async (req, res) => {
         }
 
         const newAttemptsToday = updateRes.rows[0].attempts_today;
-progress.attempts_today = newAttemptsToday; // синхронизируем объект progress
-console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
+        progress.attempts_today = newAttemptsToday;
+        console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
 
-        // Проверим, что дата действительно записалась
         const dateCheck = await client.query('SELECT last_attempt_date FROM tower_progress WHERE user_id = $1', [userId]);
         console.log(`[BATTLE] after update, DB last_attempt_date = ${dateCheck.rows[0].last_attempt_date}`);
 
@@ -220,12 +224,14 @@ console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday
             is_cybercat: false
         };
 
+        // Получаем данные для ВЫБРАННОГО класса (chosenClass)
         const classData = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
-            [userId, userClass]
+            [userId, chosenClass]
         );
-        if (classData.rows.length === 0) throw new Error('Class data not found');
+        if (classData.rows.length === 0) throw new Error('Class data not found for chosen class');
 
+        // Инвентарь – все надетые предметы, calculateStats сам отфильтрует по owner_class
         const inv = await client.query(
             `SELECT id, name, type, rarity, class_restriction, owner_class, 
                     atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
@@ -238,17 +244,17 @@ console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday
         const simulateBattle = battleModule.simulateBattle;
         const calculateStats = battleModule.calculateStats;
 
-        const playerStats = calculateStats(classData.rows[0], inv.rows, userSubclass);
+        const playerStats = calculateStats(classData.rows[0], inv.rows, chosenSubclass);
         const enemyStats = bot.stats;
 
         const battleResult = simulateBattle(
             playerStats,
             enemyStats,
-            userClass,
+            chosenClass,               // используем выбранный класс
             bot.class,
             username,
             bot.username,
-            userSubclass,
+            chosenSubclass,            // используем выбранный подкласс
             bot.subclass
         );
 

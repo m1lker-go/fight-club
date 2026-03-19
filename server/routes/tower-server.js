@@ -60,7 +60,7 @@ async function checkAndResetAttempts(client, userId, progress) {
             [today, userId]
         );
         progress.attempts_today = 0;
-        progress.last_attempt_date = today; // обновляем объект для согласованности
+        progress.last_attempt_date = today;
         console.log(`[checkAndResetAttempts] user ${userId}: reset to 0 (new day ${today})`);
     } else {
         console.log(`[checkAndResetAttempts] user ${userId}: no reset`);
@@ -250,11 +250,11 @@ router.post('/battle', async (req, res) => {
         const battleResult = simulateBattle(
             playerStats,
             enemyStats,
-            chosenClass,               // используем выбранный класс
+            chosenClass,
             bot.class,
             username,
             bot.username,
-            chosenSubclass,            // используем выбранный подкласс
+            chosenSubclass,
             bot.subclass
         );
 
@@ -333,12 +333,20 @@ router.post('/battle', async (req, res) => {
                     floor = EXCLUDED.floor,
                     achieved_at = EXCLUDED.achieved_at
                  WHERE tower_leaderboard.floor < EXCLUDED.floor`,
-                [userId, progress.current_floor] // progress.current_floor уже увеличен
+                [userId, progress.current_floor]
             );
         }
 
         await client.query('COMMIT');
         console.log(`[BATTLE COMMIT] user ${userId} success, attemptsLeft in response: ${10 - newAttemptsToday}`);
+
+        // Формируем ответ: при поражении reward = null
+        let responseReward = null;
+        if (isVictory) {
+            responseReward = rewardType === 'coins' 
+                ? { type: 'coins', amount: rewardAmount } 
+                : { type: 'avatar', avatarId: rewardAmount };
+        }
 
         res.json({
             success: true,
@@ -355,9 +363,7 @@ router.post('/battle', async (req, res) => {
             floor: progress.current_floor,
             newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
             victory: isVictory,
-            reward: rewardType === 'coins' 
-                ? { type: 'coins', amount: rewardAmount } 
-                : { type: 'avatar', avatarId: rewardAmount },
+            reward: responseReward,
             attemptsLeft: 10 - newAttemptsToday
         });
 

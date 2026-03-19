@@ -11,10 +11,10 @@ async function loadTowerStatus() {
         const res = await fetch(`${API_BASE}/tower/status?tg_id=${userData.tg_id}`);
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
-        
+
         // Всегда рендерим башню
         renderTower();
-        
+
         // Если класс не выбран – показываем туториал поверх
         if (!towerStatus.chosenClass) {
             showTutorialOverlay();
@@ -133,7 +133,7 @@ function showRoleSelection() {
 
 async function confirmSelection() {
     if (!selectedClass || !selectedSubclass) return;
-    
+
     try {
         const res = await fetch(`${API_BASE}/tower/select-class`, {
             method: 'POST',
@@ -152,7 +152,7 @@ async function confirmSelection() {
             // Убираем оверлей
             removeTutorialOverlay();
             // Обновляем отображение башни (класс и роль в шапке)
-            renderTower(); // можно просто обновить текстовые поля, но проще перерендерить
+            renderTower();
         } else {
             alert('Ошибка при выборе класса: ' + data.error);
         }
@@ -161,8 +161,6 @@ async function confirmSelection() {
         alert('Ошибка соединения');
     }
 }
-
-
 
 function getFloorRewardInfo(floor) {
     if (floor % 20 === 0) {
@@ -180,44 +178,44 @@ function getFloorRewardInfo(floor) {
 }
 
 function renderTower() {
-    // Определяем, что показывать, если класс/роль не выбраны
-const className = towerStatus.chosenClass 
-    ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass) 
-    : '—';
-const subclassName = towerStatus.chosenSubclass 
-    ? getRoleNameRu(towerStatus.chosenSubclass) 
-    : '—';
+    const className = towerStatus.chosenClass
+        ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
+        : '—';
+    const subclassName = towerStatus.chosenSubclass
+        ? getRoleNameRu(towerStatus.chosenSubclass)
+        : '—';
 
-content.innerHTML = `
-    <div class="tower-container">
-        <div class="tower-header">
-            <div class="header-grid">
-                <div class="grid-left">
-                    <div class="grid-item">
-                        <span class="header-label">Этаж:</span>
-                        <span class="header-value">${towerStatus.currentFloor}</span>
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="tower-container">
+            <div class="tower-header">
+                <div class="header-grid">
+                    <div class="grid-left">
+                        <div class="grid-item">
+                            <span class="header-label">Этаж:</span>
+                            <span class="header-value">${towerStatus.currentFloor}</span>
+                        </div>
+                        <div class="grid-item">
+                            <span class="header-label">Билеты:</span>
+                            <span class="header-value">${towerStatus.attemptsLeft}</span>
+                            <span class="ticket-icon">🎟</span>
+                        </div>
                     </div>
-                    <div class="grid-item">
-                        <span class="header-label">Билеты:</span>
-                        <span class="header-value">${towerStatus.attemptsLeft}</span>
-                        <span class="ticket-icon">🎟</span>
-                    </div>
-                </div>
-                <div class="grid-right">
-                    <div class="grid-item">
-                        <span class="header-label">Класс:</span>
-                        <span class="header-value">${className}</span>
-                    </div>
-                    <div class="grid-item">
-                        <span class="header-label">Роль:</span>
-                        <span class="header-value">${subclassName}</span>
+                    <div class="grid-right">
+                        <div class="grid-item">
+                            <span class="header-label">Класс:</span>
+                            <span class="header-value">${className}</span>
+                        </div>
+                        <div class="grid-item">
+                            <span class="header-label">Роль:</span>
+                            <span class="header-value">${subclassName}</span>
+                        </div>
                     </div>
                 </div>
             </div>
+            <div class="tower-floors" id="towerFloors"></div>
         </div>
-        <div class="tower-floors" id="towerFloors"></div>
-    </div>
-`;
+    `;
 
     const floorsContainer = document.getElementById('towerFloors');
     floorsContainer.innerHTML = '';
@@ -434,37 +432,162 @@ function showTowerBattleScreen(battleData) {
     }
 }
 
-function showRewardModal(reward) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+// ===== Новые функции для экрана результата =====
 
-    if (reward.type === 'coins') {
-        modalTitle.innerText = 'Награда';
-        modalBody.innerHTML = `<p style="text-align:center;">Вы получили ${reward.amount} монет!</p>`;
+function computeTowerStats(messages) {
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+
+    messages.forEach(msg => {
+        const text = msg.text;
+        const attacker = msg.attacker;
+        if (!attacker || attacker === 'none') return;
+
+        const targetStats = attacker === 'player' ? playerStats : enemyStats;
+        const opponentStats = attacker === 'player' ? enemyStats : playerStats;
+
+        let match = text.match(/Урон -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.hits++;
+            targetStats.totalDamage += dmg;
+        }
+
+        match = text.match(/Крит\. урон -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.hits++;
+            targetStats.crits++;
+            targetStats.totalDamage += dmg;
+        }
+
+        match = text.match(/Урон от (?:яда|огня) -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.totalDamage += dmg;
+        }
+
+        if (text.toLowerCase().includes('уворот')) {
+            opponentStats.dodges++;
+        }
+
+        match = text.match(/Вампиризм \+(\d+)/);
+        if (match) {
+            const heal = parseInt(match[1]);
+            targetStats.heal += heal;
+        }
+        match = text.match(/Здоровье \+(\d+)/);
+        if (match) {
+            const heal = parseInt(match[1]);
+            targetStats.heal += heal;
+        }
+
+        match = text.match(/Отражение -(\d+)/);
+        if (match) {
+            const reflect = parseInt(match[1]);
+            opponentStats.reflect += reflect;
+        }
+    });
+
+    return { playerStats, enemyStats };
+}
+
+function showTowerResultScreen(battleData) {
+    const { result, victory, reward, newFloor } = battleData;
+    const resultText = victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
+    const { playerStats, enemyStats } = computeTowerStats(result.messages);
+
+    // Формируем лог с цветами
+    const logArray = result.messages.map(m => {
+        let entryClass = 'log-entry';
+        const type = m.type;
+        if (type === 'dodge') entryClass += ' dodge-message';
+        else if (type && (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) entryClass += ' ult-message';
+        else if (type === 'poison_stack' || type === 'poison_dot') entryClass += ' poison-message';
+        else if (type === 'burn_stack' || type === 'burn_dot') entryClass += ' fire-message';
+        else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') entryClass += ' ice-message';
+        return `<div class="${entryClass}">${BattleLog.formatLogText(m.text)}</div>`;
+    }).join('');
+
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="battle-result" style="padding: 10px;">
+            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
+            <p style="text-align:center;">
+                ${reward ? (reward.type === 'coins' ? `+${reward.amount} монет` : 'Новый скин!') : ''}
+            </p>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                <button class="btn" id="towerBackBtn" style="flex: 1;">Назад</button>
+                ${victory
+                    ? '<button class="btn" id="towerNextBtn" style="flex: 1;">Следующий этаж</button>'
+                    : (towerStatus.attemptsLeft > 0
+                        ? '<button class="btn" id="towerRetryBtn" style="flex: 1;">Повторить</button>'
+                        : '')
+                }
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
+                <button class="btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="btn result-tab" id="tabStats">Статистика</button>
+            </div>
+            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+                ${logArray}
+            </div>
+        </div>
+    `;
+
+    const resultDiv = document.getElementById('resultContent');
+    const tabLog = document.getElementById('tabLog');
+    const tabStats = document.getElementById('tabStats');
+
+    tabLog.addEventListener('click', () => {
+        tabLog.classList.add('active');
+        tabStats.classList.remove('active');
+        resultDiv.innerHTML = logArray;
+    });
+
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultDiv.innerHTML = `
+            <style>
+                .stats-table { width:100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+                .stats-table th { color: #00aaff; font-weight: bold; padding-bottom: 8px; }
+                .stats-table td { padding: 4px 0; border-bottom: 1px solid #2f3542; }
+                .stats-table .player-col { color: #00aaff; font-weight: bold; }
+                .stats-table .enemy-col { color: #e74c3c; font-weight: bold; }
+            </style>
+            <table class="stats-table">
+                <thead><tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr></thead>
+                <tbody>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                </tbody>
+            </table>
+        `;
+    });
+
+    document.getElementById('towerBackBtn').addEventListener('click', () => {
+        renderTower();
+    });
+
+    if (victory) {
+        document.getElementById('towerNextBtn').addEventListener('click', () => {
+            // Следующий этаж – просто начинаем бой (newFloor уже обновлён в towerStatus)
+            startTowerBattle();
+        });
     } else {
-        modalTitle.innerText = 'Новый скин!';
-        fetch(`/avatars/${reward.avatarId}`)
-            .then(res => res.json())
-            .then(avatar => {
-                modalBody.innerHTML = `
-                    <div style="text-align: center;">
-                        <img src="/assets/${avatar.filename}" style="max-width: 100px; border-radius: 8px; margin-bottom: 10px;">
-                        <p>Вы получили скин «${translateSkinName(avatar.name)}»!</p>
-                    </div>
-                `;
-            })
-            .catch(() => {
-                modalBody.innerHTML = '<p style="text-align:center;">Вы получили новый скин!</p>';
+        const retryBtn = document.getElementById('towerRetryBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                // Повторная попытка – начинаем бой на том же этаже (уже обновлён? после поражения towerStatus.currentFloor не меняется)
+                startTowerBattle();
             });
+        }
     }
-    modal.style.display = 'block';
-
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target === modal) modal.style.display = 'none';
-    };
 }
 
 function handleTowerBattleEnd(battleData) {

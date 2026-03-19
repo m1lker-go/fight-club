@@ -5,6 +5,13 @@ const { generateBot } = require('../utils/botGenerator');
 
 console.log('✅ tower-server.js loaded (full version)');
 
+// Функция для получения московской даты (YYYY-MM-DD)
+function getMoscowDate() {
+    const now = new Date();
+    const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    return moscowTime.toISOString().split('T')[0];
+}
+
 // Группы классов для циклического перебора (9 комбинаций)
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
@@ -41,15 +48,16 @@ async function getOrCreateProgress(client, userId) {
     return res.rows[0];
 }
 
-// Проверка и сброс счётчика попыток, если прошёл день
+// Проверка и сброс счётчика попыток, если прошёл день (по Москве)
 async function checkAndResetAttempts(client, userId, progress) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getMoscowDate();  // ← используем московскую дату
     if (progress.last_attempt_date !== today) {
         await client.query(
             `UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2`,
             [today, userId]
         );
         progress.attempts_today = 0;
+        progress.last_attempt_date = today;
     }
 }
 
@@ -77,7 +85,7 @@ function getBotLevel(floor) {
     return 60;                     // 92–100: 60
 }
 
-// Получить состояние башни ЭНДПОИНТ здесь
+// Получить состояние башни
 router.get('/status', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -165,9 +173,11 @@ router.post('/battle', async (req, res) => {
             throw new Error('No tickets left today');
         }
 
+        // Используем московскую дату для записи последней попытки
+        const today = getMoscowDate();
         await client.query(
             `UPDATE tower_progress SET attempts_today = attempts_today + 1, last_attempt_date = $1 WHERE user_id = $2`,
-            [new Date().toISOString().split('T')[0], userId]
+            [today, userId]
         );
 
         const botLevel = getBotLevel(progress.current_floor);

@@ -1582,6 +1582,15 @@ td {
 }
 
 
+.stats-battle .player-col {
+    color: #00aaff;
+    font-weight: bold;
+}
+.stats-battle .enemy-col {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
 /* ========== БАШНЯ ========== */
 
 .tower-container {

@@ -185,6 +185,7 @@ router.post('/battle', async (req, res) => {
         }
 
         const newAttemptsToday = updateRes.rows[0].attempts_today;
+        console.log(`[TICKET] User ${userId} new attempts: ${newAttemptsToday}, date: ${today}`);
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
@@ -305,6 +306,7 @@ router.post('/battle', async (req, res) => {
                     `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)`,
                     [userId, floor, 'avatar', avatarReward]
                 );
+                console.log(`[REWARD] User ${userId} floor ${floor} received avatar ${avatarReward}`);
             }
 
             await client.query(

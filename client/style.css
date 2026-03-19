@@ -1509,67 +1509,78 @@ td {
     border: none !important;
 }
 
-/* ========== РЕЙТИНГ ========== */
-.rating-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: center;
-}
-
-.rating-tab {
-    flex: 1;
-    background-color: #2f3542;
-    border: 2px solid #00aaff;
-    color: white;
-    border-radius: 30px;
-    padding: 8px 0;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.rating-tab.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-.rating-tab i {
-    margin-right: 5px;
-    color: inherit;
-}
-
-.stats-table {
+/* ========== ТАБЛИЦЫ РЕЙТИНГА (ОБЩИЙ, СИЛА, БАШНЯ) ========== */
+#ratingContent .stats-table,
+.rating-content .stats-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
 }
 
-.stats-table th {
-    background-color: #2f3542;
+#ratingContent .stats-table th,
+.rating-content .stats-table th {
+    background-color: #1a1f2b;
     color: white;
-    padding: 10px 5px;
     font-weight: bold;
+    padding: 10px 5px;
     text-align: left;
 }
 
-.stats-table th:first-child {
-    text-align: center; /* для колонки "Место" */
-    width: 50px;
+#ratingContent .stats-table th:first-child,
+.rating-content .stats-table th:first-child {
+    text-align: center; /* колонка "Место" */
 }
 
-.stats-table td {
+#ratingContent .stats-table td,
+.rating-content .stats-table td {
     padding: 8px 5px;
-    border-bottom: 1px solid #2f3542;
     text-align: left;
 }
 
-.stats-table td:first-child {
+#ratingContent .stats-table td:first-child,
+.rating-content .stats-table td:first-child {
     text-align: center;
 }
+
+#ratingContent .stats-table tbody tr:nth-child(odd),
+.rating-content .stats-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+
+#ratingContent .stats-table tbody tr:nth-child(even),
+.rating-content .stats-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+
+/* ========== ТАБЛИЦА СТАТИСТИКИ БОЯ (В РЕЗУЛЬТАТАХ БАШНИ) ========== */
+.battle-result .stats-battle {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.battle-result .stats-battle th {
+    background-color: #1a1f2b;
+    color: white;
+    font-weight: bold;
+    padding: 10px 5px;
+    text-align: center;
+}
+
+.battle-result .stats-battle td {
+    padding: 8px 5px;
+    text-align: center;
+}
+
+.battle-result .stats-battle tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+
+.battle-result .stats-battle tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+
+
 /* ========== БАШНЯ ========== */
 
 .tower-container {

@@ -1529,6 +1529,7 @@ td {
     cursor: pointer;
     transition: 0.2s;
     text-align: center;
+    white-space: nowrap;
 }
 
 .rating-tab.active {
@@ -1556,7 +1557,7 @@ td {
 }
 
 .stats-table th:first-child {
-    text-align: center; /* для колонки Место */
+    text-align: center; /* для колонки "Место" */
     width: 50px;
 }
 
@@ -1569,7 +1570,6 @@ td {
 .stats-table td:first-child {
     text-align: center;
 }
-
 /* ========== БАШНЯ ========== */
 
 .tower-container {

@@ -1510,49 +1510,63 @@ td {
 }
 
 /* ========== РЕЙТИНГ ========== */
+.rating-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
 
-/* ========== ТАБЛИЦЫ (включая рейтинг) ========== */
+.rating-tab {
+    flex: 1;
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: white;
+    border-radius: 30px;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.rating-tab.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+.rating-tab i {
+    margin-right: 5px;
+    color: inherit;
+}
+
 .stats-table {
-    border-collapse: separate;
-    border-spacing: 0;
     width: 100%;
+    border-collapse: collapse;
     font-size: 14px;
 }
 
-/* Заголовок таблицы – стиль "кнопки" с голубой обводкой */
-.stats-table thead th {
-    background-color: rgba(35, 40, 51, 0.9);
-    border: 2px solid #00aaff;
+.stats-table th {
+    background-color: #2f3542;
+    color: white;
     padding: 10px 5px;
     font-weight: bold;
-    color: #00aaff;          /* голубой текст, можно заменить на белый если нужно */
     text-align: left;
 }
 
-/* Скругление углов для первого и последнего заголовка */
-.stats-table thead th:first-child {
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
+.stats-table th:first-child {
+    text-align: center; /* для колонки Место */
+    width: 50px;
 }
 
-.stats-table thead th:last-child {
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-}
-
-/* Убираем двойную границу между ячейками заголовка */
-.stats-table thead th:not(:last-child) {
-    border-right: none;
-}
-
-/* Строки таблицы */
-.stats-table tbody td {
+.stats-table td {
     padding: 8px 5px;
     border-bottom: 1px solid #2f3542;
+    text-align: left;
 }
 
-/* Первая колонка (место) по центру, остальные по левому краю (уже задано) */
-.stats-table tbody td:first-child {
+.stats-table td:first-child {
     text-align: center;
 }
 

@@ -1262,11 +1262,11 @@ function renderRating() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="margin-top: 10px;"></div>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
-            <button class="btn ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn"><i class="fas fa-fist-raised"></i> СИЛА</button>
-            <button class="btn ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn"><i class="fas fa-chess-rook"></i> БАШНЯ</button>
-        </div>
+        <div class="rating-tabs">
+    <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
+    <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn"><i class="fas fa-fist-raised"></i> СИЛА</button>
+    <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn"><i class="fas fa-chess-rook"></i> БАШНЯ</button>
+</div>
         <div id="ratingContent"></div>
     `;
 

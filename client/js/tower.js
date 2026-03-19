@@ -596,27 +596,19 @@ function showTowerResultScreen(battleData) {
     tabStats.addEventListener('click', () => {
         tabLog.classList.remove('active');
         tabStats.classList.add('active');
-        resultDiv.innerHTML = `
-            <style>
-                .stats-table { width:100%; border-collapse: collapse; text-align: center; font-size: 14px; }
-                .stats-table th { color: #00aaff; font-weight: bold; padding-bottom: 8px; }
-                .stats-table td { padding: 4px 0; border-bottom: 1px solid #2f3542; }
-                .stats-table .player-col { color: #00aaff; font-weight: bold; }
-                .stats-table .enemy-col { color: #e74c3c; font-weight: bold; }
-            </style>
-            <table class="stats-table">
-                <thead><tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr></thead>
-                <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
-                </tbody>
-            </table>
-        `;
-    });
+       resultDiv.innerHTML = `
+    <table class="stats-table stats-battle">
+        <thead><tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr></thead>
+        <tbody>
+            <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+            <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+            <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+            <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+            <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+            <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+        </tbody>
+    </table>
+`;
 
     document.getElementById('towerBackBtn').addEventListener('click', () => {
         renderTower();

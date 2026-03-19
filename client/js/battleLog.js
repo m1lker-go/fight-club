@@ -1,5 +1,3 @@
-// battleLog.js
-
 const BattleLog = {
     messages: [],
     states: [],
@@ -27,6 +25,11 @@ const BattleLog = {
     enemyBurnStacks: 0,
     playerRage: 0,
     enemyRage: 0,
+
+    // Для отложенного обновления полоски врага (берсерк)
+    delayEnemyHpUpdate: false,
+    delayedEnemyHp: null,
+    delayedTimer: null,
 
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
@@ -57,6 +60,9 @@ const BattleLog = {
         this.enemyBurnStacks = 0;
         this.playerRage = 0;
         this.enemyRage = 0;
+        this.delayEnemyHpUpdate = false;
+        if (this.delayedTimer) clearTimeout(this.delayedTimer);
+        this.delayedTimer = null;
 
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
@@ -95,11 +101,36 @@ const BattleLog = {
         const heroManaText = document.getElementById('heroManaText');
         const enemyManaText = document.getElementById('enemyManaText');
 
+        // Здоровье игрока обновляем сразу
         if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
-        if (enemyHpText) enemyHpText.innerText = `${state.enemyHp}/${this.battleData.result.enemyMaxHp}`;
         if (heroHpBar) heroHpBar.style.width = (state.playerHp / this.battleData.result.playerMaxHp) * 100 + '%';
-        if (enemyHpBar) enemyHpBar.style.width = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
 
+        // Обработка вражеской полоски с возможной задержкой (для берсерка)
+        if (this.delayEnemyHpUpdate) {
+            // Отменяем предыдущий таймер
+            if (this.delayedTimer) clearTimeout(this.delayedTimer);
+            // Сохраняем целевое значение
+            this.delayedEnemyHp = state.enemyHp;
+            // Запускаем таймер с учётом скорости
+            this.delayedTimer = setTimeout(() => {
+                if (enemyHpBar) enemyHpBar.style.width = (this.delayedEnemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
+                if (enemyHpText) enemyHpText.innerText = `${this.delayedEnemyHp}/${this.battleData.result.enemyMaxHp}`;
+                this.delayedTimer = null;
+            }, 2000 / this.speed);
+            // Сбрасываем флаг
+            this.delayEnemyHpUpdate = false;
+            // Вражеский текст пока не трогаем
+        } else {
+            // Если таймер был активен, но мы применили новое состояние без задержки – отменяем его
+            if (this.delayedTimer) {
+                clearTimeout(this.delayedTimer);
+                this.delayedTimer = null;
+            }
+            if (enemyHpText) enemyHpText.innerText = `${state.enemyHp}/${this.battleData.result.enemyMaxHp}`;
+            if (enemyHpBar) enemyHpBar.style.width = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
+        }
+
+        // Мана
         if (state.playerMana !== undefined) {
            if (heroMana) heroMana.style.width = Math.min(100, (state.playerMana / 100) * 100) + '%';
             if (heroManaText) heroManaText.innerText = state.playerMana;
@@ -110,10 +141,11 @@ const BattleLog = {
         }
 
         // Отладка маны
-console.log(`[MANA] player: ${state.playerMana}, enemy: ${state.enemyMana}`);
-if (state.playerMana >= 100) console.log('[MANA] Player ULT ready!');
-if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
+        console.log(`[MANA] player: ${state.playerMana}, enemy: ${state.enemyMana}`);
+        if (state.playerMana >= 100) console.log('[MANA] Player ULT ready!');
+        if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
 
+        // Обновление статусных переменных
         this.playerFrozen = state.playerFrozen || 0;
         this.enemyFrozen = state.enemyFrozen || 0;
         this.playerShield = state.playerShield || 0;
@@ -125,7 +157,7 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         this.playerBurnStacks = state.playerBurnStacks || 0;
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Расчёт уровня ярости (если подкласс берсерк)
+        // Расчёт ярости
         if (this.battleData.playerSubclass === 'berserker') {
             const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
             this.playerRage = this.getRageLevelFromPercent(playerPercent);
@@ -139,6 +171,7 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
             this.enemyRage = 0;
         }
 
+        // Оверлей заморозки
         if (state.playerHp <= 0) this.playerFrozen = 0;
         if (state.enemyHp <= 0) this.enemyFrozen = 0;
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
@@ -149,6 +182,7 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         this.renderEffects('player');
         this.renderEffects('enemy');
 
+        // Смерть
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
@@ -197,7 +231,6 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
                 effects.push({ type: 'shield', icon: '/assets/icons/icon_shield.png' });
             }
             if (this.playerRage > 0) {
-                // Каждый уровень ярости – отдельный эффект
                 for (let i = 0; i < this.playerRage; i++) {
                     effects.push({ type: 'rage', icon: '/assets/icons/icon_rage.png' });
                 }
@@ -234,7 +267,6 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         const slots = document.querySelectorAll(`.debuff-slot[data-side="${side}"]`);
         const effects = this.buildEffectsList(side);
 
-        // Разделяем на негативные и позитивные
         const negativeEffects = [];
         const positiveEffects = [];
         for (let effect of effects) {
@@ -245,15 +277,12 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
             }
         }
 
-        // Очищаем слоты
         slots.forEach(slot => slot.innerHTML = '');
 
-        // Заполняем слоты: максимум один негативный и один позитивный на слот
         for (let i = 0; i < 5; i++) {
             const slot = slots[i];
             if (!slot) continue;
 
-            // Негативный эффект для этого слота
             if (i < negativeEffects.length) {
                 const effect = negativeEffects[i];
                 const img = document.createElement('img');
@@ -263,7 +292,6 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
                 slot.appendChild(img);
             }
 
-            // Позитивный эффект для этого слота
             if (i < positiveEffects.length) {
                 const effect = positiveEffects[i];
                 const img = document.createElement('img');
@@ -276,7 +304,6 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
 
         if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
     },
-
 
     formatLogText(text) {
         text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
@@ -294,96 +321,99 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         return text;
     },
 
-   playNext() {
-    if (this.stopped) {
-        console.log('[BattleLog] stopped, ignoring');
-        return;
-    }
-    if (this.currentMsgIndex >= this.messages.length) {
-        console.log('[BattleLog] All messages shown, finishing');
-        this.finish();
-        return;
-    }
-
-    const entry = this.messages[this.currentMsgIndex];
-    const msgText = entry.text;
-    const type = entry.type;
-    const attacker = entry.attacker;
-
-    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
-
-    // Всегда добавляем запись в лог
-    const logEntry = document.createElement('div');
-    let entryClass = 'log-entry';
-
-    if (type === 'dodge') {
-        entryClass += ' dodge-message';
-    } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-        entryClass += ' ult-message';
-    } else if (type === 'poison_stack' || type === 'poison_dot') {
-        entryClass += ' poison-message';
-    } else if (type === 'burn_stack' || type === 'burn_dot') {
-        entryClass += ' fire-message';
-    } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
-        entryClass += ' ice-message';
-    }
-
-    logEntry.className = entryClass;
-    logEntry.innerHTML = this.formatLogText(msgText);
-    this.logContainer.appendChild(logEntry);
-    this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
-    // Анимация (только для не-стековых сообщений)
-    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
-    if (!isStackMessage) {
-        let animTarget = null;
-        let animFile = null;
-
-        if (type === 'attack' || type === 'crit' || type === 'damage') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'shot.gif';
-        } else if (type === 'dodge') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'missx.gif';
-        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            if (type === 'fire_ult') animFile = 'fire.gif';
-            else if (type === 'ice_ult') animFile = 'ice.gif';
-            else if (type === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        } else if (type === 'damage_self') {
-            animTarget = null;
-            animFile = null;
-        } else if (type === 'heal' || type === 'buff') {
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-        } else if (type === 'frozen_enter' || type === 'frozen_end') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'frozenx.gif';
-            console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);
+    playNext() {
+        if (this.stopped) {
+            console.log('[BattleLog] stopped, ignoring');
+            return;
+        }
+        if (this.currentMsgIndex >= this.messages.length) {
+            console.log('[BattleLog] All messages shown, finishing');
+            this.finish();
+            return;
         }
 
-        if (animTarget && animFile) {
-            console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
-            this.showAnimation(animTarget, animFile);
+        const entry = this.messages[this.currentMsgIndex];
+        const msgText = entry.text;
+        const type = entry.type;
+        const attacker = entry.attacker;
+
+        console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
+
+        // Если это сообщение о самоповреждении (берсерк), взводим флаг отложенного обновления врага
+        if (type === 'damage_self') {
+            this.delayEnemyHpUpdate = true;
         }
-    }
 
-    this.parseAndShowFloatingNumber(entry);
-    this.currentMsgIndex++;
+        const logEntry = document.createElement('div');
+        let entryClass = 'log-entry';
 
-    if (this.currentStateIndex < this.states.length) {
-        this.applyState(this.states[this.currentStateIndex]);
-        this.currentStateIndex++;
-    }
+        if (type === 'dodge') {
+            entryClass += ' dodge-message';
+        } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            entryClass += ' ult-message';
+        } else if (type === 'poison_stack' || type === 'poison_dot') {
+            entryClass += ' poison-message';
+        } else if (type === 'burn_stack' || type === 'burn_dot') {
+            entryClass += ' fire-message';
+        } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
+            entryClass += ' ice-message';
+        }
 
-    // Отладка ультимейта
-    if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
-        console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
-    }
+        logEntry.className = entryClass;
+        logEntry.innerHTML = this.formatLogText(msgText);
+        this.logContainer.appendChild(logEntry);
+        this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-},
+        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+        if (!isStackMessage) {
+            let animTarget = null;
+            let animFile = null;
+
+            if (type === 'attack' || type === 'crit' || type === 'damage') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'shot.gif';
+            } else if (type === 'dodge') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'missx.gif';
+            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                if (type === 'fire_ult') animFile = 'fire.gif';
+                else if (type === 'ice_ult') animFile = 'ice.gif';
+                else if (type === 'poison_ult') animFile = 'poison.gif';
+                else animFile = 'ultimate.gif';
+            } else if (type === 'damage_self') {
+                animTarget = null;
+                animFile = null;
+            } else if (type === 'heal' || type === 'buff') {
+                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+            } else if (type === 'frozen_enter' || type === 'frozen_end') {
+                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                animFile = 'frozenx.gif';
+                console.log(`[DEBUG] frozen: type=${type}, attacker=${attacker}, animTarget=${animTarget}`);
+            }
+
+            if (animTarget && animFile) {
+                console.log(`[BattleLog] Playing animation ${animFile} on ${animTarget}`);
+                this.showAnimation(animTarget, animFile);
+            }
+        }
+
+        this.parseAndShowFloatingNumber(entry);
+        this.currentMsgIndex++;
+
+        if (this.currentStateIndex < this.states.length) {
+            this.applyState(this.states[this.currentStateIndex]);
+            this.currentStateIndex++;
+        }
+
+        // Отладка ультимейта
+        if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
+            console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
+        }
+
+        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+    },
 
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;
@@ -562,5 +592,7 @@ if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
         this.currentStateIndex = 0;
         this.battleData = null;
         this.onFinish = null;
+        if (this.delayedTimer) clearTimeout(this.delayedTimer);
+        this.delayedTimer = null;
     }
 };

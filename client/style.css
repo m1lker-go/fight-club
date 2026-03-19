@@ -1554,9 +1554,10 @@ td {
 
 /* ========== ТАБЛИЦА СТАТИСТИКИ БОЯ (В РЕЗУЛЬТАТАХ БАШНИ) ========== */
 .battle-result .stats-battle {
-    width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
+    width: 100%;
 }
 
 .battle-result .stats-battle th {
@@ -1568,7 +1569,7 @@ td {
 }
 
 .battle-result .stats-battle td {
-    padding: 8px 5px;
+    width: 33.33%;
     text-align: center;
 }
 

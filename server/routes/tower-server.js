@@ -185,7 +185,8 @@ router.post('/battle', async (req, res) => {
         }
 
         const newAttemptsToday = updateRes.rows[0].attempts_today;
-        console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
+progress.attempts_today = newAttemptsToday; // синхронизируем объект progress
+console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
 
         // Проверим, что дата действительно записалась
         const dateCheck = await client.query('SELECT last_attempt_date FROM tower_progress WHERE user_id = $1', [userId]);

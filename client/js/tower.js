@@ -652,6 +652,12 @@ function handleTowerBattleEnd(battleData) {
         item.style.opacity = '1';
     });
 
+    // Обновляем монеты, если это была победа и награда — монеты
+    if (battleData.victory && battleData.reward && battleData.reward.type === 'coins') {
+        userData.coins += battleData.reward.amount;
+        updateTopBar();
+    }
+
     towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 

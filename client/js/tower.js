@@ -326,19 +326,31 @@ function showTowerBattleScreen(battleData) {
         item.style.opacity = '0.5';
     });
 
-    battleData.playerClass = userData.current_class;
-    battleData.enemyClass = battleData.opponent.class;
-    battleData.playerSubclass = userData.subclass;
-    battleData.enemySubclass = battleData.opponent.subclass;
+   // Используем выбранный в башне класс, если он есть, иначе текущий
+const playerClassForBattle = towerStatus.chosenClass || userData.current_class;
+const playerSubclassForBattle = towerStatus.chosenSubclass || userData.subclass;
+
+battleData.playerClass = playerClassForBattle;
+battleData.enemyClass = battleData.opponent.class;
+battleData.playerSubclass = playerSubclassForBattle;
+battleData.enemySubclass = battleData.opponent.subclass;
+
+// Определяем отображаемые названия для шапки
+const playerDisplayClass = towerStatus.chosenClass
+    ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
+    : getClassNameRu(userData.current_class);
+const playerDisplaySubclass = towerStatus.chosenSubclass
+    ? getRoleNameRu(towerStatus.chosenSubclass)
+    : getRoleNameRu(userData.subclass);
 
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
             <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
-                <div style="text-align: left;">
-                    <div>${userData.username}</div>
-                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
-                </div>
+               <div style="text-align: left;">
+    <div>${userData.username}</div>
+    <div style="font-size: 12px; color: #aaa;">${playerDisplayClass} (${playerDisplaySubclass})</div>
+</div>
                 <div style="text-align: right;">
                     <div>${battleData.opponent.username}</div>
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>

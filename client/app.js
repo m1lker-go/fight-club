@@ -1339,6 +1339,7 @@ async function loadRatingData(type) {
         console.error('Error loading rating:', e);
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>';
     }
+}
 
 function getRoleNameRu(role) {
     const roles = {
@@ -1348,8 +1349,6 @@ function getRoleNameRu(role) {
     };
     return roles[role] || role;
 }
-}
-
 
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {

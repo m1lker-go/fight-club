@@ -9,7 +9,9 @@ console.log('✅ tower-server.js loaded (full version)');
 function getMoscowDate() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-    return moscowTime.toISOString().split('T')[0];
+    const result = moscowTime.toISOString().split('T')[0];
+    console.log(`[getMoscowDate] now=${now.toISOString()}, moscowTime=${moscowTime}, result=${result}`);
+    return result;
 }
 
 // Группы классов для циклического перебора (9 комбинаций)
@@ -19,7 +21,6 @@ const classGroups = [
     { class: 'mage', subclasses: ['pyromancer', 'cryomancer', 'illusionist'] }
 ];
 
-// Определяем тип врага для каждого этажа (цикл 1..9)
 function getFloorEnemyType(floor) {
     const pos = (floor - 1) % 9;
     const groupIndex = Math.floor(pos / 3);
@@ -31,7 +32,6 @@ function getFloorEnemyType(floor) {
     };
 }
 
-// Вспомогательная функция для получения или создания записи прогресса
 async function getOrCreateProgress(client, userId) {
     const res = await client.query(
         'SELECT * FROM tower_progress WHERE user_id = $1',
@@ -47,9 +47,9 @@ async function getOrCreateProgress(client, userId) {
     return res.rows[0];
 }
 
-// Проверка и сброс счётчика попыток, если прошёл день (по Москве)
 async function checkAndResetAttempts(client, userId, progress) {
     const today = getMoscowDate();
+    console.log(`[checkAndResetAttempts] user ${userId}: stored last_attempt_date=${progress.last_attempt_date}, today=${today}`);
     if (progress.last_attempt_date !== today) {
         await client.query(
             'UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2',
@@ -59,11 +59,10 @@ async function checkAndResetAttempts(client, userId, progress) {
         progress.last_attempt_date = today;
         console.log(`[checkAndResetAttempts] user ${userId}: reset to 0 (new day ${today})`);
     } else {
-        console.log(`[checkAndResetAttempts] user ${userId}: no reset, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
+        console.log(`[checkAndResetAttempts] user ${userId}: no reset`);
     }
 }
 
-// Функция для получения случайного аватара (без учёта дефолтного и алмазных)
 async function getRandomAvatar(client) {
     const res = await client.query(
         'SELECT id FROM avatars WHERE price_diamonds = 0 AND id != 1'
@@ -74,7 +73,6 @@ async function getRandomAvatar(client) {
     return avatars[randomIndex].id;
 }
 
-// Функция уровня бота в зависимости от этажа
 function getBotLevel(floor) {
     if (floor <= 20) return floor;
     if (floor <= 76) {
@@ -160,16 +158,19 @@ router.post('/battle', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        const userRes = await client.query('SELECT id, current_class, subclass FROM users WHERE tg_id = $1', [tg_id]);
+        // Добавлено поле username в SELECT
+        const userRes = await client.query('SELECT id, current_class, subclass, username FROM users WHERE tg_id = $1', [tg_id]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const userId = userRes.rows[0].id;
         const userClass = userRes.rows[0].current_class;
         const userSubclass = userRes.rows[0].subclass;
+        const username = userRes.rows[0].username || 'Player';
 
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
 
         const today = getMoscowDate();
+        console.log(`[BATTLE] before update: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
         const updateRes = await client.query(
             'UPDATE tower_progress SET attempts_today = attempts_today + 1, last_attempt_date = $1 WHERE user_id = $2 AND attempts_today < 10 RETURNING attempts_today',
             [today, userId]
@@ -181,6 +182,10 @@ router.post('/battle', async (req, res) => {
 
         const newAttemptsToday = updateRes.rows[0].attempts_today;
         console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
+
+        // Проверим, что дата действительно записалась
+        const dateCheck = await client.query('SELECT last_attempt_date FROM tower_progress WHERE user_id = $1', [userId]);
+        console.log(`[BATTLE] after update, DB last_attempt_date = ${dateCheck.rows[0].last_attempt_date}`);
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
@@ -236,7 +241,7 @@ router.post('/battle', async (req, res) => {
             enemyStats,
             userClass,
             bot.class,
-            userRes.rows[0].username || 'Player',
+            username,
             bot.username,
             userSubclass,
             bot.subclass

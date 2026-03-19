@@ -49,14 +49,18 @@ async function getOrCreateProgress(client, userId) {
 
 async function checkAndResetAttempts(client, userId, progress) {
     const today = getMoscowDate();
-    console.log(`[checkAndResetAttempts] user ${userId}: stored last_attempt_date=${progress.last_attempt_date}, today=${today}`);
-    if (progress.last_attempt_date !== today) {
+    // Преобразуем last_attempt_date из БД (если это Date) в строку YYYY-MM-DD
+    const lastDateStr = progress.last_attempt_date 
+        ? new Date(progress.last_attempt_date).toISOString().split('T')[0] 
+        : null;
+    console.log(`[checkAndResetAttempts] user ${userId}: last_attempt_date=${lastDateStr}, today=${today}`);
+    if (lastDateStr !== today) {
         await client.query(
             'UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2',
             [today, userId]
         );
         progress.attempts_today = 0;
-        progress.last_attempt_date = today;
+        progress.last_attempt_date = today; // обновляем объект для согласованности
         console.log(`[checkAndResetAttempts] user ${userId}: reset to 0 (new day ${today})`);
     } else {
         console.log(`[checkAndResetAttempts] user ${userId}: no reset`);

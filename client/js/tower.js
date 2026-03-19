@@ -473,20 +473,12 @@ function handleTowerBattleEnd(battleData) {
         item.style.opacity = '1';
     });
 
-    if (battleData.victory) {
-        showRewardModal(battleData.reward);
-        towerStatus.currentFloor = battleData.newFloor;
-        towerStatus.attemptsLeft = battleData.attemptsLeft;
-        if (battleData.reward.type === 'coins') {
-            userData.coins += battleData.reward.amount;
-            updateTopBar();
-        }
-    } else {
-        alert('Поражение...');
-        towerStatus.attemptsLeft = battleData.attemptsLeft;
-    }
+    // Обновляем статус башни из данных боя
+    towerStatus.currentFloor = battleData.newFloor;
+    towerStatus.attemptsLeft = battleData.attemptsLeft;
 
-    renderTower();
+    // Показываем экран результата
+    showTowerResultScreen(battleData);
 }
 
 function getRoleNameRu(role) {

@@ -190,11 +190,11 @@ function renderTower() {
                             <span class="header-label">Этаж:</span>
                             <span class="header-value">${towerStatus.currentFloor}</span>
                         </div>
-                    <div class="grid-item">
-    <span class="header-label">Билеты:</span>
-    <span class="header-value">${towerStatus.attemptsLeft}</span>
-    <img src="/assets/icons/icon-ticket.png" alt="билет" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle; display: inline-block;">
-</div>
+                        <div class="grid-item">
+                            <span class="header-label">Билеты:</span>
+                            <span class="header-value">${towerStatus.attemptsLeft}</span>
+                            <img src="/assets/icons/icon-ticket.png" alt="билет" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle; display: inline-block;">
+                        </div>
                     </div>
                     <div class="grid-right">
                         <div class="grid-item">
@@ -326,31 +326,31 @@ function showTowerBattleScreen(battleData) {
         item.style.opacity = '0.5';
     });
 
-   // Используем выбранный в башне класс, если он есть, иначе текущий
-const playerClassForBattle = towerStatus.chosenClass || userData.current_class;
-const playerSubclassForBattle = towerStatus.chosenSubclass || userData.subclass;
+    // Используем выбранный в башне класс, если он есть, иначе текущий
+    const playerClassForBattle = towerStatus.chosenClass || userData.current_class;
+    const playerSubclassForBattle = towerStatus.chosenSubclass || userData.subclass;
 
-battleData.playerClass = playerClassForBattle;
-battleData.enemyClass = battleData.opponent.class;
-battleData.playerSubclass = playerSubclassForBattle;
-battleData.enemySubclass = battleData.opponent.subclass;
+    battleData.playerClass = playerClassForBattle;
+    battleData.enemyClass = battleData.opponent.class;
+    battleData.playerSubclass = playerSubclassForBattle;
+    battleData.enemySubclass = battleData.opponent.subclass;
 
-// Определяем отображаемые названия для шапки
-const playerDisplayClass = towerStatus.chosenClass
-    ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
-    : getClassNameRu(userData.current_class);
-const playerDisplaySubclass = towerStatus.chosenSubclass
-    ? getRoleNameRu(towerStatus.chosenSubclass)
-    : getRoleNameRu(userData.subclass);
+    // Определяем отображаемые названия для шапки
+    const playerDisplayClass = towerStatus.chosenClass
+        ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
+        : getClassNameRu(userData.current_class);
+    const playerDisplaySubclass = towerStatus.chosenSubclass
+        ? getRoleNameRu(towerStatus.chosenSubclass)
+        : getRoleNameRu(userData.subclass);
 
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
             <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
-               <div style="text-align: left;">
-    <div>${userData.username}</div>
-    <div style="font-size: 12px; color: #aaa;">${playerDisplayClass} (${playerDisplaySubclass})</div>
-</div>
+                <div style="text-align: left;">
+                    <div>${userData.username}</div>
+                    <div style="font-size: 12px; color: #aaa;">${playerDisplayClass} (${playerDisplaySubclass})</div>
+                </div>
                 <div style="text-align: right;">
                     <div>${battleData.opponent.username}</div>
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
@@ -566,16 +566,16 @@ function showTowerResultScreen(battleData) {
             ${rewardHtml}
 
             <div class="tower-result-grid">
-    ${victory
-        ? '<button class="tower-result-btn" id="towerNextBtn">Следующий этаж</button>'
-        : (towerStatus.attemptsLeft > 0
-            ? '<button class="tower-result-btn" id="towerRetryBtn">Повторить</button>'
-            : '<button class="tower-result-btn" disabled>Нет билетов</button>')
-    }
-    <button class="tower-result-btn" id="towerBackBtn">Назад</button>
-    <button class="tower-result-btn result-tab active" id="tabLog">Лог боя</button>
-    <button class="tower-result-btn result-tab" id="tabStats">Статистика</button>
-</div>
+                ${victory
+                    ? '<button class="tower-result-btn" id="towerNextBtn">Следующий этаж</button>'
+                    : (towerStatus.attemptsLeft > 0
+                        ? '<button class="tower-result-btn" id="towerRetryBtn">Повторить</button>'
+                        : '<button class="tower-result-btn" disabled>Нет билетов</button>')
+                }
+                <button class="tower-result-btn" id="towerBackBtn">Назад</button>
+                <button class="tower-result-btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="tower-result-btn result-tab" id="tabStats">Статистика</button>
+            </div>
 
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 ${logArray}
@@ -596,19 +596,20 @@ function showTowerResultScreen(battleData) {
     tabStats.addEventListener('click', () => {
         tabLog.classList.remove('active');
         tabStats.classList.add('active');
-       resultDiv.innerHTML = `
-    <table class="stats-table stats-battle">
-        <thead><tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr></thead>
-        <tbody>
-            <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-            <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-            <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-            <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-            <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-            <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
-        </tbody>
-    </table>
-`;
+        resultDiv.innerHTML = `
+            <table class="stats-table stats-battle">
+                <thead><tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr></thead>
+                <tbody>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                </tbody>
+            </table>
+        `;
+    });
 
     document.getElementById('towerBackBtn').addEventListener('click', () => {
         renderTower();

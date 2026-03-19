@@ -1263,8 +1263,9 @@ function renderRating() {
     content.innerHTML = `
         <div style="margin-top: 10px;"></div>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn" style="flex:1;"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
-            <button class="btn ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn" style="flex:1;"><i class="fas fa-fist-raised"></i> СИЛА</button>
+            <button class="btn ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
+            <button class="btn ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn"><i class="fas fa-fist-raised"></i> СИЛА</button>
+            <button class="btn ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn"><i class="fas fa-chess-rook"></i> БАШНЯ</button>
         </div>
         <div id="ratingContent"></div>
     `;
@@ -1281,6 +1282,12 @@ function renderRating() {
         loadRatingData('power');
     });
 
+    document.getElementById('towerTabBtn').addEventListener('click', () => {
+        ratingTab = 'tower';
+        renderRating();
+        loadRatingData('tower');
+    });
+
     loadRatingData(ratingTab);
 }
 
@@ -1293,26 +1300,46 @@ async function loadRatingData(type) {
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
 
-        let html = '<table style="width:100%; border-collapse: collapse; font-size: 14px;">';
-        html += '<tr><th>#</th><th>Игрок</th><th>Класс</th><th>Очки</th></tr>';
+        let html = '<table class="stats-table"><thead><tr><th>Место</th><th>Имя</th>';
+
+        if (type === 'rating' || type === 'power') {
+            html += '<th>Класс</th><th>Очки</th>';
+        } else if (type === 'tower') {
+            html += '<th>Класс</th><th>Роль</th><th>Этаж</th>';
+        }
+        html += '</tr></thead><tbody>';
+
         data.forEach((item, index) => {
-            const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
-            const points = type === 'rating' ? item.rating : item.power;
-            html += `<tr>
-                <td style="padding: 8px 0; text-align:center;">${index + 1}</td>
-                <td>${item.username}</td>
-                <td>${className}</td>
-                <td style="text-align:center;">${points}</td>
-            </tr>`;
+            html += '<tr>';
+            html += `<td style="text-align:center;">${index + 1}</td>`;
+            html += `<td>${item.username}</td>`;
+
+            if (type === 'rating') {
+                const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
+                html += `<td>${className}</td>`;
+                html += `<td style="text-align:center;">${item.rating}</td>`;
+            } else if (type === 'power') {
+                const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
+                html += `<td>${className}</td>`;
+                html += `<td style="text-align:center;">${item.power}</td>`;
+            } else if (type === 'tower') {
+                const className = window.getClassNameRu ? getClassNameRu(item.chosen_class) : item.chosen_class;
+                const roleName = getRoleNameRu(item.chosen_subclass);
+                html += `<td>${className}</td>`;
+                html += `<td>${roleName}</td>`;
+                html += `<td style="text-align:center;">${item.floor}</td>`;
+            }
+
+            html += '</tr>';
         });
-        html += '</table>';
+
+        html += '</tbody></table>';
         container.innerHTML = html;
     } catch (e) {
         console.error('Error loading rating:', e);
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>';
     }
 }
-
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const content = document.getElementById('content');

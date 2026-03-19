@@ -399,22 +399,22 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'damage';
             break;
         case 'pyromancer':
-            damage = Math.floor(attackerStats.int * 2.0) + ((defenderState.burnStacks || 0) * 2);
-            log = ultPhrases.pyromancer.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);
-            defenderState.burnStacks = 0;
-            type = 'fire_ult';
-            break;
+    damage = Math.floor(attackerStats.int * 1.8) + ((defenderState.burnStacks || 0) * 2);
+    log = ultPhrases.pyromancer.replace('%s', `<strong>${attackerName}</strong>`).replace('%s', `<strong>${defenderName}</strong>`).replace('%d', damage);
+    defenderState.burnStacks = 0;
+    type = 'fire_ult';
+    break;
       
-        case 'cryomancer':
+       case 'cryomancer':
     const isTargetFrozen = defenderState.frozen > 0;
-    damage = Math.round(attackerStats.int * (isTargetFrozen ? 3 : 2));
+    damage = Math.round(attackerStats.int * (isTargetFrozen ? 2.5 : 1.6));
     const phraseKey = isTargetFrozen ? 'frozen' : 'normal';
     log = ultPhrases.cryomancer[phraseKey];
     log = log.replace('%s', `<strong>${attackerName}</strong>`)
              .replace('%s', `<strong>${defenderName}</strong>`)
              .replace('%d', damage);
     if (!isTargetFrozen) {
-        defenderState.frozen = 2;
+        defenderState.frozen = 1; // теперь заморозка на 1 ход
     }
     defenderState.freezeStacks = 0;
     type = 'ice_ult';

@@ -533,8 +533,6 @@ function showTowerResultScreen(battleData) {
                     </div>
                 </div>
             `;
-        } else if (reward.type === 'coins_duplicate') {
-            // Если аватар уже был, на сервере приходит coins с amount=1500, поэтому этот блок не используется
         }
     }
 

@@ -554,16 +554,16 @@ function showTowerResultScreen(battleData) {
             ${rewardHtml}
 
             <div class="tower-result-grid">
-                <button class="tower-result-btn" id="towerBackBtn">Назад</button>
-                ${victory
-                    ? '<button class="tower-result-btn" id="towerNextBtn">Следующий этаж</button>'
-                    : (towerStatus.attemptsLeft > 0
-                        ? '<button class="tower-result-btn" id="towerRetryBtn">Повторить</button>'
-                        : '<button class="tower-result-btn" disabled>Нет билетов</button>')
-                }
-                <button class="tower-result-btn result-tab active" id="tabLog">Лог боя</button>
-                <button class="tower-result-btn result-tab" id="tabStats">Статистика</button>
-            </div>
+    ${victory
+        ? '<button class="tower-result-btn" id="towerNextBtn">Следующий этаж</button>'
+        : (towerStatus.attemptsLeft > 0
+            ? '<button class="tower-result-btn" id="towerRetryBtn">Повторить</button>'
+            : '<button class="tower-result-btn" disabled>Нет билетов</button>')
+    }
+    <button class="tower-result-btn" id="towerBackBtn">Назад</button>
+    <button class="tower-result-btn result-tab active" id="tabLog">Лог боя</button>
+    <button class="tower-result-btn result-tab" id="tabStats">Статистика</button>
+</div>
 
             <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 ${logArray}

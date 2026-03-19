@@ -44,8 +44,8 @@ router.get('/rating', async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 u.username,
-                u.rating as rating,
-                u.current_class as class
+                u.rating,
+                (SELECT class FROM user_classes WHERE user_id = u.id ORDER BY power DESC LIMIT 1) as class
             FROM users u
             WHERE u.username != 'test'
             ORDER BY u.rating DESC

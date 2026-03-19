@@ -80,4 +80,27 @@ router.get('/power', async (req, res) => {
     }
 });
 
+// Топ башни по этажам
+router.get('/tower', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                u.username,
+                tl.floor,
+                tl.achieved_at,
+                tp.chosen_class,
+                tp.chosen_subclass
+            FROM tower_leaderboard tl
+            JOIN users u ON tl.user_id = u.id
+            LEFT JOIN tower_progress tp ON tl.user_id = tp.user_id
+            WHERE u.username != 'test'
+            ORDER BY tl.floor DESC, tl.achieved_at ASC
+        `);
+        res.json(result.rows);
+    } catch (e) {
+        console.error('Ошибка получения рейтинга башни:', e);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
 module.exports = router;

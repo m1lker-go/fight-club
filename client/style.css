@@ -1736,7 +1736,7 @@ td {
 
 .tutorial-grid {
     display: grid;
-    grid-template-columns: 120px 1fr;
+    grid-template-columns: 150px 1fr;
     gap: 0;
     width: 100%;
     max-width: 400px;

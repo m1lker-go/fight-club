@@ -432,7 +432,7 @@ function showTowerBattleScreen(battleData) {
     }
 }
 
-// ===== Новые функции для экрана результата =====
+// ===== Функции для экрана результата =====
 
 function computeTowerStats(messages) {
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
@@ -492,10 +492,65 @@ function computeTowerStats(messages) {
     return { playerStats, enemyStats };
 }
 
+function showAvatarModal(avatar) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = avatar.name;
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <img src="/assets/${avatar.filename}" style="max-width: 200px; border-radius: 10px; margin-bottom: 15px;">
+            <button class="tutorial-btn" id="closeAvatarModal" style="width: 100%;">ОКЕЙ</button>
+        </div>
+    `;
+
+    modal.style.display = 'block';
+
+    document.getElementById('closeAvatarModal').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
+}
+
 function showTowerResultScreen(battleData) {
     const { result, victory, reward, newFloor } = battleData;
     const resultText = victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
+
+    // Формируем строку награды
+    let rewardHtml = '';
+    if (reward) {
+        if (reward.type === 'coins') {
+            rewardHtml = `
+                <div class="reward-line">
+                    <span>Поздравляю!</span>
+                    <span class="reward-value">Вы получили: ${reward.amount} <span class="coin-icon">🪙</span></span>
+                </div>
+            `;
+        } else if (reward.type === 'avatar') {
+            rewardHtml = `
+                <div class="reward-line" id="avatarRewardContainer">
+                    <span>Поздравляю!</span>
+                    <span class="reward-value">Вы получили: Скин <span id="avatarName">...</span> 
+                        <span class="eye-icon" id="showAvatarBtn">👁‍🗨</span>
+                    </span>
+                </div>
+            `;
+        } else if (reward.type === 'coins_duplicate') {
+            rewardHtml = `
+                <div class="reward-line">
+                    <span>Поздравляю!</span>
+                    <span class="reward-value">Вы получили: 1500 <span class="coin-icon">🪙</span></span>
+                </div>
+            `;
+        }
+    }
 
     // Формируем лог с цветами
     const logArray = result.messages.map(m => {
@@ -513,23 +568,22 @@ function showTowerResultScreen(battleData) {
     content.innerHTML = `
         <div class="battle-result" style="padding: 10px;">
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
-            <p style="text-align:center;">
-                ${reward ? (reward.type === 'coins' ? `+${reward.amount} монет` : 'Новый скин!') : ''}
-            </p>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
-                <button class="btn" id="towerBackBtn" style="flex: 1;">Назад</button>
+            ${rewardHtml}
+
+            <!-- Сетка кнопок 2x2 -->
+            <div class="tower-result-grid">
+                <button class="tower-result-btn" id="towerBackBtn">Назад</button>
                 ${victory
-                    ? '<button class="btn" id="towerNextBtn" style="flex: 1;">Следующий этаж</button>'
+                    ? '<button class="tower-result-btn" id="towerNextBtn">Следующий этаж</button>'
                     : (towerStatus.attemptsLeft > 0
-                        ? '<button class="btn" id="towerRetryBtn" style="flex: 1;">Повторить</button>'
-                        : '')
+                        ? '<button class="tower-result-btn" id="towerRetryBtn">Повторить</button>'
+                        : '<button class="tower-result-btn" disabled>Нет билетов</button>')
                 }
+                <button class="tower-result-btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="tower-result-btn result-tab" id="tabStats">Статистика</button>
             </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
-                <button class="btn result-tab active" id="tabLog">Лог боя</button>
-                <button class="btn result-tab" id="tabStats">Статистика</button>
-            </div>
-            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+
+            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 ${logArray}
             </div>
         </div>
@@ -576,17 +630,36 @@ function showTowerResultScreen(battleData) {
 
     if (victory) {
         document.getElementById('towerNextBtn').addEventListener('click', () => {
-            // Следующий этаж – просто начинаем бой (newFloor уже обновлён в towerStatus)
             startTowerBattle();
         });
     } else {
         const retryBtn = document.getElementById('towerRetryBtn');
         if (retryBtn) {
             retryBtn.addEventListener('click', () => {
-                // Повторная попытка – начинаем бой на том же этаже (уже обновлён? после поражения towerStatus.currentFloor не меняется)
                 startTowerBattle();
             });
         }
+    }
+
+    // Если награда — аватар, загружаем имя и добавляем обработчик на глаз
+    if (reward && reward.type === 'avatar') {
+        fetch(`/avatars/${reward.avatarId}`)
+            .then(res => res.json())
+            .then(avatar => {
+                const avatarNameSpan = document.getElementById('avatarName');
+                if (avatarNameSpan) avatarNameSpan.innerText = avatar.name;
+                const eyeBtn = document.getElementById('showAvatarBtn');
+                if (eyeBtn) {
+                    eyeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showAvatarModal(avatar);
+                    });
+                }
+            })
+            .catch(() => {
+                const avatarNameSpan = document.getElementById('avatarName');
+                if (avatarNameSpan) avatarNameSpan.innerText = 'неизвестный скин';
+            });
     }
 }
 

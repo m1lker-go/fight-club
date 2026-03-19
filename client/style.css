@@ -1840,3 +1840,79 @@ td {
 .back-btn, .confirm-btn {
     flex: 1;
 }
+
+/* Стили для экрана результата башни */
+.tower-result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.tower-result-btn {
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: white;
+    border-radius: 30px;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+    width: 100%;
+    text-align: center;
+}
+
+.tower-result-btn:hover:not(:disabled) {
+    background-color: #3a4050;
+}
+
+.tower-result-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.tower-result-btn.active {
+    background-color: #00aaff;
+    border-color: white;
+}
+
+.reward-line {
+    text-align: center;
+    font-size: 18px;
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+.reward-line span {
+    display: block;
+}
+
+.reward-value {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.coin-icon {
+    font-size: 24px;
+    vertical-align: middle;
+    color: white;
+}
+
+.eye-icon {
+    font-size: 24px;
+    vertical-align: middle;
+    cursor: pointer;
+    margin-left: 5px;
+    transition: opacity 0.2s;
+}
+
+.eye-icon:hover {
+    opacity: 0.7;
+}
+
+/* Стили для вкладок лога и статистики (они уже используют tower-result-btn) */
+.result-tab {
+    /* наследует tower-result-btn */
+}

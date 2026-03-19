@@ -1820,14 +1820,15 @@ td {
 
 .class-buttons, .role-buttons {
     display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
 }
 
 .class-buttons .tutorial-btn, .role-buttons .tutorial-btn {
-    flex: 1;
-    min-width: 80px;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
 }
 
 .dialog-nav {

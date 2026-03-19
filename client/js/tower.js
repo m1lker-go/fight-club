@@ -190,10 +190,10 @@ function renderTower() {
                             <span class="header-label">Этаж:</span>
                             <span class="header-value">${towerStatus.currentFloor}</span>
                         </div>
-                       <div class="grid-item">
+                      <div class="grid-item">
     <span class="header-label">Билеты:</span>
     <span class="header-value">${towerStatus.attemptsLeft}</span>
-    <span class="ticket-icon" style="color: red;">🎟</span>
+    <img src="/assets/icons/icon-ticket.png" alt="билет" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle;">
 </div>
                     </div>
                     <div class="grid-right">

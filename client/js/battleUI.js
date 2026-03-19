@@ -343,42 +343,13 @@ battleData.result.messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
         resultDiv.innerHTML = logArray;
     });
 
- tabStats.addEventListener('click', () => {
+tabStats.addEventListener('click', () => {
     tabLog.classList.remove('active');
     tabStats.classList.add('active');
     resultDiv.innerHTML = `
-        <style>
-            .stats-table {
-                width: 100%;
-                border-collapse: collapse;
-                text-align: center;
-                font-size: 14px;
-            }
-            .stats-table th {
-                color: #00aaff;
-                font-weight: bold;
-                padding-bottom: 8px;
-            }
-            .stats-table td {
-                padding: 4px 0;
-                border-bottom: 1px solid #2f3542;
-            }
-            .stats-table .player-col {
-                color: #00aaff;
-                font-weight: bold;
-            }
-            .stats-table .enemy-col {
-                color: #e74c3c;
-                font-weight: bold;
-            }
-        </style>
-        <table class="stats-table">
+        <table class="stats-table stats-battle">
             <thead>
-                <tr>
-                    <th>Игрок</th>
-                    <th>Параметр</th>
-                    <th>Соперник</th>
-                </tr>
+                <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
             </thead>
             <tbody>
                 <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>

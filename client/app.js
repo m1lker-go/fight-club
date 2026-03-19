@@ -1339,7 +1339,18 @@ async function loadRatingData(type) {
         console.error('Error loading rating:', e);
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>';
     }
+
+function getRoleNameRu(role) {
+    const roles = {
+        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
+        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
+        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
+    };
+    return roles[role] || role;
 }
+}
+
+
 // ==================== ПРОФИЛЬ ====================
 function renderProfile() {
     const content = document.getElementById('content');

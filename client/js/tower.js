@@ -26,7 +26,6 @@ async function loadTowerStatus() {
 }
 
 function showTutorialOverlay() {
-    // Создаём затемняющий оверлей с туториалом
     const overlay = document.createElement('div');
     overlay.id = 'tutorialOverlay';
     overlay.className = 'tutorial-overlay';
@@ -36,7 +35,6 @@ function showTutorialOverlay() {
                 <img src="/assets/tower/cat.png" alt="Кот" class="tutorial-cat">
             </div>
             <div class="tutorial-right" id="tutorialDialog">
-                <!-- Динамическое содержимое -->
             </div>
         </div>
     `;
@@ -146,12 +144,9 @@ async function confirmSelection() {
         });
         const data = await res.json();
         if (data.success) {
-            // Обновляем локальные данные
             towerStatus.chosenClass = selectedClass;
             towerStatus.chosenSubclass = selectedSubclass;
-            // Убираем оверлей
             removeTutorialOverlay();
-            // Обновляем отображение башни (класс и роль в шапке)
             renderTower();
         } else {
             alert('Ошибка при выборе класса: ' + data.error);
@@ -164,7 +159,7 @@ async function confirmSelection() {
 
 function getFloorRewardInfo(floor) {
     if (floor % 20 === 0) {
-        return { type: 'skin', icon: '🃏', label: 'скин' };
+        return { type: 'skin', icon: 'fas fa-square', label: 'скин' };
     }
     let amount;
     if (floor <= 5) amount = 30;
@@ -174,7 +169,7 @@ function getFloorRewardInfo(floor) {
     else if (floor <= 80) amount = 250;
     else if (floor <= 99) amount = 500;
     else amount = 2000;
-    return { type: 'coins', amount: amount, icon: '💰', label: 'монет' };
+    return { type: 'coins', amount: amount, icon: 'fas fa-coins', label: 'монет' };
 }
 
 function renderTower() {
@@ -244,15 +239,15 @@ function renderTower() {
         if (rewardInfo.type === 'coins') {
             rightHtml = `
                 <div class="floor-reward coins-reward">
-                    <i class="fas fa-coins"></i>
+                    <i class="${rewardInfo.icon}" style="color: white;"></i>
                     <span class="reward-amount">${rewardInfo.amount}</span>
                 </div>
             `;
         } else {
             rightHtml = `
                 <div class="floor-reward skin-reward">
-                    <span class="reward-icon">${rewardInfo.icon}</span>
-                    <span class="reward-label">скин</span>
+                    <i class="${rewardInfo.icon}" style="color: white;"></i>
+                    <span class="reward-label">${rewardInfo.label}</span>
                 </div>
             `;
         }
@@ -351,7 +346,6 @@ function showTowerBattleScreen(battleData) {
             </div>
 
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
-                <!-- Карточка героя -->
                 <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
@@ -370,7 +364,6 @@ function showTowerBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Дебаффы игрока (колонка слева) -->
                 <div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -379,13 +372,11 @@ function showTowerBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-                <!-- Центральная часть с таймером и кнопкой скорости -->
                 <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
                     <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
                     <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 0; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;">x1</button>
                 </div>
 
-                <!-- Дебаффы противника (колонка справа) -->
                 <div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -394,7 +385,6 @@ function showTowerBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <!-- Карточка противника -->
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
@@ -519,40 +509,35 @@ function showAvatarModal(avatar) {
 }
 
 function showTowerResultScreen(battleData) {
-    const { result, victory, reward, newFloor } = battleData;
+    const { result, victory, reward, newFloor, floor } = battleData;
     const resultText = victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
 
-    // Формируем строку награды
+    const passedFloor = floor; // этаж, который только что прошли
+
     let rewardHtml = '';
     if (reward) {
         if (reward.type === 'coins') {
             rewardHtml = `
                 <div class="reward-line">
-                    <span>Поздравляю!</span>
-                    <span class="reward-value">Вы получили: ${reward.amount} <span class="coin-icon">🪙</span></span>
+                    <div class="reward-main">Вы прошли ${passedFloor} этаж башни</div>
+                    <div class="reward-value">Вы получили: ${reward.amount} <i class="fas fa-coins" style="color: white;"></i></div>
                 </div>
             `;
         } else if (reward.type === 'avatar') {
             rewardHtml = `
                 <div class="reward-line" id="avatarRewardContainer">
-                    <span>Поздравляю!</span>
-                    <span class="reward-value">Вы получили: Скин <span id="avatarName">...</span> 
-                        <span class="eye-icon" id="showAvatarBtn">👁‍🗨</span>
-                    </span>
+                    <div class="reward-main">Вы прошли ${passedFloor} этаж башни</div>
+                    <div class="reward-value">Вы получили: Скин <span id="avatarName">...</span> 
+                        <i class="fas fa-eye" id="showAvatarBtn" style="color: white; cursor: pointer;"></i>
+                    </div>
                 </div>
             `;
         } else if (reward.type === 'coins_duplicate') {
-            rewardHtml = `
-                <div class="reward-line">
-                    <span>Поздравляю!</span>
-                    <span class="reward-value">Вы получили: 1500 <span class="coin-icon">🪙</span></span>
-                </div>
-            `;
+            // Если аватар уже был, на сервере приходит coins с amount=1500, поэтому этот блок не используется
         }
     }
 
-    // Формируем лог с цветами
     const logArray = result.messages.map(m => {
         let entryClass = 'log-entry';
         const type = m.type;
@@ -570,7 +555,6 @@ function showTowerResultScreen(battleData) {
             <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
             ${rewardHtml}
 
-            <!-- Сетка кнопок 2x2 -->
             <div class="tower-result-grid">
                 <button class="tower-result-btn" id="towerBackBtn">Назад</button>
                 ${victory
@@ -641,7 +625,6 @@ function showTowerResultScreen(battleData) {
         }
     }
 
-    // Если награда — аватар, загружаем имя и добавляем обработчик на глаз
     if (reward && reward.type === 'avatar') {
         fetch(`/avatars/${reward.avatarId}`)
             .then(res => res.json())
@@ -669,11 +652,9 @@ function handleTowerBattleEnd(battleData) {
         item.style.opacity = '1';
     });
 
-    // Обновляем статус башни из данных боя
     towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
-    // Показываем экран результата
     showTowerResultScreen(battleData);
 }
 

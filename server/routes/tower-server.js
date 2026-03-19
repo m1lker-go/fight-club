@@ -324,6 +324,17 @@ router.post('/battle', async (req, res) => {
                 'UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1',
                 [userId]
             );
+
+            // Обновляем рекорд в лидерборде башни (только если новый этаж больше предыдущего)
+            await client.query(
+                `INSERT INTO tower_leaderboard (user_id, floor, achieved_at)
+                 VALUES ($1, $2, NOW())
+                 ON CONFLICT (user_id) DO UPDATE SET
+                    floor = EXCLUDED.floor,
+                    achieved_at = EXCLUDED.achieved_at
+                 WHERE tower_leaderboard.floor < EXCLUDED.floor`,
+                [userId, progress.current_floor] // progress.current_floor уже увеличен
+            );
         }
 
         await client.query('COMMIT');

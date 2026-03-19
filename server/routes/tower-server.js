@@ -57,6 +57,9 @@ async function checkAndResetAttempts(client, userId, progress) {
         );
         progress.attempts_today = 0;
         progress.last_attempt_date = today;
+        console.log(`[checkAndResetAttempts] user ${userId}: reset to 0 (new day ${today})`);
+    } else {
+        console.log(`[checkAndResetAttempts] user ${userId}: no reset, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
     }
 }
 
@@ -96,6 +99,8 @@ router.get('/status', async (req, res) => {
 
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
+
+        console.log(`[STATUS] user ${userId}: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, attemptsLeft=${10 - progress.attempts_today}`);
 
         res.json({
             currentFloor: progress.current_floor,
@@ -175,7 +180,7 @@ router.post('/battle', async (req, res) => {
         }
 
         const newAttemptsToday = updateRes.rows[0].attempts_today;
-        console.log(`[TICKET] User ${userId} new attempts: ${newAttemptsToday}, date: ${today}`);
+        console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
@@ -290,12 +295,13 @@ router.post('/battle', async (req, res) => {
                     'INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)',
                     [userId, floor, 'coins', coinsReward]
                 );
+                console.log(`[REWARD] user ${userId} floor ${floor} +${coinsReward} coins`);
             } else if (avatarReward) {
                 await client.query(
                     'INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)',
                     [userId, floor, 'avatar', avatarReward]
                 );
-                console.log(`[REWARD] User ${userId} floor ${floor} received avatar ${avatarReward}`);
+                console.log(`[REWARD] user ${userId} floor ${floor} received avatar ${avatarReward}`);
             }
 
             await client.query(
@@ -305,6 +311,7 @@ router.post('/battle', async (req, res) => {
         }
 
         await client.query('COMMIT');
+        console.log(`[BATTLE COMMIT] user ${userId} success, attemptsLeft in response: ${10 - newAttemptsToday}`);
 
         res.json({
             success: true,

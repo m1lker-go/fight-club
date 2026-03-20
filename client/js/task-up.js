@@ -59,7 +59,7 @@ function renderReferral() {
     referralDiv.style.marginBottom = '0';
     referralDiv.style.padding = '12px';
     referralDiv.style.boxSizing = 'border-box';
-    referralDiv.style.backgroundColor = '#2a303c'; // фон, как у других заданий
+    referralDiv.style.backgroundColor = '#2a303c';
 
     const referralLink = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 
@@ -127,7 +127,7 @@ function renderTasks() {
         referralPlaceholder.appendChild(renderReferral());
     }
 
-    // Исправлено: теперь открывает календарь без двойного запроса
+    // Исправлено: вызов showAdventCalendar без лишнего fetch
     document.getElementById('showAdventBtn').addEventListener('click', () => {
         showAdventCalendar();
     });
@@ -154,7 +154,6 @@ async function loadDailyTasks() {
             return;
         }
 
-        // Показываем только невыполненные задания
         const activeTasks = tasksData.filter(task => !task.completed);
         tasksList.innerHTML = '';
 
@@ -196,7 +195,6 @@ async function loadDailyTasks() {
 
             let isReadyToClaim = false;
             if (task.id === 9) {
-                // Задание чемпион
                 const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
                 progressHtml = `
                     <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
@@ -206,10 +204,8 @@ async function loadDailyTasks() {
                         <div style="font-size: 10px; color: #aaa; min-width: 35px;">${completedTasksCount}/${totalTasksCount}</div>
                     </div>
                 `;
-                // Готово к получению, если все другие задания выполнены
                 isReadyToClaim = completedTasksCount >= totalTasksCount;
             } else {
-                // Обычные задания: готово, если прогресс достиг цели
                 isReadyToClaim = task.progress >= task.target_value;
             }
 
@@ -254,7 +250,6 @@ async function loadDailyTasks() {
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
-                // Если награда — опыт, открываем модалку выбора класса
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {

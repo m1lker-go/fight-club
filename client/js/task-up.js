@@ -128,14 +128,8 @@ function renderTasks() {
     }
 
     document.getElementById('showAdventBtn').addEventListener('click', () => {
-        fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
-            .then(res => res.json())
-            .then(data => showAdventCalendar(data))
-            .catch(err => {
-                console.error('Error loading advent:', err);
-                alert('Ошибка загрузки календаря');
-            });
-    });
+    showAdventCalendar();
+});
 
     loadDailyTasks();
 }

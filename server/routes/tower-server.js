@@ -178,20 +178,23 @@ router.post('/battle', async (req, res) => {
         const chosenClass = progress.chosen_class;
         const chosenSubclass = progress.chosen_subclass;
 
-        const today = getMoscowDate();
-        console.log(`[BATTLE] before update: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
-        const updateRes = await client.query(
+       const today = getMoscowDate();
+console.log(`[BATTLE] before update: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
+const updateRes = await client.query(
     'UPDATE tower_progress SET attempts_today = attempts_today + 1, last_attempt_date = $1 WHERE user_id = $2 AND attempts_today < 10 RETURNING attempts_today',
     [today, userId]
 );
 if (updateRes.rowCount === 0) throw new Error('No tickets left today');
 const newAttemptsToday = updateRes.rows[0].attempts_today;
+progress.attempts_today = newAttemptsToday;
+console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
 
-// ✅ ОБНОВЛЯЕМ ЗАДАНИЕ (всегда)
+// Обновляем задание "Башня" (всегда)
 if (tasksModule.updateTowerTask) {
     await tasksModule.updateTowerTask(client, userId);
+} else {
+    console.warn('[tower] updateTowerTask not found');
 }
-
 
         const newAttemptsToday = updateRes.rows[0].attempts_today;
         progress.attempts_today = newAttemptsToday;

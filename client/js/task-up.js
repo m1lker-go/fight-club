@@ -113,7 +113,7 @@ function renderTasks() {
                     <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
                 </div>
                 <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="btn" id="showAdventBtn" style="padding: 8px 12px; font-size: 12px; width: 100%;">ПОСМОТРЕТЬ</button>
+                    <button class="btn" id="showAdventBtn" style="padding: 8px 12px; font-size: 12px; width: 100%;"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
             <div id="referralPlaceholder"></div>
@@ -136,19 +136,15 @@ function renderTasks() {
                 alert('Ошибка загрузки календаря');
             });
     });
-       // Загружаем задания после отрисовки
+
     loadDailyTasks();
 }
 
-async function loadDailyTasks() {
-    // Проверяем, что мы на экране задач
-    if (currentScreen !== 'tasks') return;
 
+async function loadDailyTasks() {
+    if (currentScreen !== 'tasks') return;
     const tasksList = document.getElementById('tasksList');
-    if (!tasksList) {
-        console.warn('tasksList not found, skipping loadDailyTasks');
-        return;
-    }
+    if (!tasksList) return;
 
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
@@ -160,9 +156,8 @@ async function loadDailyTasks() {
         }
         tasksList.innerHTML = '';
 
-        tasksData.forEach(task => {
-            if (task.completed) return;
-
+        tasksData.forEach((task, index) => {
+            const isCompleted = task.completed;
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
@@ -173,10 +168,11 @@ async function loadDailyTasks() {
             const displayName = translated.name || task.name;
             const displayDesc = translated.description || task.description;
 
-            // Определяем, выполнено ли задание
-            const isCompleted = clampedProgress >= task.target_value;
-            const buttonClass = isCompleted ? 'btn claim-task-btn active' : 'btn claim-task-btn';
-            const buttonDisabled = !isCompleted ? 'disabled' : '';
+            // Альтернативное описание для классовых заданий (выигрыш 10 подряд)
+            let altDesc = '';
+            if (task.id === 1 || task.id === 2 || task.id === 3) {
+                altDesc = '<div style="font-size: 10px; color: #88ff88;">ИЛИ выиграть 10 боёв подряд</div>';
+            }
 
             const taskCard = document.createElement('div');
             taskCard.className = 'task-card';
@@ -187,53 +183,47 @@ async function loadDailyTasks() {
             taskCard.style.marginBottom = '12px';
             taskCard.style.padding = '12px';
             taskCard.style.boxSizing = 'border-box';
+            taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833'; // чередование
 
             taskCard.innerHTML = `
                 <div style="flex: 2; min-width: 0;">
                     <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
                     <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
-                    <div style="margin-top: 8px;">
-                        <div style="background-color: #2f3542; height: 5px; border-radius: 3px;">
+                    ${altDesc}
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
                             <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
                         </div>
-                        <div style="font-size: 10px; color: #aaa; margin-top: 3px;">${clampedProgress}/${task.target_value}</div>
+                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
                     </div>
                 </div>
                 <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
                     <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
                 </div>
-                <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="${buttonClass}" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}" style="padding: 8px 12px; font-size: 12px; width: 100%;" ${buttonDisabled}>ПОЛУЧИТЬ</button>
+                <div style="flex: 0 0 50px; text-align: right;">
+                    <button class="claim-task-btn ${isCompleted ? 'active' : ''}" data-task-id="${task.id}" ${isCompleted ? 'disabled' : ''} style="padding: 8px; width: 100%; font-size: 14px;">
+                        <i class="fas fa-check"></i>
+                    </button>
                 </div>
             `;
             tasksList.appendChild(taskCard);
         });
 
-        document.querySelectorAll('.claim-task-btn').forEach(btn => {
+        document.querySelectorAll('.claim-task-btn:not([disabled])').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                // Если кнопка disabled, событие не должно срабатывать, но добавим защиту
-                if (btn.disabled) return;
-
                 const taskId = btn.dataset.taskId;
-                const rewardType = btn.dataset.rewardType;
-                const rewardAmount = parseInt(btn.dataset.rewardAmount);
-
-                if (rewardType === 'exp') {
-                    claimDailyExp(taskId, rewardAmount);
+                const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                });
+                const data = await res.json();
+                if (data.error) {
+                    alert(data.error);
                 } else {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-                    });
-                    const data = await res.json();
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        alert(`Вы получили ${rewardAmount} монет!`);
-                        loadDailyTasks();
-                        refreshData();
-                    }
+                    alert('Награда получена!');
+                    loadDailyTasks();
+                    refreshData();
                 }
             });
         });

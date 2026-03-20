@@ -117,7 +117,7 @@ function renderTasks() {
     </div>
 </div>
             <div id="referralPlaceholder"></div>
-            <h3 style="text-align:center; margin:10px 0; font-size: 16px;">Ежедневные задания</h3>
+            <div class="tasks-header">Ежедневные задания</div>
             <div id="tasksList"></div>
         </div>
     `;

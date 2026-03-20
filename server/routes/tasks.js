@@ -72,17 +72,12 @@ function generateItemByRarity(rarity, ownerClass = null) {
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
     
-    // Особые дни с предметами
     if (day === 7) return { type: 'item', rarity: 'common' };
     if (day === 14) return { type: 'item', rarity: 'uncommon' };
     if (day === 22) return { type: 'item', rarity: 'epic' };
-    
-    // Последний день месяца — легендарный предмет (только если дней 30 или 31)
     if (day === daysInMonth && (daysInMonth === 30 || daysInMonth === 31)) {
         return { type: 'item', rarity: 'legendary' };
     }
-    
-    // Для остальных дней: чередование монет и опыта
     const index = day - 1;
     if (index < coinExpBase.length) {
         if (day % 2 === 1) return { type: 'coins', amount: coinExpBase[index] };
@@ -98,7 +93,7 @@ function getAdventReward(day, daysInMonth) {
     return { type: 'coins', amount: 100 };
 }
 
-// Получить состояние календаря
+// ==================== АДВЕНТ ====================
 router.get('/advent', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -141,7 +136,6 @@ router.get('/advent', async (req, res) => {
     }
 });
 
-// Забрать награду за конкретный день
 router.post('/advent/claim', async (req, res) => {
     const { tg_id, day, classChoice } = req.body;
     if (!tg_id || !day) return res.status(400).json({ error: 'Missing data' });
@@ -171,12 +165,9 @@ router.post('/advent/claim', async (req, res) => {
         if (day > currentDay || day > daysInMonth) {
             throw new Error('This day is not available yet');
         }
-        
         if (advent_mask & (1 << (day-1))) {
             throw new Error('Reward already claimed');
         }
-        
-        // Проверка, что все предыдущие дни получены
         if (day > 1) {
             const expectedMask = (1 << (day-1)) - 1;
             if ((advent_mask & expectedMask) !== expectedMask) {
@@ -207,7 +198,6 @@ router.post('/advent/claim', async (req, res) => {
             await client.query('UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4', [level, exp, userId, classChoice]);
             rewardDescription = `${reward.amount} опыта для класса ${classChoice}`;
         } else if (reward.type === 'item') {
-            // Используем новую функцию генерации с общими данными
             const item = generateItemByRarity(reward.rarity, null);
             const itemRes = await client.query(
                 `INSERT INTO items (name, type, rarity, class_restriction, owner_class, 
@@ -238,7 +228,6 @@ router.post('/advent/claim', async (req, res) => {
             [advent_mask, currentMonth, currentYear, userId]);
         
         await client.query('COMMIT');
-        
         res.json({ success: true, reward: rewardDescription, mask: advent_mask });
         
     } catch (e) {
@@ -250,36 +239,79 @@ router.post('/advent/claim', async (req, res) => {
     }
 });
 
-async function updateLuckyTask(client, userId) {
-    // Получаем текущие данные пользователя
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЗАДАНИЙ ====================
+async function updateTowerTask(client, userId) {
     const userRes = await client.query(
         'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
         [userId]
     );
     const user = userRes.rows[0];
     const today = new Date().toISOString().split('T')[0];
-    if (user.last_daily_reset !== today) {
-        // если день не тот, можно не обновлять (или сбросить)
-        return;
-    }
+    if (user.last_daily_reset !== today) return;
+
     let progress = parseProgress(user.daily_tasks_progress);
-    // Задание id 7
-    if (!(user.daily_tasks_mask & (1 << 6))) { // бит 7? биты: id-1 => 6
+    // Задание 8 (Башня)
+    if (!(user.daily_tasks_mask & (1 << 7))) {
+        progress[8] = (progress[8] || 0) + 1;
+        await client.query(
+            'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
+            [JSON.stringify(progress), userId]
+        );
+        await checkChampionTask(client, userId);
+    }
+}
+
+async function updateLuckyTask(client, userId) {
+    const userRes = await client.query(
+        'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
+        [userId]
+    );
+    const user = userRes.rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    if (user.last_daily_reset !== today) return;
+
+    let progress = parseProgress(user.daily_tasks_progress);
+    // Задание 7 (Счастливчик)
+    if (!(user.daily_tasks_mask & (1 << 6))) {
         progress[7] = (progress[7] || 0) + 1;
         await client.query(
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
+        await checkChampionTask(client, userId);
     }
 }
 
+async function checkChampionTask(client, userId) {
+    const userRes = await client.query(
+        'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
+        [userId]
+    );
+    const user = userRes.rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    if (user.last_daily_reset !== today) return;
 
-// -------------------- ЕЖЕДНЕВНЫЕ ЗАДАНИЯ --------------------
+    let progress = parseProgress(user.daily_tasks_progress);
+    const tasksRes = await client.query('SELECT id, target_value FROM daily_tasks WHERE id != 9 ORDER BY id');
+    let allCompleted = true;
+    for (let task of tasksRes.rows) {
+        const completed = !!(user.daily_tasks_mask & (1 << (task.id-1)));
+        const prog = progress[task.id] || 0;
+        if (!completed && prog < task.target_value) {
+            allCompleted = false;
+            break;
+        }
+    }
+    if (allCompleted && !(user.daily_tasks_mask & (1 << 8))) {
+        await client.query(
+            'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
+            [1 << 8, userId]
+        );
+    }
+}
 
-// Получить список доступных заданий для пользователя
+// ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 router.get('/daily/list', async (req, res) => {
-    console.log('=== /daily/list called ===');
-    console.log('tg_id:', req.query.tg_id);
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
 
@@ -298,7 +330,6 @@ router.get('/daily/list', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-
         if (lastResetStr !== today) {
             await client.query(
                 'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
@@ -309,7 +340,6 @@ router.get('/daily/list', async (req, res) => {
         }
 
         let progressObj = parseProgress(user.daily_tasks_progress);
-
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;
 
@@ -340,7 +370,6 @@ router.get('/daily/list', async (req, res) => {
     }
 });
 
-// Получить награду за задание (с возможностью выбора класса для EXP)
 router.post('/daily/claim', async (req, res) => {
     const { tg_id, task_id, class_choice } = req.body;
     if (!tg_id || !task_id) return res.status(400).json({ error: 'Missing data' });
@@ -426,11 +455,8 @@ router.post('/daily/claim', async (req, res) => {
     }
 });
 
-// Маршруты для обновления прогресса
-
+// ==================== МАРШРУТЫ ОБНОВЛЕНИЯ ПРОГРЕССА ====================
 router.post('/daily/update/battle', async (req, res) => {
-    console.log('=== /daily/update/battle called ===');
-    console.log('req.body:', req.body);
     const { tg_id, class_played, is_victory } = req.body;
     const client = await pool.connect();
     try {
@@ -452,7 +478,6 @@ router.post('/daily/update/battle', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;
             await client.query(
@@ -478,8 +503,8 @@ router.post('/daily/update/battle', async (req, res) => {
             [JSON.stringify(progress), userId]
         );
 
+        await checkChampionTask(client, userId);
         await client.query('COMMIT');
-        console.log('Прогресс обновлён:', progress);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -491,8 +516,6 @@ router.post('/daily/update/battle', async (req, res) => {
 });
 
 router.post('/daily/update/exp', async (req, res) => {
-    console.log('=== /daily/update/exp called ===');
-    console.log('req.body:', req.body);
     const { tg_id, exp_gained } = req.body;
     const client = await pool.connect();
     try {
@@ -514,7 +537,6 @@ router.post('/daily/update/exp', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;
             await client.query(
@@ -533,8 +555,8 @@ router.post('/daily/update/exp', async (req, res) => {
             [JSON.stringify(progress), userId]
         );
 
+        await checkChampionTask(client, userId);
         await client.query('COMMIT');
-        console.log('Прогресс обновлён:', progress);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -567,7 +589,6 @@ router.post('/daily/update/chest', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;
             await client.query(
@@ -588,6 +609,7 @@ router.post('/daily/update/chest', async (req, res) => {
             [JSON.stringify(progress), userId]
         );
 
+        await checkChampionTask(client, userId);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -621,7 +643,6 @@ router.post('/daily/update/profile', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            console.log('New day detected, resetting progress');
             progress = {};
             mask = 0;
             await client.query(
@@ -640,6 +661,7 @@ router.post('/daily/update/profile', async (req, res) => {
             [JSON.stringify(progress), moscowNow, userId]
         );
 
+        await checkChampionTask(client, userId);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {

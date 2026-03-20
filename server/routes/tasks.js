@@ -240,7 +240,6 @@ router.post('/advent/claim', async (req, res) => {
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЗАДАНИЙ ====================
 async function updateTowerTask(client, userId) {
-    console.log(`[TASK] updateTowerTask called for user ${userId}`);
     const userRes = await client.query(
         'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
         [userId]
@@ -248,7 +247,6 @@ async function updateTowerTask(client, userId) {
     const user = userRes.rows[0];
     const today = new Date().toISOString().split('T')[0];
     if (user.last_daily_reset !== today) {
-        console.log(`[TASK] Resetting tasks for user ${userId} (new day)`);
         await client.query(
             'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
             ['{}', today, userId]
@@ -256,20 +254,14 @@ async function updateTowerTask(client, userId) {
         user.daily_tasks_mask = 0;
         user.daily_tasks_progress = '{}';
     }
-
     let progress = parseProgress(user.daily_tasks_progress);
-    const maskBit = 1 << 7; // 128
-    if (!(user.daily_tasks_mask & maskBit)) {
-        const oldVal = progress[8] || 0;
-        progress[8] = oldVal + 1;
-        console.log(`[TASK] Tower progress: ${oldVal} -> ${progress[8]}`);
+    if (!(user.daily_tasks_mask & (1 << 7))) {
+        progress[8] = (progress[8] || 0) + 1;
         await client.query(
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
         await checkChampionTask(client, userId);
-    } else {
-        console.log(`[TASK] Tower task already claimed, skipping`);
     }
 }
 
@@ -280,10 +272,15 @@ async function updateLuckyTask(client, userId) {
     );
     const user = userRes.rows[0];
     const today = new Date().toISOString().split('T')[0];
-    if (user.last_daily_reset !== today) return;
-
+    if (user.last_daily_reset !== today) {
+        await client.query(
+            'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+            ['{}', today, userId]
+        );
+        user.daily_tasks_mask = 0;
+        user.daily_tasks_progress = '{}';
+    }
     let progress = parseProgress(user.daily_tasks_progress);
-    // Задание 7 (Счастливчик)
     if (!(user.daily_tasks_mask & (1 << 6))) {
         progress[7] = (progress[7] || 0) + 1;
         await client.query(
@@ -363,7 +360,13 @@ router.get('/daily/list', async (req, res) => {
         const result = [];
         for (const task of tasks) {
             const completed = !!(user.daily_tasks_mask & (1 << (task.id - 1)));
-            const progress = completed ? task.target_value : (progressObj[task.id] || 0);
+            let progress = completed ? task.target_value : (progressObj[task.id] || 0);
+            
+            // Для заданий 1-3 (победы за класс) учитываем альтернативное условие – 10 побед подряд
+            if ([1,2,3].includes(task.id) && !completed && dailyWinStreak >= 10) {
+                progress = task.target_value; // помечаем как выполненное по альтернативе
+            }
+            
             result.push({
                 id: task.id,
                 name: task.name,
@@ -431,8 +434,24 @@ router.post('/daily/claim', async (req, res) => {
         const task = taskRes.rows[0];
 
         let progressObj = parseProgress(user.daily_tasks_progress);
-        const progress = progressObj[task_id] || 0;
-        if (parseInt(progress) < task.target_value) {
+        let isCompleted = false;
+
+        // Проверка выполнения задания с учётом альтернативных условий
+        if ([1,2,3].includes(task.id)) {
+            const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
+            const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
+            if (dailyWinStreak >= 10) {
+                isCompleted = true;
+            } else if ((progressObj[task_id] || 0) >= task.target_value) {
+                isCompleted = true;
+            }
+        } else {
+            if ((progressObj[task_id] || 0) >= task.target_value) {
+                isCompleted = true;
+            }
+        }
+
+        if (!isCompleted) {
             throw new Error('Task not completed');
         }
 

@@ -141,6 +141,8 @@ function renderTasks() {
 }
 
 
+// js/task-up.js
+
 async function loadDailyTasks() {
     if (currentScreen !== 'tasks') return;
     const tasksList = document.getElementById('tasksList');
@@ -149,7 +151,10 @@ async function loadDailyTasks() {
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const tasksData = await res.json();
+        const data = await res.json();
+        const tasksData = data.tasks;
+        const dailyWinStreak = data.dailyWinStreak || 0;
+
         if (!Array.isArray(tasksData)) {
             console.error('Ответ не является массивом:', tasksData);
             return;
@@ -170,8 +175,19 @@ async function loadDailyTasks() {
 
             // Альтернативное описание для классовых заданий (выигрыш 10 подряд)
             let altDesc = '';
+            let altProgressHtml = '';
             if (task.id === 1 || task.id === 2 || task.id === 3) {
                 altDesc = '<div style="font-size: 10px; color: #88ff88;">ИЛИ выиграть 10 боёв подряд</div>';
+                const streakProgress = Math.min(dailyWinStreak, 10);
+                const streakPercent = (streakProgress / 10) * 100;
+                altProgressHtml = `
+                    <div style="margin-top: 2px; display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
+                            <div style="background-color: #00aaff; width: ${streakPercent}%; height: 100%; border-radius: 3px;"></div>
+                        </div>
+                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${streakProgress}/10</div>
+                    </div>
+                `;
             }
 
             const taskCard = document.createElement('div');
@@ -180,10 +196,10 @@ async function loadDailyTasks() {
             taskCard.style.alignItems = 'center';
             taskCard.style.justifyContent = 'space-between';
             taskCard.style.width = '100%';
-            taskCard.style.marginBottom = '12px';
+            taskCard.style.marginBottom = '0'; // убираем отступ
             taskCard.style.padding = '12px';
             taskCard.style.boxSizing = 'border-box';
-            taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833'; // чередование
+            taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833';
 
             taskCard.innerHTML = `
                 <div style="flex: 2; min-width: 0;">
@@ -196,13 +212,14 @@ async function loadDailyTasks() {
                         </div>
                         <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
                     </div>
+                    ${altProgressHtml}
                 </div>
                 <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
                     <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
                 </div>
                 <div style="flex: 0 0 50px; text-align: right;">
                     <button class="claim-task-btn ${isCompleted ? 'active' : ''}" data-task-id="${task.id}" ${isCompleted ? 'disabled' : ''} style="padding: 8px; width: 100%; font-size: 14px;">
-                        <i class="fas fa-check"></i>
+                        <i class="fas ${isCompleted ? 'fa-check' : 'fa-times'}"></i>
                     </button>
                 </div>
             `;

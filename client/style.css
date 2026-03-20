@@ -1591,6 +1591,35 @@ td {
     font-weight: bold;
 }
 
+.rating-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.rating-tab {
+    flex: 1;
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: white;
+    border-radius: 30px;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+
+.rating-tab.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+.rating-tab i {
+    margin-right: 5px;
+}
+
 /* ========== БАШНЯ ========== */
 
 .tower-container {

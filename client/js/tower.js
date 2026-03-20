@@ -629,18 +629,28 @@ function showTowerResultScreen(battleData) {
     }
 
     if (reward && reward.type === 'avatar') {
-        fetch(`/avatars/${reward.avatarId}`)
-            .then(res => res.json())
-            .then(avatar => {
-                const avatarNameSpan = document.getElementById('avatarName');
-                if (avatarNameSpan) avatarNameSpan.innerText = avatar.name;
-                const eyeBtn = document.getElementById('showAvatarBtn');
-                if (eyeBtn) {
-                    eyeBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showAvatarModal(avatar);
-                    });
-                }
+    fetch(`${API_BASE}/avatars/${reward.avatarId}`)
+        .then(res => {
+            if (!res.ok) throw new Error('Avatar fetch failed');
+            return res.json();
+        })
+        .then(avatar => {
+            const avatarNameSpan = document.getElementById('avatarName');
+            if (avatarNameSpan) avatarNameSpan.innerText = avatar.name;
+            const eyeBtn = document.getElementById('showAvatarBtn');
+            if (eyeBtn) {
+                eyeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showAvatarModal(avatar);
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error loading avatar:', err);
+            const avatarNameSpan = document.getElementById('avatarName');
+            if (avatarNameSpan) avatarNameSpan.innerText = 'неизвестный скин';
+        });
+}
             })
             .catch(() => {
                 const avatarNameSpan = document.getElementById('avatarName');

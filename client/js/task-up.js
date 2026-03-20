@@ -57,7 +57,7 @@ function renderReferral() {
     referralDiv.style.alignItems = 'center';
     referralDiv.style.justifyContent = 'space-between';
     referralDiv.style.width = '100%';
-    referralDiv.style.marginBottom = '12px';
+    referralDiv.style.marginBottom = '0px';
     referralDiv.style.padding = '12px';
     referralDiv.style.boxSizing = 'border-box';
 

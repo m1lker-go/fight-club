@@ -2026,3 +2026,35 @@ td {
 .result-tab {
     /* наследует tower-result-btn */
 }
+
+/* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
+
+.task-card {
+    transition: background-color 0.2s;
+}
+.task-card:hover {
+    background-color: #2f3542 !important;
+}
+.claim-task-btn {
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: #aaa;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.claim-task-btn.active {
+    background-color: #00aaff;
+    color: white;
+    cursor: default;
+}
+.claim-task-btn:not(.active):hover {
+    background-color: #3a4050;
+}
+.claim-task-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

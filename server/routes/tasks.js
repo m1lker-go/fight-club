@@ -312,6 +312,8 @@ async function checkChampionTask(client, userId) {
 
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 router.get('/daily/list', async (req, res) => {
+    console.log('=== /daily/list called ===');
+    console.log('tg_id:', req.query.tg_id);
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
 
@@ -324,6 +326,11 @@ router.get('/daily/list', async (req, res) => {
         if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const user = userRes.rows[0];
         const userId = user.id;
+
+        // ---- ДОБАВЛЕННАЯ ЧАСТЬ ----
+        const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
+        const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
+        // ---------------------------
 
         const now = new Date();
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -361,7 +368,12 @@ router.get('/daily/list', async (req, res) => {
         }
 
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        res.json(result);
+        // ---- ИЗМЕНЁННЫЙ ОТВЕТ ----
+        res.json({
+            tasks: result,
+            dailyWinStreak: dailyWinStreak
+        });
+        // -------------------------
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Database error' });

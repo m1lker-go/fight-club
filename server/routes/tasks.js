@@ -246,10 +246,19 @@ async function updateTowerTask(client, userId) {
     );
     const user = userRes.rows[0];
     const today = new Date().toISOString().split('T')[0];
-    if (user.last_daily_reset !== today) return;
+
+    // Если задания не сброшены сегодня – сбрасываем
+    if (user.last_daily_reset !== today) {
+        await client.query(
+            'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+            ['{}', today, userId]
+        );
+        user.daily_tasks_mask = 0;
+        user.daily_tasks_progress = '{}';
+    }
 
     let progress = parseProgress(user.daily_tasks_progress);
-    // Задание 8 (Башня)
+    // Задание 8 (Башня) – бит 7
     if (!(user.daily_tasks_mask & (1 << 7))) {
         progress[8] = (progress[8] || 0) + 1;
         await client.query(

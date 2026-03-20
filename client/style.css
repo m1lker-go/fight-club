@@ -2029,16 +2029,26 @@ td {
 
 /* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
 
+/* Ежедневные задания */
+.tasks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* убираем промежутки между карточками */
+}
+
 .task-card {
     transition: background-color 0.2s;
+    margin: 0;
+    padding: 12px;
+    border-bottom: 1px solid #1a1f2b; /* тонкая разделительная линия, чтобы визуально отделить карточки */
 }
 .task-card:hover {
     background-color: #2f3542 !important;
 }
 .claim-task-btn {
-    background-color: #2f3542;
-    border: 2px solid #00aaff;
-    color: #aaa;
+    background-color: transparent;
+    border: 2px solid #7f8c8d;
+    color: #7f8c8d;
     border-radius: 30px;
     cursor: pointer;
     transition: 0.2s;
@@ -2048,11 +2058,13 @@ td {
 }
 .claim-task-btn.active {
     background-color: #00aaff;
+    border-color: #00aaff;
     color: white;
-    cursor: default;
 }
 .claim-task-btn:not(.active):hover {
     background-color: #3a4050;
+    border-color: #aaa;
+    color: #aaa;
 }
 .claim-task-btn:disabled {
     opacity: 0.6;

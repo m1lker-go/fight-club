@@ -59,7 +59,7 @@ function renderReferral() {
     referralDiv.style.marginBottom = '0';
     referralDiv.style.padding = '12px';
     referralDiv.style.boxSizing = 'border-box';
-    referralDiv.style.backgroundColor = '#2a303c'; // добавляем фон
+    referralDiv.style.backgroundColor = '#2a303c'; // фон, как у других заданий
 
     const referralLink = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 
@@ -158,10 +158,12 @@ async function loadDailyTasks() {
             console.error('Ответ не является массивом:', tasksData);
             return;
         }
+
+        // Показываем только невыполненные задания
+        const activeTasks = tasksData.filter(task => !task.completed);
         tasksList.innerHTML = '';
 
-        tasksData.forEach((task, index) => {
-            const isCompleted = task.completed;
+        activeTasks.forEach((task, index) => {
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
@@ -172,7 +174,6 @@ async function loadDailyTasks() {
             const displayName = translated.name || task.name;
             const displayDesc = translated.description || task.description;
 
-            // Альтернативное описание для классовых заданий (выигрыш 10 подряд)
             let altDesc = '';
             let altProgressHtml = '';
             if (task.id === 1 || task.id === 2 || task.id === 3) {
@@ -198,8 +199,9 @@ async function loadDailyTasks() {
                 </div>
             `;
 
-            // Для задания чемпион (id=9) используем общий прогресс
+            let isReadyToClaim = false;
             if (task.id === 9) {
+                // Задание чемпион
                 const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
                 progressHtml = `
                     <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
@@ -209,6 +211,11 @@ async function loadDailyTasks() {
                         <div style="font-size: 10px; color: #aaa; min-width: 35px;">${completedTasksCount}/${totalTasksCount}</div>
                     </div>
                 `;
+                // Готово к получению, если все другие задания выполнены
+                isReadyToClaim = completedTasksCount >= totalTasksCount;
+            } else {
+                // Обычные задания: готово, если прогресс достиг цели
+                isReadyToClaim = task.progress >= task.target_value;
             }
 
             const taskCard = document.createElement('div');
@@ -234,15 +241,15 @@ async function loadDailyTasks() {
                     <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
                 </div>
                 <div style="flex: 0 0 50px; text-align: right;">
-                    <button class="claim-task-btn ${isCompleted ? 'active' : ''}" data-task-id="${task.id}" ${isCompleted ? 'disabled' : ''} style="padding: 8px; width: 100%; font-size: 14px;">
-                        <i class="fas ${isCompleted ? 'fa-check' : 'fa-times'}"></i>
+                    <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" data-task-id="${task.id}" style="padding: 8px; width: 100%; font-size: 14px;">
+                        <i class="fas ${isReadyToClaim ? 'fa-check' : 'fa-times'}"></i>
                     </button>
                 </div>
             `;
             tasksList.appendChild(taskCard);
         });
 
-        document.querySelectorAll('.claim-task-btn:not([disabled])').forEach(btn => {
+        document.querySelectorAll('.claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const taskId = btn.dataset.taskId;
                 const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {

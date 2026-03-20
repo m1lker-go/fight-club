@@ -59,6 +59,7 @@ function renderReferral() {
     referralDiv.style.marginBottom = '0';
     referralDiv.style.padding = '12px';
     referralDiv.style.boxSizing = 'border-box';
+    referralDiv.style.backgroundColor = '#2a303c'; // добавляем фон
 
     const referralLink = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 

@@ -2037,7 +2037,7 @@ td {
     gap: 0;
 }
 
-/* Заголовок "Ежедневные задания" без обводки, просто фон */
+/* Заголовок "Ежедневные задания" */
 .tasks-header {
     background-color: #1a1f2b;
     color: white;
@@ -2045,8 +2045,7 @@ td {
     font-weight: bold;
     text-align: center;
     padding: 10px;
-    margin: 0px 0;
-    border-radius: 0;
+    margin: 0;
 }
 
 .task-card {

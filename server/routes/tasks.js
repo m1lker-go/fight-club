@@ -250,6 +250,30 @@ router.post('/advent/claim', async (req, res) => {
     }
 });
 
+async function updateLuckyTask(client, userId) {
+    // Получаем текущие данные пользователя
+    const userRes = await client.query(
+        'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
+        [userId]
+    );
+    const user = userRes.rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    if (user.last_daily_reset !== today) {
+        // если день не тот, можно не обновлять (или сбросить)
+        return;
+    }
+    let progress = parseProgress(user.daily_tasks_progress);
+    // Задание id 7
+    if (!(user.daily_tasks_mask & (1 << 6))) { // бит 7? биты: id-1 => 6
+        progress[7] = (progress[7] || 0) + 1;
+        await client.query(
+            'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
+            [JSON.stringify(progress), userId]
+        );
+    }
+}
+
+
 // -------------------- ЕЖЕДНЕВНЫЕ ЗАДАНИЯ --------------------
 
 // Получить список доступных заданий для пользователя

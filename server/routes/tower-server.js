@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { generateBot } = require('../utils/botGenerator');
+const tasksModule = require('./tasks'); // добавлено
 
 console.log('✅ tower-server.js loaded (full version)');
 
@@ -49,7 +50,6 @@ async function getOrCreateProgress(client, userId) {
 
 async function checkAndResetAttempts(client, userId, progress) {
     const today = getMoscowDate();
-    // Преобразуем last_attempt_date из БД (если это Date) в строку YYYY-MM-DD
     const lastDateStr = progress.last_attempt_date 
         ? new Date(progress.last_attempt_date).toISOString().split('T')[0] 
         : null;
@@ -192,6 +192,13 @@ router.post('/battle', async (req, res) => {
         const newAttemptsToday = updateRes.rows[0].attempts_today;
         progress.attempts_today = newAttemptsToday;
         console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
+
+        // Обновляем задание "Башня" (если функция существует)
+        if (tasksModule.updateTowerTask) {
+            await tasksModule.updateTowerTask(client, userId);
+        } else {
+            console.warn('[tower] updateTowerTask not found');
+        }
 
         const dateCheck = await client.query('SELECT last_attempt_date FROM tower_progress WHERE user_id = $1', [userId]);
         console.log(`[BATTLE] after update, DB last_attempt_date = ${dateCheck.rows[0].last_attempt_date}`);
@@ -340,7 +347,6 @@ router.post('/battle', async (req, res) => {
         await client.query('COMMIT');
         console.log(`[BATTLE COMMIT] user ${userId} success, attemptsLeft in response: ${10 - newAttemptsToday}`);
 
-        // Формируем ответ: при поражении reward = null
         let responseReward = null;
         if (isVictory) {
             responseReward = rewardType === 'coins' 

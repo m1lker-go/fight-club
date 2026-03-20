@@ -127,9 +127,10 @@ function renderTasks() {
         referralPlaceholder.appendChild(renderReferral());
     }
 
+    // Исправлено: теперь открывает календарь без двойного запроса
     document.getElementById('showAdventBtn').addEventListener('click', () => {
-    showAdventCalendar();
-});
+        showAdventCalendar();
+    });
 
     loadDailyTasks();
 }
@@ -235,7 +236,11 @@ async function loadDailyTasks() {
                     <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
                 </div>
                 <div style="flex: 0 0 50px; text-align: right;">
-                    <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" data-task-id="${task.id}" style="padding: 8px; width: 100%; font-size: 14px;">
+                    <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" 
+                            data-task-id="${task.id}"
+                            data-reward-type="${task.reward_type}"
+                            data-reward-amount="${task.reward_amount}"
+                            style="padding: 8px; width: 100%; font-size: 14px;">
                         <i class="fas ${isReadyToClaim ? 'fa-check' : 'fa-times'}"></i>
                     </button>
                 </div>
@@ -245,19 +250,27 @@ async function loadDailyTasks() {
 
         document.querySelectorAll('.claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const taskId = btn.dataset.taskId;
-                const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-                });
-                const data = await res.json();
-                if (data.error) {
-                    alert(data.error);
+                const taskId = parseInt(btn.dataset.taskId);
+                const rewardType = btn.dataset.rewardType;
+                const rewardAmount = parseInt(btn.dataset.rewardAmount);
+
+                // Если награда — опыт, открываем модалку выбора класса
+                if (rewardType === 'exp') {
+                    claimDailyExp(taskId, rewardAmount);
                 } else {
-                    alert('Награда получена!');
-                    loadDailyTasks();
-                    refreshData();
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                    });
+                    const data = await res.json();
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        alert('Награда получена!');
+                        loadDailyTasks();
+                        refreshData();
+                    }
                 }
             });
         });

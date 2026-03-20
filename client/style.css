@@ -2027,15 +2027,17 @@ td {
     /* наследует tower-result-btn */
 }
 
+
+
 /* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
 
 .tasks-container {
     display: flex;
     flex-direction: column;
-    gap: 0; /* убираем промежутки между карточками */
+    gap: 0;
 }
 
-/* Заголовок "Ежедневные задания" в стиле таблиц рейтинга */
+/* Заголовок "Ежедневные задания" без обводки, просто фон */
 .tasks-header {
     background-color: #1a1f2b;
     color: white;
@@ -2043,16 +2045,15 @@ td {
     font-weight: bold;
     text-align: center;
     padding: 10px;
-    border-radius: 12px;
     margin: 10px 0;
-    border: 2px solid #00aaff;
+    border-radius: 0;
 }
 
 .task-card {
     transition: background-color 0.2s;
     margin: 0;
     padding: 12px;
-    border-bottom: 1px solid #1a1f2b; /* тонкая разделительная линия */
+    border-bottom: 1px solid #1a1f2b;
 }
 .task-card:hover {
     background-color: #2f3542 !important;
@@ -2081,9 +2082,4 @@ td {
 .claim-task-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-}
-
-/* Стиль для реферальной карточки (убираем отступ снизу) */
-.referral-card {
-    margin-bottom: 0 !important;
 }

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
-const { itemNames, fixedBonuses } = require('../data/itemData'); // импортируем общие словари
+const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // Вспомогательная функция для парсинга прогресса
 function parseProgress(progress) {
@@ -22,7 +22,6 @@ function generateItemByRarity(rarity, ownerClass = null) {
     const namesArray = itemNames[chosenClass][type][rarity];
     const name = namesArray[Math.floor(Math.random() * namesArray.length)];
 
-    // Выбираем две характеристики случайно (с возможностью повтора)
     const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
     const stat1 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
     const stat2 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
@@ -327,10 +326,8 @@ router.get('/daily/list', async (req, res) => {
         const user = userRes.rows[0];
         const userId = user.id;
 
-        // ---- ДОБАВЛЕННАЯ ЧАСТЬ ----
         const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
         const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
-        // ---------------------------
 
         const now = new Date();
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -367,13 +364,18 @@ router.get('/daily/list', async (req, res) => {
             });
         }
 
+        // Подсчёт общего количества заданий (без чемпиона) и выполненных
+        const allTasks = tasks.filter(t => t.id !== 9);
+        const totalTasksCount = allTasks.length;
+        const completedTasksCount = allTasks.filter(t => !!(user.daily_tasks_mask & (1 << (t.id - 1)))).length;
+
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        // ---- ИЗМЕНЁННЫЙ ОТВЕТ ----
         res.json({
             tasks: result,
-            dailyWinStreak: dailyWinStreak
+            dailyWinStreak: dailyWinStreak,
+            totalTasksCount: totalTasksCount,
+            completedTasksCount: completedTasksCount
         });
-        // -------------------------
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Database error' });
@@ -500,10 +502,8 @@ router.post('/daily/update/battle', async (req, res) => {
             progress = parseProgress(user.daily_tasks_progress);
         }
 
-        // Задание 5: сыграть 15 матчей
         progress[5] = (progress[5] || 0) + 1;
 
-        // Классовые победы (задания 1-3)
         if (is_victory) {
             if (class_played === 'warrior') progress[1] = (progress[1] || 0) + 1;
             if (class_played === 'assassin') progress[2] = (progress[2] || 0) + 1;
@@ -559,7 +559,6 @@ router.post('/daily/update/exp', async (req, res) => {
             progress = parseProgress(user.daily_tasks_progress);
         }
 
-        // Задание 4: набор опыта
         progress[4] = (progress[4] || 0) + exp_gained;
 
         await client.query(
@@ -611,7 +610,6 @@ router.post('/daily/update/chest', async (req, res) => {
             progress = parseProgress(user.daily_tasks_progress);
         }
 
-        // Задание 7: счастливчик (редкий+ предмет)
         if (['rare', 'epic', 'legendary'].includes(item_rarity)) {
             progress[7] = (progress[7] || 0) + 1;
         }
@@ -665,7 +663,6 @@ router.post('/daily/update/profile', async (req, res) => {
             progress = parseProgress(user.daily_tasks_progress);
         }
 
-        // Задание 6: любознательный
         progress[6] = (progress[6] || 0) + 1;
 
         await client.query(

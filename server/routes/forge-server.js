@@ -3,6 +3,9 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
+// Импортируем функции из tasks.js (экспортируйте их там!)
+const tasksModule = require('./tasks'); // ожидается, что tasks.js экспортирует updateLuckyTask и updateTowerTask
+
 // Функция генерации предмета по редкости и классу
 function generateItemByRarity(rarity, ownerClass = null) {
     const classes = ['warrior', 'assassin', 'mage'];
@@ -12,7 +15,6 @@ function generateItemByRarity(rarity, ownerClass = null) {
     const namesArray = itemNames[chosenClass][type][rarity];
     const name = namesArray[Math.floor(Math.random() * namesArray.length)];
 
-    // Выбираем две характеристики случайно (с возможностью повтора)
     const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
     const stat1 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
     const stat2 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
@@ -195,7 +197,7 @@ router.post('/craft', async (req, res) => {
         );
         const newItemId = itemRes.rows[0].id;
 
-        // Вставляем в инвентарь со всеми полями
+        // Вставляем в инвентарь
         await client.query(
             `INSERT INTO inventory (
                 user_id, item_id, equipped, in_forge,
@@ -208,6 +210,16 @@ router.post('/craft', async (req, res) => {
              newItem.atk_bonus, newItem.def_bonus, newItem.hp_bonus, newItem.spd_bonus,
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
+
+        // ========== ДОБАВЛЕННЫЙ БЛОК: обновление задания "Счастливчик" ==========
+        if (newRarity === 'rare' || newRarity === 'epic' || newRarity === 'legendary') {
+            // Вызываем функцию обновления задания (id 7)
+            if (tasksModule.updateLuckyTask) {
+                await tasksModule.updateLuckyTask(client, userId);
+            } else {
+                console.warn('[forge] updateLuckyTask not found in tasks module');
+            }
+        }
 
         await client.query('COMMIT');
         res.json({ success: true, item: { ...newItem, id: newItemId } });

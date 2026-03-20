@@ -24,9 +24,9 @@ function renderAdventCalendarInContainer(data, container) {
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>'; // белый цвет
+            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
         } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>'; // белый цвет
+            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
         } else if (reward.type === 'item') {
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';
@@ -36,7 +36,6 @@ function renderAdventCalendarInContainer(data, container) {
             iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
         }
 
-        // Иконка сверху, номер снизу (размеры управляются CSS)
         html += `<div class="${className}" data-day="${day}">
             <div class="advent-icon">${iconHtml}</div>
             <div class="advent-day-number">${day}</div>
@@ -57,7 +56,7 @@ function renderReferral() {
     referralDiv.style.alignItems = 'center';
     referralDiv.style.justifyContent = 'space-between';
     referralDiv.style.width = '100%';
-    referralDiv.style.marginBottom = '0px';
+    referralDiv.style.marginBottom = '0';
     referralDiv.style.padding = '12px';
     referralDiv.style.boxSizing = 'border-box';
 
@@ -72,8 +71,8 @@ function renderReferral() {
             <span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>
         </div>
         <div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">
-            <button class="btn referral-copy-btn" style="padding: 8px 12px; font-size: 12px; width: 45px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
-            <button class="btn referral-share-btn" style="padding: 8px 12px; font-size: 12px; width: 45px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+            <button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
+            <button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
         </div>
     `;
 
@@ -102,20 +101,20 @@ function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="tasks-container">
-         <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0; padding: 12px; box-sizing: border-box; background-color: #2a303c;">
-    <div style="flex: 2; min-width: 0;">
-        <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
-        <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
-    </div>
-    <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
-        <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
-        <span style="font-size: 12px; color: white;">EXP</span>
-        <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
-    </div>
-    <div style="flex: 0 0 100px; text-align: right;">
-        <button class="claim-task-btn" id="showAdventBtn" style="padding: 8px; width: 100%; font-size: 14px;"><i class="fas fa-eye"></i></button>
-    </div>
-</div>
+            <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0; padding: 12px; box-sizing: border-box; background-color: #2a303c;">
+                <div style="flex: 2; min-width: 0;">
+                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
+                </div>
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
+                    <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
+                    <span style="font-size: 12px; color: white;">EXP</span>
+                    <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
+                </div>
+                <div style="flex: 0 0 100px; text-align: right;">
+                    <button class="claim-task-btn" id="showAdventBtn" style="padding: 8px; width: 100%; font-size: 14px;"><i class="fas fa-eye"></i></button>
+                </div>
+            </div>
             <div id="referralPlaceholder"></div>
             <div class="tasks-header">Ежедневные задания</div>
             <div id="tasksList"></div>
@@ -140,9 +139,6 @@ function renderTasks() {
     loadDailyTasks();
 }
 
-
-// js/task-up.js
-
 async function loadDailyTasks() {
     if (currentScreen !== 'tasks') return;
     const tasksList = document.getElementById('tasksList');
@@ -154,6 +150,8 @@ async function loadDailyTasks() {
         const data = await res.json();
         const tasksData = data.tasks;
         const dailyWinStreak = data.dailyWinStreak || 0;
+        const totalTasksCount = data.totalTasksCount || 0;
+        const completedTasksCount = data.completedTasksCount || 0;
 
         if (!Array.isArray(tasksData)) {
             console.error('Ответ не является массивом:', tasksData);
@@ -190,13 +188,35 @@ async function loadDailyTasks() {
                 `;
             }
 
+            let progressHtml = `
+                <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                    <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
+                        <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
+                    </div>
+                    <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
+                </div>
+            `;
+
+            // Для задания чемпион (id=9) используем общий прогресс
+            if (task.id === 9) {
+                const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
+                progressHtml = `
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
+                            <div style="background-color: #00aaff; width: ${championPercent}%; height: 100%; border-radius: 3px;"></div>
+                        </div>
+                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${completedTasksCount}/${totalTasksCount}</div>
+                    </div>
+                `;
+            }
+
             const taskCard = document.createElement('div');
             taskCard.className = 'task-card';
             taskCard.style.display = 'flex';
             taskCard.style.alignItems = 'center';
             taskCard.style.justifyContent = 'space-between';
             taskCard.style.width = '100%';
-            taskCard.style.marginBottom = '0'; // убираем отступ
+            taskCard.style.marginBottom = '0';
             taskCard.style.padding = '12px';
             taskCard.style.boxSizing = 'border-box';
             taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833';
@@ -206,12 +226,7 @@ async function loadDailyTasks() {
                     <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
                     <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
                     ${altDesc}
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
-                        </div>
-                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
-                    </div>
+                    ${progressHtml}
                     ${altProgressHtml}
                 </div>
                 <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">

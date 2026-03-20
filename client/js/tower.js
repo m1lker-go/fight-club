@@ -356,7 +356,6 @@ function showTowerBattleScreen(battleData) {
                     <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
                 </div>
             </div>
-
             <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
                 <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
@@ -598,16 +597,16 @@ function showTowerResultScreen(battleData) {
         tabStats.classList.add('active');
         resultDiv.innerHTML = `
             <table class="stats-table stats-battle">
-                <thead><tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr></thead>
+                <thead>以为<th>Игрок</th><th>Параметр</th><th>Соперник</th> </thead>
                 <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td> </tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td> </tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td> </tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td> </tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td> </tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td> </tr>
                 </tbody>
-            </table>
+             </table>
         `;
     });
 
@@ -629,30 +628,24 @@ function showTowerResultScreen(battleData) {
     }
 
     if (reward && reward.type === 'avatar') {
-    fetch(`${API_BASE}/avatars/${reward.avatarId}`)
-        .then(res => {
-            if (!res.ok) throw new Error('Avatar fetch failed');
-            return res.json();
-        })
-        .then(avatar => {
-            const avatarNameSpan = document.getElementById('avatarName');
-            if (avatarNameSpan) avatarNameSpan.innerText = avatar.name;
-            const eyeBtn = document.getElementById('showAvatarBtn');
-            if (eyeBtn) {
-                eyeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    showAvatarModal(avatar);
-                });
-            }
-        })
-        .catch(err => {
-            console.error('Error loading avatar:', err);
-            const avatarNameSpan = document.getElementById('avatarName');
-            if (avatarNameSpan) avatarNameSpan.innerText = 'неизвестный скин';
-        });
-}
+        fetch(`${API_BASE}/avatars/${reward.avatarId}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Avatar fetch failed');
+                return res.json();
             })
-            .catch(() => {
+            .then(avatar => {
+                const avatarNameSpan = document.getElementById('avatarName');
+                if (avatarNameSpan) avatarNameSpan.innerText = avatar.name;
+                const eyeBtn = document.getElementById('showAvatarBtn');
+                if (eyeBtn) {
+                    eyeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showAvatarModal(avatar);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error('Error loading avatar:', err);
                 const avatarNameSpan = document.getElementById('avatarName');
                 if (avatarNameSpan) avatarNameSpan.innerText = 'неизвестный скин';
             });

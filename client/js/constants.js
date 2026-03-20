@@ -195,6 +195,14 @@ const dailyTaskTranslations = {
     'Referral': {
         name: 'Реферальная программа',
         description: 'Пригласи друга и получи 100 монет'
+    },
+    'Tower': {
+    name: 'Башня',
+    description: 'Потратить 3 билета в разделе Башня' 
+    },
+    'Champion': {
+    name: 'Чемпион', 
+    description: 'Выполнить все ежедневные задания'
     }
 };
 

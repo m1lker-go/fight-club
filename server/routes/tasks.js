@@ -674,3 +674,6 @@ router.post('/daily/update/profile', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.updateLuckyTask = updateLuckyTask;
+module.exports.updateTowerTask = updateTowerTask;
+module.exports.checkChampionTask = checkChampionTask;

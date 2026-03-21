@@ -127,7 +127,6 @@ function renderTasks() {
         referralPlaceholder.appendChild(renderReferral());
     }
 
-    // Исправлено: вызов showAdventCalendar без лишнего fetch
     document.getElementById('showAdventBtn').addEventListener('click', () => {
         showAdventCalendar();
     });
@@ -155,6 +154,15 @@ async function loadDailyTasks() {
         }
 
         const activeTasks = tasksData.filter(task => !task.completed);
+        // Сортировка: сначала готовые к получению (isReadyToClaim = true)
+        activeTasks.sort((a, b) => {
+            const aReady = a.progress >= a.target_value;
+            const bReady = b.progress >= b.target_value;
+            if (aReady && !bReady) return -1;
+            if (!aReady && bReady) return 1;
+            return 0;
+        });
+
         tasksList.innerHTML = '';
 
         activeTasks.forEach((task, index) => {

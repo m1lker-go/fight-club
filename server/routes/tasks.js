@@ -254,7 +254,7 @@ async function updateTowerTask(client, userId) {
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
     if (lastResetStr !== today) {
         await client.query(
-            'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+            'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
             ['{}', today, userId]
         );
         user.daily_tasks_mask = 0;
@@ -284,7 +284,7 @@ async function updateLuckyTask(client, userId) {
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
     if (lastResetStr !== today) {
         await client.query(
-            'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+            'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
             ['{}', today, userId]
         );
         user.daily_tasks_mask = 0;
@@ -321,7 +321,7 @@ router.get('/daily/list', async (req, res) => {
         const userId = user.id;
 
         const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
-        const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
+        let dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
 
         const now = new Date();
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -329,12 +329,14 @@ router.get('/daily/list', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
+            // Сбрасываем маску, прогресс и ежедневную серию побед
             await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
                 ['{}', today, userId]
             );
             user.daily_tasks_mask = 0;
             user.daily_tasks_progress = '{}';
+            dailyWinStreak = 0; // обновляем локальную переменную
         }
 
         let progressObj = parseProgress(user.daily_tasks_progress);
@@ -346,6 +348,7 @@ router.get('/daily/list', async (req, res) => {
             const completed = !!(user.daily_tasks_mask & (1 << (task.id - 1)));
             let progress = completed ? task.target_value : (progressObj[task.id] || 0);
             
+            // Для заданий 1-3 (победы за класс) учитываем альтернативное условие – 10 побед подряд
             if ([1,2,3].includes(task.id) && !completed && dailyWinStreak >= 10) {
                 progress = task.target_value;
             }
@@ -503,7 +506,7 @@ router.post('/daily/update/battle', async (req, res) => {
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
             await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
                 ['{}', today, userId]
             );
         } else {
@@ -555,7 +558,7 @@ router.post('/daily/update/exp', async (req, res) => {
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
             await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
                 ['{}', today, userId]
             );
         } else {
@@ -601,7 +604,7 @@ router.post('/daily/update/chest', async (req, res) => {
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
             await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
                 ['{}', today, userId]
             );
         } else {
@@ -648,7 +651,7 @@ router.post('/daily/update/profile', async (req, res) => {
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
             await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
                 ['{}', today, userId]
             );
         } else {

@@ -3,7 +3,6 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
-// Единая функция для получения московской даты (YYYY-MM-DD)
 function getMoscowDate() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -259,8 +258,7 @@ async function updateTowerTask(client, userId) {
     }
     let progress = parseProgress(user.daily_tasks_progress);
     const taskId = 8;
-    const maskBit = 1 << (taskId - 1);
-    if (!(user.daily_tasks_mask & maskBit)) {
+    if (!(user.daily_tasks_mask & (1 << (taskId - 1)))) {
         const currentProgress = progress[taskId] || 0;
         const newProgress = currentProgress + 1;
         progress[taskId] = newProgress;
@@ -268,15 +266,7 @@ async function updateTowerTask(client, userId) {
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
-        const taskRes = await client.query('SELECT target_value FROM daily_tasks WHERE id = $1', [taskId]);
-        const target = taskRes.rows[0]?.target_value || 3;
-        if (newProgress >= target) {
-            await client.query(
-                'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
-                [maskBit, userId]
-            );
-        }
-        await checkChampionTask(client, userId);
+        // НЕ устанавливаем маску выполнения – клиент сам заберёт награду
     }
 }
 
@@ -298,8 +288,7 @@ async function updateLuckyTask(client, userId) {
     }
     let progress = parseProgress(user.daily_tasks_progress);
     const taskId = 7;
-    const maskBit = 1 << (taskId - 1);
-    if (!(user.daily_tasks_mask & maskBit)) {
+    if (!(user.daily_tasks_mask & (1 << (taskId - 1)))) {
         const currentProgress = progress[taskId] || 0;
         const newProgress = currentProgress + 1;
         progress[taskId] = newProgress;
@@ -312,7 +301,7 @@ async function updateLuckyTask(client, userId) {
         if (newProgress >= target) {
             await client.query(
                 'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
-                [maskBit, userId]
+                [1 << (taskId - 1), userId]
             );
         }
         await checkChampionTask(client, userId);

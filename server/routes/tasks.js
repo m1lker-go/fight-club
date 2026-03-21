@@ -255,12 +255,25 @@ async function updateTowerTask(client, userId) {
         user.daily_tasks_progress = '{}';
     }
     let progress = parseProgress(user.daily_tasks_progress);
-    if (!(user.daily_tasks_mask & (1 << 7))) {
-        progress[8] = (progress[8] || 0) + 1;
+    const taskId = 8;
+    const maskBit = 1 << (taskId - 1);
+    if (!(user.daily_tasks_mask & maskBit)) {
+        const currentProgress = progress[taskId] || 0;
+        const newProgress = currentProgress + 1;
+        progress[taskId] = newProgress;
         await client.query(
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
+        // Если прогресс достиг целевого значения (3), отмечаем задание выполненным
+        const taskRes = await client.query('SELECT target_value FROM daily_tasks WHERE id = $1', [taskId]);
+        const target = taskRes.rows[0]?.target_value || 3;
+        if (newProgress >= target) {
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
+                [maskBit, userId]
+            );
+        }
         await checkChampionTask(client, userId);
     }
 }
@@ -281,12 +294,24 @@ async function updateLuckyTask(client, userId) {
         user.daily_tasks_progress = '{}';
     }
     let progress = parseProgress(user.daily_tasks_progress);
-    if (!(user.daily_tasks_mask & (1 << 6))) {
-        progress[7] = (progress[7] || 0) + 1;
+    const taskId = 7;
+    const maskBit = 1 << (taskId - 1);
+    if (!(user.daily_tasks_mask & maskBit)) {
+        const currentProgress = progress[taskId] || 0;
+        const newProgress = currentProgress + 1;
+        progress[taskId] = newProgress;
         await client.query(
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
+        const taskRes = await client.query('SELECT target_value FROM daily_tasks WHERE id = $1', [taskId]);
+        const target = taskRes.rows[0]?.target_value || 1;
+        if (newProgress >= target) {
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
+                [maskBit, userId]
+            );
+        }
         await checkChampionTask(client, userId);
     }
 }
@@ -644,6 +669,15 @@ router.post('/daily/update/chest', async (req, res) => {
 
         if (['rare', 'epic', 'legendary'].includes(item_rarity)) {
             progress[7] = (progress[7] || 0) + 1;
+            // Проверяем, не достиг ли прогресс цели
+            const taskRes = await client.query('SELECT target_value FROM daily_tasks WHERE id = 7', []);
+            const target = taskRes.rows[0]?.target_value || 1;
+            if (progress[7] >= target && !(user.daily_tasks_mask & (1 << 6))) {
+                await client.query(
+                    'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
+                    [1 << 6, userId]
+                );
+            }
         }
 
         await client.query(

@@ -1,7 +1,5 @@
 // task-up.js
 
-// ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
-
 function renderAdventCalendarInContainer(data, container) {
     const { currentDay, daysInMonth, mask } = data;
     let firstUnclaimed = null;
@@ -154,7 +152,7 @@ async function loadDailyTasks() {
         }
 
         const activeTasks = tasksData.filter(task => !task.completed);
-        // Сортировка: сначала готовые к получению (isReadyToClaim = true)
+        // Сортировка: сначала готовые к получению
         activeTasks.sort((a, b) => {
             const aReady = a.progress >= a.target_value;
             const bReady = b.progress >= b.target_value;
@@ -284,14 +282,20 @@ async function loadDailyTasks() {
 }
 
 function showAdventCalendar() {
+    console.log('[showAdventCalendar] tg_id:', userData.tg_id);
     fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
-        .then(res => res.json())
+        .then(res => {
+            console.log('[showAdventCalendar] response status:', res.status);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
         .then(data => {
+            if (data.error) throw new Error(data.error);
             renderAdventCalendar(data);
         })
         .catch(err => {
-            console.error(err);
-            alert('Ошибка загрузки календаря');
+            console.error('Error loading advent:', err);
+            alert('Ошибка загрузки календаря: ' + err.message);
         });
 }
 

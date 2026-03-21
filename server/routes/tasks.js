@@ -678,8 +678,12 @@ router.post('/daily/update/profile', async (req, res) => {
         client.release();
     }
 });
+async function checkChampionTask(client, userId) {
+    // Заглушка, так как эта функция больше не используется
+}
 
 module.exports = router;
 module.exports.updateLuckyTask = updateLuckyTask;
 module.exports.updateTowerTask = updateTowerTask;
+module.exports.checkChampionTask = checkChampionTask;
 ```

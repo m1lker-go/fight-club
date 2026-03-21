@@ -282,6 +282,11 @@ async function loadDailyTasks() {
 }
 
 function showAdventCalendar() {
+    if (!userData || !userData.tg_id) {
+        console.error('[showAdventCalendar] userData or tg_id missing');
+        alert('Ошибка: данные пользователя не загружены');
+        return;
+    }
     console.log('[showAdventCalendar] tg_id:', userData.tg_id);
     fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
         .then(res => {

@@ -1,5 +1,7 @@
 // task-up.js
 
+// ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
+
 function renderAdventCalendarInContainer(data, container) {
     const { currentDay, daysInMonth, mask } = data;
     let firstUnclaimed = null;
@@ -152,7 +154,7 @@ async function loadDailyTasks() {
         }
 
         const activeTasks = tasksData.filter(task => !task.completed);
-        // Сортировка: сначала готовые к получению
+        // Сортировка: сначала готовые к получению (прогресс >= цель)
         activeTasks.sort((a, b) => {
             const aReady = a.progress >= a.target_value;
             const bReady = b.progress >= b.target_value;

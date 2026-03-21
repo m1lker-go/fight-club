@@ -2,11 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { generateBot } = require('../utils/botGenerator');
-const tasksModule = require('./tasks'); // добавлено
+const tasksModule = require('./tasks');
 
 console.log('✅ tower-server.js loaded (full version)');
 
-// Функция для получения московской даты (YYYY-MM-DD)
 function getMoscowDate() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -15,7 +14,6 @@ function getMoscowDate() {
     return result;
 }
 
-// Группы классов для циклического перебора (9 комбинаций)
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
     { class: 'assassin', subclasses: ['assassin', 'venom_blade', 'blood_hunter'] },
@@ -34,10 +32,7 @@ function getFloorEnemyType(floor) {
 }
 
 async function getOrCreateProgress(client, userId) {
-    const res = await client.query(
-        'SELECT * FROM tower_progress WHERE user_id = $1',
-        [userId]
-    );
+    const res = await client.query('SELECT * FROM tower_progress WHERE user_id = $1', [userId]);
     if (res.rows.length === 0) {
         await client.query(
             'INSERT INTO tower_progress (user_id, current_floor, max_floor, attempts_today, last_attempt_date) VALUES ($1, 1, 0, 0, NULL)',
@@ -50,15 +45,10 @@ async function getOrCreateProgress(client, userId) {
 
 async function checkAndResetAttempts(client, userId, progress) {
     const today = getMoscowDate();
-    const lastDateStr = progress.last_attempt_date 
-        ? new Date(progress.last_attempt_date).toISOString().split('T')[0] 
-        : null;
+    const lastDateStr = progress.last_attempt_date ? new Date(progress.last_attempt_date).toISOString().split('T')[0] : null;
     console.log(`[checkAndResetAttempts] user ${userId}: last_attempt_date=${lastDateStr}, today=${today}`);
     if (lastDateStr !== today) {
-        await client.query(
-            'UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2',
-            [today, userId]
-        );
+        await client.query('UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2', [today, userId]);
         progress.attempts_today = 0;
         progress.last_attempt_date = today;
         console.log(`[checkAndResetAttempts] user ${userId}: reset to 0 (new day ${today})`);
@@ -68,9 +58,7 @@ async function checkAndResetAttempts(client, userId, progress) {
 }
 
 async function getRandomAvatar(client) {
-    const res = await client.query(
-        'SELECT id FROM avatars WHERE price_diamonds = 0 AND id != 1'
-    );
+    const res = await client.query('SELECT id FROM avatars WHERE price_diamonds = 0 AND id != 1');
     if (res.rows.length === 0) return null;
     const avatars = res.rows;
     const randomIndex = Math.floor(Math.random() * avatars.length);
@@ -88,7 +76,6 @@ function getBotLevel(floor) {
     return 60;
 }
 
-// Получить состояние башни
 router.get('/status', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -119,7 +106,6 @@ router.get('/status', async (req, res) => {
     }
 });
 
-// Выбор класса на сезон
 router.post('/select-class', async (req, res) => {
     const { tg_id, class: className, subclass } = req.body;
     if (!tg_id || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
@@ -131,10 +117,7 @@ router.post('/select-class', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
-        const classCheck = await client.query(
-            'SELECT class FROM user_classes WHERE user_id = $1 AND class = $2',
-            [userId, className]
-        );
+        const classCheck = await client.query('SELECT class FROM user_classes WHERE user_id = $1 AND class = $2', [userId, className]);
         if (classCheck.rows.length === 0) throw new Error('Class not available');
 
         await client.query(
@@ -153,7 +136,6 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -170,7 +152,6 @@ router.post('/battle', async (req, res) => {
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
 
-        // Проверяем, что класс для башни выбран
         if (!progress.chosen_class || !progress.chosen_subclass) {
             throw new Error('Class not selected for tower. Please select a class first.');
         }
@@ -189,7 +170,6 @@ router.post('/battle', async (req, res) => {
         progress.attempts_today = newAttemptsToday;
         console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
 
-        // Обновляем задание "Башня" (всегда)
         if (tasksModule.updateTowerTask) {
             await tasksModule.updateTowerTask(client, userId);
         } else {
@@ -202,20 +182,14 @@ router.post('/battle', async (req, res) => {
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
 
-        const botRes = await client.query(
-            'SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2',
-            [userId, progress.current_floor]
-        );
+        const botRes = await client.query('SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2', [userId, progress.current_floor]);
 
         let bot;
         if (botRes.rows.length > 0) {
             bot = botRes.rows[0].bot_data;
         } else {
             bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
-            await client.query(
-                'INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)',
-                [userId, progress.current_floor, bot]
-            );
+            await client.query('INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)', [userId, progress.current_floor, bot]);
         }
 
         const opponent = {
@@ -227,14 +201,9 @@ router.post('/battle', async (req, res) => {
             is_cybercat: false
         };
 
-        // Получаем данные для ВЫБРАННОГО класса (chosenClass)
-        const classData = await client.query(
-            'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
-            [userId, chosenClass]
-        );
+        const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userId, chosenClass]);
         if (classData.rows.length === 0) throw new Error('Class data not found for chosen class');
 
-        // Инвентарь – все надетые предметы, calculateStats сам отфильтрует по owner_class
         const inv = await client.query(
             `SELECT id, name, type, rarity, class_restriction, owner_class, 
                     atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
@@ -274,19 +243,13 @@ router.post('/battle', async (req, res) => {
             if (floor % 20 === 0) {
                 const avatarId = await getRandomAvatar(client);
                 if (avatarId) {
-                    const owned = await client.query(
-                        'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
-                        [userId, avatarId]
-                    );
+                    const owned = await client.query('SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2', [userId, avatarId]);
                     if (owned.rows.length > 0) {
                         coinsReward = 1500;
                         rewardType = 'coins';
                         rewardAmount = 1500;
                     } else {
-                        await client.query(
-                            'INSERT INTO user_avatars (user_id, avatar_id) VALUES ($1, $2)',
-                            [userId, avatarId]
-                        );
+                        await client.query('INSERT INTO user_avatars (user_id, avatar_id) VALUES ($1, $2)', [userId, avatarId]);
                         avatarReward = avatarId;
                         rewardType = 'avatar';
                         rewardAmount = avatarId;
@@ -310,25 +273,15 @@ router.post('/battle', async (req, res) => {
 
             if (coinsReward > 0) {
                 await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
-                await client.query(
-                    'INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)',
-                    [userId, floor, 'coins', coinsReward]
-                );
+                await client.query('INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)', [userId, floor, 'coins', coinsReward]);
                 console.log(`[REWARD] user ${userId} floor ${floor} +${coinsReward} coins`);
             } else if (avatarReward) {
-                await client.query(
-                    'INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)',
-                    [userId, floor, 'avatar', avatarReward]
-                );
+                await client.query('INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)', [userId, floor, 'avatar', avatarReward]);
                 console.log(`[REWARD] user ${userId} floor ${floor} received avatar ${avatarReward}`);
             }
 
-            await client.query(
-                'UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1',
-                [userId]
-            );
+            await client.query('UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1', [userId]);
 
-            // Обновляем рекорд в лидерборде башни (только если новый этаж больше предыдущего)
             await client.query(
                 `INSERT INTO tower_leaderboard (user_id, floor, achieved_at)
                  VALUES ($1, $2, NOW())

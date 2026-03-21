@@ -3,6 +3,13 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
+// Единая функция для получения московской даты
+function getMoscowDate() {
+    const now = new Date();
+    const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    return moscowTime.toISOString().split('T')[0];
+}
+
 // Вспомогательная функция для парсинга прогресса
 function parseProgress(progress) {
     if (!progress) return {};
@@ -13,7 +20,7 @@ function parseProgress(progress) {
     }
 }
 
-// Функция генерации предмета по редкости и классу (аналог из shop.js и forge-server.js)
+// Функция генерации предмета по редкости и классу
 function generateItemByRarity(rarity, ownerClass = null) {
     const classes = ['warrior', 'assassin', 'mage'];
     const chosenClass = ownerClass || classes[Math.floor(Math.random() * classes.length)];
@@ -67,7 +74,7 @@ function generateItemByRarity(rarity, ownerClass = null) {
     return item;
 }
 
-// Функция для определения награды по дню (без изменений)
+// Функция для определения награды по дню
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
     
@@ -245,7 +252,8 @@ async function updateTowerTask(client, userId) {
         [userId]
     );
     const user = userRes.rows[0];
-    const today = new Date().toISOString().split('T')[0];
+    const today = getMoscowDate();
+    
     if (user.last_daily_reset !== today) {
         await client.query(
             'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
@@ -265,9 +273,9 @@ async function updateTowerTask(client, userId) {
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
-        // Если прогресс достиг целевого значения (3), отмечаем задание выполненным
         const taskRes = await client.query('SELECT target_value FROM daily_tasks WHERE id = $1', [taskId]);
         const target = taskRes.rows[0]?.target_value || 3;
+        console.log(`[updateTowerTask] user ${userId}, progress=${newProgress}, target=${target}`);
         if (newProgress >= target) {
             await client.query(
                 'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
@@ -284,7 +292,7 @@ async function updateLuckyTask(client, userId) {
         [userId]
     );
     const user = userRes.rows[0];
-    const today = new Date().toISOString().split('T')[0];
+    const today = getMoscowDate();
     if (user.last_daily_reset !== today) {
         await client.query(
             'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3',
@@ -322,7 +330,7 @@ async function checkChampionTask(client, userId) {
         [userId]
     );
     const user = userRes.rows[0];
-    const today = new Date().toISOString().split('T')[0];
+    const today = getMoscowDate();
     if (user.last_daily_reset !== today) return;
 
     let progress = parseProgress(user.daily_tasks_progress);
@@ -669,7 +677,6 @@ router.post('/daily/update/chest', async (req, res) => {
 
         if (['rare', 'epic', 'legendary'].includes(item_rarity)) {
             progress[7] = (progress[7] || 0) + 1;
-            // Проверяем, не достиг ли прогресс цели
             const taskRes = await client.query('SELECT target_value FROM daily_tasks WHERE id = 7', []);
             const target = taskRes.rows[0]?.target_value || 1;
             if (progress[7] >= target && !(user.daily_tasks_mask & (1 << 6))) {

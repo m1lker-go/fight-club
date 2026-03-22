@@ -197,6 +197,7 @@ router.post('/craft', async (req, res) => {
         );
         const newItemId = itemRes.rows[0].id;
 
+        // Вставляем в инвентарь
         await client.query(
             `INSERT INTO inventory (
                 user_id, item_id, equipped, in_forge,
@@ -210,11 +211,13 @@ router.post('/craft', async (req, res) => {
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
+        // ========== ДОБАВЛЕННЫЙ БЛОК: обновление задания "Счастливчик" ==========
         if (newRarity === 'rare' || newRarity === 'epic' || newRarity === 'legendary') {
+            // Вызываем функцию обновления задания (id 7)
             if (tasksModule.updateLuckyTask) {
                 await tasksModule.updateLuckyTask(client, userId);
             } else {
-                console.warn('[forge] updateLuckyTask not found');
+                console.warn('[forge] updateLuckyTask not found in tasks module');
             }
         }
 

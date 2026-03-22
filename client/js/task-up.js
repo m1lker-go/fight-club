@@ -154,7 +154,7 @@ async function loadDailyTasks() {
         }
 
         const activeTasks = tasksData.filter(task => !task.completed);
-        // Сортировка: сначала готовые к получению (прогресс >= цель)
+        // Сортировка: сначала готовые к получению
         activeTasks.sort((a, b) => {
             const aReady = a.progress >= a.target_value;
             const bReady = b.progress >= b.target_value;
@@ -289,7 +289,7 @@ function showAdventCalendar() {
         .then(data => renderAdventCalendar(data))
         .catch(err => {
             console.error('Error loading advent:', err);
-            alert('Ошибка загрузки календаря');
+            // Не показываем alert, чтобы не мешать
         });
 }
 
@@ -411,11 +411,6 @@ function showClassChoiceModal(day, expAmount) {
 }
 
 function claimDailyExp(taskId, expAmount) {
-    if (!userData || !userData.tg_id) {
-        alert('Ошибка: данные пользователя не загружены');
-        return;
-    }
-    console.log(`[claimDailyExp] taskId=${taskId}, expAmount=${expAmount}`);
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -438,7 +433,6 @@ function claimDailyExp(taskId, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            console.log(`[claimDailyExp] sending request with classChoice=${classChoice}`);
             const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -451,7 +445,6 @@ function claimDailyExp(taskId, expAmount) {
             const data = await res.json();
             if (data.error) {
                 alert(data.error);
-                console.error('Claim error:', data.error);
             } else {
                 alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
                 renderTasks();

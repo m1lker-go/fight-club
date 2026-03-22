@@ -181,10 +181,11 @@ function renderTower() {
         : '—';
 
     const content = document.getElementById('content');
-    content.innerHTML = `
-        <div class="tower-container">
-            <div class="tower-header">
-                <div class="header-grid">
+   content.innerHTML = `
+    <div class="tower-container">
+        <div class="tower-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="header-grid" style="flex: 1;">
                     <div class="grid-left">
                         <div class="grid-item">
                             <span class="header-label">Этаж:</span>
@@ -207,10 +208,12 @@ function renderTower() {
                         </div>
                     </div>
                 </div>
+                <i class="fas fa-circle-question" id="towerHelpBtn" style="color: #00aaff; font-size: 28px; cursor: pointer; margin-left: 10px;"></i>
             </div>
-            <div class="tower-floors" id="towerFloors"></div>
         </div>
-    `;
+        <div class="tower-floors" id="towerFloors"></div>
+    </div>
+`;
 
     const floorsContainer = document.getElementById('towerFloors');
     floorsContainer.innerHTML = '';

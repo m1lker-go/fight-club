@@ -364,7 +364,7 @@ router.get('/daily/list', async (req, res) => {
             const completed = !!(user.daily_tasks_mask & (1 << (task.id - 1)));
             let progress = completed ? task.target_value : (progressObj[task.id] || 0);
             
-            // Для заданий 1-3 учитываем альтернативное условие – 10 побед подряд
+            // Для заданий 1-3 (победы за класс) учитываем альтернативное условие – 10 побед подряд
             if ([1,2,3].includes(task.id) && !completed && dailyWinStreak >= 10) {
                 progress = task.target_value;
             }

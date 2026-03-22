@@ -221,9 +221,10 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
+
     console.log(`[DEBUG] ${attackerName} damage after defense: ${damage}, defender def: ${defenderStats.def}%`);
     console.log(`[DEBUG] ${attackerName} selfDamage: ${selfDamage}, hp before: ${attackerState.hp + selfDamage}, after: ${attackerState.hp}`);
-    
+
     let vampHeal = 0;
     if (attackerVamp > 0) vampHeal = Math.floor(damage * attackerVamp / 100);
 
@@ -494,6 +495,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 pushState();
                 playerMana -= 100;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
+                // Синхронизация после ульты
+                playerHp = playerState.hp;
+                enemyHp = enemyState.hp;
             } else {
                 const attackResult = performAttack(
                     playerStats, enemyStats,
@@ -509,9 +513,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     enemyHp -= attackResult.damage;
                     playerHp += attackResult.vampHeal;
                     playerHp -= attackResult.reflectDamage;
-                    if (attackResult.selfDamage) {
-                        playerHp -= attackResult.selfDamage;
-                    }
+                    // Самоповреждение уже учтено в playerState.hp, поэтому не вычитаем повторно
+                    // Синхронизируем playerHp и enemyHp с состоянием после атаки
+                    playerHp = playerState.hp;
+                    enemyHp = enemyState.hp;
+
                     if (playerHp < 0) playerHp = 0;
                     if (enemyHp < 0) enemyHp = 0;
                     console.log(`[DEBUG] Player attack: damage=${attackResult.damage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
@@ -584,6 +590,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 pushState();
                 enemyMana -= 100;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
+                // Синхронизация после ульты
+                playerHp = playerState.hp;
+                enemyHp = enemyState.hp;
             } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,
@@ -599,9 +608,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     playerHp -= attackResult.damage;
                     enemyHp += attackResult.vampHeal;
                     enemyHp -= attackResult.reflectDamage;
-                    if (attackResult.selfDamage) {
-                        enemyHp -= attackResult.selfDamage;
-                    }
+                    // Самоповреждение уже учтено в enemyState.hp
+                    // Синхронизируем
+                    playerHp = playerState.hp;
+                    enemyHp = enemyState.hp;
+
                     if (playerHp < 0) playerHp = 0;
                     if (enemyHp < 0) enemyHp = 0;
                     console.log(`[DEBUG] Enemy attack: damage=${attackResult.damage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);

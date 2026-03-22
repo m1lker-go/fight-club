@@ -127,13 +127,14 @@ function renderTasks() {
         referralPlaceholder.appendChild(renderReferral());
     }
 
-   const showAdventBtn = document.getElementById('showAdventBtn');
-if (showAdventBtn) {
-    showAdventBtn.onclick = () => {
-        console.log('Opening advent calendar');
-        showAdventCalendar();
-    };
-}
+    // Простой обработчик без лишних вызовов
+    const showAdventBtn = document.getElementById('showAdventBtn');
+    if (showAdventBtn) {
+        showAdventBtn.onclick = () => {
+            console.log('Opening advent calendar');
+            showAdventCalendar();
+        };
+    }
 
     loadDailyTasks();
 }
@@ -306,6 +307,7 @@ function showAdventCalendar() {
             alert('Ошибка соединения с сервером');
         });
 }
+
 function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, mask } = data;
     const content = document.getElementById('content');

@@ -197,7 +197,6 @@ router.post('/craft', async (req, res) => {
         );
         const newItemId = itemRes.rows[0].id;
 
-        // Вставляем в инвентарь
         await client.query(
             `INSERT INTO inventory (
                 user_id, item_id, equipped, in_forge,
@@ -211,13 +210,11 @@ router.post('/craft', async (req, res) => {
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
-        // ========== ДОБАВЛЕННЫЙ БЛОК: обновление задания "Счастливчик" ==========
         if (newRarity === 'rare' || newRarity === 'epic' || newRarity === 'legendary') {
-            // Вызываем функцию обновления задания (id 7)
             if (tasksModule.updateLuckyTask) {
                 await tasksModule.updateLuckyTask(client, userId);
             } else {
-                console.warn('[forge] updateLuckyTask not found in tasks module');
+                console.warn('[forge] updateLuckyTask not found');
             }
         }
 
@@ -256,7 +253,9 @@ router.post('/smelt', async (req, res) => {
         await client.query('DELETE FROM inventory WHERE id = ANY($1::int[])', [item_ids]);
 
         for (const item of items.rows) {
-            switch (item.rarity) {
+            const rarity = item.rarity.toLowerCase(); // нормализация
+            console.log(`[SMELT] Processing item ${item.id}, rarity=${rarity}, name=${item.name}`);
+            switch (rarity) {
                 case 'common':
                     coinsGain += Math.floor(Math.random() * 21) + 65; // 65–85
                     break;
@@ -274,11 +273,17 @@ router.post('/smelt', async (req, res) => {
                     coinsGain += Math.floor(Math.random() * 1001) + 2000; // 2000–3000
                     diamondsGain += 2 + Math.floor(Math.random() * 4); // 2–5
                     break;
+                default:
+                    console.warn(`[SMELT] Unknown rarity: ${item.rarity}`);
             }
         }
 
-        await client.query('UPDATE users SET coins = coins + $1, diamonds = diamonds + $2 WHERE id = $3',
-            [coinsGain, diamondsGain, userId]);
+        console.log(`[SMELT] Total coinsGain=${coinsGain}, diamondsGain=${diamondsGain}`);
+        const updateRes = await client.query(
+            'UPDATE users SET coins = coins + $1, diamonds = diamonds + $2 WHERE id = $3 RETURNING coins, diamonds',
+            [coinsGain, diamondsGain, userId]
+        );
+        console.log(`[SMELT] User after update: coins=${updateRes.rows[0].coins}, diamonds=${updateRes.rows[0].diamonds}`);
 
         await client.query('COMMIT');
         res.json({ success: true, coins: coinsGain, diamonds: diamondsGain });

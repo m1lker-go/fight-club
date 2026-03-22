@@ -510,11 +510,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
+                    // Сначала синхронизируем базовые HP (учитывая самоповреждение)
+                    playerHp = playerState.hp;
+                    enemyHp = enemyState.hp;
+                    // Применяем урон, вампиризм, отражение
                     enemyHp -= attackResult.damage;
                     playerHp += attackResult.vampHeal;
                     playerHp -= attackResult.reflectDamage;
-                    // Самоповреждение уже учтено в playerState.hp, поэтому не вычитаем повторно
-                    // Синхронизируем состояния с новыми HP
+                    // Обновляем состояния
                     playerState.hp = playerHp;
                     enemyState.hp = enemyHp;
                     if (playerHp < 0) playerHp = 0;
@@ -603,11 +606,12 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
+                    // Синхронизируем с учётом самоповреждения
+                    playerHp = playerState.hp;
+                    enemyHp = enemyState.hp;
                     playerHp -= attackResult.damage;
                     enemyHp += attackResult.vampHeal;
                     enemyHp -= attackResult.reflectDamage;
-                    // Самоповреждение уже учтено в enemyState.hp
-                    // Синхронизируем
                     playerState.hp = playerHp;
                     enemyState.hp = enemyHp;
                     if (playerHp < 0) playerHp = 0;

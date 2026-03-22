@@ -3,6 +3,8 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+
 function getMoscowDate() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -94,6 +96,8 @@ function getAdventReward(day, daysInMonth) {
     }
     return { type: 'coins', amount: 100 };
 }
+
+// ==================== АДВЕНТ ====================
 
 router.get('/advent', async (req, res) => {
     const { tg_id } = req.query;
@@ -238,6 +242,8 @@ router.post('/advent/claim', async (req, res) => {
     }
 });
 
+// ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
+
 async function updateTowerTask(client, userId) {
     const userRes = await client.query(
         'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
@@ -264,6 +270,7 @@ async function updateTowerTask(client, userId) {
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
+        // НЕ устанавливаем маску – клиент сам заберёт награду
     }
 }
 
@@ -293,6 +300,7 @@ async function updateLuckyTask(client, userId) {
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
+        // НЕ устанавливаем маску – клиент сам заберёт награду
     }
 }
 
@@ -334,11 +342,29 @@ router.get('/daily/list', async (req, res) => {
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;
 
+        // Проверяем, все ли остальные задания выполнены, чтобы установить маску чемпиона
+        const allTasksExceptChampion = tasks.filter(t => t.id !== 9);
+        let allCompleted = true;
+        for (const task of allTasksExceptChampion) {
+            if (!(user.daily_tasks_mask & (1 << (task.id - 1)))) {
+                allCompleted = false;
+                break;
+            }
+        }
+        if (allCompleted && !(user.daily_tasks_mask & (1 << 8))) {
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
+                [1 << 8, userId]
+            );
+            user.daily_tasks_mask |= (1 << 8);
+        }
+
         const result = [];
         for (const task of tasks) {
             const completed = !!(user.daily_tasks_mask & (1 << (task.id - 1)));
             let progress = completed ? task.target_value : (progressObj[task.id] || 0);
             
+            // Для заданий 1-3 учитываем альтернативное условие – 10 побед подряд
             if ([1,2,3].includes(task.id) && !completed && dailyWinStreak >= 10) {
                 progress = task.target_value;
             }
@@ -404,29 +430,6 @@ router.post('/daily/claim', async (req, res) => {
             throw new Error('Task already claimed');
         }
 
-        // Специальная обработка для задания "Чемпион" (id=9)
-        if (task_id == 9) {
-            // Проверяем, что все остальные задания (id 1..8) выполнены
-            const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
-            let allOthersCompleted = true;
-            for (let row of otherTasks.rows) {
-                if (!(user.daily_tasks_mask & (1 << (row.id - 1)))) {
-                    allOthersCompleted = false;
-                    break;
-                }
-            }
-            if (!allOthersCompleted) {
-                throw new Error('Task not completed');
-            }
-            // Награда (150 монет)
-            await client.query('UPDATE users SET coins = coins + 150 WHERE id = $1', [userId]);
-            // Отмечаем задание выполненным
-            await client.query('UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2', [1 << 8, userId]);
-            await client.query('COMMIT');
-            res.json({ success: true });
-            return;
-        }
-
         const taskRes = await client.query('SELECT * FROM daily_tasks WHERE id = $1', [task_id]);
         if (taskRes.rows.length === 0) throw new Error('Task not found');
         const task = taskRes.rows[0];
@@ -455,7 +458,9 @@ router.post('/daily/claim', async (req, res) => {
         if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, userId]);
         } else if (task.reward_type === 'exp') {
+            console.log(`[claim] Exp reward for task ${task_id}, class_choice=${class_choice}`);
             if (!class_choice) {
+                console.error(`[claim] Missing class_choice for task ${task_id}, user ${userId}`);
                 throw new Error('class_choice required for exp reward');
             }
             const classRes = await client.query(
@@ -478,6 +483,7 @@ router.post('/daily/claim', async (req, res) => {
                 'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
                 [level, exp, userId, class_choice]
             );
+            console.log(`[claim] Exp added: new level=${level}, exp=${exp}`);
         }
 
         await client.query(
@@ -495,6 +501,8 @@ router.post('/daily/claim', async (req, res) => {
         client.release();
     }
 });
+
+// ==================== МАРШРУТЫ ОБНОВЛЕНИЯ ПРОГРЕССА ====================
 
 router.post('/daily/update/battle', async (req, res) => {
     const { tg_id, class_played, is_victory } = req.body;

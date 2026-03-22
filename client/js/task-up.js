@@ -284,15 +284,24 @@ async function loadDailyTasks() {
 }
 
 function showAdventCalendar() {
-    fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
+    const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`;
+    console.log('[showAdventCalendar] fetching', url);
+    fetch(url)
         .then(res => res.json())
-        .then(data => renderAdventCalendar(data))
+        .then(data => {
+            console.log('[showAdventCalendar] data received', data);
+            if (data.error) {
+                console.error('Server error:', data.error);
+                alert('Ошибка сервера: ' + data.error);
+                return;
+            }
+            renderAdventCalendar(data);
+        })
         .catch(err => {
-            console.error('Error loading advent:', err);
-            alert('Ошибка загрузки календаря');
+            console.error('Fetch error:', err);
+            alert('Ошибка соединения с сервером');
         });
 }
-
 function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, mask } = data;
     const content = document.getElementById('content');

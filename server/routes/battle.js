@@ -1,3 +1,4 @@
+```javascript
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -157,7 +158,7 @@ function calculateStats(classData, inventory, subclass) {
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
     let extraLogs = [];
 
-    // Illusionist mirage (still works)
+    // Illusionist mirage
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist && rolePassives.illusionist.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
         if (defenderState.mirageCounter >= 4) {
@@ -171,7 +172,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     // Shadow dodge (90%)
     if (defenderSubclass === 'mouse_shadow') {
-        const dodgeChance = rolePassives.mouse_shadow.dodgeChance; // 90
+        const dodgeChance = rolePassives.mouse_shadow.dodgeChance;
         if (Math.random() * 100 < dodgeChance) {
             const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
                 .replace('%s', '<strong>' + defenderName + '</strong>')
@@ -258,7 +259,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
 
     // Mana steal for Antimag
     if (attackerSubclass === 'mouse_antimag') {
-        const steal = rolePassives.mouse_antimag.manaSteal; // 5
+        const steal = rolePassives.mouse_antimag.manaSteal;
         const currentMana = defenderState.mana || 0;
         defenderState.mana = Math.max(0, currentMana - steal);
         attackerState.mana = (attackerState.mana || 0) + steal;
@@ -498,7 +499,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'buff';
             break;
         case 'mouse_necromancer':
-            // Passive handled elsewhere, but active might be nothing special
             log = `<strong>${attackerName}</strong> ничего не делает.`;
             type = 'none';
             break;
@@ -527,7 +527,6 @@ function applyDotDamage(state, name) {
             type: 'burn_dot'
         });
     }
-    // Alchemist poison
     if (state.alchemistPoison > 0 && state.alchemistPoisonDuration > 0) {
         totalDamage += state.alchemistPoison;
         logs.push({
@@ -625,7 +624,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
-                    // Check invincibility
+                    // Update playerHp from playerState (which already includes selfDamage)
+                    playerHp = playerState.hp;
+                    enemyHp = enemyState.hp;
                     let actualDamage = attackResult.damage;
                     if (enemyState.invincible > 0) {
                         actualDamage = 0;
@@ -722,6 +723,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
+                    // Update enemyHp from enemyState (which already includes selfDamage)
+                    playerHp = playerState.hp;
+                    enemyHp = enemyState.hp;
                     let actualDamage = attackResult.damage;
                     if (playerState.invincible > 0) {
                         actualDamage = 0;
@@ -774,12 +778,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         // Decrement invincible counters
         if (playerState.invincible > 0) playerState.invincible--;
         if (enemyState.invincible > 0) enemyState.invincible--;
-
-        // Handle Shadow's invisibility attack
-        if (enemyState.invisible > 0 && turn === 'player') { // after enemy turn we might process, but easier to handle after the turn
-            // We'll process after the whole round, but for simplicity, handle right after the turn if invisible was set
-            // Actually, better to handle after the turn in which invisibility was applied. We'll do it in the round-end section.
-        }
 
         // Apply dot damage at end of full round
         if (playerActedThisRound && enemyActedThisRound) {
@@ -1129,3 +1127,4 @@ router.post('/start', async (req, res) => {
 module.exports = router;
 module.exports.simulateBattle = simulateBattle;
 module.exports.calculateStats = calculateStats;
+```

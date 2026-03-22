@@ -134,7 +134,9 @@ function recalculatePower() {
 function getClassNameRu(cls) {
     if (cls === 'warrior') return 'Воин';
     if (cls === 'assassin') return 'Ассасин';
-    return 'Маг';
+    if (cls === 'mage') return 'Маг';
+    if (cls === 'mouse') return 'Мышь';
+    return cls;
 }
 
 function showRoleInfoModal(className) {

@@ -113,7 +113,7 @@ function renderTasks() {
                     <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
                 </div>
                 <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="claim-task-btn" id="showAdventBtn" style="padding: 8px; width: 100%; font-size: 14px;"><i class="fas fa-eye"></i></button>
+                    <button class="advent-eye-btn" id="showAdventBtn" style="padding: 8px; width: 100%; font-size: 14px;"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
             <div id="referralPlaceholder"></div>
@@ -127,7 +127,6 @@ function renderTasks() {
         referralPlaceholder.appendChild(renderReferral());
     }
 
-    // Простой обработчик без лишних вызовов
     const showAdventBtn = document.getElementById('showAdventBtn');
     if (showAdventBtn) {
         showAdventBtn.onclick = () => {
@@ -257,7 +256,8 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
-        document.querySelectorAll('.claim-task-btn').forEach(btn => {
+        // Обработчики только для кнопок внутри карточек заданий
+        document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const taskId = parseInt(btn.dataset.taskId);
                 const rewardType = btn.dataset.rewardType;

@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
-const { generateBot } = require('../utils/botGenerator');
-const tasksModule = require('./tasks'); // добавлено
+const { generateBot, generateMouseBoss } = require('../utils/botGenerator');
+const tasksModule = require('./tasks');
 
 console.log('✅ tower-server.js loaded (full version)');
 
@@ -195,17 +195,24 @@ router.post('/battle', async (req, res) => {
         if (botRes.rows.length > 0) {
             bot = botRes.rows[0].bot_data;
         } else {
-            bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
+            // Проверяем, боссовый ли этаж (каждые 5 этажей, начиная с 5)
+            if (progress.current_floor % 5 === 0 && progress.current_floor >= 5) {
+                bot = generateMouseBoss(progress.current_floor);
+            } else {
+                bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
+            }
             await client.query('INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)', [userId, progress.current_floor, bot]);
         }
 
         const opponent = {
             username: bot.username,
             avatar_id: bot.avatar_id,
+            avatar_filename: bot.avatar_filename,
             class: bot.class,
             subclass: bot.subclass,
             level: bot.level,
-            is_cybercat: false
+            is_cybercat: bot.is_cybercat || false,
+            is_mouse: bot.is_mouse || false
         };
 
         // Получаем данные для ВЫБРАННОГО класса (chosenClass)

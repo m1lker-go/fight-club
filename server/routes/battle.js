@@ -50,7 +50,14 @@ const rolePassives = {
     blood_hunter: { vamp: 20 },
     pyromancer: { burn: true },
     cryomancer: { freezeChance: 25, physReduction: 30 },
-    illusionist: { mirageGuaranteed: true }
+    illusionist: { mirageGuaranteed: true },
+     // Мыши-боссы
+    mouse_necromancer: { revive: true },
+    mouse_blade: { doubleAttack: true, ultimateIgnoreDef: true, ultimateVamp: 100 },
+    mouse_antimag: { manaSteal: 5, ultimateManaDependent: true },
+    mouse_paladin: { damageReduction: 50, invincible: true },
+    mouse_alchemist: { poisonOnHit: true, poisonDamagePercent: 50, ultimatePoison: true },
+    mouse_shadow: { dodgeChance: 90, invisibility: true }
 };
 
 const recentOpponents = new Map();

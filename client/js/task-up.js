@@ -127,9 +127,13 @@ function renderTasks() {
         referralPlaceholder.appendChild(renderReferral());
     }
 
-    document.getElementById('showAdventBtn').addEventListener('click', () => {
+   const showAdventBtn = document.getElementById('showAdventBtn');
+if (showAdventBtn) {
+    showAdventBtn.onclick = () => {
+        console.log('Opening advent calendar');
         showAdventCalendar();
-    });
+    };
+}
 
     loadDailyTasks();
 }

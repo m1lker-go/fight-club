@@ -2027,7 +2027,15 @@ td {
     /* наследует tower-result-btn */
 }
 
-
+#towerHelpBtn {
+    color: #00aaff;
+    font-size: 28px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+#towerHelpBtn:hover {
+    opacity: 0.8;
+}
 
 /* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
 

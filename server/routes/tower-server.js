@@ -2,18 +2,20 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { generateBot } = require('../utils/botGenerator');
-const tasksModule = require('./tasks');
+const tasksModule = require('./tasks'); // добавлено
 
 console.log('✅ tower-server.js loaded (full version)');
 
+// Функция для получения московской даты (YYYY-MM-DD)
 function getMoscowDate() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
     const result = moscowTime.toISOString().split('T')[0];
-    console.log(`[getMoscowDate] now=${now.toISOString()}, moscowTime=${moscowTime}, result=${result}`);
+    console.log('[getMoscowDate] now=' + now.toISOString() + ', moscowTime=' + moscowTime + ', result=' + result);
     return result;
 }
 
+// Группы классов для циклического перебора (9 комбинаций)
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
     { class: 'assassin', subclasses: ['assassin', 'venom_blade', 'blood_hunter'] },
@@ -46,14 +48,14 @@ async function getOrCreateProgress(client, userId) {
 async function checkAndResetAttempts(client, userId, progress) {
     const today = getMoscowDate();
     const lastDateStr = progress.last_attempt_date ? new Date(progress.last_attempt_date).toISOString().split('T')[0] : null;
-    console.log(`[checkAndResetAttempts] user ${userId}: last_attempt_date=${lastDateStr}, today=${today}`);
+    console.log('[checkAndResetAttempts] user ' + userId + ': last_attempt_date=' + lastDateStr + ', today=' + today);
     if (lastDateStr !== today) {
         await client.query('UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2', [today, userId]);
         progress.attempts_today = 0;
         progress.last_attempt_date = today;
-        console.log(`[checkAndResetAttempts] user ${userId}: reset to 0 (new day ${today})`);
+        console.log('[checkAndResetAttempts] user ' + userId + ': reset to 0 (new day ' + today + ')');
     } else {
-        console.log(`[checkAndResetAttempts] user ${userId}: no reset`);
+        console.log('[checkAndResetAttempts] user ' + userId + ': no reset');
     }
 }
 
@@ -76,6 +78,7 @@ function getBotLevel(floor) {
     return 60;
 }
 
+// Получить состояние башни
 router.get('/status', async (req, res) => {
     const { tg_id } = req.query;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -89,7 +92,7 @@ router.get('/status', async (req, res) => {
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
 
-        console.log(`[STATUS] user ${userId}: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, attemptsLeft=${10 - progress.attempts_today}`);
+        console.log('[STATUS] user ' + userId + ': attempts_today=' + progress.attempts_today + ', last_attempt_date=' + progress.last_attempt_date + ', attemptsLeft=' + (10 - progress.attempts_today));
 
         res.json({
             currentFloor: progress.current_floor,
@@ -106,6 +109,7 @@ router.get('/status', async (req, res) => {
     }
 });
 
+// Выбор класса на сезон
 router.post('/select-class', async (req, res) => {
     const { tg_id, class: className, subclass } = req.body;
     if (!tg_id || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
@@ -136,6 +140,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
+// Эндпоинт для боя в башне
 router.post('/battle', async (req, res) => {
     const { tg_id } = req.body;
     if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
@@ -152,6 +157,7 @@ router.post('/battle', async (req, res) => {
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
 
+        // Проверяем, что класс для башни выбран
         if (!progress.chosen_class || !progress.chosen_subclass) {
             throw new Error('Class not selected for tower. Please select a class first.');
         }
@@ -160,7 +166,7 @@ router.post('/battle', async (req, res) => {
         const chosenSubclass = progress.chosen_subclass;
 
         const today = getMoscowDate();
-        console.log(`[BATTLE] before update: attempts_today=${progress.attempts_today}, last_attempt_date=${progress.last_attempt_date}, today=${today}`);
+        console.log('[BATTLE] before update: attempts_today=' + progress.attempts_today + ', last_attempt_date=' + progress.last_attempt_date + ', today=' + today);
         const updateRes = await client.query(
             'UPDATE tower_progress SET attempts_today = attempts_today + 1, last_attempt_date = $1 WHERE user_id = $2 AND attempts_today < 10 RETURNING attempts_today',
             [today, userId]
@@ -168,8 +174,9 @@ router.post('/battle', async (req, res) => {
         if (updateRes.rowCount === 0) throw new Error('No tickets left today');
         const newAttemptsToday = updateRes.rows[0].attempts_today;
         progress.attempts_today = newAttemptsToday;
-        console.log(`[BATTLE UPDATE] user ${userId}: newAttemptsToday=${newAttemptsToday}, date=${today}`);
+        console.log('[BATTLE UPDATE] user ' + userId + ': newAttemptsToday=' + newAttemptsToday + ', date=' + today);
 
+        // Обновляем задание "Башня" (всегда)
         if (tasksModule.updateTowerTask) {
             await tasksModule.updateTowerTask(client, userId);
         } else {
@@ -177,7 +184,7 @@ router.post('/battle', async (req, res) => {
         }
 
         const dateCheck = await client.query('SELECT last_attempt_date FROM tower_progress WHERE user_id = $1', [userId]);
-        console.log(`[BATTLE] after update, DB last_attempt_date = ${dateCheck.rows[0].last_attempt_date}`);
+        console.log('[BATTLE] after update, DB last_attempt_date = ' + dateCheck.rows[0].last_attempt_date);
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
@@ -201,9 +208,11 @@ router.post('/battle', async (req, res) => {
             is_cybercat: false
         };
 
+        // Получаем данные для ВЫБРАННОГО класса (chosenClass)
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userId, chosenClass]);
         if (classData.rows.length === 0) throw new Error('Class data not found for chosen class');
 
+        // Инвентарь – все надетые предметы, calculateStats сам отфильтрует по owner_class
         const inv = await client.query(
             `SELECT id, name, type, rarity, class_restriction, owner_class, 
                     atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
@@ -274,14 +283,15 @@ router.post('/battle', async (req, res) => {
             if (coinsReward > 0) {
                 await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
                 await client.query('INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)', [userId, floor, 'coins', coinsReward]);
-                console.log(`[REWARD] user ${userId} floor ${floor} +${coinsReward} coins`);
+                console.log('[REWARD] user ' + userId + ' floor ' + floor + ' +' + coinsReward + ' coins');
             } else if (avatarReward) {
                 await client.query('INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)', [userId, floor, 'avatar', avatarReward]);
-                console.log(`[REWARD] user ${userId} floor ${floor} received avatar ${avatarReward}`);
+                console.log('[REWARD] user ' + userId + ' floor ' + floor + ' received avatar ' + avatarReward);
             }
 
             await client.query('UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1', [userId]);
 
+            // Обновляем рекорд в лидерборде башни (только если новый этаж больше предыдущего)
             await client.query(
                 `INSERT INTO tower_leaderboard (user_id, floor, achieved_at)
                  VALUES ($1, $2, NOW())
@@ -294,7 +304,7 @@ router.post('/battle', async (req, res) => {
         }
 
         await client.query('COMMIT');
-        console.log(`[BATTLE COMMIT] user ${userId} success, attemptsLeft in response: ${10 - newAttemptsToday}`);
+        console.log('[BATTLE COMMIT] user ' + userId + ' success, attemptsLeft in response: ' + (10 - newAttemptsToday));
 
         let responseReward = null;
         if (isVictory) {

@@ -284,25 +284,12 @@ async function loadDailyTasks() {
 }
 
 function showAdventCalendar() {
-    if (!userData || !userData.tg_id) {
-        console.error('[showAdventCalendar] userData or tg_id missing');
-        alert('Ошибка: данные пользователя не загружены');
-        return;
-    }
-    console.log('[showAdventCalendar] tg_id:', userData.tg_id);
     fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`)
-        .then(res => {
-            console.log('[showAdventCalendar] response status:', res.status);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            if (data.error) throw new Error(data.error);
-            renderAdventCalendar(data);
-        })
+        .then(res => res.json())
+        .then(data => renderAdventCalendar(data))
         .catch(err => {
             console.error('Error loading advent:', err);
-            alert('Ошибка загрузки календаря: ' + err.message);
+            alert('Ошибка загрузки календаря');
         });
 }
 

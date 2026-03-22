@@ -343,4 +343,119 @@ function generateBot(playerLevel, isCybercat = false, forcedClass = null, forced
     }
 }
 
-module.exports = { generateBot };
+// в конце файла botGenerator.js
+
+const mouseBosses = [
+    { 
+        type: 'necromancer', 
+        name: 'Мышь-некромант', 
+        avatar: 'mouse-skin-necr.png', 
+        subclass: 'mouse_necromancer',
+        // базовые характеристики для этажа 5 (далее масштабируются)
+        baseHp: 80,
+        baseAtk: 12,
+        baseDef: 8,
+        baseAgi: 15,
+        baseInt: 15,
+        baseSpd: 18
+    },
+    { 
+        type: 'blade', 
+        name: 'Клинок', 
+        avatar: 'mouse-skin-blade.png', 
+        subclass: 'mouse_blade',
+        baseHp: 70,
+        baseAtk: 18,
+        baseDef: 5,
+        baseAgi: 25,
+        baseInt: 5,
+        baseSpd: 25
+    },
+    { 
+        type: 'antimag', 
+        name: 'Антимаг', 
+        avatar: 'mouse-skin-antimag.png', 
+        subclass: 'mouse_antimag',
+        baseHp: 75,
+        baseAtk: 14,
+        baseDef: 6,
+        baseAgi: 20,
+        baseInt: 20,
+        baseSpd: 20
+    },
+    { 
+        type: 'paladin', 
+        name: 'Паладин', 
+        avatar: 'mouse-skin-titan.png', 
+        subclass: 'mouse_paladin',
+        baseHp: 100,
+        baseAtk: 10,
+        baseDef: 12,
+        baseAgi: 10,
+        baseInt: 10,
+        baseSpd: 12
+    },
+    { 
+        type: 'alchemist', 
+        name: 'Алхимик', 
+        avatar: 'icon-mouse-alchim.png', 
+        subclass: 'mouse_alchemist',
+        baseHp: 85,
+        baseAtk: 13,
+        baseDef: 7,
+        baseAgi: 18,
+        baseInt: 18,
+        baseSpd: 16
+    },
+    { 
+        type: 'shadow', 
+        name: 'Тень', 
+        avatar: 'mouse-skin-shadow.png', 
+        subclass: 'mouse_shadow',
+        baseHp: 65,
+        baseAtk: 16,
+        baseDef: 4,
+        baseAgi: 30,
+        baseInt: 8,
+        baseSpd: 28
+    }
+];
+
+function generateMouseBoss(floor) {
+    // Определяем, какой босс на этом этаже (цикл каждые 30 этажей, начиная с 5)
+    const bossIndex = (Math.floor(floor / 5) - 1) % mouseBosses.length;
+    const bossTemplate = mouseBosses[bossIndex];
+    
+    // Масштабирование характеристик с ростом этажа
+    const scale = 1 + (floor - 5) / 50; // к 100 этажу примерно +90% к статам
+    const hp = Math.floor(bossTemplate.baseHp * scale);
+    const atk = Math.floor(bossTemplate.baseAtk * scale);
+    const def = Math.floor(bossTemplate.baseDef * scale);
+    const agi = Math.floor(bossTemplate.baseAgi * scale);
+    const int = Math.floor(bossTemplate.baseInt * scale);
+    const spd = Math.floor(bossTemplate.baseSpd * scale);
+    const crit = 10 + Math.floor(floor / 10);
+    const critDmg = 1.5;
+    const vamp = 0;
+    const reflect = 0;
+    const manaMax = 100;
+    const manaRegen = 20 + Math.floor(floor / 5);
+    
+    return {
+        username: bossTemplate.name,
+        avatar_id: null,
+        avatar_filename: bossTemplate.avatar,
+        class: 'mouse',
+        subclass: bossTemplate.subclass,
+        level: Math.floor(floor / 2) + 10,
+        is_cybercat: false,
+        is_mouse: true,
+        stats: {
+            hp, atk, def, agi, int, spd,
+            crit, critDmg, vamp, reflect,
+            manaMax, manaRegen
+        }
+    };
+}
+
+module.exports = { generateBot, generateMouseBoss }; // экспортируем новую функцию

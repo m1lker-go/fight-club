@@ -51,7 +51,8 @@ const rolePassives = {
     pyromancer: { burn: true },
     cryomancer: { freezeChance: 25, physReduction: 30 },
     illusionist: { mirageGuaranteed: true },
-     // Мыши-боссы
+
+    // Mouse bosses
     mouse_necromancer: { revive: true },
     mouse_blade: { doubleAttack: true, ultimateIgnoreDef: true, ultimateVamp: 100 },
     mouse_antimag: { manaSteal: 5, ultimateManaDependent: true },
@@ -156,6 +157,7 @@ function calculateStats(classData, inventory, subclass) {
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
     let extraLogs = [];
 
+    // Illusionist mirage (still works)
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist && rolePassives.illusionist.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
         if (defenderState.mirageCounter >= 4) {
@@ -167,6 +169,18 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
+    // Shadow dodge (90%)
+    if (defenderSubclass === 'mouse_shadow') {
+        const dodgeChance = rolePassives.mouse_shadow.dodgeChance; // 90
+        if (Math.random() * 100 < dodgeChance) {
+            const phrase = dodgePhrases[Math.floor(Math.random() * dodgePhrases.length)]
+                .replace('%s', '<strong>' + defenderName + '</strong>')
+                .replace('%s', '<strong>' + attackerName + '</strong>');
+            return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
+        }
+    }
+
+    // Standard dodge based on agility
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
     const isDodge = Math.random() * 100 > hitChance;
     if (isDodge) {
@@ -181,7 +195,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let rageInfo = null;
     let selfDamage = 0;
 
-    // Обработка берсерка (ярость и самоповреждение)
+    // Berserker self damage
     if (attackerSubclass === 'berserker' && rolePassives.berserker && rolePassives.berserker.rage) {
         const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
         const rage = getBerserkerRage(hpPercent);
@@ -223,9 +237,16 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage *= critMultiplier;
     }
 
+    // Cryomancer physical reduction
     if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer && rolePassives.cryomancer.physReduction)
         damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
 
+    // Paladin damage reduction (50%)
+    if (defenderSubclass === 'mouse_paladin') {
+        damage = Math.floor(damage * (1 - rolePassives.mouse_paladin.damageReduction / 100));
+    }
+
+    // Apply defense reduction
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
@@ -235,7 +256,39 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let reflectDamage = 0;
     if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
 
-    // Накопление яда
+    // Mana steal for Antimag
+    if (attackerSubclass === 'mouse_antimag') {
+        const steal = rolePassives.mouse_antimag.manaSteal; // 5
+        const currentMana = defenderState.mana || 0;
+        defenderState.mana = Math.max(0, currentMana - steal);
+        attackerState.mana = (attackerState.mana || 0) + steal;
+        extraLogs.push({
+            text: `${attackerName} крадёт ${steal} маны у ${defenderName}.`,
+            type: 'mana_steal',
+            attacker: isPlayerAttacker ? 'player' : 'enemy'
+        });
+    }
+
+    // Poison for Alchemist (passive)
+    if (attackerSubclass === 'mouse_alchemist') {
+        if (!defenderState.alchemistPoison) defenderState.alchemistPoison = 0;
+        defenderState.alchemistPoison = Math.floor(damage * 0.5);
+        defenderState.alchemistPoisonDuration = 1;
+        extraLogs.push({
+            text: `${defenderName} отравлен! Получит ${defenderState.alchemistPoison} урона в конце хода.`,
+            type: 'poison_stack',
+            attacker: isPlayerAttacker ? 'player' : 'enemy'
+        });
+    }
+
+    // Double attack for Blade (simulate by doubling damage and adding a log line)
+    let doubleAttack = false;
+    if (attackerSubclass === 'mouse_blade') {
+        doubleAttack = true;
+        damage *= 2;
+    }
+
+    // Venom blade poison
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
@@ -249,7 +302,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Накопление огня
+    // Pyromancer burn
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
@@ -263,7 +316,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Накопление заморозки
+    // Cryomancer freeze
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
@@ -303,6 +356,10 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             .replace('%s', '<strong>' + attackerName + '</strong>')
             .replace('%s', '<strong>' + defenderName + '</strong>')
             .replace('%d', damage);
+    }
+
+    if (doubleAttack) {
+        attackPhrase += ' (двойной удар)';
     }
 
     return {
@@ -404,7 +461,50 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             log = ultPhrases.illusionist.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             type = 'damage';
             break;
-        default: return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
+
+        // Mouse bosses
+        case 'mouse_blade':
+            damage = attackerStats.atk * 2;
+            log = `<strong>${attackerName}</strong> использует Уязвимость и наносит ${damage} урона, игнорируя защиту!`;
+            type = 'damage';
+            attackerState.vampBuff = 1;
+            attackerState.vampBonus = 100;
+            break;
+        case 'mouse_antimag':
+            let mana = defenderState.mana || 0;
+            let multiplier = 1;
+            if (mana <= 20) multiplier = 3;
+            else if (mana <= 70) multiplier = 2;
+            else multiplier = 1;
+            damage = Math.floor(attackerStats.atk * multiplier);
+            log = `<strong>${attackerName}</strong> использует Антимагический удар и наносит ${damage} урона (зависит от маны цели).`;
+            type = 'damage';
+            break;
+        case 'mouse_paladin':
+            defenderState.invincible = 2;
+            log = `<strong>${attackerName}</strong> становится неуязвимым на 2 хода!`;
+            type = 'buff';
+            break;
+        case 'mouse_alchemist':
+            damage = Math.floor(attackerStats.atk * 1.5);
+            defenderState.alchemistPoison = Math.floor(attackerStats.atk * 0.8);
+            defenderState.alchemistPoisonDuration = 2;
+            log = `<strong>${attackerName}</strong> использует Адский коктейль, нанося ${damage} урона и отравляя цель на 2 хода!`;
+            type = 'damage';
+            break;
+        case 'mouse_shadow':
+            defenderState.invisible = 1;
+            log = `<strong>${attackerName}</strong> исчезает в тени! В конце хода последует сокрушительный удар.`;
+            type = 'buff';
+            break;
+        case 'mouse_necromancer':
+            // Passive handled elsewhere, but active might be nothing special
+            log = `<strong>${attackerName}</strong> ничего не делает.`;
+            type = 'none';
+            break;
+
+        default:
+            return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
     }
     return { damage, heal, log, selfDamage, stateChanges, type };
 }
@@ -427,6 +527,18 @@ function applyDotDamage(state, name) {
             type: 'burn_dot'
         });
     }
+    // Alchemist poison
+    if (state.alchemistPoison > 0 && state.alchemistPoisonDuration > 0) {
+        totalDamage += state.alchemistPoison;
+        logs.push({
+            text: `<strong>${name}</strong> получает ${state.alchemistPoison} урона от яда алхимика.`,
+            type: 'poison_dot'
+        });
+        state.alchemistPoisonDuration--;
+        if (state.alchemistPoisonDuration <= 0) {
+            state.alchemistPoison = 0;
+        }
+    }
     return { damage: totalDamage, logs };
 }
 
@@ -438,8 +550,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     const messages = [];
     const states = [];
 
-    let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0 };
-    let enemyState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: enemyHp, mirageCounter:0 };
+    let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false };
+    let enemyState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: enemyHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false };
 
     let playerActedThisRound = false;
     let enemyActedThisRound = false;
@@ -513,19 +625,20 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
-                    // Сначала синхронизируем базовые HP (учитывая самоповреждение)
-                    playerHp = playerState.hp;
-                    enemyHp = enemyState.hp;
-                    // Применяем урон, вампиризм, отражение
-                    enemyHp -= attackResult.damage;
+                    // Check invincibility
+                    let actualDamage = attackResult.damage;
+                    if (enemyState.invincible > 0) {
+                        actualDamage = 0;
+                        messages.push({ text: `<strong>${enemyName}</strong> неуязвим и не получает урона!`, type: 'buff', attacker: 'player' });
+                    }
+                    enemyHp -= actualDamage;
                     playerHp += attackResult.vampHeal;
                     playerHp -= attackResult.reflectDamage;
-                    // Обновляем состояния
                     playerState.hp = playerHp;
                     enemyState.hp = enemyHp;
                     if (playerHp < 0) playerHp = 0;
                     if (enemyHp < 0) enemyHp = 0;
-                    console.log(`[DEBUG] Player attack: damage=${attackResult.damage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
+                    console.log(`[DEBUG] Player attack: damage=${actualDamage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
                     let logText = attackResult.log;
 
                     if (attackResult.rageInfo) {
@@ -609,16 +722,19 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
-                    playerHp = playerState.hp;
-                    enemyHp = enemyState.hp;
-                    playerHp -= attackResult.damage;
+                    let actualDamage = attackResult.damage;
+                    if (playerState.invincible > 0) {
+                        actualDamage = 0;
+                        messages.push({ text: `<strong>${playerName}</strong> неуязвим и не получает урона!`, type: 'buff', attacker: 'enemy' });
+                    }
+                    playerHp -= actualDamage;
                     enemyHp += attackResult.vampHeal;
                     enemyHp -= attackResult.reflectDamage;
                     playerState.hp = playerHp;
                     enemyState.hp = enemyHp;
                     if (playerHp < 0) playerHp = 0;
                     if (enemyHp < 0) enemyHp = 0;
-                    console.log(`[DEBUG] Enemy attack: damage=${attackResult.damage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
+                    console.log(`[DEBUG] Enemy attack: damage=${actualDamage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
                     let logText = attackResult.log;
 
                     if (attackResult.rageInfo) {
@@ -655,6 +771,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = true;
         }
 
+        // Decrement invincible counters
+        if (playerState.invincible > 0) playerState.invincible--;
+        if (enemyState.invincible > 0) enemyState.invincible--;
+
+        // Handle Shadow's invisibility attack
+        if (enemyState.invisible > 0 && turn === 'player') { // after enemy turn we might process, but easier to handle after the turn
+            // We'll process after the whole round, but for simplicity, handle right after the turn if invisible was set
+            // Actually, better to handle after the turn in which invisibility was applied. We'll do it in the round-end section.
+        }
+
+        // Apply dot damage at end of full round
         if (playerActedThisRound && enemyActedThisRound) {
             const playerDot = applyDotDamage(playerState, playerName);
             const enemyDot = applyDotDamage(enemyState, enemyName);
@@ -678,8 +805,69 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 });
                 pushState();
             }
+            // Shadow invisibility attack (after the turn)
+            if (enemyState.invisible > 0 && enemyState.invisible === 1) {
+                const dmg = Math.floor(enemyStats.atk * 2);
+                playerHp -= dmg;
+                if (playerHp < 0) playerHp = 0;
+                enemyState.hp = enemyHp;
+                messages.push({
+                    text: `<strong>${enemyName}</strong> выходит из тени и наносит ${dmg} урона, игнорируя защиту!`,
+                    type: 'damage',
+                    attacker: 'enemy'
+                });
+                enemyState.invisible = 0;
+                pushState();
+            }
+            if (playerState.invisible > 0 && playerState.invisible === 1) {
+                const dmg = Math.floor(playerStats.atk * 2);
+                enemyHp -= dmg;
+                if (enemyHp < 0) enemyHp = 0;
+                playerState.hp = playerHp;
+                messages.push({
+                    text: `<strong>${playerName}</strong> выходит из тени и наносит ${dmg} урона, игнорируя защиту!`,
+                    type: 'damage',
+                    attacker: 'player'
+                });
+                playerState.invisible = 0;
+                pushState();
+            }
             playerActedThisRound = false;
             enemyActedThisRound = false;
+        }
+
+        // Necromancer revive (after death)
+        if (enemyHp <= 0 && !enemyState.revived && enemySubclass === 'mouse_necromancer') {
+            enemyHp = Math.floor(enemyStats.hp * 0.1);
+            enemyState.revived = true;
+            enemyState.poisonStacks = 0;
+            enemyState.burnStacks = 0;
+            enemyState.freezeStacks = 0;
+            enemyState.frozen = 0;
+            enemyState.alchemistPoison = 0;
+            enemyState.alchemistPoisonDuration = 0;
+            messages.push({
+                text: `<strong>${enemyName}</strong> воскресает, восстанавливая ${enemyHp} HP!`,
+                type: 'revive',
+                attacker: 'enemy'
+            });
+            pushState();
+        }
+        if (playerHp <= 0 && !playerState.revived && playerSubclass === 'mouse_necromancer') {
+            playerHp = Math.floor(playerStats.hp * 0.1);
+            playerState.revived = true;
+            playerState.poisonStacks = 0;
+            playerState.burnStacks = 0;
+            playerState.freezeStacks = 0;
+            playerState.frozen = 0;
+            playerState.alchemistPoison = 0;
+            playerState.alchemistPoisonDuration = 0;
+            messages.push({
+                text: `<strong>${playerName}</strong> воскресает, восстанавливая ${playerHp} HP!`,
+                type: 'revive',
+                attacker: 'player'
+            });
+            pushState();
         }
 
         if (playerHp <= 0 || enemyHp <= 0) break;

@@ -222,9 +222,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
-    console.log(`[DEBUG] ${attackerName} damage after defense: ${damage}, defender def: ${defenderStats.def}%`);
-    console.log(`[DEBUG] ${attackerName} selfDamage: ${selfDamage}, hp before: ${attackerState.hp + selfDamage}, after: ${attackerState.hp}`);
-
     let vampHeal = 0;
     if (attackerVamp > 0) vampHeal = Math.floor(damage * attackerVamp / 100);
 
@@ -490,7 +487,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (skill.heal) playerHp += skill.heal;
                 if (skill.selfDamage) playerHp -= skill.selfDamage;
                 if (playerHp < 0) playerHp = 0; if (enemyHp < 0) enemyHp = 0;
-                // Синхронизируем состояния
                 playerState.hp = playerHp;
                 enemyState.hp = enemyHp;
                 actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
@@ -606,7 +602,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
-                    // Синхронизируем с учётом самоповреждения
                     playerHp = playerState.hp;
                     enemyHp = enemyState.hp;
                     playerHp -= attackResult.damage;

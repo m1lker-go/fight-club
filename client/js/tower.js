@@ -768,3 +768,19 @@ function showTowerHelp() {
         if (event.target === modal) modal.style.display = 'none';
     };
 }
+
+function getRoleNameRu(role) {
+    const roles = {
+        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
+        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
+        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист',
+        // Мыши
+        mouse_necromancer: 'Мышь-некромант',
+        mouse_blade: 'Клинок',
+        mouse_antimag: 'Антимаг',
+        mouse_paladin: 'Паладин',
+        mouse_alchemist: 'Алхимик',
+        mouse_shadow: 'Тень'
+    };
+    return roles[role] || role;
+}

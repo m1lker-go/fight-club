@@ -181,39 +181,42 @@ function renderTower() {
         : '—';
 
     const content = document.getElementById('content');
-   content.innerHTML = `
-    <div class="tower-container">
-        <div class="tower-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="header-grid" style="flex: 1;">
-                    <div class="grid-left">
-                        <div class="grid-item">
-                            <span class="header-label">Этаж:</span>
-                            <span class="header-value">${towerStatus.currentFloor}</span>
+    content.innerHTML = `
+        <div class="tower-container">
+            <div class="tower-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="header-grid" style="flex: 1;">
+                        <div class="grid-left">
+                            <div class="grid-item">
+                                <span class="header-label">Этаж:</span>
+                                <span class="header-value">${towerStatus.currentFloor}</span>
+                            </div>
+                            <div class="grid-item">
+                                <span class="header-label">Билеты:</span>
+                                <span class="header-value">${towerStatus.attemptsLeft}</span>
+                                <img src="/assets/icons/icon-ticket.png" alt="билет" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle; display: inline-block;">
+                            </div>
                         </div>
-                        <div class="grid-item">
-                            <span class="header-label">Билеты:</span>
-                            <span class="header-value">${towerStatus.attemptsLeft}</span>
-                            <img src="/assets/icons/icon-ticket.png" alt="билет" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle; display: inline-block;">
+                        <div class="grid-right">
+                            <div class="grid-item">
+                                <span class="header-label">Класс:</span>
+                                <span class="header-value">${className}</span>
+                            </div>
+                            <div class="grid-item">
+                                <span class="header-label">Роль:</span>
+                                <span class="header-value">${subclassName}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="grid-right">
-                        <div class="grid-item">
-                            <span class="header-label">Класс:</span>
-                            <span class="header-value">${className}</span>
-                        </div>
-                        <div class="grid-item">
-                            <span class="header-label">Роль:</span>
-                            <span class="header-value">${subclassName}</span>
-                        </div>
-                    </div>
+                    <i class="fas fa-circle-question" id="towerHelpBtn" style="color: #00aaff; font-size: 28px; cursor: pointer; margin-left: 10px;"></i>
                 </div>
-                <i class="fas fa-circle-question" id="towerHelpBtn" style="color: #00aaff; font-size: 28px; cursor: pointer; margin-left: 10px;"></i>
             </div>
+            <div class="tower-floors" id="towerFloors"></div>
         </div>
-        <div class="tower-floors" id="towerFloors"></div>
-    </div>
-`;
+    `;
+
+    // Добавляем обработчик на кнопку помощи
+    document.getElementById('towerHelpBtn').addEventListener('click', showTowerHelp);
 
     const floorsContainer = document.getElementById('towerFloors');
     floorsContainer.innerHTML = '';

@@ -289,7 +289,7 @@ function showAdventCalendar() {
         .then(data => renderAdventCalendar(data))
         .catch(err => {
             console.error('Error loading advent:', err);
-            // Не показываем alert, чтобы не мешать
+            alert('Ошибка загрузки календаря');
         });
 }
 

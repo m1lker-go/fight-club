@@ -349,6 +349,18 @@ function showTowerBattleScreen(battleData) {
         ? getRoleNameRu(towerStatus.chosenSubclass)
         : getRoleNameRu(userData.subclass);
 
+    // Формируем аватар врага (с учётом мышей)
+    let enemyAvatarSrc = '';
+    if (battleData.opponent.is_mouse && battleData.opponent.avatar_filename) {
+        enemyAvatarSrc = `/assets/skin-mouse/${battleData.opponent.avatar_filename}`;
+    } else if (battleData.opponent.is_cybercat) {
+        enemyAvatarSrc = '/assets/cybercat-skin.png';
+    } else if (battleData.opponent.avatar_id) {
+        enemyAvatarSrc = `/assets/${getAvatarFilenameById(battleData.opponent.avatar_id)}`;
+    } else {
+        enemyAvatarSrc = '/assets/cat_heroweb.png';
+    }
+
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
@@ -404,7 +416,7 @@ function showTowerBattleScreen(battleData) {
 
                 <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
-                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <img src="${enemyAvatarSrc}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
@@ -603,16 +615,18 @@ function showTowerResultScreen(battleData) {
         tabStats.classList.add('active');
         resultDiv.innerHTML = `
             <table class="stats-table stats-battle">
-                <thead>以为<th>Игрок</th><th>Параметр</th><th>Соперник</th> </thead>
+                <thead>
+                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
+                </thead>
                 <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td> </tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td> </tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td> </tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td> </tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td> </tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td> </tr>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
                 </tbody>
-             </table>
+            </table>
         `;
     });
 
@@ -684,7 +698,6 @@ function getRoleNameRu(role) {
     };
     return roles[role] || role;
 }
-
 
 function showTowerHelp() {
     const modal = document.getElementById('roleModal');

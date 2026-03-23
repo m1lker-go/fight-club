@@ -162,7 +162,6 @@ async function loadDailyTasks() {
         }
 
         const activeTasks = tasksData.filter(task => !task.completed);
-        // Сортировка: сначала готовые к получению
         activeTasks.sort((a, b) => {
             const aReady = a.progress >= a.target_value;
             const bReady = b.progress >= b.target_value;
@@ -260,7 +259,6 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
-        // Обработчики для кнопок заданий
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const taskId = parseInt(btn.dataset.taskId);
@@ -287,7 +285,6 @@ async function loadDailyTasks() {
             });
         });
 
-        // Обработка таймера
         const allCompleted = completedTasksCount >= totalTasksCount;
         if (countdownContainer) {
             if (allCompleted) {
@@ -323,7 +320,15 @@ function updateCountdownDisplay() {
     container.innerHTML = `
         <div class="countdown-card">
             <div class="countdown-message">Вы выполнили ВСЕ задания на сегодня!</div>
-            <div class="countdown-timer">Новые задания появятся через: ${hours} ч ${minutes} мин</div>
+            <div class="countdown-timer-wrapper">
+                <div class="countdown-label">Новые задания появятся через:</div>
+                <div class="countdown-digits">
+                    <span class="digit-box">${hours}</span>
+                    <span class="digit-label">ч</span>
+                    <span class="digit-box">${minutes}</span>
+                    <span class="digit-label">мин</span>
+                </div>
+            </div>
         </div>
     `;
 }

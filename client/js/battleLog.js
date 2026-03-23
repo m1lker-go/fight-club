@@ -26,20 +26,6 @@ const BattleLog = {
     playerRage: 0,
     enemyRage: 0,
 
-    // Для отложенного обновления полоски врага (берсерк)
-    delayEnemyHpUpdate: false,
-    delayedEnemyHp: null,
-    delayedTimer: null,
-
-    // Для отложенного обновления полоски игрока (вампиризм у берсерка)
-    delayPlayerHpUpdate: false,
-    delayedPlayerHp: null,
-    delayedPlayerTimer: null,
-
-    // Для хранения данных о текущей атаке берсерка
-    berserkerAttackData: null,
-    berserkerStep: 0, // 0 - ожидание, 1 - самоповреждение, 2 - атака по врагу, 3 - вампиризм/отражение
-
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
         if (percent < 35) return 4;
@@ -69,12 +55,6 @@ const BattleLog = {
         this.enemyBurnStacks = 0;
         this.playerRage = 0;
         this.enemyRage = 0;
-        this.delayEnemyHpUpdate = false;
-        this.delayPlayerHpUpdate = false;
-        if (this.delayedTimer) clearTimeout(this.delayedTimer);
-        if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
-        this.delayedTimer = null;
-        this.delayedPlayerTimer = null;
 
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
@@ -113,60 +93,24 @@ const BattleLog = {
         const heroManaText = document.getElementById('heroManaText');
         const enemyManaText = document.getElementById('enemyManaText');
 
-        // Обновление здоровья игрока с возможной задержкой (только для берсерка)
-        if (this.delayPlayerHpUpdate) {
-            if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
-            this.delayedPlayerHp = state.playerHp;
-            this.delayedPlayerTimer = setTimeout(() => {
-                if (heroHpBar) heroHpBar.style.width = (this.delayedPlayerHp / this.battleData.result.playerMaxHp) * 100 + '%';
-                if (heroHpText) heroHpText.innerText = `${this.delayedPlayerHp}/${this.battleData.result.playerMaxHp}`;
-                this.delayedPlayerTimer = null;
-            }, 2000 / this.speed);
-            this.delayPlayerHpUpdate = false;
-        } else {
-            if (this.delayedPlayerTimer) {
-                clearTimeout(this.delayedPlayerTimer);
-                this.delayedPlayerTimer = null;
-            }
-            if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
-            if (heroHpBar) heroHpBar.style.width = (state.playerHp / this.battleData.result.playerMaxHp) * 100 + '%';
-        }
+        if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
+        if (heroHpBar) heroHpBar.style.width = (state.playerHp / this.battleData.result.playerMaxHp) * 100 + '%';
+        if (enemyHpText) enemyHpText.innerText = `${state.enemyHp}/${this.battleData.result.enemyMaxHp}`;
+        if (enemyHpBar) enemyHpBar.style.width = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
 
-        // Обработка вражеской полоски с возможной задержкой (для берсерка)
-        if (this.delayEnemyHpUpdate) {
-            if (this.delayedTimer) clearTimeout(this.delayedTimer);
-            this.delayedEnemyHp = state.enemyHp;
-            this.delayedTimer = setTimeout(() => {
-                if (enemyHpBar) enemyHpBar.style.width = (this.delayedEnemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
-                if (enemyHpText) enemyHpText.innerText = `${this.delayedEnemyHp}/${this.battleData.result.enemyMaxHp}`;
-                this.delayedTimer = null;
-            }, 2000 / this.speed);
-            this.delayEnemyHpUpdate = false;
-        } else {
-            if (this.delayedTimer) {
-                clearTimeout(this.delayedTimer);
-                this.delayedTimer = null;
-            }
-            if (enemyHpText) enemyHpText.innerText = `${state.enemyHp}/${this.battleData.result.enemyMaxHp}`;
-            if (enemyHpBar) enemyHpBar.style.width = (state.enemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
-        }
-
-        // Мана
         if (state.playerMana !== undefined) {
-           if (heroMana) heroMana.style.width = Math.min(100, (state.playerMana / 100) * 100) + '%';
+            if (heroMana) heroMana.style.width = Math.min(100, (state.playerMana / 100) * 100) + '%';
             if (heroManaText) heroManaText.innerText = state.playerMana;
         }
         if (state.enemyMana !== undefined) {
-           if (enemyMana) enemyMana.style.width = Math.min(100, (state.enemyMana / 100) * 100) + '%';
+            if (enemyMana) enemyMana.style.width = Math.min(100, (state.enemyMana / 100) * 100) + '%';
             if (enemyManaText) enemyManaText.innerText = state.enemyMana;
         }
 
-        // Отладка маны
         console.log(`[MANA] player: ${state.playerMana}, enemy: ${state.enemyMana}`);
         if (state.playerMana >= 100) console.log('[MANA] Player ULT ready!');
         if (state.enemyMana >= 100) console.log('[MANA] Enemy ULT ready!');
 
-        // Обновление статусных переменных
         this.playerFrozen = state.playerFrozen || 0;
         this.enemyFrozen = state.enemyFrozen || 0;
         this.playerShield = state.playerShield || 0;
@@ -178,7 +122,6 @@ const BattleLog = {
         this.playerBurnStacks = state.playerBurnStacks || 0;
         this.enemyBurnStacks = state.enemyBurnStacks || 0;
 
-        // Расчёт ярости
         if (this.battleData.playerSubclass === 'berserker') {
             const playerPercent = (state.playerHp / this.battleData.result.playerMaxHp) * 100;
             this.playerRage = this.getRageLevelFromPercent(playerPercent);
@@ -192,7 +135,6 @@ const BattleLog = {
             this.enemyRage = 0;
         }
 
-        // Оверлей заморозки
         if (state.playerHp <= 0) this.playerFrozen = 0;
         if (state.enemyHp <= 0) this.enemyFrozen = 0;
         const heroFrozen = document.querySelector('.hero-card .frozen-overlay');
@@ -203,7 +145,6 @@ const BattleLog = {
         this.renderEffects('player');
         this.renderEffects('enemy');
 
-        // Смерть
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
@@ -342,106 +283,6 @@ const BattleLog = {
         return text;
     },
 
-    // Разбор сообщения атаки берсерка и подготовка данных для пошагового отображения
-    prepareBerserkerAttack(entry) {
-        const msgText = entry.text;
-        const type = entry.type;
-        const attacker = entry.attacker;
-
-        const selfMatch = msgText.match(/Урон -(\d+)/);
-        const damageMatch = msgText.match(/Урон -(\d+)/); // тот же самый, что и selfMatch? Нет, в сообщении атаки есть урон по врагу.
-        // В сообщении attack/crit у берсерка есть сначала урон по врагу, затем вампиризм и отражение.
-        // В extraLogs уже есть самоповреждение, но оно идёт отдельным сообщением перед атакой.
-        // Поэтому для пошагового отображения мы будем использовать уже имеющуюся последовательность:
-        // 1. damage_self (уже отдельное сообщение) -> его обрабатываем отдельно.
-        // 2. Для сообщения attack/crit мы будем выполнять шаги: урон по врагу, затем вампиризм и отражение.
-
-        // Извлекаем урон по врагу
-        const damageToEnemyMatch = msgText.match(/Урон -(\d+)/);
-        if (!damageToEnemyMatch) return null;
-
-        const damageToEnemy = parseInt(damageToEnemyMatch[1]);
-        const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
-        const reflectMatch = msgText.match(/Отражение -(\d+)/i);
-
-        const isPlayerAttacking = (attacker === 'player');
-        const enemySide = isPlayerAttacking ? 'enemy' : 'player';
-        const playerSide = isPlayerAttacking ? 'player' : 'enemy';
-
-        const currentState = this.states[this.currentStateIndex - 1] || this.states[0];
-        const currentEnemyHp = enemySide === 'enemy' ? currentState.enemyHp : currentState.playerHp;
-        const currentPlayerHp = playerSide === 'player' ? currentState.playerHp : currentState.enemyHp;
-        const maxEnemyHp = enemySide === 'enemy' ? this.battleData.result.enemyMaxHp : this.battleData.result.playerMaxHp;
-        const maxPlayerHp = playerSide === 'player' ? this.battleData.result.playerMaxHp : this.battleData.result.enemyMaxHp;
-
-        const enemyBar = document.getElementById(enemySide === 'enemy' ? 'enemyHp' : 'heroHp');
-        const enemyText = document.getElementById(enemySide === 'enemy' ? 'enemyHpText' : 'heroHpText');
-        const playerBar = document.getElementById(playerSide === 'player' ? 'heroHp' : 'enemyHp');
-        const playerText = document.getElementById(playerSide === 'player' ? 'heroHpText' : 'enemyHpText');
-
-        let vampValue = 0;
-        if (vampMatch) vampValue = parseInt(vampMatch[1]);
-
-        let reflectValue = 0;
-        if (reflectMatch) reflectValue = parseInt(reflectMatch[1]);
-
-        return {
-            attacker, isPlayerAttacking,
-            damageToEnemy, vampValue, reflectValue,
-            currentEnemyHp, currentPlayerHp,
-            maxEnemyHp, maxPlayerHp,
-            enemyBar, enemyText, playerBar, playerText
-        };
-    },
-
-    // Пошаговое выполнение атаки берсерка
-    startBerserkerAttack(data) {
-        if (this.stopped) return;
-
-        // Шаг 1: урон по врагу
-        const afterDamage = Math.max(0, data.currentEnemyHp - data.damageToEnemy);
-        data.enemyBar.style.width = (afterDamage / data.maxEnemyHp) * 100 + '%';
-        data.enemyText.innerText = `${afterDamage}/${data.maxEnemyHp}`;
-
-        // Показываем красное число урона на аватаре врага
-        this.showFloatingNumber(data.isPlayerAttacking ? 'enemy' : 'hero', -data.damageToEnemy, '⚔️', 'red');
-
-        // Запланируем следующий шаг через 1.5 секунды
-        setTimeout(() => {
-            if (this.stopped) return;
-
-            // Шаг 2: вампиризм (если есть)
-            if (data.vampValue > 0) {
-                const afterVamp = Math.min(data.maxPlayerHp, data.currentPlayerHp + data.vampValue);
-                data.playerBar.style.width = (afterVamp / data.maxPlayerHp) * 100 + '%';
-                data.playerText.innerText = `${afterVamp}/${data.maxPlayerHp}`;
-                this.showFloatingNumber(data.isPlayerAttacking ? 'player' : 'enemy', data.vampValue, '❤️', 'green');
-            }
-
-            // Если есть отражение, запланируем его через 0.5 секунды (чтобы не накладывалось)
-            if (data.reflectValue > 0) {
-                setTimeout(() => {
-                    if (this.stopped) return;
-                    const currentAfterVamp = parseInt(data.playerText.innerText.split('/')[0]);
-                    const afterReflect = Math.max(0, currentAfterVamp - data.reflectValue);
-                    data.playerBar.style.width = (afterReflect / data.maxPlayerHp) * 100 + '%';
-                    data.playerText.innerText = `${afterReflect}/${data.maxPlayerHp}`;
-                    this.showFloatingNumber(data.isPlayerAttacking ? 'player' : 'enemy', -data.reflectValue, '🛡️', 'red');
-                }, 500 / this.speed);
-            }
-
-            // Завершаем обработку сообщения: переходим к следующему индексу сообщения и состоянию
-            this.currentMsgIndex++;
-            if (this.currentStateIndex < this.states.length) {
-                // Применяем состояние, которое соответствует концу этого хода (оно уже содержит финальные HP)
-                this.applyState(this.states[this.currentStateIndex]);
-                this.currentStateIndex++;
-            }
-            // Запускаем следующий цикл через интервал (2 секунды / скорость)
-            this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-        }, 1500 / this.speed);
-    },
-
     playNext() {
         if (this.stopped) {
             console.log('[BattleLog] stopped, ignoring');
@@ -460,10 +301,12 @@ const BattleLog = {
 
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        // Обработка самоповреждения (берсерк) – отображаем сразу, без задержек
-        if (type === 'damage_self' && 
-            ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
-             (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker'))) {
+        // Специальная обработка для берсерка
+        const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
+                            (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
+
+        if (isBerserker && type === 'damage_self') {
+            // Этап 1: урон по себе
             const selfMatch = msgText.match(/Урон -(\d+)/);
             if (selfMatch) {
                 const selfDamage = parseInt(selfMatch[1]);
@@ -472,72 +315,18 @@ const BattleLog = {
                 const maxHp = attacker === 'player' ? this.battleData.result.playerMaxHp : this.battleData.result.enemyMaxHp;
                 const targetBar = attacker === 'player' ? document.getElementById('heroHp') : document.getElementById('enemyHp');
                 const targetText = attacker === 'player' ? document.getElementById('heroHpText') : document.getElementById('enemyHpText');
-
                 const afterSelf = Math.max(0, currentHp - selfDamage);
                 targetBar.style.width = (afterSelf / maxHp) * 100 + '%';
                 targetText.innerText = `${afterSelf}/${maxHp}`;
-                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', -selfDamage, '⚔️', 'red');
             }
-            // Добавляем лог
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.innerHTML = this.formatLogText(msgText);
-            this.logContainer.appendChild(logEntry);
-            this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-            this.currentMsgIndex++;
-            if (this.currentStateIndex < this.states.length) {
-                this.applyState(this.states[this.currentStateIndex]);
-                this.currentStateIndex++;
-            }
-            this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-            return;
+            // После этого сообщения идёт следующее – атака. Запланируем её обработку через 1.5 секунды
+            setTimeout(() => {
+                this.processBerserkerAttack(attacker);
+            }, 1500 / this.speed);
         }
 
-        // Обработка атаки берсерка – разбиваем на шаги
-        if ((type === 'attack' || type === 'crit') && 
-            ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
-             (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker'))) {
-            // Сначала показываем лог
-            const logEntry = document.createElement('div');
-            let entryClass = 'log-entry';
-            if (type === 'dodge') {
-                entryClass += ' dodge-message';
-            } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                entryClass += ' ult-message';
-            } else if (type === 'poison_stack' || type === 'poison_dot') {
-                entryClass += ' poison-message';
-            } else if (type === 'burn_stack' || type === 'burn_dot') {
-                entryClass += ' fire-message';
-            } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
-                entryClass += ' ice-message';
-            }
-            logEntry.className = entryClass;
-            logEntry.innerHTML = this.formatLogText(msgText);
-            this.logContainer.appendChild(logEntry);
-            this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
-            // Анимация удара
-            const animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            this.showAnimation(animTarget, 'shot.gif');
-
-            // Парсим данные атаки
-            const attackData = this.prepareBerserkerAttack(entry);
-            if (attackData) {
-                this.startBerserkerAttack(attackData);
-            } else {
-                // Если не удалось распарсить, пропускаем как обычно
-                this.currentMsgIndex++;
-                if (this.currentStateIndex < this.states.length) {
-                    this.applyState(this.states[this.currentStateIndex]);
-                    this.currentStateIndex++;
-                }
-                this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-            }
-            return;
-        }
-
-        // Обычные сообщения (не берсерка)
+        // Обычная обработка для всех сообщений (лог, анимации, числа)
         const logEntry = document.createElement('div');
         let entryClass = 'log-entry';
         if (type === 'dodge') {
@@ -556,7 +345,7 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        // Анимации для обычных сообщений
+        // Анимации
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage) {
             let animTarget = null;
@@ -587,9 +376,18 @@ const BattleLog = {
 
         this.parseAndShowFloatingNumber(entry);
         this.currentMsgIndex++;
-        if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
-            this.currentStateIndex++;
+
+        // Для берсерка пропускаем обычное применение состояния, так как мы обрабатываем всё вручную
+        if (!(isBerserker && type === 'damage_self')) {
+            if (this.currentStateIndex < this.states.length) {
+                this.applyState(this.states[this.currentStateIndex]);
+                this.currentStateIndex++;
+            }
+        } else {
+            // Для сообщения damage_self мы не применяем состояние, но нужно продвинуть индекс состояния
+            if (this.currentStateIndex < this.states.length) {
+                this.currentStateIndex++;
+            }
         }
 
         if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
@@ -597,6 +395,68 @@ const BattleLog = {
         }
 
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+    },
+
+    // Новый метод для обработки атаки берсерка (этапы 2 и 3)
+    processBerserkerAttack(attacker) {
+        // Находим следующее сообщение (атаку) от того же атакующего
+        let attackMsg = null;
+        for (let i = this.currentMsgIndex; i < this.messages.length; i++) {
+            const msg = this.messages[i];
+            if ((msg.type === 'attack' || msg.type === 'crit') && msg.attacker === attacker) {
+                attackMsg = msg;
+                break;
+            }
+        }
+        if (!attackMsg) return;
+
+        const msgText = attackMsg.text;
+        const damageMatch = msgText.match(/Урон -(\d+)/);
+        const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
+        const reflectMatch = msgText.match(/Отражение -(\d+)/i);
+
+        if (!damageMatch) return;
+
+        const damageToEnemy = parseInt(damageMatch[1]);
+        const isPlayerAttacking = (attacker === 'player');
+        const enemySide = isPlayerAttacking ? 'enemy' : 'player';
+        const playerSide = isPlayerAttacking ? 'player' : 'enemy';
+
+        // Получаем текущие значения HP из DOM (так как после первого этапа они уже изменены)
+        const enemyBar = document.getElementById(enemySide === 'enemy' ? 'enemyHp' : 'heroHp');
+        const enemyText = document.getElementById(enemySide === 'enemy' ? 'enemyHpText' : 'heroHpText');
+        const playerBar = document.getElementById(playerSide === 'player' ? 'heroHp' : 'enemyHp');
+        const playerText = document.getElementById(playerSide === 'player' ? 'heroHpText' : 'enemyHpText');
+
+        let currentEnemyHp = parseInt(enemyText.innerText.split('/')[0]);
+        let currentPlayerHp = parseInt(playerText.innerText.split('/')[0]);
+        const maxEnemyHp = enemySide === 'enemy' ? this.battleData.result.enemyMaxHp : this.battleData.result.playerMaxHp;
+        const maxPlayerHp = playerSide === 'player' ? this.battleData.result.playerMaxHp : this.battleData.result.enemyMaxHp;
+
+        // Этап 2: урон по врагу + вампиризм (одновременно)
+        const afterDamage = Math.max(0, currentEnemyHp - damageToEnemy);
+        enemyBar.style.width = (afterDamage / maxEnemyHp) * 100 + '%';
+        enemyText.innerText = `${afterDamage}/${maxEnemyHp}`;
+
+        let vampValue = 0;
+        if (vampMatch) {
+            vampValue = parseInt(vampMatch[1]);
+            const afterVamp = Math.min(maxPlayerHp, currentPlayerHp + vampValue);
+            playerBar.style.width = (afterVamp / maxPlayerHp) * 100 + '%';
+            playerText.innerText = `${afterVamp}/${maxPlayerHp}`;
+            currentPlayerHp = afterVamp;
+        }
+
+        // Этап 3: отражение (если есть) – через 1.5 секунды
+        if (reflectMatch) {
+            const reflectValue = parseInt(reflectMatch[1]);
+            setTimeout(() => {
+                const currentAfterVamp = parseInt(playerText.innerText.split('/')[0]);
+                const afterReflect = Math.max(0, currentAfterVamp - reflectValue);
+                playerBar.style.width = (afterReflect / maxPlayerHp) * 100 + '%';
+                playerText.innerText = `${afterReflect}/${maxPlayerHp}`;
+            }, 1500 / this.speed);
+        }
     },
 
     parseAndShowFloatingNumber(entry) {
@@ -658,21 +518,12 @@ const BattleLog = {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
                 const vampValue = parseInt(vampMatch[1]);
-                // Для берсерка числа вампиризма и отражения будут показаны вручную в процессе атаки, чтобы не дублировать
-                const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
-                                    (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
-                if (!isBerserker) {
-                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
-                }
+                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
             }
             const reflectMatch = msgText.match(/отражение -(\d+)/i);
             if (reflectMatch) {
                 const reflectValue = -parseInt(reflectMatch[1]);
-                const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
-                                    (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
-                if (!isBerserker) {
-                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
-                }
+                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
             }
         }
 
@@ -777,8 +628,6 @@ const BattleLog = {
         }
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        if (this.delayedTimer) clearTimeout(this.delayedTimer);
-        if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
         this.hideAnimations();
         this.stopped = true;
         this.messages = [];
@@ -787,7 +636,5 @@ const BattleLog = {
         this.currentStateIndex = 0;
         this.battleData = null;
         this.onFinish = null;
-        this.delayedTimer = null;
-        this.delayedPlayerTimer = null;
     }
 };

@@ -319,14 +319,18 @@ function updateCountdownDisplay() {
     const { hours, minutes } = getRemainingTime();
     container.innerHTML = `
         <div class="countdown-card">
-            <div class="countdown-message">Вы выполнили ВСЕ задания на сегодня!</div>
+            <div class="countdown-message">Вы выполнили ВСЕ задания!</div>
             <div class="countdown-timer-wrapper">
                 <div class="countdown-label">Новые задания появятся через:</div>
                 <div class="countdown-digits">
-                    <span class="digit-box">${hours}</span>
-                    <span class="digit-label">ч</span>
-                    <span class="digit-box">${minutes}</span>
-                    <span class="digit-label">мин</span>
+                    <div class="digit-box">
+                        <span class="digit-value">${hours}</span>
+                        <span class="digit-unit">ч</span>
+                    </div>
+                    <div class="digit-box">
+                        <span class="digit-value">${minutes}</span>
+                        <span class="digit-unit">м</span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -356,12 +356,13 @@ const BattleLog = {
 
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
+        let skipHpUpdate = false; // флаг для пропуска обновления HP в applyState
+
         // ========== ОБРАБОТКА БЕРСЕРКА ==========
         // Ход 1а: самоповреждение (тип damage_self)
         if (type === 'damage_self' && 
             ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
              (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker'))) {
-            // Извлекаем урон по себе
             const selfMatch = msgText.match(/Урон -(\d+)/);
             if (selfMatch) {
                 const selfDamage = parseInt(selfMatch[1]);
@@ -371,10 +372,10 @@ const BattleLog = {
                 const targetBar = attacker === 'player' ? document.getElementById('heroHp') : document.getElementById('enemyHp');
                 const targetText = attacker === 'player' ? document.getElementById('heroHpText') : document.getElementById('enemyHpText');
                 
-                // Сразу уменьшаем полоску
                 const afterSelf = Math.max(0, currentHp - selfDamage);
                 targetBar.style.width = (afterSelf / maxHp) * 100 + '%';
                 targetText.innerText = `${afterSelf}/${maxHp}`;
+                skipHpUpdate = true;
             }
         }
 
@@ -382,7 +383,6 @@ const BattleLog = {
         if ((type === 'attack' || type === 'crit') && 
             ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
              (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker'))) {
-            // Извлекаем урон по врагу, вампиризм, отражение
             const damageMatch = msgText.match(/Урон -(\d+)/);
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             const reflectMatch = msgText.match(/Отражение -(\d+)/i);
@@ -393,7 +393,6 @@ const BattleLog = {
                 const enemySide = isPlayerAttacking ? 'enemy' : 'player';
                 const playerSide = isPlayerAttacking ? 'player' : 'enemy';
                 
-                // Получаем текущее состояние
                 const currentState = this.states[this.currentStateIndex - 1] || this.states[0];
                 const currentEnemyHp = enemySide === 'enemy' ? currentState.enemyHp : currentState.playerHp;
                 const currentPlayerHp = playerSide === 'player' ? currentState.playerHp : currentState.enemyHp;
@@ -405,12 +404,12 @@ const BattleLog = {
                 const playerBar = document.getElementById(playerSide === 'player' ? 'heroHp' : 'enemyHp');
                 const playerText = document.getElementById(playerSide === 'player' ? 'heroHpText' : 'enemyHpText');
                 
-                // 1. Наносим урон врагу (немедленно)
+                // 1. Наносим урон врагу
                 const afterDamage = Math.max(0, currentEnemyHp - damageToEnemy);
                 enemyBar.style.width = (afterDamage / maxEnemyHp) * 100 + '%';
                 enemyText.innerText = `${afterDamage}/${maxEnemyHp}`;
                 
-                // 2. Вампиризм (если есть) – применяем к атакующему (немедленно)
+                // 2. Вампиризм – применяем к атакующему
                 let vampValue = 0;
                 if (vampMatch) {
                     vampValue = parseInt(vampMatch[1]);
@@ -419,26 +418,25 @@ const BattleLog = {
                     playerText.innerText = `${afterVamp}/${maxPlayerHp}`;
                 }
                 
-                // 3. Отражение (если есть) – применяем к атакующему с задержкой 1 секунда
+                // 3. Отражение – применяем с задержкой 1 секунда
                 if (reflectMatch) {
                     const reflectValue = parseInt(reflectMatch[1]);
                     setTimeout(() => {
-                        // Получаем актуальное HP атакующего (уже могло измениться от вампиризма)
                         const currentAfterVamp = parseInt(playerText.innerText.split('/')[0]);
                         const afterReflect = Math.max(0, currentAfterVamp - reflectValue);
                         playerBar.style.width = (afterReflect / maxPlayerHp) * 100 + '%';
                         playerText.innerText = `${afterReflect}/${maxPlayerHp}`;
                     }, 1000 / this.speed);
                 }
+                skipHpUpdate = true;
             }
         }
 
-        // Если это сообщение о самоповреждении (берсерк), взводим флаг отложенного обновления врага (для синхронизации с состоянием)
+        // Остальные флаги (отложенное обновление для врага и игрока) оставляем как раньше
         if (type === 'damage_self') {
             this.delayEnemyHpUpdate = true;
         }
 
-        // Если в сообщении есть вампиризм, взводим флаг отложенного обновления игрока ТОЛЬКО ДЛЯ БЕРСЕРКА
         if (type === 'attack' || type === 'crit') {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
@@ -449,7 +447,7 @@ const BattleLog = {
             }
         }
 
-        // ========== ОСТАЛЬНЫЕ СООБЩЕНИЯ ==========
+        // Добавляем сообщение в лог
         const logEntry = document.createElement('div');
         let entryClass = 'log-entry';
 
@@ -470,6 +468,7 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
+        // Анимации
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage) {
             let animTarget = null;
@@ -508,12 +507,36 @@ const BattleLog = {
         this.parseAndShowFloatingNumber(entry);
         this.currentMsgIndex++;
 
+        // Применяем состояние, но если мы уже вручную обновили HP, то не даём перезаписать
         if (this.currentStateIndex < this.states.length) {
-            this.applyState(this.states[this.currentStateIndex]);
+            if (skipHpUpdate) {
+                // Сохраняем текущие отображаемые HP
+                const playerText = document.getElementById('heroHpText');
+                const enemyText = document.getElementById('enemyHpText');
+                const playerHpValue = playerText ? parseInt(playerText.innerText.split('/')[0]) : null;
+                const enemyHpValue = enemyText ? parseInt(enemyText.innerText.split('/')[0]) : null;
+
+                this.applyState(this.states[this.currentStateIndex]);
+
+                // Восстанавливаем HP, которые мы установили вручную
+                if (playerHpValue !== null && playerText) {
+                    const maxHp = this.battleData.result.playerMaxHp;
+                    playerText.innerText = `${playerHpValue}/${maxHp}`;
+                    const playerBar = document.getElementById('heroHp');
+                    if (playerBar) playerBar.style.width = (playerHpValue / maxHp) * 100 + '%';
+                }
+                if (enemyHpValue !== null && enemyText) {
+                    const maxHp = this.battleData.result.enemyMaxHp;
+                    enemyText.innerText = `${enemyHpValue}/${maxHp}`;
+                    const enemyBar = document.getElementById('enemyHp');
+                    if (enemyBar) enemyBar.style.width = (enemyHpValue / maxHp) * 100 + '%';
+                }
+            } else {
+                this.applyState(this.states[this.currentStateIndex]);
+            }
             this.currentStateIndex++;
         }
 
-        // Отладка ультимейта
         if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
             console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
         }
@@ -580,7 +603,6 @@ const BattleLog = {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
                 const vampValue = parseInt(vampMatch[1]);
-                // Проверяем, нужно ли задерживать (только для берсерка)
                 const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
                                     (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
                 if (isBerserker) {

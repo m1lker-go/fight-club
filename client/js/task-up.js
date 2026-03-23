@@ -2,6 +2,8 @@
 
 // ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
 
+let countdownInterval = null;
+
 function renderAdventCalendarInContainer(data, container) {
     const { currentDay, daysInMonth, mask } = data;
     let firstUnclaimed = null;
@@ -119,6 +121,7 @@ function renderTasks() {
             <div id="referralPlaceholder"></div>
             <div class="tasks-header">Ежедневные задания</div>
             <div id="tasksList"></div>
+            <div id="countdownContainer" class="countdown-container" style="display: none;"></div>
         </div>
     `;
 
@@ -141,6 +144,7 @@ function renderTasks() {
 async function loadDailyTasks() {
     if (currentScreen !== 'tasks') return;
     const tasksList = document.getElementById('tasksList');
+    const countdownContainer = document.getElementById('countdownContainer');
     if (!tasksList) return;
 
     try {
@@ -256,7 +260,7 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
-        // Обработчики только для кнопок внутри карточек заданий
+        // Обработчики для кнопок заданий
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const taskId = parseInt(btn.dataset.taskId);
@@ -283,8 +287,59 @@ async function loadDailyTasks() {
             });
         });
 
+        // Обработка таймера
+        const allCompleted = completedTasksCount >= totalTasksCount;
+        if (countdownContainer) {
+            if (allCompleted) {
+                countdownContainer.style.display = 'block';
+                startCountdownTimer();
+            } else {
+                countdownContainer.style.display = 'none';
+                stopCountdownTimer();
+            }
+        }
+
     } catch (e) {
         console.error('Error loading daily tasks:', e);
+    }
+}
+
+function getRemainingTime() {
+    const now = new Date();
+    const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    const nextDay = new Date(moscowTime);
+    nextDay.setDate(moscowTime.getDate() + 1);
+    nextDay.setHours(0, 0, 0, 0);
+    const diffMs = nextDay - moscowTime;
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    return { hours, minutes };
+}
+
+function updateCountdownDisplay() {
+    const container = document.getElementById('countdownContainer');
+    if (!container) return;
+    const { hours, minutes } = getRemainingTime();
+    container.innerHTML = `
+        <div class="countdown-card">
+            <div class="countdown-message">Вы выполнили ВСЕ задания на сегодня!</div>
+            <div class="countdown-timer">Новые задания появятся через: ${hours} ч ${minutes} мин</div>
+        </div>
+    `;
+}
+
+function startCountdownTimer() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    updateCountdownDisplay();
+    countdownInterval = setInterval(() => {
+        updateCountdownDisplay();
+    }, 60000);
+}
+
+function stopCountdownTimer() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
     }
 }
 

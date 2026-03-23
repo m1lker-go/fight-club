@@ -36,6 +36,10 @@ const BattleLog = {
     delayedPlayerHp: null,
     delayedPlayerTimer: null,
 
+    // Временные данные для промежуточного обновления (для берсерка)
+    berserkerSelfDamage: 0,
+    berserkerCurrentHp: 0,
+
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
         if (percent < 35) return 4;
@@ -71,6 +75,8 @@ const BattleLog = {
         if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
         this.delayedTimer = null;
         this.delayedPlayerTimer = null;
+        this.berserkerSelfDamage = 0;
+        this.berserkerCurrentHp = 0;
 
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
@@ -109,7 +115,7 @@ const BattleLog = {
         const heroManaText = document.getElementById('heroManaText');
         const enemyManaText = document.getElementById('enemyManaText');
 
-        // Обновление здоровья игрока с возможной задержкой (для вампиризма у берсерка)
+        // Обновление здоровья игрока с возможной задержкой (только для берсерка)
         if (this.delayPlayerHpUpdate) {
             if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
             this.delayedPlayerHp = state.playerHp;
@@ -356,42 +362,52 @@ const BattleLog = {
 
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        // Если это сообщение о самоповреждении (берсерк), взводим флаг отложенного обновления врага
-        if (type === 'damage_self') {
-            this.delayEnemyHpUpdate = true;
-        }
-
-        // Если это сообщение атаки или крита с вампиризмом у берсерка
-        if ((type === 'attack' || type === 'crit') && 
+        // Обработка берсерка: если это сообщение с самоповреждением и вампиризмом, делаем промежуточное обновление полоски
+        if ((type === 'damage_self' || type === 'attack' || type === 'crit') && 
             ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
              (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker'))) {
             
-            // Извлекаем selfDamage и vampHeal из текста
             const selfMatch = msgText.match(/Урон -(\d+)/);
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (selfMatch && vampMatch) {
                 const selfDamage = parseInt(selfMatch[1]);
                 const vampHeal = parseInt(vampMatch[1]);
                 
-                // Получаем текущий HP атакующего из последнего состояния (до этого сообщения)
-                const prevState = this.states[this.currentStateIndex - 1] || this.states[0];
-                const currentHp = attacker === 'player' ? prevState.playerHp : prevState.enemyHp;
+                // Получаем текущий HP атакующего из последнего состояния
+                const currentState = this.states[this.currentStateIndex - 1] || this.states[0];
+                const currentHp = attacker === 'player' ? currentState.playerHp : currentState.enemyHp;
                 const maxHp = attacker === 'player' ? this.battleData.result.playerMaxHp : this.battleData.result.enemyMaxHp;
-                
-                // Сразу уменьшаем полоску на selfDamage (без задержки)
                 const targetBar = attacker === 'player' ? document.getElementById('heroHp') : document.getElementById('enemyHp');
                 const targetText = attacker === 'player' ? document.getElementById('heroHpText') : document.getElementById('enemyHpText');
-                const afterSelfDamage = Math.max(0, currentHp - selfDamage);
-                targetBar.style.width = (afterSelfDamage / maxHp) * 100 + '%';
-                targetText.innerText = `${afterSelfDamage}/${maxHp}`;
                 
-                // Запланируем восстановление через задержку (2000 / this.speed)
-                const delay = 2000 / this.speed;
+                // Сразу уменьшаем полоску на selfDamage
+                const afterSelf = Math.max(0, currentHp - selfDamage);
+                targetBar.style.width = (afterSelf / maxHp) * 100 + '%';
+                targetText.innerText = `${afterSelf}/${maxHp}`;
+                
+                // Запланируем восстановление через задержку (вампиризм)
                 setTimeout(() => {
-                    const finalHp = Math.min(maxHp, afterSelfDamage + vampHeal);
-                    targetBar.style.width = (finalHp / maxHp) * 100 + '%';
-                    targetText.innerText = `${finalHp}/${maxHp}`;
-                }, delay);
+                    const afterVamp = Math.min(maxHp, afterSelf + vampHeal);
+                    targetBar.style.width = (afterVamp / maxHp) * 100 + '%';
+                    targetText.innerText = `${afterVamp}/${maxHp}`;
+                }, 2000 / this.speed);
+            }
+        }
+
+        // Если это сообщение о самоповреждении (берсерк), взводим флаг отложенного обновления врага
+        if (type === 'damage_self') {
+            this.delayEnemyHpUpdate = true;
+        }
+
+        // Если в сообщении есть вампиризм, взводим флаг отложенного обновления игрока ТОЛЬКО ДЛЯ БЕРСЕРКА
+        if (type === 'attack' || type === 'crit') {
+            const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
+            if (vampMatch) {
+                // Проверяем, кто атакует – если берсерк, то задержка
+                if ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
+                    (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker')) {
+                    this.delayPlayerHpUpdate = true;
+                }
             }
         }
 
@@ -525,8 +541,17 @@ const BattleLog = {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
                 const vampValue = parseInt(vampMatch[1]);
-                // Показываем зелёное число сразу (без задержки)
-                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                // Проверяем, нужно ли задерживать (только для берсерка)
+                const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
+                                    (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
+                if (isBerserker) {
+                    const delay = 2000 / this.speed;
+                    setTimeout(() => {
+                        this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                    }, delay);
+                } else {
+                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                }
             }
             const reflectMatch = msgText.match(/отражение -(\d+)/i);
             if (reflectMatch) {
@@ -625,8 +650,6 @@ const BattleLog = {
         clearTimeout(this.interval);
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        if (this.delayedTimer) clearTimeout(this.delayedTimer);
-        if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
         this.hideAnimations();
         if (this.onFinish) this.onFinish(this.battleData);
     },

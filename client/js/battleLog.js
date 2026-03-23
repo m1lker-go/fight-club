@@ -31,6 +31,11 @@ const BattleLog = {
     delayedEnemyHp: null,
     delayedTimer: null,
 
+    // Для отложенного обновления полоски игрока (вампиризм у берсерка)
+    delayPlayerHpUpdate: false,
+    delayedPlayerHp: null,
+    delayedPlayerTimer: null,
+
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
         if (percent < 35) return 4;
@@ -61,8 +66,11 @@ const BattleLog = {
         this.playerRage = 0;
         this.enemyRage = 0;
         this.delayEnemyHpUpdate = false;
+        this.delayPlayerHpUpdate = false;
         if (this.delayedTimer) clearTimeout(this.delayedTimer);
+        if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
         this.delayedTimer = null;
+        this.delayedPlayerTimer = null;
 
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
@@ -101,27 +109,36 @@ const BattleLog = {
         const heroManaText = document.getElementById('heroManaText');
         const enemyManaText = document.getElementById('enemyManaText');
 
-        // Здоровье игрока обновляем сразу
-        if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
-        if (heroHpBar) heroHpBar.style.width = (state.playerHp / this.battleData.result.playerMaxHp) * 100 + '%';
+        // Обновление здоровья игрока с возможной задержкой (только для берсерка)
+        if (this.delayPlayerHpUpdate) {
+            if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
+            this.delayedPlayerHp = state.playerHp;
+            this.delayedPlayerTimer = setTimeout(() => {
+                if (heroHpBar) heroHpBar.style.width = (this.delayedPlayerHp / this.battleData.result.playerMaxHp) * 100 + '%';
+                if (heroHpText) heroHpText.innerText = `${this.delayedPlayerHp}/${this.battleData.result.playerMaxHp}`;
+                this.delayedPlayerTimer = null;
+            }, 2000 / this.speed);
+            this.delayPlayerHpUpdate = false;
+        } else {
+            if (this.delayedPlayerTimer) {
+                clearTimeout(this.delayedPlayerTimer);
+                this.delayedPlayerTimer = null;
+            }
+            if (heroHpText) heroHpText.innerText = `${state.playerHp}/${this.battleData.result.playerMaxHp}`;
+            if (heroHpBar) heroHpBar.style.width = (state.playerHp / this.battleData.result.playerMaxHp) * 100 + '%';
+        }
 
         // Обработка вражеской полоски с возможной задержкой (для берсерка)
         if (this.delayEnemyHpUpdate) {
-            // Отменяем предыдущий таймер
             if (this.delayedTimer) clearTimeout(this.delayedTimer);
-            // Сохраняем целевое значение
             this.delayedEnemyHp = state.enemyHp;
-            // Запускаем таймер с учётом скорости
             this.delayedTimer = setTimeout(() => {
                 if (enemyHpBar) enemyHpBar.style.width = (this.delayedEnemyHp / this.battleData.result.enemyMaxHp) * 100 + '%';
                 if (enemyHpText) enemyHpText.innerText = `${this.delayedEnemyHp}/${this.battleData.result.enemyMaxHp}`;
                 this.delayedTimer = null;
             }, 2000 / this.speed);
-            // Сбрасываем флаг
             this.delayEnemyHpUpdate = false;
-            // Вражеский текст пока не трогаем
         } else {
-            // Если таймер был активен, но мы применили новое состояние без задержки – отменяем его
             if (this.delayedTimer) {
                 clearTimeout(this.delayedTimer);
                 this.delayedTimer = null;
@@ -344,6 +361,18 @@ const BattleLog = {
             this.delayEnemyHpUpdate = true;
         }
 
+        // Если в сообщении есть вампиризм, взводим флаг отложенного обновления игрока ТОЛЬКО ДЛЯ БЕРСЕРКА
+        if (type === 'attack' || type === 'crit') {
+            const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
+            if (vampMatch) {
+                // Проверяем, кто атакует – если берсерк, то задержка
+                if ((attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
+                    (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker')) {
+                    this.delayPlayerHpUpdate = true;
+                }
+            }
+        }
+
         const logEntry = document.createElement('div');
         let entryClass = 'log-entry';
 
@@ -474,7 +503,17 @@ const BattleLog = {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
                 const vampValue = parseInt(vampMatch[1]);
-                this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                // Проверяем, нужно ли задерживать (только для берсерка)
+                const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
+                                    (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
+                if (isBerserker) {
+                    const delay = 2000 / this.speed;
+                    setTimeout(() => {
+                        this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                    }, delay);
+                } else {
+                    this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
+                }
             }
             const reflectMatch = msgText.match(/отражение -(\d+)/i);
             if (reflectMatch) {
@@ -584,6 +623,8 @@ const BattleLog = {
         }
         if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
         if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+        if (this.delayedTimer) clearTimeout(this.delayedTimer);
+        if (this.delayedPlayerTimer) clearTimeout(this.delayedPlayerTimer);
         this.hideAnimations();
         this.stopped = true;
         this.messages = [];
@@ -592,7 +633,7 @@ const BattleLog = {
         this.currentStateIndex = 0;
         this.battleData = null;
         this.onFinish = null;
-        if (this.delayedTimer) clearTimeout(this.delayedTimer);
         this.delayedTimer = null;
+        this.delayedPlayerTimer = null;
     }
 };

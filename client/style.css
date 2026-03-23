@@ -2175,31 +2175,31 @@ td {
     background-color: #1a1f2b;
     border: 1px solid #aaa;
     border-radius: 12px;
-    padding: 15px 25px;
+    padding: 12px 20px;           
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-width: 100px;
+    min-width: 80px;              
 }
 
 .digit-value {
-    font-size: 48px;
+    font-size: 38px;              
     font-weight: bold;
     color: #aaa;
     line-height: 1;
-    margin-bottom: 5px;
+    margin-bottom: 4px;           
 }
 
 .digit-unit {
-    font-size: 14px;
+    font-size: 12px;             
     font-weight: normal;
     color: #aaa;
     text-transform: lowercase;
 }
 
 .colon {
-    font-size: 48px;
+    font-size: 38px;             
     font-weight: bold;
     color: #aaa;
     line-height: 1;

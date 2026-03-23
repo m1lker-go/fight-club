@@ -317,6 +317,8 @@ function updateCountdownDisplay() {
     const container = document.getElementById('countdownContainer');
     if (!container) return;
     const { hours, minutes } = getRemainingTime();
+    const hoursStr = hours.toString().padStart(2, '0');
+    const minutesStr = minutes.toString().padStart(2, '0');
     container.innerHTML = `
         <div class="countdown-card">
             <div class="countdown-message">Вы выполнили ВСЕ задания!</div>
@@ -324,12 +326,13 @@ function updateCountdownDisplay() {
                 <div class="countdown-label">Новые задания появятся через:</div>
                 <div class="countdown-digits">
                     <div class="digit-box">
-                        <span class="digit-value">${hours}</span>
-                        <span class="digit-unit">ч</span>
+                        <div class="digit-value">${hoursStr}</div>
+                        <div class="digit-unit">часов</div>
                     </div>
+                    <div class="colon">:</div>
                     <div class="digit-box">
-                        <span class="digit-value">${minutes}</span>
-                        <span class="digit-unit">м</span>
+                        <div class="digit-value">${minutesStr}</div>
+                        <div class="digit-unit">минут</div>
                     </div>
                 </div>
             </div>

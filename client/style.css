@@ -2115,6 +2115,54 @@ td {
 
 /* БЛОК ТАЙМЕРА */
 
+/* Убедимся, что контейнер задач растягивается на всю высоту */
+
+.tasks-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.countdown-container {
+    flex: 1; /* занимает всё оставшееся пространство */
+    display: flex;
+    align-items: flex-start; /* содержимое не прижимается к низу */
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    background-color: #2a303c; /* фон совпадает с карточками */
+}
+
+.countdown-card {
+    background-color: #2a303c;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+.countdown-message {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00aaff;
+    margin-bottom: 20px;
+}
+
+.countdown-timer-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.countdown-label {
+    font-size: 14px;
+    color: #aaa;
+}
+
 .countdown-digits {
     display: flex;
     align-items: center;

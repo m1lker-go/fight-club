@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -624,7 +623,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
-                    // Update playerHp from playerState (which already includes selfDamage)
                     playerHp = playerState.hp;
                     enemyHp = enemyState.hp;
                     let actualDamage = attackResult.damage;
@@ -723,7 +721,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 );
 
                 if (attackResult.hit) {
-                    // Update enemyHp from enemyState (which already includes selfDamage)
                     playerHp = playerState.hp;
                     enemyHp = enemyState.hp;
                     let actualDamage = attackResult.damage;
@@ -775,11 +772,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = true;
         }
 
-        // Decrement invincible counters
         if (playerState.invincible > 0) playerState.invincible--;
         if (enemyState.invincible > 0) enemyState.invincible--;
 
-        // Apply dot damage at end of full round
         if (playerActedThisRound && enemyActedThisRound) {
             const playerDot = applyDotDamage(playerState, playerName);
             const enemyDot = applyDotDamage(enemyState, enemyName);
@@ -803,7 +798,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 });
                 pushState();
             }
-            // Shadow invisibility attack (after the turn)
             if (enemyState.invisible > 0 && enemyState.invisible === 1) {
                 const dmg = Math.floor(enemyStats.atk * 2);
                 playerHp -= dmg;
@@ -834,7 +828,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = false;
         }
 
-        // Necromancer revive (after death)
         if (enemyHp <= 0 && !enemyState.revived && enemySubclass === 'mouse_necromancer') {
             enemyHp = Math.floor(enemyStats.hp * 0.1);
             enemyState.revived = true;
@@ -1127,4 +1120,3 @@ router.post('/start', async (req, res) => {
 module.exports = router;
 module.exports.simulateBattle = simulateBattle;
 module.exports.calculateStats = calculateStats;
-```

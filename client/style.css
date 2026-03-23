@@ -2111,3 +2111,28 @@ td {
     border-color: #aaa;
     color: #aaa;
 }
+
+.countdown-container {
+    margin-top: 20px;
+}
+
+.countdown-card {
+    background-color: #2a303c;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    border-left: 4px solid #00aaff;
+}
+
+.countdown-message {
+    font-size: 16px;
+    font-weight: bold;
+    color: #88ff88;
+    margin-bottom: 8px;
+}
+
+.countdown-timer {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00aaff;
+}

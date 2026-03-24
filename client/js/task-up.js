@@ -1,4 +1,4 @@
-// task-up.js
+// task-up.js (client)
 
 // ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
 
@@ -421,6 +421,7 @@ function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, mask } = data;
     const content = document.getElementById('content');
 
+    // Находим первый невзятый день (он же – доступный)
     let firstUnclaimed = null;
     for (let d = 1; d <= currentDay; d++) {
         if (!(mask & (1 << (d-1)))) {
@@ -433,6 +434,7 @@ function renderAdventCalendar(data) {
     for (let day = 1; day <= daysInMonth; day++) {
         const claimed = mask & (1 << (day-1));
         const available = (day === firstUnclaimed);
+        
         let className = 'advent-day';
         if (claimed) className += ' claimed';
         else if (available) className += ' available';
@@ -468,7 +470,7 @@ function renderAdventCalendar(data) {
     document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
 }
 
-let isClaiming = false; // блокировка повторного клика
+let isClaiming = false;
 
 function claimAdventDay(day, daysInMonth) {
     if (isClaiming) {
@@ -482,9 +484,8 @@ function claimAdventDay(day, daysInMonth) {
     const body = { tg_id: userData.tg_id, day };
 
     if (reward.type === 'exp') {
-        // для опыта – показываем модалку выбора класса, запрос будет внутри неё
         showClassChoiceModal(day, reward.amount);
-        isClaiming = false; // снимаем блокировку, модалка сама сделает запрос
+        isClaiming = false;
         return;
     }
 
@@ -497,11 +498,6 @@ function claimAdventDay(day, daysInMonth) {
     .then(data => {
         if (data.error) {
             alert(data.error);
-            // после ошибки всё равно обновляем календарь (может измениться маска)
-            setTimeout(() => {
-                showAdventCalendar();
-                refreshData();
-            }, 500);
         } else {
             if (reward.type === 'coins') {
                 showCoinsModal(reward.amount);
@@ -510,11 +506,11 @@ function claimAdventDay(day, daysInMonth) {
             } else {
                 alert(`Вы получили: ${data.reward}`);
             }
-            setTimeout(() => {
-                showAdventCalendar();
-                refreshData();
-            }, 500);
         }
+        setTimeout(() => {
+            showAdventCalendar();
+            refreshData();
+        }, 500);
     })
     .catch(err => {
         console.error(err);
@@ -548,22 +544,20 @@ function showClassChoiceModal(day, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            // Запрос с выбором класса
             const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, day, classChoice })
             });
             const data = await res.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
+            if (data.error) alert(data.error);
+            else {
                 showExpModal(expAmount, classChoice);
+                setTimeout(() => {
+                    showAdventCalendar();
+                    refreshData();
+                }, 500);
             }
-            setTimeout(() => {
-                showAdventCalendar();
-                refreshData();
-            }, 500);
         });
     });
 

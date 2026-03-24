@@ -1,5 +1,3 @@
-// tasks.js (server)
-
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -121,6 +119,7 @@ router.get('/advent', async (req, res) => {
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
         
+        // Если сменился месяц/год, сбрасываем прогресс (начинаем с 1-го дня)
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
             await client.query(
@@ -130,14 +129,15 @@ router.get('/advent', async (req, res) => {
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        // Only today is claimable if not already claimed
-        const nextAvailable = (lastClaimed < currentDay) ? currentDay : null;
+        const nextAvailable = lastClaimed + 1;
+        // Доступен только если следующий день не позже текущего
+        const availableDay = (nextAvailable <= currentDay) ? nextAvailable : null;
         
         res.json({
             currentDay,
             daysInMonth,
-            nextAvailable,
-            lastClaimed
+            nextAvailable: availableDay,
+            lastClaimed: lastClaimed
         });
     } finally {
         client.release();
@@ -173,12 +173,13 @@ router.post('/advent/claim', async (req, res) => {
             );
         }
         
-        // --- NEW RESTRICTION: only today's day is claimable ---
-        if (day !== currentDay) {
-            throw new Error('You can only claim today\'s reward');
+        // Проверка: можно взять только следующий невзятый день
+        const expectedDay = lastClaimed + 1;
+        if (day !== expectedDay) {
+            throw new Error(`You can only claim day ${expectedDay} next`);
         }
-        if (lastClaimed >= currentDay) {
-            throw new Error('Reward already claimed today');
+        if (day > currentDay) {
+            throw new Error('This day is not available yet');
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -230,6 +231,7 @@ router.post('/advent/claim', async (req, res) => {
             rewardItem = item;
         }
         
+        // Обновляем последний полученный день
         await client.query(
             'UPDATE users SET last_claimed_advent_day = $1 WHERE id = $2',
             [day, userId]
@@ -246,6 +248,7 @@ router.post('/advent/claim', async (req, res) => {
         client.release();
     }
 });
+
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 
 async function updateTowerTask(client, userId) {

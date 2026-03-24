@@ -33,6 +33,7 @@ function addExpToCurrentClass(expGain) {
     const classData = getCurrentClassData();
     if (!classData) return false;
 
+    const oldSkillPoints = classData.skill_points || 0;
     classData.exp += expGain;
     const expNeeded = (level) => Math.floor(80 * Math.pow(level, 1.5));
     let leveledUp = false;
@@ -40,7 +41,6 @@ function addExpToCurrentClass(expGain) {
     while (classData.exp >= expNeeded(classData.level)) {
         classData.exp -= expNeeded(classData.level);
         classData.level++;
-        // Определяем количество очков за новый уровень
         let pointsToAdd = 1;
         if (classData.level <= 14) {
             pointsToAdd = 3;
@@ -56,9 +56,65 @@ function addExpToCurrentClass(expGain) {
     currentPower = calculatePower(userData.current_class, stats.final, classData.level);
     updateTopBar();
 
+    // Сохраняем количество полученных очков навыков для модального окна
+    if (leveledUp) {
+        window.lastSkillPointsGained = classData.skill_points - oldSkillPoints;
+    }
+
     return leveledUp;
 }
 
+function showLevelUpModal(className) {
+    const modal = document.getElementById('levelUpModal');
+    if (!modal) {
+        console.error('levelUpModal not found');
+        return;
+    }
+    const body = document.getElementById('levelUpBody');
+    if (!body) return;
+
+    const classNameRu = getClassNameRu(className);
+    const classData = getCurrentClassData();
+    const skillPointsGained = window.lastSkillPointsGained || 3; // запасное значение
+
+    body.innerHTML = `
+        <p style="text-align:center;">
+            Поздравляю! Ваш ${classNameRu} достиг ${classData.level} уровня!<br>
+            Вам доступно <strong>${skillPointsGained}</strong> очк${skillPointsGained === 1 ? 'о' : (skillPointsGained < 5 ? 'а' : 'ов')} навыка.
+        </p>
+    `;
+
+    modal.style.display = 'block';
+
+    const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
+    const laterBtn = document.getElementById('levelUpLaterBtn');
+
+    // Обновляем обработчики (клонируем, чтобы убрать старые)
+    const newUpgrade = upgradeBtn.cloneNode(true);
+    const newLater = laterBtn.cloneNode(true);
+    upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
+    laterBtn.parentNode.replaceChild(newLater, laterBtn);
+
+    newUpgrade.addEventListener('click', () => {
+        modal.style.display = 'none';
+        // Разблокируем меню (на случай если оно было заблокировано)
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
+        profileTab = 'upgrade';
+        showScreen('profile');
+    });
+
+    newLater.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.onclick = () => modal.style.display = 'none';
+    }
+}
 
 // ===== УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ =====
 function hideSplashScreen() {

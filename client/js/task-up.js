@@ -363,9 +363,9 @@ function showCoinsModal(amount) {
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
         <div style="text-align: center;">
-            <i class="fas fa-coins" style="font-size: 64px; color: gold;"></i>
-            <div style="font-size: 24px; font-weight: bold; margin: 15px 0;">${amount}</div>
-            <div style="font-size: 16px;">монет получено!</div>
+            <i class="fas fa-coins reward-icon" style="color: gold;"></i>
+            <div class="reward-amount">${amount}</div>
+            <div class="reward-text">монет получено!</div>
         </div>
     `;
     modal.style.display = 'block';
@@ -384,9 +384,9 @@ function showExpModal(amount, className) {
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
         <div style="text-align: center;">
-            <i class="fas fa-star" style="font-size: 64px; color: #00aaff;"></i>
-            <div style="font-size: 24px; font-weight: bold; margin: 15px 0;">+${amount} EXP</div>
-            <div style="font-size: 16px;">для класса <strong>${getClassNameRu(className)}</strong></div>
+            <i class="fas fa-star reward-icon" style="color: #00aaff;"></i>
+            <div class="reward-amount">+${amount}</div>
+            <div class="reward-text">для класса <strong>${getClassNameRu(className)}</strong></div>
         </div>
     `;
     modal.style.display = 'block';

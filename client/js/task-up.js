@@ -405,12 +405,8 @@ function showAdventCalendar() {
     const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
     console.log('[showAdventCalendar] fetching', url);
     fetch(url)
-        .then(res => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
-            console.log('[showAdventCalendar] data received', data);
             if (data.error) throw new Error(data.error);
             renderAdventCalendar(data);
         })
@@ -421,16 +417,16 @@ function showAdventCalendar() {
 }
 
 function renderAdventCalendar(data) {
-    const { currentDay, daysInMonth, nextAvailable, lastClaimed } = data;
+    const { currentDay, daysInMonth, canClaim, lastClaimDate } = data;
     const content = document.getElementById('content');
 
     let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
     for (let day = 1; day <= daysInMonth; day++) {
         let className = 'advent-day';
-        if (day <= lastClaimed) {
-            className += ' claimed';
-        } else if (day === nextAvailable && nextAvailable !== null) {
+        if (day === currentDay && canClaim) {
             className += ' available';
+        } else if (day === currentDay && !canClaim) {
+            className += ' claimed';
         } else {
             className += ' locked';
         }
@@ -458,12 +454,12 @@ function renderAdventCalendar(data) {
     html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
     content.innerHTML = html;
 
-    document.querySelectorAll('.advent-day.available').forEach(div => {
-        div.addEventListener('click', () => {
-            const day = parseInt(div.dataset.day);
-            claimAdventDay(day, daysInMonth);
+    const availableDiv = document.querySelector('.advent-day.available');
+    if (availableDiv) {
+        availableDiv.addEventListener('click', () => {
+            claimAdventDay(currentDay, daysInMonth);
         });
-    });
+    }
 
     document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
 }
@@ -479,7 +475,7 @@ function claimAdventDay(day, daysInMonth) {
     const reward = getAdventReward(day, daysInMonth);
 
     isClaiming = true;
-    const body = { tg_id: userData.tg_id, day };
+    const body = { tg_id: userData.tg_id };
 
     if (reward.type === 'exp') {
         showClassChoiceModal(day, reward.amount);
@@ -546,7 +542,7 @@ function showClassChoiceModal(day, expAmount) {
             const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, day, classChoice })
+                body: JSON.stringify({ tg_id: userData.tg_id, classChoice })
             });
             const data = await res.json();
             if (data.error) alert(data.error);

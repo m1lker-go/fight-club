@@ -425,7 +425,7 @@ function renderAdventCalendar(data) {
         let className = 'advent-day';
         if (day <= lastClaimed) {
             className += ' claimed';
-        } else if (day === nextAvailable && day <= currentDay) {
+        } else if (day === nextAvailable && day === currentDay) {
             className += ' available';
         } else {
             className += ' locked';

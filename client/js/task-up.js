@@ -468,48 +468,61 @@ function renderAdventCalendar(data) {
     document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
 }
 
+let isClaiming = false; // блокировка повторного клика
+
 function claimAdventDay(day, daysInMonth) {
+    if (isClaiming) {
+        console.log('[ADVENT] Already claiming, ignoring');
+        return;
+    }
     const reward = getAdventReward(day, daysInMonth);
 
+    isClaiming = true;
+    const url = 'https://fight-club-api-4och.onrender.com/tasks/advent/claim';
+    const body = { tg_id: userData.tg_id, day };
+
     if (reward.type === 'exp') {
+        // для опыта – показываем модалку выбора класса, запрос будет внутри неё
         showClassChoiceModal(day, reward.amount);
-    } else if (reward.type === 'coins') {
-        fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, day })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) alert(data.error);
-            else {
-                showCoinsModal(reward.amount);
-                showAdventCalendar();
-                refreshData();
-            }
-        })
-        .catch(err => alert('Ошибка: ' + err));
-    } else if (reward.type === 'item') {
-        fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, day })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) alert(data.error);
-            else {
-                if (data.item) {
-                    showChestResult(data.item);
-                } else {
-                    alert(`Вы получили: ${data.reward}`);
-                }
-                showAdventCalendar();
-                refreshData();
-            }
-        })
-        .catch(err => alert('Ошибка: ' + err));
+        isClaiming = false; // снимаем блокировку, модалка сама сделает запрос
+        return;
     }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            // после ошибки всё равно обновляем календарь (может измениться маска)
+            setTimeout(() => {
+                showAdventCalendar();
+                refreshData();
+            }, 500);
+        } else {
+            if (reward.type === 'coins') {
+                showCoinsModal(reward.amount);
+            } else if (reward.type === 'item' && data.item) {
+                showChestResult(data.item);
+            } else {
+                alert(`Вы получили: ${data.reward}`);
+            }
+            setTimeout(() => {
+                showAdventCalendar();
+                refreshData();
+            }, 500);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Ошибка соединения');
+    })
+    .finally(() => {
+        isClaiming = false;
+    });
 }
 
 function showClassChoiceModal(day, expAmount) {
@@ -535,18 +548,22 @@ function showClassChoiceModal(day, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
+            // Запрос с выбором класса
             const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, day, classChoice })
             });
             const data = await res.json();
-            if (data.error) alert(data.error);
-            else {
+            if (data.error) {
+                alert(data.error);
+            } else {
                 showExpModal(expAmount, classChoice);
+            }
+            setTimeout(() => {
                 showAdventCalendar();
                 refreshData();
-            }
+            }, 500);
         });
     });
 

@@ -1,3 +1,5 @@
+// tasks.js (server)
+
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -173,6 +175,8 @@ router.post('/advent/claim', async (req, res) => {
         if (advent_mask & (1 << (day-1))) {
             throw new Error('Reward already claimed');
         }
+        
+        // Проверка, что предыдущие дни получены (классический адвент)
         if (day > 1) {
             const expectedMask = (1 << (day-1)) - 1;
             if ((advent_mask & expectedMask) !== expectedMask) {
@@ -181,10 +185,6 @@ router.post('/advent/claim', async (req, res) => {
         }
         
         const reward = getAdventReward(day, daysInMonth);
- // ========== ДОБАВИТЬ ЛОГИРОВАНИЕ ==========
-    console.log(`[ADVENT] day=${day}, advent_mask=${advent_mask}, expectedMask=${(1 << (day-1)) - 1}, check result=${(advent_mask & ((1 << (day-1)) - 1))}`);
-    // =========================================
-        
         let rewardDescription = '';
         let rewardItem = null;
         
@@ -229,7 +229,7 @@ router.post('/advent/claim', async (req, res) => {
                  item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
             );
             rewardDescription = `Предмет: ${item.name} (${item.rarity})`;
-            rewardItem = item; // сохраняем для клиента
+            rewardItem = item;
         }
         
         advent_mask |= (1 << (day-1));
@@ -425,9 +425,7 @@ router.post('/daily/claim', async (req, res) => {
         let progressObj = parseProgress(user.daily_tasks_progress);
         let isCompleted = false;
 
-        // Проверка выполнения задания с учётом альтернативных условий
         if (task_id == 9) {
-            // Задание чемпиона: проверяем, что все остальные задания выполнены
             const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
             let allCompleted = true;
             for (let other of otherTasks.rows) {
@@ -455,7 +453,6 @@ router.post('/daily/claim', async (req, res) => {
             throw new Error('Task not completed');
         }
 
-        // Начисляем награду
         if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, userId]);
         } else if (task.reward_type === 'exp') {
@@ -484,7 +481,6 @@ router.post('/daily/claim', async (req, res) => {
             );
         }
 
-        // Отмечаем задание выполненным
         await client.query(
             'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
             [1 << (task_id - 1), userId]

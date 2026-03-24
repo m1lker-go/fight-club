@@ -207,7 +207,12 @@ async function showBattleResult(battleData, timeOut = false) {
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
     const leveledUp = addExpToCurrentClass(expGain);
+if (leveledUp) {
+    await refreshData();
+    showLevelUpModal(userData.current_class);
+}
 
+    
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',

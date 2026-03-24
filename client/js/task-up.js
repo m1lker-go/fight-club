@@ -1,10 +1,12 @@
-// task-up.js (client)
+// task-up.js
 
 // ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
 
 let countdownInterval = null;
 
 function renderAdventCalendarInContainer(data, container) {
+    // Этот метод используется для встраивания календаря в другой контейнер (не основной)
+    // Оставляем для совместимости, но в основном используется renderAdventCalendar
     const { currentDay, daysInMonth, mask } = data;
     let firstUnclaimed = null;
     for (let d = 1; d <= currentDay; d++) {
@@ -397,6 +399,8 @@ function showExpModal(amount, className) {
     };
 }
 
+// ========== АДВЕНТ-КАЛЕНДАРЬ (новая логика) ==========
+
 function showAdventCalendar() {
     const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
     console.log('[showAdventCalendar] fetching', url);
@@ -425,7 +429,7 @@ function renderAdventCalendar(data) {
         let className = 'advent-day';
         if (day <= lastClaimed) {
             className += ' claimed';
-        } else if (day === nextAvailable && day === currentDay) {
+        } else if (day === nextAvailable && nextAvailable !== null) {
             className += ' available';
         } else {
             className += ' locked';
@@ -500,7 +504,6 @@ function claimAdventDay(day, daysInMonth) {
             } else {
                 alert(`Вы получили: ${data.reward}`);
             }
-            // Сбрасываем предыдущий таймер, если есть
             if (reloadTimeout) clearTimeout(reloadTimeout);
             reloadTimeout = setTimeout(() => {
                 showAdventCalendar();

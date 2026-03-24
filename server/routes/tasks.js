@@ -181,6 +181,10 @@ router.post('/advent/claim', async (req, res) => {
         }
         
         const reward = getAdventReward(day, daysInMonth);
+ // ========== ДОБАВИТЬ ЛОГИРОВАНИЕ ==========
+    console.log(`[ADVENT] day=${day}, advent_mask=${advent_mask}, expectedMask=${(1 << (day-1)) - 1}, check result=${(advent_mask & ((1 << (day-1)) - 1))}`);
+    // =========================================
+        
         let rewardDescription = '';
         let rewardItem = null;
         

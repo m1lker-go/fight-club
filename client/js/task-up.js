@@ -398,7 +398,7 @@ function showExpModal(amount, className) {
 }
 
 function showAdventCalendar() {
-    const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`;
+    const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
     console.log('[showAdventCalendar] fetching', url);
     fetch(url)
         .then(res => res.json())

@@ -2205,3 +2205,27 @@ td {
     line-height: 1;
     margin: 0;
 }
+
+/* Модальные окна наград */
+.modal-header h2 {
+    text-align: center;
+    width: 100%;
+}
+
+.reward-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+.reward-amount {
+    font-size: 32px;
+    font-weight: bold;
+    margin: 10px 0;
+    color: #fff;
+}
+
+.reward-text {
+    font-size: 16px;
+    color: #aaa;
+}

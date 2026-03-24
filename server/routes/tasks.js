@@ -175,14 +175,12 @@ router.post('/advent/claim', async (req, res) => {
             );
         }
         
-        const expectedDay = lastClaimed + 1;
-        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, expectedDay=${expectedDay}, requestedDay=${day}, currentDay=${currentDay}`);
-        
-        if (day !== expectedDay) {
-            throw new Error(`You can only claim the next available day (${expectedDay})`);
+        // --- NEW RESTRICTION: only today's day is claimable ---
+        if (day !== currentDay) {
+            throw new Error('You can only claim today\'s reward');
         }
-        if (day > currentDay) {
-            throw new Error('This day is not available yet');
+        if (lastClaimed >= currentDay) {
+            throw new Error('Reward already claimed today');
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -234,7 +232,6 @@ router.post('/advent/claim', async (req, res) => {
             rewardItem = item;
         }
         
-        // Обновляем last_claimed_advent_day
         await client.query(
             'UPDATE users SET last_claimed_advent_day = $1 WHERE id = $2',
             [day, userId]

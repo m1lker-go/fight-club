@@ -121,7 +121,6 @@ router.get('/advent', async (req, res) => {
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
         
-        // Сброс при смене месяца/года
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
             await client.query(
@@ -131,15 +130,14 @@ router.get('/advent', async (req, res) => {
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        const nextAvailable = lastClaimed + 1;
-        
-        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, currentDay=${currentDay}, nextAvailable=${nextAvailable}`);
+        // Only today is claimable if not already claimed
+        const nextAvailable = (lastClaimed < currentDay) ? currentDay : null;
         
         res.json({
             currentDay,
             daysInMonth,
-            nextAvailable: nextAvailable <= currentDay ? nextAvailable : null,
-            lastClaimed: lastClaimed
+            nextAvailable,
+            lastClaimed
         });
     } finally {
         client.release();

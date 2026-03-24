@@ -182,6 +182,7 @@ router.post('/advent/claim', async (req, res) => {
         
         const reward = getAdventReward(day, daysInMonth);
         let rewardDescription = '';
+        let rewardItem = null;
         
         if (reward.type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward.amount, userId]);
@@ -224,6 +225,7 @@ router.post('/advent/claim', async (req, res) => {
                  item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
             );
             rewardDescription = `Предмет: ${item.name} (${item.rarity})`;
+            rewardItem = item; // сохраняем для клиента
         }
         
         advent_mask |= (1 << (day-1));
@@ -231,7 +233,7 @@ router.post('/advent/claim', async (req, res) => {
             [advent_mask, currentMonth, currentYear, userId]);
         
         await client.query('COMMIT');
-        res.json({ success: true, reward: rewardDescription, mask: advent_mask });
+        res.json({ success: true, reward: rewardDescription, mask: advent_mask, item: rewardItem });
         
     } catch (e) {
         await client.query('ROLLBACK');

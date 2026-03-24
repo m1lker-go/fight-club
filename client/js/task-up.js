@@ -465,6 +465,7 @@ function renderAdventCalendar(data) {
 }
 
 let isClaiming = false;
+let reloadTimeout = null;
 
 function claimAdventDay(day, daysInMonth) {
     if (isClaiming) {
@@ -499,18 +500,19 @@ function claimAdventDay(day, daysInMonth) {
             } else {
                 alert(`Вы получили: ${data.reward}`);
             }
-            // Принудительно обновляем календарь и данные пользователя
-            setTimeout(() => {
+            // Сбрасываем предыдущий таймер, если есть
+            if (reloadTimeout) clearTimeout(reloadTimeout);
+            reloadTimeout = setTimeout(() => {
                 showAdventCalendar();
                 refreshData();
-            }, 1000);
+                isClaiming = false;
+                reloadTimeout = null;
+            }, 1500);
         }
     })
     .catch(err => {
         console.error(err);
         alert('Ошибка соединения');
-    })
-    .finally(() => {
         isClaiming = false;
     });
 }

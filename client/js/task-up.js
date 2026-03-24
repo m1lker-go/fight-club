@@ -277,7 +277,7 @@ async function loadDailyTasks() {
                     if (data.error) {
                         alert(data.error);
                     } else {
-                        alert('Награда получена!');
+                        showCoinsModal(rewardAmount);
                         loadDailyTasks();
                         refreshData();
                     }
@@ -353,6 +353,48 @@ function stopCountdownTimer() {
         clearInterval(countdownInterval);
         countdownInterval = null;
     }
+}
+
+function showCoinsModal(amount) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Награда';
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <i class="fas fa-coins" style="font-size: 64px; color: gold;"></i>
+            <div style="font-size: 24px; font-weight: bold; margin: 15px 0;">${amount}</div>
+            <div style="font-size: 16px;">монет получено!</div>
+        </div>
+    `;
+    modal.style.display = 'block';
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
+}
+
+function showExpModal(amount, className) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Награда';
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <i class="fas fa-star" style="font-size: 64px; color: #00aaff;"></i>
+            <div style="font-size: 24px; font-weight: bold; margin: 15px 0;">+${amount} EXP</div>
+            <div style="font-size: 16px;">для класса <strong>${getClassNameRu(className)}</strong></div>
+        </div>
+    `;
+    modal.style.display = 'block';
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
 }
 
 function showAdventCalendar() {
@@ -431,7 +473,7 @@ function claimAdventDay(day, daysInMonth) {
 
     if (reward.type === 'exp') {
         showClassChoiceModal(day, reward.amount);
-    } else {
+    } else if (reward.type === 'coins') {
         fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -441,7 +483,27 @@ function claimAdventDay(day, daysInMonth) {
         .then(data => {
             if (data.error) alert(data.error);
             else {
-                alert(`Вы получили: ${data.reward}`);
+                showCoinsModal(reward.amount);
+                showAdventCalendar();
+                refreshData();
+            }
+        })
+        .catch(err => alert('Ошибка: ' + err));
+    } else if (reward.type === 'item') {
+        fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, day })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) alert(data.error);
+            else {
+                if (data.item) {
+                    showChestResult(data.item);
+                } else {
+                    alert(`Вы получили: ${data.reward}`);
+                }
                 showAdventCalendar();
                 refreshData();
             }
@@ -481,7 +543,7 @@ function showClassChoiceModal(day, expAmount) {
             const data = await res.json();
             if (data.error) alert(data.error);
             else {
-                alert(`Вы получили: ${data.reward}`);
+                showExpModal(expAmount, classChoice);
                 showAdventCalendar();
                 refreshData();
             }
@@ -528,7 +590,7 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 alert(data.error);
             } else {
-                alert(`Вы получили ${expAmount} опыта для класса ${classChoice}!`);
+                showExpModal(expAmount, classChoice);
                 renderTasks();
                 refreshData();
             }

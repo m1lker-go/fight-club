@@ -107,11 +107,13 @@ router.get('/advent', async (req, res) => {
     
     const client = await pool.connect();
     try {
-        const user = await client.query('SELECT id, advent_month, advent_year, advent_mask FROM users WHERE tg_id = $1', [tg_id]);
+        const user = await client.query('SELECT id, last_claimed_advent_day, advent_month, advent_year FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         
-        let { advent_month, advent_year, advent_mask } = user.rows[0];
         const userId = user.rows[0].id;
+        let lastClaimed = user.rows[0].last_claimed_advent_day || 0;
+        let adventMonth = user.rows[0].advent_month;
+        let adventYear = user.rows[0].advent_year;
         
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -119,24 +121,23 @@ router.get('/advent', async (req, res) => {
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
         
-        if (advent_month !== currentMonth || advent_year !== currentYear) {
-            advent_mask = 0;
-            advent_month = currentMonth;
-            advent_year = currentYear;
+        // Сброс при смене месяца/года
+        if (adventMonth !== currentMonth || adventYear !== currentYear) {
+            lastClaimed = 0;
             await client.query(
-                'UPDATE users SET advent_month = $1, advent_year = $2, advent_mask = $3 WHERE id = $4',
-                [currentMonth, currentYear, 0, userId]
+                'UPDATE users SET last_claimed_advent_day = 0, advent_month = $1, advent_year = $2 WHERE id = $3',
+                [currentMonth, currentYear, userId]
             );
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        const nextAvailable = lastClaimed + 1;
         
         res.json({
             currentDay,
             daysInMonth,
-            mask: advent_mask,
-            month: currentMonth,
-            year: currentYear
+            nextAvailable: nextAvailable <= currentDay ? nextAvailable : null,
+            lastClaimed: lastClaimed
         });
     } finally {
         client.release();
@@ -151,10 +152,12 @@ router.post('/advent/claim', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        const user = await client.query('SELECT id, advent_month, advent_year, advent_mask FROM users WHERE tg_id = $1', [tg_id]);
+        const user = await client.query('SELECT id, last_claimed_advent_day, advent_month, advent_year FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
-        let { advent_month, advent_year, advent_mask } = user.rows[0];
+        let lastClaimed = user.rows[0].last_claimed_advent_day || 0;
+        let adventMonth = user.rows[0].advent_month;
+        let adventYear = user.rows[0].advent_year;
         
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -162,28 +165,24 @@ router.post('/advent/claim', async (req, res) => {
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
         
-        if (advent_month !== currentMonth || advent_year !== currentYear) {
-            advent_mask = 0;
-            advent_month = currentMonth;
-            advent_year = currentYear;
+        if (adventMonth !== currentMonth || adventYear !== currentYear) {
+            lastClaimed = 0;
+            await client.query(
+                'UPDATE users SET last_claimed_advent_day = 0, advent_month = $1, advent_year = $2 WHERE id = $3',
+                [currentMonth, currentYear, userId]
+            );
+        }
+        
+        // Проверка: день должен быть следующим неполученным
+        const expectedDay = lastClaimed + 1;
+        if (day !== expectedDay) {
+            throw new Error('You can only claim the next available day');
+        }
+        if (day > currentDay) {
+            throw new Error('This day is not available yet');
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        if (day > currentDay || day > daysInMonth) {
-            throw new Error('This day is not available yet');
-        }
-        if (advent_mask & (1 << (day-1))) {
-            throw new Error('Reward already claimed');
-        }
-        
-        // Проверка, что предыдущие дни получены (классический адвент)
-        if (day > 1) {
-            const expectedMask = (1 << (day-1)) - 1;
-            if ((advent_mask & expectedMask) !== expectedMask) {
-                throw new Error('You must claim previous days first');
-            }
-        }
-        
         const reward = getAdventReward(day, daysInMonth);
         let rewardDescription = '';
         let rewardItem = null;
@@ -232,12 +231,14 @@ router.post('/advent/claim', async (req, res) => {
             rewardItem = item;
         }
         
-        advent_mask |= (1 << (day-1));
-        await client.query('UPDATE users SET advent_mask = $1, advent_month = $2, advent_year = $3 WHERE id = $4', 
-            [advent_mask, currentMonth, currentYear, userId]);
+        // Обновляем последний полученный день
+        await client.query(
+            'UPDATE users SET last_claimed_advent_day = $1 WHERE id = $2',
+            [day, userId]
+        );
         
         await client.query('COMMIT');
-        res.json({ success: true, reward: rewardDescription, mask: advent_mask, item: rewardItem });
+        res.json({ success: true, reward: rewardDescription, nextAvailable: day + 1, item: rewardItem });
         
     } catch (e) {
         await client.query('ROLLBACK');

@@ -399,15 +399,20 @@ function showExpModal(amount, className) {
 
 function showAdventCalendar() {
     const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
+    console.log('[showAdventCalendar] fetching', url);
     fetch(url)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
         .then(data => {
+            console.log('[showAdventCalendar] data received', data);
             if (data.error) throw new Error(data.error);
             renderAdventCalendar(data);
         })
         .catch(err => {
             console.error('Advent error:', err);
-            alert('Ошибка загрузки календаря');
+            alert('Ошибка загрузки календаря: ' + err.message);
         });
 }
 
@@ -462,7 +467,10 @@ function renderAdventCalendar(data) {
 let isClaiming = false;
 
 function claimAdventDay(day, daysInMonth) {
-    if (isClaiming) return;
+    if (isClaiming) {
+        console.log('[ADVENT] Already claiming, ignoring');
+        return;
+    }
     const reward = getAdventReward(day, daysInMonth);
 
     isClaiming = true;
@@ -491,10 +499,11 @@ function claimAdventDay(day, daysInMonth) {
             } else {
                 alert(`Вы получили: ${data.reward}`);
             }
+            // Принудительно обновляем календарь и данные пользователя
             setTimeout(() => {
                 showAdventCalendar();
                 refreshData();
-            }, 500);
+            }, 1000);
         }
     })
     .catch(err => {

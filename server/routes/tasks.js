@@ -133,6 +133,8 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextAvailable = lastClaimed + 1;
         
+        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, currentDay=${currentDay}, nextAvailable=${nextAvailable}`);
+        
         res.json({
             currentDay,
             daysInMonth,
@@ -173,10 +175,11 @@ router.post('/advent/claim', async (req, res) => {
             );
         }
         
-        // Проверка: день должен быть следующим неполученным
         const expectedDay = lastClaimed + 1;
+        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, expectedDay=${expectedDay}, requestedDay=${day}, currentDay=${currentDay}`);
+        
         if (day !== expectedDay) {
-            throw new Error('You can only claim the next available day');
+            throw new Error(`You can only claim the next available day (${expectedDay})`);
         }
         if (day > currentDay) {
             throw new Error('This day is not available yet');
@@ -231,14 +234,14 @@ router.post('/advent/claim', async (req, res) => {
             rewardItem = item;
         }
         
-        // Обновляем последний полученный день
+        // Обновляем last_claimed_advent_day
         await client.query(
             'UPDATE users SET last_claimed_advent_day = $1 WHERE id = $2',
             [day, userId]
         );
         
         await client.query('COMMIT');
-        res.json({ success: true, reward: rewardDescription, nextAvailable: day + 1, item: rewardItem });
+        res.json({ success: true, reward: rewardDescription, nextAvailable: day + 1, item: rewardItem, newLastClaimed: day });
         
     } catch (e) {
         await client.query('ROLLBACK');
@@ -248,7 +251,6 @@ router.post('/advent/claim', async (req, res) => {
         client.release();
     }
 });
-
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 
 async function updateTowerTask(client, userId) {

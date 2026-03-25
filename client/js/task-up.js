@@ -517,52 +517,6 @@ function showClassChoiceModalForAdvent(expAmount) {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-function showClassChoiceModal(day, expAmount) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
-        </div>
-    `;
-
-    modal.style.display = 'block';
-
-    const classButtons = modalBody.querySelectorAll('.class-choice');
-    classButtons.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const classChoice = e.target.dataset.class;
-            modal.style.display = 'none';
-
-            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
-                    task_id: day, 
-                    class_choice: classChoice 
-                })
-            });
-            const data = await res.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
-                showExpModal(expAmount, classChoice);
-                renderTasks();
-                refreshData();
-            }
-        });
-    });
-
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-}
 
 function claimDailyExp(taskId, expAmount) {
     showClassChoiceModal(taskId, expAmount);

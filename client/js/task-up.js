@@ -221,30 +221,33 @@ async function loadDailyTasks() {
         });
 
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const taskId = parseInt(btn.dataset.taskId);
-                const rewardType = btn.dataset.rewardType;
-                const rewardAmount = parseInt(btn.dataset.rewardAmount);
+    // Пропускаем кнопки, у которых нет атрибута data-task-id (например, кнопки "Поделиться" и "Копировать")
+    if (!btn.dataset.taskId) return;
 
-                if (rewardType === 'exp') {
-                    claimDailyExp(taskId, rewardAmount);
-                } else {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
-                    });
-                    const data = await res.json();
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        showCoinsModal(rewardAmount);
-                        loadDailyTasks();
-                        refreshData();
-                    }
-                }
+    btn.addEventListener('click', async (e) => {
+        const taskId = parseInt(btn.dataset.taskId);
+        const rewardType = btn.dataset.rewardType;
+        const rewardAmount = parseInt(btn.dataset.rewardAmount);
+
+        if (rewardType === 'exp') {
+            claimDailyExp(taskId, rewardAmount);
+        } else {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
             });
-        });
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                showCoinsModal(rewardAmount);
+                loadDailyTasks();
+                refreshData();
+            }
+        }
+    });
+});
 
         const allCompleted = completedTasksCount >= totalTasksCount;
         if (countdownContainer) {

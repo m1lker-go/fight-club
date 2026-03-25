@@ -14,6 +14,12 @@ if (user) {
 }
 console.log('playerName:', window.playerName); // для отладки
 
+// Получаем start_param, если он был передан через ссылку вида t.me/bot?start=xxxx
+let referralCode = null;
+if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+    referralCode = tg.initDataUnsafe.start_param;
+    console.log('Referral code from start_param:', referralCode);
+}
 
 let userData = null;
 let userClasses = [];
@@ -28,7 +34,7 @@ let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
 
-// Добавляет полученный опыт текущему классу, пересчитывает уровень и возвращает true, если был повышение уровня
+// Добавляет полученный опыт текущему классу, пересчитывает уровень и возвращает true, если было повышение уровня
 function addExpToCurrentClass(expGain) {
     const classData = getCurrentClassData();
     if (!classData) return false;
@@ -149,7 +155,10 @@ async function init() {
         const response = await fetch('https://fight-club-api-4och.onrender.com/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: tg.initData }),
+            body: JSON.stringify({ 
+                initData: tg.initData,
+                referral_code: referralCode 
+            }),
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -397,8 +406,8 @@ function renderMain() {
         </div>
 
         <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
-    <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
-</button>
+            <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
+        </button>
     `;
 
     // Заполняем список подклассов
@@ -1353,14 +1362,15 @@ async function loadRatingData(type) {
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
 
-        let html = '<table class="stats-table"><thead><tr><th>Место</th><th>Имя</th>';
+        let html = '<table class="stats-table"><thead>`;
+        html += '<th>Место</th><th>Имя</th>';
 
         if (type === 'rating' || type === 'power') {
             html += '<th>Класс</th><th>Очки</th>';
         } else if (type === 'tower') {
             html += '<th>Класс</th><th>Роль</th><th>Этаж</th>';
         }
-        html += '</tr></thead><tbody>';
+        html += '</thead><tbody>';
 
         data.forEach((item, index) => {
             html += '<tr>';
@@ -1461,13 +1471,13 @@ function renderProfileBonuses(container) {
         </div>
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
-            <tr>
+             <tr>
                 <th style="text-align:left;">Параметр</th>
                 <th style="text-align:center;">База</th>
                 <th style="text-align:center;">+Инв.</th>
                 <th style="text-align:center;">+Особ.</th>
                 <th style="text-align:center;">Итого</th>
-            </tr>
+             </tr>
             ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
             ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
             ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
@@ -1478,7 +1488,7 @@ function renderProfileBonuses(container) {
             ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
             ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
             ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
-        </table>
+         </table>
     `;
 
     container.querySelectorAll('.class-btn').forEach(btn => {
@@ -1585,13 +1595,13 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-        <tr>
+         <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-        </tr>
+         </tr>
     `;
 }
 

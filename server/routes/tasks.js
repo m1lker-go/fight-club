@@ -142,20 +142,23 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
         
+        // Преобразуем lastClaimDate в строку YYYY-MM-DD для сравнения
+        const lastClaimDateStr = lastClaimDate ? new Date(lastClaimDate).toISOString().split('T')[0] : null;
+        
         // Доступен следующий день, если он не позже сегодняшнего и сегодня ещё не получали награду
         let availableDay = null;
-        if (nextDay <= currentDay && (!lastClaimDate || lastClaimDate !== todayStr)) {
+        if (nextDay <= currentDay && (!lastClaimDateStr || lastClaimDateStr !== todayStr)) {
             availableDay = nextDay;
         }
         
-        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDate}, nextDay=${nextDay}, availableDay=${availableDay}`);
+        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDateStr}, nextDay=${nextDay}, availableDay=${availableDay}`);
         
         res.json({
             currentDay,
             daysInMonth,
             nextAvailable: availableDay,
             lastClaimed: lastClaimed,
-            lastClaimDate: lastClaimDate
+            lastClaimDate: lastClaimDateStr
         });
     } finally {
         client.release();
@@ -202,15 +205,17 @@ router.post('/advent/claim', async (req, res) => {
             );
         }
         
-        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDate}, todayStr=${todayStr}, currentDay=${currentDay}`);
+        const nextDay = lastClaimed + 1;
+        const lastClaimDateStr = lastClaimDate ? new Date(lastClaimDate).toISOString().split('T')[0] : null;
+        
+        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDateStr}, todayStr=${todayStr}, currentDay=${currentDay}`);
         
         // Проверка: можно взять только следующий день
-        const nextDay = lastClaimed + 1;
         if (nextDay > currentDay) {
             throw new Error('This day is not available yet');
         }
         // Проверка: сегодня ещё не получали награду
-        if (lastClaimDate && lastClaimDate === todayStr) {
+        if (lastClaimDateStr && lastClaimDateStr === todayStr) {
             throw new Error('You have already claimed today\'s reward');
         }
         
@@ -292,7 +297,6 @@ router.post('/advent/claim', async (req, res) => {
         client.release();
     }
 });
-        
 
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 

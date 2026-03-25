@@ -189,14 +189,11 @@ async function init() {
 
 async function checkAdvent() {
     try {
-        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}`);
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
-        const { currentDay, mask } = data;
-        for (let day = 1; day <= currentDay; day++) {
-            if (!(mask & (1 << (day-1)))) {
-                showAdventCalendar();
-                return;
-            }
+        // Если есть доступный день, показываем календарь
+        if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
+            showAdventCalendar();
         }
     } catch (e) {
         console.error('Advent check error', e);

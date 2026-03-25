@@ -1326,7 +1326,7 @@ async function loadRatingData(type) {
 
         data.forEach((item, index) => {
             html += '<tr>';
-            html += `<td style="text-align:center;">${index + 1}</td>`;
+            html += `<td style="text-align:center;">${index + 1} None`;
             html += `<td>${item.username}</td>`;
 
             if (type === 'rating') {
@@ -1428,13 +1428,13 @@ function renderProfileBonuses(container) {
         </div>
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
-            <tr>
+             <tr>
                 <th style="text-align:left;">Параметр</th>
                 <th style="text-align:center;">База</th>
                 <th style="text-align:center;">+Инв.</th>
                 <th style="text-align:center;">+Особ.</th>
                 <th style="text-align:center;">Итого</th>
-            </tr>
+             </tr>
             ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
             ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
             ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
@@ -1560,13 +1560,13 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-        <tr>
+         <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-        </tr>
+         </tr>
     `;
 }
 
@@ -1756,7 +1756,7 @@ function updateMainMenuNewIcons() {
         icon.style.position = 'absolute';
         icon.style.top = '-5px';
         icon.style.right = '-10px';
-        icon.style.width = '16px';   // ← изменено с 20px на 16px
+        icon.style.width = '16px';
         icon.style.height = '16px';
         tasksMenuItem.style.position = 'relative';
         tasksMenuItem.appendChild(icon);

@@ -1,20 +1,17 @@
 let tg = window.Telegram.WebApp;
 if (tg) {
     tg.expand();
-    tg.ready(); // рекомендуется для полной инициализации
+    tg.ready();
 }
 
-// Получаем данные пользователя Telegram
-const user = tg?.initDataUnsafe?.user;
+const user = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
 if (user) {
     window.playerName = user.username || user.first_name || 'Игрок';
 } else {
-    // Если пользователь не определён (например, при локальной разработке)
     window.playerName = 'Игрок';
 }
-console.log('playerName:', window.playerName); // для отладки
+console.log('playerName:', window.playerName);
 
-// Получаем start_param, если он был передан через ссылку вида t.me/bot?start=xxxx
 let referralCode = null;
 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
     referralCode = tg.initDataUnsafe.start_param;
@@ -28,13 +25,12 @@ let currentScreen = 'main';
 let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
-let lastBattleLog = null; // для хранения лога последнего боя
+let lastBattleLog = null;
 
 let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
 
-// Добавляет полученный опыт текущему классу, пересчитывает уровень и возвращает true, если было повышение уровня
 function addExpToCurrentClass(expGain) {
     const classData = getCurrentClassData();
     if (!classData) return false;
@@ -57,12 +53,10 @@ function addExpToCurrentClass(expGain) {
         leveledUp = true;
     }
 
-    // Пересчитываем силу и обновляем топ-бар
     const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
     currentPower = calculatePower(userData.current_class, stats.final, classData.level);
     updateTopBar();
 
-    // Сохраняем количество полученных очков навыков для модального окна
     if (leveledUp) {
         window.lastSkillPointsGained = classData.skill_points - oldSkillPoints;
     }
@@ -81,7 +75,7 @@ function showLevelUpModal(className) {
 
     const classNameRu = getClassNameRu(className);
     const classData = getCurrentClassData();
-    const skillPointsGained = window.lastSkillPointsGained || 3; // запасное значение
+    const skillPointsGained = window.lastSkillPointsGained || 3;
 
     body.innerHTML = `
         <p style="text-align:center;">
@@ -95,7 +89,6 @@ function showLevelUpModal(className) {
     const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
     const laterBtn = document.getElementById('levelUpLaterBtn');
 
-    // Обновляем обработчики (клонируем, чтобы убрать старые)
     const newUpgrade = upgradeBtn.cloneNode(true);
     const newLater = laterBtn.cloneNode(true);
     upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
@@ -103,7 +96,6 @@ function showLevelUpModal(className) {
 
     newUpgrade.addEventListener('click', () => {
         modal.style.display = 'none';
-        // Разблокируем меню (на случай если оно было заблокировано)
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';
@@ -122,7 +114,6 @@ function showLevelUpModal(className) {
     }
 }
 
-// ===== УПРАВЛЕНИЕ ЭКРАНОМ ЗАГРУЗКИ =====
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
     if (splash) {
@@ -200,7 +191,6 @@ async function checkAdvent() {
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
-        // Показываем календарь только если есть доступная награда
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
             showAdventCalendar();
         }
@@ -294,11 +284,9 @@ function showScreen(screen) {
         case 'rating': renderRating(); break;
         case 'profile': renderProfile(); break;
         case 'tower': 
-            // Загружаем скрипт tower.js, если ещё не загружен, и вызываем loadTowerStatus
             if (typeof loadTowerStatus === 'function') {
                 loadTowerStatus();
             } else {
-                // Динамическая загрузка (если нужно)
                 const script = document.createElement('script');
                 script.src = 'js/tower.js?v=1';
                 script.onload = () => loadTowerStatus();
@@ -410,16 +398,13 @@ function renderMain() {
         </button>
     `;
 
-    // Заполняем список подклассов
     updateSubclasses(currentClass);
 
-    // Обработчики
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === userData.current_class) return;
 
-            // Меняем класс на сервере
             const res = await fetch('https://fight-club-api-4och.onrender.com/player/class', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -427,7 +412,6 @@ function renderMain() {
             });
             if (!res.ok) return;
 
-            // Устанавливаем подкласс по умолчанию
             const firstSubclass = {
                 warrior: 'guardian',
                 assassin: 'assassin',
@@ -439,11 +423,9 @@ function renderMain() {
                 body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
             });
 
-            // Обновляем глобальные переменные
             userData.current_class = newClass;
             userData.subclass = firstSubclass;
 
-            // Обновляем экран без полной перерисовки
             updateMainScreen();
         });
     });
@@ -473,17 +455,14 @@ function renderMain() {
     });
 }
 
-// Функция обновления главного экрана без перерисовки
 function updateMainScreen() {
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
 
-    // Пересчёт силы
     const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
     currentPower = calculatePower(currentClass, stats.final, classData.level);
     updateTopBar();
 
-    // Обновление уровня и опыта
     const level = classData.level;
     const exp = classData.exp;
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
@@ -497,16 +476,13 @@ function updateMainScreen() {
     if (expSpan) expSpan.innerText = `${exp}/${nextExp} опыта`;
     if (expBarFill) expBarFill.style.width = expPercent + '%';
 
-    // Обновление активного класса в селекторе
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.class === currentClass);
     });
 
-    // Обновление списка подклассов
     updateSubclasses(currentClass);
 }
 
-// Функция обновления списка подклассов (вынесена из renderMain)
 function updateSubclasses(className) {
     const subclassSelect = document.getElementById('subclassSelect');
     if (!subclassSelect) return;
@@ -553,282 +529,277 @@ function renderEquip() {
         return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
     }
 
- function renderInventoryForClass(className) {
-    const classItems = inventory.filter(item => 
-        item.owner_class === className && 
-        (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
-    );
-    const equipped = classItems.filter(item => item.equipped);
-    const unequipped = classItems.filter(item => !item.equipped && !item.in_forge);
+    function renderInventoryForClass(className) {
+        const classItems = inventory.filter(item => 
+            item.owner_class === className && 
+            (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
+        );
+        const equipped = classItems.filter(item => item.equipped);
+        const unequipped = classItems.filter(item => !item.equipped && !item.in_forge);
 
-    const slotConfig = {
-        left: [
-            { type: 'helmet', icon: '/assets/helmet.png' },
-            { type: 'armor', icon: '/assets/armor.png' },
-            { type: 'gloves', icon: '/assets/arm.png' }
-        ],
-        right: [
-            { type: 'weapon', icon: '/assets/weapon.png' },
-            { type: 'boots', icon: '/assets/leg.png' },
-            { type: 'accessory', icon: '/assets/ring.png' }
-        ]
-    };
+        const slotConfig = {
+            left: [
+                { type: 'helmet', icon: '/assets/helmet.png' },
+                { type: 'armor', icon: '/assets/armor.png' },
+                { type: 'gloves', icon: '/assets/arm.png' }
+            ],
+            right: [
+                { type: 'weapon', icon: '/assets/weapon.png' },
+                { type: 'boots', icon: '/assets/leg.png' },
+                { type: 'accessory', icon: '/assets/ring.png' }
+            ]
+        };
 
-    let html = `
-        <div class="equip-layout">
-            <div class="class-selector">
-                <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-            </div>
-            <div class="equip-main">
-                <div class="equip-column">
-    `;
-
-    // Левая колонка слотов
-    slotConfig.left.forEach(slot => {
-        const item = equipped.find(i => i.type === slot.type);
-        const icon = item ? getItemIconPath(item) : slot.icon;
-        const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
-        html += `
-            <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover; background-position: center;">
-                <div class="slot-icon" style="background-image: url('${icon}');"></div>
-            </div>
-        `;
-    });
-
-    // Закрываем левую колонку, вставляем аватар, открываем правую колонку
-    html += `</div> <!-- закрытие левой колонки -->
-            <div class="hero-center">
-                <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero">
-            </div>
-            <div class="equip-column">
-    `;
-
-    // Правая колонка слотов
-    slotConfig.right.forEach(slot => {
-        const item = equipped.find(i => i.type === slot.type);
-        const icon = item ? getItemIconPath(item) : slot.icon;
-        const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
-        html += `
-            <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover; background-position: center;">
-                <div class="slot-icon" style="background-image: url('${icon}');"></div>
-            </div>
-        `;
-    });
-
-    html += `</div> <!-- закрытие правой колонки -->
-            </div> <!-- закрытие equip-main -->
-            <h3>Рюкзак</h3>
-            <div class="inventory-container">
-                <div class="inventory-grid">
-    `;
-
-    // Генерация предметов в рюкзаке
-    unequipped.forEach(item => {
-        const rarityClass = `rarity-${item.rarity}`;
-        const stats = [];
-        if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-        if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-        if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-        if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-        if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-        if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-        if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-        if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-        if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-        if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-        const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
-        const forgeTag = item.in_forge ? '<span class="forge-tag" style="color:#f39c12;">(В кузнице)</span>' : '';
-        const itemIcon = getItemIconPath(item) || '';
-
-        html += `
-            <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}" data-in-forge="${item.in_forge}">
-                <div class="item-icon" style="background-image: url('${itemIcon}'); background-size: cover; background-position: center;"></div>
-                <div class="item-content">
-                    <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
-                    <div class="item-stats">${stats.join(' • ')}</div>
-                    <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
-                    ${saleTag}
-                    ${forgeTag}
-                    <div class="item-actions" style="display: none;"></div>
+        let html = `
+            <div class="equip-layout">
+                <div class="class-selector">
+                    <button class="class-btn ${className === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                    <button class="class-btn ${className === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                    <button class="class-btn ${className === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
                 </div>
-            </div>
+                <div class="equip-main">
+                    <div class="equip-column">
         `;
-    });
 
-    html += `</div></div></div>`; // закрытие inventory-grid, inventory-container, equip-layout
-    document.getElementById('content').innerHTML = html;
-
-    // Обработчики (без изменений)
-    document.querySelectorAll('.class-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const newClass = e.target.dataset.class;
-            localStorage.setItem('equipSelectedClass', newClass);
-            renderInventoryForClass(newClass);
+        slotConfig.left.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover; background-position: center;">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
         });
-    });
 
-    document.querySelectorAll('.equip-slot').forEach(slot => {
-        slot.addEventListener('click', async (e) => {
-            const itemId = slot.dataset.itemId;
-            if (!itemId) return;
-            if (confirm('Снять этот предмет?')) {
-                try {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                        if (currentScreen === 'equip') renderEquip();
-                    } else {
-                        alert('Ошибка при снятии');
-                    }
-                } catch (e) {
-                    alert('Сеть недоступна');
-                }
-            }
+        html += `</div>
+                <div class="hero-center">
+                    <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero">
+                </div>
+                <div class="equip-column">
+        `;
+
+        slotConfig.right.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover; background-position: center;">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
         });
-    });
 
-    document.querySelectorAll('.inventory-item').forEach(itemDiv => {
-        itemDiv.addEventListener('click', (e) => {
-            if (e.target.classList.contains('action-btn')) return;
+        html += `</div>
+                </div>
+                <h3>Рюкзак</h3>
+                <div class="inventory-container">
+                    <div class="inventory-grid">
+        `;
 
-            const itemId = itemDiv.dataset.itemId;
-            const forSale = itemDiv.dataset.forSale === 'true';
-            const inForge = itemDiv.dataset.inForge === 'true';
-            const actionsDiv = itemDiv.querySelector('.item-actions');
+        unequipped.forEach(item => {
+            const rarityClass = `rarity-${item.rarity}`;
+            const stats = [];
+            if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+            if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+            if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+            if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+            if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+            if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+            if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+            if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+            if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+            if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
 
-            document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
-                if (div !== actionsDiv) div.style.display = 'none';
+            const saleTag = item.for_sale ? '<span class="sale-tag">(На продаже)</span>' : '';
+            const forgeTag = item.in_forge ? '<span class="forge-tag" style="color:#f39c12;">(В кузнице)</span>' : '';
+            const itemIcon = getItemIconPath(item) || '';
+
+            html += `
+                <div class="inventory-item ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}" data-in-forge="${item.in_forge}">
+                    <div class="item-icon" style="background-image: url('${itemIcon}'); background-size: cover; background-position: center;"></div>
+                    <div class="item-content">
+                        <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                        <div class="item-stats">${stats.join(' • ')}</div>
+                        <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                        ${saleTag}
+                        ${forgeTag}
+                        <div class="item-actions" style="display: none;"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div></div>`;
+        document.getElementById('content').innerHTML = html;
+
+        document.querySelectorAll('.class-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const newClass = e.target.dataset.class;
+                localStorage.setItem('equipSelectedClass', newClass);
+                renderInventoryForClass(newClass);
             });
+        });
 
-            if (actionsDiv.style.display === 'flex') {
-                actionsDiv.style.display = 'none';
-            } else {
-                if (forSale || inForge) {
-                    if (forSale) {
+        document.querySelectorAll('.equip-slot').forEach(slot => {
+            slot.addEventListener('click', async (e) => {
+                const itemId = slot.dataset.itemId;
+                if (!itemId) return;
+                if (confirm('Снять этот предмет?')) {
+                    try {
+                        const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        });
+                        if (res.ok) {
+                            await refreshData();
+                            if (currentScreen === 'equip') renderEquip();
+                        } else {
+                            alert('Ошибка при снятии');
+                        }
+                    } catch (e) {
+                        alert('Сеть недоступна');
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.inventory-item').forEach(itemDiv => {
+            itemDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('action-btn')) return;
+
+                const itemId = itemDiv.dataset.itemId;
+                const forSale = itemDiv.dataset.forSale === 'true';
+                const inForge = itemDiv.dataset.inForge === 'true';
+                const actionsDiv = itemDiv.querySelector('.item-actions');
+
+                document.querySelectorAll('.inventory-item .item-actions').forEach(div => {
+                    if (div !== actionsDiv) div.style.display = 'none';
+                });
+
+                if (actionsDiv.style.display === 'flex') {
+                    actionsDiv.style.display = 'none';
+                } else {
+                    if (forSale || inForge) {
+                        if (forSale) {
+                            actionsDiv.innerHTML = `
+                                <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
+                                <button class="action-btn cancel-btn">Отмена</button>
+                            `;
+                        } else if (inForge) {
+                            actionsDiv.innerHTML = `
+                                <button class="action-btn remove-forge-btn" data-item-id="${itemId}">Вернуть из кузницы</button>
+                                <button class="action-btn cancel-btn">Отмена</button>
+                            `;
+                        }
+                    } else {
                         actionsDiv.innerHTML = `
-                            <button class="action-btn unsell-btn" data-item-id="${itemId}">Не продавать</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
-                        `;
-                    } else if (inForge) {
-                        actionsDiv.innerHTML = `
-                            <button class="action-btn remove-forge-btn" data-item-id="${itemId}">Вернуть из кузницы</button>
-                            <button class="action-btn cancel-btn">Отмена</button>
+                            <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
+                            <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
                         `;
                     }
-                } else {
-                    actionsDiv.innerHTML = `
-                        <button class="action-btn equip-btn" data-item-id="${itemId}">Надеть</button>
-                        <button class="action-btn sell-btn" data-item-id="${itemId}">Продать</button>
-                    `;
-                }
-                actionsDiv.style.display = 'flex';
+                    actionsDiv.style.display = 'flex';
 
-                if (forSale) {
-                    actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                        });
-                        if (res.ok) {
-                            await refreshData();
-                        } else {
-                            alert('Ошибка при снятии с продажи');
-                        }
-                    });
-                    actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        actionsDiv.style.display = 'none';
-                    });
-                } else if (inForge) {
-                    actionsDiv.querySelector('.remove-forge-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const res = await fetch('https://fight-club-api-4och.onrender.com/forge/remove', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                        });
-                        if (res.ok) {
-                            await refreshData();
-                        } else {
-                            alert('Ошибка при возврате из кузницы');
-                        }
-                    });
-                    actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        actionsDiv.style.display = 'none';
-                    });
-                } else {
-                    actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                        const item = inventory.find(i => i.id == itemId);
-                        if (!item) return;
-                        const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
-                        if (equippedInSlot) {
-                            showEquipCompareModal(equippedInSlot, item);
-                        } else {
-                            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
+                    if (forSale) {
+                        actionsDiv.querySelector('.unsell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    tg_id: userData.tg_id, 
-                                    item_id: itemId,
-                                    target_class: currentClass
-                                })
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                             });
                             if (res.ok) {
                                 await refreshData();
-                                if (currentScreen === 'equip') renderEquip();
                             } else {
-                                const err = await res.json();
-                                alert('Ошибка: ' + err.error);
+                                alert('Ошибка при снятии с продажи');
                             }
-                        }
-                    });
-
-                    actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                        const item = inventory.find(i => i.id == itemId);
-                        if (!item) return;
-                        if (item.owner_class !== currentClass) {
-                            alert('Этот предмет не принадлежит текущему классу!');
-                            return;
-                        }
-                        const price = prompt('Введите цену продажи в монетах:');
-                        if (price && !isNaN(price) && parseInt(price) > 0) {
-                            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
+                        });
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else if (inForge) {
+                        actionsDiv.querySelector('.remove-forge-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const res = await fetch('https://fight-club-api-4och.onrender.com/forge/remove', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    tg_id: userData.tg_id, 
-                                    item_id: itemId, 
-                                    price: parseInt(price) 
-                                })
+                                body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
                             });
-                            const data = await res.json();
-                            if (data.success) {
-                                alert('Предмет выставлен на маркет');
+                            if (res.ok) {
                                 await refreshData();
                             } else {
-                                alert('Ошибка: ' + data.error);
+                                alert('Ошибка при возврате из кузницы');
                             }
-                        }
-                    });
+                        });
+                        actionsDiv.querySelector('.cancel-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            actionsDiv.style.display = 'none';
+                        });
+                    } else {
+                        actionsDiv.querySelector('.equip-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                            const item = inventory.find(i => i.id == itemId);
+                            if (!item) return;
+                            const equippedInSlot = classItems.find(i => i.equipped && i.type === item.type);
+                            if (equippedInSlot) {
+                                showEquipCompareModal(equippedInSlot, item);
+                            } else {
+                                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        tg_id: userData.tg_id, 
+                                        item_id: itemId,
+                                        target_class: currentClass
+                                    })
+                                });
+                                if (res.ok) {
+                                    await refreshData();
+                                    if (currentScreen === 'equip') renderEquip();
+                                } else {
+                                    const err = await res.json();
+                                    alert('Ошибка: ' + err.error);
+                                }
+                            }
+                        });
+
+                        actionsDiv.querySelector('.sell-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                            const item = inventory.find(i => i.id == itemId);
+                            if (!item) return;
+                            if (item.owner_class !== currentClass) {
+                                alert('Этот предмет не принадлежит текущему классу!');
+                                return;
+                            }
+                            const price = prompt('Введите цену продажи в монетах:');
+                            if (price && !isNaN(price) && parseInt(price) > 0) {
+                                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 
+                                        tg_id: userData.tg_id, 
+                                        item_id: itemId, 
+                                        price: parseInt(price) 
+                                    })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    alert('Предмет выставлен на маркет');
+                                    await refreshData();
+                                } else {
+                                    alert('Ошибка: ' + data.error);
+                                }
+                            }
+                        });
+                    }
                 }
-            }
+            });
         });
-    });
-}
+    }
 
     renderInventoryForClass(selectedClass);
 }
@@ -863,28 +834,6 @@ function renderTrade() {
         renderMarket(tradeContent);
     }
 }
-
-function togglePanel(panelId) {
-    closeAllPanels();
-    const panel = document.getElementById(panelId);
-    if (panel) {
-        // Определяем, какая кнопка вызвала панель
-        let btn;
-        if (panelId === 'classPanel') btn = document.getElementById('classFilterBtn');
-        else if (panelId === 'rarityPanel') btn = document.getElementById('rarityFilterBtn');
-        else if (panelId === 'statPanel') btn = document.getElementById('statFilterBtn');
-
-        if (btn) {
-            const rect = btn.getBoundingClientRect();
-            // Устанавливаем top панели сразу под кнопкой (с учётом прокрутки)
-            panel.style.top = (rect.bottom + window.scrollY) + 'px';
-        }
-        panel.style.display = 'block';
-        openPanel = panelId;
-    }
-}
-
-// client/app.js (функция renderShop)
 
 function renderShop(target = null) {
     const container = target || document.getElementById('content');
@@ -962,7 +911,6 @@ function renderShop(target = null) {
         </div>
     `;
 
-    // Функция для обновления цены обычного сундука (бесплатный/платный)
     async function updateCommonChestPrice() {
         try {
             const tgId = Number(userData.tg_id);
@@ -1011,18 +959,14 @@ function renderShop(target = null) {
     });
 }
 
-// ==================== АКТУАЛЬНАЯ ВЕРСИЯ renderMarket ====================
+// ==================== МАРКЕТ ====================
 async function renderMarket(target = null) {
     const container = target || document.getElementById('content');
-    // Текущие значения фильтров
     let currentClass = 'any';
     let currentRarity = 'any';
     let currentStat = 'any';
-
-    // Состояние открытых панелей (только одна может быть открыта)
     let openPanel = null;
 
-    // Функция закрытия всех панелей
     function closeAllPanels() {
         if (openPanel) {
             const panel = document.getElementById(openPanel);
@@ -1031,7 +975,6 @@ async function renderMarket(target = null) {
         }
     }
 
-    // Функция открытия панели
     function togglePanel(panelId) {
         if (openPanel === panelId) {
             closeAllPanels();
@@ -1045,7 +988,6 @@ async function renderMarket(target = null) {
         }
     }
 
-    // Обработчик клика вне фильтров (закрывает панель)
     function handleClickOutside(e) {
         if (!e.target.closest('.filter-group')) {
             closeAllPanels();
@@ -1055,7 +997,6 @@ async function renderMarket(target = null) {
     container.innerHTML = `
         <div class="market-filters-container">
             <div class="filters-row">
-                <!-- Фильтр класса -->
                 <div class="filter-group" id="filter-class-group">
                     <button class="filter-button" id="classFilterBtn">
                         <span id="classFilterText">Класс</span>
@@ -1069,7 +1010,6 @@ async function renderMarket(target = null) {
                     </div>
                 </div>
 
-                <!-- Фильтр редкости -->
                 <div class="filter-group" id="filter-rarity-group">
                     <button class="filter-button" id="rarityFilterBtn">
                         <span id="rarityFilterText">Редкость</span>
@@ -1085,7 +1025,6 @@ async function renderMarket(target = null) {
                     </div>
                 </div>
 
-                <!-- Фильтр характеристики -->
                 <div class="filter-group" id="filter-stat-group">
                     <button class="filter-button" id="statFilterBtn">
                         <span id="statFilterText">Характеристика</span>
@@ -1115,7 +1054,6 @@ async function renderMarket(target = null) {
         </div>
     `;
 
-    // Добавляем обработчики для кнопок фильтров
     document.getElementById('classFilterBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         togglePanel('classPanel');
@@ -1131,7 +1069,6 @@ async function renderMarket(target = null) {
         togglePanel('statPanel');
     });
 
-    // Обработчики для опций в панелях
     document.querySelectorAll('.filter-option').forEach(opt => {
         opt.addEventListener('click', (e) => {
             const value = e.target.dataset.value;
@@ -1152,19 +1089,15 @@ async function renderMarket(target = null) {
         });
     });
 
-    // Закрытие панелей при клике вне
     document.addEventListener('click', handleClickOutside);
 
-    // Кнопка "Применить"
     document.getElementById('applyFiltersBtn').addEventListener('click', () => {
         loadMarketItems(currentStat, container, currentClass, currentRarity);
     });
 
-    // Первоначальная загрузка
     await loadMarketItems(currentStat, container, currentClass, currentRarity);
 }
 
-// Обновлённая функция loadMarketItems с параметрами
 async function loadMarketItems(statFilter = 'any', container, classFilter = 'any', rarityFilter = 'any') {
     const params = new URLSearchParams({ class: classFilter, rarity: rarityFilter });
     if (statFilter !== 'any') {
@@ -1325,10 +1258,10 @@ function renderRating() {
     content.innerHTML = `
         <div style="margin-top: 10px;"></div>
         <div class="rating-tabs">
-    <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
-    <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn"><i class="fas fa-fist-raised"></i> СИЛА</button>
-    <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn"><i class="fas fa-chess-rook"></i> БАШНЯ</button>
-</div>
+            <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
+            <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn"><i class="fas fa-fist-raised"></i> СИЛА</button>
+            <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn"><i class="fas fa-chess-rook"></i> БАШНЯ</button>
+        </div>
         <div id="ratingContent"></div>
     `;
 
@@ -1362,7 +1295,7 @@ async function loadRatingData(type) {
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
 
-        let html = '<table class="stats-table"><thead>`;
+        let html = '<table class="stats-table"><thead>';
         html += '<th>Место</th><th>Имя</th>';
 
         if (type === 'rating' || type === 'power') {
@@ -1471,13 +1404,13 @@ function renderProfileBonuses(container) {
         </div>
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
-             <tr>
+            <tr>
                 <th style="text-align:left;">Параметр</th>
                 <th style="text-align:center;">База</th>
                 <th style="text-align:center;">+Инв.</th>
                 <th style="text-align:center;">+Особ.</th>
                 <th style="text-align:center;">Итого</th>
-             </tr>
+            </tr>
             ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
             ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
             ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
@@ -1488,7 +1421,7 @@ function renderProfileBonuses(container) {
             ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
             ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
             ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
-         </table>
+        </table>
     `;
 
     container.querySelectorAll('.class-btn').forEach(btn => {
@@ -1525,7 +1458,7 @@ function renderSkills(container) {
             Доступно очков навыков: <strong>${skillPoints}</strong>
         </div>
         <div class="skills-list">
-           ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 5', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
+            ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 5', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
             ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
             ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
             ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 70%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
@@ -1595,13 +1528,13 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-         <tr>
+        <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-         </tr>
+        </tr>
     `;
 }
 

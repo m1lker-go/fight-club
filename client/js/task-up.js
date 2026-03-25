@@ -1,56 +1,11 @@
-// task-up.js
+// task-up.js (клиент, полная версия с исправленным адвент-календарём)
 
 // ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
 
 let countdownInterval = null;
 
 function renderAdventCalendarInContainer(data, container) {
-    // Этот метод используется для встраивания календаря в другой контейнер (не основной)
-    // Оставляем для совместимости, но в основном используется renderAdventCalendar
-    const { currentDay, daysInMonth, mask } = data;
-    let firstUnclaimed = null;
-    for (let d = 1; d <= currentDay; d++) {
-        if (!(mask & (1 << (d-1)))) {
-            firstUnclaimed = d;
-            break;
-        }
-    }
-
-    let html = '<div class="advent-grid">';
-    for (let day = 1; day <= daysInMonth; day++) {
-        const claimed = mask & (1 << (day-1));
-        const available = (day === firstUnclaimed);
-        let className = 'advent-day';
-        if (claimed) className += ' claimed';
-        else if (available) className += ' available';
-        else className += ' locked';
-
-        const reward = getAdventReward(day, daysInMonth);
-        let iconHtml = '';
-        if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
-        } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
-        } else if (reward.type === 'item') {
-            let color = '#aaa';
-            if (reward.rarity === 'uncommon') color = '#2ecc71';
-            else if (reward.rarity === 'rare') color = '#2e86de';
-            else if (reward.rarity === 'epic') color = '#9b59b6';
-            else if (reward.rarity === 'legendary') color = '#f1c40f';
-            iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
-        }
-
-        html += `<div class="${className}" data-day="${day}">
-            <div class="advent-icon">${iconHtml}</div>
-            <div class="advent-day-number">${day}</div>
-        </div>`;
-    }
-    html += '</div>';
-    container.innerHTML = html;
-
-    container.querySelectorAll('.advent-day.available').forEach(div => {
-        div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
-    });
+    // Не используется в основном календаре, оставлен для совместимости
 }
 
 function renderReferral() {
@@ -399,14 +354,18 @@ function showExpModal(amount, className) {
     };
 }
 
-// ========== АДВЕНТ-КАЛЕНДАРЬ (новая логика) ==========
+// ========== АДВЕНТ-КАЛЕНДАРЬ ==========
 
 function showAdventCalendar() {
     const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
     console.log('[showAdventCalendar] fetching', url);
     fetch(url)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
         .then(data => {
+            console.log('[showAdventCalendar] data received', data);
             if (data.error) throw new Error(data.error);
             renderAdventCalendar(data);
         })
@@ -417,16 +376,16 @@ function showAdventCalendar() {
 }
 
 function renderAdventCalendar(data) {
-    const { currentDay, daysInMonth, canClaim, lastClaimDate } = data;
+    const { currentDay, daysInMonth, nextAvailable, lastClaimed, lastClaimDate } = data;
     const content = document.getElementById('content');
 
     let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
     for (let day = 1; day <= daysInMonth; day++) {
         let className = 'advent-day';
-        if (day === currentDay && canClaim) {
-            className += ' available';
-        } else if (day === currentDay && !canClaim) {
+        if (day <= lastClaimed) {
             className += ' claimed';
+        } else if (day === nextAvailable && nextAvailable !== null) {
+            className += ' available';
         } else {
             className += ' locked';
         }
@@ -454,12 +413,12 @@ function renderAdventCalendar(data) {
     html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
     content.innerHTML = html;
 
-    const availableDiv = document.querySelector('.advent-day.available');
-    if (availableDiv) {
-        availableDiv.addEventListener('click', () => {
-            claimAdventDay(currentDay, daysInMonth);
+    document.querySelectorAll('.advent-day.available').forEach(div => {
+        div.addEventListener('click', () => {
+            const day = parseInt(div.dataset.day);
+            claimAdventDay(day, daysInMonth);
         });
-    }
+    });
 
     document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
 }
@@ -477,8 +436,9 @@ function claimAdventDay(day, daysInMonth) {
     isClaiming = true;
     const body = { tg_id: userData.tg_id };
 
+    // Для опыта требуется класс, поэтому если награда опыт, показываем модалку выбора класса
     if (reward.type === 'exp') {
-        showClassChoiceModal(day, reward.amount);
+        showClassChoiceModalForAdvent(reward.amount);
         isClaiming = false;
         return;
     }
@@ -516,7 +476,7 @@ function claimAdventDay(day, daysInMonth) {
     });
 }
 
-function showClassChoiceModal(day, expAmount) {
+function showClassChoiceModalForAdvent(expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -539,14 +499,16 @@ function showClassChoiceModal(day, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
+            const body = { tg_id: userData.tg_id, classChoice };
             const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, classChoice })
+                body: JSON.stringify(body)
             });
             const data = await res.json();
-            if (data.error) alert(data.error);
-            else {
+            if (data.error) {
+                alert(data.error);
+            } else {
                 showExpModal(expAmount, classChoice);
                 setTimeout(() => {
                     showAdventCalendar();
@@ -560,7 +522,8 @@ function showClassChoiceModal(day, expAmount) {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-function claimDailyExp(taskId, expAmount) {
+function showClassChoiceModal(day, expAmount) {
+    // Используется для ежедневных заданий (exp)
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -588,7 +551,7 @@ function claimDailyExp(taskId, expAmount) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     tg_id: userData.tg_id, 
-                    task_id: taskId, 
+                    task_id: day, 
                     class_choice: classChoice 
                 })
             });
@@ -605,4 +568,9 @@ function claimDailyExp(taskId, expAmount) {
 
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
+}
+
+function claimDailyExp(taskId, expAmount) {
+    // Тот же самый метод, что и выше, но с другим названием
+    showClassChoiceModal(taskId, expAmount);
 }

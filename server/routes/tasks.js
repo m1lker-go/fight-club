@@ -1,3 +1,5 @@
+// tasks.js (сервер, полная версия с исправленным адвент-календарём)
+
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -105,23 +107,49 @@ router.get('/advent', async (req, res) => {
     
     const client = await pool.connect();
     try {
-        const user = await client.query('SELECT id, last_advent_claim_date FROM users WHERE tg_id = $1', [tg_id]);
+        const user = await client.query('SELECT id, last_claimed_advent_day, advent_last_claim_date, advent_month, advent_year FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         
-        const lastClaimDate = user.rows[0].last_advent_claim_date;
+        const userId = user.rows[0].id;
+        let lastClaimed = user.rows[0].last_claimed_advent_day || 0;
+        let lastClaimDate = user.rows[0].advent_last_claim_date;
+        let adventMonth = user.rows[0].advent_month;
+        let adventYear = user.rows[0].advent_year;
+        
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const today = mskTime.toISOString().split('T')[0];
+        const currentMonth = mskTime.getMonth() + 1;
+        const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
-        const daysInMonth = new Date(mskTime.getFullYear(), mskTime.getMonth() + 1, 0).getDate();
+        const todayStr = getMoscowDate();
         
-        const canClaim = !lastClaimDate || lastClaimDate !== today;
+        // Если сменился месяц/год, сбрасываем прогресс
+        if (adventMonth !== currentMonth || adventYear !== currentYear) {
+            lastClaimed = 0;
+            lastClaimDate = null;
+            await client.query(
+                'UPDATE users SET last_claimed_advent_day = 0, advent_last_claim_date = NULL, advent_month = $1, advent_year = $2 WHERE id = $3',
+                [currentMonth, currentYear, userId]
+            );
+        }
+        
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        const nextDay = lastClaimed + 1;
+        // Доступен только если следующий день не позже сегодняшнего и сегодня ещё не забирали награду
+        let availableDay = null;
+        if (nextDay <= currentDay) {
+            // Можно забрать только если сегодня ещё не забирали
+            if (!lastClaimDate || lastClaimDate !== todayStr) {
+                availableDay = nextDay;
+            }
+        }
         
         res.json({
             currentDay,
             daysInMonth,
-            canClaim,
-            lastClaimDate
+            nextAvailable: availableDay,
+            lastClaimed: lastClaimed,
+            lastClaimDate: lastClaimDate
         });
     } finally {
         client.release();
@@ -130,29 +158,48 @@ router.get('/advent', async (req, res) => {
 
 router.post('/advent/claim', async (req, res) => {
     const { tg_id, classChoice } = req.body;
-    if (!tg_id) return res.status(400).json({ error: 'Missing data' });
+    if (!tg_id) return res.status(400).json({ error: 'Missing tg_id' });
     
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
-        const user = await client.query('SELECT id, last_advent_claim_date FROM users WHERE tg_id = $1', [tg_id]);
+        const user = await client.query('SELECT id, last_claimed_advent_day, advent_last_claim_date, advent_month, advent_year FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
-        const lastClaimDate = user.rows[0].last_advent_claim_date;
+        let lastClaimed = user.rows[0].last_claimed_advent_day || 0;
+        let lastClaimDate = user.rows[0].advent_last_claim_date;
+        let adventMonth = user.rows[0].advent_month;
+        let adventYear = user.rows[0].advent_year;
         
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const today = mskTime.toISOString().split('T')[0];
+        const currentMonth = mskTime.getMonth() + 1;
+        const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
-        const daysInMonth = new Date(mskTime.getFullYear(), mskTime.getMonth() + 1, 0).getDate();
+        const todayStr = getMoscowDate();
         
-        if (lastClaimDate === today) {
+        if (adventMonth !== currentMonth || adventYear !== currentYear) {
+            lastClaimed = 0;
+            lastClaimDate = null;
+            await client.query(
+                'UPDATE users SET last_claimed_advent_day = 0, advent_last_claim_date = NULL, advent_month = $1, advent_year = $2 WHERE id = $3',
+                [currentMonth, currentYear, userId]
+            );
+        }
+        
+        // Проверка: можно брать только следующий день
+        const nextDay = lastClaimed + 1;
+        if (nextDay > currentDay) {
+            throw new Error('This day is not available yet');
+        }
+        // Проверка: сегодня ещё не брали награду
+        if (lastClaimDate && lastClaimDate === todayStr) {
             throw new Error('You have already claimed today\'s reward');
         }
         
-        // Награда за сегодняшний день
-        const reward = getAdventReward(currentDay, daysInMonth);
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        const reward = getAdventReward(nextDay, daysInMonth);
         let rewardDescription = '';
         let rewardItem = null;
         
@@ -200,14 +247,14 @@ router.post('/advent/claim', async (req, res) => {
             rewardItem = item;
         }
         
-        // Обновляем дату последнего получения
+        // Обновляем прогресс
         await client.query(
-            'UPDATE users SET last_advent_claim_date = $1 WHERE id = $2',
-            [today, userId]
+            'UPDATE users SET last_claimed_advent_day = $1, advent_last_claim_date = $2 WHERE id = $3',
+            [nextDay, todayStr, userId]
         );
         
         await client.query('COMMIT');
-        res.json({ success: true, reward: rewardDescription, item: rewardItem });
+        res.json({ success: true, reward: rewardDescription, nextAvailable: nextDay + 1, item: rewardItem, newLastClaimed: nextDay });
         
     } catch (e) {
         await client.query('ROLLBACK');

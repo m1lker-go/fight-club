@@ -1375,11 +1375,16 @@ function renderProfile() {
         body: JSON.stringify({ tg_id: userData.tg_id })
     }).catch(err => console.error('Failed to update profile task', err));
 
+    const currentClassData = getCurrentClassData();
+    const hasSkillPoints = currentClassData.skill_points > 0;
+
     content.innerHTML = `
         <div class="profile-tabs-container">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
             <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
-            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">Улучшить</button>
+            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">
+                Улучшить ${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
         </div>
         <div id="profileContent"></div>
     `;
@@ -1467,11 +1472,20 @@ function renderSkills(container) {
     const currentClass = userData.current_class;
     const base = baseStats[currentClass] || baseStats.warrior;
 
+    // Функция для проверки наличия очков навыков у конкретного класса
+    const hasPointsForClass = (cls) => (userClasses.find(c => c.class === cls)?.skill_points || 0) > 0;
+
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
-            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">
+                Воин ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">
+                Ассасин ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">
+                Маг ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
         </div>
         <div style="text-align: center; margin: 10px 0; font-size: 18px;">
             Доступно очков навыков: <strong>${skillPoints}</strong>

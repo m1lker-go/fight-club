@@ -1,5 +1,3 @@
-// tasks.js (сервер, полная версия с исправленным адвент-календарём)
-
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -135,14 +133,16 @@ router.get('/advent', async (req, res) => {
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
+        
         // Доступен только если следующий день не позже сегодняшнего и сегодня ещё не забирали награду
         let availableDay = null;
         if (nextDay <= currentDay) {
-            // Можно забрать только если сегодня ещё не забирали
             if (!lastClaimDate || lastClaimDate !== todayStr) {
                 availableDay = nextDay;
             }
         }
+        
+        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDate}, todayStr=${todayStr}, availableDay=${availableDay}`);
         
         res.json({
             currentDay,
@@ -188,14 +188,17 @@ router.post('/advent/claim', async (req, res) => {
             );
         }
         
-        // Проверка: можно брать только следующий день
         const nextDay = lastClaimed + 1;
-        if (nextDay > currentDay) {
-            throw new Error('This day is not available yet');
-        }
+        
+        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, nextDay=${nextDay}, currentDay=${currentDay}, lastClaimDate=${lastClaimDate}, todayStr=${todayStr}`);
+        
         // Проверка: сегодня ещё не брали награду
         if (lastClaimDate && lastClaimDate === todayStr) {
             throw new Error('You have already claimed today\'s reward');
+        }
+        // Проверка: следующий день не позже сегодняшнего
+        if (nextDay > currentDay) {
+            throw new Error('This day is not available yet');
         }
         
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();

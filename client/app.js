@@ -1764,6 +1764,33 @@ function updateMainMenuNewIcons() {
         existingIcon.remove();
     }
 }
-window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 
+function updateTradeButtonIcon() {
+    const tradeBtn = document.querySelector('.round-button[data-screen="trade"]');
+    if (!tradeBtn) return;
+
+    fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)
+        .then(res => res.json())
+        .then(data => {
+            const freeAvailable = data.freeAvailable;
+            const existingIcon = tradeBtn.querySelector('.new-icon');
+            if (freeAvailable && !existingIcon) {
+                const icon = document.createElement('img');
+                icon.src = '/assets/icons/icon-new.png';
+                icon.className = 'new-icon';
+                icon.style.position = 'absolute';
+                icon.style.top = '-5px';
+                icon.style.right = '-10px';
+                icon.style.width = '16px';
+                icon.style.height = '16px';
+                tradeBtn.style.position = 'relative';
+                tradeBtn.appendChild(icon);
+            } else if (!freeAvailable && existingIcon) {
+                existingIcon.remove();
+            }
+        })
+        .catch(e => console.error('Failed to fetch free chest status for trade button', e));
+}
+
+window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 init();

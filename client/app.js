@@ -5,7 +5,7 @@ if (tg) {
 }
 
 // Получаем данные пользователя Telegram
-const user = tg.initDataUnsafe?.user;
+const user = tg?.initDataUnsafe?.user;
 if (user) {
     window.playerName = user.username || user.first_name || 'Игрок';
 } else {
@@ -16,7 +16,7 @@ console.log('playerName:', window.playerName); // для отладки
 
 // Получаем start_param, если он был передан через ссылку вида t.me/bot?start=xxxx
 let referralCode = null;
-if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
     referralCode = tg.initDataUnsafe.start_param;
     console.log('Referral code from start_param:', referralCode);
 }

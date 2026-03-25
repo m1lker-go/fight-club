@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const crypto = require('crypto');
-const { updatePlayerPower } = require('../utils/power'); // ← добавлен импорт
+const { updatePlayerPower } = require('../utils/power');
 
 // Вспомогательная функция для восстановления энергии
 async function rechargeEnergy(client, userId) {
@@ -14,7 +14,6 @@ async function rechargeEnergy(client, userId) {
     const intervals = Math.floor(diffMinutes / 15); // количество 15-минутных интервалов
     if (intervals > 0) {
         const newEnergy = Math.min(20, user.rows[0].energy + intervals);
-        // Обновляем время последнего восстановления на текущее
         await client.query(
             'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
             [newEnergy, now, userId]
@@ -40,7 +39,7 @@ function validateTelegramWebAppData(initData, botToken) {
 
 router.post('/login', async (req, res) => {
   console.log('=== LOGIN ATTEMPT ===');
-  const { initData } = req.body;
+  const { initData, start_param } = req.body; // добавляем start_param
   const botToken = process.env.BOT_TOKEN;
 
   if (!botToken) {
@@ -70,11 +69,32 @@ router.post('/login', async (req, res) => {
     if (userRes.rows.length === 0) {
       console.log('Creating new user...');
       const referralCode = Math.random().toString(36).substring(2, 10);
+      let referredById = null;
+
+      // Если есть start_param, ищем пользователя с таким referral_code
+      if (start_param) {
+        const referrer = await client.query(
+          'SELECT id FROM users WHERE referral_code = $1',
+          [start_param]
+        );
+        if (referrer.rows.length > 0) {
+          referredById = referrer.rows[0].id;
+          // Начисляем награду пригласившему (100 монет)
+          await client.query(
+            'UPDATE users SET coins = coins + 100 WHERE id = $1',
+            [referredById]
+          );
+          console.log(`Referral bonus awarded to user ${referredById} for new user ${tgId}`);
+        } else {
+          console.log(`Referral code ${start_param} not found`);
+        }
+      }
+
       const newUser = await client.query(
         `INSERT INTO users 
-         (tg_id, username, referral_code, current_class, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-        [tgId, username, referralCode, 'warrior', 1, 0, 0, 1000, 20, new Date(), 0]
+         (tg_id, username, referral_code, current_class, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, referred_by) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+        [tgId, username, referralCode, 'warrior', 1, 0, 0, 1000, 20, new Date(), 0, referredById]
       );
       userRes = newUser;
       const userId = newUser.rows[0].id;

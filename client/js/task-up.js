@@ -317,10 +317,12 @@ function showCoinsModal(amount) {
 
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
-        <div style="text-align: center;">
-            <i class="fas fa-coins reward-icon" style="color: gold;"></i>
-            <div class="reward-amount">${amount}</div>
-            <div class="reward-text">монет получено!</div>
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 28px; font-weight: bold; color: #ddd;">${amount}</span>
+                <i class="fas fa-coins" style="font-size: 28px; color: #ddd;"></i>
+            </div>
+            <div style="font-size: 14px; color: #aaa;">монет получено!</div>
         </div>
     `;
     modal.style.display = 'block';
@@ -331,6 +333,7 @@ function showCoinsModal(amount) {
     };
 }
 
+
 function showExpModal(amount, className) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -338,10 +341,12 @@ function showExpModal(amount, className) {
 
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
-        <div style="text-align: center;">
-            <i class="fas fa-star reward-icon" style="color: #00aaff;"></i>
-            <div class="reward-amount">+${amount}</div>
-            <div class="reward-text">для класса <strong>${getClassNameRu(className)}</strong></div>
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 28px; font-weight: bold; color: #ddd;">+${amount}</span>
+                <i class="fas fa-star" style="font-size: 28px; color: #ddd;"></i>
+            </div>
+            <div style="font-size: 14px; color: #aaa;">для класса <strong>${getClassNameRu(className)}</strong></div>
         </div>
     `;
     modal.style.display = 'block';

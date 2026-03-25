@@ -1724,8 +1724,8 @@ function updateMainMenuNewIcons() {
         icon.style.position = 'absolute';
         icon.style.top = '-5px';
         icon.style.right = '-10px';
-        icon.style.width = '20px';
-        icon.style.height = '20px';
+        icon.style.width = '16px';   // ← изменено с 20px на 16px
+        icon.style.height = '16px';
         tasksMenuItem.style.position = 'relative';
         tasksMenuItem.appendChild(icon);
     } else if (!hasUnclaimed && existingIcon) {

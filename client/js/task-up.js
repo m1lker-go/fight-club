@@ -1,11 +1,9 @@
-// task-up.js (клиент, полная версия с исправленным адвент-календарём)
-
-// ==================== АДВЕНТ-КАЛЕНДАРЬ И ЗАДАНИЯ ====================
+// task-up.js (полный)
 
 let countdownInterval = null;
 
 function renderAdventCalendarInContainer(data, container) {
-    // Не используется в основном календаре, оставлен для совместимости
+    // Не используется
 }
 
 function renderReferral() {
@@ -354,8 +352,6 @@ function showExpModal(amount, className) {
     };
 }
 
-// ========== АДВЕНТ-КАЛЕНДАРЬ ==========
-
 function showAdventCalendar() {
     const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
     console.log('[showAdventCalendar] fetching', url);
@@ -436,7 +432,6 @@ function claimAdventDay(day, daysInMonth) {
     isClaiming = true;
     const body = { tg_id: userData.tg_id };
 
-    // Для опыта требуется класс, поэтому если награда опыт, показываем модалку выбора класса
     if (reward.type === 'exp') {
         showClassChoiceModalForAdvent(reward.amount);
         isClaiming = false;
@@ -523,7 +518,6 @@ function showClassChoiceModalForAdvent(expAmount) {
 }
 
 function showClassChoiceModal(day, expAmount) {
-    // Используется для ежедневных заданий (exp)
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -571,6 +565,5 @@ function showClassChoiceModal(day, expAmount) {
 }
 
 function claimDailyExp(taskId, expAmount) {
-    // Тот же самый метод, что и выше, но с другим названием
     showClassChoiceModal(taskId, expAmount);
 }

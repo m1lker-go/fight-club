@@ -455,6 +455,7 @@ function renderMain() {
             if (screen) showScreen(screen);
         });
     });
+     updateTradeButtonIcon();
 }
 
 function updateMainScreen() {
@@ -945,6 +946,7 @@ function renderShop(target = null) {
                 existingIcon.remove();
             }
         }
+        if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
     } catch (e) {
         console.error('Failed to fetch free chest status', e);
     }
@@ -964,6 +966,7 @@ function renderShop(target = null) {
             if (data.item) {
                 showChestResult(data.item);
                 await refreshData();
+                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
                 if (chest === 'common') updateCommonChestPrice();
 
                 fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/chest', {
@@ -1793,4 +1796,5 @@ function updateTradeButtonIcon() {
 }
 
 window.updateMainMenuNewIcons = updateMainMenuNewIcons;
+window.updateTradeButtonIcon = updateTradeButtonIcon;
 init();

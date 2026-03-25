@@ -34,10 +34,33 @@ app.post('/webhook', async (req, res) => {
     if (!message) return res.sendStatus(200);
 
     const chatId = message.chat.id;
-    const text = message.text;
+    let text = message.text || '';
 
-    if (text === '/start') {
-        const welcomeMessage = `
+    // Парсим /start и возможный параметр
+    let referralCode = null;
+    if (text.startsWith('/start')) {
+        const parts = text.split(' ');
+        if (parts.length > 1) {
+            referralCode = parts[1];
+        }
+    }
+
+    // Формируем URL для WebApp
+    let webAppUrl = 'https://fight-club-ecru.vercel.app';
+    if (referralCode) {
+        webAppUrl += `?startapp=${referralCode}`;
+    }
+
+    const inlineKeyboard = {
+        inline_keyboard: [[
+            {
+                text: '⚔️ Начать игру',
+                web_app: { url: webAppUrl }
+            }
+        ]]
+    };
+
+    const welcomeMessage = `
 😺 **МЯУ! Добро пожаловать в Кошачий Файтинг!**  
 
 Ты попал в мир, где отважные коты сражаются за звание чемпиона. Здесь ты сможешь:
@@ -49,37 +72,26 @@ app.post('/webhook', async (req, res) => {
 🎁 **Открывать сундуки** – получай редкие сокровища и бонусы.
 
 Готов начать? Жми кнопку ниже и покажи всем, на что способен твой кот! 😼
-        `;
+    `;
 
-        const inlineKeyboard = {
-            inline_keyboard: [[
-                {
-                    text: '⚔️ Начать игру',
-                    web_app: {
-                        url: 'https://fight-club-ecru.vercel.app'
-                    }
-                }
-            ]]
-        };
-
-        try {
-            await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: welcomeMessage,
-                    parse_mode: 'Markdown',
-                    reply_markup: inlineKeyboard
-                })
-            });
-        } catch (error) {
-            console.error('Failed to send welcome message:', error);
-        }
+    try {
+        await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: welcomeMessage,
+                parse_mode: 'Markdown',
+                reply_markup: inlineKeyboard
+            })
+        });
+    } catch (error) {
+        console.error('Failed to send welcome message:', error);
     }
 
     res.sendStatus(200);
 });
+
 
 // Временный маршрут для обновления старых предметов
 app.get('/admin/update-items', async (req, res) => {

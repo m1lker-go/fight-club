@@ -1712,4 +1712,26 @@ document.querySelectorAll('.menu-item').forEach(item => {
     });
 });
 
+function updateMainMenuNewIcons() {
+    const tasksMenuItem = document.querySelector('.menu-item[data-screen="tasks"]');
+    if (!tasksMenuItem) return;
+    const hasUnclaimed = typeof hasUnclaimedTasks === 'function' ? hasUnclaimedTasks() : false;
+    const existingIcon = tasksMenuItem.querySelector('.new-icon');
+    if (hasUnclaimed && !existingIcon) {
+        const icon = document.createElement('img');
+        icon.src = '/assets/icons/icon-new.png';
+        icon.className = 'new-icon';
+        icon.style.position = 'absolute';
+        icon.style.top = '-5px';
+        icon.style.right = '-10px';
+        icon.style.width = '20px';
+        icon.style.height = '20px';
+        tasksMenuItem.style.position = 'relative';
+        tasksMenuItem.appendChild(icon);
+    } else if (!hasUnclaimed && existingIcon) {
+        existingIcon.remove();
+    }
+}
+window.updateMainMenuNewIcons = updateMainMenuNewIcons;
+
 init();

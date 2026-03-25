@@ -10,11 +10,17 @@ function renderProfile() {
         body: JSON.stringify({ tg_id: userData.tg_id })
     }).catch(err => console.error('Failed to update profile task', err));
 
+    // Проверяем, есть ли нераспределённые очки у текущего класса
+    const currentClassData = getCurrentClassData();
+    const hasSkillPoints = currentClassData.skill_points > 0;
+
     content.innerHTML = `
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
             <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
-            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">Улучшить</button>
+            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">
+                Улучшить ${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="new-icon" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
         </div>
         <div id="profileContent"></div>
     `;
@@ -58,13 +64,13 @@ function renderProfileBonuses(container) {
         </div>
         <h4 style="margin: 15px 0 5px;">Характеристики</h4>
         <table style="width:100%; border-collapse: collapse;">
-            <tr>
+             <thead>
                 <th style="text-align:left;">Параметр</th>
                 <th style="text-align:center;">База</th>
                 <th style="text-align:center;">+Инв.</th>
                 <th style="text-align:center;">+Особ.</th>
                 <th style="text-align:center;">Итого</th>
-            </tr>
+             </thead>
             ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
             ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
             ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
@@ -102,11 +108,23 @@ function renderSkills(container) {
     const currentClass = userData.current_class;
     const base = baseStats[currentClass] || baseStats.warrior;
 
+    // Функция для проверки наличия очков у класса
+    const hasPointsForClass = (cls) => {
+        const clsData = userClasses.find(c => c.class === cls);
+        return clsData ? clsData.skill_points > 0 : false;
+    };
+
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
-            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">
+                Воин ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" class="new-icon" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">
+                Ассасин ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" class="new-icon" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">
+                Маг ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="new-icon" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            </button>
         </div>
         <div style="text-align: center; margin: 10px 0; font-size: 18px;">
             Доступно очков навыков: <strong>${skillPoints}</strong>
@@ -182,13 +200,13 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-        <tr>
+         <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-        </tr>
+         </tr>
     `;
 }
 

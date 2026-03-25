@@ -1,6 +1,14 @@
 // task-up.js (полный)
 
 let countdownInterval = null;
+let lastTasksData = null;  // [NEW] храним последние данные заданий
+
+// Функция для проверки наличия неполученных наград
+function hasUnclaimedTasks() {
+    if (!lastTasksData) return false;
+    return lastTasksData.some(task => !task.completed && task.progress >= task.target_value);
+}
+window.hasUnclaimedTasks = hasUnclaimedTasks;
 
 function renderAdventCalendarInContainer(data, container) {
     // Не используется
@@ -42,16 +50,12 @@ function renderReferral() {
         });
     });
 
-    // Обновлённый обработчик для кнопки "Поделиться"
     referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
         if (window.Telegram?.WebApp?.shareURL) {
-            // Используем shareURL – открывает диалог выбора чата с предзаполненной ссылкой и текстом
             window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
         } else if (window.Telegram?.WebApp?.openTelegramLink) {
-            // Резервный вариант (старый метод) – может вызывать окно Missing data, но работает
             window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
         } else {
-            // Фолбэк: просто копируем ссылку, если WebApp недоступен
             navigator.clipboard.writeText(referralLink).then(() => {
                 alert('Ссылка скопирована!');
             });
@@ -221,33 +225,32 @@ async function loadDailyTasks() {
         });
 
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
-    // Пропускаем кнопки, у которых нет атрибута data-task-id (например, кнопки "Поделиться" и "Копировать")
-    if (!btn.dataset.taskId) return;
+            if (!btn.dataset.taskId) return;
 
-    btn.addEventListener('click', async (e) => {
-        const taskId = parseInt(btn.dataset.taskId);
-        const rewardType = btn.dataset.rewardType;
-        const rewardAmount = parseInt(btn.dataset.rewardAmount);
+            btn.addEventListener('click', async (e) => {
+                const taskId = parseInt(btn.dataset.taskId);
+                const rewardType = btn.dataset.rewardType;
+                const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
-        if (rewardType === 'exp') {
-            claimDailyExp(taskId, rewardAmount);
-        } else {
-            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                if (rewardType === 'exp') {
+                    claimDailyExp(taskId, rewardAmount);
+                } else {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                    });
+                    const data = await res.json();
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        showCoinsModal(rewardAmount);
+                        loadDailyTasks();
+                        refreshData();
+                    }
+                }
             });
-            const data = await res.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
-                showCoinsModal(rewardAmount);
-                loadDailyTasks();
-                refreshData();
-            }
-        }
-    });
-});
+        });
 
         const allCompleted = completedTasksCount >= totalTasksCount;
         if (countdownContainer) {
@@ -260,10 +263,21 @@ async function loadDailyTasks() {
             }
         }
 
+        // [NEW] Сохраняем данные заданий для проверки наличия неполученных наград
+        lastTasksData = tasksData;
+        // [NEW] Обновляем иконку в нижнем меню, если функция существует
+        if (window.updateMainMenuNewIcons) {
+            window.updateMainMenuNewIcons();
+        }
+
     } catch (e) {
         console.error('Error loading daily tasks:', e);
     }
 }
+
+// … остальные функции (getRemainingTime, updateCountdownDisplay, startCountdownTimer, stopCountdownTimer,
+// showCoinsModal, showExpModal, showAdventCalendar, renderAdventCalendar, claimAdventDay,
+// showClassChoiceModalForAdvent, claimDailyExp) остаются без изменений …
 
 function getRemainingTime() {
     const now = new Date();
@@ -341,7 +355,6 @@ function showCoinsModal(amount) {
         if (event.target === modal) modal.style.display = 'none';
     };
 }
-
 
 function showExpModal(amount, className) {
     const modal = document.getElementById('roleModal');
@@ -530,7 +543,6 @@ function showClassChoiceModalForAdvent(expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
-
 
 function claimDailyExp(taskId, expAmount) {
     const modal = document.getElementById('roleModal');

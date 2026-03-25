@@ -1472,7 +1472,6 @@ function renderSkills(container) {
     const currentClass = userData.current_class;
     const base = baseStats[currentClass] || baseStats.warrior;
 
-    // Функция для проверки наличия очков навыков у конкретного класса
     const hasPointsForClass = (cls) => (userClasses.find(c => c.class === cls)?.skill_points || 0) > 0;
 
     container.innerHTML = `

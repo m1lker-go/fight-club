@@ -42,12 +42,18 @@ function renderReferral() {
         });
     });
 
+    // Обновлённый обработчик для кнопки "Поделиться"
     referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
-        if (window.Telegram?.WebApp?.openTelegramLink) {
+        if (window.Telegram?.WebApp?.shareURL) {
+            // Используем shareURL – открывает диалог выбора чата с предзаполненной ссылкой и текстом
+            window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
+        } else if (window.Telegram?.WebApp?.openTelegramLink) {
+            // Резервный вариант (старый метод) – может вызывать окно Missing data, но работает
             window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
         } else {
+            // Фолбэк: просто копируем ссылку, если WebApp недоступен
             navigator.clipboard.writeText(referralLink).then(() => {
-                alert('Ссылка скопирована! Вы можете отправить её другу.');
+                alert('Ссылка скопирована!');
             });
         }
     });

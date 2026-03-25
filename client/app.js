@@ -166,6 +166,7 @@ async function init() {
 
             updateTopBar();
             showScreen('main');
+            updateMainMenuNewIcons(); 
             checkAdvent();
 
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
@@ -245,6 +246,7 @@ async function refreshData() {
 
             recalculatePower();
             showScreen(currentScreen);
+            if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
         }
     } catch (e) {
         console.error('Refresh error:', e);
@@ -911,25 +913,42 @@ function renderShop(target = null) {
         </div>
     `;
 
-    async function updateCommonChestPrice() {
-        try {
-            const tgId = Number(userData.tg_id);
-            const res = await fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${tgId}`);
-            const data = await res.json();
-            const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
-            const coinIcon = container.querySelector('[data-chest="common"] i');
+   async function updateCommonChestPrice() {
+    try {
+        const tgId = Number(userData.tg_id);
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${tgId}`);
+        const data = await res.json();
+        const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
+        const coinIcon = container.querySelector('[data-chest="common"] i');
 
-            if (data.freeAvailable) {
-                priceSpan.innerText = 'FREE';
-                coinIcon.style.display = 'none';
-            } else {
-                priceSpan.innerText = '100';
-                coinIcon.style.display = 'inline-block';
-            }
-        } catch (e) {
-            console.error('Failed to fetch free chest status', e);
+        if (data.freeAvailable) {
+            priceSpan.innerText = 'FREE';
+            coinIcon.style.display = 'none';
+        } else {
+            priceSpan.innerText = '100';
+            coinIcon.style.display = 'inline-block';
         }
+
+        // Добавляем/убираем иконку на кнопке "МАГАЗИН"
+        const shopBtn = document.getElementById('tradeShopBtn');
+        if (shopBtn) {
+            const existingIcon = shopBtn.querySelector('.new-icon');
+            if (data.freeAvailable && !existingIcon) {
+                const icon = document.createElement('img');
+                icon.src = '/assets/icons/icon-new.png';
+                icon.className = 'new-icon';
+                icon.style.width = '16px';
+                icon.style.height = '16px';
+                icon.style.marginLeft = '5px';
+                shopBtn.appendChild(icon);
+            } else if (!data.freeAvailable && existingIcon) {
+                existingIcon.remove();
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch free chest status', e);
     }
+}
 
     updateCommonChestPrice();
 

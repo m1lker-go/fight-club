@@ -191,7 +191,7 @@ async function checkAdvent() {
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
-        // Если есть доступный день, показываем календарь
+        // Показываем календарь только если есть доступная награда
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
             showAdventCalendar();
         }

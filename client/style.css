@@ -2304,3 +2304,101 @@ td {
     height: 16px;
     pointer-events: none;
 }
+
+
+/* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
+.stats-block {
+    background-color: #2a303c;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a1f2b;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-weight: bold;
+    color: #fff;
+    font-size: 14px;
+    min-width: 100px;
+}
+
+.stat-bar-container {
+    flex: 1;
+    position: relative;
+    background-color: #1a1f2b;
+    border-radius: 20px;
+    height: 30px;
+    margin-left: 15px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: #00aaff;
+    border-radius: 20px;
+    transition: width 0.3s ease;
+}
+
+.stat-value {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 0 2px black;
+    z-index: 1;
+}
+
+/* ========== ТАБЛИЦА ХАРАКТЕРИСТИК ========== */
+.bonuses-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+    font-size: 13px;
+}
+
+.bonuses-table thead tr {
+    background-color: #1a1f2b;
+    color: #00aaff;
+}
+
+.bonuses-table thead th {
+    padding: 12px 8px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #2a303c;
+}
+
+.bonuses-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+
+.bonuses-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+
+.bonuses-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border: none;
+}

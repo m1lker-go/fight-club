@@ -1408,6 +1408,7 @@ td {
     width: 100%;
     margin-bottom: 20px;
 }
+
 .profile-tabs-container .btn.profile-tab {
     flex: 1;
     padding: 12px 0;
@@ -1420,11 +1421,14 @@ td {
     transition: background-color 0.2s, color 0.2s;
     text-align: center;
     outline: none;
+    border-radius: 0;
 }
+
 .profile-tabs-container .btn.profile-tab.active {
     background-color: #00aaff;
     color: white;
 }
+
 .profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }

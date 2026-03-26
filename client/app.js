@@ -1320,7 +1320,7 @@ async function loadRatingData(type) {
 
         data.forEach((item, index) => {
             html += '<tr>';
-            html += `<td style="text-align:center;">${index + 1} None`;
+            html += `<td style="text-align:center;">${index + 1} `;
             html += `<td>${item.username}</td>`;
 
             if (type === 'rating') {

@@ -1399,18 +1399,17 @@ td {
 }
 
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
-#content .profile-tabs-container {
+.profile-tabs-container {
     display: flex;
-    background-color: #2f3542;
+    background-color: #2f3542;   /* общий фон */
     border-radius: 30px;
     overflow: hidden;
     width: 100%;
     margin-bottom: 20px;
-    padding: 0;
 }
 
-#content .profile-tabs-container .btn.profile-tab {
-    flex: 1;
+.profile-tabs-container .btn.profile-tab {
+    flex: 1;                     /* равная ширина */
     padding: 12px 0;
     border: none;
     background-color: transparent;
@@ -1422,20 +1421,20 @@ td {
     text-align: center;
     outline: none;
     border-radius: 0;
-    position: relative;
+    position: relative;          /* для позиционирования иконки */
 }
 
-/* Дополнительный отступ справа для кнопки, где может быть иконка */
-#content .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
+/* Специальный отступ справа для кнопки с иконкой */
+.profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
     padding-right: 30px;
 }
 
-#content .profile-tabs-container .btn.profile-tab.active {
+.profile-tabs-container .btn.profile-tab.active {
     background-color: #00aaff;
     color: white;
 }
 
-#content .profile-tabs-container .btn.profile-tab:not(.active):hover {
+.profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1449,7 +1448,6 @@ td {
     height: 16px;
     pointer-events: none;
 }
-
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */
 .hero-card,
 .enemy-card,
@@ -2267,7 +2265,7 @@ td {
     pointer-events: none;
 }
 
-/* Стили для иконок на кнопках классов в улучшении */
+/* Иконки на кнопках классов */
 .class-btn {
     position: relative;
     padding: 10px 25px 10px 15px;

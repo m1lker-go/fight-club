@@ -1399,7 +1399,7 @@ td {
 }
 
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
-#app .profile-tabs-container {
+.profile-tabs-container {
     display: flex;
     background-color: #2f3542 !important;
     border-radius: 30px;
@@ -1408,7 +1408,7 @@ td {
     margin-bottom: 20px;
 }
 
-#app .profile-tabs-container .btn.profile-tab {
+.profile-tabs-container .btn.profile-tab {
     flex: 1;
     padding: 12px 0;
     border: none;
@@ -1424,16 +1424,16 @@ td {
     position: relative;
 }
 
-#app .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
+.profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
     padding-right: 30px;
 }
 
-#app .profile-tabs-container .btn.profile-tab.active {
+.profile-tabs-container .btn.profile-tab.active {
     background-color: #00aaff !important;
     color: white;
 }
 
-#app .profile-tabs-container .btn.profile-tab:not(.active):hover {
+.profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -2263,36 +2263,4 @@ td {
 .reward-text {
     font-size: 16px;
     color: #aaa;
-}
-
-/* Стили для иконок на кнопках профиля */
-.profile-tab {
-    position: relative;
-    padding: 12px 20px; /* достаточно места для иконки справа */
-}
-
-.upgrade-tab-icon {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    pointer-events: none;
-}
-
-/* Иконки на кнопках классов */
-.class-btn {
-    position: relative;
-    padding: 10px 25px 10px 15px;
-}
-
-.class-icon {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    pointer-events: none;
 }

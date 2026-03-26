@@ -246,6 +246,9 @@ async function refreshData() {
 
             recalculatePower();
             showScreen(currentScreen);
+                if (currentScreen === 'trade' && window.updateShopTabIcon) {
+        window.updateShopTabIcon();
+    }
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
         }
     } catch (e) {
@@ -930,22 +933,9 @@ function renderShop(target = null) {
             coinIcon.style.display = 'inline-block';
         }
 
-        // Добавляем/убираем иконку на кнопке "МАГАЗИН"
-        const shopBtn = document.getElementById('tradeShopBtn');
-        if (shopBtn) {
-            const existingIcon = shopBtn.querySelector('.new-icon');
-            if (data.freeAvailable && !existingIcon) {
-                const icon = document.createElement('img');
-                icon.src = '/assets/icons/icon-new.png';
-                icon.className = 'new-icon';
-                icon.style.width = '16px';
-                icon.style.height = '16px';
-                icon.style.marginLeft = '5px';
-                shopBtn.appendChild(icon);
-            } else if (!data.freeAvailable && existingIcon) {
-                existingIcon.remove();
-            }
-        }
+      
+             // Обновляем иконку на кнопке "МАГАЗИН"
+        if (window.updateShopTabIcon) window.updateShopTabIcon();
         if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
     } catch (e) {
         console.error('Failed to fetch free chest status', e);
@@ -1272,6 +1262,7 @@ async function loadMarketItems(statFilter = 'any', container, classFilter = 'any
             }
         });
     });
+        if (window.updateShopTabIcon) window.updateShopTabIcon();
 }
 
 // ==================== РЕЙТИНГ ====================
@@ -1795,6 +1786,31 @@ function updateTradeButtonIcon() {
         .catch(e => console.error('Failed to fetch free chest status for trade button', e));
 }
 
+function updateShopTabIcon() {
+    const shopBtn = document.getElementById('tradeShopBtn');
+    if (!shopBtn) return;
+
+    fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)
+        .then(res => res.json())
+        .then(data => {
+            const freeAvailable = data.freeAvailable;
+            const existingIcon = shopBtn.querySelector('.new-icon');
+            if (freeAvailable && !existingIcon) {
+                const icon = document.createElement('img');
+                icon.src = '/assets/icons/icon-new.png';
+                icon.className = 'new-icon';
+                icon.style.width = '16px';
+                icon.style.height = '16px';
+                icon.style.marginLeft = '5px';
+                shopBtn.appendChild(icon);
+            } else if (!freeAvailable && existingIcon) {
+                existingIcon.remove();
+            }
+        })
+        .catch(e => console.error('Failed to fetch free chest status for shop tab', e));
+}
+
+window.updateShopTabIcon = updateShopTabIcon;
 window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 window.updateTradeButtonIcon = updateTradeButtonIcon;
 init();

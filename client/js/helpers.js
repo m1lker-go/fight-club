@@ -476,12 +476,14 @@ function updateProfileAvatarIcon() {
         icon.style.width = '16px';
         icon.style.height = '16px';
         icon.style.pointerEvents = 'none';
+        icon.style.zIndex = '2';   // ← добавить эту строку
         avatarContainer.style.position = 'relative';
         avatarContainer.appendChild(icon);
     } else if (!hasPoints && icon) {
         icon.remove();
     }
 }
+
 window.updateProfileAvatarIcon = updateProfileAvatarIcon;
 
 // Обновление иконки на кнопке "МАГАЗИН" внутри торговли

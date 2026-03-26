@@ -1931,8 +1931,7 @@ body {
 .equip-slot,
 .forge-slot,
 .round-button,
-.class-btn,
-.btn {
+.btn {   /* .class-btn удалён */
     background-color: rgba(35, 40, 51, 0.9);
     backdrop-filter: blur(2px);
     transition: background-color 0.2s;
@@ -1946,7 +1945,6 @@ body {
 .equip-slot:hover,
 .forge-slot:hover,
 .round-button:hover,
-.class-btn:hover,
 .btn:hover {
     background-color: rgba(45, 50, 61, 0.95);
 }

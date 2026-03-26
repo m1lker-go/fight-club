@@ -1405,11 +1405,11 @@ td {
     display: flex;
     background-color: #232833;
     border-radius: 30px;
-    overflow: hidden;
-    width: 100%;
-    margin-bottom: 20px;
     padding: 5px;
-    gap: 0;
+    margin-bottom: 20px;
+    gap: 2px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .profile-tabs-container .btn.profile-tab {
@@ -1425,9 +1425,8 @@ td {
     text-align: center;
     outline: none;
     border-radius: 25px;
-    margin: 0;
-    line-height: 1.2;
     position: relative;
+    margin: 0;
 }
 
 .profile-tabs-container .btn.profile-tab.active {
@@ -1439,7 +1438,6 @@ td {
     background-color: #3a4050;
 }
 
-/* Для кнопки с иконкой */
 .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
     padding-right: 30px;
 }

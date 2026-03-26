@@ -1517,6 +1517,7 @@ td {
 .btn:hover {
     background-color: rgba(45, 50, 61, 0.95);
 }
+/* .skill-item:hover убран, чтобы строки навыков не меняли фон */
 .top-bar,
 .bottom-menu,
 .battle-log,
@@ -2445,17 +2446,20 @@ td {
 }
 
 .skill-item {
-    background-color: #232833;
-    border-radius: 0;
-    padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    padding: 12px 12px;
+    background-color: #232833;
     margin: 0;
 }
 
 .skill-item:nth-child(even) {
     background-color: #2a303c;
+}
+
+.skill-item:hover {
+    background-color: inherit !important;
 }
 
 .skill-info {

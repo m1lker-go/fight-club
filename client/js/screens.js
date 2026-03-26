@@ -1196,9 +1196,11 @@ function renderSkills(container) {
                 ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
         </div>
-        <div style="text-align: center; margin: 10px 0; font-size: 18px;">
+
+        <div class="skills-header">
             Доступно очков навыков: <strong>${skillPoints}</strong>
         </div>
+
         <div class="skills-list">
             ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 5', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
             ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}

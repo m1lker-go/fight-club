@@ -1085,11 +1085,23 @@ function renderProfileBonuses(container) {
     const classData = getCurrentClassData();
     const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
 
+    // Функция для проверки очков навыков у класса
+    const hasPointsForClass = (cls) => (userClasses.find(c => c.class === cls)?.skill_points || 0) > 0;
+
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
-            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior" style="position: relative;">
+                Воин
+                ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
+            </button>
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin" style="position: relative;">
+                Ассасин
+                ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
+            </button>
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage" style="position: relative;">
+                Маг
+                ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
+            </button>
         </div>
         <div style="margin-top: 15px;">
             <div><strong>Уровень:</strong> ${classData.level}</div>

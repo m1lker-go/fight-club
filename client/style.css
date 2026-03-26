@@ -412,7 +412,6 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    border-left: 4px solid #00aaff;
 }
 .skill-info {
     flex: 1;

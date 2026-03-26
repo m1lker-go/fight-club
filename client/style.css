@@ -2309,8 +2309,8 @@ td {
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {
     background-color: #2a303c;
-    border-radius: 12px;
-    margin-bottom: 20px;
+    border-radius: 12px 12px 0 0; /* скруглены только верхние углы */
+    margin-bottom: 0; /* убираем отступ снизу, чтобы таблица прилегала */
     overflow: hidden;
 }
 
@@ -2318,7 +2318,7 @@ td {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: 8px 16px; /* уменьшены отступы */
     border-bottom: 1px solid #1a1f2b;
 }
 
@@ -2338,7 +2338,7 @@ td {
     position: relative;
     background-color: #1a1f2b;
     border-radius: 20px;
-    height: 30px;
+    height: 24px; /* уменьшена высота */
     margin-left: 15px;
     overflow: hidden;
 }
@@ -2373,7 +2373,7 @@ td {
 .bonuses-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 0;
+    margin-top: 0; /* таблица прилегает к блоку статистики */
     font-size: 13px;
 }
 

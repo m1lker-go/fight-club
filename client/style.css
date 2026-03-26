@@ -1400,6 +1400,7 @@ td {
 }
 
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
+/* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
 #profileContent .profile-tabs-container {
     display: flex;
     background-color: #2f3542;
@@ -1413,7 +1414,7 @@ td {
     flex: 1;
     padding: 12px 0;
     border: none;
-    background-color: transparent;
+    background-color: transparent !important;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -1422,15 +1423,26 @@ td {
     text-align: center;
     outline: none;
     border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
 }
 
 #profileContent .profile-tabs-container .btn.profile-tab.active {
-    background-color: #00aaff;
+    background-color: #00aaff !important;
     color: white;
 }
 
 #profileContent .profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+#profileContent .profile-tabs-container .btn.profile-tab img {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
 }
 
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */

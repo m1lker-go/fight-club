@@ -1202,16 +1202,16 @@ function renderSkills(container) {
         </div>
 
         <div class="skills-list">
-            ${renderSkillItem('hp_points', 'Здоровье', 'Увеличивает максимальное здоровье на 5', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
-            ${renderSkillItem('atk_points', 'Атака', 'Увеличивает базовую атаку на 1', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
-            ${renderSkillItem('def_points', 'Защита', 'Снижает получаемый физический урон на 1% (макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
-            ${renderSkillItem('dodge_points', 'Ловкость', 'Увеличивает шанс уворота на 1% (макс. 70%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
-            ${renderSkillItem('int_points', 'Интеллект', 'Усиливает активные навыки на 1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
-            ${renderSkillItem('spd_points', 'Скорость', 'Увеличивает скорость (очередность хода) на 1', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
-            ${renderSkillItem('crit_points', 'Шанс крита', 'Увеличивает шанс критического удара на 1% (макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
-            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Увеличивает множитель критического урона на 1% (база ×1.5)', (1.5 + (classData.crit_dmg_points || 0)/100).toFixed(2) + 'x', classData.crit_dmg_points || 0, skillPoints)}
-            ${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает % от нанесённого урона', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
-            ${renderSkillItem('reflect_points', 'Отражение', 'Возвращает % полученного урона атакующему', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
+            ${renderSkillItem('hp_points', 'Здоровье', 'Здоровье +5 единиц', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
+            ${renderSkillItem('atk_points', 'Атака', 'Атака +1 единица', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
+            ${renderSkillItem('def_points', 'Защита', 'Входящий физ.урон -1% <br>(макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
+            ${renderSkillItem('dodge_points', 'Ловкость', 'Шанс уворота +1% <br> (макс. 70%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
+            ${renderSkillItem('int_points', 'Интеллект', 'Сила магии +1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
+            ${renderSkillItem('spd_points', 'Скорость', 'Влияет на очерёдность хода', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
+            ${renderSkillItem('crit_points', 'Шанс крита', 'Шанс критического удара + 1% <br>(макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
+            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Множитель крит. урона + 1% <br>(По умолчанию ×1.5)', (1.5 + (classData.crit_dmg_points || 0)/100).toFixed(2) + 'x', classData.crit_dmg_points || 0, skillPoints)}
+            ${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает % <br>от нанесённого урона', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
+            ${renderSkillItem('reflect_points', 'Отражение', 'Возвращает % <br>от полученного урона', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
         </div>
     `;
 

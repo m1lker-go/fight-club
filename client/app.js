@@ -1841,6 +1841,7 @@ function updateShopTabIcon() {
         .catch(e => console.error('Failed to fetch free chest status for shop tab', e));
 }
 
+window.hasAnyUnspentSkillPoints = hasAnyUnspentSkillPoints;
 window.updateProfileAvatarIcon = updateProfileAvatarIcon;
 window.updateShopTabIcon = updateShopTabIcon;
 window.updateMainMenuNewIcons = updateMainMenuNewIcons;

@@ -399,3 +399,113 @@ function showEquipCompareModal(oldItem, newItem) {
         if (event.target === modal) modal.style.display = 'none';
     };
 }
+
+// ==================== НОВЫЕ ФУНКЦИИ (переносим из app.js) ====================
+
+// Проверка наличия нераспределённых очков навыков у любого класса
+function hasAnyUnspentSkillPoints() {
+    return userClasses.some(cls => cls.skill_points > 0);
+}
+window.hasAnyUnspentSkillPoints = hasAnyUnspentSkillPoints;
+
+// Обновление иконки на иконке заданий в нижнем меню
+function updateMainMenuNewIcons() {
+    const tasksMenuItem = document.querySelector('.menu-item[data-screen="tasks"]');
+    if (!tasksMenuItem) return;
+    const hasUnclaimed = typeof hasUnclaimedTasks === 'function' ? hasUnclaimedTasks() : false;
+    const existingIcon = tasksMenuItem.querySelector('.new-icon');
+    if (hasUnclaimed && !existingIcon) {
+        const icon = document.createElement('img');
+        icon.src = '/assets/icons/icon-new.png';
+        icon.className = 'new-icon';
+        icon.style.position = 'absolute';
+        icon.style.top = '-5px';
+        icon.style.right = '-10px';
+        icon.style.width = '16px';
+        icon.style.height = '16px';
+        tasksMenuItem.style.position = 'relative';
+        tasksMenuItem.appendChild(icon);
+    } else if (!hasUnclaimed && existingIcon) {
+        existingIcon.remove();
+    }
+}
+window.updateMainMenuNewIcons = updateMainMenuNewIcons;
+
+// Обновление иконки на круглой кнопке "Торговля" на главном экране
+function updateTradeButtonIcon() {
+    const tradeBtn = document.querySelector('.round-button[data-screen="trade"]');
+    if (!tradeBtn) return;
+
+    fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)
+        .then(res => res.json())
+        .then(data => {
+            const freeAvailable = data.freeAvailable;
+            const existingIcon = tradeBtn.querySelector('.new-icon');
+            if (freeAvailable && !existingIcon) {
+                const icon = document.createElement('img');
+                icon.src = '/assets/icons/icon-new.png';
+                icon.className = 'new-icon';
+                icon.style.position = 'absolute';
+                icon.style.top = '-5px';
+                icon.style.right = '-10px';
+                icon.style.width = '16px';
+                icon.style.height = '16px';
+                tradeBtn.style.position = 'relative';
+                tradeBtn.appendChild(icon);
+            } else if (!freeAvailable && existingIcon) {
+                existingIcon.remove();
+            }
+        })
+        .catch(e => console.error('Failed to fetch free chest status for trade button', e));
+}
+window.updateTradeButtonIcon = updateTradeButtonIcon;
+
+// Обновление иконки на аватаре (профиль) на главном экране
+function updateProfileAvatarIcon() {
+    const avatarContainer = document.querySelector('.hero-avatar');
+    if (!avatarContainer) return;
+    const hasPoints = hasAnyUnspentSkillPoints();
+    let icon = avatarContainer.querySelector('.profile-new-icon');
+    if (hasPoints && !icon) {
+        icon = document.createElement('img');
+        icon.src = '/assets/icons/icon-new.png';
+        icon.className = 'profile-new-icon';
+        icon.style.position = 'absolute';
+        icon.style.top = '5px';
+        icon.style.right = '5px';
+        icon.style.width = '16px';
+        icon.style.height = '16px';
+        icon.style.pointerEvents = 'none';
+        avatarContainer.style.position = 'relative';
+        avatarContainer.appendChild(icon);
+    } else if (!hasPoints && icon) {
+        icon.remove();
+    }
+}
+window.updateProfileAvatarIcon = updateProfileAvatarIcon;
+
+// Обновление иконки на кнопке "МАГАЗИН" внутри торговли
+function updateShopTabIcon() {
+    const shopBtn = document.getElementById('tradeShopBtn');
+    if (!shopBtn) return;
+
+    fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)
+        .then(res => res.json())
+        .then(data => {
+            const freeAvailable = data.freeAvailable;
+            const existingIcon = shopBtn.querySelector('.new-icon');
+            if (freeAvailable && !existingIcon) {
+                const icon = document.createElement('img');
+                icon.src = '/assets/icons/icon-new.png';
+                icon.className = 'new-icon';
+                icon.style.width = '16px';
+                icon.style.height = '16px';
+                icon.style.marginLeft = '5px';
+                shopBtn.appendChild(icon);
+            } else if (!freeAvailable && existingIcon) {
+                existingIcon.remove();
+            }
+        })
+        .catch(e => console.error('Failed to fetch free chest status for shop tab', e));
+}
+window.updateShopTabIcon = updateShopTabIcon;

@@ -1261,11 +1261,12 @@ function renderSkillItem(statName, displayName, description, currentValue, level
                 <div class="skill-desc">${description}</div>
             </div>
             <div class="skill-value">${currentValue}</div>
-            <button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}>+</button>
+            <button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}>
+                <i class="fas fa-plus"></i>
+            </button>
         </div>
     `;
 }
-
 function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue) {
     const gearNum = parseFloat(gearValue) || 0;
     const classBonusNum = parseFloat(classBonusValue) || 0;

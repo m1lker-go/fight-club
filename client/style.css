@@ -1398,24 +1398,54 @@ td {
     border-color: #00aaff;
 }
 
-/* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
+/* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ (ВОИН, АССАСИН, МАГ) ========== */
+.class-selector {
+    display: flex;
+    justify-content: space-around;
+    background-color: #232833;
+    border-radius: 30px;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+
+.class-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: #2f3542;
+    color: #aaa;
+}
+
+.class-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+.class-btn:not(.active):hover {
+    background-color: #3a4050;
+}
+
+/* ========== ВКЛАДКИ ПРОФИЛЯ (СКИНЫ, БОНУСЫ, УЛУЧШИТЬ) ========== */
 .profile-tabs-container {
     display: flex;
-    background-color: #2f3542;
+    background-color: #232833;
     border-radius: 30px;
     overflow: hidden;
     width: 100%;
     margin-bottom: 20px;
-    height: auto; /* высота определяется содержимым */
-    padding: 0;
+    padding: 5px;
     gap: 0;
 }
 
 .profile-tabs-container .btn.profile-tab {
     flex: 1;
-    padding: 12px 0;
+    padding: 10px;
     border: none;
-    background: none;
+    background-color: #2f3542;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -1423,31 +1453,24 @@ td {
     transition: background-color 0.2s, color 0.2s;
     text-align: center;
     outline: none;
-    border-radius: 0;
+    border-radius: 25px;
     margin: 0;
     line-height: 1.2;
     position: relative;
 }
 
-/* Убираем любые возможные фоны и рамки от глобального .btn */
-.profile-tabs-container .btn.profile-tab {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* Отступ для кнопки с иконкой */
-.profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
-    padding-right: 30px;
-}
-
 .profile-tabs-container .btn.profile-tab.active {
-    background-color: #00aaff !important;
+    background-color: #00aaff;
     color: white;
 }
 
 .profile-tabs-container .btn.profile-tab:not(.active):hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #3a4050;
+}
+
+/* Для кнопки с иконкой */
+.profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
+    padding-right: 30px;
 }
 
 .upgrade-tab-icon {

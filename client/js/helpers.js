@@ -476,7 +476,7 @@ function updateProfileAvatarIcon() {
         icon.style.width = '16px';
         icon.style.height = '16px';
         icon.style.pointerEvents = 'none';
-        icon.style.zIndex = '2';   // ← добавить эту строку
+        icon.style.zIndex = '2';   // ← добавить
         avatarContainer.style.position = 'relative';
         avatarContainer.appendChild(icon);
     } else if (!hasPoints && icon) {

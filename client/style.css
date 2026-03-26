@@ -1401,18 +1401,21 @@ td {
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
 .profile-tabs-container {
     display: flex;
-    background-color: #2f3542 !important;
+    background-color: #2f3542;
     border-radius: 30px;
     overflow: hidden;
     width: 100%;
     margin-bottom: 20px;
+    height: auto; /* высота определяется содержимым */
+    padding: 0;
+    gap: 0;
 }
 
 .profile-tabs-container .btn.profile-tab {
     flex: 1;
     padding: 12px 0;
     border: none;
-    background-color: transparent;
+    background: none;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -1421,9 +1424,19 @@ td {
     text-align: center;
     outline: none;
     border-radius: 0;
+    margin: 0;
+    line-height: 1.2;
     position: relative;
 }
 
+/* Убираем любые возможные фоны и рамки от глобального .btn */
+.profile-tabs-container .btn.profile-tab {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Отступ для кнопки с иконкой */
 .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
     padding-right: 30px;
 }
@@ -1446,23 +1459,6 @@ td {
     height: 16px;
     pointer-events: none;
 }
-
-/* Иконки на кнопках классов */
-.class-btn {
-    position: relative;
-    padding: 10px 25px 10px 15px;
-}
-
-.class-icon {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    pointer-events: none;
-}
-
 
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */
 .hero-card,

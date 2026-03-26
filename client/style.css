@@ -264,7 +264,7 @@ body {
     padding: 10px 0;
 }
 
-/* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ (ОБЩИЙ) ========== */
+/* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ ========== */
 .class-selector {
     display: flex;
     background-color: #2f3542;
@@ -275,6 +275,7 @@ body {
     width: 100%;
     box-sizing: border-box;
 }
+
 .class-btn {
     flex: 1;
     padding: 10px 0;
@@ -293,13 +294,16 @@ body {
     line-height: 1.2;
     box-sizing: border-box;
 }
+
 .class-btn.active {
     background-color: #00aaff;
     color: white;
 }
+
 .class-btn:not(.active):hover {
     background-color: #3a4050;
 }
+
 .class-icon {
     position: absolute;
     top: 50%;
@@ -466,7 +470,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 12px;
+    padding: 5px 5px;   /* уменьшено с 12px 12px */
     background-color: #232833;
     margin: 0;
 }
@@ -515,7 +519,6 @@ body {
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
 }
-
 /* ========== МОДАЛЬНЫЕ ОКНА ========== */
 .modal {
     display: none;

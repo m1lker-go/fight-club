@@ -106,6 +106,10 @@ function showLevelUpModal(className) {
 
     newLater.addEventListener('click', () => {
         modal.style.display = 'none';
+         document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
     });
 
     const closeBtn = modal.querySelector('.close');
@@ -459,6 +463,7 @@ function renderMain() {
         });
     });
      updateTradeButtonIcon();
+     updateProfileAvatarIcon();
 }
 
 function updateMainScreen() {
@@ -1370,7 +1375,7 @@ function renderProfile() {
     }).catch(err => console.error('Failed to update profile task', err));
 
     const currentClassData = getCurrentClassData();
-    const hasSkillPoints = currentClassData.skill_points > 0;
+    const hasSkillPoints = hasAnyUnspentSkillPoints();
 
     content.innerHTML = `
         <div class="profile-tabs-container">
@@ -1786,6 +1791,32 @@ function updateTradeButtonIcon() {
         .catch(e => console.error('Failed to fetch free chest status for trade button', e));
 }
 
+function hasAnyUnspentSkillPoints() {
+    return userClasses.some(cls => cls.skill_points > 0);
+}
+
+function updateProfileAvatarIcon() {
+    const avatarContainer = document.querySelector('.hero-avatar');
+    if (!avatarContainer) return;
+    const hasPoints = hasAnyUnspentSkillPoints();
+    let icon = avatarContainer.querySelector('.profile-new-icon');
+    if (hasPoints && !icon) {
+        icon = document.createElement('img');
+        icon.src = '/assets/icons/icon-new.png';
+        icon.className = 'profile-new-icon';
+        icon.style.position = 'absolute';
+        icon.style.top = '5px';
+        icon.style.right = '5px';
+        icon.style.width = '16px';
+        icon.style.height = '16px';
+        icon.style.pointerEvents = 'none';
+        avatarContainer.style.position = 'relative';
+        avatarContainer.appendChild(icon);
+    } else if (!hasPoints && icon) {
+        icon.remove();
+    }
+}
+
 function updateShopTabIcon() {
     const shopBtn = document.getElementById('tradeShopBtn');
     if (!shopBtn) return;
@@ -1810,6 +1841,7 @@ function updateShopTabIcon() {
         .catch(e => console.error('Failed to fetch free chest status for shop tab', e));
 }
 
+window.updateProfileAvatarIcon = updateProfileAvatarIcon;
 window.updateShopTabIcon = updateShopTabIcon;
 window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 window.updateTradeButtonIcon = updateTradeButtonIcon;

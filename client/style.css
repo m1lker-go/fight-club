@@ -1398,36 +1398,7 @@ td {
     border-color: #00aaff;
 }
 
-/* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ (ВОИН, АССАСИН, МАГ) ========== */
-.class-selector {
-    display: flex;
-    justify-content: space-around;
-    background-color: #232833;
-    border-radius: 30px;
-    padding: 5px;
-    margin-bottom: 20px;
-}
 
-.class-btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 25px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    background-color: #2f3542;
-    color: #aaa;
-}
-
-.class-btn.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-.class-btn:not(.active):hover {
-    background-color: #3a4050;
-}
 
 /* ========== ВКЛАДКИ ПРОФИЛЯ (СКИНЫ, БОНУСЫ, УЛУЧШИТЬ) ========== */
 .profile-tabs-container {

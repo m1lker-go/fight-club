@@ -1088,6 +1088,14 @@ function renderProfileBonuses(container) {
     // Функция для проверки очков навыков у класса
     const hasPointsForClass = (cls) => (userClasses.find(c => c.class === cls)?.skill_points || 0) > 0;
 
+    // Данные для баров
+    const maxLevel = 60;
+    const levelProgress = (classData.level / maxLevel) * 100;
+    const expNeeded = Math.floor(80 * Math.pow(classData.level, 1.5));
+    const expProgress = (classData.exp / expNeeded) * 100;
+    const skillPoints = classData.skill_points || 0;
+    const skillPointsProgress = skillPoints > 0 ? 100 : 0; // всегда полная шкала, если есть очки
+
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
             <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior" style="position: relative;">
@@ -1103,33 +1111,48 @@ function renderProfileBonuses(container) {
                 ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
         </div>
-        <div style="margin-top: 15px;">
-            <div><strong>Уровень:</strong> ${classData.level}</div>
-            <div><strong>Опыт:</strong> ${classData.exp}</div>
-            <div><strong>Очки навыков:</strong> ${classData.skill_points}</div>
+
+        <div class="stats-block">
+            <div class="stat-row">
+                <span class="stat-label">Уровень</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width: ${levelProgress}%;"></div>
+                    <span class="stat-value">${classData.level}/${maxLevel}</span>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Опыт</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width: ${expProgress}%;"></div>
+                    <span class="stat-value">${classData.exp}/${expNeeded}</span>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Очки навыков</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width: ${skillPointsProgress}%;"></div>
+                    <span class="stat-value">${skillPoints}</span>
+                </div>
+            </div>
         </div>
-        <h4 style="margin: 15px 0 5px;">Характеристики</h4>
-        <table style="width:100%; border-collapse: collapse;">
-             <thead>
-                 <th style="text-align:left;">Параметр</th>
-                 <th style="text-align:center;">База</th>
-                 <th style="text-align:center;">+Инв.</th>
-                 <th style="text-align:center;">+Особ.</th>
-                 <th style="text-align:center;">Итого</th>
-             </thead>
-             <tbody>
-                 ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
-                 ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
-                 ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
-                 ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.classBonus?.agi ? stats.classBonus.agi + '%' : '', stats.final.agi + '%')}
-                 ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
-                 ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
-                 ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
-                 ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
-                 ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
-                 ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
-             </tbody>
-         </table>
+
+        <table class="stats-table bonuses-table">
+            <thead>
+                <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th></tr>
+            </thead>
+            <tbody>
+                ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
+                ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
+                ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
+                ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.classBonus?.agi ? stats.classBonus.agi + '%' : '', stats.final.agi + '%')}
+                ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
+                ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
+                ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
+                ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
+                ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
+                ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
+            </tbody>
+        </table>
     `;
 
     container.querySelectorAll('.class-btn').forEach(btn => {

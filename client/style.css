@@ -322,7 +322,6 @@ body {
 }
 .class-btn {
     flex: 1;
-    padding: 10px;
     border: none;
     border-radius: 25px;
     font-weight: bold;
@@ -2271,7 +2270,7 @@ td {
 /* Стили для иконок на кнопках классов в улучшении */
 .class-btn {
     position: relative;
-    padding: 10px 25px 10px 15px; /* правый отступ для иконки */
+    padding: 10px 25px 10px 15px;
 }
 
 .class-icon {

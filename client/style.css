@@ -420,10 +420,7 @@ body {
     background-color: #2a303c;
 }
 
-/* Убираем эффект при наведении */
-.skill-item:hover {
-    background-color: inherit !important;
-}
+
 
 .skill-info {
     flex: 1;

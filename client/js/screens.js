@@ -1046,14 +1046,14 @@ function renderProfile() {
     }).catch(err => console.error('Failed to update profile task', err));
 
     const hasSkillPoints = hasAnyUnspentSkillPoints();
-    console.log('[renderProfile] hasSkillPoints:', hasSkillPoints); // отладка
 
     content.innerHTML = `
         <div class="profile-tabs-container">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
             <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
-            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade">
-                Улучшить ${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="upgrade-tab-icon" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade" style="position: relative;">
+                Улучшить
+                ${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="upgrade-tab-icon" alt="">' : ''}
             </button>
         </div>
         <div id="profileContent"></div>
@@ -1146,14 +1146,17 @@ function renderSkills(container) {
 
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
-            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">
-                Воин ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior" style="position: relative;">
+                Воин
+                ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
-            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">
-                Ассасин ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin" style="position: relative;">
+                Ассасин
+                ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
-            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">
-                Маг ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" style="width:16px; height:16px; margin-left:5px;">' : ''}
+            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage" style="position: relative;">
+                Маг
+                ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
         </div>
         <div style="text-align: center; margin: 10px 0; font-size: 18px;">

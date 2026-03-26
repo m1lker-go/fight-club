@@ -1,5 +1,3 @@
-/* style.css — полная версия, структурированная по блокам */
-
 /* ========== ОБЩИЕ СТИЛИ (RESET, BODY, APP) ========== */
 * {
     margin: 0;
@@ -134,7 +132,6 @@ body {
     border: 2px solid #00aaff;
     color: #00aaff;
 }
-/* Кнопки заданий */
 .claim-task-btn.active {
     background-color: #00aaff;
     color: white;
@@ -210,7 +207,6 @@ body {
 .battle-log .log-entry:last-child {
     border-bottom: none;
 }
-/* Цветные числа в логе */
 .log-entry .damage-number {
     color: #ff4444;
     font-weight: bold;
@@ -223,18 +219,21 @@ body {
     color: #00aaff;
     font-weight: bold;
 }
-/* Цвет всего сообщения (для ультимейтов и уворотов) */
-.log-entry.ult-text {
-    color: #ff4444;
+.log-entry.ice-message {
+    color: #00aaff !important;
 }
-.log-entry.dodge-text {
-    color: #2ecc71;
+.log-entry.fire-message {
+    color: #ff4444 !important;
 }
-.log-entry.ult-text .damage-number,
-.log-entry.dodge-text .damage-number {
-    /* числа сохраняют свои цвета */
+.log-entry.poison-message {
+    color: #88ff88 !important;
 }
-/* Специальные классы для результатов */
+.log-entry.ult-message {
+    color: #ffaa00 !important;
+}
+.log-entry.dodge-message {
+    color: #2ecc71 !important;
+}
 .log-entry.victory {
     color: #2ecc71;
     font-weight: bold;
@@ -242,52 +241,6 @@ body {
 .log-entry.defeat {
     color: #e74c3c;
     font-weight: bold;
-}
-
-/* Цветные сообщения в логе */
-.log-entry.ice-message {
-    color: #00aaff !important; /* голубой */
-}
-.log-entry.fire-message {
-    color: #ff4444 !important; /* красный */
-}
-.log-entry.poison-message {
-    color: #88ff88 !important; /* светло-зелёный */
-}
-.log-entry.ult-message {
-    color: #ffaa00 !important; /* тёплый жёлтый */
-}
-.log-entry.dodge-message {
-    color: #2ecc71 !important; /* зелёный */
-}
-/* Если нужно сохранить подсветку чисел внутри, можно оставить как есть */
-.log-entry .damage-number {
-    /* можно добавить жирность, но цвет не переопределяем */
-    font-weight: bold;
-}
-.log-entry .heal-number {
-    font-weight: bold;
-}
-
-
-/* ========== ЭФФЕКТЫ ПЕРЕКРЫТИЯ БАФФОВ ========== */
-
-.effects-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.effect-icon {
-    position: absolute;
-    width: 30px;
-    height: 30px;
-    object-fit: contain;
-    pointer-events: none;
-    /* Горизонтальное смещение на 20px * index, вертикальное смещение отсутствует */
-    transform: translateX(calc(20px * var(--index)));
-    /* Более новые иконки (с большим index) будут выше */
-    z-index: calc(100 + var(--index));
 }
 
 /* ========== КНОПКА СКОРОСТИ В БОЮ ========== */
@@ -314,21 +267,31 @@ body {
 /* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ (ОБЩИЙ) ========== */
 .class-selector {
     display: flex;
-    justify-content: space-around;
-    background-color: #232833;
+    background-color: #2f3542;
     border-radius: 30px;
-    padding: 5px;
-    margin-bottom: 20px;
+    padding: 4px;
+    margin-bottom: 5px;
+    gap: 2px;
+    width: 100%;
+    box-sizing: border-box;
 }
 .class-btn {
     flex: 1;
+    padding: 10px 0;
     border: none;
-    border-radius: 25px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
     background-color: #2f3542;
     color: #aaa;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    text-align: center;
+    outline: none;
+    border-radius: 25px;
+    position: relative;
+    margin: 0;
+    line-height: 1.2;
+    box-sizing: border-box;
 }
 .class-btn.active {
     background-color: #00aaff;
@@ -337,21 +300,32 @@ body {
 .class-btn:not(.active):hover {
     background-color: #3a4050;
 }
-/* Специализированные стили для переключателя в профиле (вкладка Бонусы) */
-#profileContent .class-selector {
+.class-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+/* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
+.profile-tabs-container {
     display: flex;
     background-color: #2f3542;
     border-radius: 30px;
-    overflow: hidden;
+    padding: 4px;
+    margin-bottom: 5px;
+    gap: 2px;
     width: 100%;
-    margin-bottom: 20px;
-    justify-content: flex-start; /* убираем лишние отступы */
+    box-sizing: border-box;
 }
-#profileContent .class-selector .class-btn {
+.profile-tabs-container .btn.profile-tab {
     flex: 1;
-    padding: 12px 0;
+    padding: 10px 0;
     border: none;
-    background-color: transparent;
+    background-color: #2f3542;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -359,101 +333,171 @@ body {
     transition: background-color 0.2s, color 0.2s;
     text-align: center;
     outline: none;
+    border-radius: 25px;
+    position: relative;
+    margin: 0;
+    line-height: 1.2;
+    box-sizing: border-box;
 }
-#profileContent .class-selector .class-btn.active {
+.profile-tabs-container .btn.profile-tab.active {
     background-color: #00aaff;
     color: white;
 }
-#profileContent .class-selector .class-btn:not(.active):hover {
-    background-color: rgba(255, 255, 255, 0.1);
+.profile-tabs-container .btn.profile-tab:not(.active):hover {
+    background-color: #3a4050;
 }
-/* Стили для переключателя в экипировке */
-.equip-layout .class-selector {
-    display: flex;
-    background-color: #2f3542;
-    border-radius: 30px;
+.profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
+    padding: 10px 0;
+}
+.upgrade-tab-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+/* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
+.stats-block {
+    background-color: #2a303c;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
     overflow: hidden;
-    width: 100%;
-    margin-bottom: 20px;
-    justify-content: flex-start; /* равномерное растягивание */
 }
-.equip-layout .class-selector .class-btn {
-    flex: 1;
-    padding: 12px 0;
-    border: none;
-    background-color: transparent;
-    color: #aaa;
-    font-size: 16px;
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid #1a1f2b;
+}
+.stat-row:last-child {
+    border-bottom: none;
+}
+.stat-label {
     font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-    text-align: center;
-    outline: none;
+    color: #fff;
+    font-size: 14px;
+    min-width: 100px;
 }
-.equip-layout .class-selector .class-btn.active {
+.stat-bar-container {
+    flex: 1;
+    position: relative;
+    background-color: #1a1f2b;
+    border-radius: 20px;
+    height: 24px;
+    margin-left: 15px;
+    overflow: hidden;
+}
+.stat-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
     background-color: #00aaff;
+    border-radius: 20px;
+    transition: width 0.3s ease;
+}
+.stat-value {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: white;
-}
-.equip-layout .class-selector .class-btn:not(.active):hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 0 2px black;
+    z-index: 1;
 }
 
-/* ========== СПИСОК НАВЫКОВ ========== */
+/* ========== ТАБЛИЦА ХАРАКТЕРИСТИК ========== */
+.bonuses-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+    font-size: 13px;
+}
+.bonuses-table thead tr {
+    background-color: #1a1f2b;
+    color: #00aaff;
+}
+.bonuses-table thead th {
+    padding: 12px 8px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #2a303c;
+}
+.bonuses-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+.bonuses-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+.bonuses-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border: none;
+}
 
+/* ========== СТРАНИЦА УЛУЧШЕНИЯ (НАВЫКИ) ========== */
+.skills-header {
+    background-color: #1a1f2b;
+    padding: 12px 16px;
+    border-radius: 12px 12px 0 0;
+    color: #00aaff;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: left;
+    margin-bottom: 0;
+}
 .skills-list {
     display: flex;
     flex-direction: column;
     gap: 0;
     margin-top: 0;
 }
-
 .skill-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 12px; /* уменьшен отступ слева и справа */
+    padding: 12px 12px;
     background-color: #232833;
     margin: 0;
-   }
-
+}
 .skill-item:nth-child(even) {
     background-color: #2a303c;
 }
-
-
-
 .skill-info {
     flex: 1;
-    min-width: 0; /* позволяет тексту переноситься */
 }
-
 .skill-name {
     font-weight: bold;
     margin-bottom: 4px;
     font-size: 14px;
 }
-
 .skill-desc {
     font-size: 11px;
     color: #aaa;
     line-height: 1.3;
-    word-break: break-word;
 }
-
 .skill-value {
     font-size: 16px;
     font-weight: bold;
     color: #00aaff;
     min-width: 45px;
     text-align: center;
-    flex-shrink: 0;
 }
-
 .skill-btn {
     background-color: #00aaff;
     color: white;
     border: none;
-    width: 50px; /* расширенная кнопка */
+    width: 80px;
     height: 40px;
     border-radius: 20px;
     font-size: 18px;
@@ -462,15 +506,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
 }
-
 .skill-btn:disabled {
     background-color: #444;
     cursor: not-allowed;
     opacity: 0.5;
 }
-
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
 }
@@ -557,7 +598,6 @@ body {
     justify-content: center;
     background: none;
 }
-
 .hero-center img {
     width: 100%;
     height: 100%;
@@ -565,14 +605,12 @@ body {
     border-radius: 8px;
     border: 2px solid #00aaff;
 }
-
 .equip-column {
     display: flex;
     flex-direction: column;
     gap: 8px;
     width: 78px;
 }
-
 .equip-slot {
     position: relative;
     width: 78px;
@@ -586,11 +624,9 @@ body {
     cursor: pointer;
     transition: transform 0.2s;
 }
-
 .equip-slot:hover {
     transform: scale(1.05);
 }
-
 .slot-icon {
     width: 58px;
     height: 58px;
@@ -599,7 +635,6 @@ body {
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
-
 .equip-main {
     display: flex;
     justify-content: center;
@@ -706,6 +741,7 @@ body {
 .sell-btn { background-color: #e74c3c; color: white; }
 .unsell-btn { background-color: #f39c12; color: white; }
 .cancel-btn { background-color: #7f8c8d; color: white; }
+
 /* Цвета редкости */
 .rarity-common { border-left-color: #aaa; color: #aaa; }
 .rarity-uncommon { border-left-color: #2ecc71; color: #2ecc71; }
@@ -875,41 +911,114 @@ body {
     margin-top: 5px;
 }
 
-/* ========== ТАБЛИЦЫ ========== */
-table {
-    font-size: 13px;
+/* ========== ФИЛЬТРЫ МАРКЕТА ========== */
+.market-filters-container {
+    margin-bottom: 20px;
 }
-th {
+.filters-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    position: relative;
+}
+.filter-group {
+    flex: 1;
+    position: static;
+}
+.filter-button {
+    width: 100%;
+    padding: 12px 10px;
+    background-color: #232833;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.filter-button:hover {
+    background-color: #2f3542;
+}
+.filter-button i {
     color: #00aaff;
-    font-weight: bold;
-    padding-bottom: 8px;
+    font-size: 12px;
 }
-td {
-    padding: 4px 0;
+.filter-panel {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: auto;
+    background-color: #1a1f2b;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,170,255,0.2);
+    display: none;
+}
+.filter-option {
+    padding: 12px 15px;
+    color: white;
+    cursor: pointer;
     border-bottom: 1px solid #2f3542;
+    transition: background-color 0.2s;
 }
-.stats-table {
+.filter-option:last-child {
+    border-bottom: none;
+}
+.filter-option:hover {
+    background-color: #00aaff;
+    color: white;
+}
+.stat-filter-btn {
+    background-color: #2f3542;
+    color: #aaa;
+    border: 1px solid #00aaff;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.stat-filter-btn.active {
+    background-color: #00aaff;
+    color: white;
+    border-color: #00aaff;
+}
+
+/* ========== ТАБЛИЦЫ РЕЙТИНГА ========== */
+#ratingContent .stats-table {
     width: 100%;
     border-collapse: collapse;
-    text-align: center;
     font-size: 14px;
 }
-.stats-table th {
-    color: #00aaff;
+#ratingContent .stats-table th {
+    background-color: #1a1f2b;
+    color: white;
     font-weight: bold;
-    padding-bottom: 8px;
+    padding: 10px 5px;
+    text-align: left;
 }
-.stats-table td {
-    padding: 4px 0;
-    border-bottom: 1px solid #2f3542;
+#ratingContent .stats-table th:first-child {
+    text-align: center;
 }
-.stats-table .player-col {
-    color: #00aaff;
-    font-weight: bold;
+#ratingContent .stats-table td {
+    padding: 8px 5px;
+    text-align: left;
 }
-.stats-table .enemy-col {
-    color: #e74c3c;
-    font-weight: bold;
+#ratingContent .stats-table td:first-child {
+    text-align: center;
+}
+#ratingContent .stats-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+#ratingContent .stats-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
 }
 
 /* ========== АДВЕНТ-КАЛЕНДАРЬ ========== */
@@ -943,33 +1052,18 @@ td {
     font-size: 14px;
     line-height: 1;
 }
-.advent-day i, .advent-day span {
-    font-size: inherit;
-}
 .advent-day.available {
     background-image: url('/assets/icons/advent_available.png');
     color: white;
-}
-.advent-day.available .fa-coins,
-.advent-day.available span {
-    color: white !important;
 }
 .advent-day.locked {
     background-image: url('/assets/icons/advent_locked.png');
     color: #aaa;
 }
-.advent-day.locked .fa-coins,
-.advent-day.locked span {
-    color: #aaa !important;
-}
 .advent-day.claimed {
     background-image: url('/assets/icons/advent_claimed.png');
     cursor: default;
     color: #aaa;
-}
-.advent-day.claimed .fa-coins,
-.advent-day.claimed span {
-    color: #aaa !important;
 }
 @media (max-width: 400px) {
     .advent-day > div:last-child {
@@ -1109,10 +1203,6 @@ td {
     height: 100%;
     object-fit: cover;
 }
-.hp-fill, .mana-fill {
-    transition: width 0.3s ease;
-}
-/* Контейнер для всплывающих чисел */
 .floating-numbers-container {
     position: absolute;
     top: 0;
@@ -1141,10 +1231,6 @@ td {
 .floating-number.green {
     color: #44ff44 !important;
 }
-.floating-number.red i,
-.floating-number.green i {
-    color: inherit;
-}
 .floating-icon {
     width: 1em;
     height: 1em;
@@ -1165,7 +1251,6 @@ td {
         transform: translate(-50%, -100%) scale(1);
     }
 }
-/* Оверлей заморозки */
 .frozen-overlay {
     position: absolute;
     top: 0;
@@ -1185,7 +1270,6 @@ td {
 .frozen-overlay.active {
     opacity: 1;
 }
-/* Оверлей "ПРОИГРАЛ" */
 .defeat-overlay {
     position: absolute;
     top: 0;
@@ -1213,13 +1297,11 @@ td {
 .enemy-card.defeated .defeat-overlay {
     opacity: 1;
 }
-/* Чёрно-белый эффект при смерти */
 .hero-card.defeated .hero-avatar-img,
 .enemy-card.defeated .enemy-avatar-img {
     filter: grayscale(1);
     transition: filter 0.5s ease;
 }
-/* Карточки героя и врага в бою */
 .hero-card,
 .enemy-card {
     flex: 0 0 140px;
@@ -1249,22 +1331,17 @@ td {
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     font-weight: bold;
 }
-/* Полоски здоровья и маны прозрачные */
 .hp-bar, .mana-bar {
     background-color: transparent !important;
     border: none !important;
 }
-
-/* СЛОТЫ ДЛЯ ИКОНОК В СТАТУС */
 .debuff-slot {
     position: relative;
     width: 40px;
-    height: 33px;          /* 165px / 5 */
+    height: 33px;
     margin: 0 auto;
     background: none;
 }
-
-/* Негативные иконки (для игрока слева, для противника справа) */
 .negative-icon {
     position: absolute;
     top: 50%;
@@ -1280,8 +1357,6 @@ td {
 .debuff-slot[data-side="enemy"] .negative-icon {
     right: 0;
 }
-
-/* Позитивные иконки (для игрока справа, для противника слева) */
 .positive-icon,
 .rage-icon {
     position: absolute;
@@ -1290,7 +1365,7 @@ td {
     width: 25px;
     height: 25px;
     object-fit: contain;
-    z-index: 10; /* выше негативных */
+    z-index: 10;
 }
 .debuff-slot[data-side="player"] .positive-icon,
 .debuff-slot[data-side="player"] .rage-icon {
@@ -1300,7 +1375,6 @@ td {
 .debuff-slot[data-side="enemy"] .rage-icon {
     left: 0;
 }
-
 
 /* Экран боя */
 .battle-screen {
@@ -1329,158 +1403,518 @@ td {
     gap: 0px;
     padding: 5px 2px;
 }
-.battle-log {
-    margin-top: 15px;
-    clear: both;
-}
 
-/* ========== ФИЛЬТРЫ МАРКЕТА ========== */
-.market-filters-container {
-    margin-bottom: 20px;
-}
-.filters-row {
+/* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
+.tasks-container {
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    position: relative;
+    flex-direction: column;
+    height: 100%;
 }
-.filter-group {
-    flex: 1;
-    position: static; /* для позиционирования панелей */
-}
-.filter-button {
-    width: 100%;
-    padding: 12px 10px;
-    background-color: #232833;
-    border: 1px solid #00aaff;
-    border-radius: 8px;
+.tasks-header {
+    background-color: #1a1f2b;
     color: white;
-    font-size: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    margin: 0;
+}
+.task-card {
+    transition: background-color 0.2s;
+    margin: 0;
+    padding: 12px;
+    border-bottom: 1px solid #1a1f2b;
+}
+.task-card:hover {
+    background-color: #2f3542 !important;
+}
+.claim-task-btn {
+    background-color: transparent;
+    border: 2px solid #7f8c8d;
+    color: #7f8c8d;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.2s;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    transition: background-color 0.2s;
+    justify-content: center;
 }
-.filter-button:hover {
-    background-color: #2f3542;
-}
-.filter-button i {
-    color: #00aaff;
-    font-size: 12px;
-}
-.filter-panel {
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    width: auto;
-    top: auto;
-    background-color: #1a1f2b;
-    border: 1px solid #00aaff;
-    border-radius: 8px;
-    z-index: 1000;
-    max-height: 300px;
-    overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0,170,255,0.2);
-    display: none;
-}
-.filter-option {
-    padding: 12px 15px;
-    color: white;
-    cursor: pointer;
-    border-bottom: 1px solid #2f3542;
-    transition: background-color 0.2s;
-}
-.filter-option:last-child {
-    border-bottom: none;
-}
-.filter-option:hover {
+.claim-task-btn.active {
     background-color: #00aaff;
-    color: white;
-}
-/* Фильтры характеристик (старые, возможно не используются) */
-.filter-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 10px 0;
-}
-.stat-filter-btn {
-    background-color: #2f3542;
-    color: #aaa;
-    border: 1px solid #00aaff;
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.stat-filter-btn.active {
-    background-color: #00aaff;
-    color: white;
     border-color: #00aaff;
+    color: white;
+}
+.claim-task-btn:not(.active):hover {
+    background-color: #3a4050;
+    border-color: #aaa;
+    color: #aaa;
+}
+.advent-eye-btn {
+    background-color: transparent;
+    border: 2px solid #7f8c8d;
+    border-radius: 30px;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    width: 100%;
+    font-size: 14px;
+}
+.advent-eye-btn:hover {
+    background-color: #3a4050;
+    border-color: #aaa;
+    color: #aaa;
 }
 
-
-/* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
-.profile-tabs-container {
+/* ========== ТАЙМЕР (ЗАДАНИЯ) ========== */
+.countdown-container {
+    flex: 1;
     display: flex;
-    background-color: #2f3542;
-    border-radius: 30px;
-    padding: 4px;
-    margin-bottom: 20px;
-    gap: 2px;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    background-color: #2a303c;
+}
+.countdown-card {
+    background-color: #2a303c;
+    padding: 20px;
+    text-align: center;
     width: 100%;
     box-sizing: border-box;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+.countdown-message {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00aaff;
+    margin-bottom: 20px;
+}
+.countdown-timer-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+.countdown-label {
+    font-size: 14px;
+    color: #aaa;
+}
+.countdown-digits {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.digit-box {
+    background-color: #1a1f2b;
+    border: 1px solid #aaa;
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+}
+.digit-value {
+    font-size: 38px;
+    font-weight: bold;
+    color: #aaa;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.digit-unit {
+    font-size: 12px;
+    font-weight: normal;
+    color: #aaa;
+    text-transform: lowercase;
+}
+.colon {
+    font-size: 38px;
+    font-weight: bold;
+    color: #aaa;
+    line-height: 1;
+    margin: 0;
 }
 
-.profile-tabs-container .btn.profile-tab {
+/* ========== РЕЙТИНГ (ВКЛАДКИ) ========== */
+.rating-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.rating-tab {
     flex: 1;
-    padding: 10px 0;
-    border: none;
     background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: white;
+    border-radius: 30px;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    text-align: center;
+}
+.rating-tab.active {
+    background-color: #00aaff;
+    color: white;
+}
+.rating-tab i {
+    margin-right: 5px;
+}
+
+/* ========== БАШНЯ ========== */
+.tower-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+.tower-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: rgba(35, 40, 51, 0.95);
+    backdrop-filter: blur(5px);
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.header-grid {
+    display: grid;
+    grid-template-columns: 35% 65%;
+    gap: 10px;
+}
+.grid-left, .grid-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.grid-item {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.grid-item .header-label {
+    font-size: 14px;
     color: #aaa;
+}
+.grid-item .header-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+.tower-floors {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+    width: 100%;
+}
+.tower-floor {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    height: 70px;
+    background-color: rgba(35,40,51,0.9);
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.tower-floor.first-floor {
+    height: 117px;
+}
+.tower-floor.active {
+    border: 2px solid #00aaff;
+    box-sizing: border-box;
+}
+.floor-left {
+    width: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.floor-number {
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+}
+.floor-number.small {
+    font-size: 18px;
+}
+.floor-text {
+    font-size: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+}
+.floor-center {
+    width: 300px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+.floor-center img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.start-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+}
+.floor-right {
+    width: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.floor-reward {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    color: white;
+}
+.coins-reward i {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+.coins-reward .reward-amount {
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.skin-reward .reward-icon {
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+.skin-reward .reward-label {
+    font-size: 9px;
+    color: white;
+    text-transform: uppercase;
+}
+.tower-floor:not(.active) .floor-center img {
+    filter: grayscale(1);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+.tower-floor.active .floor-center img {
+    filter: none;
+    opacity: 1;
+}
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+}
+.tutorial-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 0;
+    width: 100%;
+    max-width: 400px;
+    align-items: end;
+    margin: 0 auto;
+}
+.tutorial-left {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 100%;
+}
+.tutorial-cat {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    display: block;
+}
+.tutorial-right {
+    background-color: rgba(35,40,51,0.95);
+    border-radius: 10px;
+    padding: 15px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.dialog-text {
+    color: white;
+    font-size: 14px;
+    line-height: 1.4;
+}
+.dialog-text p {
+    margin: 5px 0;
+}
+.tutorial-btn {
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: white;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+    text-align: center;
+}
+.tutorial-btn:hover:not(:disabled) {
+    background-color: #3a4050;
+}
+.tutorial-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.tutorial-btn.selected {
+    background-color: #00aaff;
+    border-color: white;
+}
+.next-btn {
+    align-self: flex-end;
+    min-width: 100px;
+}
+.class-buttons, .role-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+.class-buttons .tutorial-btn, .role-buttons .tutorial-btn {
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+.dialog-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+.back-btn, .confirm-btn {
+    flex: 1;
+}
+.tower-result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+.tower-result-btn {
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    color: white;
+    border-radius: 30px;
+    padding: 12px 0;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.2s, opacity 0.2s;
+    width: 100%;
     text-align: center;
-    outline: none;
-    border-radius: 25px;
-    position: relative;
-    margin: 0;
-    line-height: 1.2;
-    box-sizing: border-box;
 }
-
-.profile-tabs-container .btn.profile-tab.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-.profile-tabs-container .btn.profile-tab:not(.active):hover {
+.tower-result-btn:hover:not(:disabled) {
     background-color: #3a4050;
 }
-
-.profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
-    padding: 10px 0; 
+.tower-result-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.tower-result-btn.active {
+    background-color: #00aaff;
+    border-color: white;
+}
+.reward-line {
+    text-align: center;
+    font-size: 18px;
+    margin: 10px 0;
+    line-height: 1.5;
+}
+.reward-line span {
+    display: block;
+}
+.reward-value {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+#towerHelpBtn {
+    color: #00aaff;
+    font-size: 28px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+#towerHelpBtn:hover {
+    opacity: 0.8;
 }
 
-
-.upgrade-tab-icon {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    pointer-events: none;
+/* ========== МОДАЛЬНЫЕ ОКНА НАГРАД ========== */
+.modal-header h2 {
+    text-align: center;
+    width: 100%;
 }
-
-/* ========== УНИВЕРСАЛЬНЫЕ ОТСТУПЫ ========== */
-.profile-tabs-container,
-.class-selector {
-    margin-bottom: 5px !important; /* 5px вместо 20px */
+.reward-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+.reward-amount {
+    font-size: 32px;
+    font-weight: bold;
+    margin: 10px 0;
+    color: #fff;
+}
+.reward-text {
+    font-size: 16px;
+    color: #aaa;
 }
 
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */
@@ -1513,7 +1947,6 @@ td {
 .btn:hover {
     background-color: rgba(45, 50, 61, 0.95);
 }
-/* .skill-item:hover убран, чтобы строки навыков не меняли фон */
 .top-bar,
 .bottom-menu,
 .battle-log,
@@ -1553,7 +1986,6 @@ td {
     background-color: #00aaff;
     color: white;
 }
-/* Убираем фон у аватаров и баров (дублирование) */
 .hero-card, .enemy-card,
 .hero-card > div:first-child, .enemy-card > div:first-child,
 .hp-bar, .mana-bar {
@@ -1563,49 +1995,6 @@ td {
     border: none !important;
 }
 
-/* ========== ТАБЛИЦЫ РЕЙТИНГА (ОБЩИЙ, СИЛА, БАШНЯ) ========== */
-#ratingContent .stats-table,
-.rating-content .stats-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-#ratingContent .stats-table th,
-.rating-content .stats-table th {
-    background-color: #1a1f2b;
-    color: white;
-    font-weight: bold;
-    padding: 10px 5px;
-    text-align: left;
-}
-
-#ratingContent .stats-table th:first-child,
-.rating-content .stats-table th:first-child {
-    text-align: center; /* колонка "Место" */
-}
-
-#ratingContent .stats-table td,
-.rating-content .stats-table td {
-    padding: 8px 5px;
-    text-align: left;
-}
-
-#ratingContent .stats-table td:first-child,
-.rating-content .stats-table td:first-child {
-    text-align: center;
-}
-
-#ratingContent .stats-table tbody tr:nth-child(odd),
-.rating-content .stats-table tbody tr:nth-child(odd) {
-    background-color: #232833;
-}
-
-#ratingContent .stats-table tbody tr:nth-child(even),
-.rating-content .stats-table tbody tr:nth-child(even) {
-    background-color: #2a303c;
-}
-
 /* ========== ТАБЛИЦА СТАТИСТИКИ БОЯ (В РЕЗУЛЬТАТАХ БАШНИ) ========== */
 .battle-result .stats-battle {
     border-collapse: collapse;
@@ -1613,7 +2002,6 @@ td {
     table-layout: fixed;
     width: 100%;
 }
-
 .battle-result .stats-battle th {
     background-color: #1a1f2b;
     color: white;
@@ -1621,21 +2009,16 @@ td {
     padding: 10px 5px;
     text-align: center;
 }
-
 .battle-result .stats-battle td {
     width: 33.33%;
     text-align: center;
 }
-
 .battle-result .stats-battle tbody tr:nth-child(odd) {
     background-color: #232833;
 }
-
 .battle-result .stats-battle tbody tr:nth-child(even) {
     background-color: #2a303c;
 }
-
-
 .stats-battle .player-col {
     color: #00aaff;
     font-weight: bold;
@@ -1643,878 +2026,4 @@ td {
 .stats-battle .enemy-col {
     color: #e74c3c;
     font-weight: bold;
-}
-
-.rating-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.rating-tab {
-    flex: 1;
-    background-color: #2f3542;
-    border: 2px solid #00aaff;
-    color: white;
-    border-radius: 30px;
-    padding: 8px 0;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-    text-align: center;
-}
-
-.rating-tab.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-.rating-tab i {
-    margin-right: 5px;
-}
-
-/* ========== БАШНЯ ========== */
-
-.tower-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-}
-
-.tower-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background-color: rgba(35, 40, 51, 0.95);
-    backdrop-filter: blur(5px);
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.header-grid {
-    display: grid;
-    grid-template-columns: 35% 65%;
-    gap: 10px;
-}
-
-.grid-left, .grid-right {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.grid-item {
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.grid-item .header-label {
-    font-size: 14px;
-    color: #aaa;
-}
-
-.grid-item .header-value {
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-}
-
-.ticket-icon {
-    font-size: 16px;
-    margin-left: 2px;
-}
-
-.tower-floors {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column-reverse;
-    width: 100%;
-}
-
-.tower-floor {
-    display: flex;
-    align-items: stretch;
-    width: 100%;
-    height: 70px;              /* фиксированная высота для всех этажей, кроме первого */
-    background-color: rgba(35,40,51,0.9);
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-
-.tower-floor.first-floor {
-    height: 117px;             /* высота первого этажа */
-}
-
-/* Активный этаж – голубая обводка */
-.tower-floor.active {
-    border: 2px solid #00aaff;
-    box-sizing: border-box;
-}
-
-/* Левая колонка (номер этажа) */
-.floor-left {
-    width: 50px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.floor-number {
-    font-size: 24px;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.floor-number.small {
-    font-size: 18px; /* для 100 этажа */
-}
-
-.floor-text {
-    font-size: 10px;
-    color: #aaa;
-    text-transform: uppercase;
-}
-
-/* Центральная колонка (иконка этажа) */
-.floor-center {
-    width: 300px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-}
-
-.floor-center img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-/* Надпись СТАРТ на активном этаже */
-.start-label {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-weight: bold;
-    font-size: 24px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    pointer-events: none;
-    z-index: 2;
-    white-space: nowrap;
-}
-
-/* Правая колонка (награда) */
-.floor-right {
-    width: 50px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.floor-reward {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    color: white;
-}
-
-/* Награда монетами */
-.coins-reward i {
-    font-size: 20px;
-    margin-bottom: 2px;
-}
-
-.coins-reward .reward-amount {
-    font-size: 12px;
-    font-weight: normal;
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-}
-
-/* Награда скином */
-.skin-reward .reward-icon {
-    font-size: 24px;
-    line-height: 1;
-    margin-bottom: 2px;
-}
-
-.skin-reward .reward-label {
-    font-size: 9px;
-    color: white;
-    text-transform: uppercase;
-}
-
-/* Неактивные этажи – чёрно-белые и слегка затемнённые */
-.tower-floor:not(.active) .floor-center img {
-    filter: grayscale(1);
-    opacity: 0.7;
-    transition: filter 0.3s ease, opacity 0.3s ease;
-}
-
-/* Активный этаж – цветной и яркий (можно не указывать, но для перестраховки) */
-.tower-floor.active .floor-center img {
-    filter: none;
-    opacity: 1;
-}
-
-/* Затемняющий оверлей для туториала */
-.tutorial-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(3px);
-    z-index: 1000;
-    display: flex;
-    align-items: flex-end;  /* прижимаем содержимое к низу */
-    justify-content: center;
-    padding-bottom: 20px;
-}
-
-.tutorial-grid {
-    display: grid;
-    grid-template-columns: 150px 1fr;
-    gap: 0;
-    width: 100%;
-    max-width: 400px;
-    align-items: end;
-    margin: 0 auto;
-}
-
-.tutorial-left {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    height: 100%;
-}
-
-.tutorial-cat {
-    width: 100%;
-    height: auto;
-    max-height: 300px;
-    object-fit: contain;
-    display: block;
-}
-
-.tutorial-right {
-    background-color: rgba(35,40,51,0.95);
-    border-radius: 10px;
-    padding: 15px;
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-}
-
-/* Стили кнопок и диалога – такие же, как ранее */
-.dialog-content {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.dialog-text {
-    color: white;
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.dialog-text p {
-    margin: 5px 0;
-}
-
-.tutorial-btn {
-    background-color: #2f3542;
-    border: 2px solid #00aaff;
-    color: white;
-    border-radius: 30px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s, opacity 0.2s;
-    text-align: center;
-}
-
-.tutorial-btn:hover:not(:disabled) {
-    background-color: #3a4050;
-}
-
-.tutorial-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.tutorial-btn.selected {
-    background-color: #00aaff;
-    border-color: white;
-}
-
-.next-btn {
-    align-self: flex-end;
-    min-width: 100px;
-}
-
-.class-buttons, .role-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-}
-
-.class-buttons .tutorial-btn, .role-buttons .tutorial-btn {
-    width: 100%;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-.dialog-nav {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.back-btn, .confirm-btn {
-    flex: 1;
-}
-
-/* Стили для экрана результата башни */
-.tower-result-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 15px 0;
-}
-
-.tower-result-btn {
-    background-color: #2f3542;
-    border: 2px solid #00aaff;
-    color: white;
-    border-radius: 30px;
-    padding: 12px 0;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s, opacity 0.2s;
-    width: 100%;
-    text-align: center;
-}
-
-.tower-result-btn:hover:not(:disabled) {
-    background-color: #3a4050;
-}
-
-.tower-result-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.tower-result-btn.active {
-    background-color: #00aaff;
-    border-color: white;
-}
-
-.reward-line {
-    text-align: center;
-    font-size: 18px;
-    margin: 10px 0;
-    line-height: 1.5;
-}
-
-.reward-line span {
-    display: block;
-}
-
-.reward-value {
-    font-size: 20px;
-    font-weight: bold;
-    margin-top: 5px;
-}
-
-.coin-icon {
-    font-size: 24px;
-    vertical-align: middle;
-    color: white;
-}
-
-.eye-icon {
-    font-size: 24px;
-    vertical-align: middle;
-    cursor: pointer;
-    margin-left: 5px;
-    transition: opacity 0.2s;
-}
-
-.eye-icon:hover {
-    opacity: 0.7;
-}
-
-/* Стили для вкладок лога и статистики (они уже используют tower-result-btn) */
-.result-tab {
-    /* наследует tower-result-btn */
-}
-
-#towerHelpBtn {
-    color: #00aaff;
-    font-size: 28px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-#towerHelpBtn:hover {
-    opacity: 0.8;
-}
-
-/* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
-
-.tasks-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-/* Заголовок "Ежедневные задания" */
-.tasks-header {
-    background-color: #1a1f2b;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: center;
-    padding: 10px;
-    margin: 0;
-}
-
-.task-card {
-    transition: background-color 0.2s;
-    margin: 0;
-    padding: 12px;
-    border-bottom: 1px solid #1a1f2b;
-}
-.task-card:hover {
-    background-color: #2f3542 !important;
-}
-.claim-task-btn {
-    background-color: transparent;
-    border: 2px solid #7f8c8d;
-    color: #7f8c8d;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.claim-task-btn.active {
-    background-color: #00aaff;
-    border-color: #00aaff;
-    color: white;
-}
-.claim-task-btn:not(.active):hover {
-    background-color: #3a4050;
-    border-color: #aaa;
-    color: #aaa;
-}
-.claim-task-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.advent-eye-btn {
-    background-color: transparent;
-    border: 2px solid #7f8c8d;
-    border-radius: 30px;
-    color: #7f8c8d;
-    cursor: pointer;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    width: 100%;
-    font-size: 14px;
-}
-
-.advent-eye-btn:hover {
-    background-color: #3a4050;
-    border-color: #aaa;
-    color: #aaa;
-}
-
-
-/* БЛОК ТАЙМЕРА */
-
-/* Убедимся, что контейнер задач растягивается на всю высоту */
-
-.tasks-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.countdown-container {
-    flex: 1; /* занимает всё оставшееся пространство */
-    display: flex;
-    align-items: flex-start; /* содержимое не прижимается к низу */
-    justify-content: center;
-    margin: 0;
-    padding: 0;
-    background-color: #2a303c; /* фон совпадает с карточками */
-}
-
-.countdown-card {
-    background-color: #2a303c;
-    padding: 20px;
-    text-align: center;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0;
-    border: none;
-    border-radius: 0;
-}
-
-.countdown-message {
-    font-size: 18px;
-    font-weight: bold;
-    color: #00aaff;
-    margin-bottom: 20px;
-}
-
-.countdown-timer-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-
-.countdown-label {
-    font-size: 14px;
-    color: #aaa;
-}
-
-.countdown-digits {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.digit-box {
-    background-color: #1a1f2b;
-    border: 1px solid #aaa;
-    border-radius: 12px;
-    padding: 12px 20px;           
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 80px;              
-}
-
-.digit-value {
-    font-size: 38px;              
-    font-weight: bold;
-    color: #aaa;
-    line-height: 1;
-    margin-bottom: 4px;           
-}
-
-.digit-unit {
-    font-size: 12px;             
-    font-weight: normal;
-    color: #aaa;
-    text-transform: lowercase;
-}
-
-.colon {
-    font-size: 38px;             
-    font-weight: bold;
-    color: #aaa;
-    line-height: 1;
-    margin: 0;
-}
-
-/* Модальные окна наград */
-.modal-header h2 {
-    text-align: center;
-    width: 100%;
-}
-
-.reward-icon {
-    font-size: 48px;
-    margin-bottom: 10px;
-    display: inline-block;
-}
-
-.reward-amount {
-    font-size: 32px;
-    font-weight: bold;
-    margin: 10px 0;
-    color: #fff;
-}
-
-.reward-text {
-    font-size: 16px;
-    color: #aaa;
-}
-
-/* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ ========== */
-.class-selector {
-    display: flex;
-    background-color: #2f3542;
-    border-radius: 30px;
-    padding: 4px;
-    margin-bottom: 20px;
-    gap: 2px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.class-btn {
-    flex: 1;
-    padding: 10px 0;
-    border: none;
-    background-color: #2f3542;
-    color: #aaa;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-    text-align: center;
-    outline: none;
-    border-radius: 25px;
-    position: relative;
-    margin: 0;
-    line-height: 1.2;
-    box-sizing: border-box;
-}
-
-.class-btn.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-.class-btn:not(.active):hover {
-    background-color: #3a4050;
-}
-
-.class-icon {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    pointer-events: none;
-}
-
-
-/* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
-.stats-block {
-    background-color: #2a303c;
-    border-radius: 12px 12px 0 0; /* скруглены только верхние углы */
-    margin-bottom: 0; /* убираем отступ снизу, чтобы таблица прилегала */
-    overflow: hidden;
-}
-
-.stat-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 16px; /* уменьшены отступы */
-    border-bottom: 1px solid #1a1f2b;
-}
-
-.stat-row:last-child {
-    border-bottom: none;
-}
-
-.stat-label {
-    font-weight: bold;
-    color: #fff;
-    font-size: 14px;
-    min-width: 100px;
-}
-
-.stat-bar-container {
-    flex: 1;
-    position: relative;
-    background-color: #1a1f2b;
-    border-radius: 20px;
-    height: 24px; /* уменьшена высота */
-    margin-left: 15px;
-    overflow: hidden;
-}
-
-.stat-bar-fill {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background-color: #00aaff;
-    border-radius: 20px;
-    transition: width 0.3s ease;
-}
-
-.stat-value {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-    text-shadow: 0 0 2px black;
-    z-index: 1;
-}
-
-/* ========== ТАБЛИЦА ХАРАКТЕРИСТИК ========== */
-.bonuses-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 0; /* таблица прилегает к блоку статистики */
-    font-size: 13px;
-}
-
-.bonuses-table thead tr {
-    background-color: #1a1f2b;
-    color: #00aaff;
-}
-
-.bonuses-table thead th {
-    padding: 12px 8px;
-    font-weight: bold;
-    text-align: center;
-    border-bottom: 1px solid #2a303c;
-}
-
-.bonuses-table tbody tr:nth-child(odd) {
-    background-color: #232833;
-}
-
-.bonuses-table tbody tr:nth-child(even) {
-    background-color: #2a303c;
-}
-
-.bonuses-table td {
-    padding: 10px 8px;
-    text-align: center;
-    border: none;
-}
-
-
-/* ========== СТРАНИЦА УЛУЧШЕНИЯ (НАВЫКИ) ========== */
-.skills-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    margin-top: 0;
-}
-
-.skill-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 12px;
-    background-color: #232833;
-    margin: 0;
-}
-
-.skill-item:nth-child(even) {
-    background-color: #2a303c;
-}
-
-.skill-item:hover {
-    background-color: inherit !important;
-}
-
-.skill-info {
-    flex: 1;
-}
-
-.skill-name {
-    font-weight: bold;
-    margin-bottom: 4px;
-    font-size: 14px;
-}
-
-.skill-desc {
-    font-size: 11px;
-    color: #aaa;
-    line-height: 1.3;
-}
-
-.skill-value {
-    font-size: 16px;
-    font-weight: bold;
-    color: #00aaff;
-    min-width: 45px;
-    text-align: center;
-}
-
-.skill-btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    width: 80px;
-    height: 40px;
-    border-radius: 20px;
-    font-size: 18px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.skill-btn:disabled {
-    background-color: #444;
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-.skill-btn:not(:disabled):hover {
-    opacity: 0.8;
-}
-
-/* Заголовок раздела навыков (скрыт, если не нужен, но мы создадим его в JS) */
-.skills-header {
-    background-color: #1a1f2b;
-    padding: 12px 16px;
-    border-radius: 12px 12px 0 0;
-    color: #00aaff;
-    font-weight: bold;
-    font-size: 14px;
-    text-align: left;
-    margin-bottom: 0;
 }

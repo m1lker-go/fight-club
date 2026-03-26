@@ -1400,7 +1400,7 @@ td {
 }
 
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
-/* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
+
 #profileContent .profile-tabs-container {
     display: flex;
     background-color: #2f3542;
@@ -2244,4 +2244,36 @@ td {
 .reward-text {
     font-size: 16px;
     color: #aaa;
+}
+
+/* Стили для иконок на кнопках профиля */
+.profile-tab {
+    position: relative;
+    padding: 12px 20px; /* достаточно места для иконки справа */
+}
+
+.upgrade-tab-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+/* Стили для иконок на кнопках классов в улучшении */
+.class-btn {
+    position: relative;
+    padding: 10px 25px 10px 15px; /* правый отступ для иконки */
+}
+
+.class-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
 }

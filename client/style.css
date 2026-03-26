@@ -1463,7 +1463,7 @@ td {
 }
 
 .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
-    padding-right: 30px;
+    padding: 10px 0; 
 }
 
 
@@ -1476,7 +1476,6 @@ td {
     height: 16px;
     pointer-events: none;
 }
-```
 
 /* ========== УНИВЕРСАЛЬНЫЕ ОТСТУПЫ ========== */
 .profile-tabs-container,

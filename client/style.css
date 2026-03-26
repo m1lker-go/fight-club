@@ -2424,7 +2424,6 @@ td {
     display: flex;
     align-items: center;
     gap: 10px;
-    border-left: 4px solid #00aaff;
     margin: 0;
 }
 

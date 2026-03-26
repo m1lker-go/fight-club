@@ -1400,21 +1400,21 @@ td {
 }
 
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
-
-#profileContent .profile-tabs-container {
+#content .profile-tabs-container {
     display: flex;
     background-color: #2f3542;
     border-radius: 30px;
     overflow: hidden;
     width: 100%;
     margin-bottom: 20px;
+    padding: 0;
 }
 
-#profileContent .profile-tabs-container .btn.profile-tab {
+#content .profile-tabs-container .btn.profile-tab {
     flex: 1;
     padding: 12px 0;
     border: none;
-    background-color: transparent !important;
+    background-color: transparent;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -1423,26 +1423,32 @@ td {
     text-align: center;
     outline: none;
     border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
+    position: relative;
 }
 
-#profileContent .profile-tabs-container .btn.profile-tab.active {
-    background-color: #00aaff !important;
+/* Дополнительный отступ справа для кнопки, где может быть иконка */
+#content .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
+    padding-right: 30px;
+}
+
+#content .profile-tabs-container .btn.profile-tab.active {
+    background-color: #00aaff;
     color: white;
 }
 
-#profileContent .profile-tabs-container .btn.profile-tab:not(.active):hover {
+#content .profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-#profileContent .profile-tabs-container .btn.profile-tab img {
-    display: inline-block;
+/* Иконка на кнопке "Улучшить" */
+.upgrade-tab-icon {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
     width: 16px;
     height: 16px;
-    vertical-align: middle;
+    pointer-events: none;
 }
 
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */

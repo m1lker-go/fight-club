@@ -845,12 +845,12 @@ body {
     align-items: center;
     justify-content: center;
     color: #ff4444;
-    font-size: 9px;
+      font-size: 8px;
     font-weight: bold;
     text-align: center;
     border-radius: 8px;
     line-height: 1.2;
-    padding: 0 4px;
+    padding: 0 2px;
     box-sizing: border-box;
 }
 

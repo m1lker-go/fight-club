@@ -444,6 +444,7 @@ body {
     height: 100%;
     padding: 5px;
     background-color: #1a1f2b;
+    border: none;
 }
 
 /* Верхняя строка с именами */
@@ -453,7 +454,7 @@ body {
     align-items: center;
     padding: 8px 12px;
     background-color: #1a1f2b;
-    border-radius: 8px;
+    border-radius: 12px 12px 0 0;
     margin: 0 0 5px 0;
     font-size: 14px;
     font-weight: bold;
@@ -480,12 +481,13 @@ body {
     background-color: #232833;
     margin: 0;
     border: none;
+    width: 100%;
 }
 
 /* Карточки героя и врага */
 .hero-card,
 .enemy-card {
-    flex: 0 0 120px;
+    flex: 0 0 80px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -494,8 +496,8 @@ body {
 }
 .hero-card > div:first-child,
 .enemy-card > div:first-child {
-    width: 100px;
-    height: 150px;
+    width: 80px;
+    height: 120px;
     margin: 0 auto;
     background: none !important;
     box-shadow: none !important;
@@ -512,7 +514,7 @@ body {
 /* Бары здоровья и маны */
 .hp-bar,
 .mana-bar {
-    width: 100px;
+    width: 80px;
     margin: 3px auto;
     background-color: transparent !important;
     border: none !important;
@@ -580,7 +582,7 @@ body {
     justify-content: space-between;
     align-items: center;
     background-color: #2a303c;
-    margin: 0;
+    margin: 5px 0;
     border-radius: 12px;
     padding: 12px 0;
     align-self: stretch;
@@ -588,10 +590,10 @@ body {
 
 /* Таймер */
 .battle-timer {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     font-size: 14px;
-    line-height: 48px;
+    line-height: 44px;
     padding: 0;
     background-color: #2a303c;
     border: 2px solid white;
@@ -617,8 +619,8 @@ body {
     text-align: center;
 }
 .speed-btn {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     background-color: #2a303c;
     border: 1px solid #aaa;
     border-radius: 12px;
@@ -659,6 +661,7 @@ body {
     font-size: 14px;
     margin: 0;
     flex-shrink: 0;
+    border-radius: 12px 12px 0 0;
 }
 .battle-log {
     flex: 1;
@@ -718,6 +721,7 @@ body {
 .log-entry.dodge-message {
     color: #2ecc71;
 }
+
 /* ========== СТРАНИЦА ЭКИПИРОВКИ ========== */
 .equip-container {
     display: flex;

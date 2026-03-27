@@ -1306,6 +1306,8 @@ body {
 }
 
 /* ========== КУЗНИЦА ========== */
+
+/* Слоты для ковки / плавки */
 .forge-slot {
     width: 70px;
     height: 70px;
@@ -1328,69 +1330,72 @@ body {
     margin: 0 auto;
 }
 
-/* ========== ЗАСТАВКА ЗАГРУЗКИ ========== */
-#splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
+/* Список доступных предметов (как инвентарь) */
+#forgeInventory {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
     width: 100%;
-    height: 100%;
-    background-image: url('/assets/splash-bg.png');
+    margin-top: 10px;
+}
+
+#forgeInventory .inventory-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #232833;
+    border-radius: 12px;
+    padding: 8px;
+    border-left: 4px solid;
+    cursor: pointer;
+    transition: transform 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#forgeInventory .inventory-item:hover {
+    transform: translateY(-2px);
+}
+
+#forgeInventory .item-icon {
+    width: 80px;
+    height: 80px;
+    background-color: #2f3542;
+    border-radius: 8px;
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity 0.5s ease;
+    margin-bottom: 8px;
+    flex-shrink: 0;
 }
-#splash-screen::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
+
+#forgeInventory .item-content {
     width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.4);
-    z-index: 1;
-}
-.splash-content {
-    position: relative;
-    z-index: 2;
     text-align: center;
-    margin-bottom: 15vh;
-    color: white;
-    max-width: 80%;
 }
-.splash-title {
-    font-size: 28px;
-    margin-bottom: 5px;
-    font-weight: 500;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+
+#forgeInventory .item-name {
+    word-break: break-word;
+    hyphens: auto;
+    white-space: normal;
+    max-width: 100%;
+    line-height: 1.2;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 2px;
 }
-.splash-subtitle {
-    font-size: 16px;
-    margin-bottom: 20px;
-    opacity: 0.9;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+
+#forgeInventory .item-stats {
+    font-size: 10px;
+    color: #aaa;
+    margin-bottom: 2px;
+    line-height: 1.2;
+    word-wrap: break-word;
 }
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255,255,255,0.3);
-    border-top: 4px solid white;
-    border-radius: 50%;
-    margin: 0 auto;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-#splash-screen.hidden {
-    opacity: 0;
-    pointer-events: none;
+
+#forgeInventory .item-rarity {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: bold;
 }
 
 /* ========== АНИМАЦИИ БОЯ ========== */

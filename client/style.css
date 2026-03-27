@@ -1307,7 +1307,56 @@ body {
 
 /* ========== КУЗНИЦА ========== */
 
-/* Слоты для ковки / плавки */
+/* Основной контейнер */
+.forge-container {
+    background-color: #232833;
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 5px;
+}
+
+/* Баннер */
+.forge-banner {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+.forge-banner img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Панель с вкладками */
+.forge-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+.forge-tabs .forge-tab {
+    flex: 1;
+    background-color: #2f3542;
+    color: #aaa;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.forge-tabs .forge-tab.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+/* Слоты */
+.forge-slots-grid {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
 .forge-slot {
     width: 70px;
     height: 70px;
@@ -1323,20 +1372,44 @@ body {
 .forge-slot span {
     color: #aaa;
 }
-.forge-slots-grid {
-    display: grid;
-    gap: 10px;
-    justify-content: center;
-    margin: 0 auto;
+
+/* Кнопка действия (Ковать / Расплавить) */
+#forgeActionBtn {
+    width: 100%;
+    background-color: #2f3542;
+    color: #aaa;
+    border: none;
+    padding: 12px;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 5px;
+}
+#forgeActionBtn.active {
+    background-color: #00aaff;
+    color: white;
 }
 
-/* Список доступных предметов (как инвентарь) */
+/* Заголовок "Доступные предметы" */
+.forge-inventory-header {
+    background-color: #1a1f2b;
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+    border-radius: 0;
+}
+
+/* Сетка доступных предметов (как в инвентаре) */
 #forgeInventory {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 0;
+    padding: 0;
 }
 
 #forgeInventory .inventory-item {
@@ -1352,7 +1425,6 @@ body {
     width: 100%;
     box-sizing: border-box;
 }
-
 #forgeInventory .inventory-item:hover {
     transform: translateY(-2px);
 }
@@ -1367,12 +1439,10 @@ body {
     margin-bottom: 8px;
     flex-shrink: 0;
 }
-
 #forgeInventory .item-content {
     width: 100%;
     text-align: center;
 }
-
 #forgeInventory .item-name {
     word-break: break-word;
     hyphens: auto;
@@ -1383,7 +1453,6 @@ body {
     font-size: 13px;
     margin-bottom: 2px;
 }
-
 #forgeInventory .item-stats {
     font-size: 10px;
     color: #aaa;
@@ -1391,11 +1460,28 @@ body {
     line-height: 1.2;
     word-wrap: break-word;
 }
-
 #forgeInventory .item-rarity {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: bold;
+}
+
+/* Кнопка "Добавить" (если добавится в JS) */
+#forgeInventory .inv-action-btn {
+    background-color: #2f3542;
+    color: #aaa;
+    border: 2px solid #aaa;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 5px;
+}
+#forgeInventory .inv-action-btn:hover {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
 }
 
 /* ========== АНИМАЦИИ БОЯ ========== */

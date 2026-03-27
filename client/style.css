@@ -180,11 +180,6 @@ body {
     z-index: 2;
 }
 
-
-
-
-
-
 /* ========== ПЕРЕКЛЮЧАТЕЛЬ КЛАССОВ (ОСНОВНОЙ) ========== */
 .class-selector {
     display: flex;
@@ -201,7 +196,7 @@ body {
     flex: 1;
     padding: 10px 0;
     border: none;
-    background-color: #2f3542; /* тот же цвет, что у контейнера */
+    background-color: #2f3542;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -391,7 +386,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 5px;   /* уменьшено с 12px 12px */
+    padding: 5px 5px;
     background-color: #232833;
     margin: 0;
 }
@@ -440,96 +435,234 @@ body {
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
 }
-/* ========== МОДАЛЬНЫЕ ОКНА ========== */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
+
+/* ========== ЭКРАН БОЯ ========== */
+.battle-screen {
+    display: flex;
+    flex-direction: column;
     height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.7);
-    backdrop-filter: blur(5px);
-}
-.modal-content {
+    padding: 5px;
     background-color: #1a1f2b;
-    margin: 10% auto;
-    padding: 20px;
-    border: 1px solid #00aaff;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 400px;
-    color: white;
-    box-shadow: 0 5px 15px rgba(0,170,255,0.3);
-    z-index: 1001;
 }
-.modal-header {
+.battle-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #00aaff;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
-.modal-header h2 {
-    margin: 0;
-    color: #00aaff;
-}
-.close {
-    color: #aaa;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-.close:hover,
-.close:focus {
-    color: #00aaff;
-    text-decoration: none;
-}
-
-/* ========== КАРТОЧКА РОЛИ ========== */
-.role-card {
-    background-color: #232833;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-left: 4px solid #00aaff;
-}
-.role-card h3 {
-    margin-top: 0;
-    color: #00aaff;
-}
-.role-card p {
-    margin: 5px 0;
+    padding: 8px 12px;
+    background-color: #1a1f2b;
+    border-radius: 8px;
+    margin: 0 0 5px 0;
     font-size: 14px;
-    color: #ddd;
+    font-weight: bold;
+    border: none;
 }
-.role-card .passive {
+.battle-header > div:first-child,
+.battle-header > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.battle-header .role-text {
+    font-size: 11px;
+    color: #aaa;
+}
+.battle-arena {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    background-color: #232833;
+    margin: 0;
+    border: none;
+}
+.hero-card,
+.enemy-card {
+    flex: 0 0 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: center;
+    background-color: transparent;
+}
+.hero-avatar-img,
+.enemy-avatar-img {
+    border-radius: 0;
+    border: none;
+}
+.hero-card > div:first-child,
+.enemy-card > div:first-child {
+    width: 100px;
+    height: 150px;
+    margin: 0 auto;
+    background: none !important;
+    box-shadow: none !important;
+}
+.hp-bar, .mana-bar {
+    width: 100px;
+    margin: 3px auto;
+}
+.player-debuffs,
+.enemy-debuffs {
+    flex: 0 0 45px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    background-color: #232833;
+}
+.battle-center {
+    flex: 0 0 55px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2a303c;
+    margin: 0;
+    border-radius: 12px;
+    padding: 12px 0;
+    align-self: stretch;
+}
+.battle-timer {
+    width: 48px;
+    height: 48px;
+    font-size: 14px;
+    line-height: 48px;
+    padding: 0;
+    background-color: #2a303c;
+    border: 2px solid white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin: 0;
+}
+.speed-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.speed-label {
+    font-size: 9px;
+    color: #aaa;
+    text-align: center;
+}
+.speed-btn {
+    width: 48px;
+    height: 48px;
+    background-color: #2a303c;
+    border: 1px solid #aaa;
+    border-radius: 12px;
+    color: #aaa;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-size: 12px;
+    padding: 2px 6px;
+}
+.speed-btn:hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.speed-btn.active {
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.battle-log-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin-top: 5px;
+}
+.log-header {
+    background-color: #1a1f2b;
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: bold;
+    color: #ccc;
+    font-size: 14px;
+    margin: 0;
+    flex-shrink: 0;
+}
+.battle-log {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #232833;
+    padding: 0;
+    margin: 0;
+    border-radius: 0 0 12px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #00aaff #1a1f2b;
+}
+.battle-log::-webkit-scrollbar {
+    width: 6px;
+}
+.battle-log::-webkit-scrollbar-track {
+    background: #1a1f2b;
+}
+.battle-log::-webkit-scrollbar-thumb {
+    background: #00aaff;
+    border-radius: 3px;
+}
+.log-entry {
+    padding: 8px 12px;
+    margin: 0;
+    line-height: 1.4;
+    font-size: 12px;
+}
+.log-entry:nth-child(odd) {
+    background-color: #232833;
+}
+.log-entry:nth-child(even) {
+    background-color: #2a303c;
+}
+.log-entry .damage-number {
+    color: #ff4444;
+    font-weight: bold;
+}
+.log-entry .heal-number {
+    color: #44ff44;
+    font-weight: bold;
+}
+.ice-text {
+    color: #00aaff;
+}
+.log-entry.ice-message {
+    color: #00aaff;
+}
+.log-entry.fire-message {
+    color: #ff4444;
+}
+.log-entry.poison-message {
+    color: #88ff88;
+}
+.log-entry.ult-message {
+    color: #ffaa00;
+}
+.log-entry.dodge-message {
     color: #2ecc71;
 }
-.role-card .active {
-    color: #e74c3c;
-}
-
 
 /* ========== СТРАНИЦА ЭКИПИРОВКИ ========== */
-
-/* Контейнер всей страницы */
 .equip-container {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
 }
-
-/* Верхняя фиксированная часть */
 .equip-top {
     flex-shrink: 0;
     margin-bottom: 10px;
 }
-
 .equip-top-bar {
     display: flex;
     justify-content: center;
@@ -537,14 +670,12 @@ body {
     gap: 10px;
     width: 100%;
 }
-
 .equip-column {
     display: flex;
     flex-direction: column;
     gap: 8px;
     width: 78px;
 }
-
 .equip-slot {
     position: relative;
     width: 78px;
@@ -568,7 +699,6 @@ body {
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
-
 .hero-center {
     width: 160px;
     height: 240px;
@@ -584,8 +714,6 @@ body {
     border-radius: 8px;
     border: 2px solid #00aaff;
 }
-
-/* Секция инвентаря (рюкзак) */
 .inventory-section {
     flex: 1;
     display: flex;
@@ -594,7 +722,6 @@ body {
     overflow: hidden;
     margin-top: 10px;
 }
-
 .inventory-header {
     background-color: #1a1f2b;
     padding: 12px 16px;
@@ -606,7 +733,6 @@ body {
     margin: 0;
     flex-shrink: 0;
 }
-
 .inventory-list {
     flex: 1;
     overflow-y: auto;
@@ -614,7 +740,6 @@ body {
     border-radius: 0 0 12px 12px;
     scrollbar-width: thin;
     scrollbar-color: #00aaff #1a1f2b;
-    /* Ограничиваем высоту 4 строками (каждая строка 70px) */
     max-height: 280px;
 }
 .inventory-list::-webkit-scrollbar {
@@ -622,22 +747,19 @@ body {
 }
 .inventory-list::-webkit-scrollbar-track {
     background: #1a1f2b;
-    border-radius: 10px;
 }
 .inventory-list::-webkit-scrollbar-thumb {
     background: #00aaff;
     border-radius: 10px;
 }
-
-/* Строка предмета */
 .inventory-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 3px 16px; /* вертикальный отступ 3px */
+    padding: 3px 16px;
     border-bottom: 1px solid #1a1f2b;
     background-color: #232833;
-    min-height: 64px; /* обеспечивает минимальную высоту, но не мешает */
+    min-height: 64px;
 }
 .inventory-row:nth-child(even) {
     background-color: #2a303c;
@@ -652,10 +774,6 @@ body {
 .inventory-row:last-child {
     border-bottom: none;
 }
-
-
-
-/* Иконка предмета */
 .inv-icon {
     width: 56px;
     height: 56px;
@@ -665,7 +783,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid; /* цвет задаётся через класс редкости */
+    border: 2px solid;
     box-sizing: border-box;
     position: relative;
 }
@@ -676,16 +794,11 @@ body {
     background-repeat: no-repeat;
     background-position: center;
 }
-
-
-/* Цвет обводки иконки в зависимости от редкости */
 .inventory-row.rarity-common .inv-icon { border-color: #aaa; }
 .inventory-row.rarity-uncommon .inv-icon { border-color: #2ecc71; }
 .inventory-row.rarity-rare .inv-icon { border-color: #2e86de; }
 .inventory-row.rarity-epic .inv-icon { border-color: #9b59b6; }
 .inventory-row.rarity-legendary .inv-icon { border-color: #f1c40f; }
-
-/* Информация о предмете */
 .inv-info {
     flex: 1;
     min-width: 0;
@@ -712,13 +825,10 @@ body {
     color: #aaa;
     word-break: break-word;
 }
-
 .inventory-row.empty-row .inv-icon {
     border: none;
     background: none;
 }
-
-/* Кнопки действий */
 .inv-actions {
     display: flex;
     gap: 8px;
@@ -743,17 +853,12 @@ body {
     line-height: 1.2;
     white-space: normal;
     word-break: break-word;
-    text-transform: none; /* отключаем заглавные буквы */
+    text-transform: none;
 }
 .inv-action-btn:hover {
     background-color: #2a2f3a;
     border-color: #00aaff;
     color: #00aaff;
-}
-
-/* Затемнение для иконки, если предмет на продаже */
-.inv-icon {
-    position: relative;
 }
 .sale-overlay {
     position: absolute;
@@ -766,7 +871,7 @@ body {
     align-items: center;
     justify-content: center;
     color: #ff4444;
-      font-size: 8px;
+    font-size: 8px;
     font-weight: bold;
     text-align: center;
     border-radius: 8px;
@@ -774,14 +879,6 @@ body {
     padding: 0 2px;
     box-sizing: border-box;
 }
-
-/* Чтобы текст кнопок переносился на две строки */
-.inv-action-btn {
-    white-space: normal;
-    line-height: 1.2;
-    word-break: break-word;
-}
-
 
 /* ========== МАГАЗИН СУНДУКОВ ========== */
 .chest-list {
@@ -1336,39 +1433,6 @@ body {
     filter: grayscale(1);
     transition: filter 0.5s ease;
 }
-.hero-card,
-.enemy-card {
-    flex: 0 0 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    text-align: center;
-}
-.hero-card > div:first-child,
-.enemy-card > div:first-child {
-    position: relative;
-     width: 100px;
-    height: 150px;
-    margin: 0 auto;
-    background: none !important;
-    box-shadow: none !important;
-}
-.hero-avatar-img,
-.enemy-avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #00aaff;
-}
-#heroHpText, #enemyHpText {
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    font-weight: bold;
-}
-.hp-bar, .mana-bar {
-    background-color: transparent !important;
-    border: none !important;
-}
 .debuff-slot {
     position: relative;
     width: 40px;
@@ -1409,240 +1473,6 @@ body {
 .debuff-slot[data-side="enemy"] .rage-icon {
     left: 0;
 }
-
-/* ========== ЭКРАН БОЯ ========== */
-
-
-/* ========== ЭКРАН БОЯ ========== */
-
-.battle-screen {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 5px;
-    background-color: #1a1f2b;
-}
-
-/* Заголовок с именами */
-.battle-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-     background-color: #1a1f2b;
-     border-radius: 8px;
-    margin: 0;
-    font-size: 14px;
-    font-weight: bold;
-     border-bottom: none;
-}
-.battle-header > div:first-child,
-.battle-header > div:last-child {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.battle-header .role-text {
-    font-size: 11px;
-    color: #aaa;
-}
-
-/* Центральная арена */
-.battle-arena {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    gap: 0;
-    padding: 0;
-    background-color: #232833;
-    margin: 0;
-}
-
-/* Карточки героя и врага */
-.hero-card,
-.enemy-card {
-    flex: 0 0 140px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    text-align: center;
-    background-color: transparent;
-}
-.hero-avatar-img,
-.enemy-avatar-img {
-    border-radius: 0;
-    border: 2px solid #00aaff;
-}
-
-/* Блоки дебаффов */
-.player-debuffs,
-.enemy-debuffs {
-    flex: 0 0 40px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 0;
-    background-color: #232833;
-}
-
-/* Центральная колонка (таймер + скорость) */
-.battle-center {
-    flex: 0 0 60px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* таймер вверху, кнопка внизу */
-    align-items: center;
-    background-color: #2a303c;
-    margin: 0;
-    border-radius: 0 0 12px 12px; /* скругление только снизу */
-    padding: 12px 0;
-    align-self: stretch; /* растягиваем на всю высоту */
-}
-
-/* Таймер */
-.battle-timer {
-     width: 36px;
-    height: 36px;
-    font-size: 14px;
-    line-height: 36px;
-    padding: 0;
-    background-color: #2a303c;
-    border: 2px solid white;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    margin: 0;
-}
-
-/* Контейнер кнопки скорости с подписью */
-.speed-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-.speed-label {
-    font-size: 9px;
-    color: #aaa;
-    text-align: center;
-}
-.speed-btn {
-    width: 48px;
-    height: 48px;
-    background-color: #2a303c;
-    border: 1px solid #aaa;
-    border-radius: 12px;
-    color: #aaa;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    font-size: 12px;
-    padding: 2px 6px;
-}
-.speed-btn:hover {
-    border-color: #00aaff;
-    color: #00aaff;
-}
-
-.speed-btn.active {
-    border-color: #00aaff;
-    color: #00aaff;
-}
-
-/* Контейнер лога боя */
-.battle-log-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    margin-top: 0;
-}
-
-/* Заголовок "Лог боя" */
-.log-header {
-    background-color: #1a1f2b;
-    padding: 8px 12px;
-    text-align: center;
-    font-weight: bold;
-    color: #ccc;
-    font-size: 14px;
-    margin: 0;
-    flex-shrink: 0;
-}
-
-/* Область с записями лога */
-.battle-log {
-    flex: 1;
-    overflow-y: auto;
-    background-color: #232833;
-    padding: 0;
-    margin: 0;
-    border-radius: 0 0 12px 12px;
-    scrollbar-width: thin;
-    scrollbar-color: #00aaff #1a1f2b;
-     margin-top: 5px;
-}
-.battle-log::-webkit-scrollbar {
-    width: 6px;
-}
-.battle-log::-webkit-scrollbar-track {
-    background: #1a1f2b;
-}
-.battle-log::-webkit-scrollbar-thumb {
-    background: #00aaff;
-    border-radius: 3px;
-}
-
-/* Строки лога — чередование цветов, без разделителей */
-.log-entry {
-    padding: 8px 12px;
-    margin: 0;
-    line-height: 1.4;
-    font-size: 12px;
-}
-.log-entry:nth-child(odd) {
-    background-color: #232833;
-}
-.log-entry:nth-child(even) {
-    background-color: #2a303c;
-}
-
-/* Специфические цвета для разных типов сообщений */
-.log-entry .damage-number {
-    color: #ff4444;
-    font-weight: bold;
-}
-.log-entry .heal-number {
-    color: #44ff44;
-    font-weight: bold;
-}
-.ice-text {
-    color: #00aaff;
-}
-.log-entry.ice-message {
-    color: #00aaff;
-}
-.log-entry.fire-message {
-    color: #ff4444;
-}
-.log-entry.poison-message {
-    color: #88ff88;
-}
-.log-entry.ult-message {
-    color: #ffaa00;
-}
-.log-entry.dodge-message {
-    color: #2ecc71;
-}
-
 
 /* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
 .tasks-container {
@@ -2158,8 +1988,6 @@ body {
 }
 
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */
-.hero-card,
-.enemy-card,
 .chest-card,
 .inventory-item,
 .market-item,
@@ -2168,13 +1996,11 @@ body {
 .equip-slot,
 .forge-slot,
 .round-button,
-.btn {   /* .class-btn удалён */
+.btn {
     background-color: rgba(35, 40, 51, 0.9);
     backdrop-filter: blur(2px);
     transition: background-color 0.2s;
 }
-.hero-card:hover,
-.enemy-card:hover,
 .chest-card:hover,
 .inventory-item:hover,
 .market-item:hover,
@@ -2231,7 +2057,7 @@ body {
     box-shadow: none !important;
     border: none !important;
     flex: 0 0 auto;
-   width: 100px;
+    width: 100px;
     margin: 3px auto;
 }
 

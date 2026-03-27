@@ -8,17 +8,17 @@ async function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="forge-container">
-            <div class="forge-banner" style="width:100%; overflow:hidden; border-radius:10px; margin-bottom:15px;">
-                <img src="/assets/banner_forge.png" alt="Кузница" style="width:100%; height:auto; display:block;">
+            <div class="forge-banner">
+                <img src="/assets/banner_forge.png" alt="Кузница">
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge" style="flex: 1;">Ковать</button>
-                <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt" style="flex: 1;">Расплавить</button>
-                <i class="fas fa-circle-question" id="forgeHelpBtn" style="color: #00aaff; font-size: 28px; cursor: pointer;"></i>
+            <div class="forge-tabs">
+                <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">Ковать</button>
+                <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt">Расплавить</button>
+                <i class="fas fa-circle-question" id="forgeHelpBtn"></i>
             </div>
             <div id="forgeSlots" class="forge-slots-grid"></div>
-            <button class="btn" id="forgeActionBtn" style="width:100%; margin:15px 0;" disabled>${currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить'}</button>
-            <h3 style="margin:15px 0 10px;">Доступные предметы</h3>
+            <button class="btn" id="forgeActionBtn" disabled>${currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить'}</button>
+            <div class="forge-inventory-header">Доступные предметы</div>
             <div id="forgeInventory" class="inventory-grid"></div>
         </div>
     `;
@@ -75,10 +75,10 @@ async function loadCurrentForgeItems(tab) {
 function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    const slotSize = 63; // одинаковый размер для всех слотов
 
+    // Убираем лишние inline-стили, они заданы в CSS
     slotsContainer.style.display = 'grid';
-    slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, ${slotSize}px)`;
+    slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, 70px)`;
     slotsContainer.style.gap = '10px';
     slotsContainer.style.justifyContent = 'center';
     slotsContainer.style.margin = '0 auto';
@@ -88,8 +88,8 @@ function renderForgeSlots() {
         const itemId = forgeItems[i];
         const item = inventory.find(it => it.id === itemId);
         html += `
-            <div class="forge-slot" data-slot-index="${i}" style="width:${slotSize}px; height:${slotSize}px; background-color:#2f3542; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid #00aaff; cursor:pointer; overflow:hidden;">
-                ${item ? `<img src="${getItemIconPath(item)}" style="max-width:100%; max-height:100%;" title="${item.name}">` : '<span style="color:#aaa; font-size:11px;">Пусто</span>'}
+            <div class="forge-slot" data-slot-index="${i}">
+                ${item ? `<img src="${getItemIconPath(item)}" title="${item.name}">` : '<span>Пусто</span>'}
             </div>
         `;
     }
@@ -114,6 +114,7 @@ function renderForgeSlots() {
     }
     actionBtn.onclick = performForgeAction;
 }
+
 // Загрузка инвентаря для кузницы (предметы, которые можно добавить)
 async function loadForgeInventory() {
     const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
@@ -133,15 +134,49 @@ function renderForgeInventory(items) {
         itemDiv.innerHTML = `
             <div class="item-icon" style="background-image: url('${getItemIconPath(item)}'); background-size: cover; background-position: center;"></div>
             <div class="item-content">
-                <div class="item-name" style="font-size:12px;">${itemNameTranslations[item.name] || item.name}</div>
-                <div class="item-stats" style="font-size:10px; color:#aaa;">${statsString}</div>
+                <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                <div class="item-stats">${statsString}</div>
                 <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
+                <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
             </div>
         `;
-        itemDiv.addEventListener('click', () => {
-            showForgeItemDetails(item, 'inventory');
+        itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            addToForge(item);
         });
         container.appendChild(itemDiv);
+    });
+}
+
+function addToForge(item) {
+    const slotCount = currentForgeTab === 'forge' ? 3 : 5;
+    if (forgeItems.length >= slotCount) {
+        alert('Все слоты заняты');
+        return;
+    }
+    forgeItems.push(item.id);
+    fetch('https://fight-club-api-4och.onrender.com/forge/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            tg_id: userData.tg_id, 
+            item_id: item.id,
+            tab: currentForgeTab
+        })
+    })
+    .then(async res => {
+        if (res.ok) {
+            await refreshData();
+            renderForgeSlots();
+            loadForgeInventory();
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + err.error);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Ошибка соединения');
     });
 }
 
@@ -181,9 +216,9 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     let actionButton = '';
 
     if (source === 'inventory') {
-        actionButton = `<button class="btn" id="forgeAddBtn" style="margin:10px;">Добавить в слот</button>`;
+        actionButton = `<button class="btn" id="forgeAddBtn">Добавить в слот</button>`;
     } else if (source === 'slot') {
-        actionButton = `<button class="btn" id="forgeRemoveBtn" style="margin:10px;">Убрать из слота</button>`;
+        actionButton = `<button class="btn" id="forgeRemoveBtn">Убрать из слота</button>`;
     }
 
     modalBody.innerHTML = `
@@ -200,32 +235,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     modal.style.display = 'block';
 
     if (source === 'inventory') {
-        document.getElementById('forgeAddBtn').addEventListener('click', async () => {
-            const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-            if (forgeItems.length >= slotCount) {
-                alert('Все слоты заняты');
-                return;
-            }
-            forgeItems.push(item.id);
-            const res = await fetch('https://fight-club-api-4och.onrender.com/forge/add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
-                    item_id: item.id,
-                    tab: currentForgeTab
-                })
-            });
-            if (res.ok) {
-                await refreshData();
-                renderForgeSlots();
-                loadForgeInventory();
-                modal.style.display = 'none';
-            } else {
-                const err = await res.json();
-                alert('Ошибка: ' + err.error);
-            }
-        });
+        document.getElementById('forgeAddBtn').addEventListener('click', () => addToForge(item));
     } else if (source === 'slot') {
         document.getElementById('forgeRemoveBtn').addEventListener('click', async () => {
             const index = forgeItems.indexOf(item.id);
@@ -272,10 +282,10 @@ function showForgeHelp() {
                 <p>Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</p>
                 <ul style="list-style: none; padding-left: 0;">
                    <li><span class="rarity-common">Обычный</span> – 65–85 монет</li>
-<li><span class="rarity-uncommon">Необычный</span> – 120–160 монет</li>
-<li><span class="rarity-rare">Редкий</span> – 400–600 монет</li>
-<li><span class="rarity-epic">Эпический</span> – 1000–1500 монет + шанс 50% на 1 алмаз</li>
-<li><span class="rarity-legendary">Легендарный</span> – 2000–3000 монет + 2–5 алмазов</li>
+                   <li><span class="rarity-uncommon">Необычный</span> – 120–160 монет</li>
+                   <li><span class="rarity-rare">Редкий</span> – 400–600 монет</li>
+                   <li><span class="rarity-epic">Эпический</span> – 1000–1500 монет + шанс 50% на 1 алмаз</li>
+                   <li><span class="rarity-legendary">Легендарный</span> – 2000–3000 монет + 2–5 алмазов</li>
                 </ul>
             </div>
             <div class="role-card">
@@ -342,7 +352,6 @@ async function performCraft(itemIds, chosenClass) {
         showChestResult(data.item);
         forgeItems = [];
         await refreshData();
-        // После обновления данных заново загружаем предметы для текущей вкладки (их больше нет)
         await loadCurrentForgeItems(currentForgeTab);
         renderForgeSlots();
         loadForgeInventory();

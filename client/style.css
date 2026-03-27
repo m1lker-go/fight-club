@@ -1306,8 +1306,6 @@ body {
 }
 
 /* ========== КУЗНИЦА ========== */
-
-/* Основной контейнер */
 .forge-container {
     background-color: #232833;
     border-radius: 12px;
@@ -1315,7 +1313,6 @@ body {
     padding: 5px;
 }
 
-/* Баннер */
 .forge-banner {
     width: 100%;
     border-radius: 8px 8px 0 0;
@@ -1328,13 +1325,12 @@ body {
     display: block;
 }
 
-/* Панель с вкладками */
 .forge-tabs {
     display: flex;
     gap: 5px;
     margin-bottom: 5px;
 }
-.forge-tabs .forge-tab {
+.forge-tab {
     flex: 1;
     background-color: #2f3542;
     color: #aaa;
@@ -1345,17 +1341,25 @@ body {
     cursor: pointer;
     transition: all 0.2s;
 }
-.forge-tabs .forge-tab.active {
+.forge-tab.active {
     background-color: #00aaff;
     color: white;
 }
-
-/* Слоты */
-.forge-slots-grid {
+#forgeHelpBtn {
+    color: #00aaff;
+    font-size: 28px;
+    cursor: pointer;
     display: flex;
+    align-items: center;
     justify-content: center;
+    width: 40px;
+}
+
+.forge-slots-grid {
+    display: grid;
     gap: 10px;
-    margin-bottom: 5px;
+    justify-content: center;
+    margin: 0 auto 5px auto;
 }
 .forge-slot {
     width: 70px;
@@ -1369,11 +1373,15 @@ body {
     cursor: pointer;
     overflow: hidden;
 }
+.forge-slot img {
+    max-width: 100%;
+    max-height: 100%;
+}
 .forge-slot span {
     color: #aaa;
+    font-size: 11px;
 }
 
-/* Кнопка действия (Ковать / Расплавить) */
 #forgeActionBtn {
     width: 100%;
     background-color: #2f3542;
@@ -1383,53 +1391,44 @@ body {
     border-radius: 30px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
     margin-bottom: 5px;
 }
-#forgeActionBtn.active {
-    background-color: #00aaff;
-    color: white;
+#forgeActionBtn:not(:disabled):hover {
+    background-color: #3a4050;
+}
+#forgeActionBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-/* Заголовок "Доступные предметы" */
 .forge-inventory-header {
     background-color: #1a1f2b;
     padding: 8px 12px;
     text-align: center;
     font-weight: bold;
     color: white;
-    margin: 0;
+    margin: 0 0 5px 0;
     border-radius: 0;
 }
 
-/* ========== КУЗНИЦА – СПИСОК ДОСТУПНЫХ ПРЕДМЕТОВ ========== */
 #forgeInventory {
-    display: grid;
-    grid-template-columns: 1fr; /* одна колонка на всю ширину */
-    gap: 8px;
-    width: 100%;
     margin-top: 0;
-    padding: 0;
 }
 
+/* Стили для карточек предметов в кузнице — такие же, как в инвентаре */
 #forgeInventory .inventory-item {
+    background-color: #232833;
+    border-left: 4px solid;
     display: flex;
     align-items: center;
     gap: 12px;
-    background-color: #232833;
-    border-radius: 12px;
     padding: 8px 12px;
-    border-left: 4px solid;
-    cursor: pointer;
+    border-radius: 12px;
     transition: transform 0.2s;
-    width: 100%;
-    box-sizing: border-box;
 }
-
 #forgeInventory .inventory-item:hover {
     transform: translateY(-2px);
 }
-
 #forgeInventory .item-icon {
     width: 56px;
     height: 56px;
@@ -1439,65 +1438,50 @@ body {
     background-size: cover;
     background-position: center;
 }
-
 #forgeInventory .item-content {
     flex: 1;
     text-align: left;
 }
-
 #forgeInventory .item-name {
     font-weight: bold;
-    margin-bottom: 2px;
     font-size: 13px;
+    margin-bottom: 2px;
 }
-
+#forgeInventory .item-class {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 2px;
+}
 #forgeInventory .item-stats {
     font-size: 10px;
     color: #aaa;
     margin-bottom: 2px;
 }
-
 #forgeInventory .item-rarity {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: bold;
 }
-
-#forgeInventory .inv-action-btn {
-    flex-shrink: 0;
-    width: 70px;
-    height: 36px;
-    background-color: #2f3542;
-    border: 2px solid #aaa;
-    border-radius: 20px;
-    color: #ccc;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
+#forgeInventory .item-actions {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    gap: 5px;
+    margin-top: 5px;
 }
-
-#forgeInventory .inv-action-btn:hover {
-    background-color: #3a4050;
-    border-color: #00aaff;
-    color: #00aaff;
-}
-
-/* Кнопка "Добавить" (если добавится в JS) */
-#forgeInventory .inv-action-btn {
+#forgeInventory .action-btn {
     background-color: #2f3542;
     color: #aaa;
     border: 2px solid #aaa;
     border-radius: 20px;
-    padding: 4px 12px;
+    padding: 5px 12px;
     font-size: 11px;
     cursor: pointer;
     transition: all 0.2s;
-    margin-top: 5px;
 }
-
+#forgeInventory .action-btn:hover {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
+}
 
 /* ========== АНИМАЦИИ БОЯ ========== */
 .animation-container {

@@ -595,7 +595,15 @@ body {
 
 /* ========== СТРАНИЦА ЭКИПИРОВКИ ========== */
 
-/* Фиксированная верхняя часть */
+/* Контейнер всей страницы */
+.equip-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Верхняя фиксированная часть */
 .equip-top {
     flex-shrink: 0;
     margin-bottom: 10px;
@@ -661,7 +669,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* важно для скролла */
+    min-height: 0;
     overflow: hidden;
     margin-top: 10px;
 }
@@ -675,6 +683,7 @@ body {
     font-size: 16px;
     text-align: center;
     margin: 0;
+    flex-shrink: 0;
 }
 
 .inventory-list {
@@ -684,6 +693,8 @@ body {
     border-radius: 0 0 12px 12px;
     scrollbar-width: thin;
     scrollbar-color: #00aaff #1a1f2b;
+    /* Ограничиваем высоту 4 строками (каждая строка 70px) */
+    max-height: 280px;
 }
 .inventory-list::-webkit-scrollbar {
     width: 6px;
@@ -702,9 +713,10 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 3px 16px; /* вертикальный отступ 3px */
     border-bottom: 1px solid #1a1f2b;
     background-color: #232833;
+    min-height: 64px; /* обеспечивает минимальную высоту, но не мешает */
 }
 .inventory-row:nth-child(even) {
     background-color: #2a303c;
@@ -722,22 +734,31 @@ body {
 
 /* Иконка предмета */
 .inv-icon {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     flex-shrink: 0;
     background-color: #1a1f2b;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 2px solid; /* цвет будет задан через класс редкости */
+    box-sizing: border-box;
 }
 .inv-icon-img {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
+
+/* Цвет обводки иконки в зависимости от редкости */
+.inventory-row.rarity-common .inv-icon { border-color: #aaa; }
+.inventory-row.rarity-uncommon .inv-icon { border-color: #2ecc71; }
+.inventory-row.rarity-rare .inv-icon { border-color: #2e86de; }
+.inventory-row.rarity-epic .inv-icon { border-color: #9b59b6; }
+.inventory-row.rarity-legendary .inv-icon { border-color: #f1c40f; }
 
 /* Информация о предмете */
 .inv-info {
@@ -746,8 +767,8 @@ body {
 }
 .inv-name {
     font-weight: bold;
-    margin-bottom: 4px;
-    font-size: 14px;
+    margin-bottom: 2px;
+    font-size: 13px;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -757,12 +778,12 @@ body {
     font-weight: bold;
 }
 .inv-class {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: normal;
     color: #aaa;
 }
 .inv-stats {
-    font-size: 11px;
+    font-size: 10px;
     color: #aaa;
     word-break: break-word;
 }
@@ -774,13 +795,13 @@ body {
     flex-shrink: 0;
 }
 .inv-action-btn {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     border-radius: 8px;
     background-color: #1a1f2b;
     border: 1px solid #aaa;
     color: #ccc;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
@@ -789,6 +810,7 @@ body {
     justify-content: center;
     text-align: center;
     padding: 0 4px;
+    line-height: 1.2;
 }
 .inv-action-btn:hover {
     background-color: #2a2f3a;

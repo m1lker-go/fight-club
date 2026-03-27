@@ -272,7 +272,7 @@ function renderEquip() {
         return html;
     }
 
-     // Рендеринг списка предметов (рюкзак)
+    // Рендеринг списка предметов (рюкзак)
     function renderInventoryList(className) {
         const classItems = inventory.filter(item => 
             item.owner_class === className && 
@@ -479,11 +479,39 @@ function renderEquip() {
                         alert('Ошибка: ' + data.error);
                     }
                 }
+            } else if (action === 'unsell') {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                });
+                if (res.ok) {
+                    await refreshData();
+                    renderEquip();
+                } else {
+                    alert('Ошибка при снятии с продажи');
+                }
+            } else if (action === 'editPrice') {
+                const item = inventory.find(i => i.id == itemId);
+                if (!item) return;
+                const newPrice = prompt('Введите новую цену в монетах:', item.price);
+                if (newPrice && !isNaN(newPrice) && parseInt(newPrice) > 0) {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: parseInt(newPrice) })
+                    });
+                    if (res.ok) {
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        alert('Ошибка изменения цены');
+                    }
+                }
             }
         });
     });
 }
-
 // ==================== ТОРГОВЛЯ ====================
 function renderTrade() {
     const content = document.getElementById('content');

@@ -121,6 +121,9 @@ async function init() {
             updateMainMenuNewIcons(); 
             checkAdvent();
 
+            // Загружаем данные заданий в фоне, чтобы иконка отобразилась сразу
+            if (window.refreshTasksData) window.refreshTasksData();
+
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
 
             hideSplashScreen();
@@ -202,6 +205,8 @@ async function refreshData() {
                 window.updateShopTabIcon();
             }
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+            // Обновляем данные заданий, чтобы иконка была актуальна
+            if (window.refreshTasksData) window.refreshTasksData();
         }
     } catch (e) {
         console.error('Refresh error:', e);
@@ -252,6 +257,9 @@ function showScreen(screen) {
             break;
         default: renderMain();
     }
+
+    // После смены экрана обновляем иконку в меню (на случай, если данные заданий уже есть)
+    if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
 }
 
 function renderForgeFallback() {

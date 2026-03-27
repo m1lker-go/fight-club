@@ -1360,10 +1360,10 @@ body {
 
 /* Слоты */
 .forge-slots-grid {
-    display: flex;
+    display: grid;           
+    gap: 10px;
     justify-content: center;
-    gap: 8px;
-    margin-bottom: 5px;
+    margin: 0 auto 5px auto;
 }
 .forge-slot {
     width: 60px;

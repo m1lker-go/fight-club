@@ -1412,6 +1412,9 @@ body {
 
 /* ========== ЭКРАН БОЯ ========== */
 
+
+/* ========== ЭКРАН БОЯ ========== */
+
 .battle-screen {
     display: flex;
     flex-direction: column;
@@ -1425,7 +1428,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background-color: #1a1f2b;   /* цвет 1з */
+    background-color: #1a1f2b;
     border-radius: 12px 12px 0 0;
     margin: 0;
     font-size: 14px;
@@ -1450,7 +1453,7 @@ body {
     justify-content: center;
     gap: 0;
     padding: 0;
-    background-color: #232833;   /* цвет 1с */
+    background-color: #232833;
     margin: 0;
 }
 
@@ -1463,6 +1466,10 @@ body {
     justify-content: flex-start;
     text-align: center;
     background-color: transparent;
+}
+.hero-avatar-img,
+.enemy-avatar-img {
+    border: none; /* убираем голубую обводку */
 }
 
 /* Блоки дебаффов */
@@ -1479,20 +1486,18 @@ body {
 /* Центральная колонка (таймер + скорость) */
 .battle-center {
     flex: 0 0 60px;
-    position: relative;
-    background-color: #2a303c;   /* цвет 1т */
-    margin: 5px 0;
-    border-radius: 12px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between; /* таймер вверху, кнопка внизу */
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 0;
-    min-height: 0;
+    background-color: #2a303c;
+    margin: 0;
+    border-radius: 0 0 12px 12px; /* скругление только снизу */
+    padding: 12px 0;
+    align-self: stretch; /* растягиваем на всю высоту */
 }
 
-/* Таймер (квадрат) */
+/* Таймер */
 .battle-timer {
     width: 48px;
     height: 48px;
@@ -1505,7 +1510,7 @@ body {
     color: white;
     font-weight: bold;
     font-size: 20px;
-    margin: 0 auto;
+    margin: 0;
 }
 
 /* Контейнер кнопки скорости с подписью */
@@ -1534,7 +1539,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
+    margin: 0;
 }
 .speed-btn:hover {
     border-color: #00aaff;
@@ -1552,7 +1557,7 @@ body {
 
 /* Заголовок "Лог боя" */
 .log-header {
-    background-color: #1a1f2b;   /* цвет 1з */
+    background-color: #1a1f2b;
     padding: 8px 12px;
     text-align: center;
     font-weight: bold;
@@ -1566,10 +1571,10 @@ body {
 .battle-log {
     flex: 1;
     overflow-y: auto;
-    background-color: #232833;   /* цвет 1с */
+    background-color: #232833;
     padding: 0;
     margin: 0;
-    border-radius: 0 0 12px 12px;  /* скругление только снизу */
+    border-radius: 0 0 12px 12px;
     scrollbar-width: thin;
     scrollbar-color: #00aaff #1a1f2b;
 }
@@ -1584,7 +1589,7 @@ body {
     border-radius: 3px;
 }
 
-/* Строки лога — только чередование цветов, без разделителей */
+/* Строки лога — чередование цветов, без разделителей */
 .log-entry {
     padding: 8px 12px;
     margin: 0;
@@ -1592,13 +1597,13 @@ body {
     font-size: 12px;
 }
 .log-entry:nth-child(odd) {
-    background-color: #232833;   /* цвет 1с */
+    background-color: #232833;
 }
 .log-entry:nth-child(even) {
-    background-color: #2a303c;   /* цвет 1т */
+    background-color: #2a303c;
 }
 
-/* Специфические цвета для разных типов сообщений (оставляем как было) */
+/* Специфические цвета для разных типов сообщений */
 .log-entry .damage-number {
     color: #ff4444;
     font-weight: bold;
@@ -1625,7 +1630,6 @@ body {
 .log-entry.dodge-message {
     color: #2ecc71;
 }
-
 
 
 /* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */

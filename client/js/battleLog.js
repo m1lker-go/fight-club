@@ -282,7 +282,6 @@ const BattleLog = {
         text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
         return text;
     },
-
     playNext() {
         if (this.stopped) {
             console.log('[BattleLog] stopped, ignoring');
@@ -340,6 +339,14 @@ const BattleLog = {
         } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
             entryClass += ' ice-message';
         }
+
+        // Добавляем класс атакующего для цветового разделения
+        if (attacker === 'player') {
+            entryClass += ' attacker-player';
+        } else if (attacker === 'enemy') {
+            entryClass += ' attacker-enemy';
+        }
+
         logEntry.className = entryClass;
         logEntry.innerHTML = this.formatLogText(msgText);
         this.logContainer.appendChild(logEntry);

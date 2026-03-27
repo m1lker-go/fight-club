@@ -116,16 +116,16 @@ function renderForgeInventory(items) {
             itemDiv.className = `inventory-item ${rarityClass}`;
             itemDiv.dataset.itemId = item.id;
             itemDiv.innerHTML = `
-                <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
-                <div class="item-content">
-                    <div class="item-name" style="color: ${getRarityColor(item.rarity)}">
-                        ${itemNameTranslations[item.name] || item.name}
-                        <span class="rarity-badge">(${rarityName})</span>
-                    </div>
-                    <div class="item-stats">${statsString}</div>
-                </div>
-                <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
-            `;
+    <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
+    <div class="item-content">
+        <div class="item-name" style="color: ${getRarityColor(item.rarity)}">
+            ${itemNameTranslations[item.name] || item.name}
+            <span class="rarity-badge">(${rarityName})</span>
+        </div>
+        <div class="item-stats">${statsString}</div>
+    </div>
+    <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+`;
             itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 addToForge(item);

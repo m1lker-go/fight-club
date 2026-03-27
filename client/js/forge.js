@@ -116,7 +116,6 @@ function renderForgeSlots() {
 }
 // Загрузка инвентаря для кузницы (предметы, которые можно добавить)
 async function loadForgeInventory() {
-     console.log('[Forge] loadForgeInventory started');
     const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
     renderForgeInventory(availableItems);
 }

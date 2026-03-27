@@ -478,7 +478,7 @@ body {
     justify-content: center;
     gap: 0;
     padding: 0;
-    background-color: #232833;
+    background-color: transparent;
     margin: 0;
     border: none;
     width: 100%;
@@ -539,7 +539,7 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     gap: 0;
-    background-color: #232833;
+    background-color: transparent;
 }
 .debuff-slot {
     position: relative;
@@ -721,7 +721,6 @@ body {
 .log-entry.dodge-message {
     color: #2ecc71;
 }
-
 /* ========== СТРАНИЦА ЭКИПИРОВКИ ========== */
 .equip-container {
     display: flex;
@@ -2083,8 +2082,7 @@ body {
 }
 .top-bar,
 .bottom-menu,
-.battle-log,
-.battle-header {
+.battle-log{
     background-color: rgba(35, 40, 51, 0.9);
     backdrop-filter: blur(2px);
 }

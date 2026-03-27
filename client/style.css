@@ -1339,11 +1339,14 @@ body {
     border-radius: 20px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none; /* убираем анимацию */
 }
 .forge-tab.active {
     background-color: #00aaff;
     color: white;
+}
+.forge-tab:not(.active) {
+    background-color: #2f3542;
 }
 #forgeHelpBtn {
     color: #00aaff;
@@ -1394,6 +1397,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     margin-bottom: 5px;
+    transition: none;
 }
 #forgeActionBtn:not(:disabled):hover {
     background-color: #3a4050;
@@ -1403,22 +1407,24 @@ body {
     cursor: not-allowed;
 }
 
-/* Заголовок "Доступные предметы" */
+/* Заголовок "Доступные предметы" – без отступов по бокам */
 .forge-inventory-header {
     background-color: #1a1f2b;
-    padding: 8px 12px;
+    padding: 8px 0; /* убираем горизонтальные отступы */
     text-align: center;
     font-weight: bold;
     color: white;
     margin: 0 0 5px 0;
     border-radius: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Список предметов – одна колонка, прокрутка, ровно 4 строки видно */
 #forgeInventory {
     display: flex;
     flex-direction: column;
-    max-height: calc(4 * 80px); /* высота под 4 строки */
+    max-height: calc(4 * 80px);
     overflow-y: auto;
     scrollbar-width: thin;
     margin-top: 0;
@@ -1434,35 +1440,36 @@ body {
     border-radius: 3px;
 }
 
-/* Строка предмета (как в рюкзаке) */
+/* Строка предмета – без border-left, без анимаций */
 #forgeInventory .inventory-item {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    border-left: 4px solid;
     background-color: #232833;
-    transition: transform 0.2s;
+    transition: none;
+    border-left: none;
 }
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
 }
+/* Убираем эффект при наведении */
 #forgeInventory .inventory-item:hover {
-    transform: translateY(-2px);
+    transform: none;
+    background-color: inherit;
 }
 
-/* Пустая строка – такой же фон, но без содержимого */
+/* Пустая строка – скрываем содержимое, но сохраняем высоту */
 #forgeInventory .inventory-item.empty-row {
-    border-left-color: transparent;
+    background-color: inherit;
 }
 #forgeInventory .inventory-item.empty-row .item-icon,
 #forgeInventory .inventory-item.empty-row .item-content,
 #forgeInventory .inventory-item.empty-row .inv-action-btn {
     display: none;
 }
-/* но чтобы сохранить высоту, просто оставляем пустым, но padding уже задан */
 
-/* Иконка */
+/* Иконка – обводка в цвет класса */
 #forgeInventory .item-icon {
     width: 56px;
     height: 56px;
@@ -1471,7 +1478,14 @@ body {
     border-radius: 8px;
     background-size: cover;
     background-position: center;
+    border: 2px solid; /* цвет задаётся в inline-стиле или через класс редкости */
 }
+/* Цвет обводки иконки в зависимости от редкости */
+#forgeInventory .inventory-item.rarity-common .item-icon { border-color: #aaa; }
+#forgeInventory .inventory-item.rarity-uncommon .item-icon { border-color: #2ecc71; }
+#forgeInventory .inventory-item.rarity-rare .item-icon { border-color: #2e86de; }
+#forgeInventory .inventory-item.rarity-epic .item-icon { border-color: #9b59b6; }
+#forgeInventory .inventory-item.rarity-legendary .item-icon { border-color: #f1c40f; }
 
 /* Центральный блок */
 #forgeInventory .item-content {
@@ -1483,7 +1497,6 @@ body {
     font-size: 13px;
     margin-bottom: 2px;
 }
-/* Редкость в скобках – в той же строке, но мелким шрифтом */
 #forgeInventory .item-name .rarity-badge {
     font-size: 11px;
     font-weight: normal;
@@ -1496,21 +1509,21 @@ body {
     margin-bottom: 2px;
 }
 #forgeInventory .item-rarity {
-    display: none; /* скрываем старый блок редкости, теперь она в названии */
+    display: none;
 }
 
-/* Кнопка "Добавить" */
+/* Кнопка "Добавить" – квадрат, обводка, тёмный фон */
 #forgeInventory .inv-action-btn {
     flex-shrink: 0;
     width: 70px;
-    height: 36px;
-    background-color: transparent;
+    height: 56px; /* такая же, как иконка */
+    background-color: #2f3542;
     border: 2px solid #aaa;
-    border-radius: 20px;
+    border-radius: 8px;
     color: #aaa;
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;

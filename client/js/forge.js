@@ -101,32 +101,56 @@ async function loadForgeInventory() {
 function renderForgeInventory(items) {
     const container = document.getElementById('forgeInventory');
     container.innerHTML = '';
-    items.forEach(item => {
-        const statsArray = buildStatsArray(item);
-        const statsString = statsArray.join(' • ');
-        const classDisplay = item.owner_class ? (item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')) : '';
+    const maxRows = 4; // всегда показываем 4 строки
+    const rows = [];
+    for (let i = 0; i < maxRows; i++) {
+        const item = items[i];
+        if (item) {
+            const statsArray = buildStatsArray(item);
+            const statsString = statsArray.join(' • ');
+            const rarityName = rarityTranslations[item.rarity] || item.rarity;
+            const rarityClass = `rarity-${item.rarity}`;
+            const iconPath = getItemIconPath(item);
 
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `inventory-item rarity-${item.rarity}`;
-        itemDiv.dataset.itemId = item.id;
-        itemDiv.innerHTML = `
-            <div class="item-icon" style="background-image: url('${getItemIconPath(item)}'); background-size: cover; background-position: center;"></div>
-            <div class="item-content">
-                <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
-                ${classDisplay ? `<div class="item-class">(${classDisplay})</div>` : ''}
-                <div class="item-stats">${statsString}</div>
-                <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
-                <div class="item-actions">
-                    <button class="action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `inventory-item ${rarityClass}`;
+            itemDiv.dataset.itemId = item.id;
+            itemDiv.innerHTML = `
+                <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
+                <div class="item-content">
+                    <div class="item-name" style="color: ${getRarityColor(item.rarity)}">
+                        ${itemNameTranslations[item.name] || item.name}
+                        <span class="rarity-badge">(${rarityName})</span>
+                    </div>
+                    <div class="item-stats">${statsString}</div>
                 </div>
-            </div>
-        `;
-        itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            addToForge(item);
-        });
-        container.appendChild(itemDiv);
-    });
+                <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+            `;
+            itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                addToForge(item);
+            });
+            rows.push(itemDiv);
+        } else {
+            // Пустая строка – просто div с классом empty-row
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'inventory-item empty-row';
+            rows.push(emptyDiv);
+        }
+    }
+    rows.forEach(row => container.appendChild(row));
+}
+
+// Вспомогательная функция для цвета текста редкости
+function getRarityColor(rarity) {
+    const colors = {
+        common: '#aaa',
+        uncommon: '#2ecc71',
+        rare: '#2e86de',
+        epic: '#9b59b6',
+        legendary: '#f1c40f'
+    };
+    return colors[rarity] || '#aaa';
 }
 
 function addToForge(item) {

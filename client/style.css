@@ -736,24 +736,26 @@ body {
 
 /* Иконка предмета */
 .inv-icon {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     flex-shrink: 0;
     background-color: #1a1f2b;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid; /* цвет будет задан через класс редкости */
+    border: 2px solid; /* цвет задаётся через класс редкости */
     box-sizing: border-box;
+    position: relative;
 }
 .inv-icon-img {
-    width: 40px;
-    height: 40px;
+    width: 46px;
+    height: 46px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
+
 
 /* Цвет обводки иконки в зависимости от редкости */
 .inventory-row.rarity-common .inv-icon { border-color: #aaa; }
@@ -806,7 +808,7 @@ body {
     height: 56px;
     border-radius: 8px;
     background-color: #1a1f2b;
-    border: 1px solid #aaa;
+    border: 2px solid #aaa;
     color: #ccc;
     font-size: 9px;
     font-weight: normal;

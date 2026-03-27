@@ -272,7 +272,7 @@ function renderEquip() {
         return html;
     }
 
-    // Рендеринг списка предметов (рюкзак)
+     // Рендеринг списка предметов (рюкзак)
     function renderInventoryList(className) {
         const classItems = inventory.filter(item => 
             item.owner_class === className && 
@@ -298,10 +298,33 @@ function renderEquip() {
             const itemIcon = getItemIconPath(item) || '';
             const classNameRu = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
 
+            // Определяем, на продаже ли предмет
+            const isForSale = item.for_sale === true;
+
+            // Создаём кнопки в зависимости от состояния
+            let actionButtonsHtml = '';
+            if (isForSale) {
+                actionButtonsHtml = `
+                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">СНЯТЬ<br>С ПРОДАЖИ</button>
+                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">ИЗМЕНИТЬ<br>ЦЕНУ</button>
+                `;
+            } else {
+                actionButtonsHtml = `
+                    <button class="inv-action-btn equip-btn" data-item-id="${item.id}" data-action="equip">Надеть</button>
+                    <button class="inv-action-btn sell-btn" data-item-id="${item.id}" data-action="sell">Продать</button>
+                `;
+            }
+
+            // Иконка с затемнением и текстом, если на продаже
+            let iconHtml = `<div class="inv-icon-img" style="background-image: url('${itemIcon}');"></div>`;
+            if (isForSale) {
+                iconHtml += `<div class="sale-overlay">НА ПРОДАЖЕ</div>`;
+            }
+
             itemsHtml += `
                 <div class="inventory-row ${rarityClass}" data-item-id="${item.id}" data-for-sale="${item.for_sale}" data-in-forge="${item.in_forge}">
                     <div class="inv-icon">
-                        <div class="inv-icon-img" style="background-image: url('${itemIcon}');"></div>
+                        ${iconHtml}
                     </div>
                     <div class="inv-info">
                         <div class="inv-name">
@@ -311,24 +334,23 @@ function renderEquip() {
                         <div class="inv-stats">${stats.join(' • ')}</div>
                     </div>
                     <div class="inv-actions">
-                        <button class="inv-action-btn equip-btn" data-item-id="${item.id}" data-action="equip">Надеть</button>
-                        <button class="inv-action-btn sell-btn" data-item-id="${item.id}" data-action="sell">Продать</button>
+                        ${actionButtonsHtml}
                     </div>
                 </div>
             `;
         });
 
-        // Добавляем пустые строки, если нужно (для фиксированной высоты)
-       const emptyRowsCount = Math.max(0, 4 - unequipped.length);
-    for (let i = 0; i < emptyRowsCount; i++) {
-        itemsHtml += `
-            <div class="inventory-row empty-row">
-                <div class="inv-icon empty-icon"></div>
-                <div class="inv-info"></div>
-                <div class="inv-actions"></div>
-            </div>
-        `;
-    }
+        // Добавляем пустые строки, чтобы всего было 4 строки
+        const emptyRowsCount = Math.max(0, 4 - unequipped.length);
+        for (let i = 0; i < emptyRowsCount; i++) {
+            itemsHtml += `
+                <div class="inventory-row empty-row">
+                    <div class="inv-icon empty-icon"></div>
+                    <div class="inv-info"></div>
+                    <div class="inv-actions"></div>
+                </div>
+            `;
+        }
 
         return itemsHtml;
     }

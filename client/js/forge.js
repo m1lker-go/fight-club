@@ -1,10 +1,8 @@
 // forge.js
-let forgeItems = []; // массив ID предметов в слотах текущей вкладки
-let currentForgeTab = 'forge'; // 'forge' или 'smelt'
+let forgeItems = [];
+let currentForgeTab = 'forge';
 
-// Рендер главной страницы кузницы
 async function renderForge() {
-    console.log('[Forge] renderForgeSlots started');
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="forge-container">
@@ -23,24 +21,20 @@ async function renderForge() {
         </div>
     `;
 
-    // Загружаем текущие предметы в кузнице для выбранной вкладки
     await loadCurrentForgeItems(currentForgeTab);
 
-    // Обработчики переключения вкладок
     document.querySelectorAll('.forge-tab').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newTab = e.target.dataset.forgeTab;
             if (newTab === currentForgeTab) return;
             currentForgeTab = newTab;
-            forgeItems = []; // очищаем локальный массив, потом загрузим с сервера
-            await loadCurrentForgeItems(currentForgeTab); // загружаем ID для новой вкладки
-            renderForgeSlots(); // перерисовываем слоты
-            loadForgeInventory(); // обновляем список доступных предметов
-            // Обновляем активный класс кнопок
+            forgeItems = [];
+            await loadCurrentForgeItems(currentForgeTab);
+            renderForgeSlots();
+            loadForgeInventory();
             document.querySelectorAll('.forge-tab').forEach(b => {
                 b.classList.toggle('active', b.dataset.forgeTab === currentForgeTab);
             });
-            // Обновляем текст кнопки действия
             const actionBtn = document.getElementById('forgeActionBtn');
             actionBtn.innerText = currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить';
         });
@@ -52,36 +46,20 @@ async function renderForge() {
     loadForgeInventory();
 }
 
-// Загрузка с сервера списка предметов в указанной вкладке
 async function loadCurrentForgeItems(tab) {
-    console.log('[Forge] loadCurrentForgeItems called with tab =', tab);
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/forge/current?tg_id=${userData.tg_id}&tab=${tab}`);
-        console.log('[Forge] fetch response status:', res.status);
-        if (res.ok) {
-            forgeItems = await res.json();
-            console.log('[Forge] received items:', forgeItems);
-        } else {
-            console.error('[Forge] failed to load, status', res.status);
-            forgeItems = [];
-        }
+        if (res.ok) forgeItems = await res.json();
+        else forgeItems = [];
     } catch (e) {
-        console.error('[Forge] error loading items:', e);
         forgeItems = [];
     }
 }
 
-// Рендер слотов
 function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-
-    // Убираем лишние inline-стили, они заданы в CSS
-    slotsContainer.style.display = 'grid';
     slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, 70px)`;
-    slotsContainer.style.gap = '10px';
-    slotsContainer.style.justifyContent = 'center';
-    slotsContainer.style.margin = '0 auto';
 
     let html = '';
     for (let i = 0; i < slotCount; i++) {
@@ -115,7 +93,6 @@ function renderForgeSlots() {
     actionBtn.onclick = performForgeAction;
 }
 
-// Загрузка инвентаря для кузницы (предметы, которые можно добавить)
 async function loadForgeInventory() {
     const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
     renderForgeInventory(availableItems);
@@ -127,6 +104,7 @@ function renderForgeInventory(items) {
     items.forEach(item => {
         const statsArray = buildStatsArray(item);
         const statsString = statsArray.join(' • ');
+        const classDisplay = item.owner_class ? (item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')) : '';
 
         const itemDiv = document.createElement('div');
         itemDiv.className = `inventory-item rarity-${item.rarity}`;
@@ -135,9 +113,12 @@ function renderForgeInventory(items) {
             <div class="item-icon" style="background-image: url('${getItemIconPath(item)}'); background-size: cover; background-position: center;"></div>
             <div class="item-content">
                 <div class="item-name">${itemNameTranslations[item.name] || item.name}</div>
+                ${classDisplay ? `<div class="item-class">(${classDisplay})</div>` : ''}
                 <div class="item-stats">${statsString}</div>
                 <div class="item-rarity">${rarityTranslations[item.rarity] || item.rarity}</div>
-                <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+                <div class="item-actions">
+                    <button class="action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+                </div>
             </div>
         `;
         itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {

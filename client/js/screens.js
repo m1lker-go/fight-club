@@ -305,8 +305,8 @@ function renderEquip() {
             let actionButtonsHtml = '';
             if (isForSale) {
                 actionButtonsHtml = `
-                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">СНЯТЬ<br>С ПРОДАЖИ</button>
-                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">ИЗМЕНИТЬ<br>ЦЕНУ</button>
+                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">Снять с<br>продажи</button>
+                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">Изменить<br>цену</button>
                 `;
             } else {
                 actionButtonsHtml = `
@@ -318,7 +318,7 @@ function renderEquip() {
             // Иконка с затемнением и текстом, если на продаже
             let iconHtml = `<div class="inv-icon-img" style="background-image: url('${itemIcon}');"></div>`;
             if (isForSale) {
-                iconHtml += `<div class="sale-overlay">НА ПРОДАЖЕ</div>`;
+                iconHtml += `<div class="sale-overlay">На продаже</div>`;
             }
 
             itemsHtml += `

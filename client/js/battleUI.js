@@ -50,20 +50,17 @@ function unlockMenu() {
     });
 }
 
+
 function showBattleScreen(battleData) {
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';
     });
 
-    // Добавляем классы для корректного расчёта ярости в BattleLog
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
-
-    // 👇 Добавьте эти строки
-battleData.playerSubclass = userData.subclass;
-battleData.enemySubclass = battleData.opponent.subclass;
-    
+    battleData.playerSubclass = userData.subclass;
+    battleData.enemySubclass = battleData.opponent.subclass;
 
     const getRoleNameRu = (role) => {
         const roles = {
@@ -73,30 +70,29 @@ battleData.enemySubclass = battleData.opponent.subclass;
         };
         return roles[role] || role;
     };
-    
+
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
-            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
-                <div style="text-align: left;">
+            <div class="battle-header">
+                <div>
                     <div>${userData.username}</div>
-                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
+                    <div class="role-text">${getClassNameRu(userData.current_class)} (${getRoleNameRu(userData.subclass)})</div>
                 </div>
-                <div style="text-align: right;">
+                <div>
                     <div>${battleData.opponent.username}</div>
-                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
+                    <div class="role-text">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
                 </div>
             </div>
 
-            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
+            <div class="battle-arena">
                 <!-- Карточка героя -->
-                <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                <div class="hero-card">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
-                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
-                        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
-                        <!-- Контейнер для чисел -->
+                        <div id="hero-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
@@ -109,44 +105,40 @@ battleData.enemySubclass = battleData.opponent.subclass;
                     </div>
                 </div>
 
-            <!-- Дебаффы игрока (колонка слева от центра) -->
-<div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
-    <div class="debuff-slot" data-side="player" data-slot="0"></div>
-    <div class="debuff-slot" data-side="player" data-slot="1"></div>
-    <div class="debuff-slot" data-side="player" data-slot="2"></div>
-    <div class="debuff-slot" data-side="player" data-slot="3"></div>
-    <div class="debuff-slot" data-side="player" data-slot="4"></div>
-</div>
-
-                <!-- Центральная часть с таймером и кнопкой скорости -->
-                <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
-                    <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
-                   
-<div class="speed-wrapper">
-    <div class="speed-label">Скорость:</div>
-    <button id="singleSpeedBtn" class="speed-btn" style="...">x1</button>
-</div>
-        
+                <!-- Дебаффы игрока -->
+                <div class="player-debuffs">
+                    <div class="debuff-slot" data-side="player" data-slot="0"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="1"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="2"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="3"></div>
+                    <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-               <!-- Дебаффы противника (колонка справа от центра) -->
-<!-- Дебаффы противника (колонка справа от центра) -->
-<div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
-    <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
-    <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
-    <div class="debuff-slot" data-side="enemy" data-slot="2"></div>
-    <div class="debuff-slot" data-side="enemy" data-slot="3"></div>
-    <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
-</div>
+                <!-- Центральная колонка -->
+                <div class="battle-center">
+                    <div class="battle-timer" id="battleTimer">45</div>
+                    <div class="speed-wrapper">
+                        <div class="speed-label">Скорость:</div>
+                        <button id="singleSpeedBtn" class="speed-btn">x1</button>
+                    </div>
+                </div>
 
-                <!-- Карточка противника -->
-                <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                <!-- Дебаффы врага -->
+                <div class="enemy-debuffs">
+                    <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="2"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="3"></div>
+                    <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
+                </div>
+
+                <!-- Карточка врага -->
+                <div class="enemy-card">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
-                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
-                        <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
-                        <!-- Контейнер для чисел -->
+                        <div id="enemy-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
@@ -160,7 +152,10 @@ battleData.enemySubclass = battleData.opponent.subclass;
                 </div>
             </div>
 
-            <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
+            <div class="battle-log-container">
+                <div class="log-header">Лог боя</div>
+                <div id="battleLog" class="battle-log"></div>
+            </div>
         </div>
     `;
 
@@ -175,7 +170,6 @@ battleData.enemySubclass = battleData.opponent.subclass;
 
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
-    // Сохраняем таймер в глобальной переменной, чтобы можно было очистить при выходе
     window.battleTimer = setInterval(() => {
         timeLeft--;
         timerEl.innerText = timeLeft;
@@ -190,6 +184,8 @@ battleData.enemySubclass = battleData.opponent.subclass;
         }
     }, 1000);
 }
+
+    
 
 async function showBattleResult(battleData, timeOut = false) {
     // Очищаем таймер боя, если он ещё работает

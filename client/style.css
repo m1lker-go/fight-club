@@ -732,6 +732,8 @@ body {
     border-bottom: none;
 }
 
+
+
 /* Иконка предмета */
 .inv-icon {
     width: 48px;
@@ -786,6 +788,11 @@ body {
     font-size: 10px;
     color: #aaa;
     word-break: break-word;
+}
+
+.inventory-row.empty-row .inv-icon {
+    border: none;
+    background: none;
 }
 
 /* Кнопки действий */

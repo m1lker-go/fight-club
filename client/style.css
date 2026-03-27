@@ -478,12 +478,11 @@ body {
     justify-content: center;
     gap: 0;
     padding: 0;
-    background-color: transparent;
+    background-color: #232833;
     margin: 0;
     border: none;
     width: 100%;
 }
-
 /* Карточки героя и врага */
 .hero-card,
 .enemy-card {
@@ -499,6 +498,7 @@ body {
     width: 80px;
     height: 120px;
     margin: 0 auto;
+    overflow: hidden;
     background: none !important;
     box-shadow: none !important;
 }
@@ -574,7 +574,7 @@ body {
     left: 0;
 }
 
-/* Центральная колонка (таймер + скорость) */
+/* Центральная колонка (таймер + скорость) – с отступами сверху/снизу */
 .battle-center {
     flex: 0 0 55px;
     display: flex;
@@ -585,7 +585,6 @@ body {
     margin: 5px 0;
     border-radius: 12px;
     padding: 12px 0;
-    align-self: stretch;
 }
 
 /* Таймер */
@@ -643,6 +642,7 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
+
 
 /* Контейнер лога */
 .battle-log-container {
@@ -2082,7 +2082,7 @@ body {
 }
 .top-bar,
 .bottom-menu,
-.battle-log{
+.battle-log {
     background-color: rgba(35, 40, 51, 0.9);
     backdrop-filter: blur(2px);
 }

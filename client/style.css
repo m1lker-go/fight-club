@@ -1402,10 +1402,10 @@ body {
     border-radius: 0;
 }
 
-/* Сетка доступных предметов (как в инвентаре) */
+/* ========== КУЗНИЦА – СПИСОК ДОСТУПНЫХ ПРЕДМЕТОВ ========== */
 #forgeInventory {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr; /* одна колонка на всю ширину */
     gap: 8px;
     width: 100%;
     margin-top: 0;
@@ -1414,56 +1414,75 @@ body {
 
 #forgeInventory .inventory-item {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    gap: 12px;
     background-color: #232833;
     border-radius: 12px;
-    padding: 8px;
+    padding: 8px 12px;
     border-left: 4px solid;
     cursor: pointer;
     transition: transform 0.2s;
     width: 100%;
     box-sizing: border-box;
 }
+
 #forgeInventory .inventory-item:hover {
     transform: translateY(-2px);
 }
 
 #forgeInventory .item-icon {
-    width: 80px;
-    height: 80px;
-    background-color: #2f3542;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    background-color: #1a1f2b;
     border-radius: 8px;
     background-size: cover;
     background-position: center;
-    margin-bottom: 8px;
-    flex-shrink: 0;
 }
+
 #forgeInventory .item-content {
-    width: 100%;
-    text-align: center;
+    flex: 1;
+    text-align: left;
 }
+
 #forgeInventory .item-name {
-    word-break: break-word;
-    hyphens: auto;
-    white-space: normal;
-    max-width: 100%;
-    line-height: 1.2;
     font-weight: bold;
-    font-size: 13px;
     margin-bottom: 2px;
+    font-size: 13px;
 }
+
 #forgeInventory .item-stats {
     font-size: 10px;
     color: #aaa;
     margin-bottom: 2px;
-    line-height: 1.2;
-    word-wrap: break-word;
 }
+
 #forgeInventory .item-rarity {
     font-size: 9px;
     text-transform: uppercase;
     font-weight: bold;
+}
+
+#forgeInventory .inv-action-btn {
+    flex-shrink: 0;
+    width: 70px;
+    height: 36px;
+    background-color: #2f3542;
+    border: 2px solid #aaa;
+    border-radius: 20px;
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#forgeInventory .inv-action-btn:hover {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
 }
 
 /* Кнопка "Добавить" (если добавится в JS) */
@@ -1478,11 +1497,7 @@ body {
     transition: all 0.2s;
     margin-top: 5px;
 }
-#forgeInventory .inv-action-btn:hover {
-    background-color: #3a4050;
-    border-color: #00aaff;
-    color: #00aaff;
-}
+
 
 /* ========== АНИМАЦИИ БОЯ ========== */
 .animation-container {

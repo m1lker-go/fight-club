@@ -275,6 +275,22 @@ async function loadDailyTasks() {
     }
 }
 
+// Функция для фоновой загрузки данных заданий без рендера
+async function refreshTasksData() {
+    if (!userData || !userData.tg_id) return;
+    try {
+        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        const data = await res.json();
+        if (data.tasks) {
+            lastTasksData = data.tasks;
+            if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+        }
+    } catch (e) {
+        console.error('Failed to refresh tasks data', e);
+    }
+}
+window.refreshTasksData = refreshTasksData;
+
 // … остальные функции (getRemainingTime, updateCountdownDisplay, startCountdownTimer, stopCountdownTimer,
 // showCoinsModal, showExpModal, showAdventCalendar, renderAdventCalendar, claimAdventDay,
 // showClassChoiceModalForAdvent, claimDailyExp) остаются без изменений …

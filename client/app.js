@@ -94,6 +94,11 @@ async function init() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
+    // Защитный таймер: скрыть сплэш через 5 секунд, если он всё ещё виден
+    const forceHideTimer = setTimeout(() => {
+        hideSplashScreen();
+    }, 5000);
+
     try {
         const response = await fetch('https://fight-club-api-4och.onrender.com/auth/login', {
             method: 'POST',
@@ -105,6 +110,7 @@ async function init() {
             signal: controller.signal
         });
         clearTimeout(timeoutId);
+        clearTimeout(forceHideTimer); // если успели, отменяем принудительное скрытие
 
         const data = await response.json();
         if (data.user) {
@@ -121,18 +127,19 @@ async function init() {
             updateMainMenuNewIcons(); 
             checkAdvent();
 
-            // Загружаем данные заданий в фоне, чтобы иконка отобразилась сразу
-            if (window.refreshTasksData) window.refreshTasksData();
-
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
 
-            hideSplashScreen();
+            hideSplashScreen(); // скрываем сплэш
         } else {
             alert('Ошибка авторизации');
             showErrorSplash();
+            // В случае ошибки не скрываем сплэш, а показываем ошибку внутри него
+            // Но чтобы не оставался белый экран, скроем старый сплэш (если не был заменён)
+            hideSplashScreen(); // добавим, чтобы скрыть, если showErrorSplash не сработал
         }
     } catch (e) {
         clearTimeout(timeoutId);
+        clearTimeout(forceHideTimer);
         console.error('Init error:', e);
         if (e.name === 'AbortError') {
             alert('Сервер не отвечает. Попробуйте позже.');
@@ -140,6 +147,7 @@ async function init() {
             alert('Ошибка соединения с сервером');
         }
         showErrorSplash();
+        hideSplashScreen(); // скрываем оригинальный сплэш, если showErrorSplash не заменил его
     }
 }
 

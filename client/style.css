@@ -1355,15 +1355,16 @@ body {
     width: 40px;
 }
 
+/* Слоты */
 .forge-slots-grid {
-    display: grid;
-    gap: 10px;
+    display: flex;
     justify-content: center;
-    margin: 0 auto 5px auto;
+    gap: 8px;
+    margin-bottom: 5px;
 }
 .forge-slot {
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     background-color: #2f3542;
     border-radius: 8px;
     display: flex;
@@ -1382,6 +1383,7 @@ body {
     font-size: 11px;
 }
 
+/* Кнопка действия */
 #forgeActionBtn {
     width: 100%;
     background-color: #2f3542;
@@ -1401,6 +1403,7 @@ body {
     cursor: not-allowed;
 }
 
+/* Заголовок "Доступные предметы" */
 .forge-inventory-header {
     background-color: #1a1f2b;
     padding: 8px 12px;
@@ -1411,24 +1414,55 @@ body {
     border-radius: 0;
 }
 
+/* Список предметов – одна колонка, прокрутка, ровно 4 строки видно */
 #forgeInventory {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(4 * 80px); /* высота под 4 строки */
+    overflow-y: auto;
+    scrollbar-width: thin;
     margin-top: 0;
 }
+#forgeInventory::-webkit-scrollbar {
+    width: 6px;
+}
+#forgeInventory::-webkit-scrollbar-track {
+    background: #1a1f2b;
+}
+#forgeInventory::-webkit-scrollbar-thumb {
+    background: #00aaff;
+    border-radius: 3px;
+}
 
-/* Стили для карточек предметов в кузнице — такие же, как в инвентаре */
+/* Строка предмета (как в рюкзаке) */
 #forgeInventory .inventory-item {
-    background-color: #232833;
-    border-left: 4px solid;
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    border-radius: 12px;
+    border-left: 4px solid;
+    background-color: #232833;
     transition: transform 0.2s;
+}
+#forgeInventory .inventory-item:nth-child(even) {
+    background-color: #2a303c;
 }
 #forgeInventory .inventory-item:hover {
     transform: translateY(-2px);
 }
+
+/* Пустая строка – такой же фон, но без содержимого */
+#forgeInventory .inventory-item.empty-row {
+    border-left-color: transparent;
+}
+#forgeInventory .inventory-item.empty-row .item-icon,
+#forgeInventory .inventory-item.empty-row .item-content,
+#forgeInventory .inventory-item.empty-row .inv-action-btn {
+    display: none;
+}
+/* но чтобы сохранить высоту, просто оставляем пустым, но padding уже задан */
+
+/* Иконка */
 #forgeInventory .item-icon {
     width: 56px;
     height: 56px;
@@ -1438,6 +1472,8 @@ body {
     background-size: cover;
     background-position: center;
 }
+
+/* Центральный блок */
 #forgeInventory .item-content {
     flex: 1;
     text-align: left;
@@ -1447,10 +1483,12 @@ body {
     font-size: 13px;
     margin-bottom: 2px;
 }
-#forgeInventory .item-class {
+/* Редкость в скобках – в той же строке, но мелким шрифтом */
+#forgeInventory .item-name .rarity-badge {
     font-size: 11px;
-    color: #aaa;
-    margin-bottom: 2px;
+    font-weight: normal;
+    color: inherit;
+    margin-left: 5px;
 }
 #forgeInventory .item-stats {
     font-size: 10px;
@@ -1458,26 +1496,26 @@ body {
     margin-bottom: 2px;
 }
 #forgeInventory .item-rarity {
-    font-size: 9px;
-    text-transform: uppercase;
-    font-weight: bold;
+    display: none; /* скрываем старый блок редкости, теперь она в названии */
 }
-#forgeInventory .item-actions {
-    display: flex;
-    gap: 5px;
-    margin-top: 5px;
-}
-#forgeInventory .action-btn {
-    background-color: #2f3542;
-    color: #aaa;
+
+/* Кнопка "Добавить" */
+#forgeInventory .inv-action-btn {
+    flex-shrink: 0;
+    width: 70px;
+    height: 36px;
+    background-color: transparent;
     border: 2px solid #aaa;
     border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 11px;
+    color: #aaa;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-#forgeInventory .action-btn:hover {
+#forgeInventory .inv-action-btn:hover {
     background-color: #3a4050;
     border-color: #00aaff;
     color: #00aaff;

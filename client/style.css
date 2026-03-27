@@ -592,33 +592,34 @@ body {
     color: #e74c3c;
 }
 
-/* ========== ЭКРАН ЭКИПИРОВКИ ========== */
-.hero-center {
-    width: 160px;
-    height: 240px;
+
+/* ========== СТРАНИЦА ЭКИПИРОВКИ ========== */
+
+/* Фиксированная верхняя часть */
+.equip-top {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+.equip-top-bar {
     display: flex;
-    align-items: center;
     justify-content: center;
-    background: none;
-}
-.hero-center img {
+    align-items: center;
+    gap: 10px;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #00aaff;
 }
+
 .equip-column {
     display: flex;
     flex-direction: column;
     gap: 8px;
     width: 78px;
 }
+
 .equip-slot {
     position: relative;
     width: 78px;
     height: 78px;
-    background-image: url('/assets/slot.png');
     background-size: cover;
     background-position: center;
     display: flex;
@@ -638,119 +639,163 @@ body {
     background-position: center;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
-.equip-main {
+
+.hero-center {
+    width: 160px;
+    height: 240px;
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    background: none;
+}
+.hero-center img {
     width: 100%;
-    margin-bottom: 20px;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #00aaff;
 }
 
-/* ========== КОНТЕЙНЕР РЮКЗАКА ========== */
-.inventory-container {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 5px;
-    margin-top: 15px;
-    width: 100%;
-}
-.inventory-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-}
-.inventory-item {
+/* Секция инвентаря (рюкзак) */
+.inventory-section {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    min-height: 0; /* важно для скролла */
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.inventory-header {
+    background-color: #1a1f2b;
+    padding: 12px 16px;
+    border-radius: 12px 12px 0 0;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    margin: 0;
+}
+
+.inventory-list {
+    flex: 1;
+    overflow-y: auto;
     background-color: #232833;
-    border-radius: 12px;
-    padding: 8px;
-    border-left: 4px solid;
-    cursor: pointer;
-    transition: transform 0.2s;
-    width: 100%;
-    box-sizing: border-box;
+    border-radius: 0 0 12px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #00aaff #1a1f2b;
 }
-.inventory-item:hover {
-    transform: translateY(-2px);
+.inventory-list::-webkit-scrollbar {
+    width: 6px;
 }
-.item-icon {
-    width: 80px;
-    height: 80px;
-    background-color: #2f3542;
+.inventory-list::-webkit-scrollbar-track {
+    background: #1a1f2b;
+    border-radius: 10px;
+}
+.inventory-list::-webkit-scrollbar-thumb {
+    background: #00aaff;
+    border-radius: 10px;
+}
+
+/* Строка предмета */
+.inventory-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a1f2b;
+    background-color: #232833;
+}
+.inventory-row:nth-child(even) {
+    background-color: #2a303c;
+}
+.inventory-row.empty-row {
+    background-color: #232833;
+    border-bottom: 1px solid #1a1f2b;
+}
+.inventory-row.empty-row:nth-child(even) {
+    background-color: #2a303c;
+}
+.inventory-row:last-child {
+    border-bottom: none;
+}
+
+/* Иконка предмета */
+.inv-icon {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    background-color: #1a1f2b;
     border-radius: 8px;
-    background-size: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.inv-icon-img {
+    width: 50px;
+    height: 50px;
+    background-size: contain;
+    background-repeat: no-repeat;
     background-position: center;
-    margin-bottom: 8px;
+}
+
+/* Информация о предмете */
+.inv-info {
+    flex: 1;
+    min-width: 0;
+}
+.inv-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px;
+}
+.inv-name-text {
+    font-weight: bold;
+}
+.inv-class {
+    font-size: 12px;
+    font-weight: normal;
+    color: #aaa;
+}
+.inv-stats {
+    font-size: 11px;
+    color: #aaa;
+    word-break: break-word;
+}
+
+/* Кнопки действий */
+.inv-actions {
+    display: flex;
+    gap: 8px;
     flex-shrink: 0;
 }
-.item-content {
-    width: 100%;
-    text-align: center;
-}
-.item-name {
-    word-break: break-word;
-    hyphens: auto;
-    white-space: normal;
-    max-width: 100%;
-    line-height: 1.2;
-    font-weight: bold;
-    font-size: 13px;
-    margin-bottom: 2px;
-}
-.item-stats {
-    font-size: 10px;
-    color: #aaa;
-    margin-bottom: 2px;
-    line-height: 1.2;
-    word-wrap: break-word;
-}
-.item-rarity {
-    font-size: 9px;
-    text-transform: uppercase;
-    font-weight: bold;
-}
-.sale-tag {
-    color: #e74c3c;
-    font-size: 10px;
-    display: block;
-    margin-top: 2px;
-}
-.forge-tag {
-    color: #f39c12;
-    font-size: 10px;
-    display: block;
-    margin-top: 2px;
-}
-.item-actions {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    margin-top: 8px;
-}
-.action-btn {
-    flex: 1;
-    padding: 4px 0;
-    border: none;
-    border-radius: 15px;
-    font-size: 11px;
+.inv-action-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background-color: #1a1f2b;
+    border: 1px solid #aaa;
+    color: #ccc;
+    font-size: 12px;
     font-weight: bold;
     cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 4px;
 }
-.equip-btn { background-color: #00aaff; color: white; }
-.sell-btn { background-color: #e74c3c; color: white; }
-.unsell-btn { background-color: #f39c12; color: white; }
-.cancel-btn { background-color: #7f8c8d; color: white; }
+.inv-action-btn:hover {
+    background-color: #2a2f3a;
+    border-color: #00aaff;
+    color: #00aaff;
+}
 
-/* Цвета редкости */
-.rarity-common { border-left-color: #aaa; color: #aaa; }
-.rarity-uncommon { border-left-color: #2ecc71; color: #2ecc71; }
-.rarity-rare { border-left-color: #2e86de; color: #2e86de; }
-.rarity-epic { border-left-color: #9b59b6; color: #9b59b6; }
-.rarity-legendary { border-left-color: #f1c40f; color: #f1c40f; }
 
 /* ========== МАГАЗИН СУНДУКОВ ========== */
 .chest-list {

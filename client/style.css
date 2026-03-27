@@ -802,14 +802,14 @@ body {
     flex-shrink: 0;
 }
 .inv-action-btn {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 8px;
     background-color: #1a1f2b;
     border: 1px solid #aaa;
     color: #ccc;
-    font-size: 10px;
-    font-weight: bold;
+    font-size: 9px;
+    font-weight: normal;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -818,6 +818,9 @@ body {
     text-align: center;
     padding: 0 4px;
     line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    text-transform: none; /* отключаем заглавные буквы */
 }
 .inv-action-btn:hover {
     background-color: #2a2f3a;

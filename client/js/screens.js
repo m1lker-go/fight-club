@@ -319,16 +319,16 @@ function renderEquip() {
         });
 
         // Добавляем пустые строки, если нужно (для фиксированной высоты)
-        const emptyRowsCount = Math.max(0, 5 - unequipped.length);
-        for (let i = 0; i < emptyRowsCount; i++) {
-            itemsHtml += `
-                <div class="inventory-row empty-row">
-                    <div class="inv-icon"><div class="inv-icon-img"></div></div>
-                    <div class="inv-info"></div>
-                    <div class="inv-actions"></div>
-                </div>
-            `;
-        }
+       const emptyRowsCount = Math.max(0, 4 - unequipped.length);
+    for (let i = 0; i < emptyRowsCount; i++) {
+        itemsHtml += `
+            <div class="inventory-row empty-row">
+                <div class="inv-icon empty-icon"></div>
+                <div class="inv-info"></div>
+                <div class="inv-actions"></div>
+            </div>
+        `;
+    }
 
         return itemsHtml;
     }

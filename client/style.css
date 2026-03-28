@@ -1313,7 +1313,7 @@ body {
     padding: 5px;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100%;          /* обязательно, чтобы flex-дети могли растягиваться */
     box-sizing: border-box;
 }
 
@@ -1378,7 +1378,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #aaa;
+    border: 2px solid #aaa; /* по умолчанию серая */
     cursor: pointer;
     overflow: hidden;
 }
@@ -1390,6 +1390,7 @@ body {
     color: #aaa;
     font-size: 11px;
 }
+/* Цвет обводки для заполненных слотов (устанавливается через data-rarity) */
 .forge-slot[data-rarity="common"] { border-color: #aaa; }
 .forge-slot[data-rarity="uncommon"] { border-color: #2ecc71; }
 .forge-slot[data-rarity="rare"] { border-color: #2e86de; }
@@ -1431,10 +1432,10 @@ body {
     flex-shrink: 0;
 }
 
-/* Список предметов – гибкая область, прокрутка только при переполнении */
+/* Список предметов – гибкая область, прокрутка при необходимости */
 #forgeInventory {
     flex: 1;
-    min-height: 0;          /* обязательно для прокрутки */
+    min-height: 0;          /* важно для корректной прокрутки */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1452,27 +1453,28 @@ body {
     border-radius: 3px;
 }
 
-/* Строка предмета – фиксированная высота, без анимаций */
+/* Строка предмета – фиксированная высота, без эффектов наведения */
 #forgeInventory .inventory-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 6px 12px;
+    padding: 6px 12px;      /* чуть меньше вертикальных отступов, чтобы 4 строки влезали */
     background-color: #232833;
     border-left: none;
     transition: none;
-    flex-shrink: 0;
+    flex-shrink: 0;         /* не сжиматься */
 }
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
 }
+/* Полное отключение любых эффектов при наведении */
 #forgeInventory .inventory-item:hover {
     background-color: inherit !important;
     transform: none;
     cursor: default;
 }
 
-/* Пустая строка */
+/* Пустая строка – скрываем содержимое */
 #forgeInventory .inventory-item.empty-row .item-icon,
 #forgeInventory .inventory-item.empty-row .item-content,
 #forgeInventory .inventory-item.empty-row .inv-action-btn {
@@ -1496,7 +1498,7 @@ body {
 #forgeInventory .inventory-item.rarity-epic .item-icon { border-color: #9b59b6; }
 #forgeInventory .inventory-item.rarity-legendary .item-icon { border-color: #f1c40f; }
 
-/* Текст */
+/* Центральный блок */
 #forgeInventory .item-content {
     flex: 1;
     text-align: left;
@@ -1521,7 +1523,7 @@ body {
     display: none;
 }
 
-/* Кнопка "Добавить" */
+/* Кнопка "Добавить" – без эффектов наведения */
 #forgeInventory .inv-action-btn {
     flex-shrink: 0;
     width: 70px;
@@ -1542,163 +1544,6 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
-    
-/* ========== АНИМАЦИИ БОЯ ========== */
-.animation-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    display: none;
-    z-index: 10;
-}
-.animation-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.floating-numbers-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 20;
-}
-.floating-number {
-    font-family: 'Titillium Web', sans-serif;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 28px;
-    font-weight: bold;
-    white-space: nowrap;
-    text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
-    opacity: 1;
-    animation: floatFade 2s ease-out forwards;
-}
-.floating-number.red {
-    color: #ff4444 !important;
-}
-.floating-number.green {
-    color: #44ff44 !important;
-}
-.floating-icon {
-    width: 1em;
-    height: 1em;
-    vertical-align: middle;
-    margin-left: 2px;
-}
-@keyframes floatFade {
-    0% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-        opacity: 1;
-        transform: translate(-50%, -70%) scale(1.2);
-    }
-    100% {
-        opacity: 0;
-        transform: translate(-50%, -100%) scale(1);
-    }
-}
-.frozen-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 15;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.frozen-overlay img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.frozen-overlay.active {
-    opacity: 1;
-}
-.defeat-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #e74c3c;
-    font-weight: bold;
-    font-size: 14px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-    background-color: rgba(0,0,0,0.3);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    pointer-events: none;
-    z-index: 20;
-    text-align: center;
-    line-height: 1.2;
-    padding: 0 5px;
-    box-sizing: border-box;
-}
-.hero-card.defeated .defeat-overlay,
-.enemy-card.defeated .defeat-overlay {
-    opacity: 1;
-}
-.hero-card.defeated .hero-avatar-img,
-.enemy-card.defeated .enemy-avatar-img {
-    filter: grayscale(1);
-    transition: filter 0.5s ease;
-}
-.debuff-slot {
-    position: relative;
-    width: 40px;
-    height: 33px;
-    margin: 0 auto;
-    background: none;
-}
-.negative-icon {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 25px;
-    height: 25px;
-    object-fit: contain;
-    z-index: 5;
-}
-.debuff-slot[data-side="player"] .negative-icon {
-    left: 0;
-}
-.debuff-slot[data-side="enemy"] .negative-icon {
-    right: 0;
-}
-.positive-icon,
-.rage-icon {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 25px;
-    height: 25px;
-    object-fit: contain;
-    z-index: 10;
-}
-.debuff-slot[data-side="player"] .positive-icon,
-.debuff-slot[data-side="player"] .rage-icon {
-    right: 0;
-}
-.debuff-slot[data-side="enemy"] .positive-icon,
-.debuff-slot[data-side="enemy"] .rage-icon {
-    left: 0;
-}
-
 /* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========== */
 .tasks-container {
     display: flex;

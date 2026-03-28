@@ -1313,7 +1313,7 @@ body {
     padding: 5px;
     display: flex;
     flex-direction: column;
-    height: 100%;          /* обязательно, чтобы flex-дети могли растягиваться */
+    height: 100%;
     box-sizing: border-box;
 }
 
@@ -1378,7 +1378,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #aaa; /* по умолчанию серая */
+    border: 2px solid #aaa;
     cursor: pointer;
     overflow: hidden;
 }
@@ -1390,7 +1390,6 @@ body {
     color: #aaa;
     font-size: 11px;
 }
-/* Цвет обводки для заполненных слотов (устанавливается через data-rarity) */
 .forge-slot[data-rarity="common"] { border-color: #aaa; }
 .forge-slot[data-rarity="uncommon"] { border-color: #2ecc71; }
 .forge-slot[data-rarity="rare"] { border-color: #2e86de; }
@@ -1432,10 +1431,10 @@ body {
     flex-shrink: 0;
 }
 
-/* Список предметов – гибкая область, прокрутка при необходимости */
+/* Список предметов – гибкая область, прокрутка только при переполнении */
 #forgeInventory {
     flex: 1;
-    min-height: 0;          /* важно для корректной прокрутки */
+    min-height: 0;          /* обязательно для прокрутки */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1453,28 +1452,27 @@ body {
     border-radius: 3px;
 }
 
-/* Строка предмета – фиксированная высота, без эффектов наведения */
+/* Строка предмета – фиксированная высота, без анимаций */
 #forgeInventory .inventory-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 6px 12px;      /* чуть меньше вертикальных отступов, чтобы 4 строки влезали */
+    padding: 6px 12px;
     background-color: #232833;
     border-left: none;
     transition: none;
-    flex-shrink: 0;         /* не сжиматься */
+    flex-shrink: 0;
 }
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
 }
-/* Полное отключение любых эффектов при наведении */
 #forgeInventory .inventory-item:hover {
     background-color: inherit !important;
     transform: none;
     cursor: default;
 }
 
-/* Пустая строка – скрываем содержимое */
+/* Пустая строка */
 #forgeInventory .inventory-item.empty-row .item-icon,
 #forgeInventory .inventory-item.empty-row .item-content,
 #forgeInventory .inventory-item.empty-row .inv-action-btn {
@@ -1498,7 +1496,7 @@ body {
 #forgeInventory .inventory-item.rarity-epic .item-icon { border-color: #9b59b6; }
 #forgeInventory .inventory-item.rarity-legendary .item-icon { border-color: #f1c40f; }
 
-/* Центральный блок */
+/* Текст */
 #forgeInventory .item-content {
     flex: 1;
     text-align: left;
@@ -1523,7 +1521,7 @@ body {
     display: none;
 }
 
-/* Кнопка "Добавить" – без эффектов наведения */
+/* Кнопка "Добавить" */
 #forgeInventory .inv-action-btn {
     flex-shrink: 0;
     width: 70px;

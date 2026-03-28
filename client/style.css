@@ -1306,9 +1306,6 @@ body {
 }
 
 /* ========== КУЗНИЦА ========== */
-
-
-/* ========== КУЗНИЦА ========== */
 .forge-container {
     background-color: #232833;
     border-radius: 12px;
@@ -1376,9 +1373,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #00aaff;
     cursor: pointer;
     overflow: hidden;
+    border: 2px solid #aaa; /* серая обводка по умолчанию */
 }
 .forge-slot img {
     max-width: 100%;
@@ -1388,6 +1385,11 @@ body {
     color: #aaa;
     font-size: 11px;
 }
+.forge-slot.rarity-common { border-color: #aaa; }
+.forge-slot.rarity-uncommon { border-color: #2ecc71; }
+.forge-slot.rarity-rare { border-color: #2e86de; }
+.forge-slot.rarity-epic { border-color: #9b59b6; }
+.forge-slot.rarity-legendary { border-color: #f1c40f; }
 
 /* Кнопка действия */
 #forgeActionBtn {
@@ -1410,7 +1412,7 @@ body {
     cursor: not-allowed;
 }
 
-/* Заголовок "Доступные предметы" – без отступов по бокам */
+/* Заголовок "Доступные предметы" */
 .forge-inventory-header {
     background-color: #1a1f2b;
     padding: 8px 0;
@@ -1453,6 +1455,8 @@ body {
     background-color: #232833;
     transition: none;
     border-left: none;
+    flex: 1;
+    min-height: 0;
 }
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
@@ -1502,7 +1506,7 @@ body {
 #forgeInventory .item-name .rarity-badge {
     font-size: 11px;
     font-weight: normal;
-    color: inherit;
+    color: #aaa !important;
     margin-left: 5px;
 }
 #forgeInventory .item-stats {
@@ -1535,7 +1539,6 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
-
 
 
     

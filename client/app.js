@@ -100,9 +100,9 @@ function showErrorSplash() {
 
 async function init() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 секунд таймаут запроса
 
-    // Защитный таймер: скрыть сплэш через 10 секунд, если загрузка не удалась
+    // Показываем ошибку через 10 секунд, если данные ещё не пришли
     const errorTimer = setTimeout(() => {
         if (!userData) {
             showErrorSplash();

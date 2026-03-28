@@ -101,44 +101,42 @@ async function loadForgeInventory() {
 function renderForgeInventory(items) {
     const container = document.getElementById('forgeInventory');
     container.innerHTML = '';
-    const maxRows = 4; // всегда показываем 4 строки
-    const rows = [];
-    for (let i = 0; i < maxRows; i++) {
-        const item = items[i];
-        if (item) {
-            const statsArray = buildStatsArray(item);
-            const statsString = statsArray.join(' • ');
-            const rarityName = rarityTranslations[item.rarity] || item.rarity;
-            const rarityClass = `rarity-${item.rarity}`;
-            const iconPath = getItemIconPath(item);
+    // Показываем все доступные предметы
+    items.forEach(item => {
+        const statsArray = buildStatsArray(item);
+        const statsString = statsArray.join(' • ');
+        const rarityName = rarityTranslations[item.rarity] || item.rarity;
+        const rarityClass = `rarity-${item.rarity}`;
+        const iconPath = getItemIconPath(item);
 
-            const itemDiv = document.createElement('div');
-            itemDiv.className = `inventory-item ${rarityClass}`;
-            itemDiv.dataset.itemId = item.id;
-            itemDiv.innerHTML = `
-    <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
-    <div class="item-content">
-        <div class="item-name" style="color: ${getRarityColor(item.rarity)}">
-            ${itemNameTranslations[item.name] || item.name}
-            <span class="rarity-badge">(${rarityName})</span>
-        </div>
-        <div class="item-stats">${statsString}</div>
-    </div>
-    <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
-`;
-            itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                addToForge(item);
-            });
-            rows.push(itemDiv);
-        } else {
-            // Пустая строка – просто div с классом empty-row
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'inventory-item empty-row';
-            rows.push(emptyDiv);
-        }
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `inventory-item ${rarityClass}`;
+        itemDiv.dataset.itemId = item.id;
+        itemDiv.innerHTML = `
+            <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
+            <div class="item-content">
+                <div class="item-name" style="color: ${getRarityColor(item.rarity)}">
+                    ${itemNameTranslations[item.name] || item.name}
+                    <span class="rarity-badge">(${rarityName})</span>
+                </div>
+                <div class="item-stats">${statsString}</div>
+            </div>
+            <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+        `;
+        itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            addToForge(item);
+        });
+        container.appendChild(itemDiv);
+    });
+
+    // Если предметов меньше 4, добавляем пустые строки до 4
+    const emptyRowsNeeded = Math.max(0, 4 - items.length);
+    for (let i = 0; i < emptyRowsNeeded; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'inventory-item empty-row';
+        container.appendChild(emptyDiv);
     }
-    rows.forEach(row => container.appendChild(row));
 }
 
 // Вспомогательная функция для цвета текста редкости

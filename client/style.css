@@ -1390,7 +1390,7 @@ body {
     color: #aaa;
     font-size: 11px;
 }
-/* Заполненный слот – обводка цвета редкости (задаётся через класс в JS) */
+/* Заполненный слот – обводка цвета редкости (задаётся через атрибут data-rarity) */
 .forge-slot[data-rarity="common"] { border-color: #aaa; }
 .forge-slot[data-rarity="uncommon"] { border-color: #2ecc71; }
 .forge-slot[data-rarity="rare"] { border-color: #2e86de; }
@@ -1432,12 +1432,12 @@ body {
     flex-shrink: 0;
 }
 
-/* Список предметов – занимает всё оставшееся место, прокручивается */
+/* Список предметов – занимает всё оставшееся место, прокручивается при переполнении */
 #forgeInventory {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* важно для flex-прокрутки */
+    min-height: 0; /* важно для прокрутки */
     overflow-y: auto;
     scrollbar-width: thin;
     margin-top: 0;
@@ -1453,24 +1453,23 @@ body {
     border-radius: 3px;
 }
 
-/* Строка предмета */
+/* Строка предмета – без анимаций и эффектов при наведении */
 #forgeInventory .inventory-item {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
     background-color: #232833;
-    transition: none;
     border-left: none;
+    transition: none;
 }
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
 }
 #forgeInventory .inventory-item:hover {
+    background-color: inherit !important;
     transform: none;
-    background-color: inherit;
 }
-
 /* Пустая строка – скрываем содержимое */
 #forgeInventory .inventory-item.empty-row .item-icon,
 #forgeInventory .inventory-item.empty-row .item-content,
@@ -1520,7 +1519,7 @@ body {
     display: none;
 }
 
-/* Кнопка "Добавить" */
+/* Кнопка "Добавить" – без анимации */
 #forgeInventory .inv-action-btn {
     flex-shrink: 0;
     width: 70px;

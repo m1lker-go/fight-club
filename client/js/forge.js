@@ -65,8 +65,9 @@ function renderForgeSlots() {
     for (let i = 0; i < slotCount; i++) {
         const itemId = forgeItems[i];
         const item = inventory.find(it => it.id === itemId);
+        const rarityClass = item ? `rarity-${item.rarity}` : '';
         html += `
-            <div class="forge-slot" data-slot-index="${i}">
+            <div class="forge-slot ${rarityClass}" data-slot-index="${i}">
                 ${item ? `<img src="${getItemIconPath(item)}" title="${item.name}">` : '<span>Пусто</span>'}
             </div>
         `;

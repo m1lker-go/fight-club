@@ -1313,7 +1313,7 @@ body {
     padding: 5px;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100%;          /* обязательно, чтобы flex-дети могли растягиваться */
     box-sizing: border-box;
 }
 
@@ -1378,7 +1378,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #aaa;
+    border: 2px solid #aaa; /* по умолчанию серая */
     cursor: pointer;
     overflow: hidden;
 }
@@ -1390,6 +1390,7 @@ body {
     color: #aaa;
     font-size: 11px;
 }
+/* Цвет обводки для заполненных слотов (устанавливается через data-rarity) */
 .forge-slot[data-rarity="common"] { border-color: #aaa; }
 .forge-slot[data-rarity="uncommon"] { border-color: #2ecc71; }
 .forge-slot[data-rarity="rare"] { border-color: #2e86de; }
@@ -1431,9 +1432,10 @@ body {
     flex-shrink: 0;
 }
 
-/* Список предметов – фиксированная высота для 4 строк, скролл при переполнении */
+/* Список предметов – гибкая область, прокрутка при необходимости */
 #forgeInventory {
-    height: calc(4 * 64px); /* 4 строки по 64px */
+    flex: 1;
+    min-height: 0;          /* важно для корректной прокрутки */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1451,26 +1453,28 @@ body {
     border-radius: 3px;
 }
 
-/* Строка предмета – фиксированная высота, без анимаций */
+/* Строка предмета – фиксированная высота, без эффектов наведения */
 #forgeInventory .inventory-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 6px 12px;
+    padding: 6px 12px;      /* чуть меньше вертикальных отступов, чтобы 4 строки влезали */
     background-color: #232833;
     border-left: none;
     transition: none;
-    height: 64px;
-    box-sizing: border-box;
+    flex-shrink: 0;         /* не сжиматься */
 }
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
 }
+/* Полное отключение любых эффектов при наведении */
 #forgeInventory .inventory-item:hover {
     background-color: inherit !important;
     transform: none;
+    cursor: default;
 }
-/* Пустая строка – скрываем содержимое, но сохраняем высоту */
+
+/* Пустая строка – скрываем содержимое */
 #forgeInventory .inventory-item.empty-row .item-icon,
 #forgeInventory .inventory-item.empty-row .item-content,
 #forgeInventory .inventory-item.empty-row .inv-action-btn {
@@ -1519,7 +1523,7 @@ body {
     display: none;
 }
 
-/* Кнопка "Добавить" */
+/* Кнопка "Добавить" – без эффектов наведения */
 #forgeInventory .inv-action-btn {
     flex-shrink: 0;
     width: 70px;

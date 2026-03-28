@@ -79,14 +79,22 @@ function hideSplashScreen() {
 function showErrorSplash() {
     const splash = document.getElementById('splash-screen');
     if (splash) {
+        splash.classList.remove('hidden');
+        splash.style.display = 'flex';
         splash.innerHTML = `
             <div class="splash-content">
                 <h1 class="splash-title">Ошибка соединения</h1>
                 <p class="splash-subtitle">Не удалось подключиться к серверу.</p>
                 <p style="font-size:14px; margin-bottom:20px;">Попробуйте позже или нажмите "Повторить"</p>
-                <button class="btn" onclick="location.reload()" style="margin-top: 10px;">Повторить</button>
+                <button class="btn" id="retryBtn" style="margin-top: 10px;">Повторить</button>
             </div>
         `;
+        const retryBtn = document.getElementById('retryBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                location.reload();
+            });
+        }
     }
 }
 
@@ -94,10 +102,12 @@ async function init() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-    // Защитный таймер: скрыть сплэш через 5 секунд, если он всё ещё виден
-    const forceHideTimer = setTimeout(() => {
-        hideSplashScreen();
-    }, 5000);
+    // Защитный таймер: скрыть сплэш через 10 секунд, если загрузка не удалась
+    const errorTimer = setTimeout(() => {
+        if (!userData) {
+            showErrorSplash();
+        }
+    }, 10000);
 
     try {
         const response = await fetch('https://fight-club-api-4och.onrender.com/auth/login', {
@@ -110,7 +120,7 @@ async function init() {
             signal: controller.signal
         });
         clearTimeout(timeoutId);
-        clearTimeout(forceHideTimer); // если успели, отменяем принудительное скрытие
+        clearTimeout(errorTimer);
 
         const data = await response.json();
         if (data.user) {
@@ -129,25 +139,16 @@ async function init() {
 
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
 
-            hideSplashScreen(); // скрываем сплэш
+            hideSplashScreen();
         } else {
             alert('Ошибка авторизации');
             showErrorSplash();
-            // В случае ошибки не скрываем сплэш, а показываем ошибку внутри него
-            // Но чтобы не оставался белый экран, скроем старый сплэш (если не был заменён)
-            hideSplashScreen(); // добавим, чтобы скрыть, если showErrorSplash не сработал
         }
     } catch (e) {
         clearTimeout(timeoutId);
-        clearTimeout(forceHideTimer);
+        clearTimeout(errorTimer);
         console.error('Init error:', e);
-        if (e.name === 'AbortError') {
-            alert('Сервер не отвечает. Попробуйте позже.');
-        } else {
-            alert('Ошибка соединения с сервером');
-        }
         showErrorSplash();
-        hideSplashScreen(); // скрываем оригинальный сплэш, если showErrorSplash не заменил его
     }
 }
 
@@ -213,7 +214,6 @@ async function refreshData() {
                 window.updateShopTabIcon();
             }
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
-            // Обновляем данные заданий, чтобы иконка была актуальна
             if (window.refreshTasksData) window.refreshTasksData();
         }
     } catch (e) {
@@ -266,7 +266,6 @@ function showScreen(screen) {
         default: renderMain();
     }
 
-    // После смены экрана обновляем иконку в меню (на случай, если данные заданий уже есть)
     if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
 }
 

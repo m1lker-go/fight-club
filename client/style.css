@@ -484,9 +484,10 @@ body {
     width: 100%;
 }
 /* ========== АВАТАРЫ В БОЮ – ФИКСИРОВАННЫЙ РАЗМЕР И ОБРЕЗКА ========== */
+/* ========== КАРТОЧКИ ГЕРОЯ И ВРАГА ========== */
 .hero-card,
 .enemy-card {
-    flex: 0 0 80px;
+    flex: 0 0 100px; /* ширина карточки, совпадает с шириной баров */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -495,11 +496,10 @@ body {
 }
 
 /* Контейнер аватара */
-
 .hero-card > div:first-child,
 .enemy-card > div:first-child {
-    width: 80px !important;
-    height: 120px !important;
+    width: 100px !important;
+    height: 150px !important;
     margin: 0 auto !important;
     overflow: hidden !important;
     background: none !important;
@@ -507,7 +507,6 @@ body {
 }
 
 /* Само изображение */
-
 .hero-avatar-img,
 .enemy-avatar-img {
     width: 100% !important;
@@ -517,10 +516,10 @@ body {
     border: none !important;
 }
 
-/* Бары здоровья и маны */
+/* Бары здоровья и маны – уже 100px, оставляем */
 .hp-bar,
 .mana-bar {
-    width: 80px;
+    width: 100px;
     margin: 3px auto;
     background-color: transparent !important;
     border: none !important;

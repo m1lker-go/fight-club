@@ -4,11 +4,10 @@ async function startBattle() {
     if (!userData || !userData.tg_id) {
         console.error('tg_id не определён!');
         alert('Ошибка: не удалось идентифицировать пользователя');
-        unlockMenu(); // разблокируем меню
+        unlockMenu();
         return;
     }
 
-    // Очищаем предыдущий таймер боя, если он был
     if (window.battleTimer) {
         clearInterval(window.battleTimer);
         window.battleTimer = null;
@@ -29,17 +28,16 @@ async function startBattle() {
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
             alert('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'));
-            unlockMenu(); // разблокируем меню
+            unlockMenu();
             return;
         }
 
-        // Полная остановка предыдущего лога перед показом нового экрана
         BattleLog.stop();
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);
         alert('Ошибка соединения с сервером');
-        unlockMenu(); // разблокируем меню
+        unlockMenu();
     }
 }
 
@@ -49,7 +47,6 @@ function unlockMenu() {
         item.style.opacity = '1';
     });
 }
-
 
 function showBattleScreen(battleData) {
     document.querySelectorAll('.menu-item').forEach(item => {
@@ -105,7 +102,6 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Дебаффы игрока -->
                 <div class="player-debuffs">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
@@ -114,7 +110,6 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-                <!-- Центральная колонка -->
                 <div class="battle-center">
                     <div class="battle-timer" id="battleTimer">45</div>
                     <div class="speed-wrapper">
@@ -123,7 +118,6 @@ function showBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <!-- Дебаффы врага -->
                 <div class="enemy-debuffs">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
@@ -132,7 +126,6 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <!-- Карточка врага -->
                 <div class="enemy-card">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
@@ -185,10 +178,7 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-    
-
 async function showBattleResult(battleData, timeOut = false) {
-    // Очищаем таймер боя, если он ещё работает
     if (window.battleTimer) {
         clearInterval(window.battleTimer);
         window.battleTimer = null;
@@ -202,18 +192,18 @@ async function showBattleResult(battleData, timeOut = false) {
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
+    const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
     const leveledUp = addExpToCurrentClass(expGain);
-if (leveledUp) {
-    await refreshData();
-    showLevelUpModal(userData.current_class);
-}
+    if (leveledUp) {
+        await refreshData();
+        showLevelUpModal(userData.current_class);
+    }
 
-    
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -230,19 +220,18 @@ if (leveledUp) {
         });
     } catch (err) { console.error(err); }
 
-    // Подсчёт статистики из messages
+    // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
     battleData.result.messages.forEach(msg => {
         const text = msg.text;
-        const attacker = msg.attacker; // 'player' или 'enemy'
+        const attacker = msg.attacker;
         if (!attacker || attacker === 'none') return;
 
         const targetStats = attacker === 'player' ? playerStats : enemyStats;
         const opponentStats = attacker === 'player' ? enemyStats : playerStats;
 
-        // --- Обычный урон ---
         let match = text.match(/Урон -(\d+)/);
         if (match) {
             const dmg = parseInt(match[1]);
@@ -250,7 +239,6 @@ if (leveledUp) {
             targetStats.totalDamage += dmg;
         }
 
-        // --- Критический урон ---
         match = text.match(/Крит\. урон -(\d+)/);
         if (match) {
             const dmg = parseInt(match[1]);
@@ -259,23 +247,20 @@ if (leveledUp) {
             targetStats.totalDamage += dmg;
         }
 
-        // --- Урон от стихий (яд, огонь) – идёт в общий урон, но не в hits ---
         match = text.match(/Урон от (?:яда|огня) -(\d+)/);
         if (match) {
             const dmg = parseInt(match[1]);
-            targetStats.totalDamage += dmg; // hits не увеличиваем
+            targetStats.totalDamage += dmg;
         }
 
-        // --- Уклонение ---
-     if (text.toLowerCase().includes('уворот')) {
-    opponentStats.dodges++;
-}
+        if (text.toLowerCase().includes('уворот')) {
+            opponentStats.dodges++;
+        }
 
-        // --- Лечение (вампиризм и активное) ---
         match = text.match(/Вампиризм \+(\d+)/);
         if (match) {
             const heal = parseInt(match[1]);
-            targetStats.heal += heal; // лечение получает атакующий
+            targetStats.heal += heal;
         }
         match = text.match(/Здоровье \+(\d+)/);
         if (match) {
@@ -283,57 +268,44 @@ if (leveledUp) {
             targetStats.heal += heal;
         }
 
-        // --- Отражение ---
         match = text.match(/Отражение -(\d+)/);
         if (match) {
             const reflect = parseInt(match[1]);
-            opponentStats.reflect += reflect; // отразил защитник (урон по атакующему)
+            opponentStats.reflect += reflect;
         }
     });
 
-console.log('=== MESSAGES FROM SERVER ===');
-battleData.result.messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
-    
-    // Используем сообщения напрямую для отображения лога
     const logArray = battleData.result.messages.map((m, index) => {
-    const text = m.text || JSON.stringify(m);
-    const formattedText = typeof BattleLog.formatLogText === 'function' 
-        ? BattleLog.formatLogText(text) 
-        : text;
-    let entryClass = 'log-entry';
-    const type = m.type;
-    if (type === 'dodge') {
-        entryClass += ' dodge-message';
-    } else if (type && (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) {
-        entryClass += ' ult-message';
-    } else if (type === 'poison_stack' || type === 'poison_dot') {
-        entryClass += ' poison-message';
-    } else if (type === 'burn_stack' || type === 'burn_dot') {
-        entryClass += ' fire-message';
-    } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
-        entryClass += ' ice-message';
-    }
-    return `<div class="${entryClass}">${formattedText}</div>`;
-}).join('');
+        const text = m.text || JSON.stringify(m);
+        const formattedText = typeof BattleLog.formatLogText === 'function' ? BattleLog.formatLogText(text) : text;
+        let entryClass = 'log-entry';
+        const type = m.type;
+        if (type === 'dodge') entryClass += ' dodge-message';
+        else if (type && (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) entryClass += ' ult-message';
+        else if (type === 'poison_stack' || type === 'poison_dot') entryClass += ' poison-message';
+        else if (type === 'burn_stack' || type === 'burn_dot') entryClass += ' fire-message';
+        else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') entryClass += ' ice-message';
+        return `<div class="${entryClass}">${formattedText}</div>`;
+    }).join('');
 
     const content = document.getElementById('content');
     content.innerHTML = `
-        <div class="battle-result" style="padding: 10px;">
-            <h2 style="text-align:center; margin-bottom:10px;">${resultText}</h2>
-            <p style="text-align:center;">Опыт: ${expGain} | Монеты: ${coinGain} | Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange} ${leveledUp ? '🎉' : ''}</p>
-            ${isVictory && newStreak > 0 ? `<p style="text-align:center; color:#00aaff;">Серия побед: ${newStreak}</p>` : ''}
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
-                <button class="btn" id="rematchBtn" style="flex: 1;">В бой</button>
-                <button class="btn" id="backBtn" style="flex: 1;">Назад</button>
+        <div class="battle-result">
+            <div class="battle-result-header">${resultText}</div>
+            <div class="battle-result-stats">
+                <span>Опыт: ${expGain}</span>
+                <span>Монеты: ${coinGain}</span>
+                <span>Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange}</span>
+                ${leveledUp ? '<span>🎉 Уровень повышен!</span>' : ''}
+                ${isVictory && newStreak > 0 ? `<span>🔥 Серия: ${newStreak}</span>` : ''}
             </div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
-                <button class="btn result-tab active" id="tabLog" style="flex: 1;">Лог боя</button>
-                <button class="btn result-tab" id="tabStats" style="flex: 1;">Статистика</button>
+            <div class="battle-result-buttons">
+                <button class="result-btn" id="rematchBtn">В бой</button>
+                <button class="result-btn" id="backBtn">Назад</button>
+                <button class="result-btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="result-btn result-tab" id="tabStats">Статистика</button>
             </div>
-            
-            <div id="resultContent" style="max-height: 300px; overflow-y: auto; background-color: #232833; padding: 10px; border-radius: 8px;">
+            <div class="battle-result-content" id="resultContent">
                 ${logArray}
             </div>
         </div>
@@ -349,41 +321,35 @@ battleData.result.messages.forEach((m, i) => console.log(`${i}: ${m.text}`));
         resultDiv.innerHTML = logArray;
     });
 
-tabStats.addEventListener('click', () => {
-    tabLog.classList.remove('active');
-    tabStats.classList.add('active');
-    resultDiv.innerHTML = `
-        <table class="stats-table stats-battle">
-            <thead>
-                <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
-            </thead>
-            <tbody>
-                <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
-            </tbody>
-        </table>
-    `;
-});
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultDiv.innerHTML = `
+            <table class="stats-table stats-battle">
+                <thead>
+                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                </tbody>
+            </table>
+        `;
+    });
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
-        if (window.battleTimer) {
-            clearInterval(window.battleTimer);
-            window.battleTimer = null;
-        }
+        if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         await refreshData();
         startBattle();
     });
 
     document.getElementById('backBtn').addEventListener('click', async () => {
-        if (window.battleTimer) {
-            clearInterval(window.battleTimer);
-            window.battleTimer = null;
-        }
+        if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
             item.style.pointerEvents = 'auto';

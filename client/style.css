@@ -2269,3 +2269,77 @@ body {
     opacity: 0;
     pointer-events: none;
 }
+
+
+/* ========== АНИМАЦИИ БОЯ ========== */
+
+/* Контейнер для GIF-анимаций (ударов, уклонений и т.д.) */
+.animation-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+}
+.animation-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Контейнер для всплывающих чисел */
+.floating-numbers-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+/* Стиль самого всплывающего числа */
+.floating-number {
+    font-family: 'Titillium Web', sans-serif;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: bold;
+    white-space: nowrap;
+    text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
+    opacity: 1;
+    animation: floatFade 2s ease-out forwards;
+}
+.floating-number.red {
+    color: #ff4444 !important;
+}
+.floating-number.green {
+    color: #44ff44 !important;
+}
+.floating-number .floating-icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+/* Ключевые кадры анимации */
+@keyframes floatFade {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -70%) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -100%) scale(1);
+    }
+}

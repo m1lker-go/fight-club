@@ -83,7 +83,6 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-arena">
-                <!-- Карточка героя -->
                 <div class="hero-card">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
@@ -196,14 +195,15 @@ async function showBattleResult(battleData, timeOut = false) {
 
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
-    const newStreak = battleData.reward?.newStreak || 0;
     const ratingChange = battleData.ratingChange || 0;
+    const newStreak = battleData.reward?.newStreak || 0;
     const leveledUp = addExpToCurrentClass(expGain);
     if (leveledUp) {
         await refreshData();
         showLevelUpModal(userData.current_class);
     }
 
+    // Обновление заданий
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -238,7 +238,6 @@ async function showBattleResult(battleData, timeOut = false) {
             targetStats.hits++;
             targetStats.totalDamage += dmg;
         }
-
         match = text.match(/Крит\. урон -(\d+)/);
         if (match) {
             const dmg = parseInt(match[1]);
@@ -246,17 +245,14 @@ async function showBattleResult(battleData, timeOut = false) {
             targetStats.crits++;
             targetStats.totalDamage += dmg;
         }
-
         match = text.match(/Урон от (?:яда|огня) -(\d+)/);
         if (match) {
             const dmg = parseInt(match[1]);
             targetStats.totalDamage += dmg;
         }
-
         if (text.toLowerCase().includes('уворот')) {
             opponentStats.dodges++;
         }
-
         match = text.match(/Вампиризм \+(\d+)/);
         if (match) {
             const heal = parseInt(match[1]);
@@ -267,7 +263,6 @@ async function showBattleResult(battleData, timeOut = false) {
             const heal = parseInt(match[1]);
             targetStats.heal += heal;
         }
-
         match = text.match(/Отражение -(\d+)/);
         if (match) {
             const reflect = parseInt(match[1]);
@@ -275,6 +270,7 @@ async function showBattleResult(battleData, timeOut = false) {
         }
     });
 
+    // Лог боя
     const logArray = battleData.result.messages.map((m, index) => {
         const text = m.text || JSON.stringify(m);
         const formattedText = typeof BattleLog.formatLogText === 'function' ? BattleLog.formatLogText(text) : text;
@@ -291,13 +287,16 @@ async function showBattleResult(battleData, timeOut = false) {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-result">
-            <div class="battle-result-header">${resultText}</div>
-            <div class="battle-result-stats">
-                <span>Опыт: ${expGain}</span>
-                <span>Монеты: ${coinGain}</span>
-                <span>Рейтинг: ${ratingChange > 0 ? '+' : ''}${ratingChange}</span>
-                ${leveledUp ? '<span>🎉 Уровень повышен!</span>' : ''}
-                ${isVictory && newStreak > 0 ? `<span>🔥 Серия: ${newStreak}</span>` : ''}
+            <div class="battle-result-header" style="color: ${resultColor};">${resultText}</div>
+            <div class="battle-result-stats-grid">
+                <div class="stat-item"><i class="fas fa-star"></i> Опыт:</div>
+                <div class="stat-value">+${expGain}</div>
+                <div class="stat-item"><i class="fas fa-coins"></i> Монеты:</div>
+                <div class="stat-value">+${coinGain}</div>
+                <div class="stat-item"><i class="fas fa-chart-line"></i> Рейтинг:</div>
+                <div class="stat-value">${ratingChange > 0 ? '+' : ''}${ratingChange}</div>
+                <div class="stat-item"><i class="fas fa-fist-raised"></i> Серия:</div>
+                <div class="stat-value">${newStreak}</div>
             </div>
             <div class="battle-result-buttons">
                 <button class="result-btn" id="rematchBtn">В бой</button>
@@ -327,7 +326,7 @@ async function showBattleResult(battleData, timeOut = false) {
         resultDiv.innerHTML = `
             <table class="stats-table stats-battle">
                 <thead>
-                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
+                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
                 </thead>
                 <tbody>
                     <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>

@@ -2380,77 +2380,6 @@ body {
 }
 
 
-/* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
-.battle-result {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    background-color: #232833; /* светлый фон 1с */
-    padding: 0;
-}
-
-/* Заголовок */
-.battle-result-header {
-    background-color: #1a1f2b; /* тёмный фон */
-    border-radius: 12px 12px 0 0;
-    text-align: center;
-    padding: 20px 0;
-    margin: 0;
-}
-.battle-result-header h2 {
-    margin: 0;
-    font-size: 28px;
-    font-weight: bold;
-}
-.battle-result-header .victory {
-    color: #2ecc71;
-}
-.battle-result-header .defeat {
-    color: #e74c3c;
-}
-.battle-result-header .draw {
-    color: white;
-}
-
-/* Сетка наград (2 колонки) */
-.battle-result-stats-grid {
-    display: grid;
-    grid-template-columns: 30% 1fr;
-    background-color: #2a303c;
-    padding: 12px;
-    gap: 8px;
-    font-size: 14px;
-    color: white;
-    margin: 0;
-}
-.battle-result-stats-grid .stat-item {
-    text-align: left;
-    font-weight: bold;
-}
-.battle-result-stats-grid .stat-value {
-    text-align: left;
-    font-weight: normal;
-}
-.battle-result-stats-grid i {
-    margin-right: 8px;
-    color: #00aaff;
-}
-
-/* Сетка кнопок 2x2 */
-.battle-result-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    margin: 5px;
-}
-.battle-result-btn {
-    padding: 14px 0;
-    background-color: #1a1f2b;
-    border: 2px solid #aaa;
-    color: #aaa;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
     transition: none;
     text-align: center;
 }
@@ -2487,4 +2416,118 @@ body {
 }
 .battle-result-content .log-entry:last-child {
     border-bottom: none;
+}
+
+/* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
+.battle-result {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #232833;
+}
+
+.battle-result-header {
+    background-color: #1a1f2b;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 16px;
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+}
+.battle-result-header.victory {
+    color: #2ecc71;
+}
+.battle-result-header.defeat {
+    color: #e74c3c;
+}
+.battle-result-header.draw {
+    color: white;
+}
+
+.battle-result-stats {
+    background-color: #2a303c;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 14px;
+    color: #ccc;
+}
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.stat-item i {
+    color: #00aaff;
+    width: 20px;
+    text-align: center;
+}
+.stat-value {
+    font-weight: bold;
+    color: white;
+}
+
+.battle-result-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background-color: #1a1f2b;
+    padding: 5px;
+    gap: 0;
+}
+
+.result-btn {
+    background-color: #1a1f2b;
+    border: none;
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: none;
+    color: #aaa;
+    border: 1px solid #aaa;
+}
+
+.result-btn:first-child {
+    border-radius: 12px 0 0 0;
+    border-right: none;
+}
+.result-btn:nth-child(2) {
+    border-radius: 0 12px 0 0;
+    border-left: none;
+}
+.result-btn:nth-child(3) {
+    border-radius: 0 0 0 12px;
+    border-top: none;
+    border-right: none;
+}
+.result-btn:last-child {
+    border-radius: 0 0 12px 0;
+    border-top: none;
+    border-left: none;
+}
+
+.result-btn.active {
+    background-color: #00aaff;
+    color: white;
+    border-color: #00aaff;
+}
+
+.result-btn:hover:not(.active) {
+    background-color: #2f3542;
+}
+
+.battle-result-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #232833;
+    padding: 0;
+    margin: 0;
+}
+
+.battle-result-content .log-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a303c;
 }

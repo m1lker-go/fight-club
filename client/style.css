@@ -1304,7 +1304,6 @@ body {
     text-align: center;
 }
 
-/* ========== КУЗНИЦА ========== */
 
 /* ========== КУЗНИЦА ========== */
 .forge-container {
@@ -2159,16 +2158,11 @@ body {
     background-color: #00aaff;
     color: white;
 }
-.hero-card, .enemy-card,
-.hero-card > div:first-child, .enemy-card > div:first-child,
 .hp-bar, .mana-bar {
     background: none !important;
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
-    flex: 0 0 auto;
-    width: 100px;
-    margin: 3px auto;
 }
 
 /* ========== ТАБЛИЦА СТАТИСТИКИ БОЯ (В РЕЗУЛЬТАТАХ БАШНИ) ========== */

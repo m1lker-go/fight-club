@@ -2336,3 +2336,152 @@ body {
         transform: translate(-50%, -100%) scale(1);
     }
 }
+
+/* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
+.battle-result {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    background-color: #232833; /* светлый фон 1с */
+}
+
+/* Заголовок результата */
+.battle-result-header {
+    background-color: #1a1f2b; /* тёмный фон */
+    border-radius: 12px 12px 0 0;
+    text-align: center;
+    padding: 20px 0;
+    margin: 0;
+}
+.battle-result-header h2 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: bold;
+}
+.battle-result-header .victory {
+    color: #2ecc71;
+}
+.battle-result-header .defeat {
+    color: #e74c3c;
+}
+.battle-result-header .draw {
+    color: white;
+}
+
+/* Сетка кнопок 2x2 */
+.battle-result-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 5px;
+}
+.battle-result-btn {
+    padding: 14px 0;
+    background-color: #1a1f2b;
+    border: 2px solid #aaa;
+    color: #aaa;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: none;
+    text-align: center;
+}
+.battle-result-btn.active {
+    background-color: #00aaff;
+    border-color: #00aaff;
+    color: white;
+}
+/* Закругления углов */
+.battle-result-btn:first-child {
+    border-radius: 12px 0 0 0;
+}
+.battle-result-btn:nth-child(2) {
+    border-radius: 0 12px 0 0;
+}
+.battle-result-btn:nth-child(3) {
+    border-radius: 0 0 0 12px;
+}
+.battle-result-btn:nth-child(4) {
+    border-radius: 0 0 12px 0;
+}
+.battle-result-btn:not(.active):hover {
+    background-color: #2f3542;
+    border-color: #00aaff;
+    color: #00aaff;
+}
+
+/* Блок контента (лог / статистика) */
+.battle-result-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #232833;
+    margin-top: 5px;
+    border-radius: 0;
+    scrollbar-width: thin;
+}
+.battle-result-content::-webkit-scrollbar {
+    width: 6px;
+}
+.battle-result-content::-webkit-scrollbar-track {
+    background: #1a1f2b;
+}
+.battle-result-content::-webkit-scrollbar-thumb {
+    background: #00aaff;
+    border-radius: 3px;
+}
+
+/* Лог боя (такой же, как в бою, но без лишних отступов) */
+.battle-result-log {
+    padding: 0;
+    margin: 0;
+}
+.battle-result-log .log-entry {
+    padding: 8px 12px;
+    margin: 0;
+    line-height: 1.4;
+    font-size: 12px;
+    border-bottom: 1px solid #1a1f2b;
+}
+.battle-result-log .log-entry:last-child {
+    border-bottom: none;
+}
+.battle-result-log .log-entry:nth-child(odd) {
+    background-color: #232833;
+}
+.battle-result-log .log-entry:nth-child(even) {
+    background-color: #2a303c;
+}
+
+/* Таблица статистики */
+.stats-battle {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.stats-battle th {
+    background-color: #1a1f2b;
+    color: white;
+    font-weight: bold;
+    padding: 12px 8px;
+    text-align: center;
+}
+.stats-battle td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid #1a1f2b;
+}
+.stats-battle tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+.stats-battle tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+.stats-battle .player-col {
+    color: #00aaff;
+    font-weight: bold;
+}
+.stats-battle .enemy-col {
+    color: #e74c3c;
+    font-weight: bold;
+}

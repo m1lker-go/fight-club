@@ -15,7 +15,7 @@ body {
     align-items: center;
 }
 
-#app {
+#app {.battle-timer 
     width: 100%;
     max-width: 400px;
     height: 100vh;
@@ -596,7 +596,7 @@ body {
 .battle-timer {
     width: 44px;
     height: 44px;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 44px;
     padding: 0;
     background-color: #2a303c;
@@ -2037,7 +2037,7 @@ body {
 }
 
 .battle-timer {
-    font-size: 20px;
+    font-size: 14px;
     font-weight: normal;
 }
 

@@ -289,7 +289,7 @@ async function showBattleResult(battleData, timeOut = false) {
 
     // Создаём контейнер результата
     const content = document.getElementById('content');
-    content.innerHTML = ''; // очищаем
+    content.innerHTML = '';
 
     const battleResultDiv = document.createElement('div');
     battleResultDiv.className = 'battle-result';
@@ -304,39 +304,19 @@ async function showBattleResult(battleData, timeOut = false) {
     // Блок наград (сетка)
     const statsGrid = document.createElement('div');
     statsGrid.className = 'battle-result-stats-grid';
-    statsGrid.style.display = 'grid';
-    statsGrid.style.gridTemplateColumns = 'auto 1fr';
-    statsGrid.style.gap = '8px 16px';
-    statsGrid.style.backgroundColor = '#2a303c';
-    statsGrid.style.padding = '12px 16px';
-    statsGrid.style.alignItems = 'center';
-    statsGrid.style.fontSize = '14px';
 
     const addStatRow = (label, value, iconClass) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'stat-item';
-        itemDiv.style.display = 'flex';
-        itemDiv.style.alignItems = 'center';
-        itemDiv.style.gap = '6px';
-        itemDiv.style.color = '#ccc';
-
         const icon = document.createElement('i');
         icon.className = iconClass;
-        icon.style.color = '#00aaff';
-        icon.style.width = '20px';
-        icon.style.textAlign = 'center';
-
         const labelSpan = document.createElement('span');
         labelSpan.innerText = label;
-
         itemDiv.appendChild(icon);
         itemDiv.appendChild(labelSpan);
 
         const valueDiv = document.createElement('div');
         valueDiv.className = 'stat-value';
-        valueDiv.style.fontWeight = 'bold';
-        valueDiv.style.color = 'white';
-        valueDiv.style.textAlign = 'right';
         valueDiv.innerText = value;
 
         statsGrid.appendChild(itemDiv);
@@ -350,7 +330,7 @@ async function showBattleResult(battleData, timeOut = false) {
 
     battleResultDiv.appendChild(statsGrid);
 
-    // Кнопки
+    // Кнопки (сетка 2×2)
     const buttonsRow = document.createElement('div');
     buttonsRow.className = 'battle-result-buttons';
 
@@ -382,7 +362,7 @@ async function showBattleResult(battleData, timeOut = false) {
 
     content.appendChild(battleResultDiv);
 
-    // ========== Обработчики событий ==========
+    // Обработчики событий
     rematchBtn.addEventListener('click', async () => {
         console.log('rematchBtn clicked');
         if (window.battleTimer) clearInterval(window.battleTimer);
@@ -419,12 +399,12 @@ async function showBattleResult(battleData, timeOut = false) {
                     <th>Игрок</th><th>Параметр</th><th>Соперник</th>
                 </thead>
                 <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                    <td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td>
+                    <td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td>
+                    <td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td>
+                    <td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td>
+                    <td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td>
+                    <td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td>
                 </tbody>
             </table>
         `;

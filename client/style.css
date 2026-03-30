@@ -955,82 +955,94 @@ body {
 }
 
 /* ========== МАГАЗИН СУНДУКОВ ========== */
-.chest-list {
+.chest-table {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-top: 20px;
-}
-.chest-card {
+    height: 100%;
+    width: 100%;
     background-color: #232833;
-    border-radius: 16px;
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    border: 1px solid #00aaff;
-    box-shadow: 0 4px 8px rgba(0,170,255,0.2);
-}
-.chest-icon {
-    width: 60px;
-    height: 60px;
     border-radius: 12px;
     overflow: hidden;
-    background-color: #2f3542;
+}
+
+.chest-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    border-bottom: 1px solid #2a303c;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    background-color: #232833;
+}
+
+.chest-row:nth-child(even) {
+    background-color: #2a303c;
+}
+
+.chest-row:first-child {
+    border-top: none;
+    border-radius: 12px 12px 0 0;
+    background-color: #1a1f2b;
+    cursor: default;
+}
+.chest-row:last-child {
+    border-bottom: none;
+    border-radius: 0 0 12px 12px;
+}
+
+.chest-header {
+    font-weight: bold;
+    color: #00aaff;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.chest-icon-col {
+    flex: 0 0 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
 }
-.chest-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+
+.chest-icon-col img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
 }
-.chest-info {
-    flex: 1;
-    min-width: 0;
-}
-.chest-name {
-    font-weight: bold;
-    font-size: 16px;
-    margin-bottom: 4px;
-    color: #00aaff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.chest-desc {
-    font-size: 12px;
-    color: #aaa;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.chest-btn {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 30px;
+
+.chest-info-col {
+    flex: 1.2;
     font-weight: bold;
     font-size: 14px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-}
-.chest-btn:hover {
-    opacity: 0.8;
-}
-.chest-price {
-    font-weight: bold;
     color: white;
 }
-.chest-btn i {
-    font-size: 16px;
+
+.chest-desc-col {
+    flex: 1.5;
+    font-size: 11px;
+    color: #aaa;
+    line-height: 1.3;
+}
+
+.chest-price-col {
+    flex: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+    font-weight: bold;
+    color: gold;
+    font-size: 14px;
+}
+
+.chest-price-col i {
+    font-size: 14px;
+    color: gold;
+}
+
+.chest-row:not(.chest-header):hover {
+    background-color: #2f3542;
 }
 
 /* ========== МАРКЕТ ========== */

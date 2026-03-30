@@ -197,6 +197,9 @@ async function showBattleResult(battleData, timeOut = false) {
     const coinGain = battleData.reward?.coins || 0;
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
+    
+    console.log('Награды:', { expGain, coinGain, ratingChange, newStreak });
+    
     const leveledUp = addExpToCurrentClass(expGain);
     if (leveledUp) {
         await refreshData();

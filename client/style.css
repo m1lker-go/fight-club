@@ -2338,8 +2338,7 @@ body {
 }
 
 
-
-/* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
+/* ========== РЕЗУЛЬТАТ БОЯ ========== */
 .battle-result {
     display: flex !important;
     flex-direction: column !important;
@@ -2405,6 +2404,8 @@ body {
     color: #aaa !important;
     border: 1px solid #aaa !important;
     transition: none !important;
+    pointer-events: auto !important; /* гарантия кликабельности */
+    z-index: 2 !important;
 }
 
 .result-btn:first-child {
@@ -2448,10 +2449,4 @@ body {
 .battle-result-content .log-entry {
     padding: 8px 12px !important;
     border-bottom: 1px solid #2a303c !important;
-}
-
-.result-btn {
-    position: relative;
-    z-index: 1000;
-    pointer-events: auto !important;
 }

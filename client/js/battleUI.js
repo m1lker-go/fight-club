@@ -198,7 +198,6 @@ async function showBattleResult(battleData, timeOut = false) {
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // Логирование для отладки
     console.log('Награды:', { expGain, coinGain, ratingChange, newStreak });
 
     const leveledUp = addExpToCurrentClass(expGain);
@@ -274,7 +273,7 @@ async function showBattleResult(battleData, timeOut = false) {
         }
     });
 
-    // Лог боя
+    // Формируем лог боя с цветами
     const logArray = battleData.result.messages.map((m, index) => {
         const text = m.text || JSON.stringify(m);
         const formattedText = typeof BattleLog.formatLogText === 'function' ? BattleLog.formatLogText(text) : text;
@@ -288,70 +287,82 @@ async function showBattleResult(battleData, timeOut = false) {
         return `<div class="${entryClass}">${formattedText}</div>`;
     }).join('');
 
+    // Создаём контейнер результата
     const content = document.getElementById('content');
-    content.innerHTML = `
-        <div class="battle-result">
-            <div class="battle-result-header" style="color: ${resultColor};">${resultText}</div>
-            <div class="battle-result-stats-grid">
-                <div class="stat-item"><i class="fas fa-star"></i> Опыт:</div>
-                <div class="stat-value">+${expGain}</div>
-                <div class="stat-item"><i class="fas fa-coins"></i> Монеты:</div>
-                <div class="stat-value">+${coinGain}</div>
-                <div class="stat-item"><i class="fas fa-chart-line"></i> Рейтинг:</div>
-                <div class="stat-value">${ratingChange > 0 ? '+' : ''}${ratingChange}</div>
-                <div class="stat-item"><i class="fas fa-fist-raised"></i> Серия:</div>
-                <div class="stat-value">${newStreak}</div>
-            </div>
-            <div class="battle-result-buttons">
-                <button class="result-btn" id="rematchBtn">В бой</button>
-                <button class="result-btn" id="backBtn">Назад</button>
-                <button class="result-btn result-tab active" id="tabLog">Лог боя</button>
-                <button class="result-btn result-tab" id="tabStats">Статистика</button>
-            </div>
-            <div class="battle-result-content" id="resultContent">
-                ${logArray}
-            </div>
-        </div>
-    `;
+    content.innerHTML = ''; // очищаем
 
-    // Проверяем, найдены ли кнопки
-    console.log('rematchBtn:', document.getElementById('rematchBtn'));
-    console.log('backBtn:', document.getElementById('backBtn'));
-    console.log('tabLog:', document.getElementById('tabLog'));
-    console.log('tabStats:', document.getElementById('tabStats'));
+    const battleResultDiv = document.createElement('div');
+    battleResultDiv.className = 'battle-result';
 
-    const resultDiv = document.getElementById('resultContent');
-    const tabLog = document.getElementById('tabLog');
-    const tabStats = document.getElementById('tabStats');
+    // Заголовок
+    const header = document.createElement('div');
+    header.className = 'battle-result-header';
+    header.style.color = resultColor;
+    header.innerText = resultText;
+    battleResultDiv.appendChild(header);
 
-    tabLog.addEventListener('click', () => {
-        console.log('tabLog clicked');
-        tabLog.classList.add('active');
-        tabStats.classList.remove('active');
-        resultDiv.innerHTML = logArray;
-    });
+    // Блок наград (сетка)
+    const statsGrid = document.createElement('div');
+    statsGrid.className = 'battle-result-stats-grid';
 
-  tabStats.addEventListener('click', () => {
-    tabLog.classList.remove('active');
-    tabStats.classList.add('active');
-    resultDiv.innerHTML = `
-        <table class="stats-table stats-battle">
-            <thead>
-                <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
-            </thead>
-            <tbody>
-                <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
-            </tbody>
-        </table>
-    `;
-});
+    const addStatRow = (label, value, iconClass) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'stat-item';
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        const labelSpan = document.createElement('span');
+        labelSpan.innerText = label;
+        itemDiv.appendChild(icon);
+        itemDiv.appendChild(labelSpan);
 
-    document.getElementById('rematchBtn').addEventListener('click', async () => {
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'stat-value';
+        valueDiv.innerText = value;
+        statsGrid.appendChild(itemDiv);
+        statsGrid.appendChild(valueDiv);
+    };
+
+    addStatRow('Опыт:', `+${expGain}`, 'fas fa-star');
+    addStatRow('Монеты:', `+${coinGain}`, 'fas fa-coins');
+    addStatRow('Рейтинг:', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line');
+    addStatRow('Серия:', `${newStreak}`, 'fas fa-fist-raised');
+
+    battleResultDiv.appendChild(statsGrid);
+
+    // Кнопки
+    const buttonsRow = document.createElement('div');
+    buttonsRow.className = 'battle-result-buttons';
+
+    const rematchBtn = document.createElement('button');
+    rematchBtn.className = 'result-btn';
+    rematchBtn.innerText = 'В бой';
+    const backBtn = document.createElement('button');
+    backBtn.className = 'result-btn';
+    backBtn.innerText = 'Назад';
+    const tabLog = document.createElement('button');
+    tabLog.className = 'result-btn result-tab active';
+    tabLog.innerText = 'Лог боя';
+    const tabStats = document.createElement('button');
+    tabStats.className = 'result-btn result-tab';
+    tabStats.innerText = 'Статистика';
+
+    buttonsRow.appendChild(rematchBtn);
+    buttonsRow.appendChild(backBtn);
+    buttonsRow.appendChild(tabLog);
+    buttonsRow.appendChild(tabStats);
+    battleResultDiv.appendChild(buttonsRow);
+
+    // Контейнер для контента (лог или статистика)
+    const resultContent = document.createElement('div');
+    resultContent.id = 'resultContent';
+    resultContent.className = 'battle-result-content';
+    resultContent.innerHTML = logArray; // по умолчанию лог
+    battleResultDiv.appendChild(resultContent);
+
+    content.appendChild(battleResultDiv);
+
+    // ========== Обработчики событий ==========
+    rematchBtn.addEventListener('click', async () => {
         console.log('rematchBtn clicked');
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
@@ -359,7 +370,7 @@ async function showBattleResult(battleData, timeOut = false) {
         startBattle();
     });
 
-    document.getElementById('backBtn').addEventListener('click', async () => {
+    backBtn.addEventListener('click', async () => {
         console.log('backBtn clicked');
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
@@ -369,6 +380,33 @@ async function showBattleResult(battleData, timeOut = false) {
         });
         await refreshData();
         showScreen('main');
+    });
+
+    tabLog.addEventListener('click', () => {
+        console.log('tabLog clicked');
+        tabLog.classList.add('active');
+        tabStats.classList.remove('active');
+        resultContent.innerHTML = logArray;
+    });
+
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultContent.innerHTML = `
+            <table class="stats-table stats-battle">
+                <thead>
+                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
+                </thead>
+                <tbody>
+                    <td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td>
+                    <td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td>
+                    <td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td>
+                    <td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td>
+                    <td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td>
+                    <td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td>
+                </tbody>
+            </table>
+        `;
     });
 
     if (leveledUp) {

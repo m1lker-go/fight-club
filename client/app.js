@@ -46,7 +46,7 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
         } catch (err) {
             console.warn(`Attempt ${i+1}/${retries} failed:`, err.message);
             if (i === retries - 1) throw err;
-            // Ждём перед следующей попыткой (экспоненциальная задержка)
+            // Экспоненциальная задержка перед следующей попыткой
             await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, i)));
         }
     }
@@ -119,9 +119,8 @@ function showErrorSplash() {
 
 async function init() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 секунд таймаут запроса
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-    // Показываем ошибку через 10 секунд, если данные ещё не пришли
     const errorTimer = setTimeout(() => {
         if (!userData) {
             showErrorSplash();
@@ -136,7 +135,7 @@ async function init() {
                 initData: tg.initData,
                 referral_code: referralCode 
             })
-        }, 3, 40000); // 3 попытки, таймаут 40 секунд
+        }, 3, 40000);
 
         clearTimeout(timeoutId);
         clearTimeout(errorTimer);
@@ -216,7 +215,7 @@ async function refreshData() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
-        }, 2, 20000); // 2 попытки, таймаут 20 секунд
+        }, 2, 20000);
         const data = await response.json();
         if (data.user) {
             userData = data.user;
@@ -326,7 +325,7 @@ window.renderTrade = renderTrade;
 window.renderMarket = renderMarket;
 window.renderRating = renderRating;
 window.renderProfile = renderProfile;
-window.renderTasks = renderTasks; // уже есть из task-up.js, но оставляем
+window.renderTasks = renderTasks;
 window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;

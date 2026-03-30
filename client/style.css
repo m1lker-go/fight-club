@@ -2341,6 +2341,7 @@ body {
 /* ========== РЕЗУЛЬТАТ БОЯ ========== */
 
 
+
 /* ========== РЕЗУЛЬТАТ БОЯ ========== */
 .battle-result {
     display: flex !important;
@@ -2361,6 +2362,7 @@ body {
     flex-shrink: 0 !important;
 }
 
+/* Сетка наград */
 .battle-result-stats-grid {
     display: grid !important;
     grid-template-columns: auto 1fr !important;
@@ -2388,59 +2390,57 @@ body {
     text-align: right !important;
 }
 
+/* Контейнер кнопок – фон такой же, как у наград */
 .battle-result-buttons {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    background-color: #1a1f2b !important;
+    background-color: #2a303c !important; /* светлый фон, как у наград */
     padding: 5px !important;
     gap: 0 !important;
     flex-shrink: 0 !important;
 }
 
+/* Стили для каждой кнопки */
 .result-btn {
-    background-color: #1a1f2b !important;
+    background-color: #232833 !important; /* тёмный фон */
     border: none !important;
     padding: 14px 0 !important;
     font-size: 16px !important;
     font-weight: bold !important;
     cursor: pointer !important;
     color: #aaa !important;
-    border: 1px solid #aaa !important;
     transition: none !important;
     pointer-events: auto !important;
     z-index: 2 !important;
 }
 
+/* Скругления углов */
 .result-btn:first-child {
     border-radius: 12px 0 0 0 !important;
-    border-right: none !important;
 }
 .result-btn:nth-child(2) {
     border-radius: 0 12px 0 0 !important;
-    border-left: none !important;
 }
 .result-btn:nth-child(3) {
     border-radius: 0 0 0 12px !important;
-    border-top: none !important;
-    border-right: none !important;
 }
 .result-btn:last-child {
     border-radius: 0 0 12px 0 !important;
-    border-top: none !important;
-    border-left: none !important;
 }
 
+/* Активная кнопка (синяя) */
 .result-btn.active {
     background-color: #00aaff !important;
     color: white !important;
-    border-color: #00aaff !important;
 }
 
+/* Неактивная при наведении */
 .result-btn:not(.active):hover {
-    background-color: #1a1f2b !important;
-    color: #aaa !important;
+    background-color: #2f3542 !important;
+    color: #ccc !important;
 }
 
+/* Контейнер для лога/статистики */
 .battle-result-content {
     flex: 1 !important;
     overflow-y: auto !important;
@@ -2499,5 +2499,3 @@ body {
     color: #e74c3c !important;
     font-weight: bold !important;
 }
-    
-

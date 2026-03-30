@@ -324,7 +324,7 @@ const items = [
     addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'),
     addRewardItem('Монеты', `+${coinGain}`, 'fas fa-coins'),
     addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
-    addRewardItem('Серия', `${newStreak}`, 'fas fa-fist-raised')
+   addRewardItem('Серия', `${newStreak}`, 'fas fa-swords')
 ];
 
 items.forEach(item => rewardsGrid.appendChild(item));

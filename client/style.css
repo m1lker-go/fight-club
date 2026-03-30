@@ -2338,53 +2338,6 @@ body {
 }
 
 
-
-.battle-result-log .log-entry:nth-child(odd) {
-    background-color: #232833;
-}
-.battle-result-log .log-entry:nth-child(even) {
-    background-color: #2a303c;
-}
-
-/* Таблица статистики */
-.stats-battle {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-.stats-battle th {
-    background-color: #1a1f2b;
-    color: white;
-    font-weight: bold;
-    padding: 12px 8px;
-    text-align: center;
-}
-.stats-battle td {
-    padding: 10px 8px;
-    text-align: center;
-    border-bottom: 1px solid #1a1f2b;
-}
-.stats-battle tbody tr:nth-child(odd) {
-    background-color: #232833;
-}
-.stats-battle tbody tr:nth-child(even) {
-    background-color: #2a303c;
-}
-.stats-battle .player-col {
-    color: #00aaff;
-    font-weight: bold;
-}
-.stats-battle .enemy-col {
-    color: #e74c3c;
-    font-weight: bold;
-}
-
-
-    transition: none;
-    text-align: center;
-}
-
-
 /* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
 .battle-result {
     display: flex;

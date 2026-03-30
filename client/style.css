@@ -2448,6 +2448,8 @@ body {
     transition: none;
     color: #aaa;
     border: 1px solid #aaa;
+     z-index: 10;
+    position: relative;
 }
 
 .result-btn:first-child {

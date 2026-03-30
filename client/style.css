@@ -2036,6 +2036,11 @@ body {
     opacity: 0.8;
 }
 
+.battle-timer {
+    font-size: 20px;
+    font-weight: normal;
+}
+
 /* ========== МОДАЛЬНЫЕ ОКНА ========== */
 .modal {
     display: none;

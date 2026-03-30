@@ -1062,7 +1062,13 @@ function renderProfile() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id })
-    }).catch(err => console.error('Failed to update profile task', err));
+    })
+    .then(() => {
+        // После обновления задания обновляем данные заданий и иконку
+        if (window.refreshTasksData) window.refreshTasksData();
+        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+    })
+    .catch(err => console.error('Failed to update profile task', err));
 
     const hasSkillPoints = hasAnyUnspentSkillPoints();
 

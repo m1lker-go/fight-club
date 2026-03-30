@@ -177,9 +177,6 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
-
-
-
 async function showBattleResult(battleData, timeOut = false) {
     if (window.battleTimer) {
         clearInterval(window.battleTimer);
@@ -354,7 +351,7 @@ async function showBattleResult(battleData, timeOut = false) {
         valueDiv.style.cssText = `
             font-weight: bold !important;
             color: white !important;
-            text-align: right !important;
+            text-align: left !important;
         `;
         valueDiv.innerText = value;
 
@@ -519,19 +516,16 @@ async function showBattleResult(battleData, timeOut = false) {
         resultContent.innerHTML = statsHtml;
     });
 
-    // Применяем скругления углов для каждой кнопки
-    const applyCornerRadius = () => {
-        rematchBtn.style.borderRadius = '12px 0 0 0 !important';
-        backBtn.style.borderRadius = '0 12px 0 0 !important';
-        tabLogBtn.style.borderRadius = '0 0 0 12px !important';
-        tabStatsBtn.style.borderRadius = '0 0 12px 0 !important';
-    };
+    // Применяем скругления углов для кнопок
+    rematchBtn.style.borderRadius = '12px 0 0 0 !important';
+    backBtn.style.borderRadius = '0 12px 0 0 !important';
+    tabLogBtn.style.borderRadius = '0 0 0 12px !important';
+    tabStatsBtn.style.borderRadius = '0 0 12px 0 !important';
 
     buttonsGrid.appendChild(rematchBtn);
     buttonsGrid.appendChild(backBtn);
     buttonsGrid.appendChild(tabLogBtn);
     buttonsGrid.appendChild(tabStatsBtn);
-    applyCornerRadius();
     container.appendChild(buttonsGrid);
 
     // Контейнер для контента (лог/статистика)

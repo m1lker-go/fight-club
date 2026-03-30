@@ -2338,6 +2338,7 @@ body {
 }
 
 
+
 /* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
 .battle-result {
     display: flex;
@@ -2447,3 +2448,5 @@ body {
     padding: 8px 12px;
     border-bottom: 1px solid #2a303c;
 }
+
+

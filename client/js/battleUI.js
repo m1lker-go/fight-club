@@ -197,9 +197,10 @@ async function showBattleResult(battleData, timeOut = false) {
     const coinGain = battleData.reward?.coins || 0;
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
-    
+
+    // Логирование для отладки
     console.log('Награды:', { expGain, coinGain, ratingChange, newStreak });
-    
+
     const leveledUp = addExpToCurrentClass(expGain);
     if (leveledUp) {
         await refreshData();
@@ -323,25 +324,48 @@ async function showBattleResult(battleData, timeOut = false) {
         resultDiv.innerHTML = logArray;
     });
 
- tabStats.addEventListener('click', () => {
-    tabLog.classList.remove('active');
-    tabStats.classList.add('active');
-    resultDiv.innerHTML = `
-        <table class="stats-table stats-battle">
-            <thead>
-                <th>Игрок</th><th>Параметр</th><th>Соперник</th>
-            </thead>
-            <tbody>
-                 <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                 <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                 <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                 <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                 <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                 <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
-            </tbody>
-        </table>
-    `;
-});
+    tabStats.addEventListener('click', () => {
+        tabLog.classList.remove('active');
+        tabStats.classList.add('active');
+        resultDiv.innerHTML = `
+            <table class="stats-table stats-battle">
+                <thead>
+                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
+                </thead>
+                <tbody>
+                      <td class="player-col">${playerStats.hits}</td>
+                      <td>Ударов</td>
+                      <td class="enemy-col">${enemyStats.hits}</td>
+                    </tr>
+                    <tr>
+                      <td class="player-col">${playerStats.crits}</td>
+                      <td>Критов</td>
+                      <td class="enemy-col">${enemyStats.crits}</td>
+                    </tr>
+                    <tr>
+                      <td class="player-col">${playerStats.dodges}</td>
+                      <td>Уклонений</td>
+                      <td class="enemy-col">${enemyStats.dodges}</td>
+                    </tr>
+                    <tr>
+                      <td class="player-col">${playerStats.totalDamage}</td>
+                      <td>Урона</td>
+                      <td class="enemy-col">${enemyStats.totalDamage}</td>
+                    </tr>
+                    <tr>
+                      <td class="player-col">${playerStats.heal}</td>
+                      <td>Исцелено</td>
+                      <td class="enemy-col">${enemyStats.heal}</td>
+                    </tr>
+                    <tr>
+                      <td class="player-col">${playerStats.reflect}</td>
+                      <td>Отражено</td>
+                      <td class="enemy-col">${enemyStats.reflect}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    });
 
     document.getElementById('rematchBtn').addEventListener('click', async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);

@@ -320,7 +320,7 @@ async function showBattleResult(battleData, timeOut = false) {
         resultDiv.innerHTML = logArray;
     });
 
-  tabStats.addEventListener('click', () => {
+ tabStats.addEventListener('click', () => {
     tabLog.classList.remove('active');
     tabStats.classList.add('active');
     resultDiv.innerHTML = `

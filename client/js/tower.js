@@ -542,6 +542,7 @@ function showTowerResultScreen(battleData) {
     const resultText = victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
     const resultColor = victory ? '#2ecc71' : '#e74c3c';
     const passedFloor = floor;
+    const expGain = battleData.expGain || 0; // опыт за победу
 
     // Подсчёт статистики
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
@@ -563,180 +564,88 @@ function showTowerResultScreen(battleData) {
     content.innerHTML = '';
 
     const container = document.createElement('div');
-    container.style.cssText = `
-        display: flex !important;
-        flex-direction: column !important;
-        height: 100% !important;
-        background-color: #232833 !important;
-        overflow: hidden !important;
-    `;
+    container.className = 'battle-result';
 
     // Заголовок
     const header = document.createElement('div');
-    header.style.cssText = `
-        background-color: #1a1f2b !important;
-        text-align: center !important;
-        font-size: 28px !important;
-        font-weight: bold !important;
-        padding: 16px !important;
-        border-radius: 12px 12px 0 0 !important;
-        margin: 0 !important;
-        flex-shrink: 0 !important;
-        color: ${resultColor} !important;
-    `;
+    header.className = 'battle-result-header';
+    header.style.color = resultColor;
     header.innerText = resultText;
     container.appendChild(header);
 
-    // Блок наград (сетка)
+    // Блок наград (сетка 2×2)
     const rewardsGrid = document.createElement('div');
-    rewardsGrid.style.cssText = `
-        display: grid !important;
-        grid-template-columns: auto 1fr !important;
-        gap: 8px 16px !important;
-        background-color: #2a303c !important;
-        padding: 12px 16px !important;
-        align-items: center !important;
-        font-size: 14px !important;
-        flex-shrink: 0 !important;
-    `;
+    rewardsGrid.className = 'battle-result-stats-grid';
 
-    // Добавляем информацию об этаже и награде
-    const addRewardRow = (label, value, iconClass) => {
-        const labelDiv = document.createElement('div');
-        labelDiv.style.cssText = `
-            display: flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            color: #ccc !important;
-        `;
+    const addRewardItem = (label, value, iconClass) => {
+        const item = document.createElement('div');
+        item.className = 'reward-item';
         const icon = document.createElement('i');
         icon.className = iconClass;
-        icon.style.cssText = `
-            color: #00aaff !important;
-            width: 20px !important;
-            text-align: center !important;
-        `;
         const span = document.createElement('span');
-        span.innerText = label;
-        labelDiv.appendChild(icon);
-        labelDiv.appendChild(span);
-
-        const valueDiv = document.createElement('div');
-        valueDiv.style.cssText = `
-            font-weight: bold !important;
-            color: white !important;
-            text-align: left !important;
-        `;
-        valueDiv.innerText = value;
-
-        rewardsGrid.appendChild(labelDiv);
-        rewardsGrid.appendChild(valueDiv);
+        span.innerHTML = `${label}: ${value}`;
+        item.appendChild(icon);
+        item.appendChild(span);
+        return item;
     };
 
-    // Добавляем строку с этажом
-    addRewardRow('Этаж:', `${passedFloor}`, 'fas fa-chess-rook');
-
+    // Всегда добавляем этаж
+    rewardsGrid.appendChild(addRewardItem('Этаж', `${passedFloor}`, 'fas fa-chess-rook'));
+    // Если есть награда – показываем её
     if (reward) {
         if (reward.type === 'coins') {
-            addRewardRow('Награда:', `${reward.amount} монет`, 'fas fa-coins');
+            rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount} монет`, 'fas fa-coins'));
         } else if (reward.type === 'avatar') {
-            // Скин – показываем название, иконку глаза для просмотра
-            const labelDiv = document.createElement('div');
-            labelDiv.style.cssText = `
-                display: flex !important;
-                align-items: center !important;
-                gap: 6px !important;
-                color: #ccc !important;
-            `;
+            const avatarItem = document.createElement('div');
+            avatarItem.className = 'reward-item';
             const icon = document.createElement('i');
             icon.className = 'fas fa-tshirt';
-            icon.style.cssText = `
-                color: #00aaff !important;
-                width: 20px !important;
-                text-align: center !important;
-            `;
             const span = document.createElement('span');
-            span.innerText = 'Награда:';
-            labelDiv.appendChild(icon);
-            labelDiv.appendChild(span);
-
-            const valueDiv = document.createElement('div');
-            valueDiv.style.cssText = `
-                font-weight: bold !important;
-                color: white !important;
-                text-align: left !important;
-                display: flex !important;
-                align-items: center !important;
-                gap: 8px !important;
-            `;
-            const nameSpan = document.createElement('span');
-            nameSpan.id = 'avatarName';
-            nameSpan.innerText = '...';
+            span.innerHTML = `Награда: <span id="avatarName">...</span> `;
             const eyeBtn = document.createElement('i');
             eyeBtn.className = 'fas fa-eye';
-            eyeBtn.style.cssText = `
-                color: #00aaff !important;
-                cursor: pointer !important;
-                font-size: 14px !important;
-            `;
+            eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
             eyeBtn.addEventListener('click', async () => {
                 try {
                     const res = await fetch(`${API_BASE}/avatars/${reward.avatarId}`);
                     const avatar = await res.json();
                     showAvatarModal(avatar);
-                } catch (err) {
-                    console.error(err);
-                }
+                } catch (err) { console.error(err); }
             });
-            valueDiv.appendChild(nameSpan);
-            valueDiv.appendChild(eyeBtn);
-
-            rewardsGrid.appendChild(labelDiv);
-            rewardsGrid.appendChild(valueDiv);
+            span.appendChild(eyeBtn);
+            avatarItem.appendChild(icon);
+            avatarItem.appendChild(span);
+            rewardsGrid.appendChild(avatarItem);
 
             // Загружаем имя скина
             fetch(`${API_BASE}/avatars/${reward.avatarId}`)
                 .then(res => res.json())
                 .then(avatar => {
-                    nameSpan.innerText = avatar.name;
+                    const nameSpan = document.querySelector('#avatarName');
+                    if (nameSpan) nameSpan.innerText = avatar.name;
                 })
                 .catch(err => console.error(err));
         }
+    }
+    // Добавляем опыт (всегда, если победа)
+    if (victory) {
+        rewardsGrid.appendChild(addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'));
     }
 
     container.appendChild(rewardsGrid);
 
     // Кнопки (сетка 2×2)
     const buttonsGrid = document.createElement('div');
-    buttonsGrid.style.cssText = `
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        background-color: #2a303c !important;
-        padding: 5px !important;
-        gap: 0 !important;
-        flex-shrink: 0 !important;
-    `;
+    buttonsGrid.className = 'battle-result-buttons';
 
     const createButton = (text, onClick, isActive = false) => {
         const btn = document.createElement('button');
+        btn.className = 'result-btn' + (isActive ? ' active' : '');
         btn.innerText = text;
-        btn.style.cssText = `
-            background-color: ${isActive ? '#00aaff !important' : '#232833 !important'};
-            border: none !important;
-            padding: 14px 0 !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            color: ${isActive ? 'white !important' : '#aaa !important'};
-            transition: none !important;
-            pointer-events: auto !important;
-            z-index: 2 !important;
-        `;
         btn.addEventListener('click', onClick);
         return btn;
     };
 
-    // Кнопки в зависимости от исхода
     let actionBtn;
     if (victory) {
         actionBtn = createButton('Следующий этаж', () => startTowerBattle());
@@ -756,110 +665,35 @@ function showTowerResultScreen(battleData) {
     let tabLogBtn, tabStatsBtn;
 
     tabLogBtn = createButton('Лог боя', () => {
-        tabLogBtn.style.cssText = `
-            background-color: #00aaff !important;
-            border: none !important;
-            padding: 14px 0 !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            color: white !important;
-            transition: none !important;
-            pointer-events: auto !important;
-            z-index: 2 !important;
-        `;
-        tabStatsBtn.style.cssText = `
-            background-color: #232833 !important;
-            border: none !important;
-            padding: 14px 0 !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            color: #aaa !important;
-            transition: none !important;
-            pointer-events: auto !important;
-            z-index: 2 !important;
-        `;
+        tabLogBtn.classList.add('active');
+        tabStatsBtn.classList.remove('active');
         resultContent.innerHTML = logArray;
     }, true);
 
     tabStatsBtn = createButton('Статистика', () => {
-        tabStatsBtn.style.cssText = `
-            background-color: #00aaff !important;
-            border: none !important;
-            padding: 14px 0 !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            color: white !important;
-            transition: none !important;
-            pointer-events: auto !important;
-            z-index: 2 !important;
-        `;
-        tabLogBtn.style.cssText = `
-            background-color: #232833 !important;
-            border: none !important;
-            padding: 14px 0 !important;
-            font-size: 16px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            color: #aaa !important;
-            transition: none !important;
-            pointer-events: auto !important;
-            z-index: 2 !important;
-        `;
-
+        tabStatsBtn.classList.add('active');
+        tabLogBtn.classList.remove('active');
         const statsHtml = `
-            <table class="stats-battle" style="width:100%; border-collapse:collapse; font-size:14px;">
+            <table class="stats-battle">
                 <thead>
-                    <tr style="background-color:#1a1f2b;">
-                        <th style="padding:12px 8px; text-align:center; color:white;">Игрок</th>
-                        <th style="padding:12px 8px; text-align:center; color:white;">Параметр</th>
-                        <th style="padding:12px 8px; text-align:center; color:white;">Соперник</th>
+                    <tr>
+                        <th>Игрок</th>
+                        <th>Параметр</th>
+                        <th>Соперник</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr style="background-color:#232833;">
-                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.hits}</td>
-                        <td style="padding:10px 8px; text-align:center; color:white;">Ударов</td>
-                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.hits}</td>
-                    </tr>
-                    <tr style="background-color:#2a303c;">
-                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.crits}</td>
-                        <td style="padding:10px 8px; text-align:center; color:white;">Критов</td>
-                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.crits}</td>
-                    </tr>
-                    <tr style="background-color:#232833;">
-                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.dodges}</td>
-                        <td style="padding:10px 8px; text-align:center; color:white;">Уклонений</td>
-                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.dodges}</td>
-                    </tr>
-                    <tr style="background-color:#2a303c;">
-                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.totalDamage}</td>
-                        <td style="padding:10px 8px; text-align:center; color:white;">Урона</td>
-                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.totalDamage}</td>
-                    </tr>
-                    <tr style="background-color:#232833;">
-                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.heal}</td>
-                        <td style="padding:10px 8px; text-align:center; color:white;">Исцелено</td>
-                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.heal}</td>
-                    </tr>
-                    <tr style="background-color:#2a303c;">
-                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.reflect}</td>
-                        <td style="padding:10px 8px; text-align:center; color:white;">Отражено</td>
-                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.reflect}</td>
-                    </tr>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
                 </tbody>
-            </table>
+             </table>
         `;
         resultContent.innerHTML = statsHtml;
     });
-
-    // Применяем скругления углов
-    actionBtn.style.borderRadius = '12px 0 0 0 !important';
-    backBtn.style.borderRadius = '0 12px 0 0 !important';
-    tabLogBtn.style.borderRadius = '0 0 0 12px !important';
-    tabStatsBtn.style.borderRadius = '0 0 12px 0 !important';
 
     buttonsGrid.appendChild(actionBtn);
     buttonsGrid.appendChild(backBtn);
@@ -870,13 +704,7 @@ function showTowerResultScreen(battleData) {
     // Контейнер для контента (лог/статистика)
     const resultContent = document.createElement('div');
     resultContent.id = 'resultContent';
-    resultContent.style.cssText = `
-        flex: 1 !important;
-        overflow-y: auto !important;
-        background-color: #232833 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    `;
+    resultContent.className = 'battle-result-content';
     resultContent.innerHTML = logArray;
     container.appendChild(resultContent);
 

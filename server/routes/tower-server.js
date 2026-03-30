@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { updatePlayerPower } = require('../utils/power'); // добавлен импорт
 const { generateBot, generateMouseBoss } = require('../utils/botGenerator');
 const tasksModule = require('./tasks');
 
@@ -252,8 +253,37 @@ router.post('/battle', async (req, res) => {
         let avatarReward = null;
         let rewardType = 'coins';
         let rewardAmount = 0;
+        let expGain = 0; // переменная для опыта
 
         if (isVictory) {
+            expGain = 20; // начисляем опыт за победу
+
+            // Начисление опыта выбранному классу
+            const classRes = await client.query(
+                'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
+                [userId, chosenClass]
+            );
+            if (classRes.rows.length > 0) {
+                let { level, exp, skill_points } = classRes.rows[0];
+                exp += expGain;
+                const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
+                let leveledUp = false;
+                while (exp >= expNeeded(level)) {
+                    exp -= expNeeded(level);
+                    level++;
+                    const pointsToAdd = (level <= 14) ? 3 : 5;
+                    skill_points += pointsToAdd;
+                    leveledUp = true;
+                }
+                await client.query(
+                    'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
+                    [level, exp, skill_points, userId, chosenClass]
+                );
+                if (leveledUp) {
+                    await updatePlayerPower(client, userId, chosenClass);
+                }
+            }
+
             const floor = progress.current_floor;
 
             if (floor % 20 === 0) {
@@ -336,7 +366,8 @@ router.post('/battle', async (req, res) => {
             newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
             victory: isVictory,
             reward: responseReward,
-            attemptsLeft: 10 - newAttemptsToday
+            attemptsLeft: 10 - newAttemptsToday,
+            expGain: isVictory ? expGain : 0   // добавляем опыт в ответ
         });
 
     } catch (e) {

@@ -2403,7 +2403,7 @@ body {
     grid-template-columns: 1fr 1fr;
     background-color: #2a303c;
     padding: 5px;
-    gap: 0;
+    gap: 2px;
     flex-shrink: 0;
 }
 

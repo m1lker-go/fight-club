@@ -2386,7 +2386,6 @@ body {
 
 
 /* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
-
 .battle-result {
     display: flex;
     flex-direction: column;

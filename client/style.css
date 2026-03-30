@@ -2339,118 +2339,163 @@ body {
 /* Конец анимации */
 
 /* ========== РЕЗУЛЬТАТ БОЯ ========== */
+/* ========== РЕЗУЛЬТАТ БОЯ ========== */
 .battle-result {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    background-color: #232833 !important;
-    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #232833;
+    overflow: hidden;
 }
 
 .battle-result-header {
-    background-color: #1a1f2b !important;
-    text-align: center !important;
-    font-size: 28px !important;
-    font-weight: bold !important;
-    padding: 16px !important;
-    border-radius: 12px 12px 0 0 !important;
-    flex-shrink: 0 !important;
+    background-color: #1a1f2b;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 16px;
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+    flex-shrink: 0;
 }
 
-/* Сетка наград (высокая специфичность) */
-#content .battle-result-stats-grid {
-    display: grid !important;
-    grid-template-columns: auto 1fr !important;
-    gap: 8px 16px !important;
-    background-color: #2a303c !important;
-    padding: 12px 16px !important;
-    align-items: center !important;
-    font-size: 14px !important;
-    flex-shrink: 0 !important;
+.battle-result-stats-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 16px;
+    background-color: #2a303c;
+    padding: 12px 16px;
+    align-items: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ccc;
+}
+.stat-item i {
+    color: #00aaff;
+    width: 20px;
+    text-align: center;
+}
+.stat-value {
+    font-weight: bold;
+    color: white;
+    text-align: right;
 }
 
-#content .stat-item {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    color: #ccc !important;
-}
-
-#content .stat-item i {
-    color: #00aaff !important;
-    width: 20px !important;
-    text-align: center !important;
-}
-
-#content .stat-value {
-    font-weight: bold !important;
-    color: white !important;
-    text-align: right !important;
-}
-
-/* Кнопки (сетка 2×2) */
 .battle-result-buttons {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    background-color: #1a1f2b !important;
-    padding: 5px !important;
-    gap: 0 !important;
-    flex-shrink: 0 !important;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background-color: #1a1f2b;
+    padding: 5px;
+    gap: 0;
+    flex-shrink: 0;
 }
 
 .result-btn {
-    background-color: #1a1f2b !important;
-    border: 1px solid #aaa !important;
-    padding: 14px 0 !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    cursor: pointer !important;
-    color: #aaa !important;
-    transition: none !important;
-    pointer-events: auto !important;
-    z-index: 2 !important;
+    background-color: #1a1f2b;
+    border: none;
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    border: 1px solid #aaa;
+    transition: none;
+    pointer-events: auto;
+    z-index: 2;
 }
 
 .result-btn:first-child {
-    border-radius: 12px 0 0 0 !important;
-    border-right: none !important;
+    border-radius: 12px 0 0 0;
+    border-right: none;
 }
 .result-btn:nth-child(2) {
-    border-radius: 0 12px 0 0 !important;
-    border-left: none !important;
+    border-radius: 0 12px 0 0;
+    border-left: none;
 }
 .result-btn:nth-child(3) {
-    border-radius: 0 0 0 12px !important;
-    border-top: none !important;
-    border-right: none !important;
+    border-radius: 0 0 0 12px;
+    border-top: none;
+    border-right: none;
 }
 .result-btn:last-child {
-    border-radius: 0 0 12px 0 !important;
-    border-top: none !important;
-    border-left: none !important;
+    border-radius: 0 0 12px 0;
+    border-top: none;
+    border-left: none;
 }
 
 .result-btn.active {
-    background-color: #00aaff !important;
-    color: white !important;
-    border-color: #00aaff !important;
+    background-color: #00aaff;
+    color: white;
+    border-color: #00aaff;
 }
 
 .result-btn:not(.active):hover {
-    background-color: #1a1f2b !important;
-    color: #aaa !important;
+    background-color: #1a1f2b;
+    color: #aaa;
 }
 
-/* Контентная область (лог или статистика) */
 .battle-result-content {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    background-color: #232833 !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    flex: 1;
+    overflow-y: auto;
+    background-color: #232833;
+    padding: 0;
+    margin: 0;
 }
 
 .battle-result-content .log-entry {
-    padding: 8px 12px !important;
-    border-bottom: 1px solid #2a303c !important;
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a303c;
 }
+
+/* Таблица статистики */
+.stats-battle {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    background-color: #232833;
+}
+
+.stats-battle thead tr {
+    background-color: #1a1f2b;
+}
+
+.stats-battle th {
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    border-bottom: 1px solid #2a303c;
+}
+
+.stats-battle tbody tr {
+    background-color: #232833;
+}
+
+.stats-battle tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+
+.stats-battle td {
+    padding: 10px 8px;
+    text-align: center;
+    border: none;
+}
+
+.stats-battle .player-col {
+    color: #00aaff;
+    font-weight: bold;
+}
+
+.stats-battle .enemy-col {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+

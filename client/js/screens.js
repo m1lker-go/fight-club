@@ -547,12 +547,6 @@ function renderShop(target = null) {
     const container = target || document.getElementById('tradeContent');
     container.innerHTML = `
         <div class="chest-table">
-            <div class="chest-row chest-header">
-                <div class="chest-icon-col"></div>
-                <div class="chest-info-col">Название</div>
-                <div class="chest-desc-col">Шансы</div>
-                <div class="chest-price-col">Цена</div>
-            </div>
             <div class="chest-row" data-chest="common">
                 <div class="chest-icon-col">
                     <img src="/assets/common-chess.png" alt="Обычный сундук">
@@ -654,7 +648,6 @@ function renderShop(target = null) {
 
     updateCommonChestPrice();
 
-    // Обработчики кликов по строкам
     container.querySelectorAll('.chest-row[data-chest]').forEach(row => {
         row.addEventListener('click', async () => {
             const chest = row.dataset.chest;

@@ -177,6 +177,7 @@ function showBattleScreen(battleData) {
     }, 1000);
 }
 
+
 async function showBattleResult(battleData, timeOut = false) {
     if (window.battleTimer) {
         clearInterval(window.battleTimer);
@@ -287,82 +288,43 @@ async function showBattleResult(battleData, timeOut = false) {
         return `<div class="${entryClass}">${formattedText}</div>`;
     }).join('');
 
-    // Создаём контейнер результата
+    // Создаём HTML для результата
+    const html = `
+        <div class="battle-result">
+            <div class="battle-result-header" style="color: ${resultColor};">${resultText}</div>
+            <div class="battle-result-stats-grid">
+                <div class="stat-item"><i class="fas fa-star"></i> Опыт:</div>
+                <div class="stat-value">+${expGain}</div>
+                <div class="stat-item"><i class="fas fa-coins"></i> Монеты:</div>
+                <div class="stat-value">+${coinGain}</div>
+                <div class="stat-item"><i class="fas fa-chart-line"></i> Рейтинг:</div>
+                <div class="stat-value">${ratingChange > 0 ? '+' : ''}${ratingChange}</div>
+                <div class="stat-item"><i class="fas fa-fist-raised"></i> Серия:</div>
+                <div class="stat-value">${newStreak}</div>
+            </div>
+            <div class="battle-result-buttons">
+                <button class="result-btn" id="rematchBtn">В бой</button>
+                <button class="result-btn" id="backBtn">Назад</button>
+                <button class="result-btn result-tab active" id="tabLog">Лог боя</button>
+                <button class="result-btn result-tab" id="tabStats">Статистика</button>
+            </div>
+            <div id="resultContent" class="battle-result-content">
+                ${logArray}
+            </div>
+        </div>
+    `;
+
     const content = document.getElementById('content');
-    content.innerHTML = '';
+    content.innerHTML = html;
 
-    const battleResultDiv = document.createElement('div');
-    battleResultDiv.className = 'battle-result';
+    // Получаем элементы
+    const rematchBtn = document.getElementById('rematchBtn');
+    const backBtn = document.getElementById('backBtn');
+    const tabLog = document.getElementById('tabLog');
+    const tabStats = document.getElementById('tabStats');
+    const resultContent = document.getElementById('resultContent');
 
-    // Заголовок
-    const header = document.createElement('div');
-    header.className = 'battle-result-header';
-    header.style.color = resultColor;
-    header.innerText = resultText;
-    battleResultDiv.appendChild(header);
-
-    // Блок наград (сетка)
-    const statsGrid = document.createElement('div');
-    statsGrid.className = 'battle-result-stats-grid';
-
-    const addStatRow = (label, value, iconClass) => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'stat-item';
-        const icon = document.createElement('i');
-        icon.className = iconClass;
-        const labelSpan = document.createElement('span');
-        labelSpan.innerText = label;
-        itemDiv.appendChild(icon);
-        itemDiv.appendChild(labelSpan);
-
-        const valueDiv = document.createElement('div');
-        valueDiv.className = 'stat-value';
-        valueDiv.innerText = value;
-
-        statsGrid.appendChild(itemDiv);
-        statsGrid.appendChild(valueDiv);
-    };
-
-    addStatRow('Опыт:', `+${expGain}`, 'fas fa-star');
-    addStatRow('Монеты:', `+${coinGain}`, 'fas fa-coins');
-    addStatRow('Рейтинг:', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line');
-    addStatRow('Серия:', `${newStreak}`, 'fas fa-fist-raised');
-
-    battleResultDiv.appendChild(statsGrid);
-
-    // Кнопки (сетка 2×2)
-    const buttonsRow = document.createElement('div');
-    buttonsRow.className = 'battle-result-buttons';
-
-    const rematchBtn = document.createElement('button');
-    rematchBtn.className = 'result-btn';
-    rematchBtn.innerText = 'В бой';
-    const backBtn = document.createElement('button');
-    backBtn.className = 'result-btn';
-    backBtn.innerText = 'Назад';
-    const tabLog = document.createElement('button');
-    tabLog.className = 'result-btn result-tab active';
-    tabLog.innerText = 'Лог боя';
-    const tabStats = document.createElement('button');
-    tabStats.className = 'result-btn result-tab';
-    tabStats.innerText = 'Статистика';
-
-    buttonsRow.appendChild(rematchBtn);
-    buttonsRow.appendChild(backBtn);
-    buttonsRow.appendChild(tabLog);
-    buttonsRow.appendChild(tabStats);
-    battleResultDiv.appendChild(buttonsRow);
-
-    // Контейнер для контента (лог или статистика)
-    const resultContent = document.createElement('div');
-    resultContent.id = 'resultContent';
-    resultContent.className = 'battle-result-content';
-    resultContent.innerHTML = logArray; // по умолчанию лог
-    battleResultDiv.appendChild(resultContent);
-
-    content.appendChild(battleResultDiv);
-
-    // Обработчики событий
+    // Навешиваем обработчики
     rematchBtn.addEventListener('click', async () => {
         console.log('rematchBtn clicked');
         if (window.battleTimer) clearInterval(window.battleTimer);
@@ -384,7 +346,6 @@ async function showBattleResult(battleData, timeOut = false) {
     });
 
     tabLog.addEventListener('click', () => {
-        console.log('tabLog clicked');
         tabLog.classList.add('active');
         tabStats.classList.remove('active');
         resultContent.innerHTML = logArray;

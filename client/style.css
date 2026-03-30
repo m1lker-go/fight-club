@@ -2383,40 +2383,7 @@ body {
     transition: none;
     text-align: center;
 }
-.battle-result-btn.active {
-    background-color: #00aaff;
-    border-color: #00aaff;
-    color: white;
-}
-/* Закругления углов */
-.battle-result-btn:first-child {
-    border-radius: 12px 0 0 0;
-}
-.battle-result-btn:nth-child(2) {
-    border-radius: 0 12px 0 0;
-}
-.battle-result-btn:nth-child(3) {
-    border-radius: 0 0 0 12px;
-}
-.battle-result-btn:last-child {
-    border-radius: 0 0 12px 0;
-}
 
-/* Контентная область (лог/статистика) */
-.battle-result-content {
-    flex: 1;
-    overflow-y: auto;
-    background-color: #232833;
-    padding: 0;
-    margin: 0;
-}
-.battle-result-content .log-entry {
-    padding: 8px 12px;
-    border-bottom: 1px solid #2a303c;
-}
-.battle-result-content .log-entry:last-child {
-    border-bottom: none;
-}
 
 
 /* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */

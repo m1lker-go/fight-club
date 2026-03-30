@@ -198,7 +198,6 @@ async function showBattleResult(battleData, timeOut = false) {
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // Логирование для отладки
     console.log('Награды:', { expGain, coinGain, ratingChange, newStreak });
 
     const leveledUp = addExpToCurrentClass(expGain);
@@ -207,7 +206,6 @@ async function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 
-    // Обновление заданий
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -224,7 +222,6 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
@@ -274,7 +271,6 @@ async function showBattleResult(battleData, timeOut = false) {
         }
     });
 
-    // Лог боя
     const logArray = battleData.result.messages.map((m, index) => {
         const text = m.text || JSON.stringify(m);
         const formattedText = typeof BattleLog.formatLogText === 'function' ? BattleLog.formatLogText(text) : text;
@@ -330,38 +326,15 @@ async function showBattleResult(battleData, timeOut = false) {
         resultDiv.innerHTML = `
             <table class="stats-table stats-battle">
                 <thead>
-                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
+                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
                 </thead>
                 <tbody>
-                      <td class="player-col">${playerStats.hits}</td>
-                      <td>Ударов</td>
-                      <td class="enemy-col">${enemyStats.hits}</td>
-                    </tr>
-                    <tr>
-                      <td class="player-col">${playerStats.crits}</td>
-                      <td>Критов</td>
-                      <td class="enemy-col">${enemyStats.crits}</td>
-                    </tr>
-                    <tr>
-                      <td class="player-col">${playerStats.dodges}</td>
-                      <td>Уклонений</td>
-                      <td class="enemy-col">${enemyStats.dodges}</td>
-                    </tr>
-                    <tr>
-                      <td class="player-col">${playerStats.totalDamage}</td>
-                      <td>Урона</td>
-                      <td class="enemy-col">${enemyStats.totalDamage}</td>
-                    </tr>
-                    <tr>
-                      <td class="player-col">${playerStats.heal}</td>
-                      <td>Исцелено</td>
-                      <td class="enemy-col">${enemyStats.heal}</td>
-                    </tr>
-                    <tr>
-                      <td class="player-col">${playerStats.reflect}</td>
-                      <td>Отражено</td>
-                      <td class="enemy-col">${enemyStats.reflect}</td>
-                    </tr>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
                 </tbody>
             </table>
         `;

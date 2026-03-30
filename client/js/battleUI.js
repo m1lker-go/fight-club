@@ -299,34 +299,36 @@ async function showBattleResult(battleData, timeOut = false) {
     header.innerText = resultText;
     container.appendChild(header);
 
-    // Блок наград (сетка)
-    const rewardsGrid = document.createElement('div');
-    rewardsGrid.className = 'battle-result-stats-grid';
+    // Блок наград (2 колонки, 2 строки)
+const rewardsGrid = document.createElement('div');
+rewardsGrid.className = 'battle-result-stats-grid';
 
-    const addRewardRow = (label, value, iconClass) => {
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'stat-item';
-        const icon = document.createElement('i');
-        icon.className = iconClass;
-        const span = document.createElement('span');
-        span.innerText = label;
-        labelDiv.appendChild(icon);
-        labelDiv.appendChild(span);
+const addRewardItem = (label, value, iconClass) => {
+    const item = document.createElement('div');
+    item.className = 'reward-item';
+    
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    
+    const textSpan = document.createElement('span');
+    textSpan.innerHTML = `${label}: ${value}`;
+    
+    item.appendChild(icon);
+    item.appendChild(textSpan);
+    
+    return item;
+};
 
-        const valueDiv = document.createElement('div');
-        valueDiv.className = 'stat-value';
-        valueDiv.innerText = value;
+// Порядок: левый верхний, левый нижний, правый верхний, правый нижний
+const items = [
+    addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'),
+    addRewardItem('Монеты', `+${coinGain}`, 'fas fa-coins'),
+    addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
+    addRewardItem('Серия', `${newStreak}`, 'fas fa-fist-raised')
+];
 
-        rewardsGrid.appendChild(labelDiv);
-        rewardsGrid.appendChild(valueDiv);
-    };
-
-    addRewardRow('Опыт:', `+${expGain}`, 'fas fa-star');
-    addRewardRow('Монеты:', `+${coinGain}`, 'fas fa-coins');
-    addRewardRow('Рейтинг:', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line');
-    addRewardRow('Серия:', `${newStreak}`, 'fas fa-fist-raised');
-
-    container.appendChild(rewardsGrid);
+items.forEach(item => rewardsGrid.appendChild(item));
+container.appendChild(rewardsGrid);
 
     // Кнопки (сетка 2×2)
     const buttonsGrid = document.createElement('div');

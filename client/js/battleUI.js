@@ -207,7 +207,7 @@ async function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 
-    // Обновление заданий (оставляем как есть)
+    // Обновление заданий
     try {
         await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
             method: 'POST',
@@ -224,7 +224,7 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
 
-    // Подсчёт статистики (оставляем без изменений)
+    // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
@@ -293,54 +293,69 @@ async function showBattleResult(battleData, timeOut = false) {
     content.innerHTML = '';
 
     const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.height = '100%';
-    container.style.backgroundColor = '#232833';
-    container.style.overflow = 'hidden';
+    container.style.cssText = `
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        background-color: #232833 !important;
+        overflow: hidden !important;
+    `;
 
     // Заголовок
     const header = document.createElement('div');
-    header.style.backgroundColor = '#1a1f2b';
-    header.style.textAlign = 'center';
-    header.style.fontSize = '28px';
-    header.style.fontWeight = 'bold';
-    header.style.padding = '16px';
-    header.style.borderRadius = '12px 12px 0 0';
-    header.style.color = resultColor;
+    header.style.cssText = `
+        background-color: #1a1f2b !important;
+        text-align: center !important;
+        font-size: 28px !important;
+        font-weight: bold !important;
+        padding: 16px !important;
+        border-radius: 12px 12px 0 0 !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        color: ${resultColor} !important;
+    `;
     header.innerText = resultText;
     container.appendChild(header);
 
     // Блок наград (сетка)
     const rewardsGrid = document.createElement('div');
-    rewardsGrid.style.display = 'grid';
-    rewardsGrid.style.gridTemplateColumns = 'auto 1fr';
-    rewardsGrid.style.gap = '8px 16px';
-    rewardsGrid.style.backgroundColor = '#2a303c';
-    rewardsGrid.style.padding = '12px 16px';
-    rewardsGrid.style.alignItems = 'center';
-    rewardsGrid.style.fontSize = '14px';
+    rewardsGrid.style.cssText = `
+        display: grid !important;
+        grid-template-columns: auto 1fr !important;
+        gap: 8px 16px !important;
+        background-color: #2a303c !important;
+        padding: 12px 16px !important;
+        align-items: center !important;
+        font-size: 14px !important;
+        flex-shrink: 0 !important;
+    `;
 
     const addRewardRow = (label, value, iconClass) => {
         const labelDiv = document.createElement('div');
-        labelDiv.style.display = 'flex';
-        labelDiv.style.alignItems = 'center';
-        labelDiv.style.gap = '6px';
-        labelDiv.style.color = '#ccc';
+        labelDiv.style.cssText = `
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            color: #ccc !important;
+        `;
         const icon = document.createElement('i');
         icon.className = iconClass;
-        icon.style.color = '#00aaff';
-        icon.style.width = '20px';
-        icon.style.textAlign = 'center';
+        icon.style.cssText = `
+            color: #00aaff !important;
+            width: 20px !important;
+            text-align: center !important;
+        `;
         const span = document.createElement('span');
         span.innerText = label;
         labelDiv.appendChild(icon);
         labelDiv.appendChild(span);
 
         const valueDiv = document.createElement('div');
-        valueDiv.style.fontWeight = 'bold';
-        valueDiv.style.color = 'white';
-        valueDiv.style.textAlign = 'right';
+        valueDiv.style.cssText = `
+            font-weight: bold !important;
+            color: white !important;
+            text-align: right !important;
+        `;
         valueDiv.innerText = value;
 
         rewardsGrid.appendChild(labelDiv);
@@ -356,25 +371,30 @@ async function showBattleResult(battleData, timeOut = false) {
 
     // Кнопки (сетка 2×2)
     const buttonsGrid = document.createElement('div');
-    buttonsGrid.style.display = 'grid';
-    buttonsGrid.style.gridTemplateColumns = '1fr 1fr';
-    buttonsGrid.style.backgroundColor = '#1a1f2b';
-    buttonsGrid.style.padding = '5px';
-    buttonsGrid.style.gap = '0';
+    buttonsGrid.style.cssText = `
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        background-color: #2a303c !important;
+        padding: 5px !important;
+        gap: 0 !important;
+        flex-shrink: 0 !important;
+    `;
 
     const createButton = (text, onClick, isActive = false) => {
         const btn = document.createElement('button');
         btn.innerText = text;
-        btn.style.backgroundColor = isActive ? '#00aaff' : '#1a1f2b';
-        btn.style.border = `1px solid ${isActive ? '#00aaff' : '#aaa'}`;
-        btn.style.padding = '14px 0';
-        btn.style.fontSize = '16px';
-        btn.style.fontWeight = 'bold';
-        btn.style.cursor = 'pointer';
-        btn.style.color = isActive ? 'white' : '#aaa';
-        btn.style.transition = 'none';
-        btn.style.pointerEvents = 'auto';
-        btn.style.zIndex = '2';
+        btn.style.cssText = `
+            background-color: ${isActive ? '#00aaff !important' : '#232833 !important'};
+            border: none !important;
+            padding: 14px 0 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            color: ${isActive ? 'white !important' : '#aaa !important'};
+            transition: none !important;
+            pointer-events: auto !important;
+            z-index: 2 !important;
+        `;
         btn.addEventListener('click', onClick);
         return btn;
     };
@@ -400,69 +420,130 @@ async function showBattleResult(battleData, timeOut = false) {
     let tabLogBtn, tabStatsBtn;
 
     tabLogBtn = createButton('Лог боя', () => {
-        tabLogBtn.style.backgroundColor = '#00aaff';
-        tabLogBtn.style.color = 'white';
-        tabLogBtn.style.borderColor = '#00aaff';
-        tabStatsBtn.style.backgroundColor = '#1a1f2b';
-        tabStatsBtn.style.color = '#aaa';
-        tabStatsBtn.style.borderColor = '#aaa';
+        tabLogBtn.style.cssText = `
+            background-color: #00aaff !important;
+            border: none !important;
+            padding: 14px 0 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            color: white !important;
+            transition: none !important;
+            pointer-events: auto !important;
+            z-index: 2 !important;
+        `;
+        tabStatsBtn.style.cssText = `
+            background-color: #232833 !important;
+            border: none !important;
+            padding: 14px 0 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            color: #aaa !important;
+            transition: none !important;
+            pointer-events: auto !important;
+            z-index: 2 !important;
+        `;
         resultContent.innerHTML = logArray;
     }, true);
 
     tabStatsBtn = createButton('Статистика', () => {
-        tabStatsBtn.style.backgroundColor = '#00aaff';
-        tabStatsBtn.style.color = 'white';
-        tabStatsBtn.style.borderColor = '#00aaff';
-        tabLogBtn.style.backgroundColor = '#1a1f2b';
-        tabLogBtn.style.color = '#aaa';
-        tabLogBtn.style.borderColor = '#aaa';
+        tabStatsBtn.style.cssText = `
+            background-color: #00aaff !important;
+            border: none !important;
+            padding: 14px 0 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            color: white !important;
+            transition: none !important;
+            pointer-events: auto !important;
+            z-index: 2 !important;
+        `;
+        tabLogBtn.style.cssText = `
+            background-color: #232833 !important;
+            border: none !important;
+            padding: 14px 0 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            color: #aaa !important;
+            transition: none !important;
+            pointer-events: auto !important;
+            z-index: 2 !important;
+        `;
 
         const statsHtml = `
-            <table class="stats-table stats-battle" style="width:100%; border-collapse:collapse; font-size:14px;">
+            <table class="stats-battle" style="width:100%; border-collapse:collapse; font-size:14px;">
                 <thead>
-                    <th style="padding:12px 8px; text-align:center; background-color:#1a1f2b; color:white;">Игрок</th>
-                    <th style="padding:12px 8px; text-align:center; background-color:#1a1f2b; color:white;">Параметр</th>
-                    <th style="padding:12px 8px; text-align:center; background-color:#1a1f2b; color:white;">Соперник</th>
+                    <tr style="background-color:#1a1f2b;">
+                        <th style="padding:12px 8px; text-align:center; color:white;">Игрок</th>
+                        <th style="padding:12px 8px; text-align:center; color:white;">Параметр</th>
+                        <th style="padding:12px 8px; text-align:center; color:white;">Соперник</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:#00aaff;">${playerStats.hits}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:white;">Ударов</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:#e74c3c;">${enemyStats.hits}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:#00aaff;">${playerStats.crits}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:white;">Критов</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:#e74c3c;">${enemyStats.crits}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:#00aaff;">${playerStats.dodges}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:white;">Уклонений</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:#e74c3c;">${enemyStats.dodges}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:#00aaff;">${playerStats.totalDamage}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:white;">Урона</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:#e74c3c;">${enemyStats.totalDamage}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:#00aaff;">${playerStats.heal}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:white;">Исцелено</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#232833; color:#e74c3c;">${enemyStats.heal}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:#00aaff;">${playerStats.reflect}</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:white;">Отражено</td>
-                    <td style="padding:10px 8px; text-align:center; background-color:#2a303c; color:#e74c3c;">${enemyStats.reflect}</td>
+                    <tr style="background-color:#232833;">
+                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.hits}</td>
+                        <td style="padding:10px 8px; text-align:center; color:white;">Ударов</td>
+                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.hits}</td>
+                    </tr>
+                    <tr style="background-color:#2a303c;">
+                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.crits}</td>
+                        <td style="padding:10px 8px; text-align:center; color:white;">Критов</td>
+                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.crits}</td>
+                    </tr>
+                    <tr style="background-color:#232833;">
+                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.dodges}</td>
+                        <td style="padding:10px 8px; text-align:center; color:white;">Уклонений</td>
+                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.dodges}</td>
+                    </tr>
+                    <tr style="background-color:#2a303c;">
+                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.totalDamage}</td>
+                        <td style="padding:10px 8px; text-align:center; color:white;">Урона</td>
+                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.totalDamage}</td>
+                    </tr>
+                    <tr style="background-color:#232833;">
+                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.heal}</td>
+                        <td style="padding:10px 8px; text-align:center; color:white;">Исцелено</td>
+                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.heal}</td>
+                    </tr>
+                    <tr style="background-color:#2a303c;">
+                        <td style="padding:10px 8px; text-align:center; color:#00aaff;">${playerStats.reflect}</td>
+                        <td style="padding:10px 8px; text-align:center; color:white;">Отражено</td>
+                        <td style="padding:10px 8px; text-align:center; color:#e74c3c;">${enemyStats.reflect}</td>
+                    </tr>
                 </tbody>
-             </table>
+            </table>
         `;
         resultContent.innerHTML = statsHtml;
     });
+
+    // Применяем скругления углов для каждой кнопки
+    const applyCornerRadius = () => {
+        rematchBtn.style.borderRadius = '12px 0 0 0 !important';
+        backBtn.style.borderRadius = '0 12px 0 0 !important';
+        tabLogBtn.style.borderRadius = '0 0 0 12px !important';
+        tabStatsBtn.style.borderRadius = '0 0 12px 0 !important';
+    };
 
     buttonsGrid.appendChild(rematchBtn);
     buttonsGrid.appendChild(backBtn);
     buttonsGrid.appendChild(tabLogBtn);
     buttonsGrid.appendChild(tabStatsBtn);
+    applyCornerRadius();
     container.appendChild(buttonsGrid);
 
     // Контейнер для контента (лог/статистика)
     const resultContent = document.createElement('div');
     resultContent.id = 'resultContent';
-    resultContent.style.flex = '1';
-    resultContent.style.overflowY = 'auto';
-    resultContent.style.backgroundColor = '#232833';
-    resultContent.style.padding = '0';
-    resultContent.style.margin = '0';
+    resultContent.style.cssText = `
+        flex: 1 !important;
+        overflow-y: auto !important;
+        background-color: #232833 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    `;
     resultContent.innerHTML = logArray;
     container.appendChild(resultContent);
 

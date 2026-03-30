@@ -33,6 +33,25 @@ let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
 
+// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
+async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response;
+        } catch (err) {
+            console.warn(`Attempt ${i+1}/${retries} failed:`, err.message);
+            if (i === retries - 1) throw err;
+            // Ждём перед следующей попыткой (экспоненциальная задержка)
+            await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, i)));
+        }
+    }
+}
+
 function addExpToCurrentClass(expGain) {
     const classData = getCurrentClassData();
     if (!classData) return false;
@@ -110,15 +129,15 @@ async function init() {
     }, 10000);
 
     try {
-        const response = await fetch('https://fight-club-api-4och.onrender.com/auth/login', {
+        const response = await fetchWithRetry('https://fight-club-api-4och.onrender.com/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 initData: tg.initData,
                 referral_code: referralCode 
-            }),
-            signal: controller.signal
-        });
+            })
+        }, 3, 40000); // 3 попытки, таймаут 40 секунд
+
         clearTimeout(timeoutId);
         clearTimeout(errorTimer);
 
@@ -193,11 +212,11 @@ function getAdventReward(day, daysInMonth) {
 async function refreshData() {
     if (!userData || !userData.tg_id) return;
     try {
-        const response = await fetch('https://fight-club-api-4och.onrender.com/auth/refresh', {
+        const response = await fetchWithRetry('https://fight-club-api-4och.onrender.com/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
-        });
+        }, 2, 20000); // 2 попытки, таймаут 20 секунд
         const data = await response.json();
         if (data.user) {
             userData = data.user;

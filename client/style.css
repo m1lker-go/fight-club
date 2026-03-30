@@ -2449,3 +2449,9 @@ body {
     padding: 8px 12px !important;
     border-bottom: 1px solid #2a303c !important;
 }
+
+.result-btn {
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto !important;
+}

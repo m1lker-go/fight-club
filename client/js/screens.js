@@ -1064,7 +1064,6 @@ function renderProfile() {
         body: JSON.stringify({ tg_id: userData.tg_id })
     })
     .then(() => {
-        // После обновления задания обновляем данные заданий и иконку
         if (window.refreshTasksData) window.refreshTasksData();
         if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
     })

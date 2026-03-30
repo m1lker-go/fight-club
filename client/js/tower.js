@@ -364,23 +364,24 @@ function showTowerBattleScreen(battleData) {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
-            <div class="battle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
-                <div style="text-align: left;">
+            <div class="battle-header">
+                <div>
                     <div>${userData.username}</div>
-                    <div style="font-size: 12px; color: #aaa;">${playerDisplayClass} (${playerDisplaySubclass})</div>
+                    <div class="role-text">${playerDisplayClass} (${playerDisplaySubclass})</div>
                 </div>
-                <div style="text-align: right;">
+                <div>
                     <div>${battleData.opponent.username}</div>
-                    <div style="font-size: 12px; color: #aaa;">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
+                    <div class="role-text">${getClassNameRu(battleData.opponent.class)} (${getRoleNameRu(battleData.opponent.subclass)})</div>
                 </div>
             </div>
-            <div class="battle-arena" style="display: flex; align-items: stretch; justify-content: center; gap: 0px; padding: 5px 2px;">
-                <div class="hero-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+
+            <div class="battle-arena">
+                <div class="hero-card">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
-                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;" class="hero-avatar-img">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
-                        <div id="hero-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <div id="hero-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
@@ -393,7 +394,7 @@ function showTowerBattleScreen(battleData) {
                     </div>
                 </div>
 
-                <div class="player-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
+                <div class="player-debuffs">
                     <div class="debuff-slot" data-side="player" data-slot="0"></div>
                     <div class="debuff-slot" data-side="player" data-slot="1"></div>
                     <div class="debuff-slot" data-side="player" data-slot="2"></div>
@@ -401,12 +402,15 @@ function showTowerBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="player" data-slot="4"></div>
                 </div>
 
-                <div class="battle-center" style="flex: 0 0 40px; position: relative; height: 120px;">
-                    <div class="battle-timer" id="battleTimer" style="position: absolute; top: 48px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border: 2px solid #00aaff; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: white; font-weight: bold; font-size: 16px;">45</div>
-                    <button id="singleSpeedBtn" class="speed-btn" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 2px solid #aaa; color: #aaa; padding: 0; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;">x1</button>
+                <div class="battle-center">
+                    <div class="battle-timer" id="battleTimer">∞</div>
+                    <div class="speed-wrapper">
+                        <div class="speed-label">Скорость:</div>
+                        <button id="singleSpeedBtn" class="speed-btn">x1</button>
+                    </div>
                 </div>
 
-                <div class="enemy-debuffs" style="flex: 0 0 40px; display: flex; flex-direction: column; justify-content: flex-start; gap: 0;">
+                <div class="enemy-debuffs">
                     <div class="debuff-slot" data-side="enemy" data-slot="0"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="1"></div>
                     <div class="debuff-slot" data-side="enemy" data-slot="2"></div>
@@ -414,12 +418,12 @@ function showTowerBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <div class="enemy-card" style="flex: 0 0 140px; display: flex; flex-direction: column; justify-content: flex-start; text-align: center;">
+                <div class="enemy-card">
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
-                        <img src="${enemyAvatarSrc}" alt="enemy" style="width:100%; height:100%; object-fit: cover;" class="enemy-avatar-img">
+                        <img src="${enemyAvatarSrc}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
-                        <div id="enemy-animation" class="animation-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 10;"></div>
+                        <div id="enemy-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
@@ -433,7 +437,10 @@ function showTowerBattleScreen(battleData) {
                 </div>
             </div>
 
-            <div class="battle-log" id="battleLog" style="height:250px; overflow-y:auto; background-color:#232833; border-radius:10px; padding:10px; margin-top:10px;"></div>
+            <div class="battle-log-container">
+                <div class="log-header">Лог боя</div>
+                <div id="battleLog" class="battle-log"></div>
+            </div>
         </div>
     `;
 
@@ -449,8 +456,9 @@ function showTowerBattleScreen(battleData) {
             BattleLog.setSpeed(newSpeed);
         });
     }
-}
 
+    // В башне нет таймера, поэтому не запускаем интервал
+}
 // ===== Функции для экрана результата =====
 
 function computeTowerStats(messages) {
@@ -594,7 +602,7 @@ function showTowerResultScreen(battleData) {
     // Если есть награда – показываем её
     if (reward) {
         if (reward.type === 'coins') {
-            rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount} монет`, 'fas fa-coins'));
+            rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
         } else if (reward.type === 'avatar') {
             const avatarItem = document.createElement('div');
             avatarItem.className = 'reward-item';

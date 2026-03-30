@@ -2381,10 +2381,16 @@ body {
     width: 20px;
     text-align: center;
 }
-.stat-value {
-    font-weight: bold;
-    color: white;
-    text-align: left;
+.battle-result-stats-grid .stat-value {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    font-weight: bold !important;
+    color: white !important;
+    text-align: left !important;
+    background: none !important;
+    text-shadow: none !important;
 }
 
 /* Контейнер кнопок */

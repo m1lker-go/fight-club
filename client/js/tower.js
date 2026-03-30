@@ -456,9 +456,9 @@ function showTowerBattleScreen(battleData) {
             BattleLog.setSpeed(newSpeed);
         });
     }
-
-    // В башне нет таймера, поэтому не запускаем интервал
 }
+
+
 // ===== Функции для экрана результата =====
 
 function computeTowerStats(messages) {

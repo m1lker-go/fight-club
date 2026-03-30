@@ -2418,6 +2418,7 @@ body {
     border-bottom: none;
 }
 
+
 /* ========== ЭКРАН РЕЗУЛЬТАТА БОЯ ========== */
 .battle-result {
     display: flex;
@@ -2435,30 +2436,21 @@ body {
     border-radius: 12px 12px 0 0;
     margin: 0;
 }
-.battle-result-header.victory {
-    color: #2ecc71;
-}
-.battle-result-header.defeat {
-    color: #e74c3c;
-}
-.battle-result-header.draw {
-    color: white;
-}
 
-.battle-result-stats {
+.battle-result-stats-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 8px 16px;
     background-color: #2a303c;
-    padding: 10px 16px;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
+    padding: 12px 16px;
+    align-items: center;
     font-size: 14px;
-    color: #ccc;
 }
 .stat-item {
     display: flex;
     align-items: center;
     gap: 6px;
+    color: #ccc;
 }
 .stat-item i {
     color: #00aaff;
@@ -2468,6 +2460,7 @@ body {
 .stat-value {
     font-weight: bold;
     color: white;
+    text-align: left;
 }
 
 .battle-result-buttons {

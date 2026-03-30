@@ -288,11 +288,15 @@ async function showBattleResult(battleData, timeOut = false) {
     content.innerHTML = `
         <div class="battle-result">
             <div class="battle-result-header" style="color: ${resultColor};">${resultText}</div>
-            <div class="battle-result-stats">
-                <div class="stat-item"><i class="fas fa-star"></i> Опыт: <span class="stat-value">+${expGain}</span></div>
-                <div class="stat-item"><i class="fas fa-coins"></i> Монеты: <span class="stat-value">+${coinGain}</span></div>
-                <div class="stat-item"><i class="fas fa-chart-line"></i> Рейтинг: <span class="stat-value">${ratingChange > 0 ? '+' : ''}${ratingChange}</span></div>
-                <div class="stat-item"><i class="fas fa-fist-raised"></i> Серия: <span class="stat-value">${newStreak}</span></div>
+            <div class="battle-result-stats-grid">
+                <div class="stat-item"><i class="fas fa-star"></i> Опыт:</div>
+                <div class="stat-value">+${expGain}</div>
+                <div class="stat-item"><i class="fas fa-coins"></i> Монеты:</div>
+                <div class="stat-value">+${coinGain}</div>
+                <div class="stat-item"><i class="fas fa-chart-line"></i> Рейтинг:</div>
+                <div class="stat-value">${ratingChange > 0 ? '+' : ''}${ratingChange}</div>
+                <div class="stat-item"><i class="fas fa-fist-raised"></i> Серия:</div>
+                <div class="stat-value">${newStreak}</div>
             </div>
             <div class="battle-result-buttons">
                 <button class="result-btn" id="rematchBtn">В бой</button>
@@ -325,14 +329,14 @@ async function showBattleResult(battleData, timeOut = false) {
                     <th>Игрок</th><th>Параметр</th><th>Соперник</th>
                 </thead>
                 <tbody>
-                     <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                     <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                     <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                     <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                     <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                     <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                     <tr><td class="player-col">${playerStats.hits} None<td class="player-col">${playerStats.hits}</td><td class="enemy-col">${enemyStats.hits}</td>
+                      <td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td>
+                      <td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td>
+                      <td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td>
+                      <td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td>
+                      <td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td>
                 </tbody>
-            </table>
+             </table>
         `;
     });
 

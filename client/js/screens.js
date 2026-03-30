@@ -551,79 +551,99 @@ function renderShop(target = null) {
                 <div class="chest-icon-col">
                     <img src="/assets/common-chess.png" alt="Обычный сундук">
                 </div>
-                <div class="chest-info-col">Обычный сундук</div>
-                <div class="chest-desc-col">
-                    <div>Обычное 85%</div>
-                    <div>Необычное 15%</div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Обычный сундук</div>
+                    <div class="chest-desc">
+                        <div>Обычное 85%</div>
+                        <div>Необычное 15%</div>
+                    </div>
                 </div>
                 <div class="chest-price-col">
-                    <span class="chest-price" id="commonChestPrice">?</span>
-                    <i class="fas fa-coins"></i>
+                    <button class="chest-buy-btn" data-chest="common">
+                        <span class="chest-price" id="commonChestPrice">?</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
                 </div>
             </div>
             <div class="chest-row" data-chest="uncommon">
                 <div class="chest-icon-col">
                     <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
                 </div>
-                <div class="chest-info-col">Необычный сундук</div>
-                <div class="chest-desc-col">
-                    <div>Обычное 25%</div>
-                    <div>Необычное 65%</div>
-                    <div>Редкое 10%</div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Необычный сундук</div>
+                    <div class="chest-desc">
+                        <div>Обычное 25%</div>
+                        <div>Необычное 65%</div>
+                        <div>Редкое 10%</div>
+                    </div>
                 </div>
                 <div class="chest-price-col">
-                    <span class="chest-price">250</span>
-                    <i class="fas fa-coins"></i>
+                    <button class="chest-buy-btn" data-chest="uncommon">
+                        <span class="chest-price">250</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
                 </div>
             </div>
             <div class="chest-row" data-chest="rare">
                 <div class="chest-icon-col">
                     <img src="/assets/rare-chess.png" alt="Редкий сундук">
                 </div>
-                <div class="chest-info-col">Редкий сундук</div>
-                <div class="chest-desc-col">
-                    <div>Редкое 65%</div>
-                    <div>Необычное 25%</div>
-                    <div>Эпическое 10%</div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Редкий сундук</div>
+                    <div class="chest-desc">
+                        <div>Редкое 65%</div>
+                        <div>Необычное 25%</div>
+                        <div>Эпическое 10%</div>
+                    </div>
                 </div>
                 <div class="chest-price-col">
-                    <span class="chest-price">800</span>
-                    <i class="fas fa-coins"></i>
+                    <button class="chest-buy-btn" data-chest="rare">
+                        <span class="chest-price">800</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
                 </div>
             </div>
             <div class="chest-row" data-chest="epic">
                 <div class="chest-icon-col">
                     <img src="/assets/epic-chess.png" alt="Эпический сундук">
                 </div>
-                <div class="chest-info-col">Эпический сундук</div>
-                <div class="chest-desc-col">
-                    <div>Эпическое 65%</div>
-                    <div>Редкое 25%</div>
-                    <div>Легендарное 10%</div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Эпический сундук</div>
+                    <div class="chest-desc">
+                        <div>Эпическое 65%</div>
+                        <div>Редкое 25%</div>
+                        <div>Легендарное 10%</div>
+                    </div>
                 </div>
                 <div class="chest-price-col">
-                    <span class="chest-price">1800</span>
-                    <i class="fas fa-coins"></i>
+                    <button class="chest-buy-btn" data-chest="epic">
+                        <span class="chest-price">1800</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
                 </div>
             </div>
             <div class="chest-row" data-chest="legendary">
                 <div class="chest-icon-col">
                     <img src="/assets/leg-chess.png" alt="Легендарный сундук">
                 </div>
-                <div class="chest-info-col">Легендарный сундук</div>
-                <div class="chest-desc-col">
-                    <div>Легендарное 70%</div>
-                    <div>Эпическое 30%</div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Легендарный сундук</div>
+                    <div class="chest-desc">
+                        <div>Легендарное 70%</div>
+                        <div>Эпическое 30%</div>
+                    </div>
                 </div>
                 <div class="chest-price-col">
-                    <span class="chest-price">3500</span>
-                    <i class="fas fa-coins"></i>
+                    <button class="chest-buy-btn" data-chest="legendary">
+                        <span class="chest-price">3500</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
                 </div>
             </div>
         </div>
     `;
 
-    async function updateCommonChestPrice() {
+   async function updateCommonChestPrice() {
         try {
             const tgId = Number(userData.tg_id);
             const res = await fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${tgId}`);
@@ -648,9 +668,11 @@ function renderShop(target = null) {
 
     updateCommonChestPrice();
 
-    container.querySelectorAll('.chest-row[data-chest]').forEach(row => {
-        row.addEventListener('click', async () => {
-            const chest = row.dataset.chest;
+    // Обработчики на кнопках, а не на всей строке
+    container.querySelectorAll('.chest-buy-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const chest = btn.dataset.chest;
             const res = await fetch('https://fight-club-api-4och.onrender.com/shop/buychest', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

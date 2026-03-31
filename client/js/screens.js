@@ -1188,6 +1188,27 @@ function showEditPriceModal(item) {
     };
 }
 
+
+function showToast(message, duration = 1000) {
+    // Удаляем предыдущий тост, если есть
+    const existingToast = document.querySelector('.market-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'market-toast';
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    // Анимация появления
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Автоматическое удаление
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
 // ==================== РЕЙТИНГ ====================
 function renderRating() {
     const content = document.getElementById('content');

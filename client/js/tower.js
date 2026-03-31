@@ -149,11 +149,11 @@ async function confirmSelection() {
             removeTutorialOverlay();
             renderTower();
         } else {
-            alert('Ошибка при выборе класса: ' + data.error);
+            showToast('Ошибка при выборе класса: ' + data.error, 2000);
         }
     } catch (e) {
         console.error(e);
-        alert('Ошибка соединения');
+        showToast('Ошибка соединения', 2000);
     }
 }
 

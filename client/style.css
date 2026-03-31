@@ -2538,12 +2538,7 @@ body {
 
 /* ========== ГЛАВНАЯ СТРАНИЦА ========== */
 
-/* Переменные для настройки аватара */
-.main-top-inner {
-    --avatar-height: 184px;   /* можно менять */
-    --avatar-width: 120px;    /* можно менять */
-}
-
+/* Верхний контейнер – без лишней обводки */
 .main-top-container {
     background-color: transparent;
     padding: 0;
@@ -2555,7 +2550,7 @@ body {
     display: flex;
     gap: 2px;
     padding: 2px;
-    height: var(--avatar-height);
+    height: 180px;            /* можно изменить */
 }
 
 /* Колонки кнопок – скругление только у внешних углов */
@@ -2581,7 +2576,7 @@ body {
     overflow: hidden;
 }
 
-/* Кнопка – занимает всю ячейку, без внутренних отступов */
+/* Кнопка – занимает всю ячейку */
 .main-icon-btn {
     background-color: #232833;
     border: none;
@@ -2624,7 +2619,7 @@ body {
     color: white;
 }
 
-/* Пустые кнопки – скрываем иконку и текст */
+/* Пустые кнопки */
 .main-icon-btn.empty-btn {
     background-color: #232833;
     cursor: default;
@@ -2639,7 +2634,7 @@ body {
 
 /* Центральная колонка с аватаром */
 .main-avatar-col {
-    flex: 0 0 var(--avatar-width);
+    flex: 0 0 120px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2674,6 +2669,7 @@ body {
     border-radius: 0 0 12px 12px;
     overflow-y: auto;
     flex: 1;
+    min-height: 0;        /* важно для корректной работы flex */
     display: flex;
     flex-direction: column;
 }

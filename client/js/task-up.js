@@ -496,7 +496,7 @@ function claimAdventDay(day, daysInMonth) {
             } else if (reward.type === 'item' && data.item) {
                 showChestResult(data.item);
             } else {
-                showToast(Вы получили: ${data.reward}, 2000);
+                showToast('Вы получили: ' + data.reward, 2000);
             }
             if (reloadTimeout) clearTimeout(reloadTimeout);
             reloadTimeout = setTimeout(() => {

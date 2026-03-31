@@ -53,9 +53,9 @@ function renderMain() {
         <button class="main-icon-btn empty-btn"></button>
         <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
         <button class="main-icon-btn empty-btn"></button>
-        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
+        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-backpack"></i><span>Рюкзак</span></button>
         <button class="main-icon-btn empty-btn"></button>
-        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
+        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-anvil"></i><span>Кузница</span></button>
         </div>
 </div>
             </div>

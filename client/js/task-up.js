@@ -482,31 +482,31 @@ function claimAdventDay(day, daysInMonth) {
     }
 
     fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-           showToast(data.error, 1500);
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+})
+.then(res => res.json())
+.then(data => {
+    if (data.error) {
+        showToast(data.error, 1500);
+    } else {
+        if (reward.type === 'coins') {
+            showCoinsModal(reward.amount);
+        } else if (reward.type === 'item' && data.item) {
+            showChestResult(data.item);
         } else {
-            if (reward.type === 'coins') {
-                showCoinsModal(reward.amount);
-            } else if (reward.type === 'item' && data.item) {
-                showChestResult(data.item);
-            } else {
-                showToast('Вы получили: ' + data.reward, 2000);
-            }
-            if (reloadTimeout) clearTimeout(reloadTimeout);
-            reloadTimeout = setTimeout(() => {
-                showAdventCalendar();
-                refreshData();
-                isClaiming = false;
-                reloadTimeout = null;
-            }, 1500);
+            showToast('Вы получили: ' + data.reward, 2000);
         }
-    })
+        if (reloadTimeout) clearTimeout(reloadTimeout);
+        reloadTimeout = setTimeout(() => {
+            showAdventCalendar();
+            refreshData();
+            isClaiming = false;
+            reloadTimeout = null;
+        }, 1500);
+    }
+})
     .catch(err => {
         console.error(err);
         showToast('Ошибка соединения', 1500);

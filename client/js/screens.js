@@ -539,12 +539,11 @@ function renderEquip() {
 function renderTrade() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <div style="margin-top: 10px;"></div>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn ${tradeTab === 'shop' ? 'active' : ''}" id="tradeShopBtn" style="flex:1;">МАГАЗИН</button>
-            <button class="btn ${tradeTab === 'market' ? 'active' : ''}" id="tradeMarketBtn" style="flex:1;">МАРКЕТ</button>
+        <div class="trade-tabs-container">
+            <button class="trade-tab ${tradeTab === 'shop' ? 'active' : ''}" id="tradeShopBtn">МАГАЗИН</button>
+            <button class="trade-tab ${tradeTab === 'market' ? 'active' : ''}" id="tradeMarketBtn">МАРКЕТ</button>
         </div>
-        <div id="tradeContent"></div>
+        <div id="tradeContent" style="flex: 1; display: flex; flex-direction: column; min-height: 0;"></div>
     `;
 
     const tradeContent = document.getElementById('tradeContent');
@@ -565,7 +564,6 @@ function renderTrade() {
         renderMarket(tradeContent);
     }
 }
-
 function renderShop(target = null) {
     const container = target || document.getElementById('tradeContent');
     container.innerHTML = `

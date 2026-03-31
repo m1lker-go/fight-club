@@ -154,7 +154,7 @@ function getRarityColor(rarity) {
 function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
     if (forgeItems.length >= slotCount) {
-        alert('Все слоты заняты');
+        showToast('Все слоты заняты', 1500);
         return;
     }
     forgeItems.push(item.id);
@@ -174,12 +174,12 @@ function addToForge(item) {
             loadForgeInventory();
         } else {
             const err = await res.json();
-            alert('Ошибка: ' + err.error);
+            showToast('Ошибка: ' + err.error, 1500);
         }
     })
     .catch(err => {
         console.error(err);
-        alert('Ошибка соединения');
+        showToast('Ошибка соединения', 1500);
     });
 }
 
@@ -370,13 +370,13 @@ async function performForgeAction() {
 
     if (currentForgeTab === 'forge') {
         if (forgeItems.length !== 3) {
-            alert('Нужно ровно 3 предмета');
+            showToast('Нужно ровно 3 предмета', 1500);
             return;
         }
         const items = forgeItems.map(id => inventory.find(it => it.id === id));
         const rarities = items.map(it => it.rarity);
         if (!rarities.every(r => r === rarities[0])) {
-            alert('Предметы должны быть одной редкости');
+            showToast('Предметы должны быть одной редкости', 1500);
             return;
         }
         showClassChoiceForCraft(forgeItems);
@@ -392,7 +392,7 @@ async function performForgeAction() {
         });
         const data = await res.json();
         if (data.success) {
-            alert(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`);
+           showToast(Вы получили ${data.coins} монет и ${data.diamonds} алмазов!, 2000);
             forgeItems = [];
             await refreshData();
             await loadCurrentForgeItems(currentForgeTab);

@@ -158,10 +158,10 @@ async function init() {
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
 
             hideSplashScreen();
-        } else {
-            alert('Ошибка авторизации');
-            showErrorSplash();
-        }
+       } else {
+    showToast('Ошибка авторизации', 2000);
+    showErrorSplash();
+}
     } catch (e) {
         clearTimeout(timeoutId);
         clearTimeout(errorTimer);

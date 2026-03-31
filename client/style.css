@@ -1064,20 +1064,19 @@ body {
 /* ========== МАРКЕТ ========== */
 .market-page {
     background-color: #2a303c;
-    border-radius: 0 0 12px 12px;   /* скругление только снизу */
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100%;                   /* занимает всю высоту родителя */
 }
 
 .market-filters-panel {
     background-color: #232833;
     padding: 12px;
-    border-radius: 12px 12px 0 0;
-    margin: 2px;
+    border-radius: 0;               /* убираем скругления */
+    margin: 0;                      /* убираем внешние отступы */
 }
-
 .filters-row {
     display: flex;
     gap: 8px;
@@ -1143,16 +1142,18 @@ body {
     margin-top: 8px;
 }
 .apply-filters-btn {
-    background-color: #1a1f2b;
+    background-color: #1a1f2b;      /* тёмный фон, как у заголовка */
     border: 2px solid #aaa;
-    border-radius: 8px;            
+    border-radius: 8px;
     padding: 8px 24px;
     font-size: 14px;
     font-weight: normal;
     color: #aaa;
     cursor: pointer;
     transition: all 0.2s;
-    width: 100%;                   
+    width: 120px;                   /* фиксированная ширина, как у кнопки просмотра */
+    display: block;
+    margin: 0 auto;                 /* центрируем */
 }
 .apply-filters-btn:hover {
     border-color: #00aaff;
@@ -1167,10 +1168,10 @@ body {
 }
 
 .market-items-container {
-    flex: 1;
-    overflow-y: auto;
+    flex: 1;                        /* занимает всё оставшееся пространство */
+    overflow-y: auto;               /* скроллится при необходимости */
     background-color: #232833;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0;
     padding: 0;
 }
 
@@ -1396,9 +1397,9 @@ body {
 /* ========== ВКЛАДКИ ТОРГОВЛИ (МАГАЗИН / МАРКЕТ) ========== */
 .trade-tabs-container {
     background-color: #2a303c;
-    border-radius: 12px;
+    border-radius: 12px 12px 0 0;   /* скруглены только верхние углы */
     padding: 2px;
-    margin-bottom: 10px;
+    margin-bottom: 0;                /* убираем отступ снизу */
     display: flex;
     gap: 2px;
 }
@@ -1412,12 +1413,14 @@ body {
     cursor: pointer;
     color: #aaa;
     transition: background-color 0.2s, color 0.2s;
+    border-radius: 0;               /* по умолчанию без скруглений */
 }
+
 .trade-tab:first-child {
-    border-radius: 12px 0 0 12px;
+    border-radius: 12px 0 0 0;      /* только верхний левый угол */
 }
 .trade-tab:last-child {
-    border-radius: 0 12px 12px 0;
+    border-radius: 0 12px 0 0;      /* только верхний правый угол */
 }
 .trade-tab.active {
     background-color: #00aaff;

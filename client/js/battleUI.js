@@ -3,7 +3,7 @@
 async function startBattle() {
     if (!userData || !userData.tg_id) {
         console.error('tg_id не определён!');
-        showToast('Ошибка: не удалось идентифицировать пользователя');
+        showToast('Ошибка: не удалось идентифицировать пользователя', 2000);
         unlockMenu();
         return;
     }
@@ -30,7 +30,7 @@ async function startBattle() {
             if (data.error === 'Недостаточно энергии') {
                 showToast('Недостаточно энергии!', 1500);
             } else {
-                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 2000);
+               showToast('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'), 2000);
             }
             unlockMenu();
             return;

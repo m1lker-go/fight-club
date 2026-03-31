@@ -968,31 +968,53 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
                 e.stopPropagation();
                 showEditPriceModal(item);
             });
-          // Кнопка снять с продажи
-const removeBtn = document.createElement('button');
-removeBtn.className = 'market-action-btn remove-from-market-btn';
-removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-removeBtn.title = 'Снять с продажи';
-removeBtn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    showConfirmModal('Снять этот предмет с продажи?', async () => {
-        const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+           // Кнопка снять с продажи (уже есть)
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'market-action-btn remove-from-market-btn';
+        removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        removeBtn.title = 'Снять с продажи';
+        removeBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            showConfirmModal('Снять этот предмет с продажи?', async () => {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Предмет снят с продажи', 1500);
+                    await refreshData();
+                    loadMarketItems(statFilter, classFilter, rarityFilter);
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            });
         });
-        const data = await res.json();
-        if (data.success) {
-            showToast('Предмет снят с продажи', 1500);
-            await refreshData();
-            loadMarketItems(statFilter, classFilter, rarityFilter);
-        } else {
-            showToast('Ошибка: ' + data.error, 1500);
-        }
-    });
-});
-actionsDiv.appendChild(removeBtn);
+        actionsDiv.appendChild(removeBtn);
+    } else {
+        // Кнопка просмотра (шириной как две кнопки)
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'market-action-btn view-btn';
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+        viewBtn.title = 'Просмотр';
+        viewBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showItemDetailsModal(item);
+        });
+        actionsDiv.appendChild(viewBtn);
+    }
 
+    row.appendChild(iconDiv);
+    row.appendChild(infoDiv);
+    row.appendChild(priceDiv);
+    row.appendChild(actionsDiv);
+    marketList.appendChild(row);
+}); // закрываем items.forEach
+
+} // закрываем loadMarketItems
+
+// ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
 
 // Модальное окно просмотра предмета с кнопкой Купить
 async function showItemDetailsModal(item) {
@@ -1105,9 +1127,8 @@ async function showItemDetailsModal(item) {
     };
 }
 
-//Модальное окно 
-            
- function showPriceInputModal(currentPrice, onConfirm) {
+// Модальное окно ввода цены
+function showPriceInputModal(currentPrice, onConfirm) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -1148,7 +1169,7 @@ async function showItemDetailsModal(item) {
     window.onclick = (event) => {
         if (event.target === modal) closeModal();
     };
-}           
+}
 
 // Модальное окно подтверждения
 function showConfirmModal(message, onConfirm, onCancel) {
@@ -1268,7 +1289,6 @@ function showEditPriceModal(item) {
         if (event.target === modal) closeModal();
     };
 }
-
 
 function showToast(message, duration = 1500) {
     const existingToast = document.querySelector('.market-toast');

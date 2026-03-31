@@ -726,6 +726,7 @@ async function renderMarket(target = null) {
     const container = target || document.getElementById('tradeContent');
     container.innerHTML = `
         <div class="market-page">
+         <div class="market-header">Список снаряжения</div>
             <div class="market-filters-panel">
                 <div class="filters-row">
                     <div class="filter-group" id="filter-class-group">

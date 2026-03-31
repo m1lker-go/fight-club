@@ -255,7 +255,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
                 modal.style.display = 'none';
             } else {
                 const err = await res.json();
-                alert('Ошибка: ' + err.error);
+showToast('Ошибка: ' + err.error, 1500);
             }
         });
     }
@@ -359,7 +359,7 @@ async function performCraft(itemIds, chosenClass) {
         renderForgeSlots();
         loadForgeInventory();
     } else {
-        alert('Ошибка: ' + data.error);
+        showToast('Ошибка: ' + data.error, 1500);
     }
     actionBtn.disabled = false;
 }
@@ -392,14 +392,14 @@ async function performForgeAction() {
         });
         const data = await res.json();
         if (data.success) {
-           showToast(Вы получили ${data.coins} монет и ${data.diamonds} алмазов!, 2000);
+           showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
             forgeItems = [];
             await refreshData();
             await loadCurrentForgeItems(currentForgeTab);
             renderForgeSlots();
             loadForgeInventory();
         } else {
-            alert('Ошибка: ' + data.error);
+            showToast('Ошибка: ' + data.error, 1500);
         }
     }
     actionBtn.disabled = false;

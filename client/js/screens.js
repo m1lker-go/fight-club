@@ -26,70 +26,83 @@ function renderMain() {
 
     const content = document.getElementById('content');
     content.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: stretch; padding: 20px;">
-            <div style="flex: 1;"></div>
-            <div style="flex: 0 0 auto; text-align: center;">
-                <div class="hero-avatar" id="avatarClick" style="position: relative; width: 120px; height: 180px; cursor: pointer; margin: 0 auto;">
-                    <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
-                    <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none; z-index: 1;">ПРОФИЛЬ</div>
-                </div>
-                <h2 style="margin-top: 10px;">${userData.username || 'Игрок'}</h2>
-            </div>
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px; align-items: center;">
-                <div style="display: flex; flex-direction: column; align-items: center;">
-                    <div class="round-button" data-screen="equip" style="width: 50px; height: 50px;">
-                        <i class="fas fa-tshirt" style="font-size: 20px;"></i>
+        <!-- Верхний блок с аватаром и кнопками -->
+        <div class="main-top-container">
+            <div class="main-top-inner">
+                <!-- Левая колонка кнопок (2×3) -->
+                <div class="main-buttons-col left">
+                    <div class="btn-grid">
+                        <button class="main-icon-btn" id="mainBtn1" data-action="none"><i class="fas fa-envelope"></i><span>Письмо</span></button>
+                        <button class="main-icon-btn" id="mainBtn2" data-action="none"><i class="fas fa-user-friends"></i><span>Друзья</span></button>
+                        <button class="main-icon-btn" id="mainBtn3" data-action="none"><i class="fas fa-chart-simple"></i><span>Статистика</span></button>
+                        <button class="main-icon-btn" id="mainBtn4" data-action="none"><i class="fas fa-gift"></i><span>Подарки</span></button>
+                        <button class="main-icon-btn" id="mainBtn5" data-action="none"><i class="fas fa-calendar"></i><span>События</span></button>
+                        <button class="main-icon-btn" id="mainBtn6" data-action="none"><i class="fas fa-cog"></i><span>Настройки</span></button>
                     </div>
-                    <span style="font-size: 10px; margin-top: 4px;">Снаряжение</span>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: center;">
-                    <div class="round-button" data-screen="trade" style="width: 50px; height: 50px;">
-                        <i class="fas fa-store" style="font-size: 20px;"></i>
+                <!-- Центр: аватар -->
+                <div class="main-avatar-col">
+                    <div class="hero-avatar" id="avatarClick" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
                     </div>
-                    <span style="font-size: 10px; margin-top: 4px;">Торговля</span>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: center;">
-                    <div class="round-button" data-screen="forge" style="width: 50px; height: 50px;">
-                        <i class="fas fa-hammer" style="font-size: 20px;"></i>
+                <!-- Правая колонка кнопок (2×3) -->
+                <div class="main-buttons-col right">
+                    <div class="btn-grid">
+                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Снаряжение</span></button>
+                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
+                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
+                        <button class="main-icon-btn" id="mainBtn10" data-action="none"><i class="fas fa-trophy"></i><span>Турниры</span></button>
+                        <button class="main-icon-btn" id="mainBtn11" data-action="none"><i class="fas fa-ranking-star"></i><span>Рейтинг</span></button>
+                        <button class="main-icon-btn" id="mainBtn12" data-action="none"><i class="fas fa-question-circle"></i><span>Помощь</span></button>
                     </div>
-                    <span style="font-size: 10px; margin-top: 4px;">Кузница</span>
                 </div>
             </div>
         </div>
 
-        <div style="margin: 20px 20px 0 20px;">
-            <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                <span>Уровень <span class="level-display">${level}</span></span>
-                <span class="exp-display">${exp}/${nextExp} опыта</span>
-            </div>
-            <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
-                <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
-            </div>
+        <!-- Блок с именем пользователя (заголовок) -->
+        <div class="main-username-header">
+            ${userData.username || 'Игрок'}
         </div>
 
-        <div style="margin: 20px;">
-            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
-                <div class="class-selector" style="flex: 1; margin-left: 10px;">
-                    <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                    <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                    <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+        <!-- Основной контент (опыт, класс, роль, кнопка боя) -->
+        <div class="main-content-container">
+            <div style="margin: 20px 20px 0 20px;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                    <span>Уровень <span class="level-display">${level}</span></span>
+                    <span class="exp-display">${exp}/${nextExp} опыта</span>
+                </div>
+                <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
+                    <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
                 </div>
             </div>
-            <div style="display: flex; align-items: center;">
-                <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
-                <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;"></select>
-                <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
-            </div>
-        </div>
 
-        <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
-            <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
-        </button>
+            <div style="margin: 20px;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
+                    <div class="class-selector" style="flex: 1; margin-left: 10px;">
+                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
+                    <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;"></select>
+                    <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
+                </div>
+            </div>
+
+            <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
+                <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
+            </button>
+        </div>
     `;
 
     updateSubclasses(currentClass);
 
+    // Обработчики для кнопок (существующие)
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -137,15 +150,25 @@ function renderMain() {
     document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(userData.current_class));
     document.getElementById('avatarClick').addEventListener('click', () => showScreen('profile'));
 
-    document.querySelectorAll('.round-button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // Обработчики для новых кнопок (переходы на экраны)
+    document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
+        btn.addEventListener('click', () => {
             const screen = btn.dataset.screen;
             if (screen) showScreen(screen);
         });
     });
+
+    // Кнопки без действия (пока просто вывод в консоль)
+    document.querySelectorAll('.main-icon-btn[data-action="none"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            console.log(`Кнопка ${btn.id} нажата, функционал в разработке`);
+        });
+    });
+
     updateTradeButtonIcon();
     updateProfileAvatarIcon();
 }
+
 
 function updateMainScreen() {
     const classData = getCurrentClassData();

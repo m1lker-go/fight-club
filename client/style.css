@@ -1063,21 +1063,23 @@ body {
 
 /* ========== МАРКЕТ ========== */
 .market-page {
-    min-height: 0; 
     background-color: #2a303c;
     border-radius: 0 0 12px 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 100%;                   /* занимает всю высоту родителя */
+    height: 100%;          /* занимает всю высоту родителя */
+    min-height: 0;         /* важно для flex-контейнера */
 }
 
 .market-filters-panel {
-    background-color: #232833;
+    background-color: #232833;  /* светлый фон, как у таблицы */
     padding: 12px;
-    border-radius: 0;               /* убираем скругления */
-    margin: 0;                      /* убираем внешние отступы */
+    border-radius: 0;
+    margin: 0;
+    flex-shrink: 0;        /* не сжимается */
 }
+
 .filters-row {
     display: flex;
     gap: 8px;
@@ -1140,10 +1142,10 @@ body {
 .apply-button-container {
     display: flex;
     justify-content: center;
-    margin-top: 8px;
+    margin: 16px 0 8px 0;   /* отступ сверху и снизу */
 }
 .apply-filters-btn {
-    background-color: #1a1f2b;      /* тёмный фон, как у заголовка */
+    background-color: #1a1f2b;
     border: 2px solid #aaa;
     border-radius: 8px;
     padding: 8px 24px;
@@ -1152,30 +1154,29 @@ body {
     color: #aaa;
     cursor: pointer;
     transition: all 0.2s;
-    width: 120px;                   /* фиксированная ширина, как у кнопки просмотра */
+    width: 120px;
     display: block;
-    margin: 0 auto;                 /* центрируем */
+    margin: 0 auto;
 }
 .apply-filters-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
-    background-color: #1a1f2b;
 }
 
 .market-divider {
     height: 20px;
     background-color: #1a1f2b;
     margin: 0;
+    flex-shrink: 0;
 }
-
 .market-items-container {
-    flex: 1;                        /* занимает всё оставшееся пространство */
-    overflow-y: auto;               /* скроллится при необходимости */
+    flex: 1;               /* занимает всё оставшееся место */
+    overflow-y: auto;      /* скроллится только здесь */
     background-color: #232833;
     border-radius: 0;
     padding: 0;
+    min-height: 0;         /* важно для корректной работы flex */
 }
-
 .market-items-list {
     display: flex;
     flex-direction: column;

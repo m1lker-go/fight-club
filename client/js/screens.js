@@ -1613,7 +1613,7 @@ function renderSkills(container) {
                 await refreshData();
                 renderSkills(container);
             } else {
-                alert('Ошибка: ' + data.error);
+                showToast('Ошибка: ' + data.error, 1500);
             }
         });
     });
@@ -1727,7 +1727,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
             if (!avatar) {
-                alert('Аватар не найден');
+               showToast('Аватар не найден', 1500);
                 return;
             }
 
@@ -1777,7 +1777,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                         modal.style.display = 'none';
                         renderProfileTab('skins');
                     } else {
-                        alert('Ошибка: ' + data.error);
+                        showToast('Ошибка: ' + data.error, 1500);
                     }
                 });
             }
@@ -1798,7 +1798,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                         if (currentScreen === 'main') renderMain();
                         if (currentScreen === 'equip') renderEquip();
                     } else {
-                        alert('Ошибка при смене аватара');
+                        showToast('Ошибка при смене аватара', 1500);
                     }
                 });
             }
@@ -1812,6 +1812,6 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         })
         .catch(err => {
             console.error('Error loading avatar details:', err);
-            alert('Ошибка загрузки данных аватара');
+            showToast('Ошибка загрузки данных аватара', 1500);
         });
 }

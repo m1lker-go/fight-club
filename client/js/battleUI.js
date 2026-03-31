@@ -3,7 +3,7 @@
 async function startBattle() {
     if (!userData || !userData.tg_id) {
         console.error('tg_id не определён!');
-        alert('Ошибка: не удалось идентифицировать пользователя');
+        showToast('Ошибка: не удалось идентифицировать пользователя');
         unlockMenu();
         return;
     }
@@ -27,7 +27,11 @@ async function startBattle() {
 
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
-            alert('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'));
+            if (data.error === 'Недостаточно энергии') {
+                showToast('Недостаточно энергии!', 1500);
+            } else {
+                showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 2000);
+            }
             unlockMenu();
             return;
         }
@@ -36,7 +40,7 @@ async function startBattle() {
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);
-        alert('Ошибка соединения с сервером');
+        showToast('Ошибка соединения с сервером', 2000);
         unlockMenu();
     }
 }

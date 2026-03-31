@@ -693,33 +693,37 @@ function renderShop(target = null) {
     updateCommonChestPrice();
 
     // Обработчики на кнопках, а не на всей строке
-    container.querySelectorAll('.chest-buy-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const chest = btn.dataset.chest;
-            const res = await fetch('https://fight-club-api-4och.onrender.com/shop/buychest', {
+   container.querySelectorAll('.chest-buy-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const chest = btn.dataset.chest;
+        const res = await fetch('https://fight-club-api-4och.onrender.com/shop/buychest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, chestType: chest })
+        });
+        const data = await res.json();
+        if (data.item) {
+            showChestResult(data.item);
+            await refreshData();
+            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+            if (chest === 'common') updateCommonChestPrice();
+
+            fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/chest', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, chestType: chest })
-            });
-            const data = await res.json();
-            if (data.item) {
-                showChestResult(data.item);
-                await refreshData();
-                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
-                if (chest === 'common') updateCommonChestPrice();
-
-                fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/chest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
-                }).catch(err => console.error('Failed to update chest task', err));
+                body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
+            }).catch(err => console.error('Failed to update chest task', err));
+        } else {
+            // Вместо alert показываем тост
+            if (data.error === 'Not enough coins') {
+                showToast('Недостаточно средств!', 1500);
             } else {
-                alert('Ошибка: ' + data.error);
+                showToast('Ошибка: ' + data.error, 1500);
             }
-        });
+        }
     });
-}
+});
 
 // ==================== МАРКЕТ ====================
 async function renderMarket(target = null) {
@@ -961,50 +965,30 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
                 e.stopPropagation();
                 showEditPriceModal(item);
             });
-            // Кнопка снять с продажи
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'market-action-btn remove-from-market-btn';
-            removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-            removeBtn.title = 'Снять с продажи';
-            removeBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (!confirm('Снять предмет с продажи?')) return;
-                const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert('Предмет снят с продажи');
-                    await refreshData();
-                    loadMarketItems(statFilter, classFilter, rarityFilter);
-                } else {
-                    alert('Ошибка: ' + data.error);
-                }
-            });
-            actionsDiv.appendChild(editBtn);
-            actionsDiv.appendChild(removeBtn);
+          // Кнопка снять с продажи
+const removeBtn = document.createElement('button');
+removeBtn.className = 'market-action-btn remove-from-market-btn';
+removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+removeBtn.title = 'Снять с продажи';
+removeBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    showConfirmModal('Снять этот предмет с продажи?', async () => {
+        const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Предмет снят с продажи', 1500);
+            await refreshData();
+            loadMarketItems(statFilter, classFilter, rarityFilter);
         } else {
-            // Кнопка просмотра (шириной как две кнопки)
-            const viewBtn = document.createElement('button');
-            viewBtn.className = 'market-action-btn view-btn';
-            viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
-            viewBtn.title = 'Просмотр';
-            viewBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showItemDetailsModal(item);
-            });
-            actionsDiv.appendChild(viewBtn);
+            showToast('Ошибка: ' + data.error, 1500);
         }
-
-        row.appendChild(iconDiv);
-        row.appendChild(infoDiv);
-        row.appendChild(priceDiv);
-        row.appendChild(actionsDiv);
-        marketList.appendChild(row);
     });
-}
+});
+actionsDiv.appendChild(removeBtn);
 
 
 // Модальное окно просмотра предмета с кнопкой Купить
@@ -1118,6 +1102,46 @@ async function showItemDetailsModal(item) {
     };
 }
 
+// Модальное окно подтверждения
+function showConfirmModal(message, onConfirm, onCancel) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Подтверждение';
+
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+            <div style="margin-bottom: 20px; font-size: 16px;">${message}</div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="modal-btn confirm-yes" style="background-color: #00aaff; color: white;">Да</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Нет</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        if (onCancel) onCancel();
+    };
+
+    yesBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        if (onConfirm) onConfirm();
+    });
+
+    noBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
+}
 
 // Модальное окно редактирования цены
 function showEditPriceModal(item) {

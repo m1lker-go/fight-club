@@ -2538,11 +2538,19 @@ body {
 
 /* ========== ГЛАВНАЯ СТРАНИЦА ========== */
 
+/* Контейнер контента должен занимать всю высоту */
+.content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
 /* Верхний контейнер – без лишней обводки */
 .main-top-container {
     background-color: transparent;
     padding: 0;
     margin-bottom: 10px;
+    flex-shrink: 0;
 }
 .main-top-inner {
     background-color: #2a303c;
@@ -2550,13 +2558,14 @@ body {
     display: flex;
     gap: 2px;
     padding: 2px;
-    height: 180px;            /* фиксированная высота – подберите под свой аватар */
+    height: 160px;            /* немного уменьшили высоту */
 }
 
 /* Колонки кнопок – скругление только у внешних углов */
 .main-buttons-col {
     flex: 1;
     display: flex;
+    min-width: 0;             /* важно для правильного сжатия */
 }
 .btn-grid {
     display: grid;
@@ -2575,7 +2584,7 @@ body {
     overflow: hidden;
 }
 
-/* Все кнопки – квадратные, без скруглений */
+/* Все кнопки – квадратные, без скруглений, одинакового размера */
 .main-icon-btn {
     background-color: #232833;
     border: none;
@@ -2583,22 +2592,31 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
     color: #aaa;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: normal;
-    padding: 8px 4px;
+    padding: 4px 2px;
     border-radius: 0;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    box-sizing: border-box;
 }
 .main-icon-btn i {
-    font-size: 24px;
+    font-size: 20px;          /* уменьшили иконку */
     color: #aaa;
 }
 .main-icon-btn span {
     font-size: 10px;
     color: #aaa;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .main-icon-btn:hover {
     background-color: #2f3542;
@@ -2625,7 +2643,7 @@ body {
 
 /* Центральная колонка с аватаром */
 .main-avatar-col {
-    flex: 0 0 120px;
+    flex: 0 0 110px;          /* чуть уменьшили ширину */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2652,6 +2670,7 @@ body {
     border-radius: 12px 12px 0 0;
     margin: 0;
     color: white;
+    flex-shrink: 0;
 }
 
 /* Основной контент – растягиваем на всю оставшуюся высоту */

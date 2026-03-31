@@ -1059,88 +1059,298 @@ body {
 }
 
 /* ========== МАРКЕТ ========== */
-.market-container {
-    width: 100%;           /* занимает всю ширину */
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 5px;
-    margin-top: 15px;
-    position: relative;
-    z-index: 1;
-}
-.market-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;           /* полная ширина */
-}
-.market-item {
+
+
+/* ========== МАРКЕТ ========== */
+.market-page {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    height: 100%;
     background-color: #232833;
     border-radius: 12px;
-    padding: 8px;
-    border-left: 4px solid;
-    cursor: default;
-    transition: transform 0.2s;
-    width: 100%;
-    box-sizing: border-box;
+    overflow: hidden;
 }
-.market-item:hover {
-    transform: translateY(-2px);
+
+/* Вкладки */
+.market-tabs {
+    display: flex;
+    gap: 2px;
+    background-color: #2a303c;
+    padding: 2px;
 }
-.market-item .item-icon {
-    width: 80px;
-    height: 80px;
-    background-color: #2f3542;
-    border-radius: 8px;
-    background-size: cover;
-    background-position: center;
-    margin-bottom: 8px;
-}
-.market-item .item-content {
-    width: 100%;
-    text-align: center;
-}
-.market-item .item-name {
-    word-break: break-word;
-    hyphens: auto;
-    white-space: normal;
-    line-height: 1.2;
-    max-width: 100%;
-    font-size: 13px;
+.market-tab {
+    flex: 1;
+    background-color: #232833;
+    border: none;
+    padding: 12px 0;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 2px;
-}
-.market-item .item-stats {
-    font-size: 10px;
+    cursor: pointer;
     color: #aaa;
-    margin-bottom: 2px;
-    line-height: 1.2;
+    transition: none;
 }
-.market-item .item-rarity {
-    font-size: 9px;
-    text-transform: uppercase;
-    font-weight: bold;
+.market-tab:first-child {
+    border-radius: 12px 0 0 0;
 }
-.market-item .item-price {
-    font-size: 12px;
-    font-weight: bold;
-    color: gold;
-    margin: 4px 0;
+.market-tab:last-child {
+    border-radius: 0 12px 0 0;
 }
-.buy-btn {
+.market-tab.active {
     background-color: #00aaff;
     color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 5px;
 }
+.market-tab:not(.active):hover {
+    background-color: #2f3542;
+    color: #ccc;
+}
+
+/* Блок фильтров */
+.market-filters {
+    background-color: #2a303c;
+    padding: 12px 16px;
+    margin: 0;
+}
+.filters-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    position: relative;
+}
+.filter-group {
+    flex: 1;
+    position: static;
+}
+.filter-button {
+    width: 100%;
+    padding: 12px 10px;
+    background-color: #232833;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.filter-button:hover {
+    background-color: #2f3542;
+}
+.filter-button i {
+    color: #00aaff;
+    font-size: 12px;
+}
+.filter-panel {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: auto;
+    background-color: #1a1f2b;
+    border: 1px solid #00aaff;
+    border-radius: 8px;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,170,255,0.2);
+    display: none;
+}
+.filter-option {
+    padding: 12px 15px;
+    color: white;
+    cursor: pointer;
+    border-bottom: 1px solid #2f3542;
+    transition: background-color 0.2s;
+}
+.filter-option:last-child {
+    border-bottom: none;
+}
+.filter-option:hover {
+    background-color: #00aaff;
+    color: white;
+}
+.apply-filters-btn {
+    width: 60%;
+    margin: 0 auto;
+    display: block;
+    background-color: #2f3542;
+    color: #aaa;
+    border: 1px solid #00aaff;
+    border-radius: 30px;
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.apply-filters-btn:hover {
+    background-color: #3a4050;
+    color: white;
+}
+
+/* Разделитель */
+.market-divider {
+    height: 20px;
+    background-color: #1a1f2b;
+    width: 100%;
+}
+
+/* Контейнер со списком предметов */
+.market-items-container {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #232833;
+}
+.market-items-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Строка предмета (как в инвентаре) */
+.market-item-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a303c;
+    background-color: #232833;
+}
+.market-item-row:nth-child(even) {
+    background-color: #2a303c;
+}
+.market-item-row:last-child {
+    border-bottom: none;
+}
+
+/* Иконка предмета */
+.market-item-icon {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    background-color: #1a1f2b;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+    box-sizing: border-box;
+}
+.market-item-icon img {
+    width: 46px;
+    height: 46px;
+    object-fit: contain;
+}
+.market-item-row.rarity-common .market-item-icon { border-color: #aaa; }
+.market-item-row.rarity-uncommon .market-item-icon { border-color: #2ecc71; }
+.market-item-row.rarity-rare .market-item-icon { border-color: #2e86de; }
+.market-item-row.rarity-epic .market-item-icon { border-color: #9b59b6; }
+.market-item-row.rarity-legendary .market-item-icon { border-color: #f1c40f; }
+
+/* Информация о предмете */
+.market-item-info {
+    flex: 1;
+    min-width: 0;
+}
+.market-item-name {
+    font-weight: bold;
+    margin-bottom: 2px;
+    font-size: 13px;
+}
+.market-item-class {
+    font-size: 11px;
+    font-weight: normal;
+    color: #aaa;
+    margin-left: 5px;
+}
+.market-item-stats {
+    font-size: 10px;
+    color: #aaa;
+    word-break: break-word;
+}
+
+/* Цена */
+.market-item-price {
+    font-weight: bold;
+    color: gold;
+    font-size: 14px;
+    white-space: nowrap;
+    margin-right: 8px;
+}
+.market-item-price i {
+    font-size: 12px;
+    margin-left: 2px;
+}
+
+/* Кнопки действий */
+.market-item-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.market-action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: #1a1f2b;
+    border: 2px solid #aaa;
+    color: #aaa;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.market-action-btn:hover {
+    background-color: #2a2f3a;
+    border-color: #00aaff;
+    color: #00aaff;
+}
+
+/* Модальное окно предмета */
+.market-modal-icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.market-modal-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background-color: #2a303c;
+    padding: 2px;
+    border-radius: 12px;
+    margin-top: 20px;
+}
+.market-modal-buy-btn,
+.market-modal-cancel-btn {
+    background-color: #232833;
+    border: none;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    transition: none;
+}
+.market-modal-buy-btn:first-child {
+    border-radius: 12px 0 0 12px;
+}
+.market-modal-cancel-btn:last-child {
+    border-radius: 0 12px 12px 0;
+}
+.market-modal-buy-btn:hover,
+.market-modal-cancel-btn:hover {
+    background-color: #2f3542;
+    color: #ccc;
+}
+
 
 /* ========== ФИЛЬТРЫ МАРКЕТА ========== */
 .market-filters-container {

@@ -388,7 +388,7 @@ function showEquipCompareModal(oldItem, newItem) {
                 if (currentScreen === 'equip') renderEquip();
             } else {
                 const err = await res.json();
-                alert('Ошибка: ' + err.error);
+                showToast('Ошибка: ' + err.error, 1500);
             }
             modal.style.display = 'none';
         });

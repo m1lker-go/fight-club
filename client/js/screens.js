@@ -537,6 +537,7 @@ document.querySelectorAll('.inv-action-btn').forEach(btn => {
         }
     });
 });
+}
     
 // ==================== ТОРГОВЛЯ ====================  // 
 function renderTrade() {

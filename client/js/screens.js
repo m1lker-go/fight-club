@@ -29,15 +29,15 @@ function renderMain() {
         <!-- Верхний блок с аватаром и кнопками -->
         <div class="main-top-container">
             <div class="main-top-inner">
-                <!-- Левая колонка кнопок (2×3) -->
+                <!-- Левая колонка (2×3) -->
                 <div class="main-buttons-col left">
                     <div class="btn-grid">
-                        <button class="main-icon-btn" id="mainBtn1" data-action="none"><i class="fas fa-envelope"></i><span>Письмо</span></button>
-                        <button class="main-icon-btn" id="mainBtn2" data-action="none"><i class="fas fa-user-friends"></i><span>Друзья</span></button>
-                        <button class="main-icon-btn" id="mainBtn3" data-action="none"><i class="fas fa-chart-simple"></i><span>Статистика</span></button>
-                        <button class="main-icon-btn" id="mainBtn4" data-action="none"><i class="fas fa-gift"></i><span>Подарки</span></button>
-                        <button class="main-icon-btn" id="mainBtn5" data-action="none"><i class="fas fa-calendar"></i><span>События</span></button>
-                        <button class="main-icon-btn" id="mainBtn6" data-action="none"><i class="fas fa-cog"></i><span>Настройки</span></button>
+                        <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Письмо</span></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
                     </div>
                 </div>
                 <!-- Центр: аватар -->
@@ -47,15 +47,15 @@ function renderMain() {
                         <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
                     </div>
                 </div>
-                <!-- Правая колонка кнопок (2×3) -->
+                <!-- Правая колонка (2×3) -->
                 <div class="main-buttons-col right">
                     <div class="btn-grid">
                         <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Снаряжение</span></button>
                         <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
                         <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
-                        <button class="main-icon-btn" id="mainBtn10" data-action="none"><i class="fas fa-trophy"></i><span>Турниры</span></button>
-                        <button class="main-icon-btn" id="mainBtn11" data-action="none"><i class="fas fa-ranking-star"></i><span>Рейтинг</span></button>
-                        <button class="main-icon-btn" id="mainBtn12" data-action="none"><i class="fas fa-question-circle"></i><span>Помощь</span></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
                     </div>
                 </div>
             </div>
@@ -102,7 +102,7 @@ function renderMain() {
 
     updateSubclasses(currentClass);
 
-    // Обработчики для кнопок (существующие)
+    // Обработчики для классов и ролей (без изменений)
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
@@ -150,7 +150,7 @@ function renderMain() {
     document.getElementById('roleInfoBtn').addEventListener('click', () => showRoleInfoModal(userData.current_class));
     document.getElementById('avatarClick').addEventListener('click', () => showScreen('profile'));
 
-    // Обработчики для новых кнопок (переходы на экраны)
+    // Обработчики для рабочих кнопок
     document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
         btn.addEventListener('click', () => {
             const screen = btn.dataset.screen;
@@ -158,17 +158,17 @@ function renderMain() {
         });
     });
 
-    // Кнопки без действия (пока просто вывод в консоль)
-    document.querySelectorAll('.main-icon-btn[data-action="none"]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            console.log(`Кнопка ${btn.id} нажата, функционал в разработке`);
+    // Кнопка "Письмо" (пока заглушка)
+    const mailBtn = document.getElementById('mailBtn');
+    if (mailBtn) {
+        mailBtn.addEventListener('click', () => {
+            console.log('Письмо: функционал в разработке');
         });
-    });
+    }
 
     updateTradeButtonIcon();
     updateProfileAvatarIcon();
 }
-
 
 function updateMainScreen() {
     const classData = getCurrentClassData();

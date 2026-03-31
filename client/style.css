@@ -1058,7 +1058,7 @@ body {
     color: white;
 }
 
-/* ========== МАРКЕТ ========== */
+
 
 
 /* ========== МАРКЕТ ========== */
@@ -1389,6 +1389,41 @@ body {
 }
 .modal-btn:hover {
     background-color: #3a4050;
+}
+
+/* ========== ВКЛАДКИ ТОРГОВЛИ (МАГАЗИН / МАРКЕТ) ========== */
+.trade-tabs-container {
+    background-color: #2a303c;
+    border-radius: 12px;
+    padding: 2px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 2px;
+}
+.trade-tab {
+    flex: 1;
+    background-color: #232833;
+    border: none;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    transition: background-color 0.2s, color 0.2s;
+}
+.trade-tab:first-child {
+    border-radius: 12px 0 0 12px;
+}
+.trade-tab:last-child {
+    border-radius: 0 12px 12px 0;
+}
+.trade-tab.active {
+    background-color: #00aaff;
+    color: white;
+}
+.trade-tab:not(.active):hover {
+    background-color: #2f3542;
+    color: #ccc;
 }
 
 

@@ -1222,13 +1222,16 @@ function showToast(message, duration = 1500) {
 function renderRating() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <div style="margin-top: 10px;"></div>
-        <div class="rating-tabs">
-            <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn"><i class="fas fa-trophy"></i> РЕЙТИНГ</button>
-            <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn"><i class="fas fa-fist-raised"></i> СИЛА</button>
-            <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn"><i class="fas fa-chess-rook"></i> БАШНЯ</button>
+        <div class="rating-page">
+            <div class="rating-tabs-container">
+                <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn">РЕЙТИНГ</button>
+                <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn">СИЛА</button>
+                <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn">БАШНЯ</button>
+            </div>
+            <div class="rating-content-container" id="ratingContentContainer">
+                <div id="ratingContent"></div>
+            </div>
         </div>
-        <div id="ratingContent"></div>
     `;
 
     document.getElementById('ratingTabBtn').addEventListener('click', () => {

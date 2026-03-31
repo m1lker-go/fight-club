@@ -46,7 +46,7 @@ function renderReferral() {
         navigator.clipboard.writeText(referralLink).then(() => {
             showToast('Ссылка скопирована!', 1500);
         }).catch(() => {
-            alert('Ошибка копирования');
+            showToast('Ошибка копирования', 1500)
         });
     });
 
@@ -242,7 +242,7 @@ async function loadDailyTasks() {
                     });
                     const data = await res.json();
                     if (data.error) {
-                        alert(data.error);
+                       showToast(data.error, 1500);
                     } else {
                         showCoinsModal(rewardAmount);
                         loadDailyTasks();
@@ -496,7 +496,7 @@ function claimAdventDay(day, daysInMonth) {
             } else if (reward.type === 'item' && data.item) {
                 showChestResult(data.item);
             } else {
-                alert(`Вы получили: ${data.reward}`);
+                showToast(Вы получили: ${data.reward}, 2000);
             }
             if (reloadTimeout) clearTimeout(reloadTimeout);
             reloadTimeout = setTimeout(() => {
@@ -545,7 +545,7 @@ function showClassChoiceModalForAdvent(expAmount) {
             });
             const data = await res.json();
             if (data.error) {
-                alert(data.error);
+                showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
                 setTimeout(() => {
@@ -594,7 +594,7 @@ function claimDailyExp(taskId, expAmount) {
             });
             const data = await res.json();
             if (data.error) {
-                alert(data.error);
+                showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
                 renderTasks();

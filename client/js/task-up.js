@@ -44,7 +44,7 @@ function renderReferral() {
 
     referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(referralLink).then(() => {
-            alert('Ссылка скопирована!');
+            showToast('Ссылка скопирована!', 1500);
         }).catch(() => {
             alert('Ошибка копирования');
         });
@@ -57,7 +57,7 @@ function renderReferral() {
             window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
         } else {
             navigator.clipboard.writeText(referralLink).then(() => {
-                alert('Ссылка скопирована!');
+                showToast('Ссылка скопирована!', 1500);
             });
         }
     });
@@ -410,7 +410,7 @@ function showAdventCalendar() {
         })
         .catch(err => {
             console.error('Advent error:', err);
-            alert('Ошибка загрузки календаря: ' + err.message);
+            showToast('Ошибка загрузки календаря: ' + err.message, 2000);
         });
 }
 
@@ -489,7 +489,7 @@ function claimAdventDay(day, daysInMonth) {
     .then(res => res.json())
     .then(data => {
         if (data.error) {
-            alert(data.error);
+           showToast(data.error, 1500);
         } else {
             if (reward.type === 'coins') {
                 showCoinsModal(reward.amount);
@@ -509,7 +509,7 @@ function claimAdventDay(day, daysInMonth) {
     })
     .catch(err => {
         console.error(err);
-        alert('Ошибка соединения');
+        showToast('Ошибка соединения', 1500);
         isClaiming = false;
     });
 }

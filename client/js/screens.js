@@ -724,67 +724,66 @@ function renderShop(target = null) {
 // ==================== МАРКЕТ ====================
 async function renderMarket(target = null) {
     const container = target || document.getElementById('tradeContent');
-    container.innerHTML = `
-        <div class="market-page">
-         <div class="market-header">Список снаряжения</div>
-            <div class="market-filters-panel">
-                <div class="filters-row">
-                    <div class="filter-group" id="filter-class-group">
-                        <button class="filter-button" id="classFilterBtn">
-                            <span id="classFilterText">Класс</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="filter-panel" id="classPanel" style="display: none;">
-                            <div class="filter-option" data-value="any">Любой класс</div>
-                            <div class="filter-option" data-value="warrior">Воин</div>
-                            <div class="filter-option" data-value="assassin">Ассасин</div>
-                            <div class="filter-option" data-value="mage">Маг</div>
-                        </div>
-                    </div>
-                    <div class="filter-group" id="filter-rarity-group">
-                        <button class="filter-button" id="rarityFilterBtn">
-                            <span id="rarityFilterText">Редкость</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="filter-panel" id="rarityPanel" style="display: none;">
-                            <div class="filter-option" data-value="any">Любая редкость</div>
-                            <div class="filter-option" data-value="common">Обычное</div>
-                            <div class="filter-option" data-value="uncommon">Необычное</div>
-                            <div class="filter-option" data-value="rare">Редкое</div>
-                            <div class="filter-option" data-value="epic">Эпическое</div>
-                            <div class="filter-option" data-value="legendary">Легендарное</div>
-                        </div>
-                    </div>
-                    <div class="filter-group" id="filter-stat-group">
-                        <button class="filter-button" id="statFilterBtn">
-                            <span id="statFilterText">Характеристика</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="filter-panel" id="statPanel" style="display: none;">
-                            <div class="filter-option" data-value="any">Любая характеристика</div>
-                            <div class="filter-option" data-value="atk_bonus">АТК</div>
-                            <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
-                            <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
-                            <div class="filter-option" data-value="spd_bonus">СКОР</div>
-                            <div class="filter-option" data-value="crit_bonus">КРИТ</div>
-                            <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
-                            <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
-                            <div class="filter-option" data-value="int_bonus">ИНТ</div>
-                            <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
-                            <div class="filter-option" data-value="reflect_bonus">ОТР</div>
-                        </div>
+   container.innerHTML = `
+    <div class="market-page">
+        <div class="market-filters-panel">
+            <div class="filters-row">
+                <div class="filter-group" id="filter-class-group">
+                    <button class="filter-button" id="classFilterBtn">
+                        <span id="classFilterText">Класс</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="classPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любой класс</div>
+                        <div class="filter-option" data-value="warrior">Воин</div>
+                        <div class="filter-option" data-value="assassin">Ассасин</div>
+                        <div class="filter-option" data-value="mage">Маг</div>
                     </div>
                 </div>
-                <div class="apply-button-container">
-                    <button class="btn apply-filters-btn" id="applyFiltersBtn">Применить</button>
+                <div class="filter-group" id="filter-rarity-group">
+                    <button class="filter-button" id="rarityFilterBtn">
+                        <span id="rarityFilterText">Редкость</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="rarityPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любая редкость</div>
+                        <div class="filter-option" data-value="common">Обычное</div>
+                        <div class="filter-option" data-value="uncommon">Необычное</div>
+                        <div class="filter-option" data-value="rare">Редкое</div>
+                        <div class="filter-option" data-value="epic">Эпическое</div>
+                        <div class="filter-option" data-value="legendary">Легендарное</div>
+                    </div>
+                </div>
+                <div class="filter-group" id="filter-stat-group">
+                    <button class="filter-button" id="statFilterBtn">
+                        <span id="statFilterText">Характеристика</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="filter-panel" id="statPanel" style="display: none;">
+                        <div class="filter-option" data-value="any">Любая характеристика</div>
+                        <div class="filter-option" data-value="atk_bonus">АТК</div>
+                        <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
+                        <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
+                        <div class="filter-option" data-value="spd_bonus">СКОР</div>
+                        <div class="filter-option" data-value="crit_bonus">КРИТ</div>
+                        <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
+                        <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
+                        <div class="filter-option" data-value="int_bonus">ИНТ</div>
+                        <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
+                        <div class="filter-option" data-value="reflect_bonus">ОТР</div>
+                    </div>
                 </div>
             </div>
-            <div class="market-divider"></div>
-            <div class="market-items-container" id="marketItemsContainer">
-                <div id="marketItemsList" class="market-items-list"></div>
+            <div class="apply-button-container">
+                <button class="apply-filters-btn" id="applyFiltersBtn">Применить</button>
             </div>
         </div>
-    `;
+        <div class="market-items-header">Список снаряжения</div>
+        <div class="market-items-container" id="marketItemsContainer">
+            <div id="marketItemsList" class="market-items-list"></div>
+        </div>
+    </div>
+`;
 
     // Настройка фильтров (та же логика)
     let currentClass = 'any';

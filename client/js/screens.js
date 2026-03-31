@@ -1139,7 +1139,7 @@ function showEditPriceModal(item) {
     saveBtn.addEventListener('click', async () => {
         const newPrice = parseInt(document.getElementById('newPriceInput').value);
         if (isNaN(newPrice) || newPrice <= 0) {
-            alert('Введите корректную цену');
+            showToast('Введите корректную цену', 1500);
             return;
         }
         const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
@@ -1149,8 +1149,8 @@ function showEditPriceModal(item) {
         });
         const data = await res.json();
         if (data.success) {
-            alert('Цена изменена');
             modal.style.display = 'none';
+            showToast('Цена изменена!', 1000);
             await refreshData();
             // Перезагружаем маркет с текущими фильтрами
             const classFilter = document.getElementById('classFilterText').innerText === 'Класс' ? 'any' : 
@@ -1176,7 +1176,7 @@ function showEditPriceModal(item) {
                 (document.getElementById('statFilterText').innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
             loadMarketItems(statFilter, classFilter, rarityFilter);
         } else {
-            alert('Ошибка: ' + data.error);
+            showToast('Ошибка: ' + data.error, 1500);
         }
     });
 
@@ -1187,7 +1187,6 @@ function showEditPriceModal(item) {
         if (event.target === modal) closeModal();
     };
 }
-
 
 // ==================== РЕЙТИНГ ====================
 function renderRating() {

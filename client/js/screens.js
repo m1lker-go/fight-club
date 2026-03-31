@@ -50,7 +50,7 @@ function renderMain() {
                 <!-- Правая колонка (2×3) -->
                 <div class="main-buttons-col right">
                     <div class="btn-grid">
-                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Снаряжение</span></button>
+                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
                         <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
                         <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
                         <button class="main-icon-btn empty-btn"></button>

@@ -516,7 +516,7 @@ document.querySelectorAll('.inv-action-btn').forEach(btn => {
                     showToast('Ошибка при снятии с продажи', 1500);
                 }
             });
-        } else if (action === 'editPrice') {
+       } else if (action === 'editPrice') {
             const item = inventory.find(i => i.id == itemId);
             if (!item) return;
             showPriceInputModal(item.price, async (newPrice) => {

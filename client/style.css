@@ -963,7 +963,7 @@ body {
     height: 100%;
     width: 100%;
     background-color: #232833;
-    border-radius: 0 0 12px 12px;   /* скругление только снизу */
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
 }
 
@@ -973,24 +973,25 @@ body {
     padding: 12px 16px;
     gap: 12px;
     border-bottom: 1px solid #2a303c;
-    background-color: #232833;
-    flex: 1;                 /* равномерное распределение высоты */
+    background-color: #232833;   /* светлая строка */
+    flex: 1;                      /* равномерное распределение высоты */
 }
 
 .chest-row:nth-child(even) {
-    background-color: #2a303c;
+    background-color: #2a303c;    /* тёмная строка */
 }
 
 .chest-row:first-child {
-    border-radius: 12px 12px 0 0;
+    border-radius: 0;
 }
+
 .chest-row:last-child {
     border-bottom: none;
     border-radius: 0 0 12px 12px;
 }
 
 .chest-icon-col {
-    flex: 0 0 60px;         /* фиксированная ширина для иконки */
+    flex: 0 0 60px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1003,7 +1004,7 @@ body {
 }
 
 .chest-info-col {
-    flex: 2;                /* занимает больше места */
+    flex: 2;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1023,40 +1024,40 @@ body {
 }
 
 .chest-price-col {
-    flex: 0 0 100px;        /* фиксированная ширина для кнопки */
+    flex: 0 0 100px;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
+
 .chest-buy-btn {
-    background-color: #2f3542;
-    border: none;
-    border-radius: 30px;
+    background-color: #1a1f2b;      /* тёмный фон, как заголовок */
+    border: 2px solid #aaa;         /* светло-серая обводка */
+    border-radius: 8px;             /* скруглённые углы */
     padding: 8px 16px;
     font-size: 16px;
     font-weight: bold;
-    color: white;
+    color: #aaa;                    /* светлый текст */
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
     white-space: nowrap;
 }
 
 .chest-buy-btn i {
-    color: white;
+    color: #aaa;
     font-size: 14px;
 }
 
 .chest-buy-btn:hover {
-    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
 }
-
-.chest-price {
-    font-weight: bold;
-    color: white;
+.chest-buy-btn:hover i {
+    color: #00aaff;
 }
 
 

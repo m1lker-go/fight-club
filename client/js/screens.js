@@ -47,17 +47,17 @@ function renderMain() {
                         <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
                     </div>
                 </div>
-                <!-- Правая колонка (2×3) -->
-                <div class="main-buttons-col right">
-                    <div class="btn-grid">
-                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
-                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
-                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
-                        <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn empty-btn"></button>
-                    </div>
-                </div>
+              <!-- Правая колонка (2×3) -->
+<div class="main-buttons-col right">
+    <div class="btn-grid">
+        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
+        <button class="main-icon-btn empty-btn"></button>
+        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
+        <button class="main-icon-btn empty-btn"></button>
+        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
+        <button class="main-icon-btn empty-btn"></button>
+    </div>
+</div>
             </div>
         </div>
 

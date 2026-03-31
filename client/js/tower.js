@@ -299,7 +299,7 @@ function renderTower() {
 
 async function startTowerBattle() {
     if (towerStatus.attemptsLeft <= 0) {
-        alert('У вас не осталось билетов на сегодня');
+        showToast('У вас не осталось билетов на сегодня', 1500);
         return;
     }
 
@@ -311,18 +311,22 @@ async function startTowerBattle() {
         });
         const data = await res.json();
         if (!res.ok) {
-            alert('Ошибка: ' + data.error);
+            if (data.error === 'No tickets left today') {
+                showToast('Билеты закончились', 1500);
+            } else {
+                showToast('Ошибка: ' + data.error, 2000);
+            }
             return;
         }
         if (!data.result) {
             console.error('Ответ сервера не содержит result:', data);
-            alert('Ошибка данных боя');
+            showToast('Ошибка данных боя', 2000);
             return;
         }
         showTowerBattleScreen(data);
     } catch (e) {
         console.error('Ошибка при старте боя:', e);
-        alert('Ошибка соединения');
+        showToast('Ошибка соединения', 2000);
     }
 }
 

@@ -410,133 +410,134 @@ function renderEquip() {
             </div>
         </div>
     `;
-// Обработчики
-document.querySelectorAll('.class-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const newClass = e.target.dataset.class;
-        localStorage.setItem('equipSelectedClass', newClass);
-        renderEquip();
-    });
-});
 
-document.querySelectorAll('.equip-slot').forEach(slot => {
-    slot.addEventListener('click', async (e) => {
-        const itemId = slot.dataset.itemId;
-        if (!itemId) return;
-        showConfirmModal('Снять этот предмет?', async () => {
-            try {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                });
-                if (res.ok) {
-                    await refreshData();
-                    renderEquip();
-                } else {
-                    showToast('Ошибка при снятии', 1500);
+    // Обработчики
+    document.querySelectorAll('.class-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const newClass = e.target.dataset.class;
+            localStorage.setItem('equipSelectedClass', newClass);
+            renderEquip();
+        });
+    });
+
+    document.querySelectorAll('.equip-slot').forEach(slot => {
+        slot.addEventListener('click', async (e) => {
+            const itemId = slot.dataset.itemId;
+            if (!itemId) return;
+            showConfirmModal('Снять этот предмет?', async () => {
+                try {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                    });
+                    if (res.ok) {
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        showToast('Ошибка при снятии', 1500);
+                    }
+                } catch (e) {
+                    showToast('Сеть недоступна', 1500);
                 }
-            } catch (e) {
-                showToast('Сеть недоступна', 1500);
+            });
+        });
+    });
+
+    document.querySelectorAll('.inv-action-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = btn.dataset.itemId;
+            const action = btn.dataset.action;
+
+            if (action === 'equip') {
+                const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                const item = inventory.find(i => i.id == itemId);
+                if (!item) return;
+                const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === currentClass);
+                if (equippedInSlot) {
+                    showEquipCompareModal(equippedInSlot, item);
+                } else {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            tg_id: userData.tg_id, 
+                            item_id: itemId,
+                            target_class: currentClass
+                        })
+                    });
+                    if (res.ok) {
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        const err = await res.json();
+                        showToast('Ошибка: ' + err.error, 1500);
+                    }
+                }
+            } else if (action === 'sell') {
+                const currentClass = document.querySelector('.class-btn.active').dataset.class;
+                const item = inventory.find(i => i.id == itemId);
+                if (!item) return;
+                if (item.owner_class !== currentClass) {
+                    showToast('Этот предмет не принадлежит текущему классу!', 1500);
+                    return;
+                }
+                showPriceInputModal(null, async (price) => {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            tg_id: userData.tg_id, 
+                            item_id: itemId, 
+                            price: price
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast('Предмет выставлен на маркет', 1500);
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        showToast('Ошибка: ' + data.error, 1500);
+                    }
+                });
+            } else if (action === 'unsell') {
+                showConfirmModal('Снять предмет с продажи?', async () => {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                    });
+                    if (res.ok) {
+                        showToast('Предмет снят с продажи', 1500);
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        showToast('Ошибка при снятии с продажи', 1500);
+                    }
+                });
+            } else if (action === 'editPrice') {
+                const item = inventory.find(i => i.id == itemId);
+                if (!item) return;
+                showPriceInputModal(item.price, async (newPrice) => {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: newPrice })
+                    });
+                    if (res.ok) {
+                        showToast('Цена изменена', 1500);
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        const err = await res.json();
+                        showToast('Ошибка: ' + err.error, 1500);
+                    }
+                });
             }
         });
     });
-});
-
-document.querySelectorAll('.inv-action-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const itemId = btn.dataset.itemId;
-        const action = btn.dataset.action;
-
-        if (action === 'equip') {
-            const currentClass = document.querySelector('.class-btn.active').dataset.class;
-            const item = inventory.find(i => i.id == itemId);
-            if (!item) return;
-            const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === currentClass);
-            if (equippedInSlot) {
-                showEquipCompareModal(equippedInSlot, item);
-            } else {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        tg_id: userData.tg_id, 
-                        item_id: itemId,
-                        target_class: currentClass
-                    })
-                });
-                if (res.ok) {
-                    await refreshData();
-                    renderEquip();
-                } else {
-                    const err = await res.json();
-                    showToast('Ошибка: ' + err.error, 1500);
-                }
-            }
-        } else if (action === 'sell') {
-            const currentClass = document.querySelector('.class-btn.active').dataset.class;
-            const item = inventory.find(i => i.id == itemId);
-            if (!item) return;
-            if (item.owner_class !== currentClass) {
-                showToast('Этот предмет не принадлежит текущему классу!', 1500);
-                return;
-            }
-            showPriceInputModal(null, async (price) => {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        tg_id: userData.tg_id, 
-                        item_id: itemId, 
-                        price: price
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast('Предмет выставлен на маркет', 1500);
-                    await refreshData();
-                    renderEquip();
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
-            });
-        } else if (action === 'unsell') {
-            showConfirmModal('Снять предмет с продажи?', async () => {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                });
-                if (res.ok) {
-                    showToast('Предмет снят с продажи', 1500);
-                    await refreshData();
-                    renderEquip();
-                } else {
-                    showToast('Ошибка при снятии с продажи', 1500);
-                }
-            });
-       } else if (action === 'editPrice') {
-            const item = inventory.find(i => i.id == itemId);
-            if (!item) return;
-            showPriceInputModal(item.price, async (newPrice) => {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: newPrice })
-                });
-                if (res.ok) {
-                    showToast('Цена изменена', 1500);
-                    await refreshData();
-                    renderEquip();
-                } else {
-                    const err = await res.json();
-                    showToast('Ошибка: ' + err.error, 1500);
-                }
-            });
-        }
-    });
-});
 }
     
 // ==================== ТОРГОВЛЯ ====================  // 
@@ -1504,7 +1505,7 @@ function renderProfileBonuses(container) {
 
         <table class="stats-table bonuses-table">
     <thead>
-        <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th></tr>
+        <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th> </tr>
     </thead>
     <tbody>
                 ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
@@ -1518,7 +1519,7 @@ function renderProfileBonuses(container) {
                 ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
                 ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
             </tbody>
-        </table>
+         </table>
     `;
 
     container.querySelectorAll('.class-btn').forEach(btn => {
@@ -1639,13 +1640,13 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-         <tr>
+          <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-         </tr>
+          </tr>
     `;
 }
 
@@ -1815,4 +1816,3 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
-}   

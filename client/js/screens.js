@@ -1074,8 +1074,8 @@ async function showItemDetailsModal(item) {
         });
         const data = await res.json();
         if (data.success) {
-            alert('Покупка успешна!');
             modal.style.display = 'none';
+            showToast(`Вы купили "${itemNameTranslations[item.name] || item.name}" за ${item.price} монет`, 1500);
             await refreshData();
             // Перезагружаем маркет с текущими фильтрами
             const classFilter = document.getElementById('classFilterText').innerText === 'Класс' ? 'any' : 
@@ -1101,7 +1101,12 @@ async function showItemDetailsModal(item) {
                 (document.getElementById('statFilterText').innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
             loadMarketItems(statFilter, classFilter, rarityFilter);
         } else {
-            alert('Ошибка: ' + data.error);
+            modal.style.display = 'none';
+            if (data.error === 'Not enough coins') {
+                showToast('Недостаточно средств!', 1500);
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
+            }
         }
     });
 
@@ -1112,6 +1117,7 @@ async function showItemDetailsModal(item) {
         if (event.target === modal) closeModal();
     };
 }
+
 
 // Модальное окно редактирования цены
 function showEditPriceModal(item) {
@@ -1192,7 +1198,7 @@ function showEditPriceModal(item) {
 }
 
 
-function showToast(message, duration = 1000) {
+function showToast(message, duration = 1500) {
     // Удаляем предыдущий тост, если есть
     const existingToast = document.querySelector('.market-toast');
     if (existingToast) existingToast.remove();

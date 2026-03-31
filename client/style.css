@@ -2686,3 +2686,13 @@ body {
     overflow-y: auto;
     flex: 1;
 }
+
+/* Пустые кнопки (без иконки и текста) */
+.main-icon-btn.empty-btn {
+    background-color: #232833;
+    border: none;
+    cursor: default;
+}
+.main-icon-btn.empty-btn:hover {
+    background-color: #232833;
+}

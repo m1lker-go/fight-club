@@ -1063,6 +1063,7 @@ body {
 
 /* ========== МАРКЕТ ========== */
 .market-page {
+    min-height: 0; 
     background-color: #2a303c;
     border-radius: 0 0 12px 12px;
     overflow: hidden;

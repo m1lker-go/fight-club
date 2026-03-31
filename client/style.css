@@ -2538,7 +2538,12 @@ body {
 
 /* ========== ГЛАВНАЯ СТРАНИЦА ========== */
 
-/* Верхний контейнер – без лишней обводки */
+/* Переменные для настройки аватара */
+.main-top-inner {
+    --avatar-height: 184px;   /* можно менять */
+    --avatar-width: 120px;    /* можно менять */
+}
+
 .main-top-container {
     background-color: transparent;
     padding: 0;
@@ -2550,7 +2555,7 @@ body {
     display: flex;
     gap: 2px;
     padding: 2px;
-    height: 180px;            /* Высота аватара – здесь можно менять */
+    height: var(--avatar-height);
 }
 
 /* Колонки кнопок – скругление только у внешних углов */
@@ -2560,8 +2565,8 @@ body {
 }
 .btn-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;  /* две колонки равной ширины */
-    grid-template-rows: 1fr 1fr 1fr; /* три строки равной высоты */
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
     gap: 2px;
     background-color: #2a303c;
     width: 100%;
@@ -2634,7 +2639,7 @@ body {
 
 /* Центральная колонка с аватаром */
 .main-avatar-col {
-    flex: 0 0 120px;
+    flex: 0 0 var(--avatar-width);
     display: flex;
     align-items: center;
     justify-content: center;

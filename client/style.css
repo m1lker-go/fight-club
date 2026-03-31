@@ -90,6 +90,7 @@ body {
     scrollbar-width: thin;
     scrollbar-color: #00aaff #232833;
     z-index: 1;
+    flex-direction: column; 
 }
 
 /* ========== НИЖНЕЕ МЕНЮ ========== */
@@ -2669,7 +2670,7 @@ body {
     border-radius: 0 0 12px 12px;
     overflow-y: auto;
     flex: 1;
-    min-height: 0;        /* важно для корректной работы flex */
+    min-height: 0;
     display: flex;
     flex-direction: column;
 }

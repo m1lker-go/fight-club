@@ -535,7 +535,7 @@ function renderEquip() {
         });
     });
 }
-// ==================== ТОРГОВЛЯ ====================
+// ==================== ТОРГОВЛЯ ====================  // 
 function renderTrade() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -564,6 +564,9 @@ function renderTrade() {
         renderMarket(tradeContent);
     }
 }
+
+// ==================== Магазин ====================  // 
+
 function renderShop(target = null) {
     const container = target || document.getElementById('tradeContent');
     container.innerHTML = `

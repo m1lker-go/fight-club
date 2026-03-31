@@ -959,10 +959,10 @@ body {
 .chest-table {
     display: flex;
     flex-direction: column;
-    height: 100%;            /* растягиваем на всю высоту */
+    height: 100%;
     width: 100%;
     background-color: #232833;
-    border-radius: 12px;
+    border-radius: 0 0 12px 12px;   /* скругление только снизу */
     overflow: hidden;
 }
 
@@ -1064,7 +1064,7 @@ body {
 /* ========== МАРКЕТ ========== */
 .market-page {
     background-color: #2a303c;
-    border-radius: 12px;
+    border-radius: 0 0 12px 12px;   /* скругление только снизу */
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1143,19 +1143,21 @@ body {
     margin-top: 8px;
 }
 .apply-filters-btn {
-    background-color: transparent;
-    border: 1px solid #aaa;
-    border-radius: 30px;
+    background-color: #1a1f2b;
+    border: 2px solid #aaa;
+    border-radius: 8px;            
     padding: 8px 24px;
     font-size: 14px;
     font-weight: normal;
     color: #aaa;
+    cursor: pointer;
     transition: all 0.2s;
+    width: 100%;                   
 }
 .apply-filters-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
-    background-color: transparent;
+    background-color: #1a1f2b;
 }
 
 .market-divider {
@@ -1427,6 +1429,8 @@ body {
 }
 
 
+
+
 /* ========== ФИЛЬТРЫ МАРКЕТА ========== */
 .market-filters-container {
     margin-bottom: 20px;
@@ -1505,6 +1509,29 @@ body {
     background-color: #00aaff;
     color: white;
     border-color: #00aaff;
+}
+
+/* Уведомление (тост) */
+.market-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2a303c;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    border-left: 4px solid #00aaff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+.market-toast.show {
+    opacity: 1;
 }
 
 /* ========== ТАБЛИЦЫ РЕЙТИНГА ========== */

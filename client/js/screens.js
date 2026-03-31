@@ -410,100 +410,22 @@ function renderEquip() {
             </div>
         </div>
     `;
-
-    // Обработчики
-    document.querySelectorAll('.class-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const newClass = e.target.dataset.class;
-            localStorage.setItem('equipSelectedClass', newClass);
-            renderEquip();
-        });
+// Обработчики
+document.querySelectorAll('.class-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const newClass = e.target.dataset.class;
+        localStorage.setItem('equipSelectedClass', newClass);
+        renderEquip();
     });
+});
 
-    document.querySelectorAll('.equip-slot').forEach(slot => {
-        slot.addEventListener('click', async (e) => {
-            const itemId = slot.dataset.itemId;
-            if (!itemId) return;
-            if (confirm('Снять этот предмет?')) {
-                try {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                        renderEquip();
-                    } else {
-                        alert('Ошибка при снятии');
-                    }
-                } catch (e) {
-                    alert('Сеть недоступна');
-                }
-            }
-        });
-    });
-
-    document.querySelectorAll('.inv-action-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const itemId = btn.dataset.itemId;
-            const action = btn.dataset.action;
-            if (action === 'equip') {
-                const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                const item = inventory.find(i => i.id == itemId);
-                if (!item) return;
-                const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === currentClass);
-                if (equippedInSlot) {
-                    showEquipCompareModal(equippedInSlot, item);
-                } else {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            tg_id: userData.tg_id, 
-                            item_id: itemId,
-                            target_class: currentClass
-                        })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                        renderEquip();
-                    } else {
-                        const err = await res.json();
-                        alert('Ошибка: ' + err.error);
-                    }
-                }
-            } else if (action === 'sell') {
-                const currentClass = document.querySelector('.class-btn.active').dataset.class;
-                const item = inventory.find(i => i.id == itemId);
-                if (!item) return;
-                if (item.owner_class !== currentClass) {
-                    alert('Этот предмет не принадлежит текущему классу!');
-                    return;
-                }
-                const price = prompt('Введите цену продажи в монетах:');
-                if (price && !isNaN(price) && parseInt(price) > 0) {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            tg_id: userData.tg_id, 
-                            item_id: itemId, 
-                            price: parseInt(price) 
-                        })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert('Предмет выставлен на маркет');
-                        await refreshData();
-                        renderEquip();
-                    } else {
-                        alert('Ошибка: ' + data.error);
-                    }
-                }
-            } else if (action === 'unsell') {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
+document.querySelectorAll('.equip-slot').forEach(slot => {
+    slot.addEventListener('click', async (e) => {
+        const itemId = slot.dataset.itemId;
+        if (!itemId) return;
+        showConfirmModal('Снять этот предмет?', async () => {
+            try {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unequip', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -512,29 +434,110 @@ function renderEquip() {
                     await refreshData();
                     renderEquip();
                 } else {
-                    alert('Ошибка при снятии с продажи');
+                    showToast('Ошибка при снятии', 1500);
                 }
-            } else if (action === 'editPrice') {
-                const item = inventory.find(i => i.id == itemId);
-                if (!item) return;
-                const newPrice = prompt('Введите новую цену в монетах:', item.price);
-                if (newPrice && !isNaN(newPrice) && parseInt(newPrice) > 0) {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: parseInt(newPrice) })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                        renderEquip();
-                    } else {
-                        alert('Ошибка изменения цены');
-                    }
-                }
+            } catch (e) {
+                showToast('Сеть недоступна', 1500);
             }
         });
     });
-}
+});
+
+document.querySelectorAll('.inv-action-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const itemId = btn.dataset.itemId;
+        const action = btn.dataset.action;
+
+        if (action === 'equip') {
+            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+            const item = inventory.find(i => i.id == itemId);
+            if (!item) return;
+            const equippedInSlot = inventory.find(i => i.equipped && i.type === item.type && i.owner_class === currentClass);
+            if (equippedInSlot) {
+                showEquipCompareModal(equippedInSlot, item);
+            } else {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        tg_id: userData.tg_id, 
+                        item_id: itemId,
+                        target_class: currentClass
+                    })
+                });
+                if (res.ok) {
+                    await refreshData();
+                    renderEquip();
+                } else {
+                    const err = await res.json();
+                    showToast('Ошибка: ' + err.error, 1500);
+                }
+            }
+        } else if (action === 'sell') {
+            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+            const item = inventory.find(i => i.id == itemId);
+            if (!item) return;
+            if (item.owner_class !== currentClass) {
+                showToast('Этот предмет не принадлежит текущему классу!', 1500);
+                return;
+            }
+            showPriceInputModal(null, async (price) => {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/sell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        tg_id: userData.tg_id, 
+                        item_id: itemId, 
+                        price: price
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Предмет выставлен на маркет', 1500);
+                    await refreshData();
+                    renderEquip();
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            });
+        } else if (action === 'unsell') {
+            showConfirmModal('Снять предмет с продажи?', async () => {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/unsell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                });
+                if (res.ok) {
+                    showToast('Предмет снят с продажи', 1500);
+                    await refreshData();
+                    renderEquip();
+                } else {
+                    showToast('Ошибка при снятии с продажи', 1500);
+                }
+            });
+        } else if (action === 'editPrice') {
+            const item = inventory.find(i => i.id == itemId);
+            if (!item) return;
+            showPriceInputModal(item.price, async (newPrice) => {
+                const res = await fetch('https://fight-club-api-4och.onrender.com/market/update-price', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: newPrice })
+                });
+                if (res.ok) {
+                    showToast('Цена изменена', 1500);
+                    await refreshData();
+                    renderEquip();
+                } else {
+                    const err = await res.json();
+                    showToast('Ошибка: ' + err.error, 1500);
+                }
+            });
+        }
+    });
+});
+    
 // ==================== ТОРГОВЛЯ ====================  // 
 function renderTrade() {
     const content = document.getElementById('content');
@@ -1101,6 +1104,51 @@ async function showItemDetailsModal(item) {
         if (event.target === modal) closeModal();
     };
 }
+
+//Модальное окно 
+            
+ function showPriceInputModal(currentPrice, onConfirm) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Введите цену';
+
+    modalBody.innerHTML = `
+        <div class="edit-price-modal">
+            <div class="item-name">Цена продажи</div>
+            <input type="number" id="priceInput" class="price-input" placeholder="Цена в монетах" value="${currentPrice || ''}">
+            <div class="modal-buttons">
+                <button class="modal-btn save-price-btn">Продать</button>
+                <button class="modal-btn cancel-price-btn">Отмена</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    const saveBtn = modalBody.querySelector('.save-price-btn');
+    const cancelBtn = modalBody.querySelector('.cancel-price-btn');
+    const closeX = modal.querySelector('.close');
+
+    const closeModal = () => modal.style.display = 'none';
+
+    saveBtn.addEventListener('click', () => {
+        const price = parseInt(document.getElementById('priceInput').value);
+        if (isNaN(price) || price <= 0) {
+            showToast('Введите корректную цену', 1500);
+            return;
+        }
+        closeModal();
+        if (onConfirm) onConfirm(price);
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
+}           
 
 // Модальное окно подтверждения
 function showConfirmModal(message, onConfirm, onCancel) {

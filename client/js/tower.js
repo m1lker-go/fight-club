@@ -21,7 +21,7 @@ async function loadTowerStatus() {
         }
     } catch (e) {
         console.error('Ошибка загрузки башни:', e);
-        alert('Ошибка загрузки башни');
+        showToast('Ошибка загрузки башни', 2000);
     }
 }
 

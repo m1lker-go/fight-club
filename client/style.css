@@ -2534,3 +2534,155 @@ body {
     color: #e74c3c;
     font-weight: bold;
 }
+
+
+/* ========== ГЛАВНАЯ СТРАНИЦА (НОВЫЙ ДИЗАЙН) ========== */
+
+/* Верхний контейнер (светлый фон с обводкой) */
+.main-top-container {
+    background-color: #2a303c;
+    border-radius: 16px;
+    padding: 2px;
+    margin-bottom: 10px;
+}
+.main-top-inner {
+    background-color: #1a1f2b;
+    border-radius: 14px;
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+}
+
+/* Колонки кнопок */
+.main-buttons-col {
+    flex: 1;
+}
+.main-buttons-col.left .btn-grid {
+    border-radius: 12px 0 0 12px;
+    overflow: hidden;
+}
+.main-buttons-col.right .btn-grid {
+    border-radius: 0 12px 12px 0;
+    overflow: hidden;
+}
+
+/* Сетка кнопок 2×3 */
+.btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background-color: #2a303c;
+    height: 100%;
+}
+
+/* Кнопка с иконкой и текстом */
+.main-icon-btn {
+    background-color: #232833;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #aaa;
+    font-size: 12px;
+    font-weight: normal;
+    padding: 8px 4px;
+}
+.main-icon-btn i {
+    font-size: 24px;
+    color: #00aaff;
+}
+.main-icon-btn span {
+    font-size: 10px;
+    color: #aaa;
+}
+.main-icon-btn:hover {
+    background-color: #2f3542;
+}
+.main-icon-btn:hover i {
+    color: #00aaff;
+}
+.main-icon-btn:hover span {
+    color: white;
+}
+
+/* Скругления углов для внешних кнопок */
+.main-buttons-col.left .btn-grid button:first-child {
+    border-radius: 12px 0 0 0;
+}
+.main-buttons-col.left .btn-grid button:nth-child(2) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.left .btn-grid button:nth-child(3) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.left .btn-grid button:nth-child(4) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.left .btn-grid button:nth-child(5) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.left .btn-grid button:last-child {
+    border-radius: 0 0 0 12px;
+}
+
+.main-buttons-col.right .btn-grid button:first-child {
+    border-radius: 0 12px 0 0;
+}
+.main-buttons-col.right .btn-grid button:nth-child(2) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.right .btn-grid button:nth-child(3) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.right .btn-grid button:nth-child(4) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.right .btn-grid button:nth-child(5) {
+    border-radius: 0 0 0 0;
+}
+.main-buttons-col.right .btn-grid button:last-child {
+    border-radius: 0 0 12px 0;
+}
+
+/* Центральная колонка с аватаром */
+.main-avatar-col {
+    flex: 0 0 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #1a1f2b;
+}
+.hero-avatar {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+.hero-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Заголовок с именем пользователя */
+.main-username-header {
+    background-color: #1a1f2b;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 12px;
+    border-radius: 12px 12px 0 0;
+    margin: 0;
+    color: white;
+}
+
+/* Основной контент (опыт, класс, роль, кнопка боя) */
+.main-content-container {
+    background-color: #232833;
+    border-radius: 0 0 12px 12px;
+    overflow-y: auto;
+    flex: 1;
+}

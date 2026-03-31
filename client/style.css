@@ -973,12 +973,16 @@ body {
     padding: 12px 16px;
     gap: 12px;
     border-bottom: 1px solid #2a303c;
-    background-color: #232833;   /* светлая строка */
-    flex: 1;                      /* равномерное распределение высоты */
+    flex: 1;
+    background-color: #232833;   /* светлый фон по умолчанию (для нечётных) */
+}
+
+.chest-row:nth-child(odd) {
+    background-color: #232833;   /* светлый для нечётных */
 }
 
 .chest-row:nth-child(even) {
-    background-color: #2a303c;    /* тёмная строка */
+    background-color: #2a303c;   /* тёмный для чётных */
 }
 
 .chest-row:first-child {

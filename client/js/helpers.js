@@ -145,27 +145,28 @@ function showRoleInfoModal(className) {
     const modalBody = document.getElementById('modalBody');
 
     const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
-    modalTitle.innerText = `Класс ${classNameRu}`;
+    modalTitle.innerHTML = `<i class="fas fa-shield-alt" style="color:#00aaff;"></i> Класс ${classNameRu}`;
 
+    // Описание классовой особенности
     let classFeatureHtml = '';
     if (className === 'warrior') {
         classFeatureHtml = `
             <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
+                <h3><i class="fas fa-fist-raised"></i> Особенность класса</h3>
                 <p><strong>Стойкость:</strong> за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</p>
             </div>
         `;
     } else if (className === 'assassin') {
         classFeatureHtml = `
             <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
+                <h3><i class="fas fa-running"></i> Особенность класса</h3>
                 <p><strong>Стремительность:</strong> за каждые 5 единиц ловкости получает +1 к скорости.</p>
             </div>
         `;
     } else if (className === 'mage') {
         classFeatureHtml = `
             <div class="role-card" style="border-left-color: #f39c12;">
-                <h3>Особенность класса</h3>
+                <h3><i class="fas fa-magic"></i> Особенность класса</h3>
                 <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</p>
             </div>
         `;
@@ -183,9 +184,9 @@ function showRoleInfoModal(className) {
         if (desc) {
             rolesHtml += `
                 <div class="role-card">
-                    <h3>${desc.name}</h3>
-                    <p><span class="passive">Пассивный:</span> ${desc.passive}</p>
-                    <p><span class="active">Активный:</span> ${desc.active}</p>
+                    <h3><i class="fas fa-user-tag"></i> ${desc.name}</h3>
+                    <p><span class="passive"><i class="fas fa-feather-alt"></i> Пассивный:</span> ${desc.passive}</p>
+                    <p><span class="active"><i class="fas fa-bolt"></i> Активный:</span> ${desc.active}</p>
                 </div>
             `;
         }

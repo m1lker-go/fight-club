@@ -592,13 +592,16 @@ function claimDailyExp(taskId, expAmount) {
                     class_choice: classChoice 
                 })
             });
-            const data = await res.json();
+                      const data = await res.json();
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
                 renderTasks();
-                refreshData();
+                await refreshData(); // обновляем данные перед проверкой уровня
+                if (data.leveledUp) {
+                    showLevelUpModal(classChoice);
+                }
             }
         });
     });

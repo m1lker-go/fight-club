@@ -1718,7 +1718,8 @@ function renderSkins(container) {
     });
 }
 
-function showSkinModal(avatarId, avatarFilename, owned) {
+
+    function showSkinModal(avatarId, avatarFilename, owned) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -1728,7 +1729,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
             if (!avatar) {
-               showToast('Аватар не найден', 1500);
+                showToast('Аватар не найден', 1500);
                 return;
             }
 
@@ -1816,4 +1817,4 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
-
+    

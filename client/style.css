@@ -250,6 +250,14 @@ body {
     overflow-y: auto;
     min-height: 0; /* обязательно для корректной работы flex */
 }
+/* Фиксация переключателя классов в профиле */
+#profileContent .class-selector {
+    position: sticky;
+    top: 0;
+    background-color: #2f3542;
+    z-index: 5;
+    margin-bottom: 15px;
+}
 
 .profile-tabs-container .btn.profile-tab {
     flex: 1;

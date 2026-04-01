@@ -266,27 +266,36 @@ function showForgeHelp() {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Кузница';
+    modalTitle.innerHTML = `<i class="fas fa-hammer"></i> Кузница`;
+
     modalBody.innerHTML = `
         <div style="text-align: left;">
             <div class="role-card">
-                <h3>⚒️ Ковка</h3>
+                <h3><i class="fas fa-anvil"></i> Ковка</h3>
                 <p>Поместите <strong>три предмета одинаковой редкости</strong> в слоты и нажмите «Ковать». Вы получите один предмет следующей редкости (например, три обычных → один необычный).</p>
                 <p>После нажатия появится окно выбора класса для нового предмета. Характеристики и тип предмета определяются случайно.</p>
             </div>
             <div class="role-card">
-                <h3>🔥 Расплавка</h3>
+                <h3><i class="fas fa-fire"></i> Расплавка</h3>
                 <p>Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</p>
-                <ul style="list-style: none; padding-left: 0;">
-                   <li><span class="rarity-common">Обычный</span> – 65–85 монет</li>
-                   <li><span class="rarity-uncommon">Необычный</span> – 120–160 монет</li>
-                   <li><span class="rarity-rare">Редкий</span> – 400–600 монет</li>
-                   <li><span class="rarity-epic">Эпический</span> – 1000–1500 монет + шанс 50% на 1 алмаз</li>
-                   <li><span class="rarity-legendary">Легендарный</span> – 2000–3000 монет + 2–5 алмазов</li>
-                </ul>
+                <table class="smelt-table" style="width:100%; border-collapse: collapse; margin-top:10px;">
+                    <thead>
+                        <tr style="background-color:#1a1f2b;">
+                            <th style="padding:8px; text-align:left;">Редкость</th>
+                            <th style="padding:8px; text-align:left;">Награда</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="rarity-common"><td style="padding:8px;"><i class="fas fa-box"></i> Обычный</td><td style="padding:8px;">65–85 монет</td></tr>
+                        <tr class="rarity-uncommon"><td style="padding:8px;"><i class="fas fa-gem"></i> Необычный</td><td style="padding:8px;">120–160 монет</td></tr>
+                        <tr class="rarity-rare"><td style="padding:8px;"><i class="fas fa-star"></i> Редкий</td><td style="padding:8px;">400–600 монет</td></tr>
+                        <tr class="rarity-epic"><td style="padding:8px;"><i class="fas fa-crown"></i> Эпический</td><td style="padding:8px;">1000–1500 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> шанс 50% на 1 алмаз</td></tr>
+                        <tr class="rarity-legendary"><td style="padding:8px;"><i class="fas fa-dragon"></i> Легендарный</td><td style="padding:8px;">2000–3000 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> 2–5 алмазов</td></tr>
+                    </tbody>
+                </table>
             </div>
             <div class="role-card">
-                <h3>📦 Инвентарь кузницы</h3>
+                <h3><i class="fas fa-boxes"></i> Инвентарь кузницы</h3>
                 <p>Внизу отображаются все доступные предметы, которые можно добавить в слоты. Предметы, уже находящиеся в кузнице, здесь не показываются.</p>
                 <p>Чтобы вернуть предмет из слота обратно в инвентарь, кликните на слот и нажмите «Убрать из слота».</p>
             </div>

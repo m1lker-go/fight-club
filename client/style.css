@@ -2344,7 +2344,13 @@ body {
 .tower-floor.active {
     border: 2px solid #00aaff;
     box-sizing: border-box;
+    border-radius: 12px;
 }
+
+.tower-floor.active .floor-number {
+    color: white;
+}
+
 .floor-left {
     width: 50px;
     display: flex;

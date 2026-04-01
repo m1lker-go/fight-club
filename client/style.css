@@ -423,6 +423,12 @@ body {
     overflow-y: auto;
 }
 
+/* Принудительно уменьшаем шрифт наград в кузнице */
+.rewards-list .reward-row,
+.rewards-list .reward-value {
+    font-size: 0.8rem !important;
+}
+
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {
     background-color: #2a303c;

@@ -607,11 +607,11 @@ function showTowerHelp() {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Башня испытаний';
+    modalTitle.innerHTML = `<i class="fas fa-chess-rook"></i> Башня испытаний`;
 
     const towerDescription = `
         <div class="role-card">
-            <h3>🏰 О башне</h3>
+            <h3><i class="fas fa-info-circle"></i> О башне</h3>
             <p>Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.</p>
             <p>Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.</p>
             <p>За победу на этаже вы получаете награду. С каждым этажом враги становятся сильнее, а награда выше.</p>
@@ -655,9 +655,9 @@ function showTowerHelp() {
     mouseDescriptions.forEach(mouse => {
         miceHtml += `
             <div class="role-card">
-                <h3>${mouse.name}</h3>
-                <p><span class="passive">Пассивный: ${mouse.passive.split(' – ')[0]}</span> – ${mouse.passive.split(' – ')[1]}</p>
-                <p><span class="active">Активный: ${mouse.active.split(' – ')[0]}</span> – ${mouse.active.split(' – ')[1]}</p>
+                <h3><i class="fas fa-mouse-pointer"></i> ${mouse.name}</h3>
+                <p><span class="passive"><i class="fas fa-feather-alt"></i> Пассивный:</span> ${mouse.passive}</p>
+                <p><span class="active"><i class="fas fa-bolt"></i> Активный:</span> ${mouse.active}</p>
             </div>
         `;
     });

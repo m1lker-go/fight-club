@@ -238,6 +238,7 @@ function updateSubclasses(className) {
 }
 
 // ==================== ЭКИПИРОВКА ====================
+
 function renderEquip() {
     const content = document.getElementById('content');
     if (!content) return;
@@ -262,13 +263,7 @@ function renderEquip() {
         gloves: 'bracer'
     };
 
-    function getItemIconPath(item) {
-        if (!item) return '';
-        const folder = classFolderMap[item.owner_class];
-        const fileType = typeFileMap[item.type];
-        if (!folder || !fileType) return '';
-        return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
-    }
+    // Удалено локальное определение getItemIconPath, используется глобальное из helpers.js
 
     function renderTopBar(className) {
         const classItems = inventory.filter(item => 
@@ -291,33 +286,32 @@ function renderEquip() {
         };
 
         let html = `
-    <div class="equip-top-bar">
-        <div class="equip-column">
-`;
-slotConfig.left.forEach(slot => {
-    const item = equipped.find(i => i.type === slot.type);
-    const icon = item ? getItemIconPath(item) : slot.icon;
-    const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
-    html += `
-        <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover;">
-            <div class="slot-icon" style="background-image: url('${icon}');"></div>
-        </div>
-    `;
-});
-html += `</div><div class="hero-center"><img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero"></div><div class="equip-column">`;
-slotConfig.right.forEach(slot => {
-    const item = equipped.find(i => i.type === slot.type);
-    const icon = item ? getItemIconPath(item) : slot.icon;
-    const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
-    html += `
-        <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover;">
-            <div class="slot-icon" style="background-image: url('${icon}');"></div>
-        </div>
-    `;
-});
-html += `</div></div>`;
-return html;
-
+            <div class="equip-top-bar">
+                <div class="equip-column">
+        `;
+        slotConfig.left.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover;">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
+        });
+        html += `</div><div class="hero-center"><img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero"></div><div class="equip-column">`;
+        slotConfig.right.forEach(slot => {
+            const item = equipped.find(i => i.type === slot.type);
+            const icon = item ? getItemIconPath(item) : slot.icon;
+            const slotBg = item ? `/assets/slot_${item.rarity}.png` : '/assets/slot.png';
+            html += `
+                <div class="equip-slot" data-slot="${slot.type}" data-item-id="${item ? item.id : ''}" style="background-image: url('${slotBg}'); background-size: cover;">
+                    <div class="slot-icon" style="background-image: url('${icon}');"></div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        return html;
     function renderInventoryList(className) {
         const classItems = inventory.filter(item => 
             item.owner_class === className && 

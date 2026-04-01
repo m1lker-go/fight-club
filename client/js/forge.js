@@ -317,7 +317,6 @@ function showForgeHelp() {
     };
 }
 
-
 async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;

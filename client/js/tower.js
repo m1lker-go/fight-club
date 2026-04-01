@@ -612,9 +612,9 @@ function showTowerHelp() {
     const towerDescription = `
         <div class="role-card">
             <h3><i class="fas fa-info-circle"></i> О башне</h3>
-            <p>Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.</p>
-            <p>Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.</p>
-            <p>За победу на этаже вы получаете награду. С каждым этажом враги становятся сильнее, а награда выше.</p>
+            <div class="skill-desc">Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.</div>
+            <div class="skill-desc" style="margin-top: 5px;">Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.</div>
+            <div class="skill-desc" style="margin-top: 5px;">За победу на этаже вы получаете награду. С каждым этажом враги становятся сильнее, а награда выше.</div>
         </div>
     `;
 
@@ -653,11 +653,22 @@ function showTowerHelp() {
 
     let miceHtml = '';
     mouseDescriptions.forEach(mouse => {
+        // Разделяем название навыка и описание (если есть двоеточие)
+        const passiveParts = mouse.passive.split(' – ');
+        const activeParts = mouse.active.split(' – ');
         miceHtml += `
             <div class="role-card">
                 <h3><i class="fas fa-mouse-pointer"></i> ${mouse.name}</h3>
-                <p><span class="passive"><i class="fas fa-feather-alt"></i> Пассивный:</span> ${mouse.passive}</p>
-                <p><span class="active"><i class="fas fa-bolt"></i> Активный:</span> ${mouse.active}</p>
+                <div class="skill">
+                    <span class="skill-name passive">${passiveParts[0]}</span>
+                    <span class="skill-type">(пассивный)</span>
+                    <div class="skill-desc">${passiveParts[1] || mouse.passive}</div>
+                </div>
+                <div class="skill">
+                    <span class="skill-name active">${activeParts[0]}</span>
+                    <span class="skill-type">(активный)</span>
+                    <div class="skill-desc">${activeParts[1] || mouse.active}</div>
+                </div>
             </div>
         `;
     });

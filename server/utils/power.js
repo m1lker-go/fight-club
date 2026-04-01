@@ -32,7 +32,7 @@ async function updatePlayerPower(client, userId, className) {
 
     // Расчёт базовых + навыки
     let stats = {
-        hp: base.hp + (classData.hp_points || 0) * 2,
+        hp: base.hp + (classData.hp_points || 0) * 5,
         atk: base.atk + (classData.atk_points || 0),
         def: base.def + (classData.def_points || 0),
         agi: base.agi + (classData.dodge_points || 0),

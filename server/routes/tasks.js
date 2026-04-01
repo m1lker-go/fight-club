@@ -223,6 +223,7 @@ router.post('/advent/claim', async (req, res) => {
         const reward = getAdventReward(nextDay, daysInMonth);
         let rewardDescription = '';
         let rewardItem = null;
+        let leveledUp = false;
         
         if (reward.type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward.amount, userId]);
@@ -230,24 +231,23 @@ router.post('/advent/claim', async (req, res) => {
         } else if (reward.type === 'exp') {
             if (!classChoice) throw new Error('Class choice required for exp');
             const classRes = await client.query(
-                'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+                'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
                 [userId, classChoice]
             );
             if (classRes.rows.length === 0) throw new Error('Class not found');
-            let { level, exp } = classRes.rows[0];
+            let { level, exp, skill_points } = classRes.rows[0];
             exp += reward.amount;
             const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
             while (exp >= expNeeded(level)) {
                 exp -= expNeeded(level);
                 level++;
-                await client.query(
-                    'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
-                    [userId, classChoice]
-                );
+                const pointsToAdd = (level <= 14) ? 3 : 5;
+                skill_points += pointsToAdd;
+                leveledUp = true;
             }
             await client.query(
-                'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
-                [level, exp, userId, classChoice]
+                'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
+                [level, exp, skill_points, userId, classChoice]
             );
             rewardDescription = `${reward.amount} опыта для класса ${classChoice}`;
         } else if (reward.type === 'item') {
@@ -287,7 +287,14 @@ router.post('/advent/claim', async (req, res) => {
         );
         
         await client.query('COMMIT');
-        res.json({ success: true, reward: rewardDescription, nextAvailable: nextDay + 1, item: rewardItem, newLastClaimed: nextDay });
+        res.json({ 
+            success: true, 
+            reward: rewardDescription, 
+            nextAvailable: nextDay + 1, 
+            item: rewardItem, 
+            newLastClaimed: nextDay,
+            leveledUp: leveledUp
+        });
         
     } catch (e) {
         await client.query('ROLLBACK');
@@ -503,6 +510,8 @@ router.post('/daily/claim', async (req, res) => {
             throw new Error('Task not completed');
         }
 
+        let leveledUp = false;
+
         if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, userId]);
         } else if (task.reward_type === 'exp') {
@@ -510,24 +519,23 @@ router.post('/daily/claim', async (req, res) => {
                 throw new Error('class_choice required for exp reward');
             }
             const classRes = await client.query(
-                'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+                'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
                 [userId, class_choice]
             );
             if (classRes.rows.length === 0) throw new Error('Class not found');
-            let { level, exp } = classRes.rows[0];
+            let { level, exp, skill_points } = classRes.rows[0];
             exp += task.reward_amount;
             const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
             while (exp >= expNeeded(level)) {
                 exp -= expNeeded(level);
                 level++;
-                await client.query(
-                    'UPDATE user_classes SET skill_points = skill_points + 3 WHERE user_id = $1 AND class = $2',
-                    [userId, class_choice]
-                );
+                const pointsToAdd = (level <= 14) ? 3 : 5;
+                skill_points += pointsToAdd;
+                leveledUp = true;
             }
             await client.query(
-                'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
-                [level, exp, userId, class_choice]
+                'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
+                [level, exp, skill_points, userId, class_choice]
             );
         }
 
@@ -537,7 +545,7 @@ router.post('/daily/claim', async (req, res) => {
         );
 
         await client.query('COMMIT');
-        res.json({ success: true });
+        res.json({ success: true, leveledUp: leveledUp });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

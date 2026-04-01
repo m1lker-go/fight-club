@@ -311,12 +311,19 @@ body {
 .smelt-table tr {
     background-color: #2a303c;
 }
+
 .smelt-table tr:nth-child(even) {
     background-color: #232833;
 }
 .smelt-table td, .smelt-table th {
     border-bottom: 1px solid #1a1f2b;
 }
+
+.smelt-table .rarity-common td:first-child { color: #aaa; }
+.smelt-table .rarity-uncommon td:first-child { color: #2ecc71; }
+.smelt-table .rarity-rare td:first-child { color: #2e86de; }
+.smelt-table .rarity-epic td:first-child { color: #9b59b6; }
+.smelt-table .rarity-legendary td:first-child { color: #f1c40f; }
 
 /* Стили для модального окна с описанием классов */
 .role-card h3 {

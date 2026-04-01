@@ -6,9 +6,19 @@ let selectedSubclass = null;
 
 async function loadTowerStatus() {
     try {
-        const res = await fetch(`${API_BASE}/tower/status?tg_id=${userData.tg_id}`);
+        const res = await fetch(${API_BASE}/tower/status?tg_id=${userData.tg_id});
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
+
+        // Проверяем, что необходимые функции определены
+        if (typeof getClassNameRu !== 'function') {
+            console.warn('getClassNameRu not defined, using fallback');
+            window.getClassNameRu = (cls) => cls === 'warrior' ? 'Воин' : (cls === 'assassin' ? 'Ассасин' : 'Маг');
+        }
+        if (typeof getRoleNameRu !== 'function') {
+            console.warn('getRoleNameRu not defined, using fallback');
+            window.getRoleNameRu = (role) => role;
+        }
 
         renderTower();
 
@@ -170,14 +180,14 @@ function getFloorRewardInfo(floor) {
 
 function renderTower() {
     const className = towerStatus.chosenClass
-        ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
+        ? (typeof getClassNameRu === 'function' ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
         : '—';
     const subclassName = towerStatus.chosenSubclass
-        ? getRoleNameRu(towerStatus.chosenSubclass)
+        ? (typeof getRoleNameRu === 'function' ? getRoleNameRu(towerStatus.chosenSubclass) : towerStatus.chosenSubclass)
         : '—';
 
     const content = document.getElementById('content');
-    content.innerHTML = `
+    content.innerHTML = 
         <div class="tower-container">
             <div class="tower-header">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -196,11 +206,11 @@ function renderTower() {
                         <div class="grid-right">
                             <div class="grid-item">
                                 <span class="header-label">Класс:</span>
-                                <span class="header-value">${className}</span>
+                                <span class="header-value">${escapeHtml(className)}</span>
                             </div>
                             <div class="grid-item">
                                 <span class="header-label">Роль:</span>
-                                <span class="header-value">${subclassName}</span>
+                                <span class="header-value">${escapeHtml(subclassName)}</span>
                             </div>
                         </div>
                     </div>
@@ -209,7 +219,7 @@ function renderTower() {
             </div>
             <div class="tower-floors" id="towerFloors"></div>
         </div>
-    `;
+    ;
 
     document.getElementById('towerHelpBtn').addEventListener('click', showTowerHelp);
 
@@ -225,7 +235,8 @@ function renderTower() {
 
         const floorNumberClass = i === 100 ? 'floor-number small' : 'floor-number';
 
-        let iconSrc;
+        
+let iconSrc;
         if (i === 1) {
             iconSrc = '/assets/tower/floor1.png';
         } else if (i % 2 === 0) {
@@ -238,31 +249,31 @@ function renderTower() {
         let rightHtml;
 
         if (rewardInfo.type === 'coins') {
-            rightHtml = `
+            rightHtml = 
                 <div class="floor-reward coins-reward">
                     <i class="${rewardInfo.icon}" style="color: white;"></i>
                     <span class="reward-amount">${rewardInfo.amount}</span>
                 </div>
-            `;
+            ;
         } else {
-            rightHtml = `
+            rightHtml = 
                 <div class="floor-reward skin-reward">
                     <i class="${rewardInfo.icon}" style="color: white;"></i>
                     <span class="reward-label">${rewardInfo.label}</span>
                 </div>
-            `;
+            ;
         }
 
         const centerContent = i === towerStatus.currentFloor
-            ? `<div class="floor-center start-floor">
+            ? <div class="floor-center start-floor">
                 <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
                 <span class="start-label">СТАРТ</span>
-               </div>`
-            : `<div class="floor-center">
+               </div>
+            : <div class="floor-center">
                 <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
-               </div>`;
+               </div>;
 
-        floorDiv.innerHTML = `
+        floorDiv.innerHTML = 
             <div class="floor-left">
                 <span class="${floorNumberClass}">${i}</span>
                 <span class="floor-text">этаж</span>
@@ -271,7 +282,7 @@ function renderTower() {
             <div class="floor-right">
                 ${rightHtml}
             </div>
-        `;
+        ;
         floorsContainer.appendChild(floorDiv);
     }
 
@@ -291,6 +302,9 @@ function renderTower() {
         });
     });
 }
+
+
+
 
 async function startTowerBattle() {
     if (towerStatus.attemptsLeft <= 0) {

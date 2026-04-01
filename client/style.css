@@ -242,7 +242,15 @@ body {
     gap: 2px;
     width: 100%;
     box-sizing: border-box;
+    flex-shrink: 0;
 }
+
+#profileContent {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* обязательно для корректной работы flex */
+}
+
 .profile-tabs-container .btn.profile-tab {
     flex: 1;
     padding: 10px 0;
@@ -1985,7 +1993,10 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
 }
+
+
 .tasks-header {
     background-color: #1a1f2b;
     color: white;
@@ -1994,7 +2005,18 @@ body {
     text-align: center;
     padding: 10px;
     margin: 0;
+    flex-shrink: 0;
 }
+
+/* Заголовок адвент-календаря (первая карточка) */
+.tasks-container > .task-card:first-child {
+    flex-shrink: 0;
+}
+/* Блок приглашения друга */
+#referralPlaceholder {
+    flex-shrink: 0;
+}
+
 .task-card {
     transition: background-color 0.2s;
     margin: 0;
@@ -2548,7 +2570,16 @@ body {
 /* ========== ДОПОЛНИТЕЛЬНО (ПРОЧЕЕ) ========== */
 #tasksList {
     display: block;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
+
+/* Таймер обратного отсчёта (если виден) */
+#countdownContainer {
+    flex-shrink: 0;
+}
+
 .power {
     display: flex;
     align-items: center;

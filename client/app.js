@@ -199,6 +199,7 @@ async function refreshData() {
                 window.updateShopTabIcon();
             }
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
             if (window.refreshTasksData) window.refreshTasksData();
         }
     } catch (e) {

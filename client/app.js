@@ -52,28 +52,6 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
-function addExpToCurrentClass(expGain) {
-    const classData = getCurrentClassData();
-    if (!classData) return false;
-
-    const oldSkillPoints = classData.skill_points || 0;
-    classData.exp += expGain;
-    const expNeeded = (level) => Math.floor(80 * Math.pow(level, 1.5));
-    let leveledUp = false;
-
-    while (classData.exp >= expNeeded(classData.level)) {
-        classData.exp -= expNeeded(classData.level);
-        classData.level++;
-        let pointsToAdd = 1;
-        if (classData.level <= 14) {
-            pointsToAdd = 3;
-        } else {
-            pointsToAdd = 5;
-        }
-        classData.skill_points = (classData.skill_points || 0) + pointsToAdd;
-        leveledUp = true;
-    }
-
     const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
     currentPower = calculatePower(userData.current_class, stats.final, classData.level);
     updateTopBar();

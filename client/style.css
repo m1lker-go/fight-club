@@ -399,6 +399,27 @@ body {
     overflow-y: auto;
 }
 
+.rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.reward-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.85rem;
+    padding: 4px 0;
+    border-bottom: 1px solid #3a4050;
+}
+.reward-row span:first-child {
+    font-weight: bold;
+}
+.reward-value {
+    color: #ddd;
+    text-align: right;
+}
+
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {
     background-color: #2a303c;

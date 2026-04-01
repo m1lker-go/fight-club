@@ -369,7 +369,7 @@ body {
 .smelt-table .rarity-epic td:first-child { color: #9b59b6; }
 .smelt-table .rarity-legendary td:first-child { color: #f1c40f; }
 
-/* Стили для блоков редкостей (если используется в кузнице) */
+/* Стили для блоков редкостей (в кузнице) */
 .rarity-block {
     margin-bottom: 8px;
     padding: 4px 0;
@@ -414,7 +414,7 @@ body {
     text-align: right;
 }
 
-/* Общий стиль для модального контента – прокрутка при необходимости */
+/* Общий стиль для модального контента – прокрутка при необходимости (дополнить существующее правило) */
 .modal-content {
     max-height: 85vh;
     overflow-y: auto;

@@ -52,17 +52,6 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
-    const stats = calculateClassStats(userData.current_class, classData, inventory, userData.subclass);
-    currentPower = calculatePower(userData.current_class, stats.final, classData.level);
-    updateTopBar();
-
-    if (leveledUp) {
-        window.lastSkillPointsGained = classData.skill_points - oldSkillPoints;
-    }
-
-    return leveledUp;
-}
-
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
     if (splash) {
@@ -137,9 +126,9 @@ async function init() {
 
             hideSplashScreen();
        } else {
-    showToast('Ошибка авторизации', 2000);
-    showErrorSplash();
-}
+            showToast('Ошибка авторизации', 2000);
+            showErrorSplash();
+        }
     } catch (e) {
         clearTimeout(timeoutId);
         clearTimeout(errorTimer);

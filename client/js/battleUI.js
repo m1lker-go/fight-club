@@ -197,14 +197,13 @@ async function showBattleResult(battleData, timeOut = false) {
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
     const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
-    const expGain = battleData.reward?.exp || 0;
+   const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
-
-    const leveledUp = addExpToCurrentClass(expGain);
-    if (leveledUp) {
-        await refreshData();
+    
+       if (battleData.reward?.leveledUp) {
+        await refreshData(); // обновляем данные пользователя
         showLevelUpModal(userData.current_class);
     }
 

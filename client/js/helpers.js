@@ -151,23 +151,23 @@ function showRoleInfoModal(className) {
     let classFeatureHtml = '';
     if (className === 'warrior') {
         classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
+            <div class="role-card">
                 <h3><i class="fas fa-fist-raised"></i> Особенность класса</h3>
-                <p><strong>Стойкость:</strong> за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</p>
+                <div class="skill-desc">Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</div>
             </div>
         `;
     } else if (className === 'assassin') {
         classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
+            <div class="role-card">
                 <h3><i class="fas fa-running"></i> Особенность класса</h3>
-                <p><strong>Стремительность:</strong> за каждые 5 единиц ловкости получает +1 к скорости.</p>
+                <div class="skill-desc">Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.</div>
             </div>
         `;
     } else if (className === 'mage') {
         classFeatureHtml = `
-            <div class="role-card" style="border-left-color: #f39c12;">
+            <div class="role-card">
                 <h3><i class="fas fa-magic"></i> Особенность класса</h3>
-                <p><strong>Магическая мощь:</strong> за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</p>
+                <div class="skill-desc">Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</div>
             </div>
         `;
     }
@@ -185,8 +185,16 @@ function showRoleInfoModal(className) {
             rolesHtml += `
                 <div class="role-card">
                     <h3><i class="fas fa-user-tag"></i> ${desc.name}</h3>
-                    <p><span class="passive"><i class="fas fa-feather-alt"></i> Пассивный:</span> ${desc.passive}</p>
-                    <p><span class="active"><i class="fas fa-bolt"></i> Активный:</span> ${desc.active}</p>
+                    <div class="skill">
+                        <span class="skill-name passive">Пассивный:</span>
+                        <span class="skill-type">(пассивный)</span>
+                        <div class="skill-desc">${desc.passive}</div>
+                    </div>
+                    <div class="skill">
+                        <span class="skill-name active">Активный:</span>
+                        <span class="skill-type">(активный)</span>
+                        <div class="skill-desc">${desc.active}</div>
+                    </div>
                 </div>
             `;
         }

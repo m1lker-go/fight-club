@@ -278,21 +278,28 @@ function showForgeHelp() {
             <div class="role-card">
                 <h3><i class="fas fa-fire"></i> Расплавка</h3>
                 <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</div>
-                <table class="smelt-table" style="width:100%; border-collapse: collapse; margin-top: 8px;">
-                    <thead>
-                        <tr style="background-color:#1a1f2b;">
-                            <th style="padding: 6px; text-align:left;">Редкость</th>
-                            <th style="padding: 6px; text-align:left;">Награда</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="rarity-common"><td style="padding: 6px;"><i class="fas fa-box"></i> Обычный</td><td style="padding: 6px;">65–85 монет</td></tr>
-                        <tr class="rarity-uncommon"><td style="padding: 6px;"><i class="fas fa-gem"></i> Необычный</td><td style="padding: 6px;">120–160 монет</td></tr>
-                        <tr class="rarity-rare"><td style="padding: 6px;"><i class="fas fa-star"></i> Редкий</td><td style="padding: 6px;">400–600 монет</td></tr>
-                        <tr class="rarity-epic"><td style="padding: 6px;"><i class="fas fa-crown"></i> Эпический</td><td style="padding: 6px;">1000–1500 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> шанс 50% на 1 алмаз</td></tr>
-                        <tr class="rarity-legendary"><td style="padding: 6px;"><i class="fas fa-dragon"></i> Легендарный</td><td style="padding: 6px;">2000–3000 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> 2–5 алмазов</td></tr>
-                    </tbody>
-                </table>
+                <div style="margin-top: 10px;">
+                    <div class="rarity-block rarity-common">
+                        <span class="rarity-name">Обычный</span>
+                        <div class="reward-desc">65–85 монет</div>
+                    </div>
+                    <div class="rarity-block rarity-uncommon">
+                        <span class="rarity-name">Необычный</span>
+                        <div class="reward-desc">120–160 монет</div>
+                    </div>
+                    <div class="rarity-block rarity-rare">
+                        <span class="rarity-name">Редкий</span>
+                        <div class="reward-desc">400–600 монет</div>
+                    </div>
+                    <div class="rarity-block rarity-epic">
+                        <span class="rarity-name">Эпический</span>
+                        <div class="reward-desc">1000–1500 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> шанс 50% на 1 алмаз</div>
+                    </div>
+                    <div class="rarity-block rarity-legendary">
+                        <span class="rarity-name">Легендарный</span>
+                        <div class="reward-desc">2000–3000 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> 2–5 алмазов</div>
+                    </div>
+                </div>
             </div>
             <div class="role-card">
                 <h3><i class="fas fa-boxes"></i> Инвентарь кузницы</h3>

@@ -510,4 +510,28 @@ function updateShopTabIcon() {
         })
         .catch(e => console.error('Failed to fetch free chest status for shop tab', e));
 }
+
+
+// ========== ИКОНКИ ПРЕДМЕТОВ ==========
+function getItemIconPath(item) {
+    if (!item) return '';
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
+    const folder = classFolderMap[item.owner_class];
+    const fileType = typeFileMap[item.type];
+    if (!folder || !fileType) return '';
+    return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
+}
+window.getItemIconPath = getItemIconPath;
 window.updateShopTabIcon = updateShopTabIcon;

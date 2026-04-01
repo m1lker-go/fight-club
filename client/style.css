@@ -397,21 +397,23 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
-}
+    
 .reward-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 0.85rem;
+    font-size: 0.8rem;   /* теперь мелкий, как описания */
     padding: 4px 0;
     border-bottom: 1px solid #3a4050;
 }
 .reward-row span:first-child {
     font-weight: bold;
+    font-size: 0.9rem;   /* название редкости остаётся чуть крупнее */
 }
 .reward-value {
     color: #ddd;
     text-align: right;
+    font-size: 0.8rem;
 }
 
 /* Общий стиль для модального контента – прокрутка при необходимости (дополнить существующее правило) */

@@ -308,6 +308,16 @@ body {
     font-weight: bold;
 }
 
+.smelt-table tr {
+    background-color: #2a303c;
+}
+.smelt-table tr:nth-child(even) {
+    background-color: #232833;
+}
+.smelt-table td, .smelt-table th {
+    border-bottom: 1px solid #1a1f2b;
+}
+
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {
     background-color: #2a303c;

@@ -147,31 +147,32 @@ function showRoleInfoModal(className) {
     const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
     modalTitle.innerHTML = `<i class="fas fa-shield-alt" style="color:#00aaff;"></i> Класс ${classNameRu}`;
 
-    // Описание классовой особенности
+    // Особенность класса
     let classFeatureHtml = '';
     if (className === 'warrior') {
         classFeatureHtml = `
             <div class="role-card">
-                <h3><i class="fas fa-fist-raised"></i> Особенность класса</h3>
-                <div class="skill-desc">Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</div>
+                <h3>Особенность класса</h3>
+                <div class="feature-desc">Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</div>
             </div>
         `;
     } else if (className === 'assassin') {
         classFeatureHtml = `
             <div class="role-card">
-                <h3><i class="fas fa-running"></i> Особенность класса</h3>
-                <div class="skill-desc">Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.</div>
+                <h3>Особенность класса</h3>
+                <div class="feature-desc">Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.</div>
             </div>
         `;
     } else if (className === 'mage') {
         classFeatureHtml = `
             <div class="role-card">
-                <h3><i class="fas fa-magic"></i> Особенность класса</h3>
-                <div class="skill-desc">Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</div>
+                <h3>Особенность класса</h3>
+                <div class="feature-desc">Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</div>
             </div>
         `;
     }
 
+    // Роли (подклассы)
     const subclasses = {
         warrior: ['guardian', 'berserker', 'knight'],
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
@@ -184,16 +185,16 @@ function showRoleInfoModal(className) {
         if (desc) {
             rolesHtml += `
                 <div class="role-card">
-                    <h3><i class="fas fa-user-tag"></i> ${desc.name}</h3>
+                    <h3>${desc.name}</h3>
                     <div class="skill">
-                        <span class="skill-name passive">Пассивный:</span>
+                        <span class="skill-name passive">${desc.passive.split(' – ')[0]}</span>
                         <span class="skill-type">(пассивный)</span>
-                        <div class="skill-desc">${desc.passive}</div>
+                        <div class="skill-desc">${desc.passive.split(' – ')[1] || desc.passive}</div>
                     </div>
                     <div class="skill">
-                        <span class="skill-name active">Активный:</span>
+                        <span class="skill-name active">${desc.active.split(' – ')[0]}</span>
                         <span class="skill-type">(активный)</span>
-                        <div class="skill-desc">${desc.active}</div>
+                        <div class="skill-desc">${desc.active.split(' – ')[1] || desc.active}</div>
                     </div>
                 </div>
             `;
@@ -209,6 +210,7 @@ function showRoleInfoModal(className) {
         if (event.target == modal) modal.style.display = 'none';
     };
 }
+
 
 function showChestResult(item) {
     const modal = document.getElementById('chestResultModal');

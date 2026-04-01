@@ -146,13 +146,13 @@ function showRoleInfoModal(className) {
 
     const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
     
-    // Выбор иконки в зависимости от класса
-    let iconClass = '';
-    if (className === 'warrior') iconClass = 'fas fa-shield-alt';
-    else if (className === 'assassin') iconClass = 'fas fa-user-ninja';
-    else if (className === 'mage') iconClass = 'fas fa-magic';
-    
-    modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Класс ${classNameRu}`;
+   // Выбор иконки в зависимости от класса
+let iconClass = '';
+if (className === 'warrior') iconClass = 'fas fa-shield-alt';
+else if (className === 'assassin') iconClass = 'fas fa-dagger';
+else if (className === 'mage') iconClass = 'fas fa-bomb';
+
+modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Класс ${classNameRu}`;
 
     // Особенность класса
     let classFeatureHtml = '';

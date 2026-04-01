@@ -197,12 +197,13 @@ async function showBattleResult(battleData, timeOut = false) {
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
     const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
-   const expGain = battleData.reward?.exp || 0;
+    const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
-    
-       if (battleData.reward?.leveledUp) {
+
+    // Проверяем, повысился ли уровень (сервер уже начислил опыт)
+    if (battleData.reward?.leveledUp) {
         await refreshData(); // обновляем данные пользователя
         showLevelUpModal(userData.current_class);
     }
@@ -303,35 +304,34 @@ async function showBattleResult(battleData, timeOut = false) {
     container.appendChild(header);
 
     // Блок наград (2 колонки, 2 строки)
-const rewardsGrid = document.createElement('div');
-rewardsGrid.className = 'battle-result-stats-grid';
+    const rewardsGrid = document.createElement('div');
+    rewardsGrid.className = 'battle-result-stats-grid';
 
-const addRewardItem = (label, value, iconClass) => {
-    const item = document.createElement('div');
-    item.className = 'reward-item';
-    
-    const icon = document.createElement('i');
-    icon.className = iconClass;
-    
-    const textSpan = document.createElement('span');
-    textSpan.innerHTML = `${label}: ${value}`;
-    
-    item.appendChild(icon);
-    item.appendChild(textSpan);
-    
-    return item;
-};
+    const addRewardItem = (label, value, iconClass) => {
+        const item = document.createElement('div');
+        item.className = 'reward-item';
+        
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        
+        const textSpan = document.createElement('span');
+        textSpan.innerHTML = `${label}: ${value}`;
+        
+        item.appendChild(icon);
+        item.appendChild(textSpan);
+        
+        return item;
+    };
 
-// Порядок: левый верхний, левый нижний, правый верхний, правый нижний
-const items = [
-    addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'),
-    addRewardItem('Монеты', `+${coinGain}`, 'fas fa-coins'),
-    addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
-   addRewardItem('Серия', `${newStreak}`, 'fas fa-shield-alt')
-];
+    const items = [
+        addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'),
+        addRewardItem('Монеты', `+${coinGain}`, 'fas fa-coins'),
+        addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
+        addRewardItem('Серия', `${newStreak}`, 'fas fa-shield-alt')
+    ];
 
-items.forEach(item => rewardsGrid.appendChild(item));
-container.appendChild(rewardsGrid);
+    items.forEach(item => rewardsGrid.appendChild(item));
+    container.appendChild(rewardsGrid);
 
     // Кнопки (сетка 2×2)
     const buttonsGrid = document.createElement('div');
@@ -434,9 +434,4 @@ container.appendChild(rewardsGrid);
     container.appendChild(resultContent);
 
     content.appendChild(container);
-
-    if (leveledUp) {
-        await refreshData();
-        showLevelUpModal(userData.current_class);
-    }
 }

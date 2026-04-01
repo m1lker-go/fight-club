@@ -710,11 +710,16 @@ function handleTowerBattleEnd(battleData) {
         updateTopBar();
     }
 
-    towerStatus.currentFloor = battleData.newFloor;
+       towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
+    // Проверяем, повысился ли уровень
+    if (battleData.leveledUp) {
+        await refreshData();
+        showLevelUpModal(towerStatus.chosenClass || userData.current_class);
+    }
+
     showTowerResultScreen(battleData);
-}
 
 function showTowerHelp() {
     const modal = document.getElementById('roleModal');

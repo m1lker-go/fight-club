@@ -278,13 +278,13 @@ function showForgeHelp() {
             <div class="role-card">
                 <h3><i class="fas fa-fire"></i> Расплавка</h3>
                 <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</div>
-                <div class="rewards-list" style="margin-top: 8px;">
-                    <div class="reward-row"><span class="rarity-common">Обычный</span><span class="reward-value">65–85 монет</span></div>
-                    <div class="reward-row"><span class="rarity-uncommon">Необычный</span><span class="reward-value">120–160 монет</span></div>
-                    <div class="reward-row"><span class="rarity-rare">Редкий</span><span class="reward-value">400–600 монет</span></div>
-                    <div class="reward-row"><span class="rarity-epic">Эпический</span><span class="reward-value">1000–1500 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> шанс 50% на 1 алмаз</span></div>
-                    <div class="reward-row"><span class="rarity-legendary">Легендарный</span><span class="reward-value">2000–3000 монет + <i class="fas fa-gem" style="color:#9b59b6;"></i> 2–5 алмазов</span></div>
-                </div>
+                <ul style="list-style: none; padding-left: 0; margin-top: 8px;">
+                    <li class="rarity-common" style="margin-bottom: 5px;"><span style="font-weight: bold;">Обычный:</span> 65–85 монет</li>
+                    <li class="rarity-uncommon" style="margin-bottom: 5px;"><span style="font-weight: bold;">Необычный:</span> 120–160 монет</li>
+                    <li class="rarity-rare" style="margin-bottom: 5px;"><span style="font-weight: bold;">Редкий:</span> 400–600 монет</li>
+                    <li class="rarity-epic" style="margin-bottom: 5px;"><span style="font-weight: bold;">Эпический:</span> 1000–1500 монет + <i class="fas fa-gem"></i> шанс 50% на 1 алмаз</li>
+                    <li class="rarity-legendary" style="margin-bottom: 5px;"><span style="font-weight: bold;">Легендарный:</span> 2000–3000 монет + <i class="fas fa-gem"></i> шанс 2–5 алмазов</li>
+                </ul>
             </div>
             <div class="role-card">
                 <h3><i class="fas fa-boxes"></i> Инвентарь кузницы</h3>
@@ -301,7 +301,6 @@ function showForgeHelp() {
         if (event.target === modal) modal.style.display = 'none';
     };
 }
-
 function showClassChoiceForCraft(itemIds) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');

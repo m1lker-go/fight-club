@@ -1821,3 +1821,4 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
+}

@@ -1434,7 +1434,7 @@ async function loadRatingData(type) {
             html += '</tr>';
         });
 
-        html += '</tbody>\\</table>';
+        html += '</tbody></table>';
         container.innerHTML = html;
     } catch (e) {
         console.error('Error loading rating:', e);
@@ -1551,7 +1551,7 @@ function renderProfileBonuses(container) {
 
         <table class="stats-table bonuses-table">
             <thead>
-                <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th> </tr>
+                <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th>  </tr>
             </thead>
             <tbody>
                 ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
@@ -1688,13 +1688,13 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-        <tr>
+         <tr>
             <td style="padding: 5px 0;">${escapeHtml(label)}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-        </tr>
+         </tr>
     `;
 }
 
@@ -1866,4 +1866,3 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
-

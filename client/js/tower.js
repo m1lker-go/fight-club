@@ -653,12 +653,11 @@ function showTowerHelp() {
 
     let miceHtml = '';
     mouseDescriptions.forEach(mouse => {
-        // Разделяем название навыка и описание (если есть двоеточие)
         const passiveParts = mouse.passive.split(' – ');
         const activeParts = mouse.active.split(' – ');
         miceHtml += `
             <div class="role-card">
-                <h3><i class="fas fa-mouse-pointer"></i> ${mouse.name}</h3>
+                <h3>${mouse.name}</h3>
                 <div class="skill">
                     <span class="skill-name passive">${passiveParts[0]}</span>
                     <span class="skill-type">(пассивный)</span>

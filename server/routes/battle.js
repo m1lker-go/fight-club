@@ -1026,7 +1026,7 @@ router.post('/start', async (req, res) => {
             userData.username, opponentData.username,
             userData.subclass, opponentData.subclass
         );
-
+       
         let isVictory = battleResult.winner === 'player';
         let newStreak = userData.win_streak || 0;
         let ratingChange = -15;
@@ -1043,15 +1043,15 @@ router.post('/start', async (req, res) => {
         }
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
 
+        // Обновляем ежедневную серию
         let dailyStreakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userData.id]);
         let dailyStreak = dailyStreakRes.rows[0].daily_win_streak || 0;
         if (isVictory) {
             dailyStreak++;
-            await client.query('UPDATE users SET daily_win_streak = $1 WHERE id = $2', [dailyStreak, userData.id]);
         } else {
             dailyStreak = 0;
-            await client.query('UPDATE users SET daily_win_streak = 0 WHERE id = $1', [userData.id]);
         }
+        await client.query('UPDATE users SET daily_win_streak = $1 WHERE id = $2', [dailyStreak, userData.id]);
 
         if (dailyStreak >= 10) {
             const userTasks = await client.query(

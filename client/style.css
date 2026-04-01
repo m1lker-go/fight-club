@@ -320,24 +320,32 @@ body {
 
 /* Стили для модального окна с описанием классов */
 .role-card h3 {
-    font-size: 1.3rem;
-    margin: 0 0 12px 0;
+    font-size: 1.1rem;
+    margin: 0 0 6px 0;
     color: #fff;
-    border-left: 3px solid #00aaff;
-    padding-left: 10px;
+    border-left: none;
+    padding-left: 0;
 }
+
 .role-card {
-    margin-bottom: 20px;
-    padding: 12px;
+    margin-bottom: 10px;           /* уменьшен отступ между блоками */
+    padding: 8px 12px;
     background-color: #2a303c;
     border-radius: 12px;
 }
+
+.feature-desc {
+    font-size: 0.85rem;
+    color: #ddd;
+    line-height: 1.4;
+}
+
 .skill {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 .skill-name {
     font-weight: bold;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 .skill-name.passive {
     color: #2ecc71;
@@ -346,17 +354,20 @@ body {
     color: #e74c3c;
 }
 .skill-type {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #aaa;
     margin-left: 5px;
 }
 .skill-desc {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #ddd;
-    margin-top: 5px;
+    margin-top: 3px;
     line-height: 1.4;
 }
-
+.modal-content {
+    max-height: 85vh;
+    overflow-y: auto;
+}
 
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {

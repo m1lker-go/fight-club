@@ -2648,7 +2648,7 @@ body {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #00aaff;
-    padding: 10px 20px;
+    padding-bottom: 10px;
     margin-bottom: 15px;
 }
 
@@ -2661,7 +2661,7 @@ body {
 }
 
 .modal-body {
-    padding: 0 20px 20px 20px;
+    padding: 15px 20px 20px 20px;
     max-height: 70vh;
     overflow-y: auto;
 }
@@ -2681,7 +2681,7 @@ body {
     color: #00aaff;
     text-decoration: none;
 }
-
+    
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */
 .chest-card,
 .inventory-item,

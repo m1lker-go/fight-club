@@ -464,8 +464,8 @@ function updateTradeButtonIcon() {
                 icon.src = '/assets/icons/icon-new.png';
                 icon.className = 'new-icon';
                 icon.style.position = 'absolute';
-                icon.style.top = '-20px';
-                icon.style.right = '-20px';
+                icon.style.top = '10px';
+                icon.style.right = '10px';
                 icon.style.width = '16px';
                 icon.style.height = '16px';
                 tradeBtn.style.position = 'relative';

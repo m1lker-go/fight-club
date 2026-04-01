@@ -2633,7 +2633,7 @@ body {
 .modal-content {
     background-color: #1a1f2b;
     margin: auto;
-    padding: 0; /* убираем внутренние отступы, чтобы заголовок и тело прилегали плотно */
+    padding: 20px;
     border: 1px solid #00aaff;
     border-radius: 15px;
     width: 90%;
@@ -2641,10 +2641,6 @@ body {
     color: white;
     box-shadow: 0 5px 15px rgba(0, 170, 255, 0.3);
     position: relative;
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh;
-    overflow: hidden; /* скрываем переполнение, прокрутка будет внутри body */
 }
 
 .modal-header {
@@ -2652,11 +2648,8 @@ body {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #00aaff;
-    padding-bottom: 10px;
+    padding: 10px 20px;
     margin-bottom: 15px;
-     padding: 15px 20px 10px 20px;
-    border-bottom: 1px solid #00aaff;
-    flex-shrink: 0; /* не сжимается, всегда виден */
 }
 
 .modal-header h2 {
@@ -2668,8 +2661,8 @@ body {
 }
 
 .modal-body {
-    padding: 15px 20px 20px 20px;
-    flex: 1;
+    padding: 0 20px 20px 20px;
+    max-height: 70vh;
     overflow-y: auto;
 }
 

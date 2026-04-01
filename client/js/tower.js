@@ -1,7 +1,5 @@
 // js/tower.js
 
-const API_BASE = 'https://fight-club-api-4och.onrender.com';
-
 let towerStatus = null;
 let selectedClass = null;
 let selectedSubclass = null;
@@ -12,10 +10,8 @@ async function loadTowerStatus() {
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
 
-        // Всегда рендерим башню
         renderTower();
 
-        // Если класс не выбран – показываем туториал поверх
         if (!towerStatus.chosenClass) {
             showTutorialOverlay();
         }
@@ -215,7 +211,6 @@ function renderTower() {
         </div>
     `;
 
-    // Добавляем обработчик на кнопку помощи
     document.getElementById('towerHelpBtn').addEventListener('click', showTowerHelp);
 
     const floorsContainer = document.getElementById('towerFloors');
@@ -336,7 +331,6 @@ function showTowerBattleScreen(battleData) {
         item.style.opacity = '0.5';
     });
 
-    // Используем выбранный в башне класс, если он есть, иначе текущий
     const playerClassForBattle = towerStatus.chosenClass || userData.current_class;
     const playerSubclassForBattle = towerStatus.chosenSubclass || userData.subclass;
 
@@ -345,7 +339,6 @@ function showTowerBattleScreen(battleData) {
     battleData.playerSubclass = playerSubclassForBattle;
     battleData.enemySubclass = battleData.opponent.subclass;
 
-    // Определяем отображаемые названия для шапки
     const playerDisplayClass = towerStatus.chosenClass
         ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
         : getClassNameRu(userData.current_class);
@@ -353,7 +346,6 @@ function showTowerBattleScreen(battleData) {
         ? getRoleNameRu(towerStatus.chosenSubclass)
         : getRoleNameRu(userData.subclass);
 
-    // Формируем аватар врага (с учётом мышей)
     let enemyAvatarSrc = '';
     if (battleData.opponent.is_mouse && battleData.opponent.avatar_filename) {
         enemyAvatarSrc = `/assets/skin-mouse/${battleData.opponent.avatar_filename}`;
@@ -462,7 +454,6 @@ function showTowerBattleScreen(battleData) {
     }
 }
 
-
 // ===== Функции для экрана результата =====
 
 function computeTowerStats(messages) {
@@ -554,12 +545,10 @@ function showTowerResultScreen(battleData) {
     const resultText = victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
     const resultColor = victory ? '#2ecc71' : '#e74c3c';
     const passedFloor = floor;
-    const expGain = battleData.expGain || 0; // опыт за победу
+    const expGain = battleData.expGain || 0;
 
-    // Подсчёт статистики
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
 
-    // Формируем лог боя
     const logArray = result.messages.map(m => {
         let entryClass = 'log-entry';
         const type = m.type;
@@ -571,21 +560,18 @@ function showTowerResultScreen(battleData) {
         return `<div class="${entryClass}">${BattleLog.formatLogText(m.text)}</div>`;
     }).join('');
 
-    // Создаём контейнер результата
     const content = document.getElementById('content');
     content.innerHTML = '';
 
     const container = document.createElement('div');
     container.className = 'battle-result';
 
-    // Заголовок
     const header = document.createElement('div');
     header.className = 'battle-result-header';
     header.style.color = resultColor;
     header.innerText = resultText;
     container.appendChild(header);
 
-    // Блок наград (сетка 2×2)
     const rewardsGrid = document.createElement('div');
     rewardsGrid.className = 'battle-result-stats-grid';
 
@@ -601,9 +587,7 @@ function showTowerResultScreen(battleData) {
         return item;
     };
 
-    // Всегда добавляем этаж
     rewardsGrid.appendChild(addRewardItem('Этаж', `${passedFloor}`, 'fas fa-chess-rook'));
-    // Если есть награда – показываем её
     if (reward) {
         if (reward.type === 'coins') {
             rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
@@ -629,7 +613,6 @@ function showTowerResultScreen(battleData) {
             avatarItem.appendChild(span);
             rewardsGrid.appendChild(avatarItem);
 
-            // Загружаем имя скина
             fetch(`${API_BASE}/avatars/${reward.avatarId}`)
                 .then(res => res.json())
                 .then(avatar => {
@@ -639,14 +622,12 @@ function showTowerResultScreen(battleData) {
                 .catch(err => console.error(err));
         }
     }
-    // Добавляем опыт (всегда, если победа)
     if (victory) {
         rewardsGrid.appendChild(addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'));
     }
 
     container.appendChild(rewardsGrid);
 
-    // Кнопки (сетка 2×2)
     const buttonsGrid = document.createElement('div');
     buttonsGrid.className = 'battle-result-buttons';
 
@@ -688,21 +669,17 @@ function showTowerResultScreen(battleData) {
         const statsHtml = `
             <table class="stats-battle">
                 <thead>
-                    <tr>
-                        <th>Игрок</th>
-                        <th>Параметр</th>
-                        <th>Соперник</th>
-                    </tr>
+                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
                 </thead>
                 <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                    <td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td>
+                    <td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td>
+                    <td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td>
+                    <td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td>
+                    <td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td>
+                    <td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td>
                 </tbody>
-             </table>
+            </table>
         `;
         resultContent.innerHTML = statsHtml;
     });
@@ -713,7 +690,6 @@ function showTowerResultScreen(battleData) {
     buttonsGrid.appendChild(tabStatsBtn);
     container.appendChild(buttonsGrid);
 
-    // Контейнер для контента (лог/статистика)
     const resultContent = document.createElement('div');
     resultContent.id = 'resultContent';
     resultContent.className = 'battle-result-content';
@@ -723,14 +699,12 @@ function showTowerResultScreen(battleData) {
     content.appendChild(container);
 }
 
-
 function handleTowerBattleEnd(battleData) {
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'auto';
         item.style.opacity = '1';
     });
 
-    // Обновляем монеты, если это была победа и награда — монеты
     if (battleData.victory && battleData.reward && battleData.reward.type === 'coins') {
         userData.coins += battleData.reward.amount;
         updateTopBar();
@@ -740,15 +714,6 @@ function handleTowerBattleEnd(battleData) {
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
     showTowerResultScreen(battleData);
-}
-
-function getRoleNameRu(role) {
-    const roles = {
-        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
-        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
-        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
-    };
-    return roles[role] || role;
 }
 
 function showTowerHelp() {
@@ -819,20 +784,4 @@ function showTowerHelp() {
     window.onclick = (event) => {
         if (event.target === modal) modal.style.display = 'none';
     };
-}
-
-function getRoleNameRu(role) {
-    const roles = {
-        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
-        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
-        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист',
-        // Мыши
-        mouse_necromancer: 'Мышь-некромант',
-        mouse_blade: 'Клинок',
-        mouse_antimag: 'Антимаг',
-        mouse_paladin: 'Паладин',
-        mouse_alchemist: 'Алхимик',
-        mouse_shadow: 'Тень'
-    };
-    return roles[role] || role;
 }

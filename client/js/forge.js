@@ -278,7 +278,7 @@ function showForgeHelp() {
             <div class="role-card">
                 <h3><i class="fas fa-fire"></i> Расплавка</h3>
                 <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</div>
-                <div class="rewards-list">
+                <div class="rewards-list" style="font-size: 0.8rem;">
                     <div class="reward-row rarity-common">
                         <span class="rarity-name">Обычный</span>
                         <span class="reward-value">65–85 монет</span>

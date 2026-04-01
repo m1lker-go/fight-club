@@ -437,8 +437,8 @@ function updateMainMenuNewIcons() {
         icon.src = '/assets/icons/icon-new.png';
         icon.className = 'new-icon';
         icon.style.position = 'absolute';
-        icon.style.top = '-5px';
-        icon.style.right = '-10px';
+        icon.style.top = '-8px';
+        icon.style.right = '-5px';
         icon.style.width = '16px';
         icon.style.height = '16px';
         tasksMenuItem.style.position = 'relative';

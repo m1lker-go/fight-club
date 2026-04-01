@@ -451,7 +451,7 @@ window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 
 // Обновление иконки на круглой кнопке "Торговля" на главном экране
 function updateTradeButtonIcon() {
-    const tradeBtn = document.querySelector('.round-button[data-screen="trade"]');
+    const tradeBtn = document.querySelector('[data-screen="trade"]'); // ищем любой элемент с атрибутом data-screen="trade"
     if (!tradeBtn) return;
 
     fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)

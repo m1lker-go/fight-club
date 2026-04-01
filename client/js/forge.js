@@ -183,15 +183,6 @@ function addToForge(item) {
     });
 }
 
-function getItemIconPath(item) {
-    if (!item) return '';
-    const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
-    const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
-    const folder = classFolderMap[item.owner_class];
-    const fileType = typeFileMap[item.type];
-    if (!folder || !fileType) return '';
-    return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
-}
 
 function buildStatsArray(item) {
     const stats = [];

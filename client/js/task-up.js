@@ -291,10 +291,6 @@ async function refreshTasksData() {
 }
 window.refreshTasksData = refreshTasksData;
 
-// … остальные функции (getRemainingTime, updateCountdownDisplay, startCountdownTimer, stopCountdownTimer,
-// showCoinsModal, showExpModal, showAdventCalendar, renderAdventCalendar, claimAdventDay,
-// showClassChoiceModalForAdvent, claimDailyExp) остаются без изменений …
-
 function getRemainingTime() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -548,9 +544,12 @@ function showClassChoiceModalForAdvent(expAmount) {
                 showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
+                await refreshData(); // обновляем данные перед проверкой уровня
+                if (data.leveledUp) {
+                    showLevelUpModal(classChoice);
+                }
                 setTimeout(() => {
                     showAdventCalendar();
-                    refreshData();
                 }, 500);
             }
         });
@@ -592,16 +591,16 @@ function claimDailyExp(taskId, expAmount) {
                     class_choice: classChoice 
                 })
             });
-                      const data = await res.json();
+            const data = await res.json();
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
-                renderTasks();
                 await refreshData(); // обновляем данные перед проверкой уровня
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
                 }
+                renderTasks();
             }
         });
     });

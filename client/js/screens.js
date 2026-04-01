@@ -1867,5 +1867,3 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         });
 }
 
-// Конец файла – одна закрывающая скобка
-}

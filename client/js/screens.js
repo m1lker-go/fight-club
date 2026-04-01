@@ -238,7 +238,6 @@ function updateSubclasses(className) {
 }
 
 // ==================== ЭКИПИРОВКА ====================
-
 function renderEquip() {
     const content = document.getElementById('content');
     if (!content) return;
@@ -262,8 +261,6 @@ function renderEquip() {
         accessory: 'ring',
         gloves: 'bracer'
     };
-
-    // Удалено локальное определение getItemIconPath, используется глобальное из helpers.js
 
     function renderTopBar(className) {
         const classItems = inventory.filter(item => 
@@ -312,6 +309,8 @@ function renderEquip() {
         });
         html += `</div></div>`;
         return html;
+    }
+
     function renderInventoryList(className) {
         const classItems = inventory.filter(item => 
             item.owner_class === className && 

@@ -278,13 +278,28 @@ function showForgeHelp() {
             <div class="role-card">
                 <h3><i class="fas fa-fire"></i> Расплавка</h3>
                 <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</div>
-                <ul style="list-style: none; padding-left: 0; margin-top: 8px;">
-                    <li class="rarity-common" style="margin-bottom: 5px;"><span style="font-weight: bold;">Обычный:</span> 65–85 монет</li>
-                    <li class="rarity-uncommon" style="margin-bottom: 5px;"><span style="font-weight: bold;">Необычный:</span> 120–160 монет</li>
-                    <li class="rarity-rare" style="margin-bottom: 5px;"><span style="font-weight: bold;">Редкий:</span> 400–600 монет</li>
-                    <li class="rarity-epic" style="margin-bottom: 5px;"><span style="font-weight: bold;">Эпический:</span> 1000–1500 монет + <i class="fas fa-gem"></i> шанс 50% на 1 алмаз</li>
-                    <li class="rarity-legendary" style="margin-bottom: 5px;"><span style="font-weight: bold;">Легендарный:</span> 2000–3000 монет + <i class="fas fa-gem"></i> шанс 2–5 алмазов</li>
-                </ul>
+                <div class="rewards-list">
+                    <div class="reward-row rarity-common">
+                        <span class="rarity-name">Обычный</span>
+                        <span class="reward-value">65–85 монет</span>
+                    </div>
+                    <div class="reward-row rarity-uncommon">
+                        <span class="rarity-name">Необычный</span>
+                        <span class="reward-value">120–160 монет</span>
+                    </div>
+                    <div class="reward-row rarity-rare">
+                        <span class="rarity-name">Редкий</span>
+                        <span class="reward-value">400–600 монет</span>
+                    </div>
+                    <div class="reward-row rarity-epic">
+                        <span class="rarity-name">Эпический</span>
+                        <span class="reward-value">1000–1500 монет + <i class="fas fa-gem"></i> шанс 50% на 1 алмаз</span>
+                    </div>
+                    <div class="reward-row rarity-legendary">
+                        <span class="rarity-name">Легендарный</span>
+                        <span class="reward-value">2000–3000 монет + <i class="fas fa-gem"></i> 2–5 алмазов</span>
+                    </div>
+                </div>
             </div>
             <div class="role-card">
                 <h3><i class="fas fa-boxes"></i> Инвентарь кузницы</h3>
@@ -301,35 +316,7 @@ function showForgeHelp() {
         if (event.target === modal) modal.style.display = 'none';
     };
 }
-function showClassChoiceForCraft(itemIds) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p style="text-align:center;">Для какого класса создать предмет?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
-        </div>
-        <p style="text-align:center; margin-top:15px;"><small>Если не выберете, класс будет случайным</small></p>
-    `;
-    modal.style.display = 'block';
-
-    const classButtons = modalBody.querySelectorAll('.class-choice');
-    classButtons.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const chosenClass = e.target.dataset.class;
-            modal.style.display = 'none';
-            await performCraft(itemIds, chosenClass);
-        });
-    });
-
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-}
 
 async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');

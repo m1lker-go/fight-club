@@ -297,6 +297,17 @@ body {
     pointer-events: none;
 }
 
+/* ========== ОПИСАНИЯ ========== */
+
+.passive {
+    color: #2ecc71;
+    font-weight: bold;
+}
+.active {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {
     background-color: #2a303c;

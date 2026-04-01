@@ -2,6 +2,9 @@
 let forgeItems = [];
 let currentForgeTab = 'forge';
 
+// Функция getItemIconPath и showToast ожидаются глобально из helpers.js и screens.js
+// Порядок подключения скриптов в index.html гарантирует их доступность.
+
 async function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `

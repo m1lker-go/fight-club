@@ -966,7 +966,7 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
             editBtn.className = 'market-action-btn edit-price-btn';
             editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
             editBtn.title = 'Изменить цену';
-            editBtn.addEventListener('click', (e) => {
+            editBtn.addEventListener('click, (e) => {
                 e.stopPropagation();
                 showEditPriceModal(item);
             });
@@ -1366,7 +1366,7 @@ async function loadRatingData(type) {
         html += '</thead><tbody>';
 
         data.forEach((item, index) => {
-            html += '<tr>';
+            html += '</tr>';
             html += `<td style="text-align:center;">${index + 1} `;
             html += `<td>${item.username}</td>`;
 
@@ -1505,7 +1505,7 @@ function renderProfileBonuses(container) {
 
         <table class="stats-table bonuses-table">
     <thead>
-        <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th> </tr>
+         <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th></tr>
     </thead>
     <tbody>
                 ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
@@ -1519,7 +1519,7 @@ function renderProfileBonuses(container) {
                 ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
                 ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
             </tbody>
-         </table>
+          </table>
     `;
 
     container.querySelectorAll('.class-btn').forEach(btn => {
@@ -1640,20 +1640,16 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
     return `
-          <tr>
+           <tr>
             <td style="padding: 5px 0;">${label}</td>
             <td style="text-align:center;">${baseValue}</td>
             <td style="text-align:center;">${gearDisplay}</td>
             <td style="text-align:center;">${classBonusDisplay}</td>
             <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-          </tr>
+           </tr>
     `;
 }
 
-// ==================== СКИНЫ ====================
-
-
-    
 // ==================== СКИНЫ ====================
 function renderSkins(container) {
     Promise.all([
@@ -1820,5 +1816,4 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             console.error('Error loading avatar details:', err);
             showToast('Ошибка загрузки данных аватара', 1500);
         });
-}
 }

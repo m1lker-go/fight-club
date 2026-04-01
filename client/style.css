@@ -318,6 +318,46 @@ body {
     border-bottom: 1px solid #1a1f2b;
 }
 
+/* Стили для модального окна с описанием классов */
+.role-card h3 {
+    font-size: 1.3rem;
+    margin: 0 0 12px 0;
+    color: #fff;
+    border-left: 3px solid #00aaff;
+    padding-left: 10px;
+}
+.role-card {
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: #2a303c;
+    border-radius: 12px;
+}
+.skill {
+    margin-bottom: 12px;
+}
+.skill-name {
+    font-weight: bold;
+    font-size: 1rem;
+}
+.skill-name.passive {
+    color: #2ecc71;
+}
+.skill-name.active {
+    color: #e74c3c;
+}
+.skill-type {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-left: 5px;
+}
+.skill-desc {
+    font-size: 0.9rem;
+    color: #ddd;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
+
 /* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
 .stats-block {
     background-color: #2a303c;

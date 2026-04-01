@@ -325,7 +325,7 @@ async function startTowerBattle() {
     }
 }
 
-function showTowerBattleScreen(battleData) {
+async function showTowerBattleScreen(battleData) {
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';

@@ -1651,6 +1651,10 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 }
 
 // ==================== СКИНЫ ====================
+
+
+    
+// ==================== СКИНЫ ====================
 function renderSkins(container) {
     Promise.all([
         fetch('https://fight-club-api-4och.onrender.com/avatars').then(res => {
@@ -1718,8 +1722,8 @@ function renderSkins(container) {
     });
 }
 
-
-    function showSkinModal(avatarId, avatarFilename, owned) {
+// Единая функция showSkinModal
+function showSkinModal(avatarId, avatarFilename, owned) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -1817,4 +1821,6 @@ function renderSkins(container) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
-    
+
+// Конец файла – одна закрывающая скобка
+}

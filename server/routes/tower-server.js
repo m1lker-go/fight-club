@@ -353,25 +353,27 @@ if (isVictory) {
                 : { type: 'avatar', avatarId: rewardAmount };
         }
 
-        res.json({
-            success: true,
-            opponent: opponent,
-            result: {
-                winner: battleResult.winner,
-                playerHpRemain: battleResult.playerHpRemain,
-                enemyHpRemain: battleResult.enemyHpRemain,
-                playerMaxHp: battleResult.playerMaxHp,
-                enemyMaxHp: battleResult.enemyMaxHp,
-                messages: battleResult.messages,
-                states: battleResult.states
-            },
-            floor: progress.current_floor,
-            newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
-            victory: isVictory,
-            reward: responseReward,
-            attemptsLeft: 10 - newAttemptsToday,
-            expGain: isVictory ? expGain : 0   // добавляем опыт в ответ
-        });
+       res.json({
+    success: true,
+    opponent: opponent,
+    result: {
+        winner: battleResult.winner,
+        playerHpRemain: battleResult.playerHpRemain,
+        enemyHpRemain: battleResult.enemyHpRemain,
+        playerMaxHp: battleResult.playerMaxHp,
+        enemyMaxHp: battleResult.enemyMaxHp,
+        messages: battleResult.messages,
+        states: battleResult.states
+    },
+    floor: progress.current_floor,
+    newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
+    victory: isVictory,
+    reward: responseReward,
+    attemptsLeft: 10 - newAttemptsToday,
+    expGain: isVictory ? expGain : 0,
+    leveledUp: leveledUp,
+    newLevel: newLevel
+});
 
     } catch (e) {
         await client.query('ROLLBACK');

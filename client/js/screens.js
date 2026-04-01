@@ -733,68 +733,67 @@ function renderShop(target = null) {
 // ==================== МАРКЕТ ====================
 async function renderMarket(target = null) {
     const container = target || document.getElementById('tradeContent');
-   container.innerHTML = `
-    <div class="market-page">
-        <div class="market-filters-panel">
-            <div class="filters-row">
-                <div class="filter-group" id="filter-class-group">
-                    <button class="filter-button" id="classFilterBtn">
-                        <span id="classFilterText">Класс</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="filter-panel" id="classPanel" style="display: none;">
-                        <div class="filter-option" data-value="any">Любой класс</div>
-                        <div class="filter-option" data-value="warrior">Воин</div>
-                        <div class="filter-option" data-value="assassin">Ассасин</div>
-                        <div class="filter-option" data-value="mage">Маг</div>
+    container.innerHTML = `
+        <div class="market-page">
+            <div class="market-filters-panel">
+                <div class="filters-row">
+                    <div class="filter-group" id="filter-class-group">
+                        <button class="filter-button" id="classFilterBtn">
+                            <span id="classFilterText">Класс</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-panel" id="classPanel" style="display: none;">
+                            <div class="filter-option" data-value="any">Любой класс</div>
+                            <div class="filter-option" data-value="warrior">Воин</div>
+                            <div class="filter-option" data-value="assassin">Ассасин</div>
+                            <div class="filter-option" data-value="mage">Маг</div>
+                        </div>
+                    </div>
+                    <div class="filter-group" id="filter-rarity-group">
+                        <button class="filter-button" id="rarityFilterBtn">
+                            <span id="rarityFilterText">Редкость</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-panel" id="rarityPanel" style="display: none;">
+                            <div class="filter-option" data-value="any">Любая редкость</div>
+                            <div class="filter-option" data-value="common">Обычное</div>
+                            <div class="filter-option" data-value="uncommon">Необычное</div>
+                            <div class="filter-option" data-value="rare">Редкое</div>
+                            <div class="filter-option" data-value="epic">Эпическое</div>
+                            <div class="filter-option" data-value="legendary">Легендарное</div>
+                        </div>
+                    </div>
+                    <div class="filter-group" id="filter-stat-group">
+                        <button class="filter-button" id="statFilterBtn">
+                            <span id="statFilterText">Характеристика</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-panel" id="statPanel" style="display: none;">
+                            <div class="filter-option" data-value="any">Любая характеристика</div>
+                            <div class="filter-option" data-value="atk_bonus">АТК</div>
+                            <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
+                            <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
+                            <div class="filter-option" data-value="spd_bonus">СКОР</div>
+                            <div class="filter-option" data-value="crit_bonus">КРИТ</div>
+                            <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
+                            <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
+                            <div class="filter-option" data-value="int_bonus">ИНТ</div>
+                            <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
+                            <div class="filter-option" data-value="reflect_bonus">ОТР</div>
+                        </div>
                     </div>
                 </div>
-                <div class="filter-group" id="filter-rarity-group">
-                    <button class="filter-button" id="rarityFilterBtn">
-                        <span id="rarityFilterText">Редкость</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="filter-panel" id="rarityPanel" style="display: none;">
-                        <div class="filter-option" data-value="any">Любая редкость</div>
-                        <div class="filter-option" data-value="common">Обычное</div>
-                        <div class="filter-option" data-value="uncommon">Необычное</div>
-                        <div class="filter-option" data-value="rare">Редкое</div>
-                        <div class="filter-option" data-value="epic">Эпическое</div>
-                        <div class="filter-option" data-value="legendary">Легендарное</div>
-                    </div>
-                </div>
-                <div class="filter-group" id="filter-stat-group">
-                    <button class="filter-button" id="statFilterBtn">
-                        <span id="statFilterText">Характеристика</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="filter-panel" id="statPanel" style="display: none;">
-                        <div class="filter-option" data-value="any">Любая характеристика</div>
-                        <div class="filter-option" data-value="atk_bonus">АТК</div>
-                        <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
-                        <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
-                        <div class="filter-option" data-value="spd_bonus">СКОР</div>
-                        <div class="filter-option" data-value="crit_bonus">КРИТ</div>
-                        <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
-                        <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
-                        <div class="filter-option" data-value="int_bonus">ИНТ</div>
-                        <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
-                        <div class="filter-option" data-value="reflect_bonus">ОТР</div>
-                    </div>
+                <div class="apply-button-container">
+                    <button class="apply-filters-btn" id="applyFiltersBtn">Применить</button>
                 </div>
             </div>
-            <div class="apply-button-container">
-                <button class="apply-filters-btn" id="applyFiltersBtn">Применить</button>
+            <div class="market-items-header">Список снаряжения</div>
+            <div class="market-items-container" id="marketItemsContainer">
+                <div id="marketItemsList" class="market-items-list"></div>
             </div>
         </div>
-        <div class="market-items-header">Список снаряжения</div>
-        <div class="market-items-container" id="marketItemsContainer">
-            <div id="marketItemsList" class="market-items-list"></div>
-        </div>
-    </div>
-`;
+    `;
 
-    // Настройка фильтров (та же логика)
     let currentClass = 'any';
     let currentRarity = 'any';
     let currentStat = 'any';
@@ -867,7 +866,6 @@ async function renderMarket(target = null) {
         loadMarketItems(currentStat, currentClass, currentRarity);
     });
 
-    // Загрузка предметов
     await loadMarketItems(currentStat, currentClass, currentRarity);
 }
 
@@ -910,7 +908,7 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
         return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
     }
 
-    items.forEach(item => {
+    for (const item of items) {
         const stats = [];
         if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
         if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
@@ -966,55 +964,55 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
             editBtn.className = 'market-action-btn edit-price-btn';
             editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
             editBtn.title = 'Изменить цену';
-            editBtn.addEventListener('click, (e) => {
+            editBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 showEditPriceModal(item);
             });
-           // Кнопка снять с продажи (уже есть)
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'market-action-btn remove-from-market-btn';
-        removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-        removeBtn.title = 'Снять с продажи';
-        removeBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            showConfirmModal('Снять этот предмет с продажи?', async () => {
-                const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+            // Кнопка снять с продажи
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'market-action-btn remove-from-market-btn';
+            removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            removeBtn.title = 'Снять с продажи';
+            removeBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                showConfirmModal('Снять этот предмет с продажи?', async () => {
+                    const res = await fetch('https://fight-club-api-4och.onrender.com/market/remove', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast('Предмет снят с продажи', 1500);
+                        await refreshData();
+                        loadMarketItems(statFilter, classFilter, rarityFilter);
+                    } else {
+                        showToast('Ошибка: ' + data.error, 1500);
+                    }
                 });
-                const data = await res.json();
-                if (data.success) {
-                    showToast('Предмет снят с продажи', 1500);
-                    await refreshData();
-                    loadMarketItems(statFilter, classFilter, rarityFilter);
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
             });
-        });
-        actionsDiv.appendChild(removeBtn);
-    } else {
-        // Кнопка просмотра (шириной как две кнопки)
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'market-action-btn view-btn';
-        viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
-        viewBtn.title = 'Просмотр';
-        viewBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showItemDetailsModal(item);
-        });
-        actionsDiv.appendChild(viewBtn);
+            actionsDiv.appendChild(editBtn);
+            actionsDiv.appendChild(removeBtn);
+        } else {
+            // Кнопка просмотра
+            const viewBtn = document.createElement('button');
+            viewBtn.className = 'market-action-btn view-btn';
+            viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            viewBtn.title = 'Просмотр';
+            viewBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showItemDetailsModal(item);
+            });
+            actionsDiv.appendChild(viewBtn);
+        }
+
+        row.appendChild(iconDiv);
+        row.appendChild(infoDiv);
+        row.appendChild(priceDiv);
+        row.appendChild(actionsDiv);
+        marketList.appendChild(row);
     }
-
-    row.appendChild(iconDiv);
-    row.appendChild(infoDiv);
-    row.appendChild(priceDiv);
-    row.appendChild(actionsDiv);
-    marketList.appendChild(row);
-}); // закрываем items.forEach
-
-} // закрываем loadMarketItems
+}
 
 // ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
 

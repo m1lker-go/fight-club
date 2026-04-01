@@ -456,12 +456,12 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             defenderState.freezeStacks = 0;
             type = 'ice_ult';
             break;
-        case 'illusionist':
-            damage = applyIntBonus(defenderStats.atk * 2, defenderStats.int);
+       case 'illusionist':
+            damage = applyIntBonus(defenderStats.atk * 2, attackerStats.int);
             log = ultPhrases.illusionist.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             type = 'damage';
             break;
-
+            
         // Mouse bosses
         case 'mouse_blade':
             damage = attackerStats.atk * 2;

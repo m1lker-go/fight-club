@@ -325,6 +325,29 @@ body {
 .smelt-table .rarity-epic td:first-child { color: #9b59b6; }
 .smelt-table .rarity-legendary td:first-child { color: #f1c40f; }
 
+/* Блоки редкостей в кузнице */
+.rarity-block {
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+.rarity-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: inline-block;
+    width: 90px;
+}
+.rarity-block .reward-desc {
+    font-size: 0.8rem;
+    color: #ddd;
+    margin-left: 95px; /* отступ, чтобы текст был под названием */
+}
+/* Цвета названий редкостей */
+.rarity-common .rarity-name { color: #aaa; }
+.rarity-uncommon .rarity-name { color: #2ecc71; }
+.rarity-rare .rarity-name { color: #2e86de; }
+.rarity-epic .rarity-name { color: #9b59b6; }
+.rarity-legendary .rarity-name { color: #f1c40f; }
+
 /* Стили для модального окна с описанием классов */
 .role-card h3 {
     font-size: 1.1rem;

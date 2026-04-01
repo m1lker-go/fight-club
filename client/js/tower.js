@@ -6,7 +6,7 @@ let selectedSubclass = null;
 
 async function loadTowerStatus() {
     try {
-        const res = await fetch(${API_BASE}/tower/status?tg_id=${userData.tg_id});
+        const res = await fetch(`${API_BASE}/tower/status?tg_id=${userData.tg_id}`);
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
 
@@ -28,138 +28,6 @@ async function loadTowerStatus() {
     } catch (e) {
         console.error('Ошибка загрузки башни:', e);
         showToast('Ошибка загрузки башни', 2000);
-    }
-}
-
-function showTutorialOverlay() {
-    const overlay = document.createElement('div');
-    overlay.id = 'tutorialOverlay';
-    overlay.className = 'tutorial-overlay';
-    overlay.innerHTML = `
-        <div class="tutorial-grid">
-            <div class="tutorial-left">
-                <img src="/assets/tower/cat.png" alt="Кот" class="tutorial-cat">
-            </div>
-            <div class="tutorial-right" id="tutorialDialog">
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-    showIntroStep();
-}
-
-function removeTutorialOverlay() {
-    const overlay = document.getElementById('tutorialOverlay');
-    if (overlay) overlay.remove();
-}
-
-function showIntroStep() {
-    const dialog = document.getElementById('tutorialDialog');
-    dialog.innerHTML = `
-        <div class="dialog-content">
-            <div class="dialog-text">
-                <p>Мяу! Добро пожаловать в Башню Испытаний!</p>
-                <p>Здесь ты встретишь сильнейших врагов, поднимаясь этаж за этажом.</p>
-                <p>Каждый сезон ты можешь выбрать одного героя, за которого будешь проходить башню.</p>
-                <p>Выбранный класс нельзя будет поменять до конца сезона (кроме особых билетов).</p>
-                <p>Готов? Тогда выбери своего чемпиона!</p>
-            </div>
-            <button class="tutorial-btn next-btn" id="nextToClass">Далее</button>
-        </div>
-    `;
-    document.getElementById('nextToClass').addEventListener('click', showClassSelection);
-}
-
-function showClassSelection() {
-    const dialog = document.getElementById('tutorialDialog');
-    dialog.innerHTML = `
-        <div class="dialog-content">
-            <div class="dialog-text">
-                <p>Какой класс героя ты выберешь?</p>
-            </div>
-            <div class="class-buttons">
-                <button class="tutorial-btn class-option" data-class="warrior">Воин</button>
-                <button class="tutorial-btn class-option" data-class="assassin">Ассасин</button>
-                <button class="tutorial-btn class-option" data-class="mage">Маг</button>
-            </div>
-            <button class="tutorial-btn next-btn" id="nextToRole" disabled>Далее</button>
-        </div>
-    `;
-    document.querySelectorAll('.class-option').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.class-option').forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-            selectedClass = e.target.dataset.class;
-            document.getElementById('nextToRole').disabled = false;
-        });
-    });
-    document.getElementById('nextToRole').addEventListener('click', showRoleSelection);
-}
-
-function showRoleSelection() {
-    const dialog = document.getElementById('tutorialDialog');
-    const roles = {
-        warrior: ['guardian', 'berserker', 'knight'],
-        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
-        mage: ['pyromancer', 'cryomancer', 'illusionist']
-    };
-    const roleNames = {
-        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
-        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
-        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
-    };
-    const roleList = roles[selectedClass];
-    dialog.innerHTML = `
-        <div class="dialog-content">
-            <div class="dialog-text">
-                <p>Какую роль ты выберешь?</p>
-            </div>
-            <div class="role-buttons">
-                ${roleList.map(role => `<button class="tutorial-btn role-option" data-role="${role}">${roleNames[role]}</button>`).join('')}
-            </div>
-            <div class="dialog-nav">
-                <button class="tutorial-btn back-btn" id="backToClass">Назад</button>
-                <button class="tutorial-btn confirm-btn" id="confirmRole" disabled>Подтвердить</button>
-            </div>
-        </div>
-    `;
-    document.querySelectorAll('.role-option').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.role-option').forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-            selectedSubclass = e.target.dataset.role;
-            document.getElementById('confirmRole').disabled = false;
-        });
-    });
-    document.getElementById('backToClass').addEventListener('click', showClassSelection);
-    document.getElementById('confirmRole').addEventListener('click', confirmSelection);
-}
-
-async function confirmSelection() {
-    if (!selectedClass || !selectedSubclass) return;
-
-    try {
-        const res = await fetch(`${API_BASE}/tower/select-class`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tg_id: userData.tg_id,
-                class: selectedClass,
-                subclass: selectedSubclass
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            towerStatus.chosenClass = selectedClass;
-            towerStatus.chosenSubclass = selectedSubclass;
-            removeTutorialOverlay();
-            renderTower();
-        } else {
-            showToast('Ошибка при выборе класса: ' + data.error, 2000);
-        }
-    } catch (e) {
-        console.error(e);
-        showToast('Ошибка соединения', 2000);
     }
 }
 
@@ -187,7 +55,7 @@ function renderTower() {
         : '—';
 
     const content = document.getElementById('content');
-    content.innerHTML = 
+    content.innerHTML = `
         <div class="tower-container">
             <div class="tower-header">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -219,7 +87,7 @@ function renderTower() {
             </div>
             <div class="tower-floors" id="towerFloors"></div>
         </div>
-    ;
+    `;
 
     document.getElementById('towerHelpBtn').addEventListener('click', showTowerHelp);
 
@@ -235,8 +103,7 @@ function renderTower() {
 
         const floorNumberClass = i === 100 ? 'floor-number small' : 'floor-number';
 
-        
-let iconSrc;
+        let iconSrc;
         if (i === 1) {
             iconSrc = '/assets/tower/floor1.png';
         } else if (i % 2 === 0) {
@@ -249,31 +116,35 @@ let iconSrc;
         let rightHtml;
 
         if (rewardInfo.type === 'coins') {
-            rightHtml = 
+            rightHtml = `
                 <div class="floor-reward coins-reward">
                     <i class="${rewardInfo.icon}" style="color: white;"></i>
                     <span class="reward-amount">${rewardInfo.amount}</span>
                 </div>
-            ;
+            `;
         } else {
-            rightHtml = 
+            rightHtml = `
                 <div class="floor-reward skin-reward">
                     <i class="${rewardInfo.icon}" style="color: white;"></i>
                     <span class="reward-label">${rewardInfo.label}</span>
                 </div>
-            ;
+            `;
         }
 
         const centerContent = i === towerStatus.currentFloor
-            ? <div class="floor-center start-floor">
-                <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
-                <span class="start-label">СТАРТ</span>
-               </div>
-            : <div class="floor-center">
-                <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
-               </div>;
+            ? `
+                <div class="floor-center start-floor">
+                    <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
+                    <span class="start-label">СТАРТ</span>
+                </div>
+            `
+            : `
+                <div class="floor-center">
+                    <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
+                </div>
+            `;
 
-        floorDiv.innerHTML = 
+        floorDiv.innerHTML = `
             <div class="floor-left">
                 <span class="${floorNumberClass}">${i}</span>
                 <span class="floor-text">этаж</span>
@@ -282,7 +153,7 @@ let iconSrc;
             <div class="floor-right">
                 ${rightHtml}
             </div>
-        ;
+        `;
         floorsContainer.appendChild(floorDiv);
     }
 
@@ -302,9 +173,6 @@ let iconSrc;
         });
     });
 }
-
-
-
 
 async function startTowerBattle() {
     if (towerStatus.attemptsLeft <= 0) {
@@ -354,10 +222,10 @@ async function showTowerBattleScreen(battleData) {
     battleData.enemySubclass = battleData.opponent.subclass;
 
     const playerDisplayClass = towerStatus.chosenClass
-        ? (window.getClassNameRu ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
+        ? (typeof getClassNameRu === 'function' ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
         : getClassNameRu(userData.current_class);
     const playerDisplaySubclass = towerStatus.chosenSubclass
-        ? getRoleNameRu(towerStatus.chosenSubclass)
+        ? (typeof getRoleNameRu === 'function' ? getRoleNameRu(towerStatus.chosenSubclass) : towerStatus.chosenSubclass)
         : getRoleNameRu(userData.subclass);
 
     let enemyAvatarSrc = '';
@@ -468,90 +336,27 @@ async function showTowerBattleScreen(battleData) {
     }
 }
 
-// ===== Функции для экрана результата =====
-
-function computeTowerStats(messages) {
-    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
-
-    messages.forEach(msg => {
-        const text = msg.text;
-        const attacker = msg.attacker;
-        if (!attacker || attacker === 'none') return;
-
-        const targetStats = attacker === 'player' ? playerStats : enemyStats;
-        const opponentStats = attacker === 'player' ? enemyStats : playerStats;
-
-        let match = text.match(/Урон -(\d+)/);
-        if (match) {
-            const dmg = parseInt(match[1]);
-            targetStats.hits++;
-            targetStats.totalDamage += dmg;
-        }
-
-        match = text.match(/Крит\. урон -(\d+)/);
-        if (match) {
-            const dmg = parseInt(match[1]);
-            targetStats.hits++;
-            targetStats.crits++;
-            targetStats.totalDamage += dmg;
-        }
-
-        match = text.match(/Урон от (?:яда|огня) -(\d+)/);
-        if (match) {
-            const dmg = parseInt(match[1]);
-            targetStats.totalDamage += dmg;
-        }
-
-        if (text.toLowerCase().includes('уворот')) {
-            opponentStats.dodges++;
-        }
-
-        match = text.match(/Вампиризм \+(\d+)/);
-        if (match) {
-            const heal = parseInt(match[1]);
-            targetStats.heal += heal;
-        }
-        match = text.match(/Здоровье \+(\d+)/);
-        if (match) {
-            const heal = parseInt(match[1]);
-            targetStats.heal += heal;
-        }
-
-        match = text.match(/Отражение -(\d+)/);
-        if (match) {
-            const reflect = parseInt(match[1]);
-            opponentStats.reflect += reflect;
-        }
+async function handleTowerBattleEnd(battleData) {
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'auto';
+        item.style.opacity = '1';
     });
 
-    return { playerStats, enemyStats };
-}
+    if (battleData.victory && battleData.reward && battleData.reward.type === 'coins') {
+        userData.coins += battleData.reward.amount;
+        updateTopBar();
+    }
 
-function showAvatarModal(avatar) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+    towerStatus.currentFloor = battleData.newFloor;
+    towerStatus.attemptsLeft = battleData.attemptsLeft;
 
-    modalTitle.innerText = avatar.name;
-    modalBody.innerHTML = `
-        <div style="text-align: center;">
-            <img src="/assets/${avatar.filename}" style="max-width: 200px; border-radius: 10px; margin-bottom: 15px;">
-            <button class="tutorial-btn" id="closeAvatarModal" style="width: 100%;">ОКЕЙ</button>
-        </div>
-    `;
+    // Проверяем, повысился ли уровень
+    if (battleData.leveledUp) {
+        await refreshData();
+        showLevelUpModal(towerStatus.chosenClass || userData.current_class);
+    }
 
-    modal.style.display = 'block';
-
-    document.getElementById('closeAvatarModal').addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target === modal) modal.style.display = 'none';
-    };
+    showTowerResultScreen(battleData);
 }
 
 function showTowerResultScreen(battleData) {
@@ -686,12 +491,12 @@ function showTowerResultScreen(battleData) {
                     <th>Игрок</th><th>Параметр</th><th>Соперник</th>
                 </thead>
                 <tbody>
-                    <td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td>
-                    <td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td>
-                    <td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td>
-                    <td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td>
-                    <td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td>
-                    <td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
                 </tbody>
             </table>
         `;
@@ -713,27 +518,89 @@ function showTowerResultScreen(battleData) {
     content.appendChild(container);
 }
 
-function handleTowerBattleEnd(battleData) {
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.style.pointerEvents = 'auto';
-        item.style.opacity = '1';
+function computeTowerStats(messages) {
+    let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+    let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
+
+    messages.forEach(msg => {
+        const text = msg.text;
+        const attacker = msg.attacker;
+        if (!attacker || attacker === 'none') return;
+
+        const targetStats = attacker === 'player' ? playerStats : enemyStats;
+        const opponentStats = attacker === 'player' ? enemyStats : playerStats;
+
+        let match = text.match(/Урон -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.hits++;
+            targetStats.totalDamage += dmg;
+        }
+
+        match = text.match(/Крит\. урон -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.hits++;
+            targetStats.crits++;
+            targetStats.totalDamage += dmg;
+        }
+
+        match = text.match(/Урон от (?:яда|огня) -(\d+)/);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.totalDamage += dmg;
+        }
+
+        if (text.toLowerCase().includes('уворот')) {
+            opponentStats.dodges++;
+        }
+
+        match = text.match(/Вампиризм \+(\d+)/);
+        if (match) {
+            const heal = parseInt(match[1]);
+            targetStats.heal += heal;
+        }
+        match = text.match(/Здоровье \+(\d+)/);
+        if (match) {
+            const heal = parseInt(match[1]);
+            targetStats.heal += heal;
+        }
+
+        match = text.match(/Отражение -(\d+)/);
+        if (match) {
+            const reflect = parseInt(match[1]);
+            opponentStats.reflect += reflect;
+        }
     });
 
-    if (battleData.victory && battleData.reward && battleData.reward.type === 'coins') {
-        userData.coins += battleData.reward.amount;
-        updateTopBar();
-    }
+    return { playerStats, enemyStats };
+}
 
-       towerStatus.currentFloor = battleData.newFloor;
-    towerStatus.attemptsLeft = battleData.attemptsLeft;
+function showAvatarModal(avatar) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
 
-    // Проверяем, повысился ли уровень
-    if (battleData.leveledUp) {
-        await refreshData();
-        showLevelUpModal(towerStatus.chosenClass || userData.current_class);
-    }
+    modalTitle.innerText = avatar.name;
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <img src="/assets/${avatar.filename}" style="max-width: 200px; border-radius: 10px; margin-bottom: 15px;">
+            <button class="tutorial-btn" id="closeAvatarModal" style="width: 100%;">ОКЕЙ</button>
+        </div>
+    `;
 
-    showTowerResultScreen(battleData);
+    modal.style.display = 'block';
+
+    document.getElementById('closeAvatarModal').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
+}
 
 function showTowerHelp() {
     const modal = document.getElementById('roleModal');
@@ -803,4 +670,136 @@ function showTowerHelp() {
     window.onclick = (event) => {
         if (event.target === modal) modal.style.display = 'none';
     };
+}
+
+function showTutorialOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'tutorialOverlay';
+    overlay.className = 'tutorial-overlay';
+    overlay.innerHTML = `
+        <div class="tutorial-grid">
+            <div class="tutorial-left">
+                <img src="/assets/tower/cat.png" alt="Кот" class="tutorial-cat">
+            </div>
+            <div class="tutorial-right" id="tutorialDialog">
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    showIntroStep();
+}
+
+function removeTutorialOverlay() {
+    const overlay = document.getElementById('tutorialOverlay');
+    if (overlay) overlay.remove();
+}
+
+function showIntroStep() {
+    const dialog = document.getElementById('tutorialDialog');
+    dialog.innerHTML = `
+        <div class="dialog-content">
+            <div class="dialog-text">
+                <p>Мяу! Добро пожаловать в Башню Испытаний!</p>
+                <p>Здесь ты встретишь сильнейших врагов, поднимаясь этаж за этажом.</p>
+                <p>Каждый сезон ты можешь выбрать одного героя, за которого будешь проходить башню.</p>
+                <p>Выбранный класс нельзя будет поменять до конца сезона (кроме особых билетов).</p>
+                <p>Готов? Тогда выбери своего чемпиона!</p>
+            </div>
+            <button class="tutorial-btn next-btn" id="nextToClass">Далее</button>
+        </div>
+    `;
+    document.getElementById('nextToClass').addEventListener('click', showClassSelection);
+}
+
+function showClassSelection() {
+    const dialog = document.getElementById('tutorialDialog');
+    dialog.innerHTML = `
+        <div class="dialog-content">
+            <div class="dialog-text">
+                <p>Какой класс героя ты выберешь?</p>
+            </div>
+            <div class="class-buttons">
+                <button class="tutorial-btn class-option" data-class="warrior">Воин</button>
+                <button class="tutorial-btn class-option" data-class="assassin">Ассасин</button>
+                <button class="tutorial-btn class-option" data-class="mage">Маг</button>
+            </div>
+            <button class="tutorial-btn next-btn" id="nextToRole" disabled>Далее</button>
+        </div>
+    `;
+    document.querySelectorAll('.class-option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.class-option').forEach(b => b.classList.remove('selected'));
+            e.target.classList.add('selected');
+            selectedClass = e.target.dataset.class;
+            document.getElementById('nextToRole').disabled = false;
+        });
+    });
+    document.getElementById('nextToRole').addEventListener('click', showRoleSelection);
+}
+
+function showRoleSelection() {
+    const dialog = document.getElementById('tutorialDialog');
+    const roles = {
+        warrior: ['guardian', 'berserker', 'knight'],
+        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+        mage: ['pyromancer', 'cryomancer', 'illusionist']
+    };
+    const roleNames = {
+        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
+        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
+        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
+    };
+    const roleList = roles[selectedClass];
+    dialog.innerHTML = `
+        <div class="dialog-content">
+            <div class="dialog-text">
+                <p>Какую роль ты выберешь?</p>
+            </div>
+            <div class="role-buttons">
+                ${roleList.map(role => `<button class="tutorial-btn role-option" data-role="${role}">${roleNames[role]}</button>`).join('')}
+            </div>
+            <div class="dialog-nav">
+                <button class="tutorial-btn back-btn" id="backToClass">Назад</button>
+                <button class="tutorial-btn confirm-btn" id="confirmRole" disabled>Подтвердить</button>
+            </div>
+        </div>
+    `;
+    document.querySelectorAll('.role-option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.role-option').forEach(b => b.classList.remove('selected'));
+            e.target.classList.add('selected');
+            selectedSubclass = e.target.dataset.role;
+            document.getElementById('confirmRole').disabled = false;
+        });
+    });
+    document.getElementById('backToClass').addEventListener('click', showClassSelection);
+    document.getElementById('confirmRole').addEventListener('click', confirmSelection);
+}
+
+async function confirmSelection() {
+    if (!selectedClass || !selectedSubclass) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/tower/select-class`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tg_id: userData.tg_id,
+                class: selectedClass,
+                subclass: selectedSubclass
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            towerStatus.chosenClass = selectedClass;
+            towerStatus.chosenSubclass = selectedSubclass;
+            removeTutorialOverlay();
+            renderTower();
+        } else {
+            showToast('Ошибка при выборе класса: ' + data.error, 2000);
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('Ошибка соединения', 2000);
+    }
 }

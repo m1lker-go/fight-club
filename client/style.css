@@ -397,18 +397,19 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
     
 .reward-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 0.8rem;   /* теперь мелкий, как описания */
+    font-size: 0.8rem;
     padding: 4px 0;
     border-bottom: 1px solid #3a4050;
 }
 .reward-row span:first-child {
     font-weight: bold;
-    font-size: 0.9rem;   /* название редкости остаётся чуть крупнее */
+    font-size: 0.9rem;
 }
 .reward-value {
     color: #ddd;

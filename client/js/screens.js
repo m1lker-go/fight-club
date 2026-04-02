@@ -1244,6 +1244,90 @@ function showConfirmModal(message, onConfirm, onCancel) {
     };
 }
 
+function showUnequipConfirmModal(item, onConfirm) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Снять предмет?';
+
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
+    const classFolderMap = {
+        warrior: 'tank',
+        assassin: 'assassin',
+        mage: 'mage'
+    };
+    const typeFileMap = {
+        armor: 'armor',
+        boots: 'boots',
+        helmet: 'helmet',
+        weapon: 'weapon',
+        accessory: 'ring',
+        gloves: 'bracer'
+    };
+    const folder = classFolderMap[item.owner_class];
+    const fileType = typeFileMap[item.type];
+    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
+
+    const rarityColors = {
+        common: '#aaa',
+        uncommon: '#2ecc71',
+        rare: '#2e86de',
+        epic: '#9b59b6',
+        legendary: '#f1c40f'
+    };
+    const borderColor = rarityColors[item.rarity] || '#aaa';
+
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #1a1f2b; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor};">
+                <img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">
+            </div>
+            <div style="font-weight: bold; margin-top: 10px; font-size: 18px; color: ${borderColor};">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
+            <div class="rarity-${item.rarity}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div style="color: white; font-size: 14px; margin-bottom: 5px;">Класс: ${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
+            <div style="color: white; font-size: 14px; margin-bottom: 15px;">${stats.join(' • ')}</div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="modal-btn confirm-yes" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Снять</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Отмена</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'block';
+
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+    };
+
+    yesBtn.addEventListener('click', () => {
+        closeModal();
+        if (onConfirm) onConfirm();
+    });
+
+    noBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
+}
+
+
 function showEditPriceModal(item) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');

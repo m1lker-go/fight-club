@@ -334,7 +334,9 @@ function renderItemColumn(item, isEquipped) {
             <div style="text-align: center;">
                 <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 12px;"></div>
                 <div style="margin: 10px 0;">— пусто —</div>
-                <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
+                <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;" data-action="${isEquipped ? 'old' : 'new'}">
+    <i class="fas fa-arrow-up"></i> Надеть
+</button>
             </div>
         `;
     }
@@ -386,7 +388,9 @@ function renderItemColumn(item, isEquipped) {
             <div style="font-weight: bold; margin-top: 5px; color: ${borderColor};">${translateSkinName(item.name)}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="font-size: 12px; color: white;">${stats.join(' • ')}</div>
-            <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
+            <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;" data-action="${isEquipped ? 'old' : 'new'}">
+    <i class="fas fa-arrow-up"></i> Надеть
+</button>
         </div>
     `;
 }

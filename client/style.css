@@ -401,7 +401,7 @@ body {
 .bonuses-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: 11px;      /* шрифт не уменьшаем ниже 11px */
     margin: 0;
     display: table;
     overflow: visible;
@@ -410,7 +410,7 @@ body {
 
 .bonuses-table th,
 .bonuses-table td {
-    padding: 4px 4px;   /* уменьшенные отступы */
+    padding: 4px 4px;     /* минимальные отступы внутри ячеек */
     text-align: center;
     border: none;
 }
@@ -422,7 +422,7 @@ body {
 
 .bonuses-table thead th {
     font-weight: bold;
-    padding: 6px 4px;
+    padding: 6px 4px;     /* чуть больше для заголовков, но всё ещё компактно */
 }
 
 .bonuses-table tbody tr:nth-child(odd) {

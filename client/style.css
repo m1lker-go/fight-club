@@ -298,6 +298,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
    overflow-y: auto; /* скролл всей страницы */
     padding: 0;
     margin: 0;
@@ -401,7 +402,7 @@ body {
 .bonuses-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;      /* шрифт не уменьшаем ниже 11px */
+    font-size: 13px;      /* шрифт не уменьшаем ниже 11px */
     margin: 0;
     display: table;
     overflow: visible;
@@ -410,7 +411,7 @@ body {
 
 .bonuses-table th,
 .bonuses-table td {
-    padding: 4px 4px;     /* минимальные отступы внутри ячеек */
+    padding: 8px 6px;     /* минимальные отступы внутри ячеек */
     text-align: center;
     border: none;
 }
@@ -419,10 +420,16 @@ body {
     background-color: #1a1f2b;
     color: #00aaff;
 }
+/* Первый столбец (название параметра) – выравнивание по левому краю */
+.bonuses-table td:first-child,
+.bonuses-table th:first-child {
+    text-align: left;
+    padding-left: 12px;
+}
 
 .bonuses-table thead th {
     font-weight: bold;
-    padding: 6px 4px;     /* чуть больше для заголовков, но всё ещё компактно */
+    padding: 10px 6px;
 }
 
 .bonuses-table tbody tr:nth-child(odd) {

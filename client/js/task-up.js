@@ -252,16 +252,18 @@ async function loadDailyTasks() {
             });
         });
 
-        const allCompleted = completedTasksCount >= totalTasksCount;
-        if (countdownContainer) {
-            if (allCompleted) {
-                countdownContainer.style.display = 'block';
-                startCountdownTimer();
-            } else {
-                countdownContainer.style.display = 'none';
-                stopCountdownTimer();
-            }
-        }
+       const allCompleted = completedTasksCount >= totalTasksCount;
+if (countdownContainer) {
+    if (allCompleted) {
+        tasksList.style.display = 'none';
+        countdownContainer.style.display = 'block';
+        startCountdownTimer();
+    } else {
+        tasksList.style.display = 'block';
+        countdownContainer.style.display = 'none';
+        stopCountdownTimer();
+    }
+}
 
         // [NEW] Сохраняем данные заданий для проверки наличия неполученных наград
         lastTasksData = tasksData;

@@ -2131,7 +2131,9 @@ body {
     padding: 0;
     overflow: hidden;
     margin: 0 !important;
-     width: 100% !important;
+    width: 100% !important;
+    background-color: #2a303c;
+    min-height: 100%;
 }
 .tasks-header {
     background-color: #1a1f2b;

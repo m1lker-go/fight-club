@@ -295,44 +295,55 @@ body {
     pointer-events: none;
 }
 
-/* Контент профиля – прокручивается только внутри */
+/* ========== ПРОФИЛЬ: УБИРАЕМ ПРОБЛЕМЫ СО СКРОЛЛОМ И ОТСТУПАМИ ========== */
+
+/* Контейнер профиля — убираем прокрутку, переносим на внутренние блоки */
 #profileContent {
     flex: 1;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* скрываем глобальную прокрутку */
     min-height: 0;
 }
 
-/* Кнопки выбора классов в профиле (Бонусы и Улучшить) */
+/* Кнопки классов в профиле (Воин, Ассасин, Маг) — фиксируем, убираем отступ снизу */
 #profileContent .class-selector {
+    position: sticky;
+    top: 0;
     background-color: #2a303c;
-    border-radius: 0;
+    z-index: 5;
+    margin-bottom: 0; /* убираем отступ между кнопками и контентом */
     padding: 2px;
-    gap: 2px;
-    margin: 0;
-    display: flex;
-    overflow: visible; /* убираем скролл */
+    flex-shrink: 0;
 }
 
-#profileContent .class-btn {
-    background-color: #232833;
-    color: #aaa;
+/* Блок статистики (Уровень, Опыт, Очки навыков) — верхние углы прямые, нижние скруглённые */
+.stats-block {
+    border-radius: 0 0 12px 12px;
+    margin-top: 0;
+    overflow: hidden; /* чтобы дочерние элементы не вылезали за скругления */
+}
+
+/* Таблица характеристик на странице "Бонусы" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
+.bonuses-table {
+    display: block;
+    overflow-y: auto;
+    max-height: 55vh; /* регулируйте под свои экраны */
+    border-radius: 0 0 12px 12px;
+}
+
+/* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
+.skills-list {
+    overflow-y: auto;
+    max-height: 55vh;
+    border-radius: 0 0 12px 12px;
+    margin-top: 0;
+}
+
+/* Убираем скругление у заголовка списка навыков (чтобы он был прямым сверху) */
+.skills-header {
     border-radius: 0;
-    padding: 10px 0;
-    margin: 0;
-    font-size: 16px;
-    flex: 1;
-    border: none;
 }
-
-#profileContent .class-btn.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-#profileContent .class-btn:not(.active):hover {
-    background-color: #3a4050;
-}
-
 /* ========== ОПИСАНИЯ (МОДАЛЬНЫЕ ОКНА) ========== */
 
 /* Общие стили для пассивных/активных надписей */

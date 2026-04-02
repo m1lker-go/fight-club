@@ -87,7 +87,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 5px 10px;
+    padding: 10px;
     scrollbar-width: thin;
     scrollbar-color: #00aaff #232833;
     z-index: 1;
@@ -232,7 +232,7 @@ body {
     pointer-events: none;
 }
 
-/* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
+/* ========== ВКЛАДКИ ПРОФИЛЯ (Скины, Бонусы, Улучшить) ========== */
 .profile-tabs-container {
     display: flex;
     background-color: #2a303c;
@@ -293,14 +293,130 @@ body {
     pointer-events: none;
 }
 
+/* ========== СТРАНИЦА ПРОФИЛЯ (КОНТЕЙНЕР) ========== */
+#profileContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+}
 
-/* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
+/* Кнопки выбора классов (Воин, Ассасин, Маг) */
+#profileContent .class-selector {
+    background-color: #2a303c;
+    border-radius: 0;
+    padding: 2px;
+    gap: 2px;
+    margin: 0;
+    display: flex;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+#profileContent .class-btn {
+    background-color: #232833;
+    color: #aaa;
+    border-radius: 0;
+    padding: 10px 0;
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+    flex: 1;
+    border: none;
+}
+
+#profileContent .class-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+#profileContent .class-btn:not(.active):hover {
+    background-color: #3a4050;
+}
+
+/* Блок статистики (Уровень, Опыт, Очки навыков) */
+.stats-block {
+    background-color: #2a303c;
+    border-radius: 0;
+    margin: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid #1a1f2b;
+    background-color: #2a303c;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-weight: bold;
+    color: #fff;
+    font-size: 14px;
+}
+
+.stat-value {
+    font-size: 14px;
+    color: #ddd;
+}
+
+/* Таблица характеристик (страница Бонусы) */
+.bonuses-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background-color: #2a303c;
+}
+
+.bonuses-table th,
+.bonuses-table td {
+    padding: 8px 6px;
+    text-align: center;
+    border: none;
+}
+
+.bonuses-table th:first-child,
+.bonuses-table td:first-child {
+    text-align: left;
+    padding-left: 12px;
+}
+
+.bonuses-table thead tr {
+    background-color: #1a1f2b;
+    color: #00aaff;
+}
+
+.bonuses-table thead th {
+    font-weight: bold;
+    padding: 10px 6px;
+}
+
+.bonuses-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+
+.bonuses-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+
+/* Список навыков (страница Улучшить) */
 .skills-list {
     overflow-y: auto;
-    max-height: calc(100vh - 250px);
+    flex: 1;
+    border-radius: 0;
     margin-top: 0;
-    border-radius: 0 0 12px 12px;
 }
+
 .skills-header {
     background-color: #1a1f2b;
     padding: 12px 16px;
@@ -310,31 +426,38 @@ body {
     text-align: left;
     border-radius: 0;
     margin-bottom: 0;
+    flex-shrink: 0;
 }
+
 .skill-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 5px;
+    padding: 8px 12px;
     background-color: #232833;
     margin: 0;
 }
+
 .skill-item:nth-child(even) {
     background-color: #2a303c;
 }
+
 .skill-info {
     flex: 1;
 }
+
 .skill-name {
     font-weight: bold;
     margin-bottom: 4px;
     font-size: 14px;
 }
+
 .skill-desc {
     font-size: 11px;
     color: #aaa;
     line-height: 1.3;
 }
+
 .skill-value {
     font-size: 16px;
     font-weight: bold;
@@ -342,6 +465,7 @@ body {
     min-width: 45px;
     text-align: center;
 }
+
 .skill-btn {
     background-color: #00aaff;
     color: white;
@@ -356,26 +480,15 @@ body {
     align-items: center;
     justify-content: center;
 }
+
 .skill-btn:disabled {
     background-color: #444;
     cursor: not-allowed;
     opacity: 0.5;
 }
+
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
-}
-
-
-/* Убираем лишние отступы для страницы бонусов */
-#profileContent .stats-block .stat-row {
-    padding: 2px 16px !important;
-}
-#profileContent .bonuses-table th,
-#profileContent .bonuses-table td {
-    padding: 2px 4px !important;
-}
-#profileContent .bonuses-table {
-    font-size: 11px !important;
 }
 
 /* ========== ОПИСАНИЯ (МОДАЛЬНЫЕ ОКНА) ========== */
@@ -3025,76 +3138,4 @@ body {
     min-height: 0;
     display: flex;
     flex-direction: column;
-}
-
-
-/* ========== ФИНАЛЬНЫЕ СТИЛИ ДЛЯ СТРАНИЦЫ "БОНУСЫ" ========== */
-
-/* Чередование фонов строк таблицы */
-.bonuses-table tbody tr:nth-child(odd) {
-    background-color: #232833;
-}
-.bonuses-table tbody tr:nth-child(even) {
-    background-color: #2a303c;
-}
-
-/* Размер шрифта и отступы в таблице */
-.bonuses-table {
-    font-size: 14px;
-    width: 100%;
-    border-collapse: collapse;
-}
-.bonuses-table th,
-.bonuses-table td {
-    padding: 8px 6px;
-    text-align: center;
-    border: none;
-}
-/* Первый столбец – по левому краю с небольшим отступом */
-.bonuses-table td:first-child,
-.bonuses-table th:first-child {
-    text-align: left;
-    padding-left: 12px;
-}
-/* Заголовок таблицы */
-.bonuses-table thead tr {
-    background-color: #1a1f2b;
-    color: #00aaff;
-}
-.bonuses-table thead th {
-    font-weight: bold;
-    padding: 10px 6px;
-}
-
-/* Блок статистики (уровень, опыт, очки) – нормальный размер */
-.stat-row {
-    padding: 8px 16px;
-}
-.stat-label {
-    font-size: 14px;
-    font-weight: bold;
-    color: white;
-}
-.stat-value {
-    font-size: 14px;
-    font-weight: normal;
-    color: #ddd;
-}
-
-/* Убираем ненужные скроллы и ограничения */
-.bonuses-table {
-    display: table;
-    overflow: visible;
-    max-height: none;
-}
-#profileContent {
-    overflow-y: auto;
-    height: auto;
-}
-
-.stat-row {
-    background-color: #2a303c;
-}
-.stat-row:nth-child(even) {
-    background-color: #2a303c;
 }

@@ -945,24 +945,27 @@ body {
 
 /* ========== ЭКИПИРОВКА: КНОПКИ КЛАССОВ И ФОН ========== */
 .equip-container .class-selector {
-    background-color: #2f3542;
+    background-color: #2f3542;   /* тёмный фон для видимых отступов */
     border-radius: 12px 12px 0 0;
-    padding: 2px;
-    gap: 0;
+    padding: 2px;                /* создаёт отступы 2px между кнопками */
+    gap: 2px;
     margin-bottom: 0;
+    display: flex;
 }
 
 .equip-container .class-btn {
-    background-color: #232833 !important; /* тёмный, как строки таблицы */
+    background-color: #232833 !important;
     color: #aaa;
     border-radius: 0 !important;
     margin: 0;
     padding: 10px 0;
+    flex: 1;
 }
 
 .equip-container .class-btn:first-child {
     border-radius: 10px 0 0 0 !important;
 }
+
 
 .equip-container .class-btn:last-child {
     border-radius: 0 10px 0 0 !important;

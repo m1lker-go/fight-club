@@ -257,7 +257,21 @@ function showChestResult(item) {
             iconPath = `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
         }
     }
-    const iconHtml = iconPath ? `<img src="${iconPath}" alt="item" style="width:80px; height:80px; object-fit: contain;">` : `<div style="font-size: 64px;">📦</div>`;
+
+    const rarityColors = {
+        common: '#aaa',
+        uncommon: '#2ecc71',
+        rare: '#2e86de',
+        epic: '#9b59b6',
+        legendary: '#f1c40f'
+    };
+    const borderColor = rarityColors[item.rarity] || '#aaa';
+
+    const iconHtml = `
+        <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #1a1f2b; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor};">
+            ${iconPath ? `<img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">` : '<div style="font-size: 64px;">📦</div>'}
+        </div>
+    `;
 
     let classDisplay = '';
     if (item.owner_class) {
@@ -269,7 +283,7 @@ function showChestResult(item) {
     body.innerHTML = `
         <div style="text-align: center;">
             <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">${translateSkinName(item.name)}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px; color: ${borderColor};">${translateSkinName(item.name)}</div>
             <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
             <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>

@@ -2209,14 +2209,13 @@ body {
 
 /* ========== ТАЙМЕР (ЗАДАНИЯ) ========== */
 .countdown-container {
-    flex: 1;
     display: flex;
     align-items: flex-start;
     justify-content: center;
     margin: 0;
     padding: 0;
     background-color: #2a303c;
-}
+  }
 .countdown-card {
     background-color: #2a303c;
     padding: 20px;

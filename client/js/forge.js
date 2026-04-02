@@ -317,6 +317,36 @@ function showForgeHelp() {
     };
 }
 
+function showClassChoiceForCraft(itemIds) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Выберите класс';
+    modalBody.innerHTML = `
+        <p style="text-align:center;">Для какого класса создать предмет?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+            <button class="btn class-choice" data-class="warrior">Воин</button>
+            <button class="btn class-choice" data-class="assassin">Ассасин</button>
+            <button class="btn class-choice" data-class="mage">Маг</button>
+        </div>
+        <p style="text-align:center; margin-top:15px;"><small>Если не выберете, класс будет случайным</small></p>
+    `;
+    modal.style.display = 'block';
+
+    const classButtons = modalBody.querySelectorAll('.class-choice');
+    classButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const chosenClass = e.target.dataset.class;
+            modal.style.display = 'none';
+            await performCraft(itemIds, chosenClass);
+        });
+    });
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+
 async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;

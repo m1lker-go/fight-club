@@ -3233,3 +3233,10 @@ body {
     overflow-y: auto;
     height: auto;
 }
+
+.stat-row {
+    background-color: #2a303c;
+}
+.stat-row:nth-child(even) {
+    background-color: #2a303c;
+}

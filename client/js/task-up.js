@@ -255,11 +255,10 @@ async function loadDailyTasks() {
        const allCompleted = completedTasksCount >= totalTasksCount;
 if (countdownContainer) {
     if (allCompleted) {
-        tasksList.style.display = 'none';
+        // Не скрываем список заданий, показываем таймер ниже
         countdownContainer.style.display = 'block';
         startCountdownTimer();
     } else {
-        tasksList.style.display = 'block';
         countdownContainer.style.display = 'none';
         stopCountdownTimer();
     }

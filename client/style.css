@@ -3168,3 +3168,68 @@ body {
     display: flex;
     flex-direction: column;
 }
+
+
+/* ========== ФИНАЛЬНЫЕ СТИЛИ ДЛЯ СТРАНИЦЫ "БОНУСЫ" ========== */
+
+/* Чередование фонов строк таблицы */
+.bonuses-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+.bonuses-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+
+/* Размер шрифта и отступы в таблице */
+.bonuses-table {
+    font-size: 14px;
+    width: 100%;
+    border-collapse: collapse;
+}
+.bonuses-table th,
+.bonuses-table td {
+    padding: 8px 6px;
+    text-align: center;
+    border: none;
+}
+/* Первый столбец – по левому краю с небольшим отступом */
+.bonuses-table td:first-child,
+.bonuses-table th:first-child {
+    text-align: left;
+    padding-left: 12px;
+}
+/* Заголовок таблицы */
+.bonuses-table thead tr {
+    background-color: #1a1f2b;
+    color: #00aaff;
+}
+.bonuses-table thead th {
+    font-weight: bold;
+    padding: 10px 6px;
+}
+
+/* Блок статистики (уровень, опыт, очки) – нормальный размер */
+.stat-row {
+    padding: 8px 16px;
+}
+.stat-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+.stat-value {
+    font-size: 14px;
+    font-weight: normal;
+    color: #ddd;
+}
+
+/* Убираем ненужные скроллы и ограничения */
+.bonuses-table {
+    display: table;
+    overflow: visible;
+    max-height: none;
+}
+#profileContent {
+    overflow-y: auto;
+    height: auto;
+}

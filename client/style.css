@@ -938,6 +938,29 @@ body {
     border-radius: 8px;
     border: 2px solid #00aaff;
 }
+
+/* Кнопки смены класса в экипировке */
+.equip-container .class-selector {
+    background-color: #2f3542;
+    border-radius: 12px 12px 0 0;
+    padding: 2px;
+    gap: 2px;
+}
+.equip-container .class-btn {
+    border-radius: 10px 10px 0 0;
+    background-color: #2f3542;
+}
+.equip-container .class-btn.active {
+    background-color: #00aaff;
+}
+
+/* Область аватара и слотов на светлом фоне */
+.equip-top {
+    background-color: #2a303c;
+    margin: 0;
+    padding: 10px 0;
+}
+
 .inventory-section {
     flex: 1;
     display: flex;
@@ -949,7 +972,7 @@ body {
 .inventory-header {
     background-color: #1a1f2b;
     padding: 12px 16px;
-    border-radius: 12px 12px 0 0;
+    border-radius: 0;
     color: white;
     font-weight: bold;
     font-size: 16px;

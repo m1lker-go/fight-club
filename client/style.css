@@ -2130,8 +2130,8 @@ body {
     height: 100%;
     padding: 0;
     overflow: hidden;
-    margin: -5px -10px; /* компенсируем стандартные отступы .content (5px 10px) */
-    width: calc(100% + 20px);
+    margin: 0 !important;
+     width: 100% !important;
 }
 .tasks-header {
     background-color: #1a1f2b;

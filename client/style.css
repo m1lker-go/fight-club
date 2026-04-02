@@ -941,18 +941,50 @@ body {
 
 /* Кнопки смены класса в экипировке */
 .equip-container .class-selector {
-    background-color: #2f3542;
+    background-color: #2f3542; /* тёмный фон */
     border-radius: 12px 12px 0 0;
     padding: 2px;
-    gap: 2px;
+    gap: 0; /* убираем зазор между кнопками */
+    margin-bottom: 0;
 }
+
+/* Каждая кнопка */
 .equip-container .class-btn {
-    border-radius: 10px 10px 0 0;
-    background-color: #2f3542;
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    background-color: #2f3542; /* тёмный фон */
+    color: #aaa;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    text-align: center;
+    border-radius: 0; /* убираем скругления у всех кнопок */
+    margin: 0;
 }
+
+/* Левая кнопка – скругление только левого верхнего угла */
+.equip-container .class-btn:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+/* Правая кнопка – скругление только правого верхнего угла */
+.equip-container .class-btn:last-child {
+    border-radius: 0 10px 0 0;
+}
+
+/* Активная кнопка */
 .equip-container .class-btn.active {
     background-color: #00aaff;
+    color: white;
 }
+
+/* Неактивные кнопки при наведении */
+.equip-container .class-btn:not(.active):hover {
+    background-color: #3a4050;
+}
+
 
 /* Область аватара и слотов на светлом фоне */
 .equip-top {

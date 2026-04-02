@@ -235,58 +235,56 @@ body {
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
 .profile-tabs-container {
     display: flex;
-    background-color: #2f3542;
-    border-radius: 30px;
-    padding: 4px;
-    margin-bottom: 5px;
+    background-color: #2a303c;   /* светлый фон контейнера */
+    border-radius: 12px 12px 0 0;
+    padding: 2px;
     gap: 2px;
+    margin-bottom: 0;
     width: 100%;
     box-sizing: border-box;
     flex-shrink: 0;
-}
-
-#profileContent {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0; /* обязательно для корректной работы flex */
-}
-/* Фиксация переключателя классов в профиле */
-#profileContent .class-selector {
-    position: sticky;
-    top: 0;
-    background-color: #2f3542;
-    z-index: 5;
-    margin-bottom: 15px;
 }
 
 .profile-tabs-container .btn.profile-tab {
     flex: 1;
     padding: 10px 0;
     border: none;
-    background-color: #2f3542;
+    background-color: #232833;   /* тёмный фон кнопки */
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
     text-align: center;
-    outline: none;
-    border-radius: 25px;
-    position: relative;
+    border-radius: 0;
     margin: 0;
     line-height: 1.2;
     box-sizing: border-box;
 }
+
+/* Левая кнопка – скругление левого верхнего угла */
+.profile-tabs-container .btn.profile-tab:first-child {
+    border-radius: 10px 0 0 0;
+}
+
+/* Правая кнопка – скругление правого верхнего угла */
+.profile-tabs-container .btn.profile-tab:last-child {
+    border-radius: 0 10px 0 0;
+}
+
 .profile-tabs-container .btn.profile-tab.active {
     background-color: #00aaff;
     color: white;
 }
+
 .profile-tabs-container .btn.profile-tab:not(.active):hover {
     background-color: #3a4050;
 }
+
 .profile-tabs-container .btn.profile-tab[data-tab="upgrade"] {
     padding: 10px 0;
 }
+
 .upgrade-tab-icon {
     position: absolute;
     top: 50%;
@@ -295,6 +293,44 @@ body {
     width: 16px;
     height: 16px;
     pointer-events: none;
+}
+
+/* Контент профиля – прокручивается только внутри */
+#profileContent {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* Кнопки выбора классов в профиле (Бонусы и Улучшить) */
+#profileContent .class-selector {
+    background-color: #2a303c;
+    border-radius: 0;
+    padding: 2px;
+    gap: 2px;
+    margin: 0;
+    display: flex;
+    overflow: visible; /* убираем скролл */
+}
+
+#profileContent .class-btn {
+    background-color: #232833;
+    color: #aaa;
+    border-radius: 0;
+    padding: 10px 0;
+    margin: 0;
+    font-size: 16px;
+    flex: 1;
+    border: none;
+}
+
+#profileContent .class-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+#profileContent .class-btn:not(.active):hover {
+    background-color: #3a4050;
 }
 
 /* ========== ОПИСАНИЯ (МОДАЛЬНЫЕ ОКНА) ========== */

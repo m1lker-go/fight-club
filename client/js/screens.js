@@ -1750,7 +1750,7 @@ function renderSkillItem(statName, displayName, description, currentValue, level
         <div class="skill-item">
             <div class="skill-info">
                 <div class="skill-name">${escapeHtml(displayName)}</div>
-                <div class="skill-desc">${escapeHtml(description)}</div>
+                <div class="skill-desc">${description}</div>
             </div>
             <div class="skill-value">${currentValue}</div>
             <button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}>

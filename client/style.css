@@ -91,7 +91,7 @@ body {
     scrollbar-width: thin;
     scrollbar-color: #00aaff #232833;
     z-index: 1;
-    overflow: hidden; /* убираем глобальный скролл, теперь каждый экран управляет своим скроллом */
+    overflow: hidden;
 }
 
 /* ========== НИЖНЕЕ МЕНЮ ========== */
@@ -235,7 +235,7 @@ body {
 /* ========== ВКЛАДКИ ПРОФИЛЯ ========== */
 .profile-tabs-container {
     display: flex;
-    background-color: #2a303c;   /* светлый фон контейнера */
+    background-color: #2a303c;
     border-radius: 12px 12px 0 0;
     padding: 2px;
     gap: 2px;
@@ -249,7 +249,7 @@ body {
     flex: 1;
     padding: 10px 0;
     border: none;
-    background-color: #232833;   /* тёмный фон кнопки */
+    background-color: #232833;
     color: #aaa;
     font-size: 16px;
     font-weight: bold;
@@ -262,12 +262,10 @@ body {
     box-sizing: border-box;
 }
 
-/* Левая кнопка – скругление левого верхнего угла */
 .profile-tabs-container .btn.profile-tab:first-child {
     border-radius: 10px 0 0 0;
 }
 
-/* Правая кнопка – скругление правого верхнего угла */
 .profile-tabs-container .btn.profile-tab:last-child {
     border-radius: 0 10px 0 0;
 }
@@ -296,184 +294,29 @@ body {
 }
 
 /* ========== ПРОФИЛЬ: УБИРАЕМ ПРОБЛЕМЫ СО СКРОЛЛОМ И ОТСТУПАМИ ========== */
-
-/* Контейнер профиля — убираем прокрутку, переносим на внутренние блоки */
 #profileContent {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* скрываем глобальную прокрутку */
+    overflow: hidden;
     min-height: 0;
 }
 
-/* Кнопки классов в профиле (Воин, Ассасин, Маг) — фиксируем, убираем отступ снизу */
 #profileContent .class-selector {
     position: sticky;
     top: 0;
     background-color: #2a303c;
     z-index: 5;
-    margin-bottom: 0; /* убираем отступ между кнопками и контентом */
+    margin-bottom: 0;
     padding: 2px;
     flex-shrink: 0;
 }
 
-
-/* Таблица характеристик на странице "Бонусы" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
-.bonuses-table {
-    display: block;
-    overflow-y: auto;
-    max-height: 55vh; /* регулируйте под свои экраны */
-    border-radius: 0 0 12px 12px;
-}
-
-/* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
-.skills-list {
-    overflow-y: auto;
-    max-height: 55vh;
-    border-radius: 0 0 12px 12px;
-    margin-top: 0;
-}
-
-/* Убираем скругление у заголовка списка навыков (чтобы он был прямым сверху) */
-.skills-header {
-    border-radius: 0;
-}
-/* ========== ОПИСАНИЯ (МОДАЛЬНЫЕ ОКНА) ========== */
-
-/* Общие стили для пассивных/активных надписей */
-.passive {
-    color: #2ecc71;
-    font-weight: bold;
-}
-.active {
-    color: #e74c3c;
-    font-weight: bold;
-}
-
-/* Стили для модальных окон (изоляция от остальных страниц) */
-.modal .role-card {
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    background-color: #2a303c;
-    border-radius: 12px;
-}
-.modal .role-card h3 {
-    font-size: 1.1rem;
-    margin: 0 0 6px 0;
-    color: #fff;
-    border-left: none;
-    padding-left: 0;
-}
-.modal .feature-desc {
-    font-size: 0.85rem;
-    color: #ddd;
-    line-height: 1.4;
-}
-.modal .skill {
-    margin-bottom: 8px;
-}
-.modal .skill-name {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-.modal .skill-name.passive {
-    color: #2ecc71;
-}
-.modal .skill-name.active {
-    color: #e74c3c;
-}
-.modal .skill-type {
-    font-size: 0.7rem;
-    color: #aaa;
-    margin-left: 5px;
-}
-.modal .skill-desc {
-    font-size: 0.8rem;
-    color: #ddd;
-    margin-top: 3px;
-    line-height: 1.4;
-}
-
-/* Стили для таблицы плавки (в кузнице) */
-.smelt-table tr {
-    background-color: #2a303c;
-}
-.smelt-table tr:nth-child(even) {
-    background-color: #232833;
-}
-.smelt-table td, .smelt-table th {
-    border-bottom: 1px solid #1a1f2b;
-}
-.smelt-table .rarity-common td:first-child { color: #aaa; }
-.smelt-table .rarity-uncommon td:first-child { color: #2ecc71; }
-.smelt-table .rarity-rare td:first-child { color: #2e86de; }
-.smelt-table .rarity-epic td:first-child { color: #9b59b6; }
-.smelt-table .rarity-legendary td:first-child { color: #f1c40f; }
-
-/* Стили для блоков редкостей (в кузнице) */
-.rarity-block {
-    margin-bottom: 8px;
-    padding: 4px 0;
-}
-.rarity-name {
-    font-weight: bold;
-    font-size: 0.9rem;
-    display: inline-block;
-    width: 90px;
-}
-.rarity-block .reward-desc {
-    font-size: 0.8rem;
-    color: #ddd;
-    margin-left: 95px; /* отступ, чтобы текст был под названием */
-}
-/* Цвета названий редкостей */
-.rarity-common .rarity-name { color: #aaa; }
-.rarity-uncommon .rarity-name { color: #2ecc71; }
-.rarity-rare .rarity-name { color: #2e86de; }
-.rarity-epic .rarity-name { color: #9b59b6; }
-.rarity-legendary .rarity-name { color: #f1c40f; }
-
-/* Список наград в кузнице (версия без таблицы) */
-.rewards-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-    
-.reward-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 0.8rem;
-    padding: 4px 0;
-    border-bottom: 1px solid #3a4050;
-}
-.reward-row span:first-child {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-.reward-value {
-    color: #ddd;
-    text-align: right;
-    font-size: 0.8rem;
-}
-
-/* Общий стиль для модального контента – прокрутка при необходимости (дополнить существующее правило) */
-.modal-content {
-    max-height: 85vh;
-    overflow-y: auto;
-}
-
-/* Принудительно уменьшаем шрифт наград в кузнице */
-.rewards-list .reward-row,
-.rewards-list .reward-value {
-    font-size: 0.8rem !important;
-}
-
-/* ========== БЛОК СТАТИСТИКИ (УРОВЕНЬ, ОПЫТ, ОЧКИ НАВЫКОВ) ========== */
+/* Блок статистики (Уровень, Опыт, Очки навыков) – верхние углы прямые, нижние скруглённые */
 .stats-block {
     background-color: #2a303c;
-    border-radius: 12px 12px 0 0;
+    border-radius: 0 0 12px 12px;
+    margin-top: 0;
     margin-bottom: 0;
     overflow: hidden;
 }
@@ -527,12 +370,16 @@ body {
     z-index: 1;
 }
 
-/* ========== ТАБЛИЦА ХАРАКТЕРИСТИК ========== */
+/* Таблица характеристик на странице "Бонусы" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
 .bonuses-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 0;
     font-size: 13px;
+    display: block;
+    overflow-y: auto;
+    max-height: 55vh;
+    border-radius: 0 0 12px 12px;
 }
 .bonuses-table thead tr {
     background-color: #1a1f2b;
@@ -556,22 +403,25 @@ body {
     border: none;
 }
 
-/* ========== СТРАНИЦА УЛУЧШЕНИЯ (НАВЫКИ) ========== */
-.skills-header {
-    background-color: #1a1f2b;
-    padding: 12px 16px;
-    border-radius: 12px 12px 0 0;
-    color: #00aaff;
-    font-weight: bold;
-    font-size: 14px;
-    text-align: left;
-    margin-bottom: 0;
-}
+/* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
 .skills-list {
     display: flex;
     flex-direction: column;
     gap: 0;
     margin-top: 0;
+    overflow-y: auto;
+    max-height: 55vh;
+    border-radius: 0 0 12px 12px;
+}
+.skills-header {
+    background-color: #1a1f2b;
+    padding: 12px 16px;
+    border-radius: 0;
+    color: #00aaff;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: left;
+    margin-bottom: 0;
 }
 .skill-item {
     display: flex;
@@ -627,8 +477,127 @@ body {
     opacity: 0.8;
 }
 
-/* ========== ЭКРАН БОЯ ========== */
+/* ========== ОПИСАНИЯ (МОДАЛЬНЫЕ ОКНА) ========== */
+.passive {
+    color: #2ecc71;
+    font-weight: bold;
+}
+.active {
+    color: #e74c3c;
+    font-weight: bold;
+}
+.modal .role-card {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background-color: #2a303c;
+    border-radius: 12px;
+}
+.modal .role-card h3 {
+    font-size: 1.1rem;
+    margin: 0 0 6px 0;
+    color: #fff;
+    border-left: none;
+    padding-left: 0;
+}
+.modal .feature-desc {
+    font-size: 0.85rem;
+    color: #ddd;
+    line-height: 1.4;
+}
+.modal .skill {
+    margin-bottom: 8px;
+}
+.modal .skill-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.modal .skill-name.passive {
+    color: #2ecc71;
+}
+.modal .skill-name.active {
+    color: #e74c3c;
+}
+.modal .skill-type {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-left: 5px;
+}
+.modal .skill-desc {
+    font-size: 0.8rem;
+    color: #ddd;
+    margin-top: 3px;
+    line-height: 1.4;
+}
 
+/* ========== КУЗНИЦА ========== */
+.smelt-table tr {
+    background-color: #2a303c;
+}
+.smelt-table tr:nth-child(even) {
+    background-color: #232833;
+}
+.smelt-table td, .smelt-table th {
+    border-bottom: 1px solid #1a1f2b;
+}
+.smelt-table .rarity-common td:first-child { color: #aaa; }
+.smelt-table .rarity-uncommon td:first-child { color: #2ecc71; }
+.smelt-table .rarity-rare td:first-child { color: #2e86de; }
+.smelt-table .rarity-epic td:first-child { color: #9b59b6; }
+.smelt-table .rarity-legendary td:first-child { color: #f1c40f; }
+
+.rarity-block {
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+.rarity-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: inline-block;
+    width: 90px;
+}
+.rarity-block .reward-desc {
+    font-size: 0.8rem;
+    color: #ddd;
+    margin-left: 95px;
+}
+.rarity-common .rarity-name { color: #aaa; }
+.rarity-uncommon .rarity-name { color: #2ecc71; }
+.rarity-rare .rarity-name { color: #2e86de; }
+.rarity-epic .rarity-name { color: #9b59b6; }
+.rarity-legendary .rarity-name { color: #f1c40f; }
+
+.rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.reward-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8rem;
+    padding: 4px 0;
+    border-bottom: 1px solid #3a4050;
+}
+.reward-row span:first-child {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.reward-value {
+    color: #ddd;
+    text-align: right;
+    font-size: 0.8rem;
+}
+.modal-content {
+    max-height: 85vh;
+    overflow-y: auto;
+}
+.rewards-list .reward-row,
+.rewards-list .reward-value {
+    font-size: 0.8rem !important;
+}
+
+/* ========== ЭКРАН БОЯ ========== */
 .battle-screen {
     display: flex;
     flex-direction: column;
@@ -637,8 +606,6 @@ body {
     background-color: #1a1f2b;
     border: none;
 }
-
-/* Верхняя строка с именами */
 .battle-header {
     display: flex;
     justify-content: space-between;
@@ -661,8 +628,6 @@ body {
     font-size: 11px;
     color: #aaa;
 }
-
-/* Арена с карточками и колонками */
 .battle-arena {
     display: flex;
     align-items: stretch;
@@ -674,19 +639,15 @@ body {
     border: none;
     width: 100%;
 }
-
-/* ========== КАРТОЧКИ ГЕРОЯ И ВРАГА (БОЙ) ========== */
 .hero-card,
 .enemy-card {
-    flex: 0 0 100px;   /* фиксированная ширина, совпадает с барами */
+    flex: 0 0 100px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     text-align: center;
     background-color: transparent;
 }
-
-/* Контейнер аватара */
 .hero-card > div:first-child,
 .enemy-card > div:first-child {
     width: 100px !important;
@@ -696,8 +657,6 @@ body {
     background: none !important;
     box-shadow: none !important;
 }
-
-/* Само изображение */
 .hero-avatar-img,
 .enemy-avatar-img {
     width: 100% !important;
@@ -706,8 +665,6 @@ body {
     border-radius: 0 !important;
     border: none !important;
 }
-
-/* Бары здоровья и маны – уже 100px, оставляем */
 .hp-bar,
 .mana-bar {
     width: 100px;
@@ -726,8 +683,6 @@ body {
     font-weight: bold;
     text-shadow: 0 0 2px black;
 }
-
-/* Колонки дебаффов (слева и справа) */
 .player-debuffs,
 .enemy-debuffs {
     flex: 0 0 45px;
@@ -755,22 +710,12 @@ body {
     object-fit: contain;
     z-index: 5;
 }
-.debuff-slot[data-side="player"] .negative-icon {
-    left: 0;
-}
-.debuff-slot[data-side="enemy"] .negative-icon {
-    right: 0;
-}
+.debuff-slot[data-side="player"] .negative-icon { left: 0; }
+.debuff-slot[data-side="enemy"] .negative-icon { right: 0; }
 .debuff-slot[data-side="player"] .positive-icon,
-.debuff-slot[data-side="player"] .rage-icon {
-    right: 0;
-}
+.debuff-slot[data-side="player"] .rage-icon { right: 0; }
 .debuff-slot[data-side="enemy"] .positive-icon,
-.debuff-slot[data-side="enemy"] .rage-icon {
-    left: 0;
-}
-
-/* Центральная колонка (таймер + скорость) – с отступами сверху/снизу */
+.debuff-slot[data-side="enemy"] .rage-icon { left: 0; }
 .battle-center {
     flex: 0 0 55px;
     display: flex;
@@ -782,8 +727,6 @@ body {
     border-radius: 12px;
     padding: 12px 0;
 }
-
-/* Таймер */
 .battle-timer {
     width: 44px;
     height: 44px;
@@ -800,8 +743,6 @@ body {
     font-weight: bold;
     margin: 0;
 }
-
-/* Кнопка скорости */
 .speed-wrapper {
     display: flex;
     flex-direction: column;
@@ -838,9 +779,6 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
-
-
-/* Контейнер лога */
 .battle-log-container {
     display: flex;
     flex-direction: column;
@@ -917,6 +855,7 @@ body {
 .log-entry.dodge-message {
     color: #2ecc71;
 }
+
 /* ========== СТРАНИЦА ЭКИПИРОВКИ ========== */
 .equip-container {
     display: flex;
@@ -924,14 +863,12 @@ body {
     height: 100%;
     overflow: hidden;
 }
-/* Область аватара и слотов на светлом фоне */
 .equip-top {
     background-color: #2a303c;
     margin: 0;
     padding: 10px 0;
     margin-bottom: 0;
 }
-
 .equip-top-bar {
     display: flex;
     justify-content: center;
@@ -983,17 +920,14 @@ body {
     border-radius: 8px;
     border: 2px solid #00aaff;
 }
-
-/* ========== ЭКИПИРОВКА: КНОПКИ КЛАССОВ И ФОН ========== */
 .equip-container .class-selector {
-    background-color: #2f3542;   /* тёмный фон для видимых отступов */
+    background-color: #2f3542;
     border-radius: 12px 12px 0 0;
-    padding: 2px;                /* создаёт отступы 2px между кнопками */
+    padding: 2px;
     gap: 2px;
     margin-bottom: 0;
     display: flex;
 }
-
 .equip-container .class-btn {
     background-color: #232833 !important;
     color: #aaa;
@@ -1002,16 +936,12 @@ body {
     padding: 10px 0;
     flex: 1;
 }
-
 .equip-container .class-btn:first-child {
     border-radius: 10px 0 0 0 !important;
 }
-
-
 .equip-container .class-btn:last-child {
     border-radius: 0 10px 0 0 !important;
 }
-
 .equip-container .class-btn.active {
     background-color: #00aaff !important;
     color: white;
@@ -1019,10 +949,6 @@ body {
 .equip-container .class-btn:not(.active):hover {
     background-color: #3a4050;
 }
-
-
-
-
 .inventory-section {
     flex: 1;
     display: flex;
@@ -1199,7 +1125,6 @@ body {
     border-radius: 0 0 12px 12px;
     overflow: hidden;
 }
-
 .chest-row {
     display: flex;
     align-items: center;
@@ -1207,39 +1132,32 @@ body {
     gap: 12px;
     border-bottom: 1px solid #2a303c;
     flex: 1;
-    background-color: #232833;   /* светлый фон по умолчанию (для нечётных) */
+    background-color: #232833;
 }
-
 .chest-row:nth-child(odd) {
-    background-color: #232833;   /* светлый для нечётных */
+    background-color: #232833;
 }
-
 .chest-row:nth-child(even) {
-    background-color: #2a303c;   /* тёмный для чётных */
+    background-color: #2a303c;
 }
-
 .chest-row:first-child {
     border-radius: 0;
 }
-
 .chest-row:last-child {
     border-bottom: none;
     border-radius: 0 0 12px 12px;
 }
-
 .chest-icon-col {
     flex: 0 0 60px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-
 .chest-icon-col img {
     width: 50px;
     height: 50px;
     object-fit: contain;
 }
-
 .chest-info-col {
     flex: 2;
     display: flex;
@@ -1247,35 +1165,30 @@ body {
     justify-content: center;
     gap: 4px;
 }
-
 .chest-name {
     font-weight: bold;
     font-size: 16px;
     color: white;
 }
-
 .chest-desc {
     font-size: 11px;
     color: #aaa;
     line-height: 1.3;
 }
-
 .chest-price-col {
     flex: 0 0 100px;
     display: flex;
     justify-content: center;
     align-items: center;
 }
-
-
 .chest-buy-btn {
-    background-color: #1a1f2b;      /* тёмный фон, как заголовок */
-    border: 2px solid #aaa;         /* светло-серая обводка */
-    border-radius: 8px;             /* скруглённые углы */
+    background-color: #1a1f2b;
+    border: 2px solid #aaa;
+    border-radius: 8px;
     padding: 8px 16px;
     font-size: 16px;
     font-weight: bold;
-    color: #aaa;                    /* светлый текст */
+    color: #aaa;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1283,12 +1196,10 @@ body {
     transition: all 0.2s;
     white-space: nowrap;
 }
-
 .chest-buy-btn i {
     color: #aaa;
     font-size: 14px;
 }
-
 .chest-buy-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
@@ -1296,9 +1207,6 @@ body {
 .chest-buy-btn:hover i {
     color: #00aaff;
 }
-
-
-
 
 /* ========== МАРКЕТ ========== */
 .market-page {
@@ -1308,16 +1216,15 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-height: 0; /* критически важно */
+    min-height: 0;
 }
 .market-filters-panel {
-    background-color: #2a303c;  /* светлый фон, как в таблице */
+    background-color: #2a303c;
     padding: 12px;
     border-radius: 0;
     margin: 0;
-    flex-shrink: 0;        /* панель фильтров не сжимается */
+    flex-shrink: 0;
 }
-
 .market-header {
     background-color: #2a303c;
     text-align: center;
@@ -1328,9 +1235,8 @@ body {
     border-radius: 0;
     margin: 0;
 }
-
 .market-items-header {
-    background-color: #1a1f2b;  /* тёмный фон */
+    background-color: #1a1f2b;
     text-align: center;
     font-size: 16px;
     font-weight: bold;
@@ -1340,18 +1246,15 @@ body {
     border-top: 1px solid #2a303c;
     border-bottom: 1px solid #2a303c;
 }
-
 .filters-row {
     display: flex;
     gap: 8px;
     margin-bottom: 16px;
 }
-
 .filter-group {
     flex: 1;
     position: relative;
 }
-
 .filter-button {
     width: 100%;
     padding: 10px 12px;
@@ -1374,7 +1277,6 @@ body {
     color: #aaa;
     font-size: 12px;
 }
-
 .filter-panel {
     position: absolute;
     top: 100%;
@@ -1389,7 +1291,6 @@ body {
     display: none;
     margin-top: 4px;
 }
-
 .filter-option {
     padding: 10px 12px;
     color: white;
@@ -1399,11 +1300,10 @@ body {
 .filter-option:hover {
     background-color: #00aaff;
 }
-
 .apply-button-container {
     display: flex;
     justify-content: center;
-    margin: 16px 0 8px 0;   /* отступ сверху и снизу */
+    margin: 16px 0 8px 0;
 }
 .apply-filters-btn {
     background-color: #1a1f2b;
@@ -1423,7 +1323,6 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
-
 .market-divider {
     height: 20px;
     background-color: #1a1f2b;
@@ -1441,7 +1340,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 .market-item-row {
     display: flex;
     align-items: center;
@@ -1454,7 +1352,6 @@ body {
 .market-item-row:nth-child(even) {
     background-color: #2a303c;
 }
-
 .market-item-icon {
     width: 56px;
     height: 56px;
@@ -1471,7 +1368,6 @@ body {
 .market-item-row.rarity-rare .market-item-icon { border-color: #2e86de; }
 .market-item-row.rarity-epic .market-item-icon { border-color: #9b59b6; }
 .market-item-row.rarity-legendary .market-item-icon { border-color: #f1c40f; }
-
 .item-icon-img {
     width: 46px;
     height: 46px;
@@ -1479,7 +1375,6 @@ body {
     background-repeat: no-repeat;
     background-position: center;
 }
-
 .market-item-info {
     flex: 1;
     min-width: 0;
@@ -1531,7 +1426,7 @@ body {
     font-size: 16px;
 }
 .market-action-btn.view-btn {
-    width: 88px; /* ширина двух кнопок + gap 8px */
+    width: 88px;
 }
 .market-action-btn:hover {
     background-color: #2a2f3a;
@@ -1539,7 +1434,7 @@ body {
     color: #00aaff;
 }
 
-/* Модальные окна */
+/* ========== МОДАЛЬНЫЕ ОКНА (ПРЕДМЕТЫ) ========== */
 .item-modal-content {
     text-align: center;
 }
@@ -1612,7 +1507,6 @@ body {
 .item-modal-btn:hover {
     background-color: #3a4050;
 }
-
 .edit-price-modal {
     text-align: center;
 }
@@ -1656,12 +1550,12 @@ body {
     background-color: #3a4050;
 }
 
-/* ========== ВКЛАДКИ ТОРГОВЛИ (МАГАЗИН / МАРКЕТ) ========== */
+/* ========== ВКЛАДКИ ТОРГОВЛИ ========== */
 .trade-tabs-container {
     background-color: #2a303c;
-    border-radius: 12px 12px 0 0;   /* скруглены только верхние углы */
+    border-radius: 12px 12px 0 0;
     padding: 2px;
-    margin-bottom: 0;                /* убираем отступ снизу */
+    margin-bottom: 0;
     display: flex;
     gap: 2px;
 }
@@ -1675,14 +1569,13 @@ body {
     cursor: pointer;
     color: #aaa;
     transition: background-color 0.2s, color 0.2s;
-    border-radius: 0;               /* по умолчанию без скруглений */
+    border-radius: 0;
 }
-
 .trade-tab:first-child {
-    border-radius: 12px 0 0 0;      /* только верхний левый угол */
+    border-radius: 12px 0 0 0;
 }
 .trade-tab:last-child {
-    border-radius: 0 12px 0 0;      /* только верхний правый угол */
+    border-radius: 0 12px 0 0;
 }
 .trade-tab.active {
     background-color: #00aaff;
@@ -1692,9 +1585,6 @@ body {
     background-color: #2f3542;
     color: #ccc;
 }
-
-
-
 
 /* ========== ФИЛЬТРЫ МАРКЕТА ========== */
 .market-filters-container {
@@ -1810,7 +1700,6 @@ body {
     flex-direction: column;
     height: 100%;
 }
-
 .rating-tabs-container {
     background-color: #2a303c;
     border-radius: 12px 12px 0 0;
@@ -1819,7 +1708,6 @@ body {
     gap: 2px;
     flex-shrink: 0;
 }
-
 .rating-tab {
     flex: 1;
     background-color: #232833;
@@ -1846,7 +1734,6 @@ body {
     background-color: #2f3542;
     color: #ccc;
 }
-
 .rating-content-container {
     flex: 1;
     overflow-y: auto;
@@ -1854,11 +1741,9 @@ body {
     border-radius: 0 0 12px 12px;
     padding: 0;
 }
-
 #ratingContent {
     padding: 0;
 }
-
 #ratingContent .stats-table {
     width: 100%;
     border-collapse: collapse;
@@ -1898,7 +1783,7 @@ body {
     grid-template-columns: repeat(7, 1fr);
     gap: 5px;
     margin: 15px 0;
-    width: 100%;           /* занимает всю ширину */
+    width: 100%;
     padding: 0;
     box-sizing: border-box;
 }
@@ -1973,8 +1858,7 @@ body {
     text-align: center;
 }
 
-
-/* ========== КУЗНИЦА ========== */
+/* ========== КУЗНИЦА (продолжение) ========== */
 .forge-container {
     background-color: #232833;
     border-radius: 12px;
@@ -1985,7 +1869,6 @@ body {
     height: 100%;
     box-sizing: border-box;
 }
-
 .forge-banner {
     width: 100%;
     border-radius: 8px 8px 0 0;
@@ -1998,7 +1881,6 @@ body {
     height: auto;
     display: block;
 }
-
 .forge-tabs {
     display: flex;
     gap: 5px;
@@ -2030,8 +1912,6 @@ body {
     width: 40px;
     flex-shrink: 0;
 }
-
-/* Слоты */
 .forge-slots-grid {
     display: flex;
     justify-content: center;
@@ -2064,8 +1944,6 @@ body {
 .forge-slot[data-rarity="rare"] { border-color: #2e86de; }
 .forge-slot[data-rarity="epic"] { border-color: #9b59b6; }
 .forge-slot[data-rarity="legendary"] { border-color: #f1c40f; }
-
-/* Кнопка действия */
 #forgeActionBtn {
     width: 100%;
     background-color: #2f3542;
@@ -2086,8 +1964,6 @@ body {
     opacity: 0.6;
     cursor: not-allowed;
 }
-
-/* Заголовок "Доступные предметы" */
 .forge-inventory-header {
     background-color: #1a1f2b;
     padding: 8px 0;
@@ -2099,8 +1975,6 @@ body {
     width: 100%;
     flex-shrink: 0;
 }
-
-/* Список предметов – гибкая область, прокрутка при необходимости */
 #forgeInventory {
     flex: 1;
     min-height: 0;
@@ -2120,8 +1994,6 @@ body {
     background: #00aaff;
     border-radius: 3px;
 }
-
-/* Строка предмета – без эффектов наведения */
 #forgeInventory .inventory-item {
     display: flex;
     align-items: center;
@@ -2135,21 +2007,16 @@ body {
 #forgeInventory .inventory-item:nth-child(even) {
     background-color: #2a303c;
 }
-/* Полное отключение любых эффектов при наведении */
 #forgeInventory .inventory-item:hover {
     background-color: inherit !important;
     transform: none !important;
     cursor: default !important;
 }
-
-/* Пустая строка – скрываем содержимое */
 #forgeInventory .inventory-item.empty-row .item-icon,
 #forgeInventory .inventory-item.empty-row .item-content,
 #forgeInventory .inventory-item.empty-row .inv-action-btn {
     display: none;
 }
-
-/* Иконка */
 #forgeInventory .item-icon {
     width: 52px;
     height: 52px;
@@ -2165,8 +2032,6 @@ body {
 #forgeInventory .inventory-item.rarity-rare .item-icon { border-color: #2e86de; }
 #forgeInventory .inventory-item.rarity-epic .item-icon { border-color: #9b59b6; }
 #forgeInventory .inventory-item.rarity-legendary .item-icon { border-color: #f1c40f; }
-
-/* Центральный блок */
 #forgeInventory .item-content {
     flex: 1;
     text-align: left;
@@ -2190,8 +2055,6 @@ body {
 #forgeInventory .item-rarity {
     display: none;
 }
-
-/* Кнопка "Добавить" */
 #forgeInventory .inv-action-btn {
     flex-shrink: 0;
     width: 70px;
@@ -2220,8 +2083,6 @@ body {
     height: 100%;
     overflow: hidden;
 }
-
-
 .tasks-header {
     background-color: #1a1f2b;
     color: white;
@@ -2232,16 +2093,12 @@ body {
     margin: 0;
     flex-shrink: 0;
 }
-
-/* Заголовок адвент-календаря (первая карточка) */
 .tasks-container > .task-card:first-child {
     flex-shrink: 0;
 }
-/* Блок приглашения друга */
 #referralPlaceholder {
     flex-shrink: 0;
 }
-
 .task-card {
     transition: background-color 0.2s;
     margin: 0;
@@ -2291,15 +2148,13 @@ body {
     border-color: #aaa;
     color: #aaa;
 }
-
-/* ========== ТАЙМЕР (ЗАДАНИЯ) ========== */
 .countdown-container {
-    flex: 1;  /* растягиваем на всю оставшуюся высоту */
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: #2a303c;
-    border-radius: 0 0 12px 12px; /* скругление только снизу */
+    border-radius: 0 0 12px 12px;
     margin: 0;
     padding: 0;
 }
@@ -2368,7 +2223,6 @@ body {
     margin: 0;
 }
 
-
 /* ========== БАШНЯ ========== */
 .tower-container {
     display: flex;
@@ -2380,10 +2234,10 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
-    background-color: #1a1f2b;   /* тёмный фон, как заголовок */
+    background-color: #1a1f2b;
     padding: 10px;
-    border-radius: 12px 12px 0 0; /* скругление только сверху */
-    margin-bottom: 0;             /* убираем отступ снизу */
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
     box-shadow: none;
 }
 .header-grid {
@@ -2419,8 +2273,8 @@ body {
     display: flex;
     flex-direction: column-reverse;
     width: 100%;
-    background-color: #232833;    /* светлый фон, как таблица */
-    border-radius: 0 0 12px 12px; /* скругление только снизу */
+    background-color: #232833;
+    border-radius: 0 0 12px 12px;
     margin-top: 0;
 }
 .tower-floor {
@@ -2441,11 +2295,9 @@ body {
     box-sizing: border-box;
     border-radius: 12px;
 }
-
 .tower-floor.active .floor-number {
     color: white;
 }
-
 .floor-left {
     width: 50px;
     display: flex;
@@ -2701,13 +2553,12 @@ body {
 #towerHelpBtn:hover {
     opacity: 0.8;
 }
-
 .battle-timer {
     font-size: 14px;
     font-weight: normal;
 }
 
-/* ========== МОДАЛЬНЫЕ ОКНА ========== */
+/* ========== МОДАЛЬНЫЕ ОКНА (ОСНОВНЫЕ) ========== */
 .modal {
     display: none;
     position: fixed;
@@ -2722,7 +2573,6 @@ body {
     justify-content: center;
     align-items: center;
 }
-
 .modal-content {
     background-color: #1a1f2b;
     margin: auto;
@@ -2735,7 +2585,6 @@ body {
     box-shadow: 0 5px 15px rgba(0, 170, 255, 0.3);
     position: relative;
 }
-
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -2744,7 +2593,6 @@ body {
     padding-bottom: 10px;
     margin-bottom: 15px;
 }
-
 .modal-header h2 {
     margin: 0;
     color: #00aaff;
@@ -2752,13 +2600,11 @@ body {
     width: 100%;
     font-size: 1.3rem;
 }
-
 .modal-body {
     padding: 15px 20px 20px 20px;
     max-height: 70vh;
     overflow-y: auto;
 }
-
 .close {
     color: #aaa;
     font-size: 28px;
@@ -2768,13 +2614,12 @@ body {
     right: 15px;
     top: 15px;
 }
-
 .close:hover,
 .close:focus {
     color: #00aaff;
     text-decoration: none;
 }
-    
+
 /* ========== ЗАТЕМНЕНИЕ ДЛЯ КАРТОЧЕК НА ФОНЕ ========== */
 .chest-card,
 .inventory-item,
@@ -2813,12 +2658,9 @@ body {
     overflow-y: auto;
     min-height: 0;
 }
-
-/* Таймер обратного отсчёта (если виден) */
 #countdownContainer {
     flex-shrink: 0;
 }
-
 .power {
     display: flex;
     align-items: center;
@@ -2851,8 +2693,6 @@ body {
     box-shadow: none !important;
     border: none !important;
 }
-
-/* ========== ТАБЛИЦА СТАТИСТИКИ БОЯ (В РЕЗУЛЬТАТАХ БАШНИ) ========== */
 .battle-result .stats-battle {
     border-collapse: collapse;
     font-size: 14px;
@@ -2950,10 +2790,7 @@ body {
     pointer-events: none;
 }
 
-
 /* ========== АНИМАЦИИ БОЯ ========== */
-
-/* Контейнер для GIF-анимаций (ударов, уклонений и т.д.) */
 .animation-container {
     position: absolute;
     top: 0;
@@ -2969,8 +2806,6 @@ body {
     height: 100%;
     object-fit: cover;
 }
-
-/* Контейнер для всплывающих чисел */
 .floating-numbers-container {
     position: absolute;
     top: 0;
@@ -2980,8 +2815,6 @@ body {
     pointer-events: none;
     z-index: 20;
 }
-
-/* Стиль самого всплывающего числа */
 .floating-number {
     font-family: 'Titillium Web', sans-serif;
     position: absolute;
@@ -3007,8 +2840,6 @@ body {
     vertical-align: middle;
     margin-left: 2px;
 }
-
-/* Ключевые кадры анимации */
 @keyframes floatFade {
     0% {
         opacity: 1;
@@ -3023,8 +2854,6 @@ body {
         transform: translate(-50%, -100%) scale(1);
     }
 }
-/* Конец анимации */
-
 
 /* ========== РЕЗУЛЬТАТ БОЯ ========== */
 .battle-result {
@@ -3034,31 +2863,27 @@ body {
     background-color: #232833;
     overflow: hidden;
 }
-
 .battle-result-header {
     background-color: #1a1f2b;
     text-align: center;
-    font-size: 24px;          /* уменьшили */
+    font-size: 24px;
     font-weight: bold;
     padding: 16px;
     border-radius: 12px 12px 0 0;
     margin: 0;
     flex-shrink: 0;
-    color: white !important;  /* всегда белый */
+    color: white !important;
 }
-
-/* Блок наград – сетка 2×2 */
 .battle-result-stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;   /* две колонки */
-    gap: 16px 24px;                   /* вертикальный и горизонтальный отступы */
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 24px;
     background-color: #2a303c;
-    padding: 16px 20px;               /* увеличили отступы сверху/снизу и по бокам */
+    padding: 16px 20px;
     align-items: center;
-    font-size: 16px;                  /* увеличили шрифт */
+    font-size: 16px;
     flex-shrink: 0;
 }
-
 .reward-item {
     display: flex;
     align-items: center;
@@ -3066,25 +2891,20 @@ body {
     color: #ccc;
     line-height: 1.4;
 }
-
 .reward-item i {
     color: #00aaff;
     width: 24px;
     text-align: center;
     font-size: 18px;
 }
-
 .reward-item span {
     font-weight: normal;
     color: white;
 }
-
 .reward-item span strong {
     font-weight: bold;
-    color: #ffaa00; /* можно оставить жёлтым для цифр, но не обязательно */
+    color: #ffaa00;
 }
-
-/* Контейнер кнопок */
 .battle-result-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3093,7 +2913,6 @@ body {
     gap: 2px;
     flex-shrink: 0;
 }
-
 .result-btn {
     background-color: #232833;
     border: none;
@@ -3106,7 +2925,6 @@ body {
     pointer-events: auto;
     z-index: 2;
 }
-
 .result-btn:first-child {
     border-radius: 12px 0 0 0;
 }
@@ -3119,17 +2937,14 @@ body {
 .result-btn:last-child {
     border-radius: 0 0 12px 0;
 }
-
 .result-btn.active {
     background-color: #00aaff;
     color: white;
 }
-
 .result-btn:not(.active):hover {
     background-color: #2f3542;
     color: #ccc;
 }
-
 .battle-result-content {
     flex: 1;
     overflow-y: auto;
@@ -3137,13 +2952,10 @@ body {
     padding: 0;
     margin: 0;
 }
-
 .battle-result-content .log-entry {
     padding: 8px 12px;
     border-bottom: 1px solid #2a303c;
 }
-
-/* ========== ТАБЛИЦА СТАТИСТИКИ БОЯ ========== */
 .stats-battle {
     width: 100%;
     border-collapse: collapse;
@@ -3152,11 +2964,9 @@ body {
     padding: 0;
     background-color: #232833;
 }
-
 .stats-battle thead tr {
     background-color: #1a1f2b;
 }
-
 .stats-battle th {
     padding: 12px 8px;
     text-align: center;
@@ -3164,35 +2974,27 @@ body {
     color: white;
     border-bottom: 1px solid #2a303c;
 }
-
 .stats-battle tbody tr {
     background-color: #232833;
 }
-
 .stats-battle tbody tr:nth-child(even) {
     background-color: #2a303c;
 }
-
 .stats-battle td {
     padding: 10px 8px;
     text-align: center;
     border: none;
 }
-
 .stats-battle .player-col {
     color: #00aaff;
     font-weight: bold;
 }
-
 .stats-battle .enemy-col {
     color: #e74c3c;
     font-weight: bold;
 }
 
-
 /* ========== ГЛАВНАЯ СТРАНИЦА ========== */
-
-/* Верхний контейнер – без лишней обводки */
 .main-top-container {
     background-color: transparent;
     padding: 0;
@@ -3204,10 +3006,8 @@ body {
     display: flex;
     gap: 2px;
     padding: 2px;
-    height: 180px;            /* можно изменить */
+    height: 180px;
 }
-
-/* Колонки кнопок – скругление только у внешних углов */
 .main-buttons-col {
     flex: 1;
     display: flex;
@@ -3229,19 +3029,14 @@ body {
     overflow: visible;
     border-radius: 0;
 }
-
-/* Скругление для правой колонки (переносим на родителя) */
 .main-buttons-col.right {
     border-radius: 0 12px 12px 0;
     overflow: hidden;
 }
-/* Сетка внутри должна позволять иконкам выходить за пределы */
 .main-buttons-col.right .btn-grid {
     overflow: visible;
     border-radius: 0;
 }
-
-/* Кнопка – занимает всю ячейку */
 .main-icon-btn {
     background-color: #232833;
     border: none;
@@ -3283,8 +3078,6 @@ body {
 .main-icon-btn:hover span {
     color: white;
 }
-
-/* Пустые кнопки */
 .main-icon-btn.empty-btn {
     background-color: #232833;
     cursor: default;
@@ -3296,8 +3089,6 @@ body {
 .main-icon-btn.empty-btn span {
     display: none;
 }
-
-/* Центральная колонка с аватаром */
 .main-avatar-col {
     flex: 0 0 120px;
     display: flex;
@@ -3315,8 +3106,6 @@ body {
     height: 100%;
     object-fit: cover;
 }
-
-/* Заголовок с именем пользователя */
 .main-username-header {
     background-color: #1a1f2b;
     text-align: center;
@@ -3327,8 +3116,6 @@ body {
     margin: 0;
     color: white;
 }
-
-/* Основной контент – растягиваем на всю оставшуюся высоту */
 .main-content-container {
     background-color: #232833;
     border-radius: 0 0 12px 12px;
@@ -3337,9 +3124,4 @@ body {
     min-height: 0;
     display: flex;
     flex-direction: column;
-}
-
-/* Чтобы маячок на кнопке торговли не обрезался */
-.main-buttons-col.right .btn-grid {
-    overflow: visible;
 }

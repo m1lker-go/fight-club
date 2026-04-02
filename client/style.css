@@ -397,35 +397,37 @@ body {
     z-index: 1;
 }
 
-/* Таблица характеристик на странице "Бонусы" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
+/* Таблица характеристик на странице "Бонусы" — компактно, без отступов между ячейками */
 .bonuses-table {
-    display: block;
-    overflow-y: auto;
-    max-height: calc(100vh - 250px); /* подберите под себя, чтобы не залезало на кнопки */
-    margin-top: 0;
-    border-radius: 0 0 12px 12px;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 0;
 }
 
+.bonuses-table th,
+.bonuses-table td {
+    padding: 6px 4px;
+    text-align: center;
+    border: none; /* убираем все границы между ячейками */
+}
+
+/* Заголовок таблицы */
 .bonuses-table thead tr {
     background-color: #1a1f2b;
     color: #00aaff;
 }
 .bonuses-table thead th {
-    padding: 12px 8px;
     font-weight: bold;
-    text-align: center;
-    border-bottom: 1px solid #2a303c;
+    padding: 8px 4px; /* чуть больше для заголовков, но всё ещё компактно */
 }
+
+/* Чередование цветов строк */
 .bonuses-table tbody tr:nth-child(odd) {
     background-color: #232833;
 }
 .bonuses-table tbody tr:nth-child(even) {
     background-color: #2a303c;
-}
-.bonuses-table td {
-    padding: 10px 8px;
-    text-align: center;
-    border: none;
 }
 
 /* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */

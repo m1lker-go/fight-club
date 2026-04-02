@@ -2250,13 +2250,15 @@ body {
 
 /* ========== ТАЙМЕР (ЗАДАНИЯ) ========== */
 .countdown-container {
+    flex: 1;  /* растягиваем на всю оставшуюся высоту */
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
+    background-color: #2a303c;
+    border-radius: 0 0 12px 12px; /* скругление только снизу */
     margin: 0;
     padding: 0;
-    background-color: #2a303c;
-  }
+}
 .countdown-card {
     background-color: #2a303c;
     padding: 20px;

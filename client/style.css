@@ -298,7 +298,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
    overflow-y: auto; /* скролл всей страницы */
     padding: 0;
     margin: 0;
@@ -345,6 +345,8 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 
@@ -400,13 +402,16 @@ body {
 
 /* Таблица характеристик на странице "Бонусы" — компактно, без отступов между ячейками */
 .bonuses-table {
-    width: 100%;
     border-collapse: collapse;
     font-size: 13px;      /* шрифт не уменьшаем ниже 11px */
     margin: 0;
     display: table;
     overflow: visible;
     max-height: none;
+    margin-top: 0 !important;
+    width: 100%;
+    table-layout: fixed;
+    word-break: break-word;
 }
 
 .bonuses-table th,
@@ -423,8 +428,14 @@ body {
 /* Первый столбец (название параметра) – выравнивание по левому краю */
 .bonuses-table td:first-child,
 .bonuses-table th:first-child {
-    text-align: left;
-    padding-left: 12px;
+    padding-left: 4px !important;  /* 3px или 8px – на ваше усмотрение */
+    text-align: left !important;   /* выравнивание по левому краю */
+}
+
+/* Остальные столбцы по центру */
+.bonuses-table td:not(:first-child),
+.bonuses-table th:not(:first-child) {
+    text-align: center !important;
 }
 
 .bonuses-table thead th {
@@ -438,6 +449,10 @@ body {
 
 .bonuses-table tbody tr:nth-child(even) {
     background-color: #2a303c;
+}
+
+.bonuses-table:last-child {
+    margin-bottom: 0;
 }
 
 /* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */

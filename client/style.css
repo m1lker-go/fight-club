@@ -293,40 +293,39 @@ body {
     pointer-events: none;
 }
 
-/* ========== ПРОФИЛЬ: УБИРАЕМ ПРОБЛЕМЫ СО СКРОЛЛОМ И ОТСТУПАМИ ========== */
+/* ========== ПРОФИЛЬ: СТРАНИЦА "БОНУСЫ" – УВЕЛИЧЕННЫЙ ШРИФТ, БЕЗ ВНУТРЕННЕГО СКРОЛЛА ========== */
+
+/* Контейнер профиля – вся страница скроллится, если не хватает места */
 #profileContent {
     flex: 1;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-   overflow-y: auto; /* скролл всей страницы */
     padding: 0;
-    margin: 0;
 }
 
+/* Кнопки классов (Воин, Ассасин, Маг) – фиксируем сверху */
 #profileContent .class-selector {
-    display: flex;
-    background-color: #2a303c; /* светлый фон для отступов 2px */
-    padding: 2px;
-    gap: 2px;
-    margin-bottom: 0 !important; /* убираем отступ снизу */
-    border-radius: 0;
     position: sticky;
     top: 0;
+    background-color: #2a303c;
+    padding: 2px;
+    gap: 2px;
+    margin: 0;
+    border-radius: 0;
     z-index: 5;
+    flex-shrink: 0;
 }
 
 #profileContent .class-btn {
-    background-color: #232833 !important; /* тёмный фон кнопки */
+    background-color: #232833 !important;
     color: #aaa !important;
-    border: none;
     border-radius: 0 !important;
     padding: 10px 0;
     font-size: 16px;
     font-weight: bold;
-    flex: 1;
-    margin: 0;
 }
+
 
 #profileContent .class-btn.active {
     background-color: #00aaff !important;
@@ -338,23 +337,11 @@ body {
 }
 
 
-/* Блок статистики (Уровень, Опыт, Очки навыков) – верхние углы прямые, нижние скруглённые */
-.stats-block {
-    background-color: #2a303c;
-    border-radius: 0 !important; /* убираем скругления */
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-}
-
-
 .stat-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-   padding: 2px 16px;
+    padding: 6px 16px;
     border-bottom: 1px solid #1a1f2b;
 }
 .stat-row:last-child {
@@ -363,11 +350,13 @@ body {
 .stat-label {
     font-weight: bold;
     color: #fff;
-    font-size: 12px;
+    font-size: 14px;
     min-width: 100px;
 }
 .stats-block .stat-value {
-    font-size: 11px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
 }
 .stat-bar-container {
     flex: 1;
@@ -387,7 +376,7 @@ body {
     border-radius: 20px;
     transition: width 0.3s ease;
 }
-.stats-block .stat-value {
+.stat-bar-container .stat-value {
     position: absolute;
     top: 0;
     left: 0;
@@ -403,60 +392,49 @@ body {
     z-index: 1;
 }
 
-/* Таблица характеристик на странице "Бонусы" — компактно, без отступов между ячейками */
+/* Таблица характеристик – читаемый шрифт, без внутреннего скролла */
 .bonuses-table {
+    width: 100%;
     border-collapse: collapse;
-    font-size: 13px;      /* шрифт не уменьшаем ниже 11px */
+    font-size: 13px;        /* нормальный размер шрифта */
     margin: 0;
     display: table;
     overflow: visible;
     max-height: none;
-    margin-top: 0 !important;
-    width: 100%;
-    table-layout: fixed;
-    word-break: break-word;
 }
 
 .bonuses-table th,
 .bonuses-table td {
-    padding: 4px 4px;     /* минимальные отступы внутри ячеек */
+    padding: 6px 6px;       /* достаточные отступы для читаемости */
     text-align: center;
     border: none;
 }
 
+/* Первый столбец – по левому краю с небольшим отступом */
+.bonuses-table td:first-child,
+.bonuses-table th:first-child {
+    text-align: left;
+    padding-left: 12px;
+}
+
+/* Заголовок таблицы */
 .bonuses-table thead tr {
     background-color: #1a1f2b;
     color: #00aaff;
 }
-/* Первый столбец (название параметра) – выравнивание по левому краю */
-.bonuses-table td:first-child,
-.bonuses-table th:first-child {
-    padding-left: 4px !important;  /* 3px или 8px – на ваше усмотрение */
-    text-align: left !important;   /* выравнивание по левому краю */
-}
-
-/* Остальные столбцы по центру */
-.bonuses-table td:not(:first-child),
-.bonuses-table th:not(:first-child) {
-    text-align: center !important;
-}
-
 .bonuses-table thead th {
     font-weight: bold;
-    padding: 4px 4px;
+    padding: 8px 6px;
 }
 
+/* Чередование цветов строк */
 .bonuses-table tbody tr:nth-child(odd) {
     background-color: #232833;
 }
-
 .bonuses-table tbody tr:nth-child(even) {
     background-color: #2a303c;
 }
 
-.bonuses-table:last-child {
-    margin-bottom: 0;
-}
 
 /* Список навыков на странице "Улучшить" — прокрутка внутри, верхние углы прямые, нижние скруглённые */
 .skills-list {

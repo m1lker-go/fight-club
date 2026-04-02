@@ -87,7 +87,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 0 !important;
     scrollbar-width: thin;
     scrollbar-color: #00aaff #232833;
     z-index: 1;
@@ -2128,8 +2128,10 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden;
     padding: 0;
+    overflow: hidden;
+    margin: -5px -10px; /* компенсируем стандартные отступы .content (5px 10px) */
+    width: calc(100% + 20px);
 }
 .tasks-header {
     background-color: #1a1f2b;
@@ -2197,7 +2199,7 @@ body {
     color: #aaa;
 }
 .countdown-container {
-    flex: 1;  /* растягиваем на всю оставшуюся высоту */
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2706,6 +2708,8 @@ body {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+    margin: 0;
+    padding: 0;
 }
 #countdownContainer {
     flex-shrink: 0;

@@ -87,7 +87,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 5px 10px;
     scrollbar-width: thin;
     scrollbar-color: #00aaff #232833;
     z-index: 1;
@@ -354,7 +354,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 16px;
+   padding: 2px 16px;
     border-bottom: 1px solid #1a1f2b;
 }
 .stat-row:last-child {
@@ -363,8 +363,11 @@ body {
 .stat-label {
     font-weight: bold;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
     min-width: 100px;
+}
+.stats-block .stat-value {
+    font-size: 11px;
 }
 .stat-bar-container {
     flex: 1;
@@ -416,7 +419,7 @@ body {
 
 .bonuses-table th,
 .bonuses-table td {
-    padding: 8px 6px;     /* минимальные отступы внутри ячеек */
+    padding: 4px 4px;     /* минимальные отступы внутри ячеек */
     text-align: center;
     border: none;
 }
@@ -440,7 +443,7 @@ body {
 
 .bonuses-table thead th {
     font-weight: bold;
-    padding: 10px 6px;
+    padding: 4px 4px;
 }
 
 .bonuses-table tbody tr:nth-child(odd) {
@@ -524,6 +527,19 @@ body {
 }
 .skill-btn:not(:disabled):hover {
     opacity: 0.8;
+}
+
+
+/* Убираем лишние отступы для страницы бонусов */
+#profileContent .stats-block .stat-row {
+    padding: 2px 16px !important;
+}
+#profileContent .bonuses-table th,
+#profileContent .bonuses-table td {
+    padding: 2px 4px !important;
+}
+#profileContent .bonuses-table {
+    font-size: 11px !important;
 }
 
 /* ========== ОПИСАНИЯ (МОДАЛЬНЫЕ ОКНА) ========== */

@@ -3176,3 +3176,9 @@ body {
     display: flex;
     flex-direction: column;
 }
+
+/* Убираем растяжение таймера, чтобы он шёл сразу после контента */
+.countdown-container {
+    flex: 0 0 auto !important;
+    margin-top: 0 !important;
+}

@@ -883,10 +883,14 @@ body {
     height: 100%;
     overflow: hidden;
 }
+/* Область аватара и слотов на светлом фоне */
 .equip-top {
-    flex-shrink: 0;
-    margin-bottom: 10px;
+    background-color: #2a303c;
+    margin: 0;
+    padding: 10px 0;
+    margin-bottom: 0;
 }
+
 .equip-top-bar {
     display: flex;
     justify-content: center;
@@ -986,12 +990,7 @@ body {
 }
 
 
-/* Область аватара и слотов на светлом фоне */
-.equip-top {
-    background-color: #2a303c;
-    margin: 0;
-    padding: 10px 0;
-}
+
 
 .inventory-section {
     flex: 1;
@@ -999,7 +998,7 @@ body {
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-    margin-top: 10px;
+    margin-top: 0px;
 }
 .inventory-header {
     background-color: #1a1f2b;

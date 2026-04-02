@@ -332,9 +332,9 @@ function renderItemColumn(item, isEquipped) {
     if (!item) {
         return `
             <div style="text-align: center;">
-                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 8px;"></div>
+                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 12px;"></div>
                 <div style="margin: 10px 0;">— пусто —</div>
-                <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
+                <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
             </div>
         `;
     }
@@ -369,15 +369,24 @@ function renderItemColumn(item, isEquipped) {
     const fileType = typeFileMap[item.type];
     const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
 
+    const rarityColors = {
+        common: '#aaa',
+        uncommon: '#2ecc71',
+        rare: '#2e86de',
+        epic: '#9b59b6',
+        legendary: '#f1c40f'
+    };
+    const borderColor = rarityColors[item.rarity] || '#aaa';
+
     return `
         <div style="text-align: center;">
-            <div style="width: 80px; height: 80px; margin: 0 auto;">
-                <img src="${iconPath}" style="width:100%; height:100%; object-fit: contain;">
+            <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #1a1f2b; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor};">
+                <img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">
             </div>
-            <div style="font-weight: bold; margin-top: 5px;">${translateSkinName(item.name)}</div>
+            <div style="font-weight: bold; margin-top: 5px; color: ${borderColor};">${translateSkinName(item.name)}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="font-size: 12px; color: #aaa;">${stats.join(' • ')}</div>
-            <button class="btn equip-compare-btn" style="margin-top: 10px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
+            <div style="font-size: 12px; color: white;">${stats.join(' • ')}</div>
+            <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px;" data-action="${isEquipped ? 'old' : 'new'}">⬆️ Надеть</button>
         </div>
     `;
 }

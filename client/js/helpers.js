@@ -297,7 +297,6 @@ function showLevelUpModal(className) {
     const modal = document.getElementById('levelUpModal');
     const body = document.getElementById('levelUpBody');
     const classNameRu = getClassNameRu(className);
-    // Убрали конкретное число очков, оставили общую фразу
     body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.</p>`;
 
     modal.style.display = 'block';
@@ -305,6 +304,7 @@ function showLevelUpModal(className) {
     const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
     const laterBtn = document.getElementById('levelUpLaterBtn');
 
+    // Клонируем кнопки, чтобы убрать старые обработчики
     const newUpgrade = upgradeBtn.cloneNode(true);
     const newLater = laterBtn.cloneNode(true);
     upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
@@ -316,8 +316,20 @@ function showLevelUpModal(className) {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';
         });
-        profileTab = 'upgrade';
+        // Переходим на экран профиля
         showScreen('profile');
+        // Ждём отрисовки и кликаем по вкладке "Улучшить"
+        setTimeout(() => {
+            const upgradeTab = document.querySelector('.profile-tab[data-tab="upgrade"]');
+            if (upgradeTab) {
+                upgradeTab.click();
+            } else {
+                // Запасной вариант: устанавливаем переменную и перерисовываем
+                if (typeof window.profileTab !== 'undefined') window.profileTab = 'upgrade';
+                else if (typeof profileTab !== 'undefined') profileTab = 'upgrade';
+                renderProfile(); // перерисовываем профиль с нужной вкладкой
+            }
+        }, 100);
     });
 
     newLater.addEventListener('click', () => {

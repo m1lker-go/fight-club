@@ -2129,6 +2129,7 @@ body {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    padding: 0;
 }
 .tasks-header {
     background-color: #1a1f2b;

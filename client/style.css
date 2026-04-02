@@ -2199,7 +2199,6 @@ body {
     color: #aaa;
 }
 .countdown-container {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2207,8 +2206,7 @@ body {
     border-radius: 0 0 12px 12px;
     margin: 0;
     padding: 0;
-    width: 100%;
-}
+   }
 .countdown-card {
     background-color: #2a303c;
     padding: 20px;

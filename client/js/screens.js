@@ -426,29 +426,31 @@ function renderEquip() {
         });
     });
 
-    document.querySelectorAll('.equip-slot').forEach(slot => {
-        slot.addEventListener('click', async (e) => {
-            const itemId = slot.dataset.itemId;
-            if (itemId == null) return;
-            showConfirmModal('Снять этот предмет?', async () => {
-                try {
-                    const res = await fetch(`${API_BASE}/inventory/unequip`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                    });
-                    if (res.ok) {
-                        await refreshData();
-                        renderEquip();
-                    } else {
-                        showToast('Ошибка при снятии', 1500);
-                    }
-                } catch (e) {
-                    showToast('Сеть недоступна', 1500);
+   document.querySelectorAll('.equip-slot').forEach(slot => {
+    slot.addEventListener('click', async (e) => {
+        const itemId = slot.dataset.itemId;
+        if (itemId == null) return;
+        const item = inventory.find(i => i.id == Number(itemId));
+        if (!item) return;
+        showUnequipConfirmModal(item, async () => {
+            try {
+                const res = await fetch(`${API_BASE}/inventory/unequip`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                });
+                if (res.ok) {
+                    await refreshData();
+                    renderEquip();
+                } else {
+                    showToast('Ошибка при снятии', 1500);
                 }
-            });
+            } catch (e) {
+                showToast('Сеть недоступна', 1500);
+            }
         });
     });
+});
 
     document.querySelectorAll('.inv-action-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {

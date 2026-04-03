@@ -54,7 +54,7 @@ function showAuthModal() {
 }
 
 async function loginWithTelegram() {
-    const oauthUrl = `https://oauth.telegram.org/embed?bot_id=${BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
+    const oauthUrl = `https://oauth.telegram.org/embed?bot_username=${window.BOT_USERNAME}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
     
     window.removeEventListener('message', handleTelegramMessage);

@@ -56,7 +56,6 @@ let sessionToken = localStorage.getItem('sessionToken');
 
 async function checkAuth() {
     if (sessionToken) {
-        // Пытаемся получить профиль по токену
         try {
             const res = await fetch('https://fight-club-api-4och.onrender.com/auth/profile', {
                 headers: { 'Authorization': `Bearer ${sessionToken}` }
@@ -76,7 +75,6 @@ async function checkAuth() {
                 hideSplashScreen();
                 return true;
             } else {
-                // Токен невалиден – очищаем
                 localStorage.removeItem('sessionToken');
                 sessionToken = null;
             }
@@ -84,7 +82,7 @@ async function checkAuth() {
             console.error('Auth check error:', e);
         }
     }
-    // Если не авторизованы – показываем модальное окно входа
+    // Если сессии нет или она невалидна – показываем модальное окно входа
     if (typeof showAuthModal === 'function') {
         showAuthModal();
     } else {
@@ -126,12 +124,8 @@ function showErrorSplash() {
     }
 }
 
-async function init() {
-    // Сначала проверяем, есть ли sessionToken
-    const authSuccess = await checkAuth();
-    if (authSuccess) return;
-
-    // Если нет токена или авторизация не удалась – полагаемся на стандартный вход через Telegram
+// Резервный вход через Telegram (для старых версий, когда нет сессии)
+async function legacyTelegramLogin() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
     const errorTimer = setTimeout(() => {
@@ -163,7 +157,6 @@ async function init() {
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
 
-            // Если у пользователя нет nickname – показываем модалку выбора ника
             if (!userData.nickname && typeof showNicknameModal === 'function') {
                 showNicknameModal(userData.id);
             } else {
@@ -182,7 +175,7 @@ async function init() {
     } catch (e) {
         clearTimeout(timeoutId);
         clearTimeout(errorTimer);
-        console.error('Init error:', e);
+        console.error('Legacy login error:', e);
         showErrorSplash();
     }
 }
@@ -356,4 +349,5 @@ window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
 window.renderSettings = renderSettings; // если будет определена в screens.js
 
-init();
+// Запуск приложения
+checkAuth();

@@ -14,6 +14,7 @@ if (user) {
 }
 console.log('playerName:', window.playerName);
 
+// Реферальный код из startapp (если есть)
 let referralCode = null;
 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
     referralCode = tg.initDataUnsafe.start_param;
@@ -33,7 +34,7 @@ let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
 
-// Глобальный базовый URL для API (используется во всех скриптах)
+// Глобальный базовый URL для API
 window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
@@ -54,15 +55,79 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
+// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM (ВНУТРИ WEBAPP) ==========
+async function autoLoginTelegram() {
+    if (!tg || !tg.initData) return false;
+    console.log('Auto login via Telegram initData...');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+        const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                initData: tg.initData,
+                referral_code: referralCode
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.sessionToken) {
+                localStorage.setItem('sessionToken', data.sessionToken);
+                sessionToken = data.sessionToken;
+                // После успешного входа загружаем данные пользователя
+                await loadUserDataByToken(data.sessionToken);
+                return true;
+            }
+        } else {
+            console.error('Auto login failed:', await response.text());
+        }
+    } catch (e) {
+        clearTimeout(timeoutId);
+        console.error('Auto login error:', e);
+    }
+    return false;
+}
+
+// Загрузка данных пользователя по токену (вынесено из checkAuth для переиспользования)
+async function loadUserDataByToken(token) {
+    try {
+        const res = await fetch(`${window.API_BASE}/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            userData = data.user;
+            userClasses = data.userClasses || [];
+            inventory = data.inventory || [];
+            BOT_USERNAME = data.bot_username || '';
+            await loadAvatars();
+            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+            updateTopBar();
+            showScreen('main');
+            updateMainMenuNewIcons();
+            checkAdvent();
+            hideSplashScreen();
+            return true;
+        }
+    } catch (e) {
+        console.error('Load user data error:', e);
+    }
+    return false;
+}
+
 // ========== УПРАВЛЕНИЕ СЕССИЕЙ И АВТОРИЗАЦИЕЙ ==========
 let sessionToken = localStorage.getItem('sessionToken');
 
 async function checkAuth() {
     // Если есть токен, проверяем его на сервере
     if (sessionToken) {
-        // Таймаут на случай зависания запроса
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         try {
             const res = await fetch(`${window.API_BASE}/auth/profile`, {
@@ -86,23 +151,26 @@ async function checkAuth() {
                 hideSplashScreen();
                 return true;
             } else {
-                // Токен невалиден – удаляем его
                 localStorage.removeItem('sessionToken');
                 sessionToken = null;
             }
         } catch (e) {
             clearTimeout(timeoutId);
             console.error('Auth check error:', e);
-            // Показываем ошибку соединения
             showErrorSplash();
             return false;
         }
     }
 
-    // Если сессии нет или она невалидна – показываем модальное окно входа
-    // Сначала скрываем спиннер, чтобы модалка была видна
-    hideSplashScreen();
+    // Нет токена – пробуем автоматический вход, если внутри Telegram WebApp
+    const isTelegramWebApp = !!(tg && tg.initData);
+    if (isTelegramWebApp) {
+        const autoLogged = await autoLoginTelegram();
+        if (autoLogged) return true;
+    }
 
+    // Если не удалось – показываем модальное окно входа
+    hideSplashScreen();
     if (typeof showAuthModal === 'function') {
         showAuthModal();
     } else {
@@ -141,62 +209,6 @@ function showErrorSplash() {
                 location.reload();
             });
         }
-    }
-}
-
-// Резервный вход через Telegram (для старых версий, когда нет сессии) – больше не используется, но оставлен для совместимости
-async function legacyTelegramLogin() {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-    const errorTimer = setTimeout(() => {
-        if (!userData) {
-            showErrorSplash();
-        }
-    }, 10000);
-
-    try {
-        const response = await fetchWithRetry(`${window.API_BASE}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                initData: tg.initData,
-                referral_code: referralCode 
-            })
-        }, 3, 40000);
-
-        clearTimeout(timeoutId);
-        clearTimeout(errorTimer);
-
-        const data = await response.json();
-        if (data.user) {
-            userData = data.user;
-            userClasses = data.classes || [];
-            inventory = data.inventory || [];
-            BOT_USERNAME = data.bot_username || '';
-
-            await loadAvatars();
-            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-
-            if (!userData.nickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userData.id);
-            } else {
-                updateTopBar();
-                showScreen('main');
-                updateMainMenuNewIcons(); 
-                checkAdvent();
-                hideSplashScreen();
-            }
-
-            fetch(`${window.API_BASE}/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
-        } else {
-            showToast('Ошибка авторизации', 2000);
-            showErrorSplash();
-        }
-    } catch (e) {
-        clearTimeout(timeoutId);
-        clearTimeout(errorTimer);
-        console.error('Legacy login error:', e);
-        showErrorSplash();
     }
 }
 

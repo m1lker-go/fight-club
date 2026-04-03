@@ -108,7 +108,7 @@ async function loadUserDataByToken(token) {
             BOT_USERNAME = data.bot_username || '';
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-            recalculatePower();  // <--- ДОБАВЛЕНО
+            recalculatePower();
             updateTopBar();
             showScreen('main');
             updateMainMenuNewIcons();
@@ -146,7 +146,7 @@ async function checkAuth() {
                 BOT_USERNAME = data.bot_username || '';
                 await loadAvatars();
                 userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-                recalculatePower();  // <--- ДОБАВЛЕНО
+                recalculatePower();
                 updateTopBar();
                 showScreen('main');
                 updateMainMenuNewIcons();
@@ -224,7 +224,7 @@ async function checkAdvent() {
             if (typeof showAdventCalendar === 'function') showAdventCalendar();
         }
     } catch (e) {
-        console.error('Advent check error:', e);
+        console.error('Advent check error', e);
     }
 }
 
@@ -371,9 +371,6 @@ document.querySelectorAll('.menu-item').forEach(item => {
     });
 });
 
-
-
-
 // Функции, которые будут переопределены в screens.js, объявляем глобально
 window.renderMain = renderMain;
 window.renderEquip = renderEquip;
@@ -385,7 +382,6 @@ window.renderTasks = renderTasks;
 window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
-
 
 // Обработка внешней авторизации (возврат из VK в системном браузере)
 function handleExternalAuth() {
@@ -410,14 +406,13 @@ function handleExternalAuth() {
     if (vkLink === 'success') {
         if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
         window.history.replaceState({}, document.title, window.location.pathname);
-        // Перезагружаем настройки, если они открыты
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         return true;
     }
     return false;
 }
 
-// Вызвать в начале checkAuth или в начале файла
+// Вызов обработки внешней авторизации перед запуском приложения
 handleExternalAuth();
 
 // Запуск приложения

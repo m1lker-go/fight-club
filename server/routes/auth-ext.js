@@ -165,10 +165,82 @@ router.post('/update-settings', async (req, res) => {
     } finally { client.release(); }
 });
 
+
+
 // Привязка нового аккаунта (Google, VK) – аналогично email, но с OAuth2
-router.post('/link', async (req, res) => {
-    // Реализация OAuth2 (Google, VK) через редирект или прямые токены
-    // Здесь потребуется отдельная логика, но для краткости опускаю
+// В файле auth-ext.js добавьте:
+router.post('/telegram-oauth', async (req, res) => {
+    const { initData } = req.body;
+    if (!initData) return res.status(400).json({ error: 'No initData' });
+
+    // Проверяем подпись Telegram (как в auth.js)
+    const botToken = process.env.BOT_TOKEN;
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+    urlParams.delete('hash');
+
+    const dataCheckString = Array.from(urlParams.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n');
+
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    if (calculatedHash !== hash) {
+        return res.status(401).json({ error: 'Invalid Telegram data' });
+    }
+
+    const user = JSON.parse(urlParams.get('user'));
+    const tgId = user.id;
+    const username = user.username || `user_${tgId}`;
+
+    const client = await pool.connect();
+    try {
+        // Ищем пользователя по tg_id
+        let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
+        let userData;
+        let needNickname = false;
+
+        if (userRes.rows.length === 0) {
+            // Новый пользователь
+            const referralCode = Math.random().toString(36).substring(2, 10);
+            const newUser = await client.query(
+                `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+            );
+            userData = newUser.rows[0];
+            needNickname = true; // потребуется ввести никнейм
+            // Добавляем классы
+            const classes = ['warrior', 'assassin', 'mage'];
+            for (let cls of classes) {
+                await client.query(
+                    `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                    [userData.id, cls]
+                );
+            }
+        } else {
+            userData = userRes.rows[0];
+            needNickname = !userData.nickname;
+        }
+
+        // Генерируем сессионный токен
+        const sessionToken = crypto.randomBytes(32).toString('hex');
+        await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+
+        res.json({
+            success: true,
+            sessionToken,
+            userId: userData.id,
+            needNickname,
+            user: userData
+        });
+    } finally {
+        client.release();
+    }
 });
+
+
 
 module.exports = router;

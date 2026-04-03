@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // API routes
-app.use('/auth', require('./routes/auth-ext')); // ← ИСПРАВЛЕНО (было './routes/auth')
+app.use('/auth', require('./routes/auth-ext'));
 app.use('/player', require('./routes/player'));
 app.use('/inventory', require('./routes/inventory'));
 app.use('/shop', require('./routes/shop'));

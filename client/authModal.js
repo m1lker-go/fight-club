@@ -3,13 +3,8 @@ let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;
 
-// Telegram Bot ID (число)
 const BOT_ID = '8215458077';
-
-// Google Client ID (реальный, полученный из Google Cloud Console)
 const GOOGLE_CLIENT_ID = '777033220750-06670cfa2tb9qnaj95pph70mv20ob.apps.googleusercontent.com';
-
-// VK App ID (для будущей интеграции)
 const VK_APP_ID = '54523677';
 
 function showAuthModal() {
@@ -58,7 +53,6 @@ function showAuthModal() {
     document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
 }
 
-// Telegram OAuth
 async function loginWithTelegram() {
     const oauthUrl = `https://oauth.telegram.org/embed?bot_id=${BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
@@ -92,7 +86,6 @@ async function loginWithTelegram() {
     }
 }
 
-// Google OAuth
 function loginWithGoogle() {
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
@@ -124,12 +117,10 @@ function loginWithGoogle() {
     document.head.appendChild(script);
 }
 
-// VK OAuth (заглушка, в разработке)
 async function loginWithVK() {
     showToast('Вход через VK в разработке', 1500);
 }
 
-// Отправка кода на email
 async function sendEmailCode() {
     const email = document.getElementById('authEmail').value;
     if (!email) {
@@ -150,7 +141,6 @@ async function sendEmailCode() {
     }
 }
 
-// Подтверждение email с кодом
 async function verifyEmailCode() {
     const email = document.getElementById('authEmail').value;
     const code = document.getElementById('authCode').value;

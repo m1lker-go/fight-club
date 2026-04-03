@@ -32,6 +32,8 @@ let lastBattleLog = null;
 let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
+// Глобальный базовый URL для API (используется во всех скриптах)
+window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {

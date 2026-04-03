@@ -137,6 +137,46 @@ function showNicknameStep() {
     });
 }
 
+function showNicknameModal(userId) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Выберите никнейм';
+    modalBody.innerHTML = `
+        <div class="auth-nickname">
+            <input type="text" id="nicknameInput" placeholder="Английские буквы и цифры" maxlength="20">
+            <button id="saveNicknameBtn">Сохранить</button>
+        </div>
+    `;
+    modal.style.display = 'block';
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) closeBtn.style.display = 'none';
+    document.getElementById('saveNicknameBtn').addEventListener('click', async () => {
+        const nickname = document.getElementById('nicknameInput').value.trim();
+        if (!nickname) return;
+        // Проверка уникальности
+        const check = await fetch(`/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+        const { available } = await check.json();
+        if (!available) {
+            showToast('Никнейм уже занят', 1500);
+            return;
+        }
+        const token = localStorage.getItem('sessionToken');
+        const res = await fetch('/auth/update-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, nickname })
+        });
+        if (res.ok) {
+            modal.style.display = 'none';
+            location.reload();
+        } else {
+            showToast('Ошибка сохранения никнейма', 1500);
+        }
+    });
+}
+
+
 async function loginWithTelegram() {
     // Открываем окно Telegram OAuth
     const oauthUrl = `https://oauth.telegram.org/embed?bot_id=${BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
@@ -177,4 +217,6 @@ async function sendEmailCode() { ... }
 async function verifyEmailCode() { ... }
 async function submitNickname() { ... }
 
+
+window.showNicknameModal = showNicknameModal;
 window.showAuthModal = showAuthModal;

@@ -138,6 +138,26 @@ async function loginWithVK() {
     });
 }
 
+async function sendEmailCode() {
+    const email = document.getElementById('authEmail').value;
+    if (!email) {
+        showToast('Введите email', 1500);
+        return;
+    }
+    const res = await fetch(`${window.API_BASE}/auth/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: 'email', email })
+    });
+    if (res.ok) {
+        document.getElementById('codeSection').style.display = 'block';
+        showToast('Код отправлен на почту', 1500);
+    } else {
+        const err = await res.json();
+        showToast(err.error || 'Ошибка отправки кода', 1500);
+    }
+}
+
 async function verifyEmailCode() {
     const email = document.getElementById('authEmail').value;
     const code = document.getElementById('authCode').value;

@@ -1,3 +1,4 @@
+// authModal.js
 let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;

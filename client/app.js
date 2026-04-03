@@ -371,6 +371,9 @@ document.querySelectorAll('.menu-item').forEach(item => {
     });
 });
 
+
+
+
 // Функции, которые будут переопределены в screens.js, объявляем глобально
 window.renderMain = renderMain;
 window.renderEquip = renderEquip;
@@ -382,6 +385,40 @@ window.renderTasks = renderTasks;
 window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
+
+
+// Обработка внешней авторизации (возврат из VK в системном браузере)
+function handleExternalAuth() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const vkAuth = urlParams.get('vk_auth');
+    if (vkAuth === 'success') {
+        const sessionToken = urlParams.get('sessionToken');
+        const needNickname = urlParams.get('needNickname') === 'true';
+        const userId = urlParams.get('userId');
+        if (sessionToken) {
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needNickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(userId);
+            } else {
+                location.reload();
+            }
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return true;
+    }
+    const vkLink = urlParams.get('vk_link');
+    if (vkLink === 'success') {
+        if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Перезагружаем настройки, если они открыты
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        return true;
+    }
+    return false;
+}
+
+// Вызвать в начале checkAuth или в начале файла
+handleExternalAuth();
 
 // Запуск приложения
 checkAuth();

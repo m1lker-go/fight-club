@@ -1,5 +1,4 @@
 // settings.js
-
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {

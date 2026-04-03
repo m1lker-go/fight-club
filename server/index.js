@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { pool, initDB } = require('./db'); // добавлен pool
-const { updatePlayerPower } = require('./utils/power'); // перенесён в начало
+const { pool, initDB } = require('./db');
+const { updatePlayerPower } = require('./utils/power');
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // API routes
-app.use('/auth', require('./routes/auth'));
+app.use('/auth', require('./routes/auth-ext')); // ← ИСПРАВЛЕНО (было './routes/auth')
 app.use('/player', require('./routes/player'));
 app.use('/inventory', require('./routes/inventory'));
 app.use('/shop', require('./routes/shop'));
@@ -26,8 +26,6 @@ app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
 
-
-
 // Webhook для Telegram
 app.post('/webhook', async (req, res) => {
     const { message } = req.body;
@@ -36,7 +34,6 @@ app.post('/webhook', async (req, res) => {
     const chatId = message.chat.id;
     let text = message.text || '';
 
-    // Парсим /start и возможный параметр
     let referralCode = null;
     if (text.startsWith('/start')) {
         const parts = text.split(' ');
@@ -45,7 +42,6 @@ app.post('/webhook', async (req, res) => {
         }
     }
 
-    // Формируем URL для WebApp
     let webAppUrl = 'https://fight-club-ecru.vercel.app';
     if (referralCode) {
         webAppUrl += `?startapp=${referralCode}`;
@@ -92,12 +88,10 @@ app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
 });
 
-
 // Временный маршрут для обновления старых предметов
 app.get('/admin/update-items', async (req, res) => {
     const client = await pool.connect();
     try {
-        // Новые фиксированные бонусы
         const fixedBonuses = {
             common: {
                 atk: 1, def: 1, hp: 2, spd: 1,
@@ -139,22 +133,18 @@ app.get('/admin/update-items', async (req, res) => {
             reflect_bonus: 'reflect'
         };
 
-        // Обновляем таблицу items
         const items = await client.query('SELECT * FROM items');
         let itemsUpdated = 0;
         for (const item of items.rows) {
             const rarity = item.rarity;
             if (!fixedBonuses[rarity]) continue;
 
-            // Находим ненулевые характеристики (до 2 штук)
             const activeFields = fields.filter(f => item[f] > 0);
             if (activeFields.length === 0) continue;
 
-            // Обнуляем все бонусы
             const zeroQuery = `UPDATE items SET ${fields.map(f => `${f} = 0`).join(', ')} WHERE id = $1`;
             await client.query(zeroQuery, [item.id]);
 
-            // Применяем новые бонусы для каждой активной характеристики
             for (const field of activeFields) {
                 const stat = fieldToStat[field];
                 const bonus = fixedBonuses[rarity][stat];
@@ -166,7 +156,6 @@ app.get('/admin/update-items', async (req, res) => {
             itemsUpdated++;
         }
 
-        // Обновляем таблицу inventory аналогично
         const invItems = await client.query('SELECT * FROM inventory');
         let invUpdated = 0;
         for (const inv of invItems.rows) {

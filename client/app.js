@@ -36,6 +36,7 @@ let ratingTab = 'rating';
 
 // Глобальный базовый URL для API
 window.API_BASE = 'https://fight-club-api-4och.onrender.com';
+window.BOT_USERNAME = 'CatFightingBot';
 
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {

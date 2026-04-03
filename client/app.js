@@ -46,10 +46,52 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
         } catch (err) {
             console.warn(`Attempt ${i+1}/${retries} failed:`, err.message);
             if (i === retries - 1) throw err;
-            // Экспоненциальная задержка перед следующей попыткой
             await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, i)));
         }
     }
+}
+
+// ========== УПРАВЛЕНИЕ СЕССИЕЙ И АВТОРИЗАЦИЕЙ ==========
+let sessionToken = localStorage.getItem('sessionToken');
+
+async function checkAuth() {
+    if (sessionToken) {
+        // Пытаемся получить профиль по токену
+        try {
+            const res = await fetch('https://fight-club-api-4och.onrender.com/auth/profile', {
+                headers: { 'Authorization': `Bearer ${sessionToken}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                userData = data.user;
+                userClasses = data.userClasses || [];
+                inventory = data.inventory || [];
+                BOT_USERNAME = data.bot_username || '';
+                await loadAvatars();
+                userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+                updateTopBar();
+                showScreen('main');
+                updateMainMenuNewIcons();
+                checkAdvent();
+                hideSplashScreen();
+                return true;
+            } else {
+                // Токен невалиден – очищаем
+                localStorage.removeItem('sessionToken');
+                sessionToken = null;
+            }
+        } catch (e) {
+            console.error('Auth check error:', e);
+        }
+    }
+    // Если не авторизованы – показываем модальное окно входа
+    if (typeof showAuthModal === 'function') {
+        showAuthModal();
+    } else {
+        console.error('showAuthModal not defined');
+        showErrorSplash();
+    }
+    return false;
 }
 
 function hideSplashScreen() {
@@ -85,9 +127,13 @@ function showErrorSplash() {
 }
 
 async function init() {
+    // Сначала проверяем, есть ли sessionToken
+    const authSuccess = await checkAuth();
+    if (authSuccess) return;
+
+    // Если нет токена или авторизация не удалась – полагаемся на стандартный вход через Telegram
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
-
     const errorTimer = setTimeout(() => {
         if (!userData) {
             showErrorSplash();
@@ -117,15 +163,19 @@ async function init() {
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
 
-            updateTopBar();
-            showScreen('main');
-            updateMainMenuNewIcons(); 
-            checkAdvent();
+            // Если у пользователя нет nickname – показываем модалку выбора ника
+            if (!userData.nickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(userData.id);
+            } else {
+                updateTopBar();
+                showScreen('main');
+                updateMainMenuNewIcons(); 
+                checkAdvent();
+                hideSplashScreen();
+            }
 
             fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
-
-            hideSplashScreen();
-       } else {
+        } else {
             showToast('Ошибка авторизации', 2000);
             showErrorSplash();
         }
@@ -138,11 +188,12 @@ async function init() {
 }
 
 async function checkAdvent() {
+    if (!userData) return;
     try {
         const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
-            showAdventCalendar();
+            if (typeof showAdventCalendar === 'function') showAdventCalendar();
         }
     } catch (e) {
         console.error('Advent check error', e);
@@ -155,11 +206,9 @@ function getAdventReward(day, daysInMonth) {
     if (day === 7) return { type: 'item', rarity: 'common' };
     if (day === 14) return { type: 'item', rarity: 'uncommon' };
     if (day === 22) return { type: 'item', rarity: 'epic' };
-    
     if (day === daysInMonth && (daysInMonth === 30 || daysInMonth === 31)) {
         return { type: 'item', rarity: 'legendary' };
     }
-    
     const index = day - 1;
     if (index < coinExpBase.length) {
         if (day % 2 === 1) return { type: 'coins', amount: coinExpBase[index] };
@@ -208,6 +257,7 @@ async function refreshData() {
 }
 
 function updateTopBar() {
+    if (!userData) return;
     document.getElementById('coinCount').innerText = userData.coins;
     document.getElementById('diamondCount').innerText = userData.diamonds || 0;
     document.getElementById('rating').innerText = userData.rating;
@@ -247,6 +297,13 @@ function showScreen(screen) {
                 script.src = 'js/tower.js?v=1';
                 script.onload = () => loadTowerStatus();
                 document.head.appendChild(script);
+            }
+            break;
+        case 'settings':
+            if (typeof renderSettings === 'function') {
+                renderSettings();
+            } else {
+                content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
             }
             break;
         default: renderMain();
@@ -297,5 +354,6 @@ window.renderTasks = renderTasks;
 window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
+window.renderSettings = renderSettings; // если будет определена в screens.js
 
 init();

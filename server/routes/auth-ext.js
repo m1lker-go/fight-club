@@ -340,11 +340,9 @@ router.get('/vk/callback', async (req, res) => {
 
         const { user_id, email, access_token } = tokenData;
 
-        // Получение данных пользователя
         const userInfoResponse = await fetch(`https://api.vk.com/method/users.get?user_ids=${user_id}&fields=photo_50&access_token=${access_token}&v=5.131`);
         const userInfo = await userInfoResponse.json();
         const vkUser = userInfo.response[0];
-        const username = `${vkUser.first_name} ${vkUser.last_name}`;
 
         if (state.mode === 'link') {
             // Режим привязки: добавляем VK к существующему пользователю
@@ -354,7 +352,6 @@ router.get('/vk/callback', async (req, res) => {
             if (userRes.rows.length === 0) throw new Error('Invalid session');
             const userId = userRes.rows[0].id;
 
-            // Проверяем, не привязан ли этот VK к другому пользователю
             const existing = await client.query(
                 'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
                 ['vk', String(user_id)]
@@ -372,22 +369,23 @@ router.get('/vk/callback', async (req, res) => {
             if (email) {
                 await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
             }
-            // Отправляем HTML с сообщением об успехе для закрытия popup
-            res.send(`
-                <html>
-                <body>
-                <script>
+
+            // Определяем, нужно ли вернуться в WebApp или внешний браузер
+            const isTelegramWebApp = req.headers['user-agent']?.includes('Telegram') && !req.query.redirect;
+            if (!isTelegramWebApp && process.env.CLIENT_URL) {
+                const redirectUrl = `${process.env.CLIENT_URL}?vk_link=success`;
+                return res.redirect(redirectUrl);
+            }
+            // Для popup-режима (обычный браузер) отправляем HTML с postMessage
+            return res.send(`
+                <html><body><script>
                     window.opener.postMessage({ type: 'vkLinkSuccess' }, '${process.env.CLIENT_URL}');
                     window.close();
-                </script>
-                </body>
-                </html>
+                </script></body></html>
             `);
-            return;
         }
 
         // Режим входа (login)
-        // Ищем пользователя по email или VK ID
         let userRes = await client.query(
             `SELECT u.* FROM users u
              LEFT JOIN user_connections uc ON u.id = uc.user_id AND uc.provider = 'vk'
@@ -397,7 +395,6 @@ router.get('/vk/callback', async (req, res) => {
         let userData;
         let needNickname = false;
         if (userRes.rows.length === 0) {
-            // Создаём нового пользователя
             const referralCode = Math.random().toString(36).substring(2, 10);
             const newUser = await client.query(
                 `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
@@ -408,16 +405,12 @@ router.get('/vk/callback', async (req, res) => {
             needNickname = true;
             const classes = ['warrior', 'assassin', 'mage'];
             for (let cls of classes) {
-                await client.query(
-                    `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                    [userData.id, cls]
-                );
+                await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
             }
         } else {
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         }
-        // Привязываем VK
         await client.query(
             `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
              VALUES ($1, 'vk', $2, $3, $4)
@@ -430,11 +423,15 @@ router.get('/vk/callback', async (req, res) => {
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
-        // Отправляем HTML с сообщением для родительского окна (закрываем popup и передаём данные)
+        // Редирект для внешнего браузера или HTML для popup
+        const isTelegramWebApp = req.headers['user-agent']?.includes('Telegram') && !req.query.redirect;
+        if (!isTelegramWebApp && process.env.CLIENT_URL) {
+            const redirectUrl = `${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
+            return res.redirect(redirectUrl);
+        }
+        // Для popup (обычный браузер)
         res.send(`
-            <html>
-            <body>
-            <script>
+            <html><body><script>
                 window.opener.postMessage({
                     type: 'vkAuthSuccess',
                     sessionToken: '${sessionToken}',
@@ -442,9 +439,7 @@ router.get('/vk/callback', async (req, res) => {
                     userId: ${userData.id}
                 }, '${process.env.CLIENT_URL}');
                 window.close();
-            </script>
-            </body>
-            </html>
+            </script></body></html>
         `);
     } catch (err) {
         console.error(err);

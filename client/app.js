@@ -347,7 +347,6 @@ window.renderTasks = renderTasks;
 window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
-window.renderSettings = renderSettings; // если будет определена в screens.js
 
 // Запуск приложения
 checkAuth();

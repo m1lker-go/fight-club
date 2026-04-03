@@ -55,6 +55,16 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
 
 // ========== УПРАВЛЕНИЕ СЕССИЕЙ И АВТОРИЗАЦИЕЙ ==========
 let sessionToken = localStorage.getItem('sessionToken');
+let timeoutId = setTimeout(() => {
+    if (!userData) {
+        showErrorSplash();
+    }
+}, 20000); // 10 секунд ожидания
+
+const res = await fetch('https://fight-club-api-4och.onrender.com/auth/profile', {
+    headers: { 'Authorization': `Bearer ${sessionToken}` }
+});
+clearTimeout(timeoutId);
 
 async function checkAuth() {
     if (sessionToken) {

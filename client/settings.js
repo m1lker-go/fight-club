@@ -1,4 +1,6 @@
 // settings.js
+const API_BASE = 'https://fight-club-api-4och.onrender.com';
+
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {
@@ -8,7 +10,7 @@ async function renderSettings() {
     }
 
     try {
-        const res = await fetch('/auth/profile', {
+        const res = await fetch(`${API_BASE}/auth/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to load profile');
@@ -89,7 +91,7 @@ async function renderSettings() {
 async function updateSettings(updates) {
     const token = localStorage.getItem('sessionToken');
     try {
-        const res = await fetch('/auth/update-settings', {
+        const res = await fetch(`${API_BASE}/auth/update-settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, ...updates })

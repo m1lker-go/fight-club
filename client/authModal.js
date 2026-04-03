@@ -114,27 +114,28 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
-    showToast('Вход через VK в разработке', 1500);
-}
-
-async function sendEmailCode() {
-    const email = document.getElementById('authEmail').value;
-    if (!email) {
-        showToast('Введите email', 1500);
-        return;
-    }
-    const res = await fetch(`${window.API_BASE}/auth/init`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: 'email', email })
+    // Открываем popup с редиректом на серверный маршрут /auth/vk
+    const width = 600;
+    const height = 700;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    const popup = window.open(`${window.API_BASE}/auth/vk`, 'VKAuth', `width=${width},height=${height},left=${left},top=${top}`);
+    
+    // Обработчик сообщения от сервера после редиректа
+    window.addEventListener('message', async function vkHandler(event) {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'vkAuthSuccess') {
+            const { sessionToken, needNickname, userId } = event.data;
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needNickname) {
+                showNicknameModal(userId);
+            } else {
+                location.reload();
+            }
+            window.removeEventListener('message', vkHandler);
+            if (popup) popup.close();
+        }
     });
-    if (res.ok) {
-        document.getElementById('codeSection').style.display = 'block';
-        showToast('Код отправлен на почту', 1500);
-    } else {
-        const err = await res.json();
-        showToast(err.error || 'Ошибка отправки кода', 1500);
-    }
 }
 
 async function verifyEmailCode() {

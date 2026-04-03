@@ -155,8 +155,7 @@ function linkVK() {
     if (isTelegramWebApp) {
         window.Telegram.WebApp.openLink(linkUrl);
     } else {
-        const width = 600;
-        const height = 700;
+        const width = 600, height = 700;
         const left = (screen.width - width) / 2;
         const top = (screen.height - height) / 2;
         const popup = window.open(linkUrl, 'VKLink', `width=${width},height=${height},left=${left},top=${top}`);

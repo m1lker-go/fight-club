@@ -57,7 +57,7 @@ function renderMain() {
                         <button class="main-icon-btn empty-btn"></button>
                         <button class="main-icon-btn empty-btn"></button>
                         <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn" data-screen="settings"><i class="fas fa-cog"></i><span>Настройки</span></button>
                         <button class="main-icon-btn empty-btn"></button>
                     </div>
                 </div>

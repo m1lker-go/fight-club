@@ -117,7 +117,6 @@ async function updateSettings(updates) {
 }
 
 function linkTelegram() {
-    // Используем глобальный BOT_USERNAME вместо BOT_ID
     const oauthUrl = `https://oauth.telegram.org/embed?bot_username=${window.BOT_USERNAME}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
     window.removeEventListener('message', handleTelegramLink);
@@ -153,7 +152,7 @@ function linkGoogle() {
     script.src = 'https://accounts.google.com/gsi/client';
     script.onload = () => {
         google.accounts.id.initialize({
-            client_id: window.GOOGLE_CLIENT_ID, // используем глобальную переменную
+            client_id: window.GOOGLE_CLIENT_ID,
             callback: async (response) => {
                 const idToken = response.credential;
                 const token = localStorage.getItem('sessionToken');

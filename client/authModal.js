@@ -1,11 +1,6 @@
-// authModal.js
 let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;
-
-const BOT_ID = '8215458077';
-const GOOGLE_CLIENT_ID = '777033220750-06670cfa2tb9qnaj95pph70mv20ob.apps.googleusercontent.com';
-const VK_APP_ID = '54523677';
 
 function showAuthModal() {
     const modal = document.getElementById('roleModal');
@@ -91,7 +86,7 @@ function loginWithGoogle() {
     script.src = 'https://accounts.google.com/gsi/client';
     script.onload = () => {
         google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
+            client_id: window.GOOGLE_CLIENT_ID,
             callback: async (response) => {
                 const idToken = response.credential;
                 const res = await fetch(`${window.API_BASE}/auth/google`, {

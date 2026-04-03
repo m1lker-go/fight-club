@@ -3,11 +3,14 @@ let currentStep = 'method'; // 'method', 'email', 'nickname'
 let tempSessionToken = null;
 let tempUserId = null;
 
-// ID вашего Telegram бота (числовой)
-const BOT_ID = '123456789'; // Замените на реальный ID
+// ID вашего Telegram бота (числовой) - замените на реальный!
+const BOT_ID = '8215458077'; // Используем BOT_ID из вашего .env (только число)
 
 // ID клиента Google (замените на свой)
-const GOOGLE_CLIENT_ID = 'ваш_client_id.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'ваш_client_id.apps.googleusercontent.com'; // Замените на реальный
+
+// Базовый URL сервера
+const API_BASE = 'https://fight-club-api-4och.onrender.com';
 
 // Функция показа основного модального окна входа
 function showAuthModal() {
@@ -61,12 +64,17 @@ function showAuthModal() {
 async function loginWithTelegram() {
     const oauthUrl = `https://oauth.telegram.org/embed?bot_id=${BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
-    window.addEventListener('message', async (event) => {
+    
+    // Удаляем предыдущий обработчик, если есть, чтобы избежать дублирования
+    window.removeEventListener('message', handleTelegramMessage);
+    window.addEventListener('message', handleTelegramMessage);
+    
+    async function handleTelegramMessage(event) {
         if (event.origin !== 'https://oauth.telegram.org') return;
         const { initData } = event.data;
         if (initData) {
             popup.close();
-            const res = await fetch('/auth/telegram-oauth', {
+            const res = await fetch(`${API_BASE}/auth/telegram-oauth`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ initData })
@@ -82,8 +90,9 @@ async function loginWithTelegram() {
             } else {
                 showToast(data.error, 1500);
             }
+            window.removeEventListener('message', handleTelegramMessage);
         }
-    });
+    }
 }
 
 // Google OAuth
@@ -95,7 +104,7 @@ function loginWithGoogle() {
             client_id: GOOGLE_CLIENT_ID,
             callback: async (response) => {
                 const idToken = response.credential;
-                const res = await fetch('/auth/google', {
+                const res = await fetch(`${API_BASE}/auth/google`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idToken })
@@ -130,7 +139,7 @@ async function sendEmailCode() {
         showToast('Введите email', 1500);
         return;
     }
-    const res = await fetch('/auth/init', {
+    const res = await fetch(`${API_BASE}/auth/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ method: 'email', email })
@@ -148,7 +157,7 @@ async function sendEmailCode() {
 async function verifyEmailCode() {
     const email = document.getElementById('authEmail').value;
     const code = document.getElementById('authCode').value;
-    const res = await fetch('/auth/verify-email', {
+    const res = await fetch(`${API_BASE}/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code })
@@ -180,13 +189,13 @@ function showNicknameStep() {
 async function submitNickname() {
     const nickname = document.getElementById('authNickname').value.trim();
     if (!nickname) return;
-    const check = await fetch(`/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+    const check = await fetch(`${API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
     const { available } = await check.json();
     if (!available) {
         showToast('Никнейм уже занят', 1500);
         return;
     }
-    const res = await fetch('/auth/update-settings', {
+    const res = await fetch(`${API_BASE}/auth/update-settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: tempSessionToken, nickname })
@@ -217,14 +226,14 @@ function showNicknameModal(userId) {
     document.getElementById('saveNicknameBtn').addEventListener('click', async () => {
         const nickname = document.getElementById('nicknameInput').value.trim();
         if (!nickname) return;
-        const check = await fetch(`/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+        const check = await fetch(`${API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
         const { available } = await check.json();
         if (!available) {
             showToast('Никнейм уже занят', 1500);
             return;
         }
         const token = localStorage.getItem('sessionToken');
-        const res = await fetch('/auth/update-settings', {
+        const res = await fetch(`${API_BASE}/auth/update-settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, nickname })

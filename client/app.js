@@ -37,6 +37,7 @@ let ratingTab = 'rating';
 // Глобальный базовый URL для API
 window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 window.BOT_USERNAME = 'CatFightingBot';
+window.GOOGLE_CLIENT_ID = '777033220750-06670cfa2tb9qnaj95pph70mv20ob.apps.googleusercontent.com';
 
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
@@ -80,7 +81,6 @@ async function autoLoginTelegram() {
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 sessionToken = data.sessionToken;
-                // После успешного входа загружаем данные пользователя
                 await loadUserDataByToken(data.sessionToken);
                 return true;
             }
@@ -108,6 +108,7 @@ async function loadUserDataByToken(token) {
             BOT_USERNAME = data.bot_username || '';
             await loadAvatars();
             userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+            recalculatePower();  // <--- ДОБАВЛЕНО
             updateTopBar();
             showScreen('main');
             updateMainMenuNewIcons();
@@ -145,6 +146,7 @@ async function checkAuth() {
                 BOT_USERNAME = data.bot_username || '';
                 await loadAvatars();
                 userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+                recalculatePower();  // <--- ДОБАВЛЕНО
                 updateTopBar();
                 showScreen('main');
                 updateMainMenuNewIcons();
@@ -222,7 +224,7 @@ async function checkAdvent() {
             if (typeof showAdventCalendar === 'function') showAdventCalendar();
         }
     } catch (e) {
-        console.error('Advent check error', e);
+        console.error('Advent check error:', e);
     }
 }
 

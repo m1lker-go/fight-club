@@ -167,3 +167,14 @@ async function loginWithTelegram() {
         }
     });
 }
+
+// Заглушки для OAuth (будут реализованы позже)
+async function loginWithOAuth(provider) {
+    showToast(`Авторизация через ${provider} в разработке`, 1500);
+}
+
+async function sendEmailCode() { ... }
+async function verifyEmailCode() { ... }
+async function submitNickname() { ... }
+
+window.showAuthModal = showAuthModal;

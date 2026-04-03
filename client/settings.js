@@ -1,4 +1,7 @@
 // settings.js
+const GOOGLE_CLIENT_ID = '777033220750-06670cfa2tb9qnaj95pph70mv20ob.apps.googleusercontent.com';
+const BOT_ID = '8215458077';
+
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {
@@ -42,7 +45,7 @@ async function renderSettings() {
                         <div class="connection-row">
                             <span>Telegram</span>
                             <span>${user.tg_id ? 'Подключён' : '—'}</span>
-                            ${!user.tg_id ? '<button class="link-btn" data-provider="telegram">Привязать</button>' : ''}
+                            <button class="link-btn" data-provider="telegram">${user.tg_id ? 'Сменить' : 'Привязать'}</button>
                         </div>
                         <div class="connection-row">
                             <span>Google</span>
@@ -57,7 +60,7 @@ async function renderSettings() {
                         <div class="connection-row">
                             <span>Email</span>
                             <span>${user.email || '—'}</span>
-                            ${!user.email ? '<button class="link-btn" data-provider="email">Привязать</button>' : ''}
+                            <button class="link-btn" data-provider="email">${user.email ? 'Сменить' : 'Привязать'}</button>
                         </div>
                     </div>
                 </div>
@@ -77,10 +80,19 @@ async function renderSettings() {
             });
         }
 
+        // Обработчики привязки аккаунтов
         document.querySelectorAll('.link-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const provider = btn.dataset.provider;
-                if (typeof showToast === 'function') showToast(`Привязка ${provider} в разработке`, 1500);
+                if (provider === 'telegram') {
+                    linkTelegram();
+                } else if (provider === 'google') {
+                    linkGoogle();
+                } else if (provider === 'email') {
+                    showToast('Привязка email в разработке', 1500);
+                } else {
+                    showToast(`Привязка ${provider} в разработке`, 1500);
+                }
             });
         });
     } catch (err) {
@@ -104,6 +116,68 @@ async function updateSettings(updates) {
         console.error(err);
         if (typeof showToast === 'function') showToast('Ошибка сохранения', 1500);
     }
+}
+
+function linkTelegram() {
+    const oauthUrl = `https://oauth.telegram.org/embed?bot_id=${BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
+    const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
+    window.removeEventListener('message', handleTelegramLink);
+    window.addEventListener('message', handleTelegramLink);
+    async function handleTelegramLink(event) {
+        if (event.origin !== 'https://oauth.telegram.org') return;
+        const { initData } = event.data;
+        if (initData) {
+            popup.close();
+            const token = localStorage.getItem('sessionToken');
+            const res = await fetch(`${window.API_BASE}/auth/link`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ provider: 'telegram', initData })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Telegram аккаунт привязан', 1500);
+                renderSettings();
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
+            }
+            window.removeEventListener('message', handleTelegramLink);
+        }
+    }
+}
+
+function linkGoogle() {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = () => {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: async (response) => {
+                const idToken = response.credential;
+                const token = localStorage.getItem('sessionToken');
+                const res = await fetch(`${window.API_BASE}/auth/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ provider: 'google', idToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Google аккаунт привязан', 1500);
+                    renderSettings();
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            }
+        });
+        google.accounts.id.prompt();
+    };
+    document.head.appendChild(script);
 }
 
 window.renderSettings = renderSettings;

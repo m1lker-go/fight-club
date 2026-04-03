@@ -1,16 +1,15 @@
 // settings.js
-const API_BASE = 'https://fight-club-api-4och.onrender.com';
 
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {
-        showToast('Сессия не найдена', 1500);
-        showScreen('main');
+        if (typeof showToast === 'function') showToast('Сессия не найдена', 1500);
+        if (typeof showScreen === 'function') showScreen('main');
         return;
     }
 
     try {
-        const res = await fetch(`${API_BASE}/auth/profile`, {
+        const res = await fetch(`${window.API_BASE}/auth/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to load profile');
@@ -19,11 +18,12 @@ async function renderSettings() {
         const connections = data.connections || [];
 
         const content = document.getElementById('content');
+        if (!content) return;
         content.innerHTML = `
             <div class="settings-container">
                 <div class="settings-header">
                     <img src="/assets/${user.avatar || 'cat_heroweb.png'}" class="settings-avatar">
-                    <span class="settings-username">${user.nickname || user.username || 'Игрок'}</span>
+                    <span class="settings-username">${escapeHtml(user.nickname || user.username || 'Игрок')}</span>
                 </div>
                 <div class="settings-row">
                     <span>Музыка</span>
@@ -65,42 +65,45 @@ async function renderSettings() {
             </div>
         `;
 
-        // Обработчики тумблеров
-        document.getElementById('musicToggle').addEventListener('change', async (e) => {
-            await updateSettings({ music_enabled: e.target.checked });
-        });
-        document.getElementById('soundToggle').addEventListener('change', async (e) => {
-            await updateSettings({ sound_enabled: e.target.checked });
-        });
+        const musicToggle = document.getElementById('musicToggle');
+        if (musicToggle) {
+            musicToggle.addEventListener('change', async (e) => {
+                await updateSettings({ music_enabled: e.target.checked });
+            });
+        }
+        const soundToggle = document.getElementById('soundToggle');
+        if (soundToggle) {
+            soundToggle.addEventListener('change', async (e) => {
+                await updateSettings({ sound_enabled: e.target.checked });
+            });
+        }
 
-        // Обработчики привязки аккаунтов (заглушки)
         document.querySelectorAll('.link-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const provider = btn.dataset.provider;
-                showToast(`Привязка ${provider} в разработке`, 1500);
-                // Здесь будет вызов OAuth
+                if (typeof showToast === 'function') showToast(`Привязка ${provider} в разработке`, 1500);
             });
         });
     } catch (err) {
         console.error(err);
-        showToast('Ошибка загрузки настроек', 1500);
-        showScreen('main');
+        if (typeof showToast === 'function') showToast('Ошибка загрузки настроек', 1500);
+        if (typeof showScreen === 'function') showScreen('main');
     }
 }
 
 async function updateSettings(updates) {
     const token = localStorage.getItem('sessionToken');
     try {
-        const res = await fetch(`${API_BASE}/auth/update-settings`, {
+        const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, ...updates })
         });
         if (!res.ok) throw new Error('Failed to update');
-        showToast('Настройки сохранены', 1000);
+        if (typeof showToast === 'function') showToast('Настройки сохранены', 1000);
     } catch (err) {
         console.error(err);
-        showToast('Ошибка сохранения', 1500);
+        if (typeof showToast === 'function') showToast('Ошибка сохранения', 1500);
     }
 }
 

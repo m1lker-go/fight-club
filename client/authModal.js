@@ -117,12 +117,9 @@ async function loginWithVK() {
     const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
     const authUrl = `${window.API_BASE}/auth/vk?mode=login`;
     if (isTelegramWebApp) {
-        // Внутри Telegram – открываем системный браузер
         window.Telegram.WebApp.openLink(authUrl);
     } else {
-        // Обычный браузер – popup
-        const width = 600;
-        const height = 700;
+        const width = 600, height = 700;
         const left = (screen.width - width) / 2;
         const top = (screen.height - height) / 2;
         const popup = window.open(authUrl, 'VKAuth', `width=${width},height=${height},left=${left},top=${top}`);
@@ -131,11 +128,8 @@ async function loginWithVK() {
             if (event.data && event.data.type === 'vkAuthSuccess') {
                 const { sessionToken, needNickname, userId } = event.data;
                 localStorage.setItem('sessionToken', sessionToken);
-                if (needNickname) {
-                    showNicknameModal(userId);
-                } else {
-                    location.reload();
-                }
+                if (needNickname) showNicknameModal(userId);
+                else location.reload();
                 window.removeEventListener('message', vkHandler);
                 if (popup) popup.close();
             }

@@ -32,6 +32,7 @@ let lastBattleLog = null;
 let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
+
 // Глобальный базовый URL для API (используется во всех скриптах)
 window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 
@@ -55,23 +56,21 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
 
 // ========== УПРАВЛЕНИЕ СЕССИЕЙ И АВТОРИЗАЦИЕЙ ==========
 let sessionToken = localStorage.getItem('sessionToken');
-let timeoutId = setTimeout(() => {
-    if (!userData) {
-        showErrorSplash();
-    }
-}, 20000); // 10 секунд ожидания
-
-const res = await fetch('https://fight-club-api-4och.onrender.com/auth/profile', {
-    headers: { 'Authorization': `Bearer ${sessionToken}` }
-});
-clearTimeout(timeoutId);
 
 async function checkAuth() {
+    // Если есть токен, проверяем его на сервере
     if (sessionToken) {
+        // Таймаут на случай зависания запроса
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
+
         try {
-            const res = await fetch('https://fight-club-api-4och.onrender.com/auth/profile', {
-                headers: { 'Authorization': `Bearer ${sessionToken}` }
+            const res = await fetch(`${window.API_BASE}/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${sessionToken}` },
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
             if (res.ok) {
                 const data = await res.json();
                 userData = data.user;
@@ -87,14 +86,23 @@ async function checkAuth() {
                 hideSplashScreen();
                 return true;
             } else {
+                // Токен невалиден – удаляем его
                 localStorage.removeItem('sessionToken');
                 sessionToken = null;
             }
         } catch (e) {
+            clearTimeout(timeoutId);
             console.error('Auth check error:', e);
+            // Показываем ошибку соединения
+            showErrorSplash();
+            return false;
         }
     }
+
     // Если сессии нет или она невалидна – показываем модальное окно входа
+    // Сначала скрываем спиннер, чтобы модалка была видна
+    hideSplashScreen();
+
     if (typeof showAuthModal === 'function') {
         showAuthModal();
     } else {
@@ -136,7 +144,7 @@ function showErrorSplash() {
     }
 }
 
-// Резервный вход через Telegram (для старых версий, когда нет сессии)
+// Резервный вход через Telegram (для старых версий, когда нет сессии) – больше не используется, но оставлен для совместимости
 async function legacyTelegramLogin() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -147,7 +155,7 @@ async function legacyTelegramLogin() {
     }, 10000);
 
     try {
-        const response = await fetchWithRetry('https://fight-club-api-4och.onrender.com/auth/login', {
+        const response = await fetchWithRetry(`${window.API_BASE}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -179,7 +187,7 @@ async function legacyTelegramLogin() {
                 hideSplashScreen();
             }
 
-            fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
+            fetch(`${window.API_BASE}/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`).catch(err => console.error('Failed to refresh daily', err));
         } else {
             showToast('Ошибка авторизации', 2000);
             showErrorSplash();
@@ -195,7 +203,7 @@ async function legacyTelegramLogin() {
 async function checkAdvent() {
     if (!userData) return;
     try {
-        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        const res = await fetch(`${window.API_BASE}/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
             if (typeof showAdventCalendar === 'function') showAdventCalendar();
@@ -232,7 +240,7 @@ function getAdventReward(day, daysInMonth) {
 async function refreshData() {
     if (!userData || !userData.tg_id) return;
     try {
-        const response = await fetchWithRetry('https://fight-club-api-4och.onrender.com/auth/refresh', {
+        const response = await fetchWithRetry(`${window.API_BASE}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id })
@@ -325,7 +333,7 @@ function renderForgeFallback() {
 async function loadAvatars() {
     if (avatarsList) return avatarsList;
     try {
-        const res = await fetch('https://fight-club-api-4och.onrender.com/avatars');
+        const res = await fetch(`${window.API_BASE}/avatars`);
         if (!res.ok) throw new Error('Failed to fetch avatars');
         avatarsList = await res.json();
         return avatarsList;

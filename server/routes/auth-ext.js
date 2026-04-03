@@ -451,4 +451,84 @@ router.post('/update-settings', async (req, res) => {
     }
 });
 
+// VK OAuth
+router.get('/vk', (req, res) => {
+    const vkAuthUrl = `https://oauth.vk.com/authorize?client_id=${process.env.VK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}&response_type=code&v=5.131&scope=email,phone`;
+    res.redirect(vkAuthUrl);
+});
+
+router.get('/vk/callback', async (req, res) => {
+    const { code } = req.query;
+    if (!code) return res.status(400).send('No code provided');
+
+    try {
+        // Обмен кода на access_token
+        const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}&code=${code}`);
+        const tokenData = await tokenResponse.json();
+        if (tokenData.error) throw new Error(tokenData.error_description);
+
+        const { user_id, email, access_token } = tokenData;
+
+        // Получение данных пользователя
+        const userInfoResponse = await fetch(`https://api.vk.com/method/users.get?user_ids=${user_id}&fields=photo_50&access_token=${access_token}&v=5.131`);
+        const userInfo = await userInfoResponse.json();
+        const vkUser = userInfo.response[0];
+        const username = `${vkUser.first_name} ${vkUser.last_name}`;
+
+        const client = await pool.connect();
+        try {
+            // Ищем пользователя по email или VK ID
+            let userRes = await client.query(
+                `SELECT u.* FROM users u
+                 LEFT JOIN user_connections uc ON u.id = uc.user_id AND uc.provider = 'vk'
+                 WHERE uc.provider_id = $1 OR u.email = $2`,
+                [String(user_id), email]
+            );
+            let userData;
+            let needNickname = false;
+            if (userRes.rows.length === 0) {
+                // Создаём нового
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                const newUser = await client.query(
+                    `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+                    [email || null, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                );
+                userData = newUser.rows[0];
+                needNickname = true;
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(
+                        `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                        [userData.id, cls]
+                    );
+                }
+            } else {
+                userData = userRes.rows[0];
+                needNickname = !userData.nickname;
+            }
+            // Привязываем VK
+            await client.query(
+                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                 VALUES ($1, 'vk', $2, $3, $4)
+                 ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+                [userData.id, String(user_id), email || null, JSON.stringify(tokenData)]
+            );
+            // Обновляем email в users, если его не было
+            if (email && !userData.email) {
+                await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
+            }
+            const sessionToken = generateToken();
+            await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+            // После успешного входа перенаправляем на клиент
+            res.redirect(`${process.env.CLIENT_URL}?sessionToken=${sessionToken}&needNickname=${needNickname}`);
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Authentication failed');
+    }
+});
+
 module.exports = router;

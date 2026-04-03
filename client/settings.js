@@ -88,6 +88,8 @@ async function renderSettings() {
                     linkGoogle();
                 } else if (provider === 'email') {
                     showToast('Привязка email в разработке', 1500);
+                    } else if (provider === 'vk') {
+                    linkVK();
                 } else {
                     showToast(`Привязка ${provider} в разработке`, 1500);
                 }

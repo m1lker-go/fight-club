@@ -147,6 +147,30 @@ function linkTelegram() {
     }
 }
 
+function linkVK() {
+    const width = 600;
+    const height = 700;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    const popup = window.open(`${window.API_BASE}/auth/vk?mode=link`, 'VKLink', `width=${width},height=${height},left=${left},top=${top}`);
+    
+    window.addEventListener('message', async function vkLinkHandler(event) {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'vkLinkSuccess') {
+            showToast('VK аккаунт привязан', 1500);
+            renderSettings();
+            window.removeEventListener('message', vkLinkHandler);
+            if (popup) popup.close();
+        }
+        if (event.data && event.data.type === 'vkLinkError') {
+            showToast('Ошибка привязки: ' + event.data.error, 1500);
+            window.removeEventListener('message', vkLinkHandler);
+            if (popup) popup.close();
+        }
+    });
+}
+
+
 function linkGoogle() {
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';

@@ -136,3 +136,34 @@ function showNicknameStep() {
         }
     });
 }
+
+async function loginWithTelegram() {
+    // Открываем окно Telegram OAuth
+    const oauthUrl = `https://oauth.telegram.org/embed?bot_id=${BOT_ID}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
+    const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
+    // Слушаем сообщения от виджета (Telegram отправляет сообщение с initData)
+    window.addEventListener('message', async (event) => {
+        if (event.origin !== 'https://oauth.telegram.org') return;
+        const { initData } = event.data;
+        if (initData) {
+            popup.close();
+            // Отправляем initData на сервер
+            const res = await fetch('/auth/telegram-oauth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('sessionToken', data.sessionToken);
+                if (data.needNickname) {
+                    showNicknameModal(data.userId);
+                } else {
+                    location.reload();
+                }
+            } else {
+                showToast(data.error, 1500);
+            }
+        }
+    });
+}

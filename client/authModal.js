@@ -92,34 +92,47 @@ async function loginWithTelegram() {
 
 // Google OAuth One Tap
 function loginWithGoogle() {
+    if (googleLinkingInProgress) {
+        showToast('Вход через Google уже выполняется', 1500);
+        return;
+    }
+    googleLinkingInProgress = true;
     const width = 600, height = 700;
     const left = (screen.width - width) / 2;
     const top = (screen.height - height) / 2;
     const popup = window.open(`${window.API_BASE}/auth/google-auth?mode=login`, 'GoogleAuth', `width=${width},height=${height},left=${left},top=${top}`);
     if (!popup) {
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
+        googleLinkingInProgress = false;
+        showToast('Пожалуйста, разрешите всплывающие окна', 1500);
         return;
     }
-    window.addEventListener('message', async function googleAuthHandler(event) {
+    const googleAuthHandler = async (event) => {
         if (event.origin !== window.location.origin) return;
         if (event.data && event.data.type === 'googleAuthSuccess') {
+            googleLinkingInProgress = false;
             const { sessionToken, needNickname, userId } = event.data;
             localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname) showNicknameModal(userId);
-            else location.reload();
+            if (needNickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(userId);
+            } else {
+                location.reload();
+            }
             window.removeEventListener('message', googleAuthHandler);
             if (popup) popup.close();
         }
         if (event.data && event.data.type === 'googleAuthError') {
-            showToast('Ошибка входа через Google: ' + event.data.error, 1500);
+            googleLinkingInProgress = false;
+            showToast('Ошибка входа: ' + event.data.error, 1500);
             window.removeEventListener('message', googleAuthHandler);
             if (popup) popup.close();
         }
-    });
-    // Таймер на случай закрытия окна без авторизации
+    };
+    window.addEventListener('message', googleAuthHandler);
+    // Таймер только для сброса флага, без проверки popup.closed (избегаем COOP)
     const checkClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkClosed);
+            googleLinkingInProgress = false;
             window.removeEventListener('message', googleAuthHandler);
         }
     }, 1000);

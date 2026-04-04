@@ -3313,6 +3313,10 @@ input:checked + .slider:before {
     cursor: pointer;
     width: 100%;
     transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .logout-btn:hover {

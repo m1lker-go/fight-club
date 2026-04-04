@@ -50,15 +50,21 @@ function showAuthModal() {
 }
 
 async function loginWithTelegram() {
-   const oauthUrl = `https://oauth.telegram.org/embed?bot_username=CatFightingBot&origin=${encodeURIComponent(window.location.origin)}&size=large`;
+    // Используем правильный формат URL виджета: /embed/BOT_USERNAME
+    const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
     
-    window.removeEventListener('message', handleTelegramMessage);
-    window.addEventListener('message', handleTelegramMessage);
-    
-    async function handleTelegramMessage(event) {
-        console.log('Message received:', event);
+    if (!popup) {
+        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
+        return;
+    }
+
+    // Обработчик сообщений от виджета
+    const handleTelegramMessage = async (event) => {
+        // Проверяем источник сообщения
         if (event.origin !== 'https://oauth.telegram.org') return;
+        
+        // Виджет отправляет объект с полем initData
         const { initData } = event.data;
         if (initData) {
             popup.close();
@@ -80,8 +86,19 @@ async function loginWithTelegram() {
             }
             window.removeEventListener('message', handleTelegramMessage);
         }
-    }
+    };
+
+    window.addEventListener('message', handleTelegramMessage);
+    
+    // Таймер на случай, если пользователь закроет окно без авторизации
+    const checkPopupClosed = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(checkPopupClosed);
+            window.removeEventListener('message', handleTelegramMessage);
+        }
+    }, 1000);
 }
+
 
 function loginWithGoogle() {
     const script = document.createElement('script');

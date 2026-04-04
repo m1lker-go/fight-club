@@ -397,17 +397,7 @@ router.get('/vk/callback', async (req, res) => {
         if (!isTelegramWebApp && process.env.CLIENT_URL) {
             return res.redirect(`${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
         }
-        res.send(`
-            <html><body><script>
-                window.opener.postMessage({
-                    type: 'vkAuthSuccess',
-                    sessionToken: '${sessionToken}',
-                    needNickname: ${needNickname},
-                    userId: ${userData.id}
-                }, '${process.env.CLIENT_URL}');
-                window.close();
-            </script></body></html>
-        `);
+        res.redirect(`${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
     } catch (err) {
         console.error(err);
         res.status(500).send('Authentication failed');

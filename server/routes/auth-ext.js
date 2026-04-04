@@ -569,39 +569,58 @@ router.post('/link', async (req, res) => {
             res.json({ success: true });
         }
         else if (provider === 'vk' && code && device_id) {
-            // Обмен кода на токен через VK API
-            const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&code=${code}&device_id=${device_id}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}`);
-            const tokenData = await tokenResponse.json();
-            if (tokenData.error) throw new Error(tokenData.error_description);
-            const { user_id, email } = tokenData;
-            
-            // Проверяем, не привязан ли этот VK к другому пользователю
-            const existing = await client.query(
-                'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
-                ['vk', String(user_id)]
-            );
-            if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
-                return res.status(409).json({ error: 'Этот VK аккаунт уже привязан к другому пользователю' });
-            }
-            // Проверяем, не занят ли email другим пользователем (если email есть)
-            if (email) {
-                const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
-                if (emailUser.rows.length > 0) {
-                    return res.status(409).json({ error: 'Этот email уже зарегистрирован у другого пользователя' });
-                }
-            }
-            // Привязываем VK
-            await client.query(
-                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-                 VALUES ($1, 'vk', $2, $3, $4)
-                 ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
-                [userId, String(user_id), email || null, JSON.stringify(tokenData)]
-            );
-            if (email) {
-                await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
-            }
-            res.json({ success: true });
+    console.log('=== VK LINK ===');
+    console.log('code:', code);
+    console.log('device_id:', device_id);
+    console.log('VK_APP_ID:', process.env.VK_APP_ID);
+    console.log('VK_CALLBACK_URL:', process.env.VK_CALLBACK_URL);
+    console.log('VK_CLIENT_SECRET (first 5 chars):', process.env.VK_CLIENT_SECRET?.substring(0,5));
+    
+    try {
+        // Обмен кода на токен через VK API
+        const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&code=${code}&device_id=${device_id}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}`);
+        console.log('VK token response status:', tokenResponse.status);
+        const tokenData = await tokenResponse.json();
+        console.log('VK token data:', JSON.stringify(tokenData, null, 2));
+        
+        if (tokenData.error) {
+            console.error('VK token exchange error:', tokenData.error, tokenData.error_description);
+            return res.status(400).json({ error: `Ошибка VK: ${tokenData.error_description || tokenData.error}` });
         }
+        const { user_id, email } = tokenData;
+        
+        // Проверяем, не привязан ли этот VK к другому пользователю
+        const existing = await client.query(
+            'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
+            ['vk', String(user_id)]
+        );
+        if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
+            return res.status(409).json({ error: 'Этот VK аккаунт уже привязан к другому пользователю' });
+        }
+        // Проверяем, не занят ли email другим пользователем (если email есть)
+        if (email) {
+            const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
+            if (emailUser.rows.length > 0) {
+                return res.status(409).json({ error: 'Этот email уже зарегистрирован у другого пользователя' });
+            }
+        }
+        // Привязываем VK
+        await client.query(
+            `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+             VALUES ($1, 'vk', $2, $3, $4)
+             ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+            [userId, String(user_id), email || null, JSON.stringify(tokenData)]
+        );
+        if (email) {
+            await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('VK link error:', err);
+        res.status(500).json({ error: 'Ошибка привязки VK: ' + err.message });
+    }
+}
+          
         else if (provider === 'email' && email) {
             const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
             if (emailUser.rows.length > 0) {

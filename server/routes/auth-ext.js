@@ -568,7 +568,7 @@ router.post('/link', async (req, res) => {
             }
             res.json({ success: true });
         }
-                else if (provider === 'vk' && code && device_id) {
+        else if (provider === 'vk' && code && device_id) {
             // Обмен кода на токен через VK API
             const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&code=${code}&device_id=${device_id}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}`);
             const tokenData = await tokenResponse.json();
@@ -601,6 +601,23 @@ router.post('/link', async (req, res) => {
                 await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
             }
             res.json({ success: true });
+        }
+        else if (provider === 'email' && email) {
+            const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
+            if (emailUser.rows.length > 0) {
+                return res.status(409).json({ error: 'Этот email уже зарегистрирован у другого пользователя' });
+            }
+            await client.query(
+                `INSERT INTO user_connections (user_id, provider, email)
+                 VALUES ($1, 'email', $2)
+                 ON CONFLICT (user_id, provider) DO UPDATE SET email = $2`,
+                [userId, email]
+            );
+            await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
+            res.json({ success: true });
+        }
+        else {
+            res.status(400).json({ error: 'Invalid provider or missing data' });
         }
     } catch (err) {
         console.error(err);

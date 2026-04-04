@@ -596,8 +596,9 @@ router.get('/google-auth', (req, res) => {
 
 router.get('/google-callback', async (req, res) => {
     const { code, error, state: stateParam } = req.query;
-    // Логируем все полученные параметры для отладки
-    console.log('Google callback received query:', req.query);
+    console.log('=== Google Callback Started ===');
+    console.log('Query params:', req.query);
+    
     if (error) {
         console.error('Google OAuth error:', error);
         return res.status(400).send(`Ошибка Google: ${error}`);
@@ -606,10 +607,23 @@ router.get('/google-callback', async (req, res) => {
         console.error('No code provided in callback');
         return res.status(400).send('No code provided');
     }
+    console.log('✅ Code received, length:', code.length);
+    
     let state;
-    try { state = JSON.parse(stateParam); } catch(e) { state = { mode: 'login' }; }
+    try {
+        state = JSON.parse(stateParam);
+        console.log('State parsed:', state);
+    } catch(e) {
+        state = { mode: 'login' };
+        console.log('State parsing failed, using default login mode');
+    }
+    
     const client = await pool.connect();
     try {
+        // Обмен кода на токены
+        const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
+        console.log('Redirect URI for token exchange:', redirectUri);
+        
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -617,26 +631,42 @@ router.get('/google-callback', async (req, res) => {
                 code,
                 client_id: process.env.GOOGLE_CLIENT_ID,
                 client_secret: process.env.GOOGLE_CLIENT_SECRET,
-                redirect_uri: `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`,
+                redirect_uri: redirectUri,
                 grant_type: 'authorization_code'
             })
         });
+        
+        console.log('Token response status:', tokenResponse.status);
         const tokenData = await tokenResponse.json();
-        if (tokenData.error) throw new Error(tokenData.error_description);
+        console.log('Token response data:', JSON.stringify(tokenData, null, 2));
+        
+        if (tokenData.error) {
+            console.error('Token exchange error:', tokenData.error, tokenData.error_description);
+            throw new Error(tokenData.error_description || tokenData.error);
+        }
         const { id_token } = tokenData;
+        console.log('✅ ID token obtained');
+        
         const ticket = await googleClient.verifyIdToken({ idToken: id_token, audience: process.env.GOOGLE_CLIENT_ID });
         const payload = ticket.getPayload();
         const email = payload.email;
         const googleId = payload.sub;
-
+        console.log('✅ User verified, email:', email, 'googleId:', googleId);
+        
+        // Режим привязки
         if (state.mode === 'link') {
-            // Привязка Google – postMessage (popup)
+            console.log('Mode: LINK (binding Google to existing user)');
             const sessionToken = state.sessionToken;
-            if (!sessionToken) throw new Error('No session token');
+            if (!sessionToken) throw new Error('No session token for linking');
             const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
             if (userRes.rows.length === 0) throw new Error('Invalid session');
             const userId = userRes.rows[0].id;
-            const existing = await client.query('SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
+            console.log('User ID for linking:', userId);
+            
+            const existing = await client.query(
+                'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
+                ['google', googleId]
+            );
             if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
                 throw new Error('Google already linked to another user');
             }
@@ -647,6 +677,7 @@ router.get('/google-callback', async (req, res) => {
                 [userId, googleId, email, JSON.stringify(payload)]
             );
             if (email) await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
+            console.log('✅ Google linked successfully, sending postMessage');
             return res.send(`
                 <html><body><script>
                     window.opener.postMessage({ type: 'googleLinkSuccess' }, '${process.env.CLIENT_URL}');
@@ -654,20 +685,27 @@ router.get('/google-callback', async (req, res) => {
                 </script></body></html>
             `);
         }
-
-        // Режим входа (login) – редирект на клиент
-        let existingConnection = await client.query('SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
+        
+        // Режим входа
+        console.log('Mode: LOGIN (full OAuth flow)');
+        let existingConnection = await client.query(
+            'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
+            ['google', googleId]
+        );
         let userData, needNickname = false;
         if (existingConnection.rows.length > 0) {
             const userId = existingConnection.rows[0].user_id;
+            console.log('Existing user found, userId:', userId);
             await rechargeEnergy(client, userId);
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         } else {
+            console.log('No existing connection, checking email uniqueness...');
             if (email) {
                 const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
                 if (emailUser.rows.length > 0) {
+                    console.log('Email already registered, returning conflict');
                     return res.status(409).send('Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.');
                 }
             }
@@ -679,11 +717,13 @@ router.get('/google-callback', async (req, res) => {
             );
             userData = newUser.rows[0];
             needNickname = true;
+            console.log('New user created, userId:', userData.id);
             const classes = ['warrior', 'assassin', 'mage'];
             for (let cls of classes) {
                 await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
             }
         }
+        // Сохраняем или обновляем связь с Google
         await client.query(
             `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
              VALUES ($1, 'google', $2, $3, $4)
@@ -691,12 +731,16 @@ router.get('/google-callback', async (req, res) => {
             [userData.id, googleId, email, JSON.stringify(payload)]
         );
         if (email && !userData.email) await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
+        
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-        res.redirect(`${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
+        console.log('✅ Session token generated, redirecting to client');
+        const redirectUrl = `${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
+        console.log('Redirect URL:', redirectUrl);
+        res.redirect(redirectUrl);
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Authentication failed');
+        console.error('❌ Error in google-callback:', err);
+        res.status(500).send('Authentication failed: ' + err.message);
     } finally {
         client.release();
     }

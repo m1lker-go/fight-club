@@ -160,7 +160,6 @@ function linkTelegram() {
         }
     };
     window.addEventListener('message', handleTelegramLink);
-    // Таймаут на случай, если окно закрыли без действия
     const checkPopupClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkPopupClosed);
@@ -180,7 +179,7 @@ function linkVK() {
     const linkUrl = `${window.API_BASE}/auth/vk?mode=link`;
     if (isTelegramWebApp) {
         window.Telegram.WebApp.openLink(linkUrl);
-        vkLinkingInProgress = false; // сброс, так как переключение в другой браузер
+        vkLinkingInProgress = false;
     } else {
         const width = 600, height = 700;
         const left = (screen.width - width) / 2;
@@ -208,7 +207,6 @@ function linkVK() {
             }
         };
         window.addEventListener('message', vkLinkHandler);
-        // Таймаут на случай закрытия окна
         const checkPopupClosed = setInterval(() => {
             if (popup.closed) {
                 clearInterval(checkPopupClosed);

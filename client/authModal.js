@@ -11,26 +11,34 @@ function showAuthModal() {
     modalBody.innerHTML = `
         <div class="auth-container">
             <div class="auth-methods">
-                <button class="auth-btn" id="telegramAuthBtn">Войти через Telegram</button>
-                <button class="auth-btn" id="googleAuthBtn">Войти через Google</button>
-                <button class="auth-btn" id="vkAuthBtn">Войти через VK</button>
-                <button class="auth-btn" id="emailAuthBtn">Войти по email</button>
+                <button class="auth-btn telegram-btn" id="telegramAuthBtn">
+                    <i class="fab fa-telegram-plane"></i> Войти через Telegram
+                </button>
+                <button class="auth-btn google-btn" id="googleAuthBtn">
+                    <i class="fab fa-google"></i> Войти через Google
+                </button>
+                <button class="auth-btn vk-btn" id="vkAuthBtn">
+                    <i class="fab fa-vk"></i> Войти через VK
+                </button>
+                <button class="auth-btn email-btn" id="emailAuthBtn">
+                    <i class="fas fa-envelope"></i> Войти по email
+                </button>
             </div>
             <div class="auth-email-form" style="display:none;">
-                <input type="email" id="authEmail" placeholder="Email">
-                <button id="sendCodeBtn">Отправить код</button>
+                <input type="email" id="authEmail" placeholder="Email" class="auth-input">
+                <button class="auth-submit-btn" id="sendCodeBtn">Отправить код</button>
                 <div id="codeSection" style="display:none;">
-                    <input type="text" id="authCode" placeholder="Код из письма">
-                    <button id="verifyCodeBtn">Подтвердить</button>
+                    <input type="text" id="authCode" placeholder="Код из письма" class="auth-input">
+                    <button class="auth-submit-btn" id="verifyCodeBtn">Подтвердить</button>
                 </div>
             </div>
             <div class="auth-nickname" style="display:none;">
-                <input type="text" id="authNickname" placeholder="Придумайте никнейм (англ.)" maxlength="20">
-                <button id="submitNickname">Продолжить</button>
+                <input type="text" id="authNickname" placeholder="Придумайте никнейм (англ.)" maxlength="20" class="auth-input">
+                <button class="auth-submit-btn" id="submitNickname">Продолжить</button>
             </div>
         </div>
     `;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
     modal.style.position = 'fixed';
     modal.style.zIndex = '2000';
     const closeBtn = modal.querySelector('.close');

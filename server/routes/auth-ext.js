@@ -318,6 +318,7 @@ router.get('/vk/callback', async (req, res) => {
         const vkUser = userInfo.response[0];
 
         if (state.mode === 'link') {
+            // Привязка VK к существующему пользователю
             const sessionToken = state.sessionToken;
             if (!sessionToken) throw new Error('No session token for linking');
             const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
@@ -339,14 +340,16 @@ router.get('/vk/callback', async (req, res) => {
             if (email) {
                 await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
             }
-            const isTelegramWebApp = req.headers['user-agent']?.includes('Telegram') && !req.query.redirect;
-            if (!isTelegramWebApp && process.env.CLIENT_URL) {
-                return res.redirect(`${process.env.CLIENT_URL}?vk_link=success`);
-            }
-            return res.send(`<html><body><script>window.opener.postMessage({ type: 'vkLinkSuccess' }, '${process.env.CLIENT_URL}'); window.close();</script></body></html>`);
+            // Привязка – отправляем postMessage (для popup)
+            return res.send(`
+                <html><body><script>
+                    window.opener.postMessage({ type: 'vkLinkSuccess' }, '${process.env.CLIENT_URL}');
+                    window.close();
+                </script></body></html>
+            `);
         }
 
-        // Режим входа
+        // Режим входа (login) – редирект на клиент с параметрами
         let existingConnection = await client.query(
             'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
             ['vk', String(user_id)]
@@ -392,12 +395,8 @@ router.get('/vk/callback', async (req, res) => {
         }
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-
-        const isTelegramWebApp = req.headers['user-agent']?.includes('Telegram') && !req.query.redirect;
-        if (!isTelegramWebApp && process.env.CLIENT_URL) {
-            return res.redirect(`${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
-        }
-        res.redirect(`${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
+        // РЕДИРЕКТ НА КЛИЕНТ (исправлено с google_auth на vk_auth)
+        res.redirect(`${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
     } catch (err) {
         console.error(err);
         res.status(500).send('Authentication failed');
@@ -581,7 +580,7 @@ router.post('/refresh', async (req, res) => {
     }
 });
 
-// ========== GOOGLE OAuth через popup (fallback) ==========
+// ========== GOOGLE OAuth через редирект ==========
 router.get('/google-auth', (req, res) => {
     const mode = req.query.mode === 'link' ? 'link' : 'login';
     let state = { mode };
@@ -589,7 +588,7 @@ router.get('/google-auth', (req, res) => {
         state.sessionToken = req.query.token;
     }
     const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
-     console.log('Google redirect URI:', redirectUri);
+    console.log('Google redirect URI:', redirectUri);
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20profile&state=${encodeURIComponent(JSON.stringify(state))}`;
     res.redirect(url);
 });
@@ -601,7 +600,6 @@ router.get('/google-callback', async (req, res) => {
     try { state = JSON.parse(stateParam); } catch(e) { state = { mode: 'login' }; }
     const client = await pool.connect();
     try {
-        // Обмен кода на токены
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -622,7 +620,7 @@ router.get('/google-callback', async (req, res) => {
         const googleId = payload.sub;
 
         if (state.mode === 'link') {
-            // Привязка Google к существующему пользователю
+            // Привязка Google – postMessage (popup)
             const sessionToken = state.sessionToken;
             if (!sessionToken) throw new Error('No session token');
             const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
@@ -639,7 +637,6 @@ router.get('/google-callback', async (req, res) => {
                 [userId, googleId, email, JSON.stringify(payload)]
             );
             if (email) await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
-            // Привязка – отправляем postMessage (popup)
             return res.send(`
                 <html><body><script>
                     window.opener.postMessage({ type: 'googleLinkSuccess' }, '${process.env.CLIENT_URL}');
@@ -648,7 +645,7 @@ router.get('/google-callback', async (req, res) => {
             `);
         }
 
-        // Режим входа (login) – делаем редирект на клиент с параметрами
+        // Режим входа (login) – редирект на клиент
         let existingConnection = await client.query('SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
         let userData, needNickname = false;
         if (existingConnection.rows.length > 0) {
@@ -686,7 +683,6 @@ router.get('/google-callback', async (req, res) => {
         if (email && !userData.email) await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-        // РЕДИРЕКТ (вместо postMessage)
         res.redirect(`${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
     } catch (err) {
         console.error(err);

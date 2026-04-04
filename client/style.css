@@ -3322,3 +3322,74 @@ input:checked + .slider:before {
 .logout-btn:hover {
     background-color: #c0392b;
 }
+
+/* ========== ОКНО ВХОДА (СТИЛИ ДЛЯ КНОПОК) ========== */
+.auth-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    background-color: #2a303c;
+    border: 1px solid #aaa;
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.auth-btn i {
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+}
+
+.auth-btn:hover {
+    background-color: #3a404e;
+    border-color: #00aaff;
+}
+
+/* Цветные иконки (опционально) */
+.telegram-btn i { color: #26A5E4; }
+.google-btn i { color: #DB4437; }
+.vk-btn i { color: #4680C2; }
+.email-btn i { color: #00aaff; }
+
+/* Поля ввода и кнопки в email-форме */
+.auth-input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background-color: #2a303c;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+.auth-submit-btn {
+    background-color: #00aaff;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 16px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+}
+
+.auth-submit-btn:hover {
+    background-color: #0088cc;
+}

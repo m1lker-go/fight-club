@@ -278,4 +278,36 @@ function linkGoogle() {
     }, 1000);
 }
 
+// Функция показа модального окна для выхода
+function showLogoutConfirmModal(onConfirm) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Выход из аккаунта';
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+            <div style="margin-bottom: 20px; font-size: 16px;">Вы уверены, что хотите выйти?</div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="modal-btn confirm-yes" style="background-color: #e74c3c; color: white;">Выйти</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Отмена</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+    const closeModal = () => modal.style.display = 'none';
+    yesBtn.addEventListener('click', () => {
+        closeModal();
+        if (onConfirm) onConfirm();
+    });
+    noBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
+}
+
+
 window.renderSettings = renderSettings;

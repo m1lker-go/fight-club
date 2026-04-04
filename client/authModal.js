@@ -49,22 +49,16 @@ function showAuthModal() {
     document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
 }
 
-// Telegram OAuth 2.0 через редирект (без виджета)
-// authModal.js
+// Telegram OAuth через виджет
 async function loginWithTelegram() {
-    // Правильный формат для виджета
     const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
-
     if (!popup) {
         showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
         return;
     }
-
     const handleTelegramMessage = async (event) => {
-        // Важно: проверяем источник сообщения для безопасности
         if (event.origin !== 'https://oauth.telegram.org') return;
-
         const { initData } = event.data;
         if (initData) {
             popup.close();
@@ -87,15 +81,45 @@ async function loginWithTelegram() {
             window.removeEventListener('message', handleTelegramMessage);
         }
     };
-
     window.addEventListener('message', handleTelegramMessage);
-    // Таймер для сброса флага, если пользователь закроет окно
     const checkPopupClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkPopupClosed);
             window.removeEventListener('message', handleTelegramMessage);
         }
     }, 1000);
+}
+
+// Google OAuth One Tap
+function loginWithGoogle() {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = () => {
+        google.accounts.id.initialize({
+            client_id: window.GOOGLE_CLIENT_ID,
+            callback: async (response) => {
+                const idToken = response.credential;
+                const res = await fetch(`${window.API_BASE}/auth/google`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('sessionToken', data.sessionToken);
+                    if (data.needNickname) {
+                        showNicknameModal(data.user.id);
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    showToast(data.error, 1500);
+                }
+            }
+        });
+        google.accounts.id.prompt();
+    };
+    document.head.appendChild(script);
 }
 
 async function loginWithVK() {

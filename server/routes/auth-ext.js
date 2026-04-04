@@ -396,7 +396,17 @@ router.get('/vk/callback', async (req, res) => {
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
         // РЕДИРЕКТ НА КЛИЕНТ (исправлено с google_auth на vk_auth)
-        res.redirect(`${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
+        res.send(`
+    <html><body><script>
+        window.opener.postMessage({
+            type: 'vkAuthSuccess',
+            sessionToken: '${sessionToken}',
+            needNickname: ${needNickname},
+            userId: ${userData.id}
+        }, '${process.env.CLIENT_URL}');
+        window.close();
+    </script></body></html>
+`);
     } catch (err) {
         console.error(err);
         res.status(500).send('Authentication failed');

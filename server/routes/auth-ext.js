@@ -590,6 +590,16 @@ router.post('/refresh', async (req, res) => {
     }
 });
 
+router.get('/google-auth', (req, res) => {
+    const mode = req.query.mode === 'link' ? 'link' : 'login';
+    let state = { mode };
+    if (mode === 'link' && req.query.token) {
+        state.sessionToken = req.query.token;
+    }
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.GOOGLE_CALLBACK_URL)}&response_type=code&scope=email%20profile&state=${encodeURIComponent(JSON.stringify(state))}`;
+    res.redirect(url);
+});
+
 // ========== TELEGRAM OAuth 2.0 через редирект (для браузера) ==========
 router.get('/telegram-auth', (req, res) => {
     const redirectUri = `${process.env.API_BASE_URL}/auth/telegram-callback`;

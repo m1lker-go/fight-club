@@ -84,7 +84,7 @@ async function loginWithTelegram() {
             } else {
                 showToast(data.error, 1500);
             }
-            window.removeEventListener('message', handleTelegramMessage);
+            window.location.href = `${window.API_BASE}/auth/telegram-auth?mode=login`;
         }
     };
 

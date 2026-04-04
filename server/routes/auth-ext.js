@@ -591,4 +591,111 @@ router.post('/refresh', async (req, res) => {
     }
 });
 
+// ========== GOOGLE OAuth через popup (fallback) ==========
+router.get('/google-auth', (req, res) => {
+    const mode = req.query.mode === 'link' ? 'link' : 'login';
+    let state = { mode };
+    if (mode === 'link' && req.query.token) {
+        state.sessionToken = req.query.token;
+    }
+    const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20profile&state=${encodeURIComponent(JSON.stringify(state))}`;
+    res.redirect(url);
+});
+
+router.get('/google-callback', async (req, res) => {
+    const { code, state: stateParam } = req.query;
+    if (!code) return res.status(400).send('No code provided');
+    let state;
+    try { state = JSON.parse(stateParam); } catch(e) { state = { mode: 'login' }; }
+    const client = await pool.connect();
+    try {
+        // Обмен кода на токены
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                code,
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                redirect_uri: `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`,
+                grant_type: 'authorization_code'
+            })
+        });
+        const tokenData = await tokenResponse.json();
+        if (tokenData.error) throw new Error(tokenData.error_description);
+        const { id_token } = tokenData;
+        const ticket = await googleClient.verifyIdToken({ idToken: id_token, audience: process.env.GOOGLE_CLIENT_ID });
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        const googleId = payload.sub;
+
+        if (state.mode === 'link') {
+            // Привязка Google к существующему пользователю
+            const sessionToken = state.sessionToken;
+            if (!sessionToken) throw new Error('No session token');
+            const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
+            if (userRes.rows.length === 0) throw new Error('Invalid session');
+            const userId = userRes.rows[0].id;
+            const existing = await client.query('SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
+            if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
+                throw new Error('Google already linked to another user');
+            }
+            await client.query(
+                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                 VALUES ($1, 'google', $2, $3, $4)
+                 ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+                [userId, googleId, email, JSON.stringify(payload)]
+            );
+            if (email) await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
+            return res.redirect(`${process.env.CLIENT_URL}?google_link=success`);
+        }
+
+        // Режим входа (login)
+        let existingConnection = await client.query('SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
+        let userData, needNickname = false;
+        if (existingConnection.rows.length > 0) {
+            const userId = existingConnection.rows[0].user_id;
+            await rechargeEnergy(client, userId);
+            const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+            userData = userRes.rows[0];
+            needNickname = !userData.nickname;
+        } else {
+            if (email) {
+                const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+                if (emailUser.rows.length > 0) {
+                    return res.status(409).send('Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.');
+                }
+            }
+            const referralCode = Math.random().toString(36).substring(2, 10);
+            const newUser = await client.query(
+                `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+                [email || null, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+            );
+            userData = newUser.rows[0];
+            needNickname = true;
+            const classes = ['warrior', 'assassin', 'mage'];
+            for (let cls of classes) {
+                await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
+            }
+        }
+        await client.query(
+            `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+             VALUES ($1, 'google', $2, $3, $4)
+             ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+            [userData.id, googleId, email, JSON.stringify(payload)]
+        );
+        if (email && !userData.email) await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
+        const sessionToken = generateToken();
+        await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+        res.redirect(`${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Authentication failed');
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

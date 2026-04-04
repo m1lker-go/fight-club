@@ -177,13 +177,21 @@ function linkVK() {
 }
 
 
+let googleLinkingInProgress = false;
+
 function linkGoogle() {
+    if (googleLinkingInProgress) {
+        showToast('Привязка Google уже выполняется', 1500);
+        return;
+    }
+    googleLinkingInProgress = true;
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.onload = () => {
         google.accounts.id.initialize({
             client_id: window.GOOGLE_CLIENT_ID,
             callback: async (response) => {
+                googleLinkingInProgress = false;
                 const idToken = response.credential;
                 const token = localStorage.getItem('sessionToken');
                 const res = await fetch(`${window.API_BASE}/auth/link`, {
@@ -205,7 +213,12 @@ function linkGoogle() {
         });
         google.accounts.id.prompt();
     };
+    script.onerror = () => {
+        googleLinkingInProgress = false;
+        showToast('Ошибка загрузки Google API', 1500);
+    };
     document.head.appendChild(script);
 }
+
 
 window.renderSettings = renderSettings;

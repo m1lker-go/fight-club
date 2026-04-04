@@ -4,6 +4,36 @@ window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
 
+function showLogoutConfirmModal(onConfirm) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Выход из аккаунта';
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+            <div style="margin-bottom: 20px; font-size: 16px;">Вы уверены, что хотите выйти?</div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="modal-btn confirm-yes" style="background-color: #e74c3c; color: white;">Выйти</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Отмена</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+    const closeModal = () => modal.style.display = 'none';
+    yesBtn.addEventListener('click', () => {
+        closeModal();
+        if (onConfirm) onConfirm();
+    });
+    noBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
+}
+
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {
@@ -67,7 +97,7 @@ async function renderSettings() {
                     </div>
                 </div>
                 <div class="settings-logout">
-                    <button class="logout-btn" id="logoutBtn">🚪 Выйти из аккаунта</button>
+                    <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти из аккаунта</button>
                 </div>
             </div>
         `;
@@ -102,15 +132,19 @@ async function renderSettings() {
             });
         });
 
-        // Кнопка выхода
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
-                    localStorage.removeItem('sessionToken');
-                    window.location.reload();
-                }
-            });
+            const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+            if (isTelegramWebApp) {
+                logoutBtn.style.display = 'none';
+            } else {
+                logoutBtn.addEventListener('click', () => {
+                    showLogoutConfirmModal(() => {
+                        localStorage.removeItem('sessionToken');
+                        window.location.reload();
+                    });
+                });
+            }
         }
     } catch (err) {
         console.error(err);

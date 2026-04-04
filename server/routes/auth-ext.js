@@ -188,7 +188,6 @@ router.post('/verify-email', async (req, res) => {
     }
 });
 
-// Для входа через Telegram внутри WebApp (popup с initData)
 router.post('/telegram-oauth', async (req, res) => {
     const { initData } = req.body;
     if (!initData) return res.status(400).json({ error: 'No initData' });
@@ -205,7 +204,6 @@ router.post('/telegram-oauth', async (req, res) => {
     }
 });
 
-// Автоматический вход внутри Telegram WebApp (без popup)
 router.post('/telegram-auto', async (req, res) => {
     const { initData, referral_code } = req.body;
     if (!initData) return res.status(400).json({ error: 'No initData' });
@@ -222,7 +220,6 @@ router.post('/telegram-auto', async (req, res) => {
     }
 });
 
-// Google OAuth через One Tap (получение idToken)
 router.post('/google', async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ error: 'No idToken' });
@@ -345,7 +342,6 @@ router.get('/vk/callback', async (req, res) => {
         const vkUser = userInfo.response[0];
         
         if (state.mode === 'link') {
-            // Привязка VK к существующему пользователю
             const sessionToken = state.sessionToken;
             if (!sessionToken) throw new Error('No session token for linking');
             const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
@@ -425,7 +421,6 @@ router.get('/vk/callback', async (req, res) => {
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
         console.log('✅ Session token generated, sending postMessage to popup');
-        // Отправляем HTML с postMessage для popup
         res.send(`
             <html><body><script>
                 window.opener.postMessage({
@@ -531,7 +526,7 @@ router.post('/link', async (req, res) => {
             if (email) {
                 await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
             }
-            res.json({ success: true });
+            return res.json({ success: true });
         }
         else if (provider === 'telegram' && initData) {
             const botToken = process.env.BOT_TOKEN;
@@ -566,61 +561,56 @@ router.post('/link', async (req, res) => {
             if (!userTg.rows[0].tg_id) {
                 await client.query('UPDATE users SET tg_id = $1 WHERE id = $2', [tgId, userId]);
             }
-            res.json({ success: true });
+            return res.json({ success: true });
         }
         else if (provider === 'vk' && code && device_id) {
-    console.log('=== VK LINK ===');
-    console.log('code:', code);
-    console.log('device_id:', device_id);
-    console.log('VK_APP_ID:', process.env.VK_APP_ID);
-    console.log('VK_CALLBACK_URL:', process.env.VK_CALLBACK_URL);
-    console.log('VK_CLIENT_SECRET (first 5 chars):', process.env.VK_CLIENT_SECRET?.substring(0,5));
-    
-    try {
-        // Обмен кода на токен через VK API
-        const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&code=${code}&device_id=${device_id}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}`);
-        console.log('VK token response status:', tokenResponse.status);
-        const tokenData = await tokenResponse.json();
-        console.log('VK token data:', JSON.stringify(tokenData, null, 2));
-        
-        if (tokenData.error) {
-            console.error('VK token exchange error:', tokenData.error, tokenData.error_description);
-            return res.status(400).json({ error: `Ошибка VK: ${tokenData.error_description || tokenData.error}` });
-        }
-        const { user_id, email } = tokenData;
-        
-        // Проверяем, не привязан ли этот VK к другому пользователю
-        const existing = await client.query(
-            'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
-            ['vk', String(user_id)]
-        );
-        if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
-            return res.status(409).json({ error: 'Этот VK аккаунт уже привязан к другому пользователю' });
-        }
-        // Проверяем, не занят ли email другим пользователем (если email есть)
-        if (email) {
-            const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
-            if (emailUser.rows.length > 0) {
-                return res.status(409).json({ error: 'Этот email уже зарегистрирован у другого пользователя' });
+            console.log('=== VK LINK ===');
+            console.log('code:', code);
+            console.log('device_id:', device_id);
+            console.log('VK_APP_ID:', process.env.VK_APP_ID);
+            console.log('VK_CALLBACK_URL:', process.env.VK_CALLBACK_URL);
+            console.log('VK_CLIENT_SECRET (first 5 chars):', process.env.VK_CLIENT_SECRET?.substring(0,5));
+            
+            try {
+                const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&code=${code}&device_id=${device_id}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}`);
+                console.log('VK token response status:', tokenResponse.status);
+                const tokenData = await tokenResponse.json();
+                console.log('VK token data:', JSON.stringify(tokenData, null, 2));
+                
+                if (tokenData.error) {
+                    console.error('VK token exchange error:', tokenData.error, tokenData.error_description);
+                    return res.status(400).json({ error: `Ошибка VK: ${tokenData.error_description || tokenData.error}` });
+                }
+                const { user_id, email } = tokenData;
+                
+                const existing = await client.query(
+                    'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
+                    ['vk', String(user_id)]
+                );
+                if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
+                    return res.status(409).json({ error: 'Этот VK аккаунт уже привязан к другому пользователю' });
+                }
+                if (email) {
+                    const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
+                    if (emailUser.rows.length > 0) {
+                        return res.status(409).json({ error: 'Этот email уже зарегистрирован у другого пользователя' });
+                    }
+                }
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'vk', $2, $3, $4)
+                     ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+                    [userId, String(user_id), email || null, JSON.stringify(tokenData)]
+                );
+                if (email) {
+                    await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
+                }
+                return res.json({ success: true });
+            } catch (err) {
+                console.error('VK link error:', err);
+                return res.status(500).json({ error: 'Ошибка привязки VK: ' + err.message });
             }
         }
-        // Привязываем VK
-        await client.query(
-            `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-             VALUES ($1, 'vk', $2, $3, $4)
-             ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
-            [userId, String(user_id), email || null, JSON.stringify(tokenData)]
-        );
-        if (email) {
-            await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
-        }
-        res.json({ success: true });
-    } catch (err) {
-        console.error('VK link error:', err);
-        res.status(500).json({ error: 'Ошибка привязки VK: ' + err.message });
-    }
-}
-          
         else if (provider === 'email' && email) {
             const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
             if (emailUser.rows.length > 0) {
@@ -633,10 +623,10 @@ router.post('/link', async (req, res) => {
                 [userId, email]
             );
             await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
-            res.json({ success: true });
+            return res.json({ success: true });
         }
         else {
-            res.status(400).json({ error: 'Invalid provider or missing data' });
+            return res.status(400).json({ error: 'Invalid provider or missing data' });
         }
     } catch (err) {
         console.error(err);
@@ -683,7 +673,7 @@ router.get('/google-auth', (req, res) => {
     const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
     console.log('Google redirect URI:', redirectUri);
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20profile&state=${encodeURIComponent(JSON.stringify(state))}`;
-     console.log('Full Google auth URL:', url);
+    console.log('Full Google auth URL:', url);
     res.redirect(url);
 });
 
@@ -713,7 +703,6 @@ router.get('/google-callback', async (req, res) => {
     
     const client = await pool.connect();
     try {
-        // Обмен кода на токены
         const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
         console.log('Redirect URI for token exchange:', redirectUri);
         
@@ -746,7 +735,6 @@ router.get('/google-callback', async (req, res) => {
         const googleId = payload.sub;
         console.log('✅ User verified, email:', email, 'googleId:', googleId);
         
-        // Режим привязки
         if (state.mode === 'link') {
             console.log('Mode: LINK (binding Google to existing user)');
             const sessionToken = state.sessionToken;
@@ -779,7 +767,6 @@ router.get('/google-callback', async (req, res) => {
             `);
         }
         
-        // Режим входа
         console.log('Mode: LOGIN (full OAuth flow)');
         let existingConnection = await client.query(
             'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
@@ -816,7 +803,6 @@ router.get('/google-callback', async (req, res) => {
                 await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
             }
         }
-        // Сохраняем или обновляем связь с Google
         await client.query(
             `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
              VALUES ($1, 'google', $2, $3, $4)
@@ -845,21 +831,17 @@ router.post('/vk-sdk', async (req, res) => {
     if (!code) return res.status(400).json({ error: 'No code provided' });
 
     try {
-        // Обмен кода на токен (используем стандартный VK OAuth, но с новыми параметрами)
         const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&code=${code}&device_id=${device_id}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}`);
         const tokenData = await tokenResponse.json();
         if (tokenData.error) throw new Error(tokenData.error_description);
 
         const { user_id, email, access_token } = tokenData;
-
-        // Получаем данные пользователя
         const userInfoResponse = await fetch(`https://api.vk.com/method/users.get?user_ids=${user_id}&fields=photo_50&access_token=${access_token}&v=5.131`);
         const userInfo = await userInfoResponse.json();
         const vkUser = userInfo.response[0];
 
         const client = await pool.connect();
         try {
-            // Ищем пользователя по VK ID или email
             let existingConnection = await client.query(
                 'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
                 ['vk', String(user_id)]
@@ -872,14 +854,12 @@ router.post('/vk-sdk', async (req, res) => {
                 userData = userRes.rows[0];
                 needNickname = !userData.nickname;
             } else {
-                // Проверяем email на уникальность
                 if (email) {
                     const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
                     if (emailUser.rows.length > 0) {
                         return res.status(409).json({ error: 'Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.' });
                     }
                 }
-                // Создаём нового пользователя
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 const newUser = await client.query(
                     `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
@@ -893,7 +873,6 @@ router.post('/vk-sdk', async (req, res) => {
                     await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
                 }
             }
-            // Сохраняем связь с VK
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'vk', $2, $3, $4)

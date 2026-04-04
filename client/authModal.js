@@ -57,6 +57,7 @@ async function loginWithTelegram() {
     window.addEventListener('message', handleTelegramMessage);
     
     async function handleTelegramMessage(event) {
+        console.log('Message received:', event);
         if (event.origin !== 'https://oauth.telegram.org') return;
         const { initData } = event.data;
         if (initData) {

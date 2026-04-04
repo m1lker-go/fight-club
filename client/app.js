@@ -38,29 +38,6 @@ let ratingTab = 'rating';
 window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
-// ========== ПРИНУДИТЕЛЬНАЯ ОБРАБОТКА OAUTH-РЕДИРЕКТОВ ==========
-const urlParams = new URLSearchParams(window.location.search);
-const googleAuth = urlParams.get('google_auth');
-const vkAuth = urlParams.get('vk_auth');
-const telegramAuth = urlParams.get('telegram_auth');
-
-if (googleAuth === 'success' || vkAuth === 'success' || telegramAuth === 'success') {
-    const token = urlParams.get('sessionToken');
-    if (token) {
-        localStorage.setItem('sessionToken', token);
-        // Если нужен никнейм, параметр needNickname тоже можно обработать здесь
-        const needNickname = urlParams.get('needNickname') === 'true';
-        const userId = urlParams.get('userId');
-        if (needNickname && typeof showNicknameModal === 'function') {
-            // Сохраняем токен и показываем модалку, не перезагружая (модалка сама перезагрузит после сохранения)
-            showNicknameModal(userId);
-        } else {
-            window.location.href = window.location.pathname;
-        }
-    } else {
-        window.location.href = window.location.pathname;
-    }
-}
 
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
@@ -489,7 +466,7 @@ function handleExternalAuth() {
     }
 
     if (handled && window.location.search) {
-        // Если параметры остались (например, не сработал replace), очищаем историю
+        // Если параметры остались, очищаем историю
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     return handled;

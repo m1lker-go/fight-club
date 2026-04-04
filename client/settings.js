@@ -1,5 +1,9 @@
 // settings.js
 
+let telegramLinkingInProgress = false;
+let vkLinkingInProgress = false;
+let googleLinkingInProgress = false;
+
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {
@@ -78,7 +82,6 @@ async function renderSettings() {
             });
         }
 
-        // Обработчики привязки аккаунтов
         document.querySelectorAll('.link-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const provider = btn.dataset.provider;
@@ -88,7 +91,7 @@ async function renderSettings() {
                     linkGoogle();
                 } else if (provider === 'email') {
                     showToast('Привязка email в разработке', 1500);
-                    } else if (provider === 'vk') {
+                } else if (provider === 'vk') {
                     linkVK();
                 } else {
                     showToast(`Привязка ${provider} в разработке`, 1500);
@@ -119,11 +122,19 @@ async function updateSettings(updates) {
 }
 
 function linkTelegram() {
+    if (telegramLinkingInProgress) {
+        showToast('Привязка Telegram уже выполняется', 1500);
+        return;
+    }
+    telegramLinkingInProgress = true;
     const oauthUrl = `https://oauth.telegram.org/embed?bot_username=${window.BOT_USERNAME}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
-    window.removeEventListener('message', handleTelegramLink);
-    window.addEventListener('message', handleTelegramLink);
-    async function handleTelegramLink(event) {
+    if (!popup) {
+        telegramLinkingInProgress = false;
+        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
+        return;
+    }
+    const handleTelegramLink = async (event) => {
         if (event.origin !== 'https://oauth.telegram.org') return;
         const { initData } = event.data;
         if (initData) {
@@ -138,6 +149,7 @@ function linkTelegram() {
                 body: JSON.stringify({ provider: 'telegram', initData })
             });
             const data = await res.json();
+            telegramLinkingInProgress = false;
             if (data.success) {
                 showToast('Telegram аккаунт привязан', 1500);
                 renderSettings();
@@ -146,38 +158,66 @@ function linkTelegram() {
             }
             window.removeEventListener('message', handleTelegramLink);
         }
-    }
+    };
+    window.addEventListener('message', handleTelegramLink);
+    // Таймаут на случай, если окно закрыли без действия
+    const checkPopupClosed = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(checkPopupClosed);
+            telegramLinkingInProgress = false;
+            window.removeEventListener('message', handleTelegramLink);
+        }
+    }, 1000);
 }
 
 function linkVK() {
+    if (vkLinkingInProgress) {
+        showToast('Привязка VK уже выполняется', 1500);
+        return;
+    }
+    vkLinkingInProgress = true;
     const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
     const linkUrl = `${window.API_BASE}/auth/vk?mode=link`;
     if (isTelegramWebApp) {
         window.Telegram.WebApp.openLink(linkUrl);
+        vkLinkingInProgress = false; // сброс, так как переключение в другой браузер
     } else {
         const width = 600, height = 700;
         const left = (screen.width - width) / 2;
         const top = (screen.height - height) / 2;
         const popup = window.open(linkUrl, 'VKLink', `width=${width},height=${height},left=${left},top=${top}`);
-        window.addEventListener('message', async function vkLinkHandler(event) {
+        if (!popup) {
+            vkLinkingInProgress = false;
+            showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
+            return;
+        }
+        const vkLinkHandler = async (event) => {
             if (event.origin !== window.location.origin) return;
             if (event.data && event.data.type === 'vkLinkSuccess') {
+                vkLinkingInProgress = false;
                 showToast('VK аккаунт привязан', 1500);
                 renderSettings();
                 window.removeEventListener('message', vkLinkHandler);
                 if (popup) popup.close();
             }
             if (event.data && event.data.type === 'vkLinkError') {
+                vkLinkingInProgress = false;
                 showToast('Ошибка привязки: ' + event.data.error, 1500);
                 window.removeEventListener('message', vkLinkHandler);
                 if (popup) popup.close();
             }
-        });
+        };
+        window.addEventListener('message', vkLinkHandler);
+        // Таймаут на случай закрытия окна
+        const checkPopupClosed = setInterval(() => {
+            if (popup.closed) {
+                clearInterval(checkPopupClosed);
+                vkLinkingInProgress = false;
+                window.removeEventListener('message', vkLinkHandler);
+            }
+        }, 1000);
     }
 }
-
-
-let googleLinkingInProgress = false;
 
 function linkGoogle() {
     if (googleLinkingInProgress) {
@@ -219,6 +259,5 @@ function linkGoogle() {
     };
     document.head.appendChild(script);
 }
-
 
 window.renderSettings = renderSettings;

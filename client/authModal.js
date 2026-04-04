@@ -2,6 +2,7 @@
 let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;
+let googleLoginInProgress = false;  // флаг для входа через Google
 
 function showAuthModal() {
     const modal = document.getElementById('roleModal');
@@ -98,26 +99,26 @@ async function loginWithTelegram() {
     }, 1000);
 }
 
-// Google OAuth One Tap
+// Google OAuth через popup (вход)
 function loginWithGoogle() {
-    if (googleLinkingInProgress) {
+    if (googleLoginInProgress) {
         showToast('Вход через Google уже выполняется', 1500);
         return;
     }
-    googleLinkingInProgress = true;
+    googleLoginInProgress = true;
     const width = 600, height = 700;
     const left = (screen.width - width) / 2;
     const top = (screen.height - height) / 2;
     const popup = window.open(`${window.API_BASE}/auth/google-auth?mode=login`, 'GoogleAuth', `width=${width},height=${height},left=${left},top=${top}`);
     if (!popup) {
-        googleLinkingInProgress = false;
+        googleLoginInProgress = false;
         showToast('Пожалуйста, разрешите всплывающие окна', 1500);
         return;
     }
     const googleAuthHandler = async (event) => {
         if (event.origin !== window.location.origin) return;
         if (event.data && event.data.type === 'googleAuthSuccess') {
-            googleLinkingInProgress = false;
+            googleLoginInProgress = false;
             const { sessionToken, needNickname, userId } = event.data;
             localStorage.setItem('sessionToken', sessionToken);
             if (needNickname && typeof showNicknameModal === 'function') {
@@ -129,18 +130,17 @@ function loginWithGoogle() {
             if (popup) popup.close();
         }
         if (event.data && event.data.type === 'googleAuthError') {
-            googleLinkingInProgress = false;
+            googleLoginInProgress = false;
             showToast('Ошибка входа: ' + event.data.error, 1500);
             window.removeEventListener('message', googleAuthHandler);
             if (popup) popup.close();
         }
     };
     window.addEventListener('message', googleAuthHandler);
-    // Таймер только для сброса флага, без проверки popup.closed (избегаем COOP)
     const checkClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkClosed);
-            googleLinkingInProgress = false;
+            googleLoginInProgress = false;
             window.removeEventListener('message', googleAuthHandler);
         }
     }, 1000);
@@ -249,11 +249,11 @@ function showNicknameModal(userId) {
     modalTitle.innerText = 'Выберите никнейм';
     modalBody.innerHTML = `
         <div class="auth-nickname">
-            <input type="text" id="nicknameInput" placeholder="Английские буквы и цифры" maxlength="20">
-            <button id="saveNicknameBtn">Сохранить</button>
+            <input type="text" id="nicknameInput" placeholder="Английские буквы и цифры" maxlength="20" class="auth-input">
+            <button class="auth-submit-btn" id="saveNicknameBtn">Сохранить</button>
         </div>
     `;
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
     document.getElementById('saveNicknameBtn').addEventListener('click', async () => {

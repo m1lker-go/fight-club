@@ -127,7 +127,7 @@ function linkTelegram() {
         return;
     }
     telegramLinkingInProgress = true;
-    const oauthUrl = `https://oauth.telegram.org/embed?bot_username=${window.BOT_USERNAME}&origin=${encodeURIComponent(window.location.origin)}&size=large`;
+    const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
     if (!popup) {
         telegramLinkingInProgress = false;

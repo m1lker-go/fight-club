@@ -229,7 +229,6 @@ function linkGoogle() {
     }
     googleLinkingInProgress = true;
     
-    // Попробуем One Tap
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.onload = () => {
@@ -256,39 +255,14 @@ function linkGoogle() {
                 }
             }
         });
-        // Если One Tap не отображается (например, заблокирован), откроем popup через 2 секунды
+        google.accounts.id.prompt();
+        // Если через 3 секунды One Tap не появился, сбрасываем флаг и показываем ошибку
         setTimeout(() => {
             if (googleLinkingInProgress) {
-                // One Tap не сработал, открываем popup
-                google.accounts.id.cancel(); // отменяем One Tap
-                const authUrl = `${window.API_BASE}/auth/google-auth?mode=link&token=${encodeURIComponent(localStorage.getItem('sessionToken'))}`;
-                const width = 600, height = 700;
-                const left = (screen.width - width) / 2;
-                const top = (screen.height - height) / 2;
-                const popup = window.open(authUrl, 'GoogleLink', `width=${width},height=${height},left=${left},top=${top}`);
-                if (!popup) {
-                    googleLinkingInProgress = false;
-                    showToast('Пожалуйста, разрешите всплывающие окна', 1500);
-                    return;
-                }
-                window.addEventListener('message', async function googleLinkHandler(event) {
-                    if (event.origin !== window.location.origin) return;
-                    if (event.data && event.data.type === 'googleLinkSuccess') {
-                        googleLinkingInProgress = false;
-                        showToast('Google аккаунт привязан', 1500);
-                        renderSettings();
-                        window.removeEventListener('message', googleLinkHandler);
-                        if (popup) popup.close();
-                    }
-                    if (event.data && event.data.type === 'googleLinkError') {
-                        googleLinkingInProgress = false;
-                        showToast('Ошибка привязки: ' + event.data.error, 1500);
-                        window.removeEventListener('message', googleLinkHandler);
-                        if (popup) popup.close();
-                    }
-                });
+                googleLinkingInProgress = false;
+                showToast('Google One Tap не появился. Попробуйте обновить страницу или войдите через браузер.', 3000);
             }
-        }, 2000);
+        }, 3000);
     };
     script.onerror = () => {
         googleLinkingInProgress = false;

@@ -127,44 +127,39 @@ function linkTelegram() {
         return;
     }
     telegramLinkingInProgress = true;
-    const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
-    const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
+    // Открываем новое окно (popup) для привязки, чтобы не терять текущую сессию
+    const width = 600, height = 700;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    const popup = window.open(`${window.API_BASE}/auth/telegram-auth?mode=link`, 'TelegramLink', `width=${width},height=${height},left=${left},top=${top}`);
     if (!popup) {
         telegramLinkingInProgress = false;
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
+        showToast('Пожалуйста, разрешите всплывающие окна', 1500);
         return;
     }
-    const handleTelegramLink = async (event) => {
-        if (event.origin !== 'https://oauth.telegram.org') return;
-        const { initData } = event.data;
-        if (initData) {
-            popup.close();
-            const token = localStorage.getItem('sessionToken');
-            const res = await fetch(`${window.API_BASE}/auth/link`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ provider: 'telegram', initData })
-            });
-            const data = await res.json();
+    // Обработчик сообщения от сервера (через postMessage)
+    window.addEventListener('message', async function tgLinkHandler(event) {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'telegramLinkSuccess') {
             telegramLinkingInProgress = false;
-            if (data.success) {
-                showToast('Telegram аккаунт привязан', 1500);
-                renderSettings();
-            } else {
-                showToast('Ошибка: ' + data.error, 1500);
-            }
-            window.removeEventListener('message', handleTelegramLink);
+            showToast('Telegram аккаунт привязан', 1500);
+            renderSettings();
+            window.removeEventListener('message', tgLinkHandler);
+            if (popup) popup.close();
         }
-    };
-    window.addEventListener('message', handleTelegramLink);
-    const checkPopupClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkPopupClosed);
+        if (event.data && event.data.type === 'telegramLinkError') {
             telegramLinkingInProgress = false;
-            window.removeEventListener('message', handleTelegramLink);
+            showToast('Ошибка привязки: ' + event.data.error, 1500);
+            window.removeEventListener('message', tgLinkHandler);
+            if (popup) popup.close();
+        }
+    });
+    // Проверяем закрытие окна
+    const checkClosed = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(checkClosed);
+            telegramLinkingInProgress = false;
+            window.removeEventListener('message', tgLinkHandler);
         }
     }, 1000);
 }

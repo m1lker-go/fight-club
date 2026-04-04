@@ -256,13 +256,13 @@ function linkGoogle() {
             }
         });
         google.accounts.id.prompt();
-        // Если через 3 секунды One Tap не появился, сбрасываем флаг и показываем ошибку
+        // Сброс флага через 5 секунд, если окно не появилось
         setTimeout(() => {
             if (googleLinkingInProgress) {
                 googleLinkingInProgress = false;
-                showToast('Google One Tap не появился. Попробуйте обновить страницу или войдите через браузер.', 3000);
+                showToast('Google One Tap не появился. Проверьте настройки браузера или войдите через браузер.', 3000);
             }
-        }, 3000);
+        }, 5000);
     };
     script.onerror = () => {
         googleLinkingInProgress = false;

@@ -117,38 +117,53 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
-    const width = 600, height = 700;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    const popup = window.open(`${window.API_BASE}/auth/vk?mode=login`, 'VKAuth', `width=${width},height=${height},left=${left},top=${top}`);
-    if (!popup) {
-        showToast('Пожалуйста, разрешите всплывающие окна', 1500);
+    // Проверяем, загрузился ли SDK
+    if (!window.VKIDSDK) {
+        showToast('Загрузка VK SDK...', 1000);
+        // Ждём загрузки (повторная попытка через 500 мс)
+        setTimeout(() => {
+            if (window.VKIDSDK) loginWithVK();
+            else showToast('Ошибка загрузки VK SDK', 1500);
+        }, 500);
         return;
     }
-    window.addEventListener('message', async function vkHandler(event) {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'vkAuthSuccess') {
-            const { sessionToken, needNickname, userId } = event.data;
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
-            } else {
-                location.reload();
-            }
-            window.removeEventListener('message', vkHandler);
-            if (popup) popup.close();
-        }
-        if (event.data && event.data.type === 'vkAuthError') {
-            showToast('Ошибка входа: ' + event.data.error, 1500);
-            window.removeEventListener('message', vkHandler);
-            if (popup) popup.close();
-        }
+
+    const VKID = window.VKIDSDK;
+    VKID.Config.init({
+        app: 54525890, // новый Client ID
+        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback', // ваш callback
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: 'email', // запрашиваем email
     });
-    // Таймаут на случай, если окно закроется без авторизации
-    setTimeout(() => {
-        window.removeEventListener('message', vkHandler);
-        if (popup && !popup.closed) popup.close();
-    }, 120000);
+
+    // Открываем popup авторизации (вместо One Tap, чтобы не дублировать кнопку)
+    VKID.Auth.login()
+        .then(async (response) => {
+            // response содержит код авторизации
+            const { code, device_id } = response;
+            // Отправляем код на сервер
+            const res = await fetch(`${window.API_BASE}/auth/vk-sdk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, device_id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('sessionToken', data.sessionToken);
+                if (data.needNickname) {
+                    showNicknameModal(data.userId);
+                } else {
+                    location.reload();
+                }
+            } else {
+                showToast(data.error, 1500);
+            }
+        })
+        .catch((error) => {
+            console.error('VK auth error:', error);
+            showToast('Ошибка авторизации VK', 1500);
+        });
 }
 
 async function sendEmailCode() {

@@ -122,17 +122,17 @@ async function updateSettings(updates) {
 }
 
 function linkTelegram() {
-    if (telegramLinkingInProgress) {
+    if (window.telegramLinkingInProgress) {
         showToast('Привязка Telegram уже выполняется', 1500);
         return;
     }
-    telegramLinkingInProgress = true;
+    window.telegramLinkingInProgress = true;
     const width = 600, height = 700;
     const left = (screen.width - width) / 2;
     const top = (screen.height - height) / 2;
     const popup = window.open(`${window.API_BASE}/auth/telegram-auth?mode=link`, 'TelegramLink', `width=${width},height=${height},left=${left},top=${top}`);
     if (!popup) {
-        telegramLinkingInProgress = false;
+        window.telegramLinkingInProgress = false;
         showToast('Пожалуйста, разрешите всплывающие окна', 1500);
         return;
     }
@@ -140,7 +140,7 @@ function linkTelegram() {
     const checkClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkClosed);
-            telegramLinkingInProgress = false;
+            window.telegramLinkingInProgress = false;
         }
     }, 1000);
 }

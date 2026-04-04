@@ -222,52 +222,63 @@ function linkTelegram() {
 }
 
 
+let vkLinkingInProgress = false;
+
 function linkVK() {
     if (vkLinkingInProgress) {
         showToast('Привязка VK уже выполняется', 1500);
         return;
     }
     vkLinkingInProgress = true;
-    const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-    const linkUrl = `${window.API_BASE}/auth/vk?mode=link`;
-    if (isTelegramWebApp) {
-        window.Telegram.WebApp.openLink(linkUrl);
-        vkLinkingInProgress = false;
-    } else {
-        const width = 600, height = 700;
-        const left = (screen.width - width) / 2;
-        const top = (screen.height - height) / 2;
-        const popup = window.open(linkUrl, 'VKLink', `width=${width},height=${height},left=${left},top=${top}`);
-        if (!popup) {
-            vkLinkingInProgress = false;
-            showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
-            return;
-        }
-        const vkLinkHandler = async (event) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data && event.data.type === 'vkLinkSuccess') {
+
+    // Проверяем, загрузился ли SDK
+    if (!window.VKIDSDK) {
+        showToast('Загрузка VK SDK...', 1000);
+        setTimeout(() => {
+            if (window.VKIDSDK) linkVK();
+            else {
                 vkLinkingInProgress = false;
+                showToast('Ошибка загрузки VK SDK', 1500);
+            }
+        }, 500);
+        return;
+    }
+
+    const VKID = window.VKIDSDK;
+    VKID.Config.init({
+        app: 54525890, // ваш новый Client ID
+        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback',
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: 'email',
+    });
+
+    VKID.Auth.login()
+        .then(async (response) => {
+            const { code, device_id } = response;
+            const token = localStorage.getItem('sessionToken');
+            const res = await fetch(`${window.API_BASE}/auth/link`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ provider: 'vk', code, device_id })
+            });
+            const data = await res.json();
+            vkLinkingInProgress = false;
+            if (data.success) {
                 showToast('VK аккаунт привязан', 1500);
                 renderSettings();
-                window.removeEventListener('message', vkLinkHandler);
-                if (popup) popup.close();
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
             }
-            if (event.data && event.data.type === 'vkLinkError') {
-                vkLinkingInProgress = false;
-                showToast('Ошибка привязки: ' + event.data.error, 1500);
-                window.removeEventListener('message', vkLinkHandler);
-                if (popup) popup.close();
-            }
-        };
-        window.addEventListener('message', vkLinkHandler);
-        const checkPopupClosed = setInterval(() => {
-            if (popup.closed) {
-                clearInterval(checkPopupClosed);
-                vkLinkingInProgress = false;
-                window.removeEventListener('message', vkLinkHandler);
-            }
-        }, 1000);
-    }
+        })
+        .catch((error) => {
+            console.error('VK link error:', error);
+            vkLinkingInProgress = false;
+            showToast('Ошибка привязки VK', 1500);
+        });
 }
 
 function linkGoogle() {

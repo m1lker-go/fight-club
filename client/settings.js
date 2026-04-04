@@ -1,6 +1,6 @@
 // settings.js
 
-let telegramLinkingInProgress = false;
+window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
 

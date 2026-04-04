@@ -383,68 +383,12 @@ window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
 
-// Обработка внешней авторизации (возврат из VK в системном браузере)
-// Обработка внешней авторизации (возврат из VK, Telegram, Google через редирект)
+// Обработка внешней авторизации (возврат из OAuth-потоков Google, VK, Telegram)
 function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
-    
-    // Telegram OAuth 2.0 (редирект)
-    const telegramAuth = urlParams.get('telegram_auth');
-    if (telegramAuth === 'success') {
-        const sessionToken = urlParams.get('sessionToken');
-        const needNickname = urlParams.get('needNickname') === 'true';
-        const userId = urlParams.get('userId');
-        if (sessionToken) {
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
-            } else {
-                location.reload();
-            }
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return true;
-    }
-    
-    // Привязка Telegram (возврат из popup)
-   const telegramLink = urlParams.get('telegram_link');
-if (telegramLink === 'success') {
-    if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
-    // Сбрасываем флаг привязки
-    if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
-    window.history.replaceState({}, document.title, window.location.pathname);
-    if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
-    return true;
-}
-    
-    // VK OAuth (редирект)
-    const vkAuth = urlParams.get('vk_auth');
-    if (vkAuth === 'success') {
-        const sessionToken = urlParams.get('sessionToken');
-        const needNickname = urlParams.get('needNickname') === 'true';
-        const userId = urlParams.get('userId');
-        if (sessionToken) {
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
-            } else {
-                location.reload();
-            }
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return true;
-    }
-    
-    // Привязка VK
-    const vkLink = urlParams.get('vk_link');
-    if (vkLink === 'success') {
-        if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
-        window.history.replaceState({}, document.title, window.location.pathname);
-        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
-        return true;
-    }
-    
-    // Google OAuth (редирект) – обычно не используется, т.к. Google работает через popup, но на всякий случай
+    let handled = false;
+
+    // ---- Google OAuth (вход) ----
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -458,11 +402,75 @@ if (telegramLink === 'success') {
                 location.reload();
             }
         }
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return true;
+        handled = true;
     }
-    
-    return false;
+
+    // ---- Google OAuth (привязка) ----
+    const googleLink = urlParams.get('google_link');
+    if (googleLink === 'success') {
+        if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        handled = true;
+    }
+
+    // ---- VK OAuth (вход) ----
+    const vkAuth = urlParams.get('vk_auth');
+    if (vkAuth === 'success') {
+        const sessionToken = urlParams.get('sessionToken');
+        const needNickname = urlParams.get('needNickname') === 'true';
+        const userId = urlParams.get('userId');
+        if (sessionToken) {
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needNickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(userId);
+            } else {
+                location.reload();
+            }
+        }
+        handled = true;
+    }
+
+    // ---- VK OAuth (привязка) ----
+    const vkLink = urlParams.get('vk_link');
+    if (vkLink === 'success') {
+        if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        handled = true;
+    }
+
+    // ---- Telegram OAuth (вход через редирект) ----
+    const telegramAuth = urlParams.get('telegram_auth');
+    if (telegramAuth === 'success') {
+        const sessionToken = urlParams.get('sessionToken');
+        const needNickname = urlParams.get('needNickname') === 'true';
+        const userId = urlParams.get('userId');
+        if (sessionToken) {
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needNickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(userId);
+            } else {
+                location.reload();
+            }
+        }
+        handled = true;
+    }
+
+    // ---- Telegram OAuth (привязка) ----
+    const telegramLink = urlParams.get('telegram_link');
+    if (telegramLink === 'success') {
+        if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
+        // Сбрасываем глобальный флаг привязки, если он был установлен
+        if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        handled = true;
+    }
+
+    // Очищаем URL от параметров, если что-то обработали
+    if (handled) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    return handled;
 }
 
 // Вызов обработки внешней авторизации перед запуском приложения

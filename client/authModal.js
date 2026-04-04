@@ -117,27 +117,38 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
-    const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-    const authUrl = `${window.API_BASE}/auth/vk?mode=login`;
-    if (isTelegramWebApp) {
-        window.Telegram.WebApp.openLink(authUrl);
-    } else {
-        const width = 600, height = 700;
-        const left = (screen.width - width) / 2;
-        const top = (screen.height - height) / 2;
-        const popup = window.open(authUrl, 'VKAuth', `width=${width},height=${height},left=${left},top=${top}`);
-        window.addEventListener('message', async function vkHandler(event) {
-            if (event.origin !== window.location.origin) return;
-            if (event.data && event.data.type === 'vkAuthSuccess') {
-                const { sessionToken, needNickname, userId } = event.data;
-                localStorage.setItem('sessionToken', sessionToken);
-                if (needNickname) showNicknameModal(userId);
-                else location.reload();
-                window.removeEventListener('message', vkHandler);
-                if (popup) popup.close();
-            }
-        });
+    const width = 600, height = 700;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    const popup = window.open(`${window.API_BASE}/auth/vk?mode=login`, 'VKAuth', `width=${width},height=${height},left=${left},top=${top}`);
+    if (!popup) {
+        showToast('Пожалуйста, разрешите всплывающие окна', 1500);
+        return;
     }
+    window.addEventListener('message', async function vkHandler(event) {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'vkAuthSuccess') {
+            const { sessionToken, needNickname, userId } = event.data;
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needNickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(userId);
+            } else {
+                location.reload();
+            }
+            window.removeEventListener('message', vkHandler);
+            if (popup) popup.close();
+        }
+        if (event.data && event.data.type === 'vkAuthError') {
+            showToast('Ошибка входа: ' + event.data.error, 1500);
+            window.removeEventListener('message', vkHandler);
+            if (popup) popup.close();
+        }
+    });
+    // Таймаут на случай, если окно закроется без авторизации
+    setTimeout(() => {
+        window.removeEventListener('message', vkHandler);
+        if (popup && !popup.closed) popup.close();
+    }, 120000);
 }
 
 async function sendEmailCode() {

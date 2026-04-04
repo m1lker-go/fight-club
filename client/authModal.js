@@ -49,56 +49,10 @@ function showAuthModal() {
     document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
 }
 
+// Telegram OAuth 2.0 через редирект (без виджета)
 async function loginWithTelegram() {
-    // Используем правильный формат URL виджета: /embed/BOT_USERNAME
-    const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
-    const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
-    
-    if (!popup) {
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
-        return;
-    }
-
-    // Обработчик сообщений от виджета
-    const handleTelegramMessage = async (event) => {
-        // Проверяем источник сообщения
-        if (event.origin !== 'https://oauth.telegram.org') return;
-        
-        // Виджет отправляет объект с полем initData
-        const { initData } = event.data;
-        if (initData) {
-            popup.close();
-            const res = await fetch(`${window.API_BASE}/auth/telegram-oauth`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ initData })
-            });
-            const data = await res.json();
-            if (data.success) {
-                localStorage.setItem('sessionToken', data.sessionToken);
-                if (data.needNickname) {
-                    showNicknameModal(data.userId);
-                } else {
-                    location.reload();
-                }
-            } else {
-                showToast(data.error, 1500);
-            }
-            window.location.href = `${window.API_BASE}/auth/telegram-auth?mode=login`;
-        }
-    };
-
-    window.addEventListener('message', handleTelegramMessage);
-    
-    // Таймер на случай, если пользователь закроет окно без авторизации
-    const checkPopupClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkPopupClosed);
-            window.removeEventListener('message', handleTelegramMessage);
-        }
-    }, 1000);
+    window.location.href = `${window.API_BASE}/auth/telegram-auth?mode=login`;
 }
-
 
 function loginWithGoogle() {
     const script = document.createElement('script');

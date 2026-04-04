@@ -649,10 +649,16 @@ router.get('/google-callback', async (req, res) => {
                 [userId, googleId, email, JSON.stringify(payload)]
             );
             if (email) await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
-            return res.redirect(`${process.env.CLIENT_URL}?google_link=success`);
+            // Привязка – отправляем postMessage (popup)
+            return res.send(`
+                <html><body><script>
+                    window.opener.postMessage({ type: 'googleLinkSuccess' }, '${process.env.CLIENT_URL}');
+                    window.close();
+                </script></body></html>
+            `);
         }
 
-        // Режим входа (login)
+        // Режим входа (login) – делаем редирект на клиент с параметрами
         let existingConnection = await client.query('SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2', ['google', googleId]);
         let userData, needNickname = false;
         if (existingConnection.rows.length > 0) {
@@ -690,17 +696,8 @@ router.get('/google-callback', async (req, res) => {
         if (email && !userData.email) await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-        res.send(`
-    <html><body><script>
-        window.opener.postMessage({
-            type: 'googleAuthSuccess',
-            sessionToken: '${sessionToken}',
-            needNickname: ${needNickname},
-            userId: ${userData.id}
-        }, '${process.env.CLIENT_URL}');
-        window.close();
-    </script></body></html>
-`);
+        // РЕДИРЕКТ (вместо postMessage)
+        res.redirect(`${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`);
     } catch (err) {
         console.error(err);
         res.status(500).send('Authentication failed');

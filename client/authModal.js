@@ -3,6 +3,7 @@ let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;
 let googleLoginInProgress = false;  // флаг для входа через Google
+let telegramLoginInProgress = false; // флаг для входа через Telegram
 
 function showAuthModal() {
     const modal = document.getElementById('roleModal');
@@ -60,9 +61,15 @@ function showAuthModal() {
 
 // Telegram OAuth через виджет
 async function loginWithTelegram() {
+    if (telegramLoginInProgress) {
+        showToast('Вход через Telegram уже выполняется', 1500);
+        return;
+    }
+    telegramLoginInProgress = true;
     const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
     if (!popup) {
+        telegramLoginInProgress = false;
         showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
         return;
     }
@@ -87,16 +94,20 @@ async function loginWithTelegram() {
             } else {
                 showToast(data.error, 1500);
             }
+            telegramLoginInProgress = false;
             window.removeEventListener('message', handleTelegramMessage);
         }
     };
     window.addEventListener('message', handleTelegramMessage);
-    const checkPopupClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkPopupClosed);
+    // Таймаут для сброса флага, если окно закрыто без авторизации
+    setTimeout(() => {
+        if (telegramLoginInProgress) {
+            telegramLoginInProgress = false;
             window.removeEventListener('message', handleTelegramMessage);
+            if (popup && !popup.closed) popup.close();
+            showToast('Вход отменён или окно закрыто', 1500);
         }
-    }, 1000);
+    }, 120000);
 }
 
 // Google OAuth через popup (вход)
@@ -137,13 +148,15 @@ function loginWithGoogle() {
         }
     };
     window.addEventListener('message', googleAuthHandler);
-    const checkClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkClosed);
+    // Таймаут для сброса флага, если окно закрыто без авторизации
+    setTimeout(() => {
+        if (googleLoginInProgress) {
             googleLoginInProgress = false;
             window.removeEventListener('message', googleAuthHandler);
+            if (popup && !popup.closed) popup.close();
+            showToast('Вход отменён или окно закрыто', 1500);
         }
-    }, 1000);
+    }, 120000);
 }
 
 async function loginWithVK() {

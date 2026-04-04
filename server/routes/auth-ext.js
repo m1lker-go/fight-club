@@ -590,12 +590,22 @@ router.get('/google-auth', (req, res) => {
     const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
     console.log('Google redirect URI:', redirectUri);
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20profile&state=${encodeURIComponent(JSON.stringify(state))}`;
+     console.log('Full Google auth URL:', url);
     res.redirect(url);
 });
 
 router.get('/google-callback', async (req, res) => {
-    const { code, state: stateParam } = req.query;
-    if (!code) return res.status(400).send('No code provided');
+    const { code, error, state: stateParam } = req.query;
+    // Логируем все полученные параметры для отладки
+    console.log('Google callback received query:', req.query);
+    if (error) {
+        console.error('Google OAuth error:', error);
+        return res.status(400).send(`Ошибка Google: ${error}`);
+    }
+    if (!code) {
+        console.error('No code provided in callback');
+        return res.status(400).send('No code provided');
+    }
     let state;
     try { state = JSON.parse(stateParam); } catch(e) { state = { mode: 'login' }; }
     const client = await pool.connect();

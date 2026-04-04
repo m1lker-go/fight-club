@@ -127,7 +127,6 @@ function linkTelegram() {
         return;
     }
     telegramLinkingInProgress = true;
-    // Открываем новое окно (popup) для привязки, чтобы не терять текущую сессию
     const width = 600, height = 700;
     const left = (screen.width - width) / 2;
     const top = (screen.height - height) / 2;
@@ -137,29 +136,11 @@ function linkTelegram() {
         showToast('Пожалуйста, разрешите всплывающие окна', 1500);
         return;
     }
-    // Обработчик сообщения от сервера (через postMessage)
-    window.addEventListener('message', async function tgLinkHandler(event) {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'telegramLinkSuccess') {
-            telegramLinkingInProgress = false;
-            showToast('Telegram аккаунт привязан', 1500);
-            renderSettings();
-            window.removeEventListener('message', tgLinkHandler);
-            if (popup) popup.close();
-        }
-        if (event.data && event.data.type === 'telegramLinkError') {
-            telegramLinkingInProgress = false;
-            showToast('Ошибка привязки: ' + event.data.error, 1500);
-            window.removeEventListener('message', tgLinkHandler);
-            if (popup) popup.close();
-        }
-    });
-    // Проверяем закрытие окна
+    // Проверяем закрытие окна, чтобы сбросить флаг, если пользователь закроет окно без привязки
     const checkClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkClosed);
             telegramLinkingInProgress = false;
-            window.removeEventListener('message', tgLinkHandler);
         }
     }, 1000);
 }

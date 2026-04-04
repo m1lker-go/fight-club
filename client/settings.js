@@ -66,6 +66,9 @@ async function renderSettings() {
                         </div>
                     </div>
                 </div>
+                <div class="settings-logout">
+                    <button class="logout-btn" id="logoutBtn">🚪 Выйти из аккаунта</button>
+                </div>
             </div>
         `;
 
@@ -98,6 +101,17 @@ async function renderSettings() {
                 }
             });
         });
+
+        // Кнопка выхода
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                    localStorage.removeItem('sessionToken');
+                    window.location.reload();
+                }
+            });
+        }
     } catch (err) {
         console.error(err);
         if (typeof showToast === 'function') showToast('Ошибка загрузки настроек', 1500);

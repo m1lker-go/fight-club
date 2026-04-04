@@ -599,6 +599,7 @@ router.get('/google-auth', (req, res) => {
         state.sessionToken = req.query.token;
     }
     const redirectUri = `${process.env.API_BASE_URL || process.env.CLIENT_URL}/auth/google-callback`;
+     console.log('Google redirect URI:', redirectUri);
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=email%20profile&state=${encodeURIComponent(JSON.stringify(state))}`;
     res.redirect(url);
 });

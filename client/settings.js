@@ -121,6 +121,7 @@ async function updateSettings(updates) {
     }
 }
 
+// settings.js
 function linkTelegram() {
     if (window.telegramLinkingInProgress) {
         showToast('Привязка Telegram уже выполняется', 1500);
@@ -131,19 +132,39 @@ function linkTelegram() {
     const left = (screen.width - width) / 2;
     const top = (screen.height - height) / 2;
     const popup = window.open(`${window.API_BASE}/auth/telegram-auth?mode=link`, 'TelegramLink', `width=${width},height=${height},left=${left},top=${top}`);
+
     if (!popup) {
         window.telegramLinkingInProgress = false;
         showToast('Пожалуйста, разрешите всплывающие окна', 1500);
         return;
     }
-    // Проверяем закрытие окна, чтобы сбросить флаг, если пользователь закроет окно без привязки
-    const checkClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkClosed);
+
+    const handleTelegramLink = async (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'telegramLinkSuccess') {
             window.telegramLinkingInProgress = false;
+            showToast('Telegram аккаунт привязан', 1500);
+            renderSettings();
+            window.removeEventListener('message', handleTelegramLink);
+            if (popup) popup.close();
+        }
+        if (event.data && event.data.type === 'telegramLinkError') {
+            window.telegramLinkingInProgress = false;
+            showToast('Ошибка привязки: ' + event.data.error, 1500);
+            window.removeEventListener('message', handleTelegramLink);
+            if (popup) popup.close();
+        }
+    };
+    window.addEventListener('message', handleTelegramLink);
+    const checkPopupClosed = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(checkPopupClosed);
+            window.telegramLinkingInProgress = false;
+            window.removeEventListener('message', handleTelegramLink);
         }
     }, 1000);
 }
+
 
 function linkVK() {
     if (vkLinkingInProgress) {

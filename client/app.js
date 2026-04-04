@@ -407,13 +407,15 @@ function handleExternalAuth() {
     }
     
     // Привязка Telegram (возврат из popup)
-    const telegramLink = urlParams.get('telegram_link');
-    if (telegramLink === 'success') {
-        if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
-        window.history.replaceState({}, document.title, window.location.pathname);
-        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
-        return true;
-    }
+   const telegramLink = urlParams.get('telegram_link');
+if (telegramLink === 'success') {
+    if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
+    // Сбрасываем флаг привязки
+    if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+    return true;
+}
     
     // VK OAuth (редирект)
     const vkAuth = urlParams.get('vk_auth');

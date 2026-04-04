@@ -110,53 +110,10 @@ async function loginWithTelegram() {
     }, 120000);
 }
 
-// Google OAuth через popup (вход)
+// Google OAuth через редирект (без popup)
 function loginWithGoogle() {
-    if (googleLoginInProgress) {
-        showToast('Вход через Google уже выполняется', 1500);
-        return;
-    }
-    googleLoginInProgress = true;
-    const width = 600, height = 700;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    const popup = window.open(`${window.API_BASE}/auth/google-auth?mode=login`, 'GoogleAuth', `width=${width},height=${height},left=${left},top=${top}`);
-    if (!popup) {
-        googleLoginInProgress = false;
-        showToast('Пожалуйста, разрешите всплывающие окна', 1500);
-        return;
-    }
-    const googleAuthHandler = async (event) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'googleAuthSuccess') {
-            googleLoginInProgress = false;
-            const { sessionToken, needNickname, userId } = event.data;
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
-            } else {
-                location.reload();
-            }
-            window.removeEventListener('message', googleAuthHandler);
-            if (popup) popup.close();
-        }
-        if (event.data && event.data.type === 'googleAuthError') {
-            googleLoginInProgress = false;
-            showToast('Ошибка входа: ' + event.data.error, 1500);
-            window.removeEventListener('message', googleAuthHandler);
-            if (popup) popup.close();
-        }
-    };
-    window.addEventListener('message', googleAuthHandler);
-    // Таймаут для сброса флага, если окно закрыто без авторизации
-    setTimeout(() => {
-        if (googleLoginInProgress) {
-            googleLoginInProgress = false;
-            window.removeEventListener('message', googleAuthHandler);
-            if (popup && !popup.closed) popup.close();
-            showToast('Вход отменён или окно закрыто', 1500);
-        }
-    }, 120000);
+    // Просто перенаправляем на серверный маршрут
+    window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
 async function loginWithVK() {

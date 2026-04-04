@@ -303,20 +303,47 @@ router.get('/vk', (req, res) => {
 });
 
 router.get('/vk/callback', async (req, res) => {
-    const { code, state: stateParam } = req.query;
-    if (!code) return res.status(400).send('No code provided');
+    console.log('=== VK Callback Started ===');
+    console.log('Full query:', req.query);
+    const { code, error, state: stateParam } = req.query;
+    if (error) {
+        console.error('VK OAuth error param:', error);
+        return res.status(400).send(`Ошибка VK: ${error}`);
+    }
+    if (!code) {
+        console.error('No code provided in VK callback');
+        return res.status(400).send('No code provided');
+    }
+    console.log('✅ VK code received:', code);
+    
     let state;
-    try { state = JSON.parse(stateParam); } catch(e) { state = { mode: 'login' }; }
+    try {
+        state = JSON.parse(stateParam);
+        console.log('State parsed:', state);
+    } catch(e) {
+        state = { mode: 'login' };
+        console.log('State parsing failed, using default login mode');
+    }
+    
     const client = await pool.connect();
     try {
         const tokenResponse = await fetch(`https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_CLIENT_SECRET}&redirect_uri=${encodeURIComponent(process.env.VK_CALLBACK_URL)}&code=${code}`);
+        console.log('VK token response status:', tokenResponse.status);
         const tokenData = await tokenResponse.json();
-        if (tokenData.error) throw new Error(tokenData.error_description);
+        console.log('VK token data:', JSON.stringify(tokenData, null, 2));
+        
+        if (tokenData.error) {
+            console.error('VK token exchange error:', tokenData.error, tokenData.error_description);
+            throw new Error(tokenData.error_description || tokenData.error);
+        }
         const { user_id, email, access_token } = tokenData;
+        console.log('✅ VK user_id:', user_id, 'email:', email);
+        
         const userInfoResponse = await fetch(`https://api.vk.com/method/users.get?user_ids=${user_id}&fields=photo_50&access_token=${access_token}&v=5.131`);
         const userInfo = await userInfoResponse.json();
+        console.log('VK user info:', JSON.stringify(userInfo, null, 2));
         const vkUser = userInfo.response[0];
-
+        
         if (state.mode === 'link') {
             // Привязка VK к существующему пользователю
             const sessionToken = state.sessionToken;
@@ -340,7 +367,7 @@ router.get('/vk/callback', async (req, res) => {
             if (email) {
                 await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);
             }
-            // Привязка – отправляем postMessage (для popup)
+            console.log('✅ VK linked successfully, sending postMessage');
             return res.send(`
                 <html><body><script>
                     window.opener.postMessage({ type: 'vkLinkSuccess' }, '${process.env.CLIENT_URL}');
@@ -348,8 +375,9 @@ router.get('/vk/callback', async (req, res) => {
                 </script></body></html>
             `);
         }
-
-        // Режим входа (login) – редирект на клиент с параметрами
+        
+        // Режим входа (login) – отправляем postMessage для popup
+        console.log('Mode: LOGIN (full OAuth flow)');
         let existingConnection = await client.query(
             'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
             ['vk', String(user_id)]
@@ -357,15 +385,18 @@ router.get('/vk/callback', async (req, res) => {
         let userData, needNickname = false;
         if (existingConnection.rows.length > 0) {
             const userId = existingConnection.rows[0].user_id;
+            console.log('Existing user found, userId:', userId);
             await rechargeEnergy(client, userId);
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         } else {
+            console.log('No existing connection, checking email uniqueness...');
             if (email) {
                 const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
                 if (emailUser.rows.length > 0) {
-                    return res.status(409).json({ error: 'Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.' });
+                    console.log('Email already registered, returning conflict');
+                    return res.status(409).send('Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.');
                 }
             }
             const referralCode = Math.random().toString(36).substring(2, 10);
@@ -376,12 +407,10 @@ router.get('/vk/callback', async (req, res) => {
             );
             userData = newUser.rows[0];
             needNickname = true;
+            console.log('New user created, userId:', userData.id);
             const classes = ['warrior', 'assassin', 'mage'];
             for (let cls of classes) {
-                await client.query(
-                    `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                    [userData.id, cls]
-                );
+                await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
             }
         }
         await client.query(
@@ -395,21 +424,22 @@ router.get('/vk/callback', async (req, res) => {
         }
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-        // РЕДИРЕКТ НА КЛИЕНТ (исправлено с google_auth на vk_auth)
+        console.log('✅ Session token generated, sending postMessage to popup');
+        // Отправляем HTML с postMessage для popup
         res.send(`
-    <html><body><script>
-        window.opener.postMessage({
-            type: 'vkAuthSuccess',
-            sessionToken: '${sessionToken}',
-            needNickname: ${needNickname},
-            userId: ${userData.id}
-        }, '${process.env.CLIENT_URL}');
-        window.close();
-    </script></body></html>
-`);
+            <html><body><script>
+                window.opener.postMessage({
+                    type: 'vkAuthSuccess',
+                    sessionToken: '${sessionToken}',
+                    needNickname: ${needNickname},
+                    userId: ${userData.id}
+                }, '${process.env.CLIENT_URL}');
+                window.close();
+            </script></body></html>
+        `);
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Authentication failed');
+        console.error('❌ Error in vk-callback:', err);
+        res.status(500).send('Authentication failed: ' + err.message);
     } finally {
         client.release();
     }

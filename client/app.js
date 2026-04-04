@@ -39,6 +39,19 @@ window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
+const urlParams = new URLSearchParams(window.location.search);
+const googleAuth = urlParams.get('google_auth');
+const vkAuth = urlParams.get('vk_auth');
+const telegramAuth = urlParams.get('telegram_auth');
+
+if (googleAuth === 'success' || vkAuth === 'success' || telegramAuth === 'success') {
+    const token = urlParams.get('sessionToken');
+    if (token) {
+        localStorage.setItem('sessionToken', token);
+        window.location.href = window.location.pathname; // перезагрузка без параметров
+    }
+}
+
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     for (let i = 0; i < retries; i++) {

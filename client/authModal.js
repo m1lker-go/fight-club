@@ -92,34 +92,37 @@ async function loginWithTelegram() {
 
 // Google OAuth One Tap
 function loginWithGoogle() {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.onload = () => {
-        google.accounts.id.initialize({
-            client_id: window.GOOGLE_CLIENT_ID,
-            callback: async (response) => {
-                const idToken = response.credential;
-                const res = await fetch(`${window.API_BASE}/auth/google`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needNickname) {
-                        showNicknameModal(data.user.id);
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    showToast(data.error, 1500);
-                }
-            }
-        });
-        google.accounts.id.prompt();
-    };
-    document.head.appendChild(script);
+    const width = 600, height = 700;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    const popup = window.open(`${window.API_BASE}/auth/google-auth?mode=login`, 'GoogleAuth', `width=${width},height=${height},left=${left},top=${top}`);
+    if (!popup) {
+        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
+        return;
+    }
+    window.addEventListener('message', async function googleAuthHandler(event) {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'googleAuthSuccess') {
+            const { sessionToken, needNickname, userId } = event.data;
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needNickname) showNicknameModal(userId);
+            else location.reload();
+            window.removeEventListener('message', googleAuthHandler);
+            if (popup) popup.close();
+        }
+        if (event.data && event.data.type === 'googleAuthError') {
+            showToast('Ошибка входа через Google: ' + event.data.error, 1500);
+            window.removeEventListener('message', googleAuthHandler);
+            if (popup) popup.close();
+        }
+    });
+    // Таймер на случай закрытия окна без авторизации
+    const checkClosed = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', googleAuthHandler);
+        }
+    }, 1000);
 }
 
 async function loginWithVK() {

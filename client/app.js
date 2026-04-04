@@ -399,7 +399,8 @@ function handleExternalAuth() {
             if (needNickname && typeof showNicknameModal === 'function') {
                 showNicknameModal(userId);
             } else {
-                location.reload();
+                // Принудительная перезагрузка без параметров
+                window.location.replace(window.location.pathname);
             }
         }
         handled = true;
@@ -424,7 +425,7 @@ function handleExternalAuth() {
             if (needNickname && typeof showNicknameModal === 'function') {
                 showNicknameModal(userId);
             } else {
-                location.reload();
+                window.location.replace(window.location.pathname);
             }
         }
         handled = true;
@@ -438,7 +439,7 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- Telegram OAuth (вход через редирект) ----
+    // ---- Telegram OAuth (вход) ----
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -449,7 +450,7 @@ function handleExternalAuth() {
             if (needNickname && typeof showNicknameModal === 'function') {
                 showNicknameModal(userId);
             } else {
-                location.reload();
+                window.location.replace(window.location.pathname);
             }
         }
         handled = true;
@@ -459,17 +460,15 @@ function handleExternalAuth() {
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
         if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
-        // Сбрасываем глобальный флаг привязки, если он был установлен
         if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
 
-    // Очищаем URL от параметров, если что-то обработали
-    if (handled) {
+    if (handled && window.location.search) {
+        // Если параметры остались (например, не сработал replace), очищаем историю
         window.history.replaceState({}, document.title, window.location.pathname);
     }
-
     return handled;
 }
 

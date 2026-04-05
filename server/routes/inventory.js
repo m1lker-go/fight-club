@@ -5,6 +5,7 @@ const { pool } = require('../db');
 // Надеть предмет
 router.post('/equip', async (req, res) => {
     const { tg_id, item_id, target_class } = req.body;
+    console.log('[equip] Request body:', { tg_id, item_id, target_class });
     if (!tg_id || !item_id || !target_class) {
         return res.status(400).json({ error: 'Missing parameters' });
     }
@@ -12,35 +13,39 @@ router.post('/equip', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // Найти пользователя
         const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const userId = userRes.rows[0].id;
+        console.log('[equip] User ID:', userId);
         
-        // Проверить, что предмет принадлежит пользователю, не экипирован, не в кузнице, не на продаже
+        // Получаем предмет по inventory.id
         const itemRes = await client.query(
-            `SELECT * FROM inventory 
-             WHERE id = $1 AND user_id = $2 AND equipped = false AND in_forge = false AND for_sale = false`,
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (itemRes.rows.length === 0) throw new Error('Item not available');
+        console.log('[equip] Item query result:', itemRes.rows[0] || 'not found');
+        if (itemRes.rows.length === 0) throw new Error('Item not found');
         const item = itemRes.rows[0];
         
-        // Проверить, что класс предмета соответствует целевому классу
+        // Проверяем, что предмет не экипирован, не в кузнице, не на продаже
+        if (item.equipped) throw new Error('Item is already equipped');
+        if (item.in_forge) throw new Error('Item is in forge');
+        if (item.for_sale) throw new Error('Item is on sale');
+        
+        // Проверка класса
         if (item.owner_class && item.owner_class !== target_class && item.class_restriction !== 'any') {
             throw new Error('Item class mismatch');
         }
         
-        // Снять текущий предмет в том же слоте для этого класса
+        // Снимаем текущий предмет в этом слоте для этого класса
         await client.query(
-            `UPDATE inventory SET equipped = false 
-             WHERE user_id = $1 AND equipped = true AND type = $2 AND owner_class = $3`,
+            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND equipped = true AND type = $2 AND owner_class = $3',
             [userId, item.type, target_class]
         );
         
-        // Надеть новый предмет
+        // Надеваем новый
         await client.query(
-            `UPDATE inventory SET equipped = true WHERE id = $1`,
+            'UPDATE inventory SET equipped = true WHERE id = $1',
             [item_id]
         );
         
@@ -64,19 +69,19 @@ router.post('/unequip', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
         const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const userId = userRes.rows[0].id;
         
         const itemRes = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = true',
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (itemRes.rows.length === 0) throw new Error('Item not equipped');
+        if (itemRes.rows.length === 0) throw new Error('Item not found');
+        const item = itemRes.rows[0];
+        if (!item.equipped) throw new Error('Item is not equipped');
         
         await client.query('UPDATE inventory SET equipped = false WHERE id = $1', [item_id]);
-        
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -97,22 +102,24 @@ router.post('/sell', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
         const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const userId = userRes.rows[0].id;
         
         const itemRes = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND in_forge = false AND for_sale = false',
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (itemRes.rows.length === 0) throw new Error('Item not available');
+        if (itemRes.rows.length === 0) throw new Error('Item not found');
+        const item = itemRes.rows[0];
+        if (item.equipped) throw new Error('Cannot sell equipped item');
+        if (item.in_forge) throw new Error('Item is in forge');
+        if (item.for_sale) throw new Error('Item already on sale');
         
         await client.query(
             'UPDATE inventory SET for_sale = true, price = $1 WHERE id = $2',
             [price, item_id]
         );
-        
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -133,19 +140,18 @@ router.post('/unsell', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
         const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const userId = userRes.rows[0].id;
         
         const itemRes = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (itemRes.rows.length === 0) throw new Error('Item not on sale');
+        if (itemRes.rows.length === 0) throw new Error('Item not found');
+        if (!itemRes.rows[0].for_sale) throw new Error('Item is not on sale');
         
         await client.query('UPDATE inventory SET for_sale = false, price = NULL WHERE id = $1', [item_id]);
-        
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {

@@ -52,11 +52,13 @@ async function handleTelegramLogin(initData, referralCode, client) {
     const tgId = user.id;
     const username = user.username || `user_${tgId}`;
 
+    // Ищем только по tg_id (без поиска по email)
     let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
     let userData;
     let needNickname = false;
 
     if (userRes.rows.length === 0) {
+        // Создаём нового пользователя
         const newReferralCode = Math.random().toString(36).substring(2, 10);
         let referredById = null;
         if (referralCode) {
@@ -81,6 +83,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
                 [userData.id, cls]
             );
         }
+        // Записываем связь с Telegram (без email, если он есть – просто сохраняем, но не используем для поиска)
         await client.query(
             `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
              VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,

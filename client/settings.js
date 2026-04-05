@@ -226,34 +226,44 @@ function linkVK() {
         return;
     }
     vkLinkingInProgress = true;
-    
+    console.log('[VK] Привязка начата');
+
     if (typeof VK === 'undefined') {
+        console.error('[VK] API не загружен');
         showToast('VK API не загружен', 1500);
         vkLinkingInProgress = false;
         return;
     }
+    console.log('[VK] API загружен');
+
     if (!VK._initCalled) {
+        console.log('[VK] Инициализация VK.init');
         VK.init({ apiId: 54525890 });
         VK._initCalled = true;
     }
-    
+
     let container = document.getElementById('vk_link_widget');
     if (!container) {
         container = document.createElement('div');
         container.id = 'vk_link_widget';
         container.style.display = 'none';
         document.body.appendChild(container);
+        console.log('[VK] Создан контейнер виджета');
     } else {
         container.innerHTML = '';
+        console.log('[VK] Контейнер виджета очищен');
     }
-    
+
+    console.log('[VK] Вызов VK.Widgets.Auth');
     VK.Widgets.Auth(container.id, {
         onAuth: async (response) => {
-            console.log('VK onAuth response:', response);
+            console.log('[VK] onAuth response:', response);
             if (response && response.session) {
+                console.log('[VK] Сессия получена, user:', response.session.user);
                 const user = response.session.user;
                 const accessToken = response.session.sid;
                 const token = localStorage.getItem('sessionToken');
+                console.log('[VK] Отправка данных на сервер /auth/link');
                 const res = await fetch(`${window.API_BASE}/auth/link`, {
                     method: 'POST',
                     headers: {
@@ -263,6 +273,7 @@ function linkVK() {
                     body: JSON.stringify({ provider: 'vk', user, access_token: accessToken })
                 });
                 const data = await res.json();
+                console.log('[VK] Ответ сервера:', data);
                 vkLinkingInProgress = false;
                 if (data.success) {
                     showToast('VK аккаунт привязан', 1500);
@@ -271,9 +282,16 @@ function linkVK() {
                     showToast('Ошибка: ' + data.error, 1500);
                 }
             } else {
+                console.error('[VK] Ошибка: нет сессии в ответе виджета');
                 vkLinkingInProgress = false;
                 showToast('Ошибка привязки VK', 1500);
             }
+            container.remove();
+        },
+        onError: function(error) {
+            console.error('[VK] Ошибка виджета:', error);
+            vkLinkingInProgress = false;
+            showToast('Ошибка VK: ' + (error.error_msg || error.message || 'неизвестная'), 1500);
             container.remove();
         }
     });

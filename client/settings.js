@@ -221,44 +221,47 @@ function linkTelegram() {
 }
 
 function linkVK() {
-    if (vkLinkingInProgress) {
-        showToast('Привязка VK уже выполняется', 1500);
-        return;
-    }
-    vkLinkingInProgress = true;
-    const width = 600, height = 700;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    const popup = window.open(`${window.API_BASE}/auth/vk?mode=link`, 'VKLink', `width=${width},height=${height},left=${left},top=${top}`);
-    if (!popup) {
-        vkLinkingInProgress = false;
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
-        return;
-    }
-    const vkLinkHandler = async (event) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'vkLinkSuccess') {
-            vkLinkingInProgress = false;
+  if (vkLinkingInProgress) {
+    showToast('Привязка VK уже выполняется', 1500);
+    return;
+  }
+  vkLinkingInProgress = true;
+  
+  const container = document.createElement('div');
+  container.id = 'vk_link_widget';
+  container.style.display = 'none';
+  document.body.appendChild(container);
+  
+  if (typeof VK !== 'undefined' && VK.Widgets) {
+    VK.Widgets.Auth(container.id, {
+      onAuth: async function(response) {
+        if (response && response.session) {
+          const user = response.session.user;
+          const token = localStorage.getItem('sessionToken');
+          const res = await fetch(`${window.API_BASE}/auth/link`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ provider: 'vk', user: user, access_token: response.session.sid })
+          });
+          const data = await res.json();
+          vkLinkingInProgress = false;
+          if (data.success) {
             showToast('VK аккаунт привязан', 1500);
             renderSettings();
-            window.removeEventListener('message', vkLinkHandler);
-            if (popup) popup.close();
+          } else {
+            showToast('Ошибка: ' + data.error, 1500);
+          }
+          container.remove();
         }
-        if (event.data && event.data.type === 'vkLinkError') {
-            vkLinkingInProgress = false;
-            showToast('Ошибка привязки: ' + event.data.error, 1500);
-            window.removeEventListener('message', vkLinkHandler);
-            if (popup) popup.close();
-        }
-    };
-    window.addEventListener('message', vkLinkHandler);
-    const checkPopupClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkPopupClosed);
-            vkLinkingInProgress = false;
-            window.removeEventListener('message', vkLinkHandler);
-        }
-    }, 1000);
+      }
+    });
+  } else {
+    showToast('VK API не загружен', 1500);
+    vkLinkingInProgress = false;
+  }
 }
 
 function linkGoogle() {

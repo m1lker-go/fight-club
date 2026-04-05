@@ -500,6 +500,7 @@ router.post('/link', async (req, res) => {
         if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
         const userId = userRes.rows[0].id;
 
+        // Google OAuth (One Tap / popup)
         if (provider === 'google' && idToken) {
             const ticket = await googleClient.verifyIdToken({
                 idToken,
@@ -532,6 +533,7 @@ router.post('/link', async (req, res) => {
             }
             return res.json({ success: true });
         }
+        // Telegram OAuth (виджет)
         else if (provider === 'telegram' && initData) {
             const botToken = process.env.BOT_TOKEN;
             const urlParams = new URLSearchParams(initData);
@@ -567,11 +569,10 @@ router.post('/link', async (req, res) => {
             }
             return res.json({ success: true });
         }
-        // VK через Low-code (user и access_token)
+        // VK через Low-code (user + access_token)
         else if (provider === 'vk' && user && user.id) {
             const vkId = user.id;
             const email = user.email || null;
-            // Проверяем, не привязан ли этот VK к другому пользователю
             const existing = await client.query(
                 'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
                 ['vk', String(vkId)]
@@ -579,14 +580,12 @@ router.post('/link', async (req, res) => {
             if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
                 return res.status(409).json({ error: 'Этот VK аккаунт уже привязан к другому пользователю' });
             }
-            // Проверяем, не занят ли email другим пользователем (если email есть)
             if (email) {
                 const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
                 if (emailUser.rows.length > 0) {
                     return res.status(409).json({ error: 'Этот email уже зарегистрирован у другого пользователя' });
                 }
             }
-            // Привязываем VK
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'vk', $2, $3, $4)
@@ -598,7 +597,7 @@ router.post('/link', async (req, res) => {
             }
             return res.json({ success: true });
         }
-        // VK через старый OAuth (code + device_id) – оставляем для совместимости
+        // VK через старый OAuth (code + device_id) – запасной вариант
         else if (provider === 'vk' && code && device_id) {
             console.log('=== VK LINK (old OAuth) ===');
             console.log('code:', code);
@@ -647,6 +646,7 @@ router.post('/link', async (req, res) => {
                 return res.status(500).json({ error: 'Ошибка привязки VK: ' + err.message });
             }
         }
+        // Email привязка
         else if (provider === 'email' && email) {
             const emailUser = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
             if (emailUser.rows.length > 0) {

@@ -249,6 +249,7 @@ function linkVK() {
     
     VK.Widgets.Auth(container.id, {
         onAuth: async (response) => {
+            console.log('VK onAuth response:', response);
             if (response && response.session) {
                 const user = response.session.user;
                 const accessToken = response.session.sid;

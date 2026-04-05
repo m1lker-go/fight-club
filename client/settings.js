@@ -221,47 +221,61 @@ function linkTelegram() {
 }
 
 function linkVK() {
-  if (vkLinkingInProgress) {
-    showToast('Привязка VK уже выполняется', 1500);
-    return;
-  }
-  vkLinkingInProgress = true;
-  
-  const container = document.createElement('div');
-  container.id = 'vk_link_widget';
-  container.style.display = 'none';
-  document.body.appendChild(container);
-  
-  if (typeof VK !== 'undefined' && VK.Widgets) {
+    if (vkLinkingInProgress) {
+        showToast('Привязка VK уже выполняется', 1500);
+        return;
+    }
+    vkLinkingInProgress = true;
+    
+    if (typeof VK === 'undefined') {
+        showToast('VK API не загружен', 1500);
+        vkLinkingInProgress = false;
+        return;
+    }
+    if (!VK._initCalled) {
+        VK.init({ apiId: 54525890 });
+        VK._initCalled = true;
+    }
+    
+    let container = document.getElementById('vk_link_container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'vk_link_container';
+        container.style.display = 'none';
+        document.body.appendChild(container);
+    } else {
+        container.innerHTML = '';
+    }
+    
     VK.Widgets.Auth(container.id, {
-      onAuth: async function(response) {
-        if (response && response.session) {
-          const user = response.session.user;
-          const token = localStorage.getItem('sessionToken');
-          const res = await fetch(`${window.API_BASE}/auth/link`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ provider: 'vk', user: user, access_token: response.session.sid })
-          });
-          const data = await res.json();
-          vkLinkingInProgress = false;
-          if (data.success) {
-            showToast('VK аккаунт привязан', 1500);
-            renderSettings();
-          } else {
-            showToast('Ошибка: ' + data.error, 1500);
-          }
-          container.remove();
+        onAuth: async (response) => {
+            if (response && response.session) {
+                const user = response.session.user;
+                const accessToken = response.session.sid;
+                const token = localStorage.getItem('sessionToken');
+                const res = await fetch(`${window.API_BASE}/auth/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ provider: 'vk', user, access_token: accessToken })
+                });
+                const data = await res.json();
+                vkLinkingInProgress = false;
+                if (data.success) {
+                    showToast('VK аккаунт привязан', 1500);
+                    renderSettings();
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            } else {
+                vkLinkingInProgress = false;
+                showToast('Ошибка привязки VK', 1500);
+            }
+            container.remove();
         }
-      }
     });
-  } else {
-    showToast('VK API не загружен', 1500);
-    vkLinkingInProgress = false;
-  }
 }
 
 function linkGoogle() {

@@ -3,7 +3,7 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
-const tasksModule = require('./tasks'); // для заданий
+const tasksModule = require('./tasks');
 
 function generateItemByRarity(rarity, ownerClass = null) {
     const classes = ['warrior', 'assassin', 'mage'];
@@ -73,7 +73,7 @@ router.post('/add', async (req, res) => {
         const userId = user.rows[0].id;
         console.log('[forge/add] User ID:', userId);
 
-        // Проверяем, что предмет принадлежит пользователю и не экипирован, не на продаже, не в кузнице
+        // Проверяем, что предмет существует и не экипирован, не на продаже, не в кузнице
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]

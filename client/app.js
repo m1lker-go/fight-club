@@ -39,6 +39,7 @@ window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
+// Обработка OAuth-редиректов (Google, VK, Telegram) – сохраняем токен и перезагружаем
 const urlParams = new URLSearchParams(window.location.search);
 const googleAuth = urlParams.get('google_auth');
 const vkAuth = urlParams.get('vk_auth');
@@ -48,7 +49,7 @@ if (googleAuth === 'success' || vkAuth === 'success' || telegramAuth === 'succes
     const token = urlParams.get('sessionToken');
     if (token) {
         localStorage.setItem('sessionToken', token);
-        window.location.href = window.location.pathname; // перезагрузка без параметров
+        window.location.href = window.location.pathname;
     }
 }
 
@@ -94,8 +95,17 @@ async function autoLoginTelegram() {
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 sessionToken = data.sessionToken;
-                await loadUserDataByToken(data.sessionToken);
-                return true;
+                console.log('Auto login success, loading user data...');
+                const loaded = await loadUserDataByToken(data.sessionToken);
+                if (loaded) {
+                    console.log('User data loaded successfully');
+                    return true;
+                } else {
+                    console.error('Failed to load user data after auto login');
+                    // Попробуем перезагрузить страницу, если данные не загрузились
+                    window.location.reload();
+                    return true; // reload прервёт выполнение
+                }
             }
         } else {
             console.error('Auto login failed:', await response.text());
@@ -110,11 +120,13 @@ async function autoLoginTelegram() {
 // Загрузка данных пользователя по токену (вынесено из checkAuth для переиспользования)
 async function loadUserDataByToken(token) {
     try {
+        console.log('loadUserDataByToken: fetching profile...');
         const res = await fetch(`${window.API_BASE}/auth/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
             const data = await res.json();
+            console.log('Profile data received, user id:', data.user?.id);
             userData = data.user;
             userClasses = data.userClasses || [];
             inventory = data.inventory || [];
@@ -127,7 +139,10 @@ async function loadUserDataByToken(token) {
             updateMainMenuNewIcons();
             checkAdvent();
             hideSplashScreen();
+            console.log('loadUserDataByToken: success');
             return true;
+        } else {
+            console.error('Profile fetch failed:', res.status);
         }
     } catch (e) {
         console.error('Load user data error:', e);
@@ -139,7 +154,8 @@ async function loadUserDataByToken(token) {
 let sessionToken = localStorage.getItem('sessionToken');
 
 async function checkAuth() {
-    // Если есть токен, проверяем его на сервере
+    console.log('checkAuth: sessionToken =', sessionToken);
+    // Если есть токен, проверяем его на сервере и загружаем данные
     if (sessionToken) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -165,8 +181,10 @@ async function checkAuth() {
                 updateMainMenuNewIcons();
                 checkAdvent();
                 hideSplashScreen();
+                console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {
+                console.warn('checkAuth: token invalid, removing');
                 localStorage.removeItem('sessionToken');
                 sessionToken = null;
             }
@@ -181,8 +199,12 @@ async function checkAuth() {
     // Нет токена – пробуем автоматический вход, если внутри Telegram WebApp
     const isTelegramWebApp = !!(tg && tg.initData);
     if (isTelegramWebApp) {
+        console.log('checkAuth: trying auto login via Telegram');
         const autoLogged = await autoLoginTelegram();
-        if (autoLogged) return true;
+        if (autoLogged) {
+            // После успешного авто-входа данные уже загружены в loadUserDataByToken
+            return true;
+        }
     }
 
     // Если не удалось – показываем модальное окно входа
@@ -266,7 +288,10 @@ function getAdventReward(day, daysInMonth) {
 }
 
 async function refreshData() {
-    if (!userData || !userData.tg_id) return;
+    if (!userData || !userData.tg_id) {
+        console.warn('refreshData: userData or tg_id missing');
+        return;
+    }
     try {
         const response = await fetchWithRetry(`${window.API_BASE}/auth/refresh`, {
             method: 'POST',
@@ -412,7 +437,6 @@ function handleExternalAuth() {
             if (needNickname && typeof showNicknameModal === 'function') {
                 showNicknameModal(userId);
             } else {
-                // Принудительная перезагрузка без параметров
                 window.location.replace(window.location.pathname);
             }
         }
@@ -479,7 +503,6 @@ function handleExternalAuth() {
     }
 
     if (handled && window.location.search) {
-        // Если параметры остались, очищаем историю
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     return handled;

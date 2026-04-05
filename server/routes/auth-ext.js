@@ -188,6 +188,7 @@ router.post('/verify-email', async (req, res) => {
     }
 });
 
+// Для входа через Telegram внутри WebApp (popup с initData)
 router.post('/telegram-oauth', async (req, res) => {
     const { initData } = req.body;
     if (!initData) return res.status(400).json({ error: 'No initData' });
@@ -204,6 +205,7 @@ router.post('/telegram-oauth', async (req, res) => {
     }
 });
 
+// Автоматический вход внутри Telegram WebApp (без popup)
 router.post('/telegram-auto', async (req, res) => {
     const { initData, referral_code } = req.body;
     if (!initData) return res.status(400).json({ error: 'No initData' });
@@ -220,6 +222,7 @@ router.post('/telegram-auto', async (req, res) => {
     }
 });
 
+// Google OAuth через One Tap (получение idToken)
 router.post('/google', async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ error: 'No idToken' });
@@ -287,7 +290,7 @@ router.post('/google', async (req, res) => {
     }
 });
 
-// ========== VK OAuth ==========
+// ========== VK OAuth (для входа через popup) ==========
 router.get('/vk', (req, res) => {
     const mode = req.query.mode === 'link' ? 'link' : 'login';
     let state = { mode };
@@ -342,6 +345,7 @@ router.get('/vk/callback', async (req, res) => {
         const vkUser = userInfo.response[0];
         
         if (state.mode === 'link') {
+            // Привязка VK к существующему пользователю
             const sessionToken = state.sessionToken;
             if (!sessionToken) throw new Error('No session token for linking');
             const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
@@ -630,7 +634,7 @@ router.post('/link', async (req, res) => {
         }
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        return res.status(500).json({ error: 'Server error' });
     } finally {
         client.release();
     }
@@ -836,6 +840,7 @@ router.post('/vk-sdk', async (req, res) => {
         if (tokenData.error) throw new Error(tokenData.error_description);
 
         const { user_id, email, access_token } = tokenData;
+
         const userInfoResponse = await fetch(`https://api.vk.com/method/users.get?user_ids=${user_id}&fields=photo_50&access_token=${access_token}&v=5.131`);
         const userInfo = await userInfoResponse.json();
         const vkUser = userInfo.response[0];

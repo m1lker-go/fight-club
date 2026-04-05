@@ -4,9 +4,8 @@ const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // Импортируем функции из tasks.js (экспортируйте их там!)
-const tasksModule = require('./tasks'); // ожидается, что tasks.js экспортирует updateLuckyTask и updateTowerTask
+const tasksModule = require('./tasks');
 
-// Функция генерации предмета по редкости и классу
 function generateItemByRarity(rarity, ownerClass = null) {
     const classes = ['warrior', 'assassin', 'mage'];
     const chosenClass = ownerClass || classes[Math.floor(Math.random() * classes.length)];
@@ -73,12 +72,16 @@ router.post('/add', async (req, res) => {
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
 
+        // Проверяем, что предмет принадлежит пользователю, не экипирован, не на продаже и не в кузнице
         const item = await client.query(
-            'SELECT id FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND for_sale = false AND in_forge = false',
+            'SELECT id FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND for_sale = false AND (in_forge IS NULL OR in_forge = false)',
             [item_id, userId]
         );
-        if (item.rows.length === 0) throw new Error('Item not available');
+        if (item.rows.length === 0) {
+            throw new Error('Item not available');
+        }
 
+        // Обновляем флаг in_forge и forge_tab
         await client.query(
             'UPDATE inventory SET in_forge = true, forge_tab = $1 WHERE id = $2',
             [tab, item_id]
@@ -88,7 +91,7 @@ router.post('/add', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('[forge/add] Error:', e.message);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
@@ -120,7 +123,7 @@ router.post('/remove', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('[forge/remove] Error:', e.message);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
@@ -146,7 +149,7 @@ router.get('/current', async (req, res) => {
         );
         res.json(result.rows.map(row => row.id));
     } catch (e) {
-        console.error(e);
+        console.error('[forge/current] Error:', e);
         res.status(500).json({ error: 'Database error' });
     }
 });
@@ -197,7 +200,6 @@ router.post('/craft', async (req, res) => {
         );
         const newItemId = itemRes.rows[0].id;
 
-        // Вставляем в инвентарь
         await client.query(
             `INSERT INTO inventory (
                 user_id, item_id, equipped, in_forge,
@@ -211,13 +213,12 @@ router.post('/craft', async (req, res) => {
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
-        // ========== ДОБАВЛЕННЫЙ БЛОК: обновление задания "Счастливчик" ==========
+        // Обновление задания "Счастливчик"
         if (newRarity === 'rare' || newRarity === 'epic' || newRarity === 'legendary') {
-            // Вызываем функцию обновления задания (id 7)
             if (tasksModule.updateLuckyTask) {
                 await tasksModule.updateLuckyTask(client, userId);
             } else {
-                console.warn('[forge] updateLuckyTask not found in tasks module');
+                console.warn('[forge] updateLuckyTask not found');
             }
         }
 
@@ -225,14 +226,14 @@ router.post('/craft', async (req, res) => {
         res.json({ success: true, item: { ...newItem, id: newItemId } });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('[forge/craft] Error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
     }
 });
 
-// Плавка: превращение предметов в ресурсы (можно от 1 до 5 предметов)
+// Плавка
 router.post('/smelt', async (req, res) => {
     const { tg_id, item_ids } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length === 0 || item_ids.length > 5) {
@@ -256,43 +257,33 @@ router.post('/smelt', async (req, res) => {
         await client.query('DELETE FROM inventory WHERE id = ANY($1::int[])', [item_ids]);
 
         for (const item of items.rows) {
-            const rarity = item.rarity.toLowerCase(); // нормализация
-            console.log(`[SMELT] Processing item ${item.id}, rarity=${rarity}, name=${item.name}`);
+            const rarity = item.rarity.toLowerCase();
             switch (rarity) {
-                case 'common':
-                    coinsGain += Math.floor(Math.random() * 21) + 65; // 65–85
-                    break;
-                case 'uncommon':
-                    coinsGain += Math.floor(Math.random() * 41) + 120; // 120–160
-                    break;
-                case 'rare':
-                    coinsGain += Math.floor(Math.random() * 201) + 400; // 400–600
-                    break;
+                case 'common': coinsGain += Math.floor(Math.random() * 21) + 65; break;
+                case 'uncommon': coinsGain += Math.floor(Math.random() * 41) + 120; break;
+                case 'rare': coinsGain += Math.floor(Math.random() * 201) + 400; break;
                 case 'epic':
-                    coinsGain += Math.floor(Math.random() * 501) + 1000; // 1000–1500
+                    coinsGain += Math.floor(Math.random() * 501) + 1000;
                     if (Math.random() < 0.5) diamondsGain += 1;
                     break;
                 case 'legendary':
-                    coinsGain += Math.floor(Math.random() * 1001) + 2000; // 2000–3000
-                    diamondsGain += 2 + Math.floor(Math.random() * 4); // 2–5
+                    coinsGain += Math.floor(Math.random() * 1001) + 2000;
+                    diamondsGain += 2 + Math.floor(Math.random() * 4);
                     break;
-                default:
-                    console.warn(`[SMELT] Unknown rarity: ${item.rarity}`);
+                default: console.warn(`Unknown rarity: ${item.rarity}`);
             }
         }
 
-        console.log(`[SMELT] Total coinsGain=${coinsGain}, diamondsGain=${diamondsGain}`);
-        const updateRes = await client.query(
-            'UPDATE users SET coins = coins + $1, diamonds = diamonds + $2 WHERE id = $3 RETURNING coins, diamonds',
+        await client.query(
+            'UPDATE users SET coins = coins + $1, diamonds = diamonds + $2 WHERE id = $3',
             [coinsGain, diamondsGain, userId]
         );
-        console.log(`[SMELT] User after update: coins=${updateRes.rows[0].coins}, diamonds=${updateRes.rows[0].diamonds}`);
 
         await client.query('COMMIT');
         res.json({ success: true, coins: coinsGain, diamonds: diamondsGain });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('[forge/smelt] Error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

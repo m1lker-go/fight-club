@@ -3,8 +3,7 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
-// Импортируем функции из tasks.js (экспортируйте их там!)
-const tasksModule = require('./tasks');
+const tasksModule = require('./tasks'); // для заданий
 
 function generateItemByRarity(rarity, ownerClass = null) {
     const classes = ['warrior', 'assassin', 'mage'];
@@ -60,9 +59,9 @@ function generateItemByRarity(rarity, ownerClass = null) {
 }
 
 // Добавить предмет в кузницу
-// В маршруте /add (уже есть, но убедитесь, что проверка правильная)
 router.post('/add', async (req, res) => {
     const { tg_id, item_id, tab } = req.body;
+    console.log('[forge/add] Request:', { tg_id, item_id, tab });
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
         return res.status(400).json({ error: 'Invalid tab' });
     }
@@ -72,15 +71,19 @@ router.post('/add', async (req, res) => {
         const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
         if (user.rows.length === 0) throw new Error('User not found');
         const userId = user.rows[0].id;
+        console.log('[forge/add] User ID:', userId);
 
-        // Проверяем, что предмет принадлежит пользователю, не экипирован, не на продаже и не в кузнице
+        // Проверяем, что предмет принадлежит пользователю и не экипирован, не на продаже, не в кузнице
         const item = await client.query(
-            'SELECT id FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND for_sale = false AND (in_forge = false OR in_forge IS NULL)',
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (item.rows.length === 0) {
-            throw new Error('Item not available');
-        }
+        console.log('[forge/add] Item query result:', item.rows[0] || 'not found');
+        if (item.rows.length === 0) throw new Error('Item not found');
+        const invItem = item.rows[0];
+        if (invItem.equipped) throw new Error('Item is equipped');
+        if (invItem.for_sale) throw new Error('Item is on sale');
+        if (invItem.in_forge) throw new Error('Item already in forge');
 
         await client.query(
             'UPDATE inventory SET in_forge = true, forge_tab = $1 WHERE id = $2',
@@ -101,6 +104,9 @@ router.post('/add', async (req, res) => {
 // Убрать предмет из кузницы
 router.post('/remove', async (req, res) => {
     const { tg_id, item_id } = req.body;
+    if (!tg_id || !item_id) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -109,10 +115,11 @@ router.post('/remove', async (req, res) => {
         const userId = user.rows[0].id;
 
         const item = await client.query(
-            'SELECT id FROM inventory WHERE id = $1 AND user_id = $2 AND in_forge = true',
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
         );
-        if (item.rows.length === 0) throw new Error('Item not in forge');
+        if (item.rows.length === 0) throw new Error('Item not found');
+        if (!item.rows[0].in_forge) throw new Error('Item not in forge');
 
         await client.query(
             'UPDATE inventory SET in_forge = false, forge_tab = NULL WHERE id = $1',
@@ -154,7 +161,7 @@ router.get('/current', async (req, res) => {
     }
 });
 
-// Ковка: объединение 3 предметов в один более высокой редкости
+// Ковка
 router.post('/craft', async (req, res) => {
     const { tg_id, item_ids, chosen_class } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length !== 3) {
@@ -213,12 +220,9 @@ router.post('/craft', async (req, res) => {
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
-        // Обновление задания "Счастливчик"
         if (newRarity === 'rare' || newRarity === 'epic' || newRarity === 'legendary') {
             if (tasksModule.updateLuckyTask) {
                 await tasksModule.updateLuckyTask(client, userId);
-            } else {
-                console.warn('[forge] updateLuckyTask not found');
             }
         }
 

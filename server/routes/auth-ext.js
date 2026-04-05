@@ -719,7 +719,35 @@ router.post('/refresh', async (req, res) => {
         const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         const userData = updatedUser.rows[0];
         const classes = await client.query('SELECT * FROM user_classes WHERE user_id = $1', [userId]);
-        const inventory = await client.query('SELECT i.*, it.* FROM inventory i JOIN items it ON i.item_id = it.id WHERE i.user_id = $1', [userId]);
+        const inventory = await client.query(
+            `SELECT 
+                i.id as id, 
+                i.item_id, 
+                i.equipped, 
+                i.for_sale, 
+                i.price, 
+                i.in_forge, 
+                i.forge_tab,
+                it.name, 
+                it.type, 
+                it.rarity, 
+                it.class_restriction, 
+                it.owner_class,
+                it.atk_bonus, 
+                it.def_bonus, 
+                it.hp_bonus, 
+                it.spd_bonus,
+                it.crit_bonus, 
+                it.crit_dmg_bonus, 
+                it.agi_bonus, 
+                it.int_bonus, 
+                it.vamp_bonus, 
+                it.reflect_bonus
+             FROM inventory i 
+             JOIN items it ON i.item_id = it.id 
+             WHERE i.user_id = $1`,
+            [userId]
+        );
         res.json({
             user: userData,
             classes: classes.rows,

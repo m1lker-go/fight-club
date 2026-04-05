@@ -242,37 +242,24 @@ function linkVK() {
         VK._initCalled = true;
     }
 
-    let container = document.getElementById('vk_link_widget');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'vk_link_widget';
-        container.style.display = 'none';
-        document.body.appendChild(container);
-        console.log('[VK] Создан контейнер виджета');
-    } else {
-        container.innerHTML = '';
-        console.log('[VK] Контейнер виджета очищен');
-    }
-
-    console.log('[VK] Вызов VK.Widgets.Auth');
-    VK.Widgets.Auth(container.id, {
-        onAuth: async (response) => {
-            console.log('[VK] onAuth response:', response);
-            if (response && response.session) {
-                console.log('[VK] Сессия получена, user:', response.session.user);
-                const user = response.session.user;
-                const accessToken = response.session.sid;
-                const token = localStorage.getItem('sessionToken');
-                console.log('[VK] Отправка данных на сервер /auth/link');
-                const res = await fetch(`${window.API_BASE}/auth/link`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ provider: 'vk', user, access_token: accessToken })
-                });
-                const data = await res.json();
+    // Используем VK.Auth.login – он открывает стандартное окно авторизации
+    VK.Auth.login((response) => {
+        console.log('[VK] VK.Auth.login response:', response);
+        if (response && response.session) {
+            const user = response.session.user;
+            const accessToken = response.session.sid;
+            const token = localStorage.getItem('sessionToken');
+            console.log('[VK] Отправка данных на сервер /auth/link');
+            fetch(`${window.API_BASE}/auth/link`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ provider: 'vk', user, access_token: accessToken })
+            })
+            .then(res => res.json())
+            .then(data => {
                 console.log('[VK] Ответ сервера:', data);
                 vkLinkingInProgress = false;
                 if (data.success) {
@@ -281,19 +268,21 @@ function linkVK() {
                 } else {
                     showToast('Ошибка: ' + data.error, 1500);
                 }
-            } else {
-                console.error('[VK] Ошибка: нет сессии в ответе виджета');
+            })
+            .catch(err => {
+                console.error('[VK] Ошибка запроса:', err);
                 vkLinkingInProgress = false;
-                showToast('Ошибка привязки VK', 1500);
-            }
-            container.remove();
-        },
-        onError: function(error) {
-            console.error('[VK] Ошибка виджета:', error);
+                showToast('Ошибка сервера', 1500);
+            });
+        } else {
+            console.error('[VK] Ошибка: нет сессии', response);
             vkLinkingInProgress = false;
-            showToast('Ошибка VK: ' + (error.error_msg || error.message || 'неизвестная'), 1500);
-            container.remove();
+            showToast('Ошибка авторизации VK', 1500);
         }
+    }, (error) => {
+        console.error('[VK] Ошибка VK.Auth.login:', error);
+        vkLinkingInProgress = false;
+        showToast('Ошибка VK: ' + (error.error_msg || error.message || 'неизвестная'), 1500);
     });
 }
 

@@ -2,9 +2,6 @@
 let forgeItems = [];
 let currentForgeTab = 'forge';
 
-// Функция getItemIconPath и showToast ожидаются глобально из helpers.js и screens.js
-// Порядок подключения скриптов в index.html гарантирует их доступность.
-
 async function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -104,7 +101,6 @@ async function loadForgeInventory() {
 function renderForgeInventory(items) {
     const container = document.getElementById('forgeInventory');
     container.innerHTML = '';
-    // Показываем все доступные предметы
     items.forEach(item => {
         const statsArray = buildStatsArray(item);
         const statsString = statsArray.join(' • ');
@@ -133,7 +129,6 @@ function renderForgeInventory(items) {
         container.appendChild(itemDiv);
     });
 
-    // Если предметов меньше 4, добавляем пустые строки до 4
     const emptyRowsNeeded = Math.max(0, 4 - items.length);
     for (let i = 0; i < emptyRowsNeeded; i++) {
         const emptyDiv = document.createElement('div');
@@ -142,7 +137,6 @@ function renderForgeInventory(items) {
     }
 }
 
-// Вспомогательная функция для цвета текста редкости
 function getRarityColor(rarity) {
     const colors = {
         common: '#aaa',
@@ -160,7 +154,12 @@ function addToForge(item) {
         showToast('Все слоты заняты', 1500);
         return;
     }
-    forgeItems.push(item.id);
+    // Проверяем, не добавлен ли уже (локально)
+    if (forgeItems.includes(item.id)) {
+        showToast('Предмет уже в кузнице', 1500);
+        return;
+    }
+    // Отправляем запрос на сервер, не меняя локальное состояние до успеха
     fetch('https://fight-club-api-4och.onrender.com/forge/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,6 +171,7 @@ function addToForge(item) {
     })
     .then(async res => {
         if (res.ok) {
+            forgeItems.push(item.id);
             await refreshData();
             renderForgeSlots();
             loadForgeInventory();
@@ -185,7 +185,6 @@ function addToForge(item) {
         showToast('Ошибка соединения', 1500);
     });
 }
-
 
 function buildStatsArray(item) {
     const stats = [];
@@ -206,18 +205,15 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-
     modalTitle.innerText = item.name;
     const stats = buildStatsArray(item);
     const classDisplay = item.owner_class ? (item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')) : 'Неизвестный';
     let actionButton = '';
-
     if (source === 'inventory') {
         actionButton = `<button class="btn" id="forgeAddBtn">Добавить в слот</button>`;
     } else if (source === 'slot') {
         actionButton = `<button class="btn" id="forgeRemoveBtn">Убрать из слота</button>`;
     }
-
     modalBody.innerHTML = `
         <div style="text-align: center;">
             <img src="${getItemIconPath(item)}" style="max-width: 100px; max-height: 100px; margin-bottom:10px;">
@@ -230,7 +226,6 @@ function showForgeItemDetails(item, source, slotIndex = null) {
         </div>
     `;
     modal.style.display = 'block';
-
     if (source === 'inventory') {
         document.getElementById('forgeAddBtn').addEventListener('click', () => addToForge(item));
     } else if (source === 'slot') {
@@ -249,11 +244,10 @@ function showForgeItemDetails(item, source, slotIndex = null) {
                 modal.style.display = 'none';
             } else {
                 const err = await res.json();
-showToast('Ошибка: ' + err.error, 1500);
+                showToast('Ошибка: ' + err.error, 1500);
             }
         });
     }
-
     document.getElementById('closeModal').addEventListener('click', () => {
         modal.style.display = 'none';
     });
@@ -265,9 +259,7 @@ function showForgeHelp() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-
     modalTitle.innerHTML = `<i class="fas fa-hammer"></i> Кузница`;
-
     modalBody.innerHTML = `
         <div style="text-align: left;">
             <div class="role-card">
@@ -277,29 +269,7 @@ function showForgeHelp() {
             </div>
             <div class="role-card">
                 <h3><i class="fas fa-fire"></i> Расплавка</h3>
-                <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости:</div>
-                <div class="rewards-list" style="font-size: 0.8rem;">
-                    <div class="reward-row rarity-common">
-                        <span class="rarity-name">Обычный</span>
-                        <span class="reward-value">65–85 монет</span>
-                    </div>
-                    <div class="reward-row rarity-uncommon">
-                        <span class="rarity-name">Необычный</span>
-                        <span class="reward-value">120–160 монет</span>
-                    </div>
-                    <div class="reward-row rarity-rare">
-                        <span class="rarity-name">Редкий</span>
-                        <span class="reward-value">400–600 монет</span>
-                    </div>
-                    <div class="reward-row rarity-epic">
-                        <span class="rarity-name">Эпический</span>
-                        <span class="reward-value">1000–1500 монет + <i class="fas fa-gem"></i> шанс 50% на 1 алмаз</span>
-                    </div>
-                    <div class="reward-row rarity-legendary">
-                        <span class="rarity-name">Легендарный</span>
-                        <span class="reward-value">2000–3000 монет + <i class="fas fa-gem"></i> 2–5 алмазов</span>
-                    </div>
-                </div>
+                <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости.</div>
             </div>
             <div class="role-card">
                 <h3><i class="fas fa-boxes"></i> Инвентарь кузницы</h3>
@@ -308,7 +278,6 @@ function showForgeHelp() {
             </div>
         </div>
     `;
-
     modal.style.display = 'block';
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
@@ -321,7 +290,6 @@ function showClassChoiceForCraft(itemIds) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p style="text-align:center;">Для какого класса создать предмет?</p>
@@ -333,7 +301,6 @@ function showClassChoiceForCraft(itemIds) {
         <p style="text-align:center; margin-top:15px;"><small>Если не выберете, класс будет случайным</small></p>
     `;
     modal.style.display = 'block';
-
     const classButtons = modalBody.querySelectorAll('.class-choice');
     classButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -342,7 +309,6 @@ function showClassChoiceForCraft(itemIds) {
             await performCraft(itemIds, chosenClass);
         });
     });
-
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
@@ -350,7 +316,6 @@ function showClassChoiceForCraft(itemIds) {
 async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
-
     const res = await fetch('https://fight-club-api-4och.onrender.com/forge/craft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -377,7 +342,6 @@ async function performCraft(itemIds, chosenClass) {
 async function performForgeAction() {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
-
     if (currentForgeTab === 'forge') {
         if (forgeItems.length !== 3) {
             showToast('Нужно ровно 3 предмета', 1500);
@@ -402,7 +366,7 @@ async function performForgeAction() {
         });
         const data = await res.json();
         if (data.success) {
-           showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
+            showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
             forgeItems = [];
             await refreshData();
             await loadCurrentForgeItems(currentForgeTab);

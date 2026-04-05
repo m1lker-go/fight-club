@@ -60,6 +60,7 @@ function generateItemByRarity(rarity, ownerClass = null) {
 }
 
 // Добавить предмет в кузницу
+// В маршруте /add (уже есть, но убедитесь, что проверка правильная)
 router.post('/add', async (req, res) => {
     const { tg_id, item_id, tab } = req.body;
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
@@ -74,14 +75,13 @@ router.post('/add', async (req, res) => {
 
         // Проверяем, что предмет принадлежит пользователю, не экипирован, не на продаже и не в кузнице
         const item = await client.query(
-            'SELECT id FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND for_sale = false AND (in_forge IS NULL OR in_forge = false)',
+            'SELECT id FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND for_sale = false AND (in_forge = false OR in_forge IS NULL)',
             [item_id, userId]
         );
         if (item.rows.length === 0) {
             throw new Error('Item not available');
         }
 
-        // Обновляем флаг in_forge и forge_tab
         await client.query(
             'UPDATE inventory SET in_forge = true, forge_tab = $1 WHERE id = $2',
             [tab, item_id]

@@ -1,55 +1,55 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
-const { updatePlayerPower } = require('../utils/power'); // добавлен импорт
 
 // Надеть предмет
 router.post('/equip', async (req, res) => {
-    console.log('=== НАДЕВАНИЕ ПРЕДМЕТА ===');
-    console.log('Request body:', req.body);
-    
     const { tg_id, item_id, target_class } = req.body;
-    if (!target_class) {
-        return res.status(400).json({ error: 'target_class is required' });
+    if (!tg_id || !item_id || !target_class) {
+        return res.status(400).json({ error: 'Missing parameters' });
     }
-    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-
-        const item = await client.query('SELECT type, owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
-        if (item.rows.length === 0) throw new Error('Item not found');
-        const type = item.rows[0].type;
-        const ownerClass = item.rows[0].owner_class;
-
-        if (ownerClass !== target_class) {
-            throw new Error(`Item belongs to class ${ownerClass}, not ${target_class}`);
-        }
-
-        await client.query(
-            'UPDATE inventory SET equipped = false WHERE user_id = $1 AND type = $2 AND owner_class = $3',
-            [userId, type, target_class]
-        );
-
-        await client.query(
-            'UPDATE inventory SET equipped = true WHERE id = $1 AND user_id = $2',
+        
+        // Найти пользователя
+        const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const userId = userRes.rows[0].id;
+        
+        // Проверить, что предмет принадлежит пользователю, не экипирован, не в кузнице, не на продаже
+        const itemRes = await client.query(
+            `SELECT * FROM inventory 
+             WHERE id = $1 AND user_id = $2 AND equipped = false AND in_forge = false AND for_sale = false`,
             [item_id, userId]
         );
-
-        // Пересчитываем силу для целевого класса
-        await updatePlayerPower(client, userId, target_class);
-
+        if (itemRes.rows.length === 0) throw new Error('Item not available');
+        const item = itemRes.rows[0];
+        
+        // Проверить, что класс предмета соответствует целевому классу
+        if (item.owner_class && item.owner_class !== target_class && item.class_restriction !== 'any') {
+            throw new Error('Item class mismatch');
+        }
+        
+        // Снять текущий предмет в том же слоте для этого класса
+        await client.query(
+            `UPDATE inventory SET equipped = false 
+             WHERE user_id = $1 AND equipped = true AND type = $2 AND owner_class = $3`,
+            [userId, item.type, target_class]
+        );
+        
+        // Надеть новый предмет
+        await client.query(
+            `UPDATE inventory SET equipped = true WHERE id = $1`,
+            [item_id]
+        );
+        
         await client.query('COMMIT');
-        console.log('=== ОПЕРАЦИЯ УСПЕШНА ===');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Ошибка при надевании:', e);
-        res.status(500).json({ error: e.message });
+        console.error('[equip] Error:', e.message);
+        res.status(400).json({ error: e.message });
     } finally {
         client.release();
     }
@@ -57,70 +57,67 @@ router.post('/equip', async (req, res) => {
 
 // Снять предмет
 router.post('/unequip', async (req, res) => {
-    console.log('Unequip request:', req.body);
     const { tg_id, item_id } = req.body;
+    if (!tg_id || !item_id) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-
-        // Получаем класс предмета перед снятием
-        const itemRes = await client.query('SELECT owner_class FROM inventory WHERE id = $1 AND user_id = $2', [item_id, userId]);
-        if (itemRes.rows.length === 0) throw new Error('Item not found');
-        const ownerClass = itemRes.rows[0].owner_class;
-
-        const result = await client.query(
-            'UPDATE inventory SET equipped = false WHERE id = $1 AND user_id = $2 RETURNING id',
+        
+        const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const userId = userRes.rows[0].id;
+        
+        const itemRes = await client.query(
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = true',
             [item_id, userId]
         );
-        if (result.rowCount === 0) throw new Error('Item not found or not yours');
-
-        // Пересчитываем силу для класса этого предмета
-        await updatePlayerPower(client, userId, ownerClass);
-
+        if (itemRes.rows.length === 0) throw new Error('Item not equipped');
+        
+        await client.query('UPDATE inventory SET equipped = false WHERE id = $1', [item_id]);
+        
         await client.query('COMMIT');
-        console.log('Unequip success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Unequip error:', e);
+        console.error('[unequip] Error:', e.message);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
     }
 });
 
-// Продать (выставить на продажу)
+// Выставить на продажу
 router.post('/sell', async (req, res) => {
-    console.log('Sell request:', req.body);
     const { tg_id, item_id, price } = req.body;
+    if (!tg_id || !item_id || !price || price <= 0) {
+        return res.status(400).json({ error: 'Invalid price' });
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-
-        const inv = await client.query(
-            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND for_sale = false',
+        
+        const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const userId = userRes.rows[0].id;
+        
+        const itemRes = await client.query(
+            'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND in_forge = false AND for_sale = false',
             [item_id, userId]
         );
-        if (inv.rows.length === 0) throw new Error('Item not available for sale');
-
+        if (itemRes.rows.length === 0) throw new Error('Item not available');
+        
         await client.query(
             'UPDATE inventory SET for_sale = true, price = $1 WHERE id = $2',
             [price, item_id]
         );
-
+        
         await client.query('COMMIT');
-        console.log('Sell success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Sell error:', e);
+        console.error('[sell] Error:', e.message);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();
@@ -129,32 +126,31 @@ router.post('/sell', async (req, res) => {
 
 // Снять с продажи
 router.post('/unsell', async (req, res) => {
-    console.log('Unsell request:', req.body);
     const { tg_id, item_id } = req.body;
+    if (!tg_id || !item_id) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-
-        const inv = await client.query(
+        
+        const userRes = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const userId = userRes.rows[0].id;
+        
+        const itemRes = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',
             [item_id, userId]
         );
-        if (inv.rows.length === 0) throw new Error('Item not found or not for sale');
-
-        await client.query(
-            'UPDATE inventory SET for_sale = false, price = NULL WHERE id = $1',
-            [item_id]
-        );
-
+        if (itemRes.rows.length === 0) throw new Error('Item not on sale');
+        
+        await client.query('UPDATE inventory SET for_sale = false, price = NULL WHERE id = $1', [item_id]);
+        
         await client.query('COMMIT');
-        console.log('Unsell success for item', item_id);
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Unsell error:', e);
+        console.error('[unsell] Error:', e.message);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

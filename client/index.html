@@ -10,6 +10,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap" rel="stylesheet">
+    <!-- VK API (openapi) – загружаем рано, чтобы он был доступен в authModal.js -->
+    <script src="https://vk.com/js/api/openapi.js?169" type="text/javascript"></script>
+    <script>
+        // Инициализация VK API (обязательно перед использованием VK.Widgets)
+        VK.init({ apiId: 54525890 });
+    </script>
+    <!-- VK ID SDK (альтернативный, может пригодиться) -->
+    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
 </head>
 <body>
     <div id="splash-screen">
@@ -87,7 +95,7 @@
         </div>
     </div>
 
-    <!-- Скрипты -->
+    <!-- Скрипты приложения (порядок важен) -->
     <script src="js/constants.js?v=12"></script>
     <script src="js/helpers.js?v=12"></script>
     <script src="js/screens.js?v=2"></script>
@@ -99,43 +107,44 @@
     <script src="js/forge.js?v=12"></script>
     <script src="js/tower.js?v=12"></script>
     <script src="app.js?v=12"></script>
-    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
 
-    <!-- VK Low-code виджет -->
-<script src="https://vk.com/js/api/openapi.js?169" type="text/javascript"></script>
-<div id="vk_auth_widget" style="display: none;"></div>
-<script>
-  window.vkAuthCallback = function(response) {
-    if (response && response.session) {
-      const user = response.session.user;
-      // Отправляем данные на сервер для входа
-      fetch('https://fight-club-api-4och.onrender.com/auth/vk-lowcode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: user, access_token: response.session.sid })
-      }).then(res => res.json()).then(data => {
-        if (data.success) {
-          localStorage.setItem('sessionToken', data.sessionToken);
-          if (data.needNickname) {
-            // Если нужен никнейм, показываем модалку
-            if (typeof showNicknameModal === 'function') showNicknameModal(data.userId);
-          } else {
-            location.reload();
-          }
-        } else {
-          alert('Ошибка входа через VK: ' + data.error);
-        }
-      }).catch(err => console.error(err));
-    }
-  };
-  // Инициализация виджета будет происходить при нажатии на кнопку входа
-  window.initVKWidget = function(containerId) {
-    VK.Widgets.Auth(containerId, {
-      onAuth: window.vkAuthCallback,
-      authUrl: '/auth/vk-lowcode' // не используется, но оставим
-    });
-  };
-</script>
-    
+    <!-- Вспомогательный скрипт для VK Low-code (глобальная callback-функция) -->
+    <script>
+        // Эта функция будет вызвана виджетом VK после успешной авторизации
+        window.vkAuthCallback = function(response) {
+            if (response && response.session) {
+                const user = response.session.user;
+                // Отправляем данные на сервер для входа
+                fetch('https://fight-club-api-4och.onrender.com/auth/vk-lowcode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: user, access_token: response.session.sid })
+                }).then(res => res.json()).then(data => {
+                    if (data.success) {
+                        localStorage.setItem('sessionToken', data.sessionToken);
+                        if (data.needNickname) {
+                            if (typeof showNicknameModal === 'function') showNicknameModal(data.userId);
+                        } else {
+                            location.reload();
+                        }
+                    } else {
+                        alert('Ошибка входа через VK: ' + data.error);
+                    }
+                }).catch(err => console.error('VK lowcode fetch error:', err));
+            }
+        };
+
+        // Инициализация виджета (будет вызвана из loginWithVK при необходимости)
+        window.initVKWidget = function(containerId) {
+            if (typeof VK !== 'undefined' && VK.Widgets) {
+                VK.Widgets.Auth(containerId, {
+                    onAuth: window.vkAuthCallback,
+                    authUrl: '/auth/vk-lowcode' // не используется напрямую, но оставим
+                });
+            } else {
+                console.error('VK API не загружен');
+            }
+        };
+    </script>
 </body>
 </html>

@@ -117,53 +117,44 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
-    // Проверяем, загрузился ли SDK
-    if (!window.VKIDSDK) {
-        showToast('Загрузка VK SDK...', 1000);
-        // Ждём загрузки (повторная попытка через 500 мс)
-        setTimeout(() => {
-            if (window.VKIDSDK) loginWithVK();
-            else showToast('Ошибка загрузки VK SDK', 1500);
-        }, 500);
-        return;
-    }
-
-    const VKID = window.VKIDSDK;
-    VKID.Config.init({
-        app: 54525890, // новый Client ID
-        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback', // ваш callback
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.LOWCODE,
-        scope: 'email', // запрашиваем email
-    });
-
-    // Открываем popup авторизации (вместо One Tap, чтобы не дублировать кнопку)
-    VKID.Auth.login()
-        .then(async (response) => {
-            // response содержит код авторизации
-            const { code, device_id } = response;
-            // Отправляем код на сервер
-            const res = await fetch(`${window.API_BASE}/auth/vk-sdk`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, device_id })
-            });
-            const data = await res.json();
+  // Создаём контейнер для виджета, если его нет
+  let container = document.getElementById('vk_auth_widget');
+  if (!container) {
+    const div = document.createElement('div');
+    div.id = 'vk_auth_widget';
+    div.style.display = 'none';
+    document.body.appendChild(div);
+    container = div;
+  }
+  // Очищаем содержимое и инициализируем виджет
+  container.innerHTML = '';
+  if (typeof VK !== 'undefined' && VK.Widgets) {
+    VK.Widgets.Auth(container.id, {
+      onAuth: function(response) {
+        if (response && response.session) {
+          const user = response.session.user;
+          fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: user, access_token: response.session.sid })
+          }).then(res => res.json()).then(data => {
             if (data.success) {
-                localStorage.setItem('sessionToken', data.sessionToken);
-                if (data.needNickname) {
-                    showNicknameModal(data.userId);
-                } else {
-                    location.reload();
-                }
+              localStorage.setItem('sessionToken', data.sessionToken);
+              if (data.needNickname && typeof showNicknameModal === 'function') {
+                showNicknameModal(data.userId);
+              } else {
+                location.reload();
+              }
             } else {
-                showToast(data.error, 1500);
+              showToast(data.error, 1500);
             }
-        })
-        .catch((error) => {
-            console.error('VK auth error:', error);
-            showToast('Ошибка авторизации VK', 1500);
-        });
+          }).catch(err => showToast('Ошибка сервера', 1500));
+        }
+      }
+    });
+  } else {
+    showToast('VK API не загружен', 1500);
+  }
 }
 
 async function sendEmailCode() {

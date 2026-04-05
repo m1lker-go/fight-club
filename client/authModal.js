@@ -121,21 +121,21 @@ async function loginWithVK() {
         showToast('VK API не загружен', 1500);
         return;
     }
-    // Убедимся, что VK инициализирован (если не через index.html)
+    // Инициализируем VK только один раз
     if (!VK._initCalled) {
         VK.init({ apiId: 54525890 });
         VK._initCalled = true;
     }
     
     // Создаём временный контейнер для виджета
-    let container = document.getElementById('vk_auth_container');
+    let container = document.getElementById('vk_auth_widget');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'vk_auth_container';
+        container.id = 'vk_auth_widget';
         container.style.display = 'none';
         document.body.appendChild(container);
     } else {
-        container.innerHTML = ''; // очищаем
+        container.innerHTML = '';
     }
     
     VK.Widgets.Auth(container.id, {
@@ -162,7 +162,6 @@ async function loginWithVK() {
             } else {
                 showToast('Ошибка авторизации VK', 1500);
             }
-            // Удаляем контейнер после использования
             container.remove();
         }
     });

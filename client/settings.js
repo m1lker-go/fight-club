@@ -237,10 +237,10 @@ function linkVK() {
         VK._initCalled = true;
     }
     
-    let container = document.getElementById('vk_link_container');
+    let container = document.getElementById('vk_link_widget');
     if (!container) {
         container = document.createElement('div');
-        container.id = 'vk_link_container';
+        container.id = 'vk_link_widget';
         container.style.display = 'none';
         document.body.appendChild(container);
     } else {

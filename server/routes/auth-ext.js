@@ -899,4 +899,69 @@ router.post('/vk-sdk', async (req, res) => {
     }
 });
 
+router.post('/auth/vk-lowcode', async (req, res) => {
+  const { user, access_token } = req.body;
+  if (!user || !user.id) return res.status(400).json({ error: 'No user data' });
+  
+  const vkId = user.id;
+  const email = user.email || null;
+  const username = `${user.first_name} ${user.last_name}`;
+  
+  const client = await pool.connect();
+  try {
+    // Ищем пользователя по VK ID в user_connections
+    let existingConnection = await client.query(
+      'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
+      ['vk', String(vkId)]
+    );
+    let userData, needNickname = false;
+    if (existingConnection.rows.length > 0) {
+      const userId = existingConnection.rows[0].user_id;
+      await rechargeEnergy(client, userId);
+      const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+      userData = userRes.rows[0];
+      needNickname = !userData.nickname;
+    } else {
+      // Проверяем email на уникальность
+      if (email) {
+        const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (emailUser.rows.length > 0) {
+          return res.status(409).json({ error: 'Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.' });
+        }
+      }
+      const referralCode = Math.random().toString(36).substring(2, 10);
+      const newUser = await client.query(
+        `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [email || null, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+      );
+      userData = newUser.rows[0];
+      needNickname = true;
+      const classes = ['warrior', 'assassin', 'mage'];
+      for (let cls of classes) {
+        await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
+      }
+    }
+    // Сохраняем связь с VK
+    await client.query(
+      `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+       VALUES ($1, 'vk', $2, $3, $4)
+       ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+      [userData.id, String(vkId), email || null, JSON.stringify({ user, access_token })]
+    );
+    if (email && !userData.email) {
+      await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
+    }
+    const sessionToken = generateToken();
+    await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+    res.json({ success: true, sessionToken, needNickname, userId: userData.id, user: userData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Authentication failed' });
+  } finally {
+    client.release();
+  }
+});
+
+
 module.exports = router;

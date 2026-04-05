@@ -117,44 +117,55 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
-  // Создаём контейнер для виджета, если его нет
-  let container = document.getElementById('vk_auth_widget');
-  if (!container) {
-    const div = document.createElement('div');
-    div.id = 'vk_auth_widget';
-    div.style.display = 'none';
-    document.body.appendChild(div);
-    container = div;
-  }
-  // Очищаем содержимое и инициализируем виджет
-  container.innerHTML = '';
-  if (typeof VK !== 'undefined' && VK.Widgets) {
+    if (typeof VK === 'undefined') {
+        showToast('VK API не загружен', 1500);
+        return;
+    }
+    // Убедимся, что VK инициализирован (если не через index.html)
+    if (!VK._initCalled) {
+        VK.init({ apiId: 54525890 });
+        VK._initCalled = true;
+    }
+    
+    // Создаём временный контейнер для виджета
+    let container = document.getElementById('vk_auth_container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'vk_auth_container';
+        container.style.display = 'none';
+        document.body.appendChild(container);
+    } else {
+        container.innerHTML = ''; // очищаем
+    }
+    
     VK.Widgets.Auth(container.id, {
-      onAuth: function(response) {
-        if (response && response.session) {
-          const user = response.session.user;
-          fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user: user, access_token: response.session.sid })
-          }).then(res => res.json()).then(data => {
-            if (data.success) {
-              localStorage.setItem('sessionToken', data.sessionToken);
-              if (data.needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(data.userId);
-              } else {
-                location.reload();
-              }
+        onAuth: async (response) => {
+            if (response && response.session) {
+                const user = response.session.user;
+                const accessToken = response.session.sid;
+                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user, access_token: accessToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('sessionToken', data.sessionToken);
+                    if (data.needNickname && typeof showNicknameModal === 'function') {
+                        showNicknameModal(data.userId);
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    showToast(data.error, 1500);
+                }
             } else {
-              showToast(data.error, 1500);
+                showToast('Ошибка авторизации VK', 1500);
             }
-          }).catch(err => showToast('Ошибка сервера', 1500));
+            // Удаляем контейнер после использования
+            container.remove();
         }
-      }
     });
-  } else {
-    showToast('VK API не загружен', 1500);
-  }
 }
 
 async function sendEmailCode() {

@@ -59,6 +59,11 @@ async function renderSettings() {
                     <img src="/assets/${user.avatar || 'cat_heroweb.png'}" class="settings-avatar">
                     <span class="settings-username">${escapeHtml(user.nickname || user.username || 'Игрок')}</span>
                 </div>
+                <div class="settings-row nickname-row">
+                    <span>Никнейм</span>
+                    <span class="nickname-value">${escapeHtml(user.nickname || user.username || 'Игрок')}</span>
+                    <button class="edit-nickname-btn" id="editNicknameBtn"><i class="fas fa-pencil-alt"></i></button>
+                </div>
                 <div class="settings-row">
                     <span>Музыка</span>
                     <label class="switch">
@@ -115,6 +120,14 @@ async function renderSettings() {
             });
         }
 
+        // Обработчик кнопки смены никнейма
+        const editNicknameBtn = document.getElementById('editNicknameBtn');
+        if (editNicknameBtn) {
+            editNicknameBtn.addEventListener('click', () => {
+                showNicknameEditModal(user.nickname || user.username || '');
+            });
+        }
+
         document.querySelectorAll('.link-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const provider = btn.dataset.provider;
@@ -167,6 +180,67 @@ async function updateSettings(updates) {
         console.error(err);
         if (typeof showToast === 'function') showToast('Ошибка сохранения', 1500);
     }
+}
+
+function showNicknameEditModal(currentNickname) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Изменить никнейм';
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <input type="text" id="editNicknameInput" class="auth-input" placeholder="Новый никнейм (англ. буквы и цифры, подчёркивание)" value="${escapeHtml(currentNickname)}" maxlength="20">
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+                <button class="modal-btn save-nickname-btn" style="background-color: #00aaff;">Сохранить</button>
+                <button class="modal-btn cancel-nickname-btn">Отмена</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+    const input = document.getElementById('editNicknameInput');
+    const saveBtn = modalBody.querySelector('.save-nickname-btn');
+    const cancelBtn = modalBody.querySelector('.cancel-nickname-btn');
+    const closeX = modal.querySelector('.close');
+    const closeModal = () => modal.style.display = 'none';
+    
+    saveBtn.addEventListener('click', async () => {
+        const newNickname = input.value.trim();
+        if (!newNickname) {
+            showToast('Введите никнейм', 1500);
+            return;
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(newNickname)) {
+            showToast('Никнейм может содержать только английские буквы, цифры и подчёркивание', 1500);
+            return;
+        }
+        const token = localStorage.getItem('sessionToken');
+        // Проверка уникальности никнейма
+        const checkRes = await fetch(`${window.API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(newNickname)}`);
+        const { available } = await checkRes.json();
+        if (!available) {
+            showToast('Никнейм уже занят', 1500);
+            return;
+        }
+        const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, nickname: newNickname })
+        });
+        if (res.ok) {
+            showToast('Никнейм изменён', 1500);
+            closeModal();
+            renderSettings(); // обновить страницу настроек
+            if (currentScreen === 'main') renderMain(); // обновить главный экран
+        } else {
+            const err = await res.json();
+            showToast('Ошибка: ' + (err.error || 'неизвестная'), 1500);
+        }
+    });
+    cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
 }
 
 function linkTelegram() {
@@ -242,7 +316,6 @@ function linkVK() {
         VK._initCalled = true;
     }
 
-    // Используем VK.Auth.login – он открывает стандартное окно авторизации
     VK.Auth.login((response) => {
         console.log('[VK] VK.Auth.login response:', response);
         if (response && response.session) {

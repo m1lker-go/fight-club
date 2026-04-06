@@ -1,9 +1,7 @@
-// authModal.js
 let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;
 
-// Флаги для предотвращения повторных вызовов
 let googleLoginInProgress = false;
 let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
@@ -103,7 +101,7 @@ async function loginWithTelegram() {
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needNickname) {
+                    if (data.needNickname && typeof showNicknameModal === 'function') {
                         showNicknameModal(data.userId);
                     } else {
                         location.reload();
@@ -142,7 +140,6 @@ function loginWithGoogle() {
         return;
     }
     googleLoginInProgress = true;
-    // Таймаут на случай, если редирект не произошёл (защита)
     setTimeout(() => {
         if (googleLoginInProgress) {
             googleLoginInProgress = false;
@@ -152,7 +149,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== VK OAuth через Low-code SDK ==========
+// ========== VK OAuth через Low-code SDK (ИСПРАВЛЕННЫЙ) ==========
 async function loginWithVK() {
     if (vkLoginInProgress) {
         showToast('Вход через VK уже выполняется', 1500);
@@ -160,10 +157,11 @@ async function loginWithVK() {
     }
     vkLoginInProgress = true;
 
-    let timeoutId = setTimeout(() => {
+    // Таймаут на случай зависания
+    const timeoutId = setTimeout(() => {
         if (vkLoginInProgress) {
             vkLoginInProgress = false;
-            showToast('Вход через VK отменён (таймаут)', 1500);
+            showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
         }
     }, 120000);
 
@@ -184,7 +182,7 @@ async function loginWithVK() {
     const VKID = window.VKIDSDK;
     VKID.Config.init({
         app: 54525890,
-        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback',
+        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback', // этот URL используется VK для редиректа, но мы используем low-code, он не нужен? Оставим.
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.LOWCODE,
         scope: 'email',
@@ -200,7 +198,10 @@ async function loginWithVK() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code, device_id })
                 });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${errorText}`);
+                }
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('sessionToken', data.sessionToken);
@@ -210,7 +211,7 @@ async function loginWithVK() {
                         location.reload();
                     }
                 } else {
-                    showToast(data.error, 1500);
+                    showToast(data.error || 'Ошибка входа через VK', 1500);
                 }
             } catch (err) {
                 console.error('VK auth fetch error:', err);
@@ -223,7 +224,7 @@ async function loginWithVK() {
             clearTimeout(timeoutId);
             vkLoginInProgress = false;
             console.error('VK auth error:', error);
-            showToast('Ошибка авторизации VK', 1500);
+            showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
         });
 }
 

@@ -10,7 +10,10 @@ console.log('PORT:', process.env.PORT);
 console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: ['https://cat-fight.ru', 'https://fight-club-ecru.vercel.app', 'https://fight-club-api-4och.onrender.com'],
+    credentials: true
+}));
 app.use(express.json());
 
 // API routes

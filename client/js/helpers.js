@@ -17,7 +17,6 @@ function getCurrentClassData() {
 function calculateClassStats(className, classData, inventory, subclass) {
     const base = baseStats[className] || baseStats.warrior;
 
-    // Базовые статы с учётом очков навыков (ИЗМЕНЕНО: *5 вместо *2)
     let baseStatsWithSkills = {
         hp: base.hp + (classData.hp_points || 0) * 5,
         atk: base.atk + (classData.atk_points || 0),
@@ -62,11 +61,9 @@ function calculateClassStats(className, classData, inventory, subclass) {
         reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
     };
 
-    // Классовые особенности (добавляются к final)
     let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
 
     if (className === 'warrior') {
-        // ИЗМЕНЕНО: +5 HP за каждые 5 защиты (было +3)
         const bonusHp = Math.floor(final.def / 5) * 5;
         classBonus.hp = bonusHp;
         final.hp += bonusHp;
@@ -84,7 +81,6 @@ function calculateClassStats(className, classData, inventory, subclass) {
         final.agi += bonusAgi;
     }
 
-    // ДОБАВЛЕНО: пассивная особенность воина +10% к итоговому HP
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.1);
     }
@@ -146,15 +142,13 @@ function showRoleInfoModal(className) {
 
     const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
     
-   // Выбор иконки в зависимости от класса
-let iconClass = '';
-if (className === 'warrior') iconClass = 'fas fa-shield-alt';
-else if (className === 'assassin') iconClass = 'fas fa-khanda';
-else if (className === 'mage') iconClass = 'fas fa-bomb';
+    let iconClass = '';
+    if (className === 'warrior') iconClass = 'fas fa-shield-alt';
+    else if (className === 'assassin') iconClass = 'fas fa-khanda';
+    else if (className === 'mage') iconClass = 'fas fa-bomb';
 
-modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Класс ${classNameRu}`;
+    modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Класс ${classNameRu}`;
 
-    // Особенность класса
     let classFeatureHtml = '';
     if (className === 'warrior') {
         classFeatureHtml = `
@@ -179,7 +173,6 @@ modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Кл
         `;
     }
 
-    // Роли (подклассы)
     const subclasses = {
         warrior: ['guardian', 'berserker', 'knight'],
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
@@ -217,7 +210,6 @@ modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Кл
         if (event.target == modal) modal.style.display = 'none';
     };
 }
-
 
 function showChestResult(item) {
     const modal = document.getElementById('chestResultModal');
@@ -283,10 +275,10 @@ function showChestResult(item) {
     body.innerHTML = `
         <div style="text-align: center;">
             <div style="margin-bottom: 10px;">${iconHtml}</div>
-            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px; color: ${borderColor};">${translateSkinName(item.name)}</div>
+            <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px; color: ${borderColor};">${escapeHtml(translateSkinName(item.name))}</div>
             <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${classDisplay}</div>
-            <div style="color: #aaa; font-size: 14px;">${stats.join(' • ')}</div>
+            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${escapeHtml(classDisplay)}</div>
+            <div style="color: #aaa; font-size: 14px;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
         </div>
     `;
 
@@ -297,14 +289,13 @@ function showLevelUpModal(className) {
     const modal = document.getElementById('levelUpModal');
     const body = document.getElementById('levelUpBody');
     const classNameRu = getClassNameRu(className);
-    body.innerHTML = `<p style="text-align:center;">Ваш ${classNameRu} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.</p>`;
+    body.innerHTML = `<p style="text-align:center;">Ваш ${escapeHtml(classNameRu)} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.</p>`;
 
     modal.style.display = 'block';
 
     const upgradeBtn = document.getElementById('levelUpUpgradeBtn');
     const laterBtn = document.getElementById('levelUpLaterBtn');
 
-    // Клонируем кнопки, чтобы убрать старые обработчики
     const newUpgrade = upgradeBtn.cloneNode(true);
     const newLater = laterBtn.cloneNode(true);
     upgradeBtn.parentNode.replaceChild(newUpgrade, upgradeBtn);
@@ -316,18 +307,15 @@ function showLevelUpModal(className) {
             item.style.pointerEvents = 'auto';
             item.style.opacity = '1';
         });
-        // Переходим на экран профиля
         showScreen('profile');
-        // Ждём отрисовки и кликаем по вкладке "Улучшить"
         setTimeout(() => {
             const upgradeTab = document.querySelector('.profile-tab[data-tab="upgrade"]');
             if (upgradeTab) {
                 upgradeTab.click();
             } else {
-                // Запасной вариант: устанавливаем переменную и перерисовываем
                 if (typeof window.profileTab !== 'undefined') window.profileTab = 'upgrade';
                 else if (typeof profileTab !== 'undefined') profileTab = 'upgrade';
-                renderProfile(); // перерисовываем профиль с нужной вкладкой
+                renderProfile();
             }
         }, 100);
     });
@@ -347,8 +335,8 @@ function renderItemColumn(item, isEquipped) {
                 <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 12px;"></div>
                 <div style="margin: 10px 0;">— пусто —</div>
                 <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;" data-action="${isEquipped ? 'old' : 'new'}">
-    <i class="fas fa-arrow-up"></i> Надеть
-</button>
+                    <i class="fas fa-arrow-up"></i> Надеть
+                </button>
             </div>
         `;
     }
@@ -397,12 +385,12 @@ function renderItemColumn(item, isEquipped) {
             <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #1a1f2b; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor};">
                 <img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">
             </div>
-            <div style="font-weight: bold; margin-top: 5px; color: ${borderColor};">${translateSkinName(item.name)}</div>
+            <div style="font-weight: bold; margin-top: 5px; color: ${borderColor};">${escapeHtml(translateSkinName(item.name))}</div>
             <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="font-size: 12px; color: white;">${stats.join(' • ')}</div>
+            <div style="font-size: 12px; color: white;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
             <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;" data-action="${isEquipped ? 'old' : 'new'}">
-    <i class="fas fa-arrow-up"></i> Надеть
-</button>
+                <i class="fas fa-arrow-up"></i> Надеть
+            </button>
         </div>
     `;
 }
@@ -431,7 +419,7 @@ function showEquipCompareModal(oldItem, newItem) {
     if (newBtn) {
         newBtn.addEventListener('click', async () => {
             const currentClass = document.querySelector('.class-btn.active').dataset.class;
-            const res = await fetch('https://fight-club-api-4och.onrender.com/inventory/equip', {
+            const res = await fetch(`${window.API_BASE}/inventory/equip`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -457,15 +445,13 @@ function showEquipCompareModal(oldItem, newItem) {
     };
 }
 
-// ==================== НОВЫЕ ФУНКЦИИ (переносим из app.js) ====================
+// ==================== НОВЫЕ ФУНКЦИИ ====================
 
-// Проверка наличия нераспределённых очков навыков у любого класса
 function hasAnyUnspentSkillPoints() {
     return userClasses.some(cls => cls.skill_points > 0);
 }
 window.hasAnyUnspentSkillPoints = hasAnyUnspentSkillPoints;
 
-// Обновление иконки на иконке заданий в нижнем меню
 function updateMainMenuNewIcons() {
     if (!userData || !userData.tg_id) return;
     const tasksMenuItem = document.querySelector('.menu-item[data-screen="tasks"]');
@@ -489,13 +475,12 @@ function updateMainMenuNewIcons() {
 }
 window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 
-// Обновление иконки на круглой кнопке "Торговля" на главном экране
 function updateTradeButtonIcon() {
     if (!userData || !userData.tg_id) return;
-    const tradeBtn = document.querySelector('[data-screen="trade"]'); // ищем любой элемент с атрибутом data-screen="trade"
+    const tradeBtn = document.querySelector('[data-screen="trade"]');
     if (!tradeBtn) return;
 
-    fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)
+    fetch(`${window.API_BASE}/player/freechest?tg_id=${userData.tg_id}`)
         .then(res => res.json())
         .then(data => {
             const freeAvailable = data.freeAvailable;
@@ -519,7 +504,6 @@ function updateTradeButtonIcon() {
 }
 window.updateTradeButtonIcon = updateTradeButtonIcon;
 
-// Обновление иконки на аватаре (профиль) на главном экране
 function updateProfileAvatarIcon() {
     const avatarContainer = document.querySelector('.hero-avatar');
     if (!avatarContainer) return;
@@ -535,23 +519,21 @@ function updateProfileAvatarIcon() {
         icon.style.width = '16px';
         icon.style.height = '16px';
         icon.style.pointerEvents = 'none';
-        icon.style.zIndex = '2';   // ← добавить
+        icon.style.zIndex = '2';
         avatarContainer.style.position = 'relative';
         avatarContainer.appendChild(icon);
     } else if (!hasPoints && icon) {
         icon.remove();
     }
 }
-
 window.updateProfileAvatarIcon = updateProfileAvatarIcon;
 
-// Обновление иконки на кнопке "МАГАЗИН" внутри торговли
 function updateShopTabIcon() {
     if (!userData || !userData.tg_id) return;
     const shopBtn = document.getElementById('tradeShopBtn');
     if (!shopBtn) return;
 
-    fetch(`https://fight-club-api-4och.onrender.com/player/freechest?tg_id=${userData.tg_id}`)
+    fetch(`${window.API_BASE}/player/freechest?tg_id=${userData.tg_id}`)
         .then(res => res.json())
         .then(data => {
             const freeAvailable = data.freeAvailable;
@@ -570,7 +552,7 @@ function updateShopTabIcon() {
         })
         .catch(e => console.error('Failed to fetch free chest status for shop tab', e));
 }
-
+window.updateShopTabIcon = updateShopTabIcon;
 
 // ========== ИКОНКИ ПРЕДМЕТОВ ==========
 function getItemIconPath(item) {
@@ -594,4 +576,3 @@ function getItemIconPath(item) {
     return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
 }
 window.getItemIconPath = getItemIconPath;
-window.updateShopTabIcon = updateShopTabIcon;

@@ -10,8 +10,22 @@ console.log('PORT:', process.env.PORT);
 console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
+
+// Настройка CORS
+const allowedOrigins = [
+    'https://cat-fight.ru',
+    'https://fight-club-ecru.vercel.app',
+    'https://fight-club-api-4och.onrender.com'
+];
 app.use(cors({
-    origin: ['https://cat-fight.ru', 'https://fight-club-ecru.vercel.app', 'https://fight-club-api-4och.onrender.com'],
+    origin: function(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -28,6 +42,12 @@ app.use('/avatars', require('./routes/avatars'));
 app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
+
+// Заглушка для VK callback (на случай, если VK решит сделать редирект)
+app.post('/auth/vk/callback', (req, res) => {
+    console.log('Received VK callback (unexpected, because low-code uses callback mode)');
+    res.status(400).json({ error: 'This endpoint is not used. Please use low-code flow.' });
+});
 
 // Webhook для Telegram
 app.post('/webhook', async (req, res) => {
@@ -211,6 +231,17 @@ app.get('/admin/recalc-power', async (req, res) => {
     } finally {
         client.release();
     }
+});
+
+// Обработка 404
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not found' });
+});
+
+// Глобальный обработчик ошибок
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 3000;

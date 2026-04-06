@@ -3393,3 +3393,35 @@ input:checked + .slider:before {
 .auth-submit-btn:hover {
     background-color: #0088cc;
 }
+
+
+/* Изменить имя пользователя */
+
+.nickname-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2a303c;
+    padding: 12px;
+    border-radius: 12px;
+}
+.nickname-value {
+    flex: 1;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+}
+.edit-nickname-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    color: #aaa;
+    transition: all 0.2s;
+}
+.edit-nickname-btn:hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}

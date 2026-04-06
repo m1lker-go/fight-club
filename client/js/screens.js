@@ -1,11 +1,11 @@
-// screens.js – все функции рендеринга экранов
+// screens.js – все функции рендеринга экранов (исправленная версия)
 
 // ==================== ГЛОБАЛЬНЫЕ НАСТРОЙКИ ====================
-const API_BASE = 'https://fight-club-api-4och.onrender.com';
+// Используем window.API_BASE, заданный в app.js
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
-// Экранирование HTML для защиты от XSS
+// Экранирование HTML для защиты от XSS (дублируем на случай, если helpers.js не загружен)
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>]/g, function(m) {
@@ -130,7 +130,7 @@ function renderMain() {
             const newClass = btn.dataset.class;
             if (newClass === userData.current_class) return;
 
-            const res = await fetch(`${API_BASE}/player/class`, {
+            const res = await fetch(`${window.API_BASE}/player/class`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
@@ -142,7 +142,7 @@ function renderMain() {
                 assassin: 'assassin',
                 mage: 'pyromancer'
             }[newClass];
-            await fetch(`${API_BASE}/player/subclass`, {
+            await fetch(`${window.API_BASE}/player/subclass`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
@@ -158,7 +158,7 @@ function renderMain() {
     if (subclassSelect) {
         subclassSelect.addEventListener('change', async (e) => {
             const newSubclass = e.target.value;
-            const res = await fetch(`${API_BASE}/player/subclass`, {
+            const res = await fetch(`${window.API_BASE}/player/subclass`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, subclass: newSubclass })
@@ -296,7 +296,7 @@ function renderEquip() {
                 </div>
             `;
         });
-        html += `</div><div class="hero-center"><img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero"></div><div class="equip-column">`;
+        html += `</div><div class="hero-center"><img src="/assets/${escapeHtml(userData.avatar || 'cat_heroweb.png')}" alt="hero"></div><div class="equip-column">`;
         slotConfig.right.forEach(slot => {
             const item = equipped.find(i => i.type === slot.type);
             const icon = item ? getItemIconPath(item) : slot.icon;
@@ -365,7 +365,7 @@ function renderEquip() {
                             <span class="inv-name-text" style="color: ${getRarityColor(item.rarity)};">${escapeHtml(itemNameTranslations[item.name] || item.name)}</span>
                             <span class="inv-class">(${escapeHtml(classNameRu)})</span>
                         </div>
-                        <div class="inv-stats">${stats.join(' • ')}</div>
+                        <div class="inv-stats">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
                     </div>
                     <div class="inv-actions">
                         ${actionButtonsHtml}
@@ -426,31 +426,31 @@ function renderEquip() {
         });
     });
 
-   document.querySelectorAll('.equip-slot').forEach(slot => {
-    slot.addEventListener('click', async (e) => {
-        const itemId = slot.dataset.itemId;
-        if (itemId == null) return;
-        const item = inventory.find(i => i.id == Number(itemId));
-        if (!item) return;
-        showUnequipConfirmModal(item, async () => {
-            try {
-                const res = await fetch(`${API_BASE}/inventory/unequip`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
-                });
-                if (res.ok) {
-                    await refreshData();
-                    renderEquip();
-                } else {
-                    showToast('Ошибка при снятии', 1500);
+    document.querySelectorAll('.equip-slot').forEach(slot => {
+        slot.addEventListener('click', async (e) => {
+            const itemId = slot.dataset.itemId;
+            if (itemId == null) return;
+            const item = inventory.find(i => i.id == Number(itemId));
+            if (!item) return;
+            showUnequipConfirmModal(item, async () => {
+                try {
+                    const res = await fetch(`${window.API_BASE}/inventory/unequip`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                    });
+                    if (res.ok) {
+                        await refreshData();
+                        renderEquip();
+                    } else {
+                        showToast('Ошибка при снятии', 1500);
+                    }
+                } catch (e) {
+                    showToast('Сеть недоступна', 1500);
                 }
-            } catch (e) {
-                showToast('Сеть недоступна', 1500);
-            }
+            });
         });
     });
-});
 
     document.querySelectorAll('.inv-action-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -468,7 +468,7 @@ function renderEquip() {
                 if (equippedInSlot) {
                     showEquipCompareModal(equippedInSlot, item);
                 } else {
-                    const res = await fetch(`${API_BASE}/inventory/equip`, {
+                    const res = await fetch(`${window.API_BASE}/inventory/equip`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -494,7 +494,7 @@ function renderEquip() {
                     return;
                 }
                 showPriceInputModal(null, async (price) => {
-                    const res = await fetch(`${API_BASE}/inventory/sell`, {
+                    const res = await fetch(`${window.API_BASE}/inventory/sell`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -514,7 +514,7 @@ function renderEquip() {
                 });
             } else if (action === 'unsell') {
                 showConfirmModal('Снять предмет с продажи?', async () => {
-                    const res = await fetch(`${API_BASE}/inventory/unsell`, {
+                    const res = await fetch(`${window.API_BASE}/inventory/unsell`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
@@ -531,7 +531,7 @@ function renderEquip() {
                 const item = inventory.find(i => i.id == Number(itemId));
                 if (!item) return;
                 showPriceInputModal(item.price, async (newPrice) => {
-                    const res = await fetch(`${API_BASE}/market/update-price`, {
+                    const res = await fetch(`${window.API_BASE}/market/update-price`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: newPrice })
@@ -689,7 +689,7 @@ function renderShop(target = null) {
     async function updateCommonChestPrice() {
         try {
             const tgId = Number(userData.tg_id);
-            const res = await fetch(`${API_BASE}/player/freechest?tg_id=${tgId}`);
+            const res = await fetch(`${window.API_BASE}/player/freechest?tg_id=${tgId}`);
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             const coinIcon = container.querySelector('[data-chest="common"] i');
@@ -715,7 +715,7 @@ function renderShop(target = null) {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const chest = btn.dataset.chest;
-            const res = await fetch(`${API_BASE}/shop/buychest`, {
+            const res = await fetch(`${window.API_BASE}/shop/buychest`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, chestType: chest })
@@ -733,7 +733,7 @@ function renderShop(target = null) {
                 if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
                 if (chest === 'common') updateCommonChestPrice();
 
-                fetch(`${API_BASE}/tasks/daily/update/chest`, {
+                fetch(`${window.API_BASE}/tasks/daily/update/chest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
@@ -898,7 +898,7 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
     if (statFilter !== 'any') {
         params.append('stat', statFilter);
     }
-    const res = await fetch(`${API_BASE}/market?` + params);
+    const res = await fetch(`${window.API_BASE}/market?` + params);
     let items;
     try {
         items = await res.json();
@@ -1006,7 +1006,7 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
             removeBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 showConfirmModal('Снять этот предмет с продажи?', async () => {
-                    const res = await fetch(`${API_BASE}/market/remove`, {
+                    const res = await fetch(`${window.API_BASE}/market/remove`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
@@ -1089,7 +1089,7 @@ async function showItemDetailsModal(item) {
             </div>
             <div class="item-modal-name ${item.rarity}">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
             <div class="item-modal-class">${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
-            <div class="item-modal-stats">${stats.join(' • ')}</div>
+            <div class="item-modal-stats">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
             <div class="item-modal-price">${item.price} <i class="fas fa-coins"></i></div>
             <div class="item-modal-buttons">
                 <button class="item-modal-btn buy-item-btn">Купить</button>
@@ -1105,7 +1105,7 @@ async function showItemDetailsModal(item) {
     const closeX = modal.querySelector('.close');
 
     buyBtn.addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/market/buy`, {
+        const res = await fetch(`${window.API_BASE}/market/buy`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
@@ -1299,7 +1299,7 @@ function showUnequipConfirmModal(item, onConfirm) {
             <div style="font-weight: bold; margin-top: 10px; font-size: 18px; color: ${borderColor};">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
             <div class="rarity-${item.rarity}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
             <div style="color: white; font-size: 14px; margin-bottom: 5px;">Класс: ${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
-            <div style="color: white; font-size: 14px; margin-bottom: 15px;">${stats.join(' • ')}</div>
+            <div style="color: white; font-size: 14px; margin-bottom: 15px;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button class="modal-btn confirm-yes" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Снять</button>
                 <button class="modal-btn confirm-no" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Отмена</button>
@@ -1328,7 +1328,6 @@ function showUnequipConfirmModal(item, onConfirm) {
         if (event.target === modal) closeModal();
     };
 }
-
 
 function showEditPriceModal(item) {
     const modal = document.getElementById('roleModal');
@@ -1362,7 +1361,7 @@ function showEditPriceModal(item) {
             showToast('Введите корректную цену', 1500);
             return;
         }
-        const res = await fetch(`${API_BASE}/market/update-price`, {
+        const res = await fetch(`${window.API_BASE}/market/update-price`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id, new_price: newPrice })
@@ -1474,7 +1473,7 @@ async function loadRatingData(type) {
     container.innerHTML = '<p style="text-align:center;">Загрузка...</p>';
 
     try {
-        const res = await fetch(`${API_BASE}/rank/${type}`);
+        const res = await fetch(`${window.API_BASE}/rank/${type}`);
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
 
@@ -1525,7 +1524,7 @@ function renderProfile() {
     const content = document.getElementById('content');
     if (!content) return;
 
-    fetch(`${API_BASE}/tasks/daily/update/profile`, {
+    fetch(`${window.API_BASE}/tasks/daily/update/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tg_id: userData.tg_id })
@@ -1650,7 +1649,7 @@ function renderProfileBonuses(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.currentTarget.dataset.class;
             if (newClass === currentClass) return;
-            const res = await fetch(`${API_BASE}/player/class`, {
+            const res = await fetch(`${window.API_BASE}/player/class`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
@@ -1711,7 +1710,7 @@ function renderSkills(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.currentTarget.dataset.class;
             if (newClass === currentClass) return;
-            await fetch(`${API_BASE}/player/class`, {
+            await fetch(`${window.API_BASE}/player/class`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
@@ -1724,7 +1723,7 @@ function renderSkills(container) {
     container.querySelectorAll('.skill-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = e.currentTarget.dataset.stat;
-            const res = await fetch(`${API_BASE}/player/upgrade`, {
+            const res = await fetch(`${window.API_BASE}/player/upgrade`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1763,8 +1762,8 @@ function renderSkillItem(statName, displayName, description, currentValue, level
 function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue) {
     const gearNum = parseFloat(gearValue) || 0;
     const classBonusNum = parseFloat(classBonusValue) || 0;
-    const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${gearValue}</span>` : '';
-    const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${classBonusValue}</span>` : '';
+    const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${escapeHtml(gearValue)}</span>` : '';
+    const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${escapeHtml(classBonusValue)}</span>` : '';
     return `
          <tr>
             <td style="padding: 5px 0;">${escapeHtml(label)}</td>
@@ -1780,11 +1779,11 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 function renderSkins(container) {
     if (!container) return;
     Promise.all([
-        fetch(`${API_BASE}/avatars`).then(res => {
+        fetch(`${window.API_BASE}/avatars`).then(res => {
             if (!res.ok) throw new Error('Failed to fetch avatars');
             return res.json();
         }),
-        fetch(`${API_BASE}/avatars/user/${userData.tg_id}`).then(res => {
+        fetch(`${window.API_BASE}/avatars/user/${userData.tg_id}`).then(res => {
             if (!res.ok) throw new Error('Failed to fetch owned avatars');
             return res.json();
         })
@@ -1851,7 +1850,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    fetch(`${API_BASE}/avatars`)
+    fetch(`${window.API_BASE}/avatars`)
         .then(res => res.json())
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
@@ -1895,7 +1894,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (!owned && !isActive) {
                 document.getElementById('buySkin')?.addEventListener('click', async () => {
-                    const res = await fetch(`${API_BASE}/avatars/buy`, {
+                    const res = await fetch(`${window.API_BASE}/avatars/buy`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
@@ -1913,7 +1912,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (owned && !isActive) {
                 document.getElementById('activateSkin')?.addEventListener('click', async () => {
-                    const res = await fetch(`${API_BASE}/player/avatar`, {
+                    const res = await fetch(`${window.API_BASE}/player/avatar`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })

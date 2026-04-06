@@ -117,54 +117,48 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
-    if (typeof VK === 'undefined') {
-        showToast('VK API не загружен', 1500);
+    if (!window.VKIDSDK) {
+        showToast('Загрузка VK SDK...', 1000);
+        setTimeout(() => {
+            if (window.VKIDSDK) loginWithVK();
+            else showToast('Ошибка загрузки VK SDK', 1500);
+        }, 500);
         return;
     }
-    // Инициализируем VK только один раз
-    if (!VK._initCalled) {
-        VK.init({ apiId: 54525890 });
-        VK._initCalled = true;
-    }
-    
-    // Создаём временный контейнер для виджета
-    let container = document.getElementById('vk_auth_widget');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'vk_auth_widget';
-        container.style.display = 'none';
-        document.body.appendChild(container);
-    } else {
-        container.innerHTML = '';
-    }
-    
-    VK.Widgets.Auth(container.id, {
-        onAuth: async (response) => {
-            if (response && response.session) {
-                const user = response.session.user;
-                const accessToken = response.session.sid;
-                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user, access_token: accessToken })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needNickname && typeof showNicknameModal === 'function') {
-                        showNicknameModal(data.userId);
-                    } else {
-                        location.reload();
-                    }
+
+    const VKID = window.VKIDSDK;
+    VKID.Config.init({
+        app: 54525890, // ваш Client ID
+        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback', // серверный callback
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: 'email',
+    });
+
+    VKID.Auth.login()
+        .then(async (response) => {
+            const { code, device_id } = response;
+            const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, device_id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('sessionToken', data.sessionToken);
+                if (data.needNickname && typeof showNicknameModal === 'function') {
+                    showNicknameModal(data.userId);
                 } else {
-                    showToast(data.error, 1500);
+                    location.reload();
                 }
             } else {
-                showToast('Ошибка авторизации VK', 1500);
+                showToast(data.error, 1500);
             }
-            container.remove();
-        }
-    });
+        })
+        .catch((error) => {
+            console.error('VK auth error:', error);
+            showToast('Ошибка авторизации VK', 1500);
+        });
 }
 
 async function sendEmailCode() {

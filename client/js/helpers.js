@@ -490,6 +490,7 @@ window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 
 // Обновление иконки на круглой кнопке "Торговля" на главном экране
 function updateTradeButtonIcon() {
+    if (!userData || !userData.tg_id) return;
     const tradeBtn = document.querySelector('[data-screen="trade"]'); // ищем любой элемент с атрибутом data-screen="trade"
     if (!tradeBtn) return;
 
@@ -545,6 +546,7 @@ window.updateProfileAvatarIcon = updateProfileAvatarIcon;
 
 // Обновление иконки на кнопке "МАГАЗИН" внутри торговли
 function updateShopTabIcon() {
+    if (!userData || !userData.tg_id) return;
     const shopBtn = document.getElementById('tradeShopBtn');
     if (!shopBtn) return;
 

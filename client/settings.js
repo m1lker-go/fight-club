@@ -249,10 +249,20 @@ function linkTelegram() {
         return;
     }
     window.telegramLinkingInProgress = true;
+    
+    // Таймаут на случай, если окно не закроется или виджет зависнет
+    const timeoutId = setTimeout(() => {
+        if (window.telegramLinkingInProgress) {
+            window.telegramLinkingInProgress = false;
+            showToast('Привязка Telegram не удалась (таймаут). Попробуйте ещё раз.', 3000);
+        }
+    }, 120000); // 2 минуты
+
     const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramLink', 'width=600,height=600');
 
     if (!popup) {
+        clearTimeout(timeoutId);
         window.telegramLinkingInProgress = false;
         showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
         return;
@@ -262,6 +272,7 @@ function linkTelegram() {
         if (event.origin !== 'https://oauth.telegram.org') return;
         const { initData } = event.data;
         if (initData) {
+            clearTimeout(timeoutId);
             popup.close();
             const token = localStorage.getItem('sessionToken');
             const res = await fetch(`${window.API_BASE}/auth/link`, {
@@ -285,14 +296,21 @@ function linkTelegram() {
     };
 
     window.addEventListener('message', handleTelegramLink);
+    
+    // Проверка закрытия окна (если пользователь закрыл вручную)
     const checkPopupClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkPopupClosed);
-            window.telegramLinkingInProgress = false;
+            clearTimeout(timeoutId);
+            if (window.telegramLinkingInProgress) {
+                window.telegramLinkingInProgress = false;
+                showToast('Привязка Telegram отменена', 1500);
+            }
             window.removeEventListener('message', handleTelegramLink);
         }
     }, 1000);
 }
+
 
 function linkVK() {
     if (vkLinkingInProgress) {
@@ -356,40 +374,50 @@ function linkGoogle() {
         return;
     }
     googleLinkingInProgress = true;
-    const width = 600, height = 700;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    const token = localStorage.getItem('sessionToken');
-    const popup = window.open(`${window.API_BASE}/auth/google-auth?mode=link&token=${encodeURIComponent(token)}`, 'GoogleLink', `width=${width},height=${height},left=${left},top=${top}`);
-    if (!popup) {
-        googleLinkingInProgress = false;
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
-        return;
-    }
-    const googleLinkHandler = async (event) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data && event.data.type === 'googleLinkSuccess') {
+    
+    // Таймаут на случай, если One Tap не появится или зависнет
+    const timeoutId = setTimeout(() => {
+        if (googleLinkingInProgress) {
             googleLinkingInProgress = false;
-            showToast('Google аккаунт привязан', 1500);
-            renderSettings();
-            window.removeEventListener('message', googleLinkHandler);
-            if (popup) popup.close();
+            showToast('Привязка Google не удалась (таймаут). Попробуйте ещё раз.', 3000);
         }
-        if (event.data && event.data.type === 'googleLinkError') {
-            googleLinkingInProgress = false;
-            showToast('Ошибка привязки: ' + event.data.error, 1500);
-            window.removeEventListener('message', googleLinkHandler);
-            if (popup) popup.close();
-        }
+    }, 30000); // 30 секунд
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = () => {
+        google.accounts.id.initialize({
+            client_id: window.GOOGLE_CLIENT_ID,
+            callback: async (response) => {
+                clearTimeout(timeoutId);
+                googleLinkingInProgress = false;
+                const idToken = response.credential;
+                const token = localStorage.getItem('sessionToken');
+                const res = await fetch(`${window.API_BASE}/auth/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ provider: 'google', idToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Google аккаунт привязан', 1500);
+                    renderSettings();
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            }
+        });
+        google.accounts.id.prompt();
     };
-    window.addEventListener('message', googleLinkHandler);
-    const checkClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkClosed);
-            googleLinkingInProgress = false;
-            window.removeEventListener('message', googleLinkHandler);
-        }
-    }, 1000);
+    script.onerror = () => {
+        clearTimeout(timeoutId);
+        googleLinkingInProgress = false;
+        showToast('Ошибка загрузки Google API. Проверьте соединение.', 1500);
+    };
+    document.head.appendChild(script);
 }
 
 window.renderSettings = renderSettings;

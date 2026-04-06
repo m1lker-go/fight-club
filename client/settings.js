@@ -326,11 +326,20 @@ function linkVK() {
     }
     vkLinkingInProgress = true;
 
+    const timeoutId = setTimeout(() => {
+        if (vkLinkingInProgress) {
+            vkLinkingInProgress = false;
+            showToast('Привязка VK не удалась (таймаут). Попробуйте ещё раз.', 3000);
+        }
+    }, 120000);
+
     if (!window.VKIDSDK) {
         showToast('Загрузка VK SDK...', 1000);
         setTimeout(() => {
-            if (window.VKIDSDK) linkVK();
-            else {
+            if (window.VKIDSDK) {
+                linkVK();
+            } else {
+                clearTimeout(timeoutId);
                 vkLinkingInProgress = false;
                 showToast('Ошибка загрузки VK SDK', 1500);
             }
@@ -349,29 +358,37 @@ function linkVK() {
 
     VKID.Auth.login()
         .then(async (response) => {
+            clearTimeout(timeoutId);
             const { code, device_id } = response;
             const token = localStorage.getItem('sessionToken');
-            const res = await fetch(`${window.API_BASE}/auth/link`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ provider: 'vk', code, device_id })
-            });
-            const data = await res.json();
-            vkLinkingInProgress = false;
-            if (data.success) {
-                showToast('VK аккаунт привязан', 1500);
-                renderSettings();
-            } else {
-                showToast('Ошибка: ' + data.error, 1500);
+            try {
+                const res = await fetch(`${window.API_BASE}/auth/link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ provider: 'vk', code, device_id })
+                });
+                const data = await res.json();
+                vkLinkingInProgress = false;
+                if (data.success) {
+                    showToast('VK аккаунт привязан', 1500);
+                    renderSettings();
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            } catch (err) {
+                vkLinkingInProgress = false;
+                console.error('VK link fetch error:', err);
+                showToast('Ошибка соединения', 1500);
             }
         })
         .catch((error) => {
-            console.error('VK link error:', error);
+            clearTimeout(timeoutId);
             vkLinkingInProgress = false;
-            showToast('Ошибка привязки VK', 1500);
+            console.error('VK link error:', error);
+            showToast('Ошибка привязки VK: ' + (error.message || 'неизвестная'), 1500);
         });
 }
 

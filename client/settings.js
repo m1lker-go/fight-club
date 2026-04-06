@@ -4,6 +4,13 @@ window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
 
+let timeoutId = setTimeout(() => {
+    if (vkLinkingInProgress) {
+        vkLinkingInProgress = false;
+        showToast('Привязка VK отменена (таймаут)', 1500);
+    }
+}, 120000);
+
 function showLogoutConfirmModal(onConfirm) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');

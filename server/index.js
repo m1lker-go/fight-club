@@ -11,7 +11,7 @@ console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 
-// Настройка CORS
+// Настройка CORS с проверкой источников
 const allowedOrigins = [
     'https://cat-fight.ru',
     'https://fight-club-ecru.vercel.app',
@@ -43,9 +43,9 @@ app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
 
-// Заглушка для VK callback (на случай, если VK решит сделать редирект)
+// Заглушка для VK callback (на случай редиректа)
 app.post('/auth/vk/callback', (req, res) => {
-    console.log('Received VK callback (unexpected, because low-code uses callback mode)');
+    console.log('Received VK callback (unexpected, low-code uses callback mode)');
     res.status(400).json({ error: 'This endpoint is not used. Please use low-code flow.' });
 });
 

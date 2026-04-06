@@ -467,6 +467,7 @@ window.hasAnyUnspentSkillPoints = hasAnyUnspentSkillPoints;
 
 // Обновление иконки на иконке заданий в нижнем меню
 function updateMainMenuNewIcons() {
+    if (!userData || !userData.tg_id) return;
     const tasksMenuItem = document.querySelector('.menu-item[data-screen="tasks"]');
     if (!tasksMenuItem) return;
     const hasUnclaimed = typeof hasUnclaimedTasks === 'function' ? hasUnclaimedTasks() : false;

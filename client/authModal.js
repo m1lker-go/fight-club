@@ -4,6 +4,7 @@ let tempSessionToken = null;
 let tempUserId = null;
 let googleLoginInProgress = false;  // флаг для входа через Google
 let telegramLoginInProgress = false; // флаг для входа через Telegram
+let vkLoginInProgress = false;
 
 function showAuthModal() {
     const modal = document.getElementById('roleModal');
@@ -117,19 +118,35 @@ function loginWithGoogle() {
 }
 
 async function loginWithVK() {
+    if (vkLoginInProgress) {
+        showToast('Вход через VK уже выполняется', 1500);
+        return;
+    }
+    vkLoginInProgress = true;
+    
+    // Таймаут на случай зависания
+    const timeoutId = setTimeout(() => {
+        vkLoginInProgress = false;
+        showToast('Вход через VK отменён (таймаут)', 1500);
+    }, 120000);
+
     if (!window.VKIDSDK) {
         showToast('Загрузка VK SDK...', 1000);
         setTimeout(() => {
             if (window.VKIDSDK) loginWithVK();
-            else showToast('Ошибка загрузки VK SDK', 1500);
+            else {
+                vkLoginInProgress = false;
+                clearTimeout(timeoutId);
+                showToast('Ошибка загрузки VK SDK', 1500);
+            }
         }, 500);
         return;
     }
 
     const VKID = window.VKIDSDK;
     VKID.Config.init({
-        app: 54525890, // ваш Client ID
-        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback', // серверный callback
+        app: 54525890,
+        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback',
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.LOWCODE,
         scope: 'email',
@@ -137,6 +154,7 @@ async function loginWithVK() {
 
     VKID.Auth.login()
         .then(async (response) => {
+            clearTimeout(timeoutId);
             const { code, device_id } = response;
             const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
                 method: 'POST',
@@ -144,6 +162,7 @@ async function loginWithVK() {
                 body: JSON.stringify({ code, device_id })
             });
             const data = await res.json();
+            vkLoginInProgress = false;
             if (data.success) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 if (data.needNickname && typeof showNicknameModal === 'function') {
@@ -156,6 +175,8 @@ async function loginWithVK() {
             }
         })
         .catch((error) => {
+            clearTimeout(timeoutId);
+            vkLoginInProgress = false;
             console.error('VK auth error:', error);
             showToast('Ошибка авторизации VK', 1500);
         });

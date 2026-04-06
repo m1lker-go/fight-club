@@ -300,63 +300,54 @@ function linkVK() {
         return;
     }
     vkLinkingInProgress = true;
-    console.log('[VK] Привязка начата');
 
-    if (typeof VK === 'undefined') {
-        console.error('[VK] API не загружен');
-        showToast('VK API не загружен', 1500);
-        vkLinkingInProgress = false;
+    if (!window.VKIDSDK) {
+        showToast('Загрузка VK SDK...', 1000);
+        setTimeout(() => {
+            if (window.VKIDSDK) linkVK();
+            else {
+                vkLinkingInProgress = false;
+                showToast('Ошибка загрузки VK SDK', 1500);
+            }
+        }, 500);
         return;
     }
-    console.log('[VK] API загружен');
 
-    if (!VK._initCalled) {
-        console.log('[VK] Инициализация VK.init');
-        VK.init({ apiId: 54525890 });
-        VK._initCalled = true;
-    }
+    const VKID = window.VKIDSDK;
+    VKID.Config.init({
+        app: 54525890,
+        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback',
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: 'email',
+    });
 
-    VK.Auth.login((response) => {
-        console.log('[VK] VK.Auth.login response:', response);
-        if (response && response.session) {
-            const user = response.session.user;
-            const accessToken = response.session.sid;
+    VKID.Auth.login()
+        .then(async (response) => {
+            const { code, device_id } = response;
             const token = localStorage.getItem('sessionToken');
-            console.log('[VK] Отправка данных на сервер /auth/link');
-            fetch(`${window.API_BASE}/auth/link`, {
+            const res = await fetch(`${window.API_BASE}/auth/link`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ provider: 'vk', user, access_token: accessToken })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log('[VK] Ответ сервера:', data);
-                vkLinkingInProgress = false;
-                if (data.success) {
-                    showToast('VK аккаунт привязан', 1500);
-                    renderSettings();
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
-            })
-            .catch(err => {
-                console.error('[VK] Ошибка запроса:', err);
-                vkLinkingInProgress = false;
-                showToast('Ошибка сервера', 1500);
+                body: JSON.stringify({ provider: 'vk', code, device_id })
             });
-        } else {
-            console.error('[VK] Ошибка: нет сессии', response);
+            const data = await res.json();
             vkLinkingInProgress = false;
-            showToast('Ошибка авторизации VK', 1500);
-        }
-    }, (error) => {
-        console.error('[VK] Ошибка VK.Auth.login:', error);
-        vkLinkingInProgress = false;
-        showToast('Ошибка VK: ' + (error.error_msg || error.message || 'неизвестная'), 1500);
-    });
+            if (data.success) {
+                showToast('VK аккаунт привязан', 1500);
+                renderSettings();
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
+            }
+        })
+        .catch((error) => {
+            console.error('VK link error:', error);
+            vkLinkingInProgress = false;
+            showToast('Ошибка привязки VK', 1500);
+        });
 }
 
 function linkGoogle() {

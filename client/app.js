@@ -247,7 +247,7 @@ function showErrorSplash() {
 }
 
 async function checkAdvent() {
-   if (!userData || !userData.tg_id) return;
+    if (!userData || !userData.tg_id) return;
     try {
         const res = await fetch(`${window.API_BASE}/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
@@ -255,7 +255,7 @@ async function checkAdvent() {
             if (typeof showAdventCalendar === 'function') showAdventCalendar();
         }
     } catch (e) {
-        console.error('Advent check error', e);
+        console.error('Advent check error:', e);
     }
 }
 
@@ -285,9 +285,9 @@ function getAdventReward(day, daysInMonth) {
 
 async function refreshData() {
     if (!userData || !userData.tg_id) {
-    console.warn('refreshData: userData or tg_id missing');
-    return;
-}
+        console.warn('refreshData: userData or tg_id missing');
+        return;
+    }
     try {
         const response = await fetchWithRetry(`${window.API_BASE}/auth/refresh`, {
             method: 'POST',

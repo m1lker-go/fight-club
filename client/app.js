@@ -95,17 +95,13 @@ async function autoLoginTelegram() {
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 sessionToken = data.sessionToken;
-                console.log('Auto login success, loading user data...');
-                const loaded = await loadUserDataByToken(data.sessionToken);
-                if (loaded) {
-                    console.log('User data loaded successfully');
-                    return true;
+                if (data.needNickname && typeof showNicknameModal === 'function') {
+                    showNicknameModal(data.userId);
+                    return true; // Модалка сама перезагрузит страницу после сохранения никнейма
                 } else {
-                    console.error('Failed to load user data after auto login');
-                    // Попробуем перезагрузить страницу, если данные не загрузились
-                    window.location.reload();
-                    return true; // reload прервёт выполнение
+                    await loadUserDataByToken(data.sessionToken);
                 }
+                return true;
             }
         } else {
             console.error('Auto login failed:', await response.text());

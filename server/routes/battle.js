@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
 
@@ -989,14 +989,15 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
     };
 }
 
+// ========== ИСПРАВЛЕННЫЙ МАРШРУТ /start ==========
 router.post('/start', async (req, res) => {
-    const { tg_id } = req.body;
+    const { tg_id, user_id } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length===0) throw new Error('User not found');
-        const userData = user.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userData = user;
         await rechargeEnergy(client, userData.id);
         const energyResult = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
         if (energyResult.rows[0].energy < 1) throw new Error('Недостаточно энергии');

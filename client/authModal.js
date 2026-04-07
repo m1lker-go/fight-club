@@ -182,7 +182,7 @@ async function loginWithVK() {
     const VKID = window.VKIDSDK;
     VKID.Config.init({
         app: 54525890,
-        redirectUrl: 'https://fight-club-api-4och.onrender.com/auth/vk/callback', // этот URL используется VK для редиректа, но мы используем low-code, он не нужен? Оставим.
+        redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback', // этот URL используется VK для редиректа, но мы используем low-code, он не нужен? Оставим.
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.LOWCODE,
         scope: 'email',

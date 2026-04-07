@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const { pool, getUserByIdentifier } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
 const tasksModule = require('./tasks');
@@ -60,20 +60,19 @@ function generateItemByRarity(rarity, ownerClass = null) {
 
 // Добавить предмет в кузницу
 router.post('/add', async (req, res) => {
-    const { tg_id, item_id, tab } = req.body;
-    console.log('[forge/add] Request:', { tg_id, item_id, tab });
+    const { tg_id, user_id, item_id, tab } = req.body;
+    console.log('[forge/add] Request:', { tg_id, user_id, item_id, tab });
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
         return res.status(400).json({ error: 'Invalid tab' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
         console.log('[forge/add] User ID:', userId);
 
-        // Проверяем, что предмет существует и не экипирован, не на продаже, не в кузнице
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
@@ -103,16 +102,16 @@ router.post('/add', async (req, res) => {
 
 // Убрать предмет из кузницы
 router.post('/remove', async (req, res) => {
-    const { tg_id, item_id } = req.body;
-    if (!tg_id || !item_id) {
+    const { tg_id, user_id, item_id } = req.body;
+    if ((!tg_id && !user_id) || !item_id) {
         return res.status(400).json({ error: 'Missing parameters' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
 
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
@@ -139,18 +138,19 @@ router.post('/remove', async (req, res) => {
 
 // Получить список ID предметов в указанной вкладке кузницы
 router.get('/current', async (req, res) => {
-    const { tg_id, tab } = req.query;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    const { tg_id, user_id, tab } = req.query;
+    if ((!tg_id && !user_id)) return res.status(400).json({ error: 'tg_id or user_id required' });
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
         return res.status(400).json({ error: 'Invalid tab' });
     }
 
+    const client = await pool.connect();
     try {
-        const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userId = user.id;
 
-        const result = await pool.query(
+        const result = await client.query(
             'SELECT id FROM inventory WHERE user_id = $1 AND in_forge = true AND forge_tab = $2',
             [userId, tab]
         );
@@ -158,21 +158,23 @@ router.get('/current', async (req, res) => {
     } catch (e) {
         console.error('[forge/current] Error:', e);
         res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
     }
 });
 
 // Ковка
 router.post('/craft', async (req, res) => {
-    const { tg_id, item_ids, chosen_class } = req.body;
+    const { tg_id, user_id, item_ids, chosen_class } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length !== 3) {
         return res.status(400).json({ error: 'Need exactly 3 items' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
 
         const items = await client.query(
             'SELECT * FROM inventory WHERE id = ANY($1::int[]) AND user_id = $2 AND equipped = false AND for_sale = false AND in_forge = true',
@@ -239,16 +241,16 @@ router.post('/craft', async (req, res) => {
 
 // Плавка
 router.post('/smelt', async (req, res) => {
-    const { tg_id, item_ids } = req.body;
+    const { tg_id, user_id, item_ids } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length === 0 || item_ids.length > 5) {
         return res.status(400).json({ error: 'Need 1 to 5 items' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id, coins, diamonds FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
         let coinsGain = 0;
         let diamondsGain = 0;
 

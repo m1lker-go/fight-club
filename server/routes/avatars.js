@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const { pool, getUserByIdentifier } = require('../db');
 
 // Получить список всех доступных аватаров
 router.get('/', async (req, res) => {
@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
         const result = await pool.query(
             'SELECT id, name, filename, is_default, price_gold, price_diamonds FROM avatars ORDER BY is_default DESC, name'
         );
-        console.log('Avatars fetched:', result.rows); // для отладки
+        console.log('Avatars fetched:', result.rows);
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -16,15 +16,17 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Получить список купленных аватаров пользователя
+// Получить список купленных аватаров пользователя (по tg_id или user_id)
 router.get('/user/:tg_id', async (req, res) => {
     const { tg_id } = req.params;
+    const { user_id } = req.query; // поддерживаем user_id как query параметр
+    const client = await pool.connect();
     try {
-        const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userId = user.id;
 
-        const result = await pool.query(
+        const result = await client.query(
             'SELECT avatar_id FROM user_avatars WHERE user_id = $1',
             [userId]
         );
@@ -32,22 +34,24 @@ router.get('/user/:tg_id', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
     }
 });
 
 // Купить аватар
 router.post('/buy', async (req, res) => {
-    const { tg_id, avatar_id } = req.body;
-    if (!tg_id || !avatar_id) return res.status(400).json({ error: 'Missing data' });
+    const { tg_id, user_id, avatar_id } = req.body;
+    if ((!tg_id && !user_id) || !avatar_id) return res.status(400).json({ error: 'Missing data' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        const user = await client.query('SELECT id, coins, diamonds FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-        let { coins, diamonds } = user.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
+        let { coins, diamonds } = user;
 
         const avatar = await client.query('SELECT price_gold, price_diamonds FROM avatars WHERE id = $1', [avatar_id]);
         if (avatar.rows.length === 0) throw new Error('Avatar not found');

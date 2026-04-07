@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
-const { updatePlayerPower } = require('../utils/power'); // добавлен импорт
+const { pool, getUserByIdentifier } = require('../db');
+const { updatePlayerPower } = require('../utils/power');
 const { generateBot, generateMouseBoss } = require('../utils/botGenerator');
 const tasksModule = require('./tasks');
 
-console.log('✅ tower-server.js loaded (full version)');
+console.log('✅ tower-server.js loaded (full version with user_id support)');
 
 // Функция для получения московской даты (YYYY-MM-DD)
 function getMoscowDate() {
@@ -79,16 +79,16 @@ function getBotLevel(floor) {
     return 60;
 }
 
-// Получить состояние башни
+// ========== ПОЛУЧЕНИЕ СТАТУСА БАШНИ ==========
 router.get('/status', async (req, res) => {
-    const { tg_id } = req.query;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    const { tg_id, user_id } = req.query;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
 
     const client = await pool.connect();
     try {
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userId = user.id;
 
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
@@ -110,17 +110,17 @@ router.get('/status', async (req, res) => {
     }
 });
 
-// Выбор класса на сезон
+// ========== ВЫБОР КЛАССА НА СЕЗОН ==========
 router.post('/select-class', async (req, res) => {
-    const { tg_id, class: className, subclass } = req.body;
-    if (!tg_id || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
+    const { tg_id, user_id, class: className, subclass } = req.body;
+    if ((!tg_id && !user_id) || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
 
         const classCheck = await client.query('SELECT class FROM user_classes WHERE user_id = $1 AND class = $2', [userId, className]);
         if (classCheck.rows.length === 0) throw new Error('Class not available');
@@ -141,19 +141,19 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// Эндпоинт для боя в башне
+// ========== БОЙ В БАШНЕ ==========
 router.post('/battle', async (req, res) => {
-    const { tg_id } = req.body;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    const { tg_id, user_id } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        const userRes = await client.query('SELECT id, username FROM users WHERE tg_id = $1', [tg_id]);
-        if (userRes.rows.length === 0) throw new Error('User not found');
-        const userId = userRes.rows[0].id;
-        const username = userRes.rows[0].username || 'Player';
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
+        const username = user.username || 'Player';
 
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
@@ -253,39 +253,38 @@ router.post('/battle', async (req, res) => {
         let avatarReward = null;
         let rewardType = 'coins';
         let rewardAmount = 0;
-        let expGain = 0; // переменная для опыта
+        let expGain = 0;
+        let leveledUp = false;
+        let newLevel = null;
 
-       let leveledUp = false;
-let newLevel = null;
+        if (isVictory) {
+            expGain = 20;
 
-if (isVictory) {
-    expGain = 20;
-
-    // Начисление опыта выбранному классу
-    const classRes = await client.query(
-        'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
-        [userId, chosenClass]
-    );
-    if (classRes.rows.length > 0) {
-        let { level, exp, skill_points } = classRes.rows[0];
-        exp += expGain;
-        const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
-        while (exp >= expNeeded(level)) {
-            exp -= expNeeded(level);
-            level++;
-            const pointsToAdd = (level <= 14) ? 3 : 5;
-            skill_points += pointsToAdd;
-            leveledUp = true;
-            newLevel = level;
-        }
-        await client.query(
-            'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
-            [level, exp, skill_points, userId, chosenClass]
-        );
-        if (leveledUp) {
-            await updatePlayerPower(client, userId, chosenClass);
-        }
-    }
+            // Начисление опыта выбранному классу
+            const classRes = await client.query(
+                'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
+                [userId, chosenClass]
+            );
+            if (classRes.rows.length > 0) {
+                let { level, exp, skill_points } = classRes.rows[0];
+                exp += expGain;
+                const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
+                while (exp >= expNeeded(level)) {
+                    exp -= expNeeded(level);
+                    level++;
+                    const pointsToAdd = (level <= 14) ? 3 : 5;
+                    skill_points += pointsToAdd;
+                    leveledUp = true;
+                    newLevel = level;
+                }
+                await client.query(
+                    'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
+                    [level, exp, skill_points, userId, chosenClass]
+                );
+                if (leveledUp) {
+                    await updatePlayerPower(client, userId, chosenClass);
+                }
+            }
 
             const floor = progress.current_floor;
 
@@ -353,27 +352,27 @@ if (isVictory) {
                 : { type: 'avatar', avatarId: rewardAmount };
         }
 
-       res.json({
-    success: true,
-    opponent: opponent,
-    result: {
-        winner: battleResult.winner,
-        playerHpRemain: battleResult.playerHpRemain,
-        enemyHpRemain: battleResult.enemyHpRemain,
-        playerMaxHp: battleResult.playerMaxHp,
-        enemyMaxHp: battleResult.enemyMaxHp,
-        messages: battleResult.messages,
-        states: battleResult.states
-    },
-    floor: progress.current_floor,
-    newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
-    victory: isVictory,
-    reward: responseReward,
-    attemptsLeft: 10 - newAttemptsToday,
-    expGain: isVictory ? expGain : 0,
-    leveledUp: leveledUp,
-    newLevel: newLevel
-});
+        res.json({
+            success: true,
+            opponent: opponent,
+            result: {
+                winner: battleResult.winner,
+                playerHpRemain: battleResult.playerHpRemain,
+                enemyHpRemain: battleResult.enemyHpRemain,
+                playerMaxHp: battleResult.playerMaxHp,
+                enemyMaxHp: battleResult.enemyMaxHp,
+                messages: battleResult.messages,
+                states: battleResult.states
+            },
+            floor: progress.current_floor,
+            newFloor: isVictory ? progress.current_floor + 1 : progress.current_floor,
+            victory: isVictory,
+            reward: responseReward,
+            attemptsLeft: 10 - newAttemptsToday,
+            expGain: isVictory ? expGain : 0,
+            leveledUp: leveledUp,
+            newLevel: newLevel
+        });
 
     } catch (e) {
         await client.query('ROLLBACK');

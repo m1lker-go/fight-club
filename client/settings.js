@@ -334,7 +334,7 @@ function linkVK() {
     const VKID = window.VKIDSDK;
     VKID.Config.init({
         app: 54525890,
-       redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback',
+        redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback', // ← ИСПРАВЛЕНО
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.LOWCODE,
         scope: 'email',

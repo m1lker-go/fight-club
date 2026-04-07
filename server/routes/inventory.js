@@ -1,21 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const { pool, getUserByIdentifier } = require('../db');
 
 // Надеть предмет
 router.post('/equip', async (req, res) => {
-    const { tg_id, item_id, target_class } = req.body;
-    console.log('[equip] Request body:', { tg_id, item_id, target_class });
-    if (!tg_id || !item_id || !target_class) {
+    const { tg_id, user_id, item_id, target_class } = req.body;
+    console.log('[equip] Request body:', { tg_id, user_id, item_id, target_class });
+    if ((!tg_id && !user_id) || !item_id || !target_class) {
         return res.status(400).json({ error: 'Missing parameters' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
         console.log('[equip] User ID:', userId);
         
         // Проверяем, что предмет существует, принадлежит пользователю и не экипирован, не в кузнице, не на продаже
@@ -59,16 +59,16 @@ router.post('/equip', async (req, res) => {
 
 // Снять предмет
 router.post('/unequip', async (req, res) => {
-    const { tg_id, item_id } = req.body;
-    if (!tg_id || !item_id) {
+    const { tg_id, user_id, item_id } = req.body;
+    if ((!tg_id && !user_id) || !item_id) {
         return res.status(400).json({ error: 'Missing parameters' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
         
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = true',
@@ -91,16 +91,16 @@ router.post('/unequip', async (req, res) => {
 
 // Выставить на продажу
 router.post('/sell', async (req, res) => {
-    const { tg_id, item_id, price } = req.body;
-    if (!tg_id || !item_id || !price || price <= 0) {
+    const { tg_id, user_id, item_id, price } = req.body;
+    if ((!tg_id && !user_id) || !item_id || !price || price <= 0) {
         return res.status(400).json({ error: 'Invalid price' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
         
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND equipped = false AND in_forge = false AND for_sale = false',
@@ -126,16 +126,16 @@ router.post('/sell', async (req, res) => {
 
 // Снять с продажи
 router.post('/unsell', async (req, res) => {
-    const { tg_id, item_id } = req.body;
-    if (!tg_id || !item_id) {
+    const { tg_id, user_id, item_id } = req.body;
+    if ((!tg_id && !user_id) || !item_id) {
         return res.status(400).json({ error: 'Missing parameters' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
         
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true',

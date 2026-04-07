@@ -1,7 +1,7 @@
-// task-up.js (полный)
+// task-up.js (исправленный)
 
 let countdownInterval = null;
-let lastTasksData = null;  // [NEW] храним последние данные заданий
+let lastTasksData = null;  // храним последние данные заданий
 
 // Функция для проверки наличия неполученных наград
 function hasUnclaimedTasks() {
@@ -26,7 +26,7 @@ function renderReferral() {
     referralDiv.style.boxSizing = 'border-box';
     referralDiv.style.backgroundColor = '#2a303c';
 
-    const referralLink = `https://t.me/${BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
+    const referralLink = `https://t.me/${window.BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 
     referralDiv.innerHTML = `
         <div style="flex: 2; min-width: 0;">
@@ -113,7 +113,8 @@ async function loadDailyTasks() {
     if (!tasksList) return;
 
     try {
-        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        // Используем apiRequest, user_id добавится автоматически
+        const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         const tasksData = data.tasks;
@@ -235,10 +236,9 @@ async function loadDailyTasks() {
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+                    const res = await window.apiRequest('/tasks/daily/claim', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, task_id: taskId })
+                        body: JSON.stringify({ task_id: taskId })
                     });
                     const data = await res.json();
                     if (data.error) {
@@ -252,21 +252,19 @@ async function loadDailyTasks() {
             });
         });
 
-       const allCompleted = completedTasksCount >= totalTasksCount;
-if (countdownContainer) {
-    if (allCompleted) {
-        // Не скрываем список заданий, показываем таймер ниже
-        countdownContainer.style.display = 'block';
-        startCountdownTimer();
-    } else {
-        countdownContainer.style.display = 'none';
-        stopCountdownTimer();
-    }
-}
+        const allCompleted = completedTasksCount >= totalTasksCount;
+        if (countdownContainer) {
+            if (allCompleted) {
+                countdownContainer.style.display = 'block';
+                startCountdownTimer();
+            } else {
+                countdownContainer.style.display = 'none';
+                stopCountdownTimer();
+            }
+        }
 
-        // [NEW] Сохраняем данные заданий для проверки наличия неполученных наград
+        // Сохраняем данные заданий для проверки наличия неполученных наград
         lastTasksData = tasksData;
-        // [NEW] Обновляем иконку в нижнем меню, если функция существует
         if (window.updateMainMenuNewIcons) {
             window.updateMainMenuNewIcons();
         }
@@ -278,9 +276,9 @@ if (countdownContainer) {
 
 // Функция для фоновой загрузки данных заданий без рендера
 async function refreshTasksData() {
-    if (!userData || !userData.tg_id) return;
+    if (!userData || !userData.id) return;
     try {
-        const res = await fetch(`https://fight-club-api-4och.onrender.com/tasks/daily/list?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
         const data = await res.json();
         if (data.tasks) {
             lastTasksData = data.tasks;
@@ -393,9 +391,7 @@ function showExpModal(amount, className) {
 }
 
 function showAdventCalendar() {
-    const url = `https://fight-club-api-4och.onrender.com/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`;
-    console.log('[showAdventCalendar] fetching', url);
-    fetch(url)
+    window.apiRequest('/tasks/advent', { method: 'GET' })
         .then(res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return res.json();
@@ -470,7 +466,7 @@ function claimAdventDay(day, daysInMonth) {
     const reward = getAdventReward(day, daysInMonth);
 
     isClaiming = true;
-    const body = { tg_id: userData.tg_id };
+    const body = {}; // не нужно явно передавать tg_id или user_id
 
     if (reward.type === 'exp') {
         showClassChoiceModalForAdvent(reward.amount);
@@ -478,32 +474,31 @@ function claimAdventDay(day, daysInMonth) {
         return;
     }
 
-    fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-})
-.then(res => res.json())
-.then(data => {
-    if (data.error) {
-        showToast(data.error, 1500);
-    } else {
-        if (reward.type === 'coins') {
-            showCoinsModal(reward.amount);
-        } else if (reward.type === 'item' && data.item) {
-            showChestResult(data.item);
+    window.apiRequest('/tasks/advent/claim', {
+        method: 'POST',
+        body: JSON.stringify(body)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error, 1500);
         } else {
-            showToast('Вы получили: ' + data.reward, 2000);
+            if (reward.type === 'coins') {
+                showCoinsModal(reward.amount);
+            } else if (reward.type === 'item' && data.item) {
+                showChestResult(data.item);
+            } else {
+                showToast('Вы получили: ' + data.reward, 2000);
+            }
+            if (reloadTimeout) clearTimeout(reloadTimeout);
+            reloadTimeout = setTimeout(() => {
+                showAdventCalendar();
+                refreshData();
+                isClaiming = false;
+                reloadTimeout = null;
+            }, 1500);
         }
-        if (reloadTimeout) clearTimeout(reloadTimeout);
-        reloadTimeout = setTimeout(() => {
-            showAdventCalendar();
-            refreshData();
-            isClaiming = false;
-            reloadTimeout = null;
-        }, 1500);
-    }
-})
+    })
     .catch(err => {
         console.error(err);
         showToast('Ошибка соединения', 1500);
@@ -534,10 +529,9 @@ function showClassChoiceModalForAdvent(expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            const body = { tg_id: userData.tg_id, classChoice };
-            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/advent/claim', {
+            const body = { classChoice };
+            const res = await window.apiRequest('/tasks/advent/claim', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
             const data = await res.json();
@@ -545,7 +539,7 @@ function showClassChoiceModalForAdvent(expAmount) {
                 showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
-                await refreshData(); // обновляем данные перед проверкой уровня
+                await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
                 }
@@ -583,11 +577,9 @@ function claimDailyExp(taskId, expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            const res = await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/claim', {
+            const res = await window.apiRequest('/tasks/daily/claim', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
                     task_id: taskId, 
                     class_choice: classChoice 
                 })
@@ -597,7 +589,7 @@ function claimDailyExp(taskId, expAmount) {
                 showToast(data.error, 1500);
             } else {
                 showExpModal(expAmount, classChoice);
-                await refreshData(); // обновляем данные перед проверкой уровня
+                await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
                 }

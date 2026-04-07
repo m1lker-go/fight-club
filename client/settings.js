@@ -340,38 +340,46 @@ function linkVK() {
         scope: 'email',
     });
 
-    VKID.Auth.login()
-        .then(async (response) => {
-            clearTimeout(timeoutId);
-            const { code, device_id } = response;
+  VKID.Auth.login()
+    .then(async (response) => {
+        clearTimeout(timeoutId);
+        const { code, device_id } = response;
+        try {
+            // Обмениваем код на токен прямо на клиенте
+            const tokenData = await VKID.Auth.exchangeCode(code, device_id);
+            const { access_token, user_id, email } = tokenData;
+            
             const token = localStorage.getItem('sessionToken');
-            try {
-                const res = await window.apiRequest('/auth/link', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ provider: 'vk', code, device_id })
-                });
-                const data = await res.json();
-                vkLinkingInProgress = false;
-                if (data.success) {
-                    showToast('VK аккаунт привязан', 1500);
-                    renderSettings();
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
-            } catch (err) {
-                vkLinkingInProgress = false;
-                console.error('VK link fetch error:', err);
-                showToast('Ошибка соединения', 1500);
-            }
-        })
-        .catch((error) => {
-            clearTimeout(timeoutId);
+            const res = await window.apiRequest('/auth/link', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    provider: 'vk',
+                    access_token: access_token,
+                    user_id: user_id,
+                    email: email
+                })
+            });
+            const data = await res.json();
             vkLinkingInProgress = false;
-            console.error('VK link error:', error);
-            showToast('Ошибка привязки VK: ' + (error.message || 'неизвестная'), 1500);
-        });
-}
+            if (data.success) {
+                showToast('VK аккаунт привязан', 1500);
+                renderSettings();
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
+            }
+        } catch (err) {
+            console.error('VK exchange error:', err);
+            showToast('Ошибка обмена токена', 1500);
+            vkLinkingInProgress = false;
+        }
+    })
+    .catch((error) => {
+        clearTimeout(timeoutId);
+        vkLinkingInProgress = false;
+        console.error('VK login error:', error);
+        showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
+    });
 
 function linkGoogle() {
     if (googleLinkingInProgress) {

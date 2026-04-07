@@ -157,7 +157,6 @@ async function loginWithVK() {
     }
     vkLoginInProgress = true;
 
-    // Таймаут на случай зависания
     const timeoutId = setTimeout(() => {
         if (vkLoginInProgress) {
             vkLoginInProgress = false;
@@ -182,7 +181,7 @@ async function loginWithVK() {
     const VKID = window.VKIDSDK;
     VKID.Config.init({
         app: 54525890,
-        redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback', // этот URL используется VK для редиректа, но мы используем low-code, он не нужен? Оставим.
+        redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback',
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.LOWCODE,
         scope: 'email',
@@ -193,10 +192,14 @@ async function loginWithVK() {
             clearTimeout(timeoutId);
             const { code, device_id } = response;
             try {
+                // Обмениваем код на токен на клиенте (PKCE)
+                const tokenData = await VKID.Auth.exchangeCode(code, device_id);
+                const { access_token, user_id, email } = tokenData;
+                
                 const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, device_id })
+                    body: JSON.stringify({ access_token, user_id, email })
                 });
                 if (!res.ok) {
                     const errorText = await res.text();
@@ -214,8 +217,8 @@ async function loginWithVK() {
                     showToast(data.error || 'Ошибка входа через VK', 1500);
                 }
             } catch (err) {
-                console.error('VK auth fetch error:', err);
-                showToast('Ошибка соединения, попробуйте позже', 1500);
+                console.error('VK auth error:', err);
+                showToast('Ошибка авторизации VK: ' + (err.message || 'неизвестная'), 1500);
             } finally {
                 vkLoginInProgress = false;
             }
@@ -223,7 +226,7 @@ async function loginWithVK() {
         .catch((error) => {
             clearTimeout(timeoutId);
             vkLoginInProgress = false;
-            console.error('VK auth error:', error);
+            console.error('VK login error:', error);
             showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
         });
 }

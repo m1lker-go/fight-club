@@ -99,26 +99,18 @@ async function handleTelegramLogin(initData, referralCode, client) {
 // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ VK ==========
 async function exchangeVkCode(code, device_id) {
     const params = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
         client_id: process.env.VK_APP_ID,
         client_secret: process.env.VK_CLIENT_SECRET,
-        code: code,
-        device_id: device_id,
         redirect_uri: process.env.VK_CALLBACK_URL
     });
-    console.log('[VK exchange] params:', Object.fromEntries(params));
-    const response = await fetch(`https://oauth.vk.com/access_token?${params}`);
-    const text = await response.text();
-    console.log('[VK exchange] response status:', response.status);
-    console.log('[VK exchange] response body:', text);
-    let data;
-    try {
-        data = JSON.parse(text);
-    } catch(e) {
-        throw new Error(`Invalid JSON: ${text}`);
-    }
-    if (data.error) {
-        throw new Error(`VK token exchange error: ${data.error_description || data.error}`);
-    }
+    const response = await fetch(`https://id.vk.ru/oauth2/auth?${params}`, {
+        method: 'POST', // лучше POST
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error_description || 'VK token exchange error');
     return data;
 }
 

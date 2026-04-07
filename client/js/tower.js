@@ -1,12 +1,16 @@
-// js/tower.js
+// js/tower.js (исправленный)
 
 let towerStatus = null;
 let selectedClass = null;
 let selectedSubclass = null;
 
 async function loadTowerStatus() {
+    if (!userData || !userData.id) {
+        console.error('loadTowerStatus: userData or id missing');
+        return;
+    }
     try {
-        const res = await fetch(`${API_BASE}/tower/status?tg_id=${userData.tg_id}`);
+        const res = await window.apiRequest('/tower/status', { method: 'GET' });
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
 
@@ -181,10 +185,9 @@ async function startTowerBattle() {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/tower/battle`, {
+        const res = await window.apiRequest('/tower/battle', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id })
+            body: JSON.stringify({})  // user_id добавится автоматически
         });
         const data = await res.json();
         if (!res.ok) {
@@ -422,7 +425,7 @@ function showTowerResultScreen(battleData) {
             eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
             eyeBtn.addEventListener('click', async () => {
                 try {
-                    const res = await fetch(`${API_BASE}/avatars/${reward.avatarId}`);
+                    const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
                     const avatar = await res.json();
                     showAvatarModal(avatar);
                 } catch (err) { console.error(err); }
@@ -432,7 +435,7 @@ function showTowerResultScreen(battleData) {
             avatarItem.appendChild(span);
             rewardsGrid.appendChild(avatarItem);
 
-            fetch(`${API_BASE}/avatars/${reward.avatarId}`)
+            window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' })
                 .then(res => res.json())
                 .then(avatar => {
                     const nameSpan = document.querySelector('#avatarName');
@@ -790,11 +793,9 @@ async function confirmSelection() {
     if (!selectedClass || !selectedSubclass) return;
 
     try {
-        const res = await fetch(`${API_BASE}/tower/select-class`, {
+        const res = await window.apiRequest('/tower/select-class', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                tg_id: userData.tg_id,
                 class: selectedClass,
                 subclass: selectedSubclass
             })

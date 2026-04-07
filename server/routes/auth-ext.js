@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
 const { rechargeEnergy } = require('../utils/energy');
+const { pool, getUserByIdentifier } = require('../db');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 

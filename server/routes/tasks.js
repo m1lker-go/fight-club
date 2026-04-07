@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const { pool, getUserByIdentifier } = require('../db'); // добавлен getUserByIdentifier
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
@@ -100,22 +100,19 @@ function getAdventReward(day, daysInMonth) {
 // ==================== АДВЕНТ ====================
 
 router.get('/advent', async (req, res) => {
-    const { tg_id } = req.query;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    const { tg_id, user_id } = req.query;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
     const client = await pool.connect();
     try {
-        const user = await client.query(
-            'SELECT id, advent_last_claimed_day, advent_last_claim_date, advent_month, advent_year FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
         
-        const userId = user.rows[0].id;
-        let lastClaimed = user.rows[0].advent_last_claimed_day || 0;
-        let lastClaimDate = user.rows[0].advent_last_claim_date;
-        let adventMonth = user.rows[0].advent_month;
-        let adventYear = user.rows[0].advent_year;
+        const userId = user.id;
+        let lastClaimed = user.advent_last_claimed_day || 0;
+        let lastClaimDate = user.advent_last_claim_date;
+        let adventMonth = user.advent_month;
+        let adventYear = user.advent_year;
         
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -142,10 +139,8 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
         
-        // Преобразуем lastClaimDate в строку YYYY-MM-DD для сравнения
         const lastClaimDateStr = lastClaimDate ? new Date(lastClaimDate).toISOString().split('T')[0] : null;
         
-        // Доступен следующий день, если он не позже сегодняшнего и сегодня ещё не получали награду
         let availableDay = null;
         if (nextDay <= currentDay && (!lastClaimDateStr || lastClaimDateStr !== todayStr)) {
             availableDay = nextDay;
@@ -166,23 +161,20 @@ router.get('/advent', async (req, res) => {
 });
 
 router.post('/advent/claim', async (req, res) => {
-    const { tg_id, classChoice } = req.body;
-    if (!tg_id) return res.status(400).json({ error: 'Missing tg_id' });
+    const { tg_id, user_id, classChoice } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
-        const user = await client.query(
-            'SELECT id, advent_last_claimed_day, advent_last_claim_date, advent_month, advent_year FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-        let lastClaimed = user.rows[0].advent_last_claimed_day || 0;
-        let lastClaimDate = user.rows[0].advent_last_claim_date;
-        let adventMonth = user.rows[0].advent_month;
-        let adventYear = user.rows[0].advent_year;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
+        let lastClaimed = user.advent_last_claimed_day || 0;
+        let lastClaimDate = user.advent_last_claim_date;
+        let adventMonth = user.advent_month;
+        let adventYear = user.advent_year;
         
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -210,11 +202,9 @@ router.post('/advent/claim', async (req, res) => {
         
         console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDateStr}, todayStr=${todayStr}, currentDay=${currentDay}`);
         
-        // Проверка: можно взять только следующий день
         if (nextDay > currentDay) {
             throw new Error('This day is not available yet');
         }
-        // Проверка: сегодня ещё не получали награду
         if (lastClaimDateStr && lastClaimDateStr === todayStr) {
             throw new Error('You have already claimed today\'s reward');
         }
@@ -277,7 +267,6 @@ router.post('/advent/claim', async (req, res) => {
             rewardItem = item;
         }
         
-        // Обновляем прогресс
         await client.query(
             `UPDATE users 
              SET advent_last_claimed_day = $1, 
@@ -308,6 +297,7 @@ router.post('/advent/claim', async (req, res) => {
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 
 async function updateTowerTask(client, userId) {
+    // Оставляем как есть, но userId уже передан
     const userRes = await client.query(
         'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
         [userId]
@@ -333,7 +323,6 @@ async function updateTowerTask(client, userId) {
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
-        // НЕ устанавливаем маску – клиент сам заберёт награду
     }
 }
 
@@ -363,24 +352,19 @@ async function updateLuckyTask(client, userId) {
             'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
             [JSON.stringify(progress), userId]
         );
-        // НЕ устанавливаем маску – клиент сам заберёт награду
     }
 }
 
 router.get('/daily/list', async (req, res) => {
     console.log('=== /daily/list called ===');
-    console.log('tg_id:', req.query.tg_id);
-    const { tg_id } = req.query;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id required' });
+    console.log('tg_id:', req.query.tg_id, 'user_id:', req.query.user_id);
+    const { tg_id, user_id } = req.query;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
 
     const client = await pool.connect();
     try {
-        const userRes = await client.query(
-            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const user = userRes.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
         const userId = user.id;
 
         const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
@@ -447,19 +431,15 @@ router.get('/daily/list', async (req, res) => {
 });
 
 router.post('/daily/claim', async (req, res) => {
-    const { tg_id, task_id, class_choice } = req.body;
-    if (!tg_id || !task_id) return res.status(400).json({ error: 'Missing data' });
+    const { tg_id, user_id, task_id, class_choice } = req.body;
+    if ((!tg_id && !user_id) || !task_id) return res.status(400).json({ error: 'Missing data' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        const userRes = await client.query(
-            'SELECT id, coins, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (userRes.rows.length === 0) throw new Error('User not found');
-        const user = userRes.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
         const userId = user.id;
 
         const now = new Date();
@@ -558,16 +538,14 @@ router.post('/daily/claim', async (req, res) => {
 // ==================== МАРШРУТЫ ОБНОВЛЕНИЯ ПРОГРЕССА ====================
 
 router.post('/daily/update/battle', async (req, res) => {
-    const { tg_id, class_played, is_victory } = req.body;
+    const { tg_id, user_id, class_played, is_victory } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const userRes = await client.query(
-            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (userRes.rows.length === 0) throw new Error('User not found');
-        const user = userRes.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
         const userId = user.id;
 
         const now = new Date();
@@ -610,16 +588,14 @@ router.post('/daily/update/battle', async (req, res) => {
 });
 
 router.post('/daily/update/exp', async (req, res) => {
-    const { tg_id, exp_gained } = req.body;
+    const { tg_id, user_id, exp_gained } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const userRes = await client.query(
-            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (userRes.rows.length === 0) throw new Error('User not found');
-        const user = userRes.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
         const userId = user.id;
 
         const now = new Date();
@@ -656,16 +632,14 @@ router.post('/daily/update/exp', async (req, res) => {
 });
 
 router.post('/daily/update/chest', async (req, res) => {
-    const { tg_id, item_rarity } = req.body;
+    const { tg_id, user_id, item_rarity } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const userRes = await client.query(
-            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (userRes.rows.length === 0) throw new Error('User not found');
-        const user = userRes.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
         const userId = user.id;
 
         const now = new Date();
@@ -703,16 +677,14 @@ router.post('/daily/update/chest', async (req, res) => {
 });
 
 router.post('/daily/update/profile', async (req, res) => {
-    const { tg_id } = req.body;
+    const { tg_id, user_id } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const userRes = await client.query(
-            'SELECT id, daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE tg_id = $1',
-            [tg_id]
-        );
-        if (userRes.rows.length === 0) throw new Error('User not found');
-        const user = userRes.rows[0];
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
         const userId = user.id;
 
         const now = new Date();

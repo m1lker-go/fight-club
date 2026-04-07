@@ -1,4 +1,5 @@
-// forge.js
+// forge.js (исправленный)
+
 let forgeItems = [];
 let currentForgeTab = 'forge';
 
@@ -47,8 +48,12 @@ async function renderForge() {
 }
 
 async function loadCurrentForgeItems(tab) {
+    if (!userData || !userData.id) return;
     try {
-        const res = await fetch(`https://fight-club-api-4och.onrender.com/forge/current?tg_id=${userData.tg_id}&tab=${tab}`);
+        const res = await window.apiRequest(`/forge/current`, {
+            method: 'GET',
+            body: { tab: tab }  // apiRequest добавит user_id и tg_id в query
+        });
         if (res.ok) forgeItems = await res.json();
         else forgeItems = [];
     } catch (e) {
@@ -154,17 +159,13 @@ function addToForge(item) {
         showToast('Все слоты заняты', 1500);
         return;
     }
-    // Проверяем, не добавлен ли уже (локально)
     if (forgeItems.includes(item.id)) {
         showToast('Предмет уже в кузнице', 1500);
         return;
     }
-    // Отправляем запрос на сервер, не меняя локальное состояние до успеха
-    fetch('https://fight-club-api-4och.onrender.com/forge/add', {
+    window.apiRequest('/forge/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            tg_id: userData.tg_id, 
             item_id: item.id,
             tab: currentForgeTab
         })
@@ -232,10 +233,9 @@ function showForgeItemDetails(item, source, slotIndex = null) {
         document.getElementById('forgeRemoveBtn').addEventListener('click', async () => {
             const index = forgeItems.indexOf(item.id);
             if (index > -1) forgeItems.splice(index, 1);
-            const res = await fetch('https://fight-club-api-4och.onrender.com/forge/remove', {
+            const res = await window.apiRequest('/forge/remove', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+                body: JSON.stringify({ item_id: item.id })
             });
             if (res.ok) {
                 await refreshData();
@@ -316,11 +316,9 @@ function showClassChoiceForCraft(itemIds) {
 async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
-    const res = await fetch('https://fight-club-api-4och.onrender.com/forge/craft', {
+    const res = await window.apiRequest('/forge/craft', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            tg_id: userData.tg_id,
             item_ids: itemIds,
             chosen_class: chosenClass
         })
@@ -356,11 +354,9 @@ async function performForgeAction() {
         showClassChoiceForCraft(forgeItems);
     } else {
         if (forgeItems.length === 0) return;
-        const res = await fetch('https://fight-club-api-4och.onrender.com/forge/smelt', {
+        const res = await window.apiRequest('/forge/smelt', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                tg_id: userData.tg_id,
                 item_ids: forgeItems
             })
         });

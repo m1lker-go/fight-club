@@ -96,7 +96,6 @@ async function handleTelegramLogin(initData, referralCode, client) {
     return { sessionToken, needNickname, userId: userData.id, user: userData };
 }
 
-
 // ========== МАРШРУТЫ ==========
 
 router.get('/check-nickname', async (req, res) => {
@@ -221,7 +220,6 @@ router.post('/telegram-auto', async (req, res) => {
     }
 });
 
-
 // ========== VK LOW-CODE ВХОД (принимает access_token с клиента) ==========
 router.post('/vk-lowcode', async (req, res) => {
     const { access_token, user_id, email } = req.body;
@@ -231,7 +229,6 @@ router.post('/vk-lowcode', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        // Проверяем, существует ли уже связь с VK
         let existingConnection = await client.query(
             'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
             ['vk', String(user_id)]
@@ -241,14 +238,12 @@ router.post('/vk-lowcode', async (req, res) => {
         let needNickname = false;
 
         if (existingConnection.rows.length > 0) {
-            // Вход через уже привязанный VK
             const userId = existingConnection.rows[0].user_id;
             await rechargeEnergy(client, userId);
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         } else {
-            // Проверяем email (если есть) на конфликт
             if (email) {
                 const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
                 if (emailUser.rows.length > 0) {
@@ -256,7 +251,6 @@ router.post('/vk-lowcode', async (req, res) => {
                 }
             }
 
-            // Создаём нового пользователя
             const referralCode = Math.random().toString(36).substring(2, 10);
             const newUser = await client.query(
                 `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
@@ -266,7 +260,6 @@ router.post('/vk-lowcode', async (req, res) => {
             userData = newUser.rows[0];
             needNickname = true;
 
-            // Создаём классы
             const classes = ['warrior', 'assassin', 'mage'];
             for (let cls of classes) {
                 await client.query(
@@ -274,7 +267,6 @@ router.post('/vk-lowcode', async (req, res) => {
                     [userData.id, cls]
                 );
             }
-            // Сохраняем связь с VK (токен можно сохранить, но не обязательно)
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'vk', $2, $3, $4)`,
@@ -282,7 +274,6 @@ router.post('/vk-lowcode', async (req, res) => {
             );
         }
 
-        // Генерируем сессионный токен
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
@@ -300,8 +291,6 @@ router.post('/vk-lowcode', async (req, res) => {
         client.release();
     }
 });
-
-
 
 // Google OAuth через One Tap (получение idToken)
 router.post('/google', async (req, res) => {
@@ -448,7 +437,7 @@ router.post('/update-settings', async (req, res) => {
 router.post('/link', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token' });
-    const { provider, idToken, initData, email, code, device_id, user, access_token } = req.body;
+    const { provider, idToken, initData, email, code, device_id, user, access_token, user_id: vkUserId } = req.body;
     const client = await pool.connect();
     try {
         const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
@@ -524,18 +513,11 @@ router.post('/link', async (req, res) => {
             }
             return res.json({ success: true });
         }
-        // VK (привязка через Low-code, используем тот же обмен)
-        else if (provider === 'vk' && code && device_id) {
-            let tokenData;
-            try {
-                tokenData = await exchangeVkCode(code, device_id);
-            } catch (err) {
-                return res.status(400).json({ error: err.message });
-            }
-            const { user_id, email } = tokenData;
+        // VK (привязка через access_token с клиента)
+        else if (provider === 'vk' && access_token && vkUserId) {
             const existing = await client.query(
                 'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
-                ['vk', String(user_id)]
+                ['vk', String(vkUserId)]
             );
             if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
                 return res.status(409).json({ error: 'Этот VK аккаунт уже привязан к другому пользователю' });
@@ -550,7 +532,7 @@ router.post('/link', async (req, res) => {
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'vk', $2, $3, $4)
                  ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
-                [userId, String(user_id), email || null, JSON.stringify(tokenData)]
+                [userId, String(vkUserId), email || null, JSON.stringify({ access_token, user_id: vkUserId, email })]
             );
             if (email) {
                 await client.query('UPDATE users SET email = $1 WHERE id = $2 AND email IS NULL', [email, userId]);

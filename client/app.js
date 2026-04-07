@@ -39,27 +39,69 @@ window.API_BASE = 'https://fight-club-api-4och.onrender.com';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
-// Обработка OAuth-редиректов (Google, VK, Telegram) – сохраняем токен и перезагружаем
-const urlParams = new URLSearchParams(window.location.search);
-const googleAuth = urlParams.get('google_auth');
-const vkAuth = urlParams.get('vk_auth');
-const telegramAuth = urlParams.get('telegram_auth');
-
-if (googleAuth === 'success' || vkAuth === 'success' || telegramAuth === 'success') {
-    const token = urlParams.get('sessionToken');
-    if (token) {
-        localStorage.setItem('sessionToken', token);
-        window.location.href = window.location.pathname;
+// ========== УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАПРОСОВ ==========
+// Автоматически добавляет user_id и tg_id в тело POST или в URL GET
+window.apiRequest = async function(endpoint, options = {}) {
+    const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
+    const method = options.method || 'GET';
+    
+    // Клонируем тело, если есть
+    let body = options.body ? JSON.parse(options.body) : {};
+    
+    // Добавляем идентификаторы пользователя, если они известны
+    if (userData && userData.id) {
+        body.user_id = userData.id;
     }
-}
+    if (userData && userData.tg_id) {
+        body.tg_id = userData.tg_id;
+    }
+    
+    const fetchOptions = {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        }
+    };
+    
+    if (method === 'GET') {
+        // Для GET запросов добавляем параметры в URL
+        const params = new URLSearchParams();
+        if (body.user_id) params.append('user_id', body.user_id);
+        if (body.tg_id) params.append('tg_id', body.tg_id);
+        // Удаляем user_id и tg_id из тела, чтобы не отправлять их в body
+        delete body.user_id;
+        delete body.tg_id;
+        // Добавляем остальные параметры из body (если есть)
+        for (const [key, value] of Object.entries(body)) {
+            if (value !== undefined && value !== null) {
+                params.append(key, value);
+            }
+        }
+        const separator = url.includes('?') ? '&' : '?';
+        const newUrl = url + separator + params.toString();
+        delete fetchOptions.body;
+        return fetch(newUrl, fetchOptions);
+    } else {
+        // Для POST, PUT и т.д. отправляем body с добавленными полями
+        fetchOptions.body = JSON.stringify(body);
+        return fetch(url, fetchOptions);
+    }
+};
 
-// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
+// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ (с использованием apiRequest) ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     for (let i = 0; i < retries; i++) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
-            const response = await fetch(url, { ...options, signal: controller.signal });
+            // Используем apiRequest, если url относительный, иначе прямой fetch
+            let response;
+            if (url.startsWith(window.API_BASE) || url.startsWith('/')) {
+                response = await window.apiRequest(url, { ...options, signal: controller.signal });
+            } else {
+                response = await fetch(url, { ...options, signal: controller.signal });
+            }
             clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return response;
@@ -97,7 +139,7 @@ async function autoLoginTelegram() {
                 sessionToken = data.sessionToken;
                 if (data.needNickname && typeof showNicknameModal === 'function') {
                     showNicknameModal(data.userId);
-                    return true; // Модалка сама перезагрузит страницу после сохранения никнейма
+                    return true;
                 } else {
                     await loadUserDataByToken(data.sessionToken);
                 }
@@ -113,11 +155,11 @@ async function autoLoginTelegram() {
     return false;
 }
 
-// Загрузка данных пользователя по токену (вынесено из checkAuth для переиспользования)
+// Загрузка данных пользователя по токену (использует apiRequest)
 async function loadUserDataByToken(token) {
     try {
         console.log('loadUserDataByToken: fetching profile...');
-        const res = await fetch(`${window.API_BASE}/auth/profile`, {
+        const res = await window.apiRequest('/auth/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -151,13 +193,12 @@ let sessionToken = localStorage.getItem('sessionToken');
 
 async function checkAuth() {
     console.log('checkAuth: sessionToken =', sessionToken);
-    // Если есть токен, проверяем его на сервере и загружаем данные
     if (sessionToken) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         try {
-            const res = await fetch(`${window.API_BASE}/auth/profile`, {
+            const res = await window.apiRequest('/auth/profile', {
                 headers: { 'Authorization': `Bearer ${sessionToken}` },
                 signal: controller.signal
             });
@@ -192,18 +233,15 @@ async function checkAuth() {
         }
     }
 
-    // Нет токена – пробуем автоматический вход, если внутри Telegram WebApp
     const isTelegramWebApp = !!(tg && tg.initData);
     if (isTelegramWebApp) {
         console.log('checkAuth: trying auto login via Telegram');
         const autoLogged = await autoLoginTelegram();
         if (autoLogged) {
-            // После успешного авто-входа данные уже загружены в loadUserDataByToken
             return true;
         }
     }
 
-    // Если не удалось – показываем модальное окно входа
     hideSplashScreen();
     if (typeof showAuthModal === 'function') {
         showAuthModal();
@@ -249,7 +287,7 @@ function showErrorSplash() {
 async function checkAdvent() {
     if (!userData || !userData.tg_id) return;
     try {
-        const res = await fetch(`${window.API_BASE}/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        const res = await window.apiRequest(`/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
             if (typeof showAdventCalendar === 'function') showAdventCalendar();
@@ -284,15 +322,15 @@ function getAdventReward(day, daysInMonth) {
 }
 
 async function refreshData() {
-    if (!userData || !userData.tg_id) {
-        console.warn('refreshData: userData or tg_id missing');
+    if (!userData || !userData.id) {
+        console.warn('refreshData: userData or id missing');
         return;
     }
     try {
-        const response = await fetchWithRetry(`${window.API_BASE}/auth/refresh`, {
+        const response = await fetchWithRetry('/auth/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id })
+            body: JSON.stringify({ tg_id: userData.tg_id, user_id: userData.id })
         }, 2, 20000);
         const data = await response.json();
         if (data.user) {

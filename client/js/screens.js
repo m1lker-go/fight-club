@@ -1,4 +1,4 @@
-// screens.js – все функции рендеринга экранов (исправленная версия)
+// screens.js – все функции рендеринга экранов (исправленная версия с apiRequest)
 
 // ==================== ГЛОБАЛЬНЫЕ НАСТРОЙКИ ====================
 // Используем window.API_BASE, заданный в app.js
@@ -130,10 +130,9 @@ function renderMain() {
             const newClass = btn.dataset.class;
             if (newClass === userData.current_class) return;
 
-            const res = await fetch(`${window.API_BASE}/player/class`, {
+            const res = await window.apiRequest('/player/class', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+                body: JSON.stringify({ class: newClass })
             });
             if (!res.ok) return;
 
@@ -142,10 +141,9 @@ function renderMain() {
                 assassin: 'assassin',
                 mage: 'pyromancer'
             }[newClass];
-            await fetch(`${window.API_BASE}/player/subclass`, {
+            await window.apiRequest('/player/subclass', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, subclass: firstSubclass })
+                body: JSON.stringify({ subclass: firstSubclass })
             });
 
             userData.current_class = newClass;
@@ -158,10 +156,9 @@ function renderMain() {
     if (subclassSelect) {
         subclassSelect.addEventListener('change', async (e) => {
             const newSubclass = e.target.value;
-            const res = await fetch(`${window.API_BASE}/player/subclass`, {
+            const res = await window.apiRequest('/player/subclass', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, subclass: newSubclass })
+                body: JSON.stringify({ subclass: newSubclass })
             });
             if (res.ok) {
                 userData.subclass = newSubclass;
@@ -434,10 +431,9 @@ function renderEquip() {
             if (!item) return;
             showUnequipConfirmModal(item, async () => {
                 try {
-                    const res = await fetch(`${window.API_BASE}/inventory/unequip`, {
+                    const res = await window.apiRequest('/inventory/unequip', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        body: JSON.stringify({ item_id: itemId })
                     });
                     if (res.ok) {
                         await refreshData();
@@ -468,11 +464,9 @@ function renderEquip() {
                 if (equippedInSlot) {
                     showEquipCompareModal(equippedInSlot, item);
                 } else {
-                    const res = await fetch(`${window.API_BASE}/inventory/equip`, {
+                    const res = await window.apiRequest('/inventory/equip', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
-                            tg_id: userData.tg_id, 
                             item_id: itemId,
                             target_class: currentClass
                         })
@@ -494,11 +488,9 @@ function renderEquip() {
                     return;
                 }
                 showPriceInputModal(null, async (price) => {
-                    const res = await fetch(`${window.API_BASE}/inventory/sell`, {
+                    const res = await window.apiRequest('/inventory/sell', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
-                            tg_id: userData.tg_id, 
                             item_id: itemId, 
                             price: price
                         })
@@ -514,10 +506,9 @@ function renderEquip() {
                 });
             } else if (action === 'unsell') {
                 showConfirmModal('Снять предмет с продажи?', async () => {
-                    const res = await fetch(`${window.API_BASE}/inventory/unsell`, {
+                    const res = await window.apiRequest('/inventory/unsell', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId })
+                        body: JSON.stringify({ item_id: itemId })
                     });
                     if (res.ok) {
                         showToast('Предмет снят с продажи', 1500);
@@ -531,10 +522,9 @@ function renderEquip() {
                 const item = inventory.find(i => i.id == Number(itemId));
                 if (!item) return;
                 showPriceInputModal(item.price, async (newPrice) => {
-                    const res = await fetch(`${window.API_BASE}/market/update-price`, {
+                    const res = await window.apiRequest('/market/update-price', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: itemId, new_price: newPrice })
+                        body: JSON.stringify({ item_id: itemId, new_price: newPrice })
                     });
                     if (res.ok) {
                         showToast('Цена изменена', 1500);
@@ -688,8 +678,7 @@ function renderShop(target = null) {
 
     async function updateCommonChestPrice() {
         try {
-            const tgId = Number(userData.tg_id);
-            const res = await fetch(`${window.API_BASE}/player/freechest?tg_id=${tgId}`);
+            const res = await window.apiRequest('/player/freechest');
             const data = await res.json();
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             const coinIcon = container.querySelector('[data-chest="common"] i');
@@ -715,10 +704,9 @@ function renderShop(target = null) {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const chest = btn.dataset.chest;
-            const res = await fetch(`${window.API_BASE}/shop/buychest`, {
+            const res = await window.apiRequest('/shop/buychest', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, chestType: chest })
+                body: JSON.stringify({ chestType: chest })
             });
             let data;
             try {
@@ -733,10 +721,9 @@ function renderShop(target = null) {
                 if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
                 if (chest === 'common') updateCommonChestPrice();
 
-                fetch(`${window.API_BASE}/tasks/daily/update/chest`, {
+                window.apiRequest('/tasks/daily/update/chest', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tg_id: userData.tg_id, item_rarity: data.item.rarity })
+                    body: JSON.stringify({ item_rarity: data.item.rarity })
                 }).catch(err => console.error('Failed to update chest task', err));
             } else {
                 if (data.error === 'Not enough coins') {
@@ -894,11 +881,14 @@ async function renderMarket(target = null) {
 }
 
 async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFilter = 'any') {
-    const params = new URLSearchParams({ class: classFilter, rarity: rarityFilter });
+    const params = { class: classFilter, rarity: rarityFilter };
     if (statFilter !== 'any') {
-        params.append('stat', statFilter);
+        params.stat = statFilter;
     }
-    const res = await fetch(`${window.API_BASE}/market?` + params);
+    const res = await window.apiRequest('/market', {
+        method: 'GET',
+        body: params
+    });
     let items;
     try {
         items = await res.json();
@@ -1006,10 +996,9 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
             removeBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 showConfirmModal('Снять этот предмет с продажи?', async () => {
-                    const res = await fetch(`${window.API_BASE}/market/remove`, {
+                    const res = await window.apiRequest('/market/remove', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+                        body: JSON.stringify({ item_id: item.id })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -1105,10 +1094,9 @@ async function showItemDetailsModal(item) {
     const closeX = modal.querySelector('.close');
 
     buyBtn.addEventListener('click', async () => {
-        const res = await fetch(`${window.API_BASE}/market/buy`, {
+        const res = await window.apiRequest('/market/buy', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id })
+            body: JSON.stringify({ item_id: item.id })
         });
         let data;
         try {
@@ -1361,10 +1349,9 @@ function showEditPriceModal(item) {
             showToast('Введите корректную цену', 1500);
             return;
         }
-        const res = await fetch(`${window.API_BASE}/market/update-price`, {
+        const res = await window.apiRequest('/market/update-price', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, item_id: item.id, new_price: newPrice })
+            body: JSON.stringify({ item_id: item.id, new_price: newPrice })
         });
         let data;
         try {
@@ -1473,7 +1460,7 @@ async function loadRatingData(type) {
     container.innerHTML = '<p style="text-align:center;">Загрузка...</p>';
 
     try {
-        const res = await fetch(`${window.API_BASE}/rank/${type}`);
+        const res = await window.apiRequest(`/rank/${type}`, { method: 'GET' });
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
 
@@ -1524,11 +1511,7 @@ function renderProfile() {
     const content = document.getElementById('content');
     if (!content) return;
 
-    fetch(`${window.API_BASE}/tasks/daily/update/profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userData.tg_id })
-    })
+    window.apiRequest('/tasks/daily/update/profile', { method: 'POST' })
     .then(() => {
         if (window.refreshTasksData) window.refreshTasksData();
         if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
@@ -1649,10 +1632,9 @@ function renderProfileBonuses(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.currentTarget.dataset.class;
             if (newClass === currentClass) return;
-            const res = await fetch(`${window.API_BASE}/player/class`, {
+            const res = await window.apiRequest('/player/class', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+                body: JSON.stringify({ class: newClass })
             });
             if (res.ok) {
                 userData.current_class = newClass;
@@ -1710,10 +1692,9 @@ function renderSkills(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.currentTarget.dataset.class;
             if (newClass === currentClass) return;
-            await fetch(`${window.API_BASE}/player/class`, {
+            await window.apiRequest('/player/class', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+                body: JSON.stringify({ class: newClass })
             });
             userData.current_class = newClass;
             renderSkills(container);
@@ -1723,11 +1704,9 @@ function renderSkills(container) {
     container.querySelectorAll('.skill-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = e.currentTarget.dataset.stat;
-            const res = await fetch(`${window.API_BASE}/player/upgrade`, {
+            const res = await window.apiRequest('/player/upgrade', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    tg_id: userData.tg_id,
                     class: currentClass,
                     stat: stat,
                     points: 1
@@ -1779,14 +1758,8 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 function renderSkins(container) {
     if (!container) return;
     Promise.all([
-        fetch(`${window.API_BASE}/avatars`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch avatars');
-            return res.json();
-        }),
-        fetch(`${window.API_BASE}/avatars/user/${userData.tg_id}`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch owned avatars');
-            return res.json();
-        })
+        fetch(`${window.API_BASE}/avatars`).then(res => res.json()),
+        window.apiRequest(`/avatars/user/${userData.tg_id}`, { method: 'GET' }).then(res => res.json())
     ])
     .then(([allAvatars, ownedIds]) => {
         const activeAvatarId = userData.avatar_id || 1;
@@ -1894,10 +1867,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (!owned && !isActive) {
                 document.getElementById('buySkin')?.addEventListener('click', async () => {
-                    const res = await fetch(`${window.API_BASE}/avatars/buy`, {
+                    const res = await window.apiRequest('/avatars/buy', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                        body: JSON.stringify({ avatar_id: avatarId })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -1912,10 +1884,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (owned && !isActive) {
                 document.getElementById('activateSkin')?.addEventListener('click', async () => {
-                    const res = await fetch(`${window.API_BASE}/player/avatar`, {
+                    const res = await window.apiRequest('/player/avatar', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                        body: JSON.stringify({ avatar_id: avatarId })
                     });
                     const data = await res.json();
                     if (data.success) {

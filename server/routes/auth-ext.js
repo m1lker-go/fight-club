@@ -96,32 +96,6 @@ async function handleTelegramLogin(initData, referralCode, client) {
     return { sessionToken, needNickname, userId: userData.id, user: userData };
 }
 
-// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ VK ==========
-async function exchangeVkCode(code, device_id) {
-    const params = new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        client_id: process.env.VK_APP_ID,
-        client_secret: process.env.VK_CLIENT_SECRET,
-        redirect_uri: process.env.VK_CALLBACK_URL,
-        device_id: device_id
-    });
-    const url = 'https://id.vk.ru/oauth2/auth';
-    console.log('[VK exchange] requesting POST to', url);
-    console.log('[VK exchange] body:', params.toString());
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString()
-    });
-    const data = await response.json();
-    console.log('[VK exchange] response status:', response.status);
-    console.log('[VK exchange] response data:', JSON.stringify(data, null, 2));
-    if (data.error) {
-        throw new Error(`VK token exchange error: ${data.error_description || data.error}`);
-    }
-    return data;
-}
 
 // ========== МАРШРУТЫ ==========
 
@@ -247,26 +221,17 @@ router.post('/telegram-auto', async (req, res) => {
     }
 });
 
-// ========== VK LOW-CODE ВХОД (НОВЫЙ МАРШРУТ) ==========
+
+// ========== VK LOW-CODE ВХОД (принимает access_token с клиента) ==========
 router.post('/vk-lowcode', async (req, res) => {
-    const { code, device_id } = req.body;
-    if (!code) return res.status(400).json({ error: 'Missing code' });
+    const { access_token, user_id, email } = req.body;
+    if (!access_token || !user_id) {
+        return res.status(400).json({ error: 'Missing access_token or user_id' });
+    }
 
     const client = await pool.connect();
     try {
-        // Обмениваем код на токен
-        let tokenData;
-        try {
-            tokenData = await exchangeVkCode(code, device_id);
-        } catch (err) {
-            console.error('VK token exchange failed:', err);
-            return res.status(400).json({ error: err.message });
-        }
-
-        const { user_id, email, access_token } = tokenData;
-        if (!user_id) return res.status(400).json({ error: 'No user_id from VK' });
-
-        // Ищем существующее соединение VK
+        // Проверяем, существует ли уже связь с VK
         let existingConnection = await client.query(
             'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
             ['vk', String(user_id)]
@@ -283,7 +248,7 @@ router.post('/vk-lowcode', async (req, res) => {
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         } else {
-            // Проверяем, не зарегистрирован ли уже email (если есть)
+            // Проверяем email (если есть) на конфликт
             if (email) {
                 const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
                 if (emailUser.rows.length > 0) {
@@ -309,11 +274,11 @@ router.post('/vk-lowcode', async (req, res) => {
                     [userData.id, cls]
                 );
             }
-            // Сохраняем связь с VK
+            // Сохраняем связь с VK (токен можно сохранить, но не обязательно)
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'vk', $2, $3, $4)`,
-                [userData.id, String(user_id), email || null, JSON.stringify(tokenData)]
+                [userData.id, String(user_id), email || null, JSON.stringify({ access_token, user_id, email })]
             );
         }
 
@@ -321,7 +286,6 @@ router.post('/vk-lowcode', async (req, res) => {
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
-        // Возвращаем данные для клиента (как в Google OAuth)
         res.json({
             success: true,
             sessionToken,
@@ -336,6 +300,8 @@ router.post('/vk-lowcode', async (req, res) => {
         client.release();
     }
 });
+
+
 
 // Google OAuth через One Tap (получение idToken)
 router.post('/google', async (req, res) => {

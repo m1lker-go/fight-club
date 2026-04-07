@@ -1,8 +1,8 @@
 // battleUI.js
 
 async function startBattle() {
-    if (!userData || !userData.tg_id) {
-        console.error('tg_id не определён!');
+    if (!userData || !userData.id) {
+        console.error('user_id не определён!');
         showToast('Ошибка: не удалось идентифицировать пользователя', 2000);
         unlockMenu();
         return;
@@ -14,11 +14,10 @@ async function startBattle() {
     }
 
     try {
-        const response = await fetch('https://fight-club-api-4och.onrender.com/battle/start', {
+        // Используем apiRequest, user_id добавится автоматически
+        const response = await window.apiRequest('/battle/start', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                tg_id: userData.tg_id,
                 playerName: window.playerName || userData.username || 'Player'
             })
         });
@@ -208,20 +207,18 @@ async function showBattleResult(battleData, timeOut = false) {
         showLevelUpModal(userData.current_class);
     }
 
-    // Обновление заданий
+    // Обновление заданий через apiRequest
     try {
-        await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/battle', {
+        await window.apiRequest('/tasks/daily/update/battle', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, class_played: userData.current_class, is_victory: isVictory })
+            body: JSON.stringify({ class_played: userData.current_class, is_victory: isVictory })
         });
     } catch (err) { console.error(err); }
 
     try {
-        await fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/exp', {
+        await window.apiRequest('/tasks/daily/update/exp', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, exp_gained: expGain })
+            body: JSON.stringify({ exp_gained: expGain })
         });
     } catch (err) { console.error(err); }
 

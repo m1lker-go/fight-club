@@ -126,4 +126,17 @@ const initDB = async () => {
   }
 };
 
-module.exports = { pool, initDB };
+// Универсальная функция поиска пользователя по tg_id или user_id
+async function getUserByIdentifier(client, tg_id, user_id) {
+    if (user_id) {
+        const res = await client.query('SELECT * FROM users WHERE id = $1', [user_id]);
+        if (res.rows.length) return res.rows[0];
+    }
+    if (tg_id) {
+        const res = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
+        if (res.rows.length) return res.rows[0];
+    }
+    return null;
+}
+
+module.exports = { pool, initDB, getUserByIdentifier };

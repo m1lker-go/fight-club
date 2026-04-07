@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
-const { updatePlayerPower } = require('../utils/power'); // добавлен импорт
+const { pool, getUserByIdentifier } = require('../db');
+const { updatePlayerPower } = require('../utils/power');
 
 // ========== ТЕСТОВЫЙ МАРШРУТ ==========
 router.get('/test', async (req, res) => {
@@ -34,10 +34,9 @@ async function rechargeEnergy(client, userId) {
     const last = new Date(user.rows[0].last_energy);
     const now = new Date();
     const diffMinutes = Math.floor((now - last) / (1000 * 60));
-    const intervals = Math.floor(diffMinutes / 15); // количество 15-минутных интервалов
+    const intervals = Math.floor(diffMinutes / 15);
     if (intervals > 0) {
         const newEnergy = Math.min(20, user.rows[0].energy + intervals);
-        // Обновляем время последнего восстановления на текущее
         await client.query(
             'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
             [newEnergy, now, userId]
@@ -53,31 +52,21 @@ function validateTgId(tg_id) {
 
 // ========== БЕСПЛАТНЫЙ СУНДУК ==========
 router.get('/freechest', async (req, res) => {
-    const rawTgId = req.query.tg_id;
+    const { tg_id, user_id } = req.query;
     
     console.log('=== FREE CHEST CHECK ===');
-    console.log('tg_id:', rawTgId);
+    console.log('tg_id:', tg_id, 'user_id:', user_id);
     
-    if (!rawTgId) {
-        return res.status(400).json({ error: 'tg_id required' });
+    if (!tg_id && !user_id) {
+        return res.status(400).json({ error: 'tg_id or user_id required' });
     }
     
-    const tgId = parseInt(rawTgId);
-    if (isNaN(tgId)) {
-        return res.status(400).json({ error: 'Invalid tg_id' });
-    }
-    
+    const client = await pool.connect();
     try {
-        const user = await pool.query(
-            'SELECT last_free_common_chest FROM users WHERE tg_id = $1', 
-            [tgId]
-        );
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
         
-        if (user.rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        const lastFree = user.rows[0].last_free_common_chest;
+        const lastFree = user.last_free_common_chest;
         const now = new Date();
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
@@ -89,6 +78,8 @@ router.get('/freechest', async (req, res) => {
     } catch (e) {
         console.error('Database error:', e);
         res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
     }
 });
 
@@ -175,19 +166,14 @@ router.get('/class/:tg_id/:class', async (req, res) => {
 });
 
 router.post('/upgrade', async (req, res) => {
-    const { tg_id, class: className, stat, points } = req.body;
-    
-    if (!validateTgId(tg_id)) {
-        console.log('Invalid tg_id in /upgrade:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
+    const { tg_id, user_id, class: className, stat, points } = req.body;
     
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
 
         const classData = await client.query(
             'SELECT skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
@@ -201,7 +187,6 @@ router.post('/upgrade', async (req, res) => {
             [points, userId, className]
         );
 
-        // Пересчитываем силу после изменения навыков
         await updatePlayerPower(client, userId, className);
 
         await client.query('COMMIT');
@@ -215,23 +200,17 @@ router.post('/upgrade', async (req, res) => {
 });
 
 router.post('/class', async (req, res) => {
-    const { tg_id, class: newClass } = req.body;
-    
-    if (!validateTgId(tg_id)) {
-        console.log('Invalid tg_id in /class:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
+    const { tg_id, user_id, class: newClass } = req.body;
     
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
 
         await client.query('UPDATE users SET current_class = $1 WHERE id = $2', [newClass, userId]);
 
-        // Пересчитываем силу для нового класса (на случай, если у него есть навыки)
         await updatePlayerPower(client, userId, newClass);
 
         await client.query('COMMIT');
@@ -245,24 +224,18 @@ router.post('/class', async (req, res) => {
 });
 
 router.post('/subclass', async (req, res) => {
-    const { tg_id, subclass } = req.body;
-    
-    if (!validateTgId(tg_id)) {
-        console.log('Invalid tg_id in /subclass:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
+    const { tg_id, user_id, subclass } = req.body;
     
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await client.query('SELECT id, current_class FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) throw new Error('User not found');
-        const userId = user.rows[0].id;
-        const currentClass = user.rows[0].current_class;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        const userId = user.id;
+        const currentClass = user.current_class;
 
         await client.query('UPDATE users SET subclass = $1 WHERE id = $2', [subclass, userId]);
 
-        // Подкласс влияет на пассивные бонусы, пересчитываем силу для текущего класса
         await updatePlayerPower(client, userId, currentClass);
 
         await client.query('COMMIT');
@@ -276,23 +249,19 @@ router.post('/subclass', async (req, res) => {
 });
 
 router.post('/avatar', async (req, res) => {
-    const { tg_id, avatar_id } = req.body;
-    
-    if (!validateTgId(tg_id)) {
-        console.log('Invalid tg_id in /avatar:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
+    const { tg_id, user_id, avatar_id } = req.body;
     
     if (!avatar_id) {
         return res.status(400).json({ error: 'Missing avatar_id' });
     }
     
+    const client = await pool.connect();
     try {
-        const user = await pool.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
-        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const userId = user.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userId = user.id;
 
-        const owned = await pool.query(
+        const owned = await client.query(
             'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
             [userId, avatar_id]
         );
@@ -300,11 +269,13 @@ router.post('/avatar', async (req, res) => {
             return res.status(403).json({ error: 'Avatar not owned' });
         }
 
-        await pool.query('UPDATE users SET avatar_id = $1 WHERE id = $2', [avatar_id, userId]);
+        await client.query('UPDATE users SET avatar_id = $1 WHERE id = $2', [avatar_id, userId]);
         res.json({ success: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
     }
 });
 

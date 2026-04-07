@@ -35,7 +35,7 @@ let tradeTab = 'shop';
 let ratingTab = 'rating';
 
 // Глобальный базовый URL для API
-window.API_BASE = 'https://fight-club-api-4och.onrender.com';
+window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 

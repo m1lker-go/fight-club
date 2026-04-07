@@ -608,13 +608,13 @@ router.post('/link', async (req, res) => {
 });
 
 router.post('/refresh', async (req, res) => {
-    const { tg_id } = req.body;
-    if (!tg_id) return res.status(400).json({ error: 'tg_id is required' });
+    const { tg_id, user_id } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     const client = await pool.connect();
     try {
-        const userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
-        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const userId = userRes.rows[0].id;
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userId = user.id;
         await rechargeEnergy(client, userId);
         const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         const userData = updatedUser.rows[0];

@@ -1,15 +1,8 @@
-// settings.js
+// settings.js (исправленный)
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
-
-let timeoutId = setTimeout(() => {
-    if (vkLinkingInProgress) {
-        vkLinkingInProgress = false;
-        showToast('Привязка VK отменена (таймаут)', 1500);
-    }
-}, 120000);
 
 function showLogoutConfirmModal(onConfirm) {
     const modal = document.getElementById('roleModal');
@@ -50,7 +43,7 @@ async function renderSettings() {
     }
 
     try {
-        const res = await fetch(`${window.API_BASE}/auth/profile`, {
+        const res = await window.apiRequest('/auth/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to load profile');
@@ -127,7 +120,6 @@ async function renderSettings() {
             });
         }
 
-        // Обработчик кнопки смены никнейма
         const editNicknameBtn = document.getElementById('editNicknameBtn');
         if (editNicknameBtn) {
             editNicknameBtn.addEventListener('click', () => {
@@ -176,9 +168,8 @@ async function renderSettings() {
 async function updateSettings(updates) {
     const token = localStorage.getItem('sessionToken');
     try {
-        const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
+        const res = await window.apiRequest('/auth/update-settings', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, ...updates })
         });
         if (!res.ok) throw new Error('Failed to update');
@@ -221,23 +212,22 @@ function showNicknameEditModal(currentNickname) {
             return;
         }
         const token = localStorage.getItem('sessionToken');
-        // Проверка уникальности никнейма
-        const checkRes = await fetch(`${window.API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(newNickname)}`);
+        // Проверка уникальности никнейма через apiRequest
+        const checkRes = await window.apiRequest(`/auth/check-nickname?nickname=${encodeURIComponent(newNickname)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
             showToast('Никнейм уже занят', 1500);
             return;
         }
-        const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
+        const res = await window.apiRequest('/auth/update-settings', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, nickname: newNickname })
         });
         if (res.ok) {
             showToast('Никнейм изменён', 1500);
             closeModal();
-            renderSettings(); // обновить страницу настроек
-            if (currentScreen === 'main') renderMain(); // обновить главный экран
+            renderSettings();
+            if (currentScreen === 'main') renderMain();
         } else {
             const err = await res.json();
             showToast('Ошибка: ' + (err.error || 'неизвестная'), 1500);
@@ -257,13 +247,12 @@ function linkTelegram() {
     }
     window.telegramLinkingInProgress = true;
     
-    // Таймаут на случай, если окно не закроется или виджет зависнет
     const timeoutId = setTimeout(() => {
         if (window.telegramLinkingInProgress) {
             window.telegramLinkingInProgress = false;
             showToast('Привязка Telegram не удалась (таймаут). Попробуйте ещё раз.', 3000);
         }
-    }, 120000); // 2 минуты
+    }, 120000);
 
     const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
     const popup = window.open(oauthUrl, 'TelegramLink', 'width=600,height=600');
@@ -282,12 +271,9 @@ function linkTelegram() {
             clearTimeout(timeoutId);
             popup.close();
             const token = localStorage.getItem('sessionToken');
-            const res = await fetch(`${window.API_BASE}/auth/link`, {
+            const res = await window.apiRequest('/auth/link', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ provider: 'telegram', initData })
             });
             const data = await res.json();
@@ -304,7 +290,6 @@ function linkTelegram() {
 
     window.addEventListener('message', handleTelegramLink);
     
-    // Проверка закрытия окна (если пользователь закрыл вручную)
     const checkPopupClosed = setInterval(() => {
         if (popup.closed) {
             clearInterval(checkPopupClosed);
@@ -317,7 +302,6 @@ function linkTelegram() {
         }
     }, 1000);
 }
-
 
 function linkVK() {
     if (vkLinkingInProgress) {
@@ -362,12 +346,9 @@ function linkVK() {
             const { code, device_id } = response;
             const token = localStorage.getItem('sessionToken');
             try {
-                const res = await fetch(`${window.API_BASE}/auth/link`, {
+                const res = await window.apiRequest('/auth/link', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ provider: 'vk', code, device_id })
                 });
                 const data = await res.json();
@@ -399,13 +380,12 @@ function linkGoogle() {
     }
     googleLinkingInProgress = true;
     
-    // Таймаут на случай, если One Tap не появится или зависнет
     const timeoutId = setTimeout(() => {
         if (googleLinkingInProgress) {
             googleLinkingInProgress = false;
             showToast('Привязка Google не удалась (таймаут). Попробуйте ещё раз.', 3000);
         }
-    }, 30000); // 30 секунд
+    }, 30000);
 
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
@@ -417,12 +397,9 @@ function linkGoogle() {
                 googleLinkingInProgress = false;
                 const idToken = response.credential;
                 const token = localStorage.getItem('sessionToken');
-                const res = await fetch(`${window.API_BASE}/auth/link`, {
+                const res = await window.apiRequest('/auth/link', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ provider: 'google', idToken })
                 });
                 const data = await res.json();

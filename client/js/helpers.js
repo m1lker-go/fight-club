@@ -1,4 +1,4 @@
-// helpers.js
+// helpers.js – исправленная версия с apiRequest и поддержкой user_id
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
@@ -419,11 +419,9 @@ function showEquipCompareModal(oldItem, newItem) {
     if (newBtn) {
         newBtn.addEventListener('click', async () => {
             const currentClass = document.querySelector('.class-btn.active').dataset.class;
-            const res = await fetch(`${window.API_BASE}/inventory/equip`, {
+            const res = await window.apiRequest('/inventory/equip', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    tg_id: userData.tg_id, 
                     item_id: newItem.id,
                     target_class: currentClass
                 })
@@ -453,7 +451,7 @@ function hasAnyUnspentSkillPoints() {
 window.hasAnyUnspentSkillPoints = hasAnyUnspentSkillPoints;
 
 function updateMainMenuNewIcons() {
-    if (!userData || !userData.tg_id) return;
+    if (!userData || !userData.id) return;
     const tasksMenuItem = document.querySelector('.menu-item[data-screen="tasks"]');
     if (!tasksMenuItem) return;
     const hasUnclaimed = typeof hasUnclaimedTasks === 'function' ? hasUnclaimedTasks() : false;
@@ -476,11 +474,11 @@ function updateMainMenuNewIcons() {
 window.updateMainMenuNewIcons = updateMainMenuNewIcons;
 
 function updateTradeButtonIcon() {
-    if (!userData || !userData.tg_id) return;
+    if (!userData || !userData.id) return;
     const tradeBtn = document.querySelector('[data-screen="trade"]');
     if (!tradeBtn) return;
 
-    fetch(`${window.API_BASE}/player/freechest?tg_id=${userData.tg_id}`)
+    window.apiRequest('/player/freechest', { method: 'GET' })
         .then(res => res.json())
         .then(data => {
             const freeAvailable = data.freeAvailable;
@@ -529,11 +527,11 @@ function updateProfileAvatarIcon() {
 window.updateProfileAvatarIcon = updateProfileAvatarIcon;
 
 function updateShopTabIcon() {
-    if (!userData || !userData.tg_id) return;
+    if (!userData || !userData.id) return;
     const shopBtn = document.getElementById('tradeShopBtn');
     if (!shopBtn) return;
 
-    fetch(`${window.API_BASE}/player/freechest?tg_id=${userData.tg_id}`)
+    window.apiRequest('/player/freechest', { method: 'GET' })
         .then(res => res.json())
         .then(data => {
             const freeAvailable = data.freeAvailable;

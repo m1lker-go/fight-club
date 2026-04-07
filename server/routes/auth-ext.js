@@ -104,13 +104,15 @@ async function exchangeVkCode(code, device_id) {
         client_id: process.env.VK_APP_ID,
         client_secret: process.env.VK_CLIENT_SECRET,
         redirect_uri: process.env.VK_CALLBACK_URL,
-        device_id: device_id   // ← добавляем device_id
+        device_id: device_id
     });
-    const url = `https://id.vk.ru/oauth2/auth?${params}`;
-    console.log('[VK exchange] requesting URL:', url);
+    const url = 'https://id.vk.ru/oauth2/auth';
+    console.log('[VK exchange] requesting POST to', url);
+    console.log('[VK exchange] body:', params.toString());
     const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
     });
     const data = await response.json();
     console.log('[VK exchange] response status:', response.status);

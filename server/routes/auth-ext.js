@@ -226,8 +226,15 @@ router.post('/telegram-auto', async (req, res) => {
 router.get('/telegram/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('Missing code');
-    // Проверка state (можно сравнить с тем, что сохранили в localStorage, но у вас нет доступа к localStorage на сервере. Можно передать state в сессию или просто игнорировать для простоты, но лучше использовать session)
-    // Для упрощения пропустим проверку state, но в production добавьте.
+
+    // Расшифровываем state
+    let stateObj = {};
+    try {
+        stateObj = JSON.parse(state);
+    } catch(e) {
+        // Если state не JSON, значит это старый формат (или ошибка)
+        stateObj = { mode: 'login' };
+    }
 
     const clientId = process.env.TELEGRAM_CLIENT_ID;
     const clientSecret = process.env.TELEGRAM_CLIENT_SECRET;
@@ -249,23 +256,49 @@ router.get('/telegram/callback', async (req, res) => {
         if (tokenData.error) throw new Error(tokenData.error_description);
 
         const { id_token } = tokenData;
-        // id_token — это JWT. Декодируем его (без проверки подписи, можно проверить через библиотеку)
         const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
-        const tgId = payload.sub; // это число (telegram user id)
+        const tgId = payload.sub;
         const username = payload.username || `user_${tgId}`;
-        const firstName = payload.first_name;
-        const lastName = payload.last_name;
-        const photoUrl = payload.photo_url;
 
-        // Теперь у вас есть tgId. Далее — логин или создание пользователя, аналогично /auth/telegram-auto
         const client = await pool.connect();
         try {
+            // Если это привязка (mode = link)
+            if (stateObj.mode === 'link') {
+                const sessionToken = stateObj.token;
+                if (!sessionToken) throw new Error('No session token for linking');
+
+                const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
+                if (userRes.rows.length === 0) throw new Error('Invalid session');
+                const userId = userRes.rows[0].id;
+
+                // Проверяем, не привязан ли уже этот Telegram к другому пользователю
+                const existing = await client.query(
+                    'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
+                    ['telegram', String(tgId)]
+                );
+                if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
+                    throw new Error('Этот Telegram уже привязан к другому аккаунту');
+                }
+
+                // Сохраняем связь
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'telegram', $2, $3, $4)
+                     ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+                    [userId, String(tgId), null, JSON.stringify(payload)]
+                );
+                // Обновляем tg_id в таблице users, если его нет
+                await client.query('UPDATE users SET tg_id = $1 WHERE id = $2 AND tg_id IS NULL', [tgId, userId]);
+
+                return res.redirect(`${process.env.CLIENT_URL}?telegram_link=success`);
+            }
+
+            // Иначе – обычный вход (mode = login или не указан)
             let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
             let userData;
             let needNickname = false;
 
             if (userRes.rows.length === 0) {
-                // Создаём нового пользователя
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 const newUser = await client.query(
                     `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
@@ -295,7 +328,6 @@ router.get('/telegram/callback', async (req, res) => {
             const sessionToken = generateToken();
             await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
-            // Редиректим обратно на клиент с параметрами
             const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
             res.redirect(redirectUrl);
         } finally {
@@ -303,7 +335,7 @@ router.get('/telegram/callback', async (req, res) => {
         }
     } catch (err) {
         console.error('Telegram OIDC error:', err);
-        res.status(500).send('Authentication failed');
+        res.status(500).send('Authentication failed: ' + err.message);
     }
 });
 

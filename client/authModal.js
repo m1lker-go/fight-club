@@ -82,18 +82,12 @@ function loginWithTelegramOIDC() {
 
     const clientId = '8215458077';
     const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/telegram/callback');
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = generateCodeChallenge(codeVerifier);
-    const stateObj = {
-        verifier: codeVerifier,
-        random: Math.random().toString(36).substring(2)
-    };
-    const state = encodeURIComponent(JSON.stringify(stateObj));
-    localStorage.setItem('telegram_oauth_state', stateObj.random);
-    localStorage.setItem('telegram_code_verifier', codeVerifier);
-    const url = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+    const state = Math.random().toString(36).substring(2);
+    localStorage.setItem('telegram_oauth_state', state);
+    const url = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile&state=${state}`;
     window.location.href = url;
 }
+
 
 function generateCodeVerifier() {
     const array = new Uint8Array(32);

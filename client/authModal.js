@@ -47,7 +47,19 @@ function showAuthModal() {
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
 
-    document.getElementById('telegramAuthBtn')?.addEventListener('click', loginWithTelegram);
+    // Определяем, открыто ли приложение внутри Telegram WebApp
+    const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+    const telegramBtn = document.getElementById('telegramAuthBtn');
+    if (telegramBtn) {
+        if (isTelegramWebApp) {
+            // Внутри Telegram автовход работает через checkAuth, кнопка не нужна
+            telegramBtn.style.display = 'none';
+        } else {
+            // В браузере используем OIDC
+            telegramBtn.addEventListener('click', loginWithTelegramOIDC);
+        }
+    }
+
     document.getElementById('googleAuthBtn')?.addEventListener('click', loginWithGoogle);
     document.getElementById('vkAuthBtn')?.addEventListener('click', loginWithVK);
     document.getElementById('emailAuthBtn')?.addEventListener('click', () => {
@@ -60,77 +72,20 @@ function showAuthModal() {
     document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
 }
 
-// ========== TELEGRAM OAuth через виджет ==========
-async function loginWithTelegram() {
+// ========== TELEGRAM OAuth через OpenID Connect (только для браузера) ==========
+function loginWithTelegramOIDC() {
     if (telegramLoginInProgress) {
         showToast('Вход через Telegram уже выполняется', 1500);
         return;
     }
     telegramLoginInProgress = true;
 
-    const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
-    const popup = window.open(oauthUrl, 'TelegramAuth', 'width=600,height=600');
-    if (!popup) {
-        telegramLoginInProgress = false;
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
-        return;
-    }
-
-    let timeoutId = setTimeout(() => {
-        if (telegramLoginInProgress) {
-            telegramLoginInProgress = false;
-            window.removeEventListener('message', handleTelegramMessage);
-            if (popup && !popup.closed) popup.close();
-            showToast('Вход отменён или окно закрыто', 1500);
-        }
-    }, 120000);
-
-    const handleTelegramMessage = async (event) => {
-        if (event.origin !== 'https://oauth.telegram.org') return;
-        const { initData } = event.data;
-        if (initData) {
-            clearTimeout(timeoutId);
-            popup.close();
-            try {
-                const res = await fetch(`${window.API_BASE}/auth/telegram-oauth`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ initData })
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needNickname && typeof showNicknameModal === 'function') {
-                        showNicknameModal(data.userId);
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    showToast(data.error, 1500);
-                }
-            } catch (err) {
-                console.error('Telegram auth fetch error:', err);
-                showToast('Ошибка соединения, попробуйте позже', 1500);
-            } finally {
-                telegramLoginInProgress = false;
-                window.removeEventListener('message', handleTelegramMessage);
-            }
-        }
-    };
-
-    window.addEventListener('message', handleTelegramMessage);
-    const checkPopupClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkPopupClosed);
-            clearTimeout(timeoutId);
-            if (telegramLoginInProgress) {
-                telegramLoginInProgress = false;
-                window.removeEventListener('message', handleTelegramMessage);
-                showToast('Вход отменён', 1500);
-            }
-        }
-    }, 1000);
+    const clientId = '8215458077'; // ваш Client ID из BotFather
+    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
+    const state = Math.random().toString(36).substring(2);
+    localStorage.setItem('telegram_oauth_state', state);
+    const url = `https://oauth.telegram.org/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid&state=${state}`;
+    window.location.href = url;
 }
 
 // ========== GOOGLE OAuth через редирект ==========
@@ -149,7 +104,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== VK OAuth через Low-code SDK (ИСПРАВЛЕННЫЙ) ==========
+// ========== VK OAuth через Low-code SDK (исправленный) ==========
 async function loginWithVK() {
     if (vkLoginInProgress) {
         showToast('Вход через VK уже выполняется', 1500);
@@ -192,7 +147,6 @@ async function loginWithVK() {
             clearTimeout(timeoutId);
             const { code, device_id } = response;
             try {
-                // Обмениваем код на токен на клиенте (PKCE)
                 const tokenData = await VKID.Auth.exchangeCode(code, device_id);
                 const { access_token, user_id, email } = tokenData;
                 
@@ -322,15 +276,6 @@ async function submitNickname() {
         console.error(err);
         showToast('Ошибка соединения', 1500);
     }
-}
-
-function loginWithTelegramOIDC() {
-    const clientId = 'ваш_Client_ID'; // или возьмите из переменной окружения на клиенте (но лучше хранить на сервере)
-    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
-    const state = Math.random().toString(36).substring(2); // для защиты от CSRF
-    localStorage.setItem('telegram_oauth_state', state);
-    const url = `https://oauth.telegram.org/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid&state=${state}`;
-    window.location.href = url;
 }
 
 function showNicknameModal(userId) {

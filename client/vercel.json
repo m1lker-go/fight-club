@@ -14,6 +14,7 @@
     }
   ],
   "routes": [
+    { "src": "/auth/telegram/callback", "dest": "https://api.cat-fight.ru/auth/telegram/callback" },
     { "src": "/style.css", "dest": "/client/style.css" },
     { "src": "/favicon.ico", "dest": "/client/favicon.ico" },
     { "src": "/assets/(.*)", "dest": "/client/assets/$1" },

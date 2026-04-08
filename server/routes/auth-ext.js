@@ -227,21 +227,21 @@ router.get('/telegram/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('Missing code');
 
-    // Получаем code_verifier из localStorage клиента – но на сервере его нет!
-    // Нужно передавать code_verifier в state. Поэтому мы будем ожидать, что state содержит JSON с code_verifier.
-    // Но для упрощения, мы можем не проверять PKCE (Telegram может его не требовать, если явно не указан code_challenge_method).
-    // Однако мы его указали, значит, при обмене нужно передать code_verifier.
-    // Единственный способ – передать code_verifier через state.
-    
     let codeVerifier = null;
+    let isLink = false;
+    let sessionToken = null;
     let stateObj = {};
+
     try {
         stateObj = JSON.parse(state);
-        codeVerifier = stateObj.verifier;
+        codeVerifier = stateObj.verifier || null;
+        isLink = stateObj.mode === 'link';
+        sessionToken = stateObj.token || null;
     } catch(e) {
-        // Если state не JSON, то это старый формат
+        // Если state не JSON (старый формат), игнорируем PKCE
+        console.warn('State is not JSON, PKCE disabled');
     }
-    
+
     const clientId = process.env.TELEGRAM_CLIENT_ID;
     const clientSecret = process.env.TELEGRAM_CLIENT_SECRET;
     const redirectUri = process.env.TELEGRAM_REDIRECT_URI;
@@ -263,7 +263,10 @@ router.get('/telegram/callback', async (req, res) => {
             body: new URLSearchParams(tokenParams)
         });
         const tokenData = await tokenResponse.json();
-        if (tokenData.error) throw new Error(tokenData.error_description);
+        if (tokenData.error) {
+            console.error('Telegram token error:', tokenData);
+            throw new Error(tokenData.error_description || 'Token exchange failed');
+        }
 
         const { id_token } = tokenData;
         const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
@@ -272,10 +275,8 @@ router.get('/telegram/callback', async (req, res) => {
 
         const client = await pool.connect();
         try {
-            // Проверяем, есть ли режим link (можно передать в state)
-            const isLink = stateObj.mode === 'link';
             if (isLink) {
-                const sessionToken = stateObj.token;
+                // Привязка (оставляем как было)
                 if (!sessionToken) throw new Error('No session token for linking');
                 const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
                 if (userRes.rows.length === 0) throw new Error('Invalid session');
@@ -323,9 +324,9 @@ router.get('/telegram/callback', async (req, res) => {
                     userData = userRes.rows[0];
                     needNickname = !userData.nickname;
                 }
-                const sessionToken = generateToken();
-                await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-                const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
+                const sessionTokenNew = generateToken();
+                await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionTokenNew, userData.id]);
+                const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionTokenNew}&needNickname=${needNickname}&userId=${userData.id}`;
                 res.redirect(redirectUrl);
             }
         } finally {

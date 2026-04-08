@@ -60,10 +60,18 @@ async function loadCurrentForgeItems() {
             method: 'GET',
             body: { tab: currentForgeTab }
         });
+        const text = await res.text();
+        console.log('[loadCurrentForgeItems] raw response:', text);
         if (res.ok) {
-            const data = await res.json();
-            window.forgeItems = Array.isArray(data) ? data : [];
+            try {
+                const data = JSON.parse(text);
+                window.forgeItems = Array.isArray(data) ? data : [];
+            } catch(e) {
+                console.error('Invalid JSON:', text);
+                window.forgeItems = [];
+            }
         } else {
+            console.error('Server error status:', res.status, text);
             window.forgeItems = [];
         }
     } catch (e) {

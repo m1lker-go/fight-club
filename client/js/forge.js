@@ -163,6 +163,7 @@ function addToForge(item) {
         showToast('Предмет уже в кузнице', 1500);
         return;
     }
+    console.log('[addToForge] Sending request for item', item.id, 'tab', currentForgeTab);
     window.apiRequest('/forge/add', {
         method: 'POST',
         body: JSON.stringify({ 
@@ -171,18 +172,22 @@ function addToForge(item) {
         })
     })
     .then(async res => {
+        console.log('[addToForge] Response status:', res.status);
+        const data = await res.json();
+        console.log('[addToForge] Response data:', data);
         if (res.ok) {
             forgeItems.push(item.id);
+            console.log('[addToForge] forgeItems after push:', forgeItems);
             await refreshData();
+            console.log('[addToForge] after refreshData, inventory length:', inventory.length);
             renderForgeSlots();
             loadForgeInventory();
         } else {
-            const err = await res.json();
-            showToast('Ошибка: ' + err.error, 1500);
+            showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
         }
     })
     .catch(err => {
-        console.error(err);
+        console.error('[addToForge] Fetch error:', err);
         showToast('Ошибка соединения', 1500);
     });
 }

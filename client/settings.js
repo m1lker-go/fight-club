@@ -245,62 +245,15 @@ function linkTelegram() {
         return;
     }
     window.telegramLinkingInProgress = true;
-    
-    const timeoutId = setTimeout(() => {
-        if (window.telegramLinkingInProgress) {
-            window.telegramLinkingInProgress = false;
-            showToast('Привязка Telegram не удалась (таймаут). Попробуйте ещё раз.', 3000);
-        }
-    }, 120000);
 
-    const oauthUrl = `https://oauth.telegram.org/embed/CatFightingBot?origin=${encodeURIComponent(window.location.origin)}&size=large`;
-    const popup = window.open(oauthUrl, 'TelegramLink', 'width=600,height=600');
-
-    if (!popup) {
-        clearTimeout(timeoutId);
-        window.telegramLinkingInProgress = false;
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 1500);
-        return;
-    }
-
-    const handleTelegramLink = async (event) => {
-        if (event.origin !== 'https://oauth.telegram.org') return;
-        const { initData } = event.data;
-        if (initData) {
-            clearTimeout(timeoutId);
-            popup.close();
-            const token = localStorage.getItem('sessionToken');
-            const res = await window.apiRequest('/auth/link', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ provider: 'telegram', initData })
-            });
-            const data = await res.json();
-            window.telegramLinkingInProgress = false;
-            if (data.success) {
-                showToast('Telegram аккаунт привязан', 1500);
-                renderSettings();
-            } else {
-                showToast('Ошибка: ' + data.error, 1500);
-            }
-            window.removeEventListener('message', handleTelegramLink);
-        }
-    };
-
-    window.addEventListener('message', handleTelegramLink);
-    
-    const checkPopupClosed = setInterval(() => {
-        if (popup.closed) {
-            clearInterval(checkPopupClosed);
-            clearTimeout(timeoutId);
-            if (window.telegramLinkingInProgress) {
-                window.telegramLinkingInProgress = false;
-                showToast('Привязка Telegram отменена', 1500);
-            }
-            window.removeEventListener('message', handleTelegramLink);
-        }
-    }, 1000);
+    const clientId = '8215458077';
+    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
+    const state = JSON.stringify({ mode: 'link', token: localStorage.getItem('sessionToken') });
+    localStorage.setItem('telegram_link_state', state);
+    const url = `https://oauth.telegram.org/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid&state=${encodeURIComponent(state)}`;
+    window.location.href = url;
 }
+
 
 function linkVK() {
     if (vkLinkingInProgress) {

@@ -163,11 +163,11 @@ function getRarityColor(rarity) {
 
 async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    if (window.forgeItems && window.forgeItems.length >= slotCount) {
+    if (forgeItems.length >= slotCount) {
         showToast('Все слоты заняты', 1500);
         return;
     }
-    if (window.forgeItems && window.forgeItems.includes(item.id)) {
+    if (forgeItems.includes(item.id)) {
         showToast('Предмет уже в кузнице', 1500);
         return;
     }
@@ -181,15 +181,13 @@ async function addToForge(item) {
         });
         const data = await res.json();
         if (res.ok) {
-            await refreshData();
-            if (currentScreen === 'forge') {
-                await refreshForgeUI();
-            }
+            // Принудительно перезагружаем страницу, чтобы гарантированно обновить состояние
+            location.reload();
         } else {
             showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
         }
     } catch (err) {
-        console.error('[addToForge] Fetch error:', err);
+        console.error(err);
         showToast('Ошибка соединения', 1500);
     }
 }

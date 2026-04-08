@@ -81,7 +81,7 @@ function loginWithTelegramOIDC() {
     telegramLoginInProgress = true;
 
     const clientId = '8215458077';
-    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
+  const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/telegram/callback');
     
     // Генерируем случайный state и code_verifier
     const state = Math.random().toString(36).substring(2);

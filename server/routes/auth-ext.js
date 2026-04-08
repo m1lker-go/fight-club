@@ -227,20 +227,9 @@ router.get('/telegram/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('Missing code');
 
-    let codeVerifier = null;
-    let isLink = false;
-    let sessionToken = null;
-    let stateObj = {};
-
-    try {
-        stateObj = JSON.parse(state);
-        codeVerifier = stateObj.verifier || null;
-        isLink = stateObj.mode === 'link';
-        sessionToken = stateObj.token || null;
-    } catch(e) {
-        // Если state не JSON (старый формат), игнорируем PKCE
-        console.warn('State is not JSON, PKCE disabled');
-    }
+    // Если state пришёл как строка (не JSON), используем его как есть
+    let stateStr = state;
+    console.log('Telegram state:', stateStr);
 
     const clientId = process.env.TELEGRAM_CLIENT_ID;
     const clientSecret = process.env.TELEGRAM_CLIENT_SECRET;
@@ -254,9 +243,6 @@ router.get('/telegram/callback', async (req, res) => {
             redirect_uri: redirectUri,
             grant_type: 'authorization_code'
         };
-        if (codeVerifier) {
-            tokenParams.code_verifier = codeVerifier;
-        }
         const tokenResponse = await fetch('https://oauth.telegram.org/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -275,60 +261,39 @@ router.get('/telegram/callback', async (req, res) => {
 
         const client = await pool.connect();
         try {
-            if (isLink) {
-                // Привязка (оставляем как было)
-                if (!sessionToken) throw new Error('No session token for linking');
-                const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
-                if (userRes.rows.length === 0) throw new Error('Invalid session');
-                const userId = userRes.rows[0].id;
-
-                const existing = await client.query(
-                    'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
-                    ['telegram', String(tgId)]
+            // Проверяем, есть ли уже такой пользователь
+            let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
+            let userData;
+            let needNickname = false;
+            if (userRes.rows.length === 0) {
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                const newUser = await client.query(
+                    `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
-                if (existing.rows.length > 0 && existing.rows[0].user_id !== userId) {
-                    throw new Error('Этот Telegram уже привязан к другому аккаунту');
+                userData = newUser.rows[0];
+                needNickname = true;
+
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
                 }
                 await client.query(
                     `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-                     VALUES ($1, 'telegram', $2, $3, $4)
-                     ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
-                    [userId, String(tgId), null, JSON.stringify(payload)]
+                     VALUES ($1, 'telegram', $2, $3, $4)`,
+                    [userData.id, String(tgId), null, JSON.stringify(payload)]
                 );
-                await client.query('UPDATE users SET tg_id = $1 WHERE id = $2 AND tg_id IS NULL', [tgId, userId]);
-                return res.redirect(`${process.env.CLIENT_URL}?telegram_link=success`);
             } else {
-                // Обычный вход
-                let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
-                let userData;
-                let needNickname = false;
-                if (userRes.rows.length === 0) {
-                    const referralCode = Math.random().toString(36).substring(2, 10);
-                    const newUser = await client.query(
-                        `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-                        [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
-                    );
-                    userData = newUser.rows[0];
-                    needNickname = true;
-                    const classes = ['warrior', 'assassin', 'mage'];
-                    for (let cls of classes) {
-                        await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
-                    }
-                    await client.query(
-                        `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-                         VALUES ($1, 'telegram', $2, $3, $4)`,
-                        [userData.id, String(tgId), null, JSON.stringify(payload)]
-                    );
-                } else {
-                    userData = userRes.rows[0];
-                    needNickname = !userData.nickname;
-                }
-                const sessionTokenNew = generateToken();
-                await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionTokenNew, userData.id]);
-                const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionTokenNew}&needNickname=${needNickname}&userId=${userData.id}`;
-                res.redirect(redirectUrl);
+                userData = userRes.rows[0];
+                needNickname = !userData.nickname;
             }
+
+            const sessionToken = generateToken();
+            await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+
+            const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
+            res.redirect(redirectUrl);
         } finally {
             client.release();
         }
@@ -337,6 +302,7 @@ router.get('/telegram/callback', async (req, res) => {
         res.status(500).send('Authentication failed: ' + err.message);
     }
 });
+
 
 // ========== VK LOW-CODE ВХОД (принимает access_token с клиента) ==========
 router.post('/vk-lowcode', async (req, res) => {

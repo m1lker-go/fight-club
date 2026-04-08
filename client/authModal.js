@@ -324,6 +324,15 @@ async function submitNickname() {
     }
 }
 
+function loginWithTelegramOIDC() {
+    const clientId = 'ваш_Client_ID'; // или возьмите из переменной окружения на клиенте (но лучше хранить на сервере)
+    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
+    const state = Math.random().toString(36).substring(2); // для защиты от CSRF
+    localStorage.setItem('telegram_oauth_state', state);
+    const url = `https://oauth.telegram.org/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid&state=${state}`;
+    window.location.href = url;
+}
+
 function showNicknameModal(userId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');

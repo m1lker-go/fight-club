@@ -1,4 +1,12 @@
 {
+  "headers": [
+    {
+      "source": "/style.css",
+      "headers": [
+        { "key": "Content-Type", "value": "text/css" }
+      ]
+    }
+  ],
   "routes": [
     { "src": "/js/(.*)", "dest": "/js/$1" },
     { "src": "/(.*).js", "dest": "/$1.js" },

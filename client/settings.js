@@ -248,9 +248,19 @@ function linkTelegram() {
 
     const clientId = '8215458077';
     const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
-    const state = JSON.stringify({ mode: 'link', token: localStorage.getItem('sessionToken') });
-    localStorage.setItem('telegram_link_state', state);
-    const url = `https://oauth.telegram.org/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid&state=${encodeURIComponent(state)}`;
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+    const stateObj = {
+        mode: 'link',
+        token: localStorage.getItem('sessionToken'),
+        verifier: codeVerifier,
+        random: Math.random().toString(36).substring(2)
+    };
+    const state = encodeURIComponent(JSON.stringify(stateObj));
+    localStorage.setItem('telegram_link_state', stateObj.random);
+    localStorage.setItem('telegram_code_verifier', codeVerifier);
+    
+    const url = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
     window.location.href = url;
 }
 

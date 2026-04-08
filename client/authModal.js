@@ -72,7 +72,7 @@ function showAuthModal() {
     document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
 }
 
-// ========== TELEGRAM OAuth через OpenID Connect (только для браузера) ==========
+// ========== TELEGRAM OAuth через OpenID Connect (рабочая версия) ==========
 function loginWithTelegramOIDC() {
     if (telegramLoginInProgress) {
         showToast('Вход через Telegram уже выполняется', 1500);
@@ -80,12 +80,31 @@ function loginWithTelegramOIDC() {
     }
     telegramLoginInProgress = true;
 
-    const clientId = '8215458077'; // ваш Client ID из BotFather
+    const clientId = '8215458077';
     const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
     const state = Math.random().toString(36).substring(2);
     localStorage.setItem('telegram_oauth_state', state);
-    const url = `https://oauth.telegram.org/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid&state=${state}`;
+    
+    // Генерируем code_verifier и code_challenge (PKCE)
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+    localStorage.setItem('telegram_code_verifier', codeVerifier);
+    
+    const url = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
     window.location.href = url;
+}
+
+function generateCodeVerifier() {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function generateCodeChallenge(verifier) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
 // ========== GOOGLE OAuth через редирект ==========

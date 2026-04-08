@@ -247,7 +247,7 @@ function linkTelegram() {
     window.telegramLinkingInProgress = true;
 
     const clientId = '8215458077';
-    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
+   const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/telegram/callback');
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const stateObj = {

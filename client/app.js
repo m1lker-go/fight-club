@@ -45,19 +45,28 @@ window.apiRequest = async function(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
     const method = options.method || 'GET';
     
-    // Клонируем тело, если есть
-    let body = options.body ? JSON.parse(options.body) : {};
+    let bodyObj = {};
+    if (options.body) {
+        if (typeof options.body === 'object') {
+            bodyObj = options.body;
+        } else {
+            try {
+                bodyObj = JSON.parse(options.body);
+            } catch(e) {
+                bodyObj = {};
+            }
+        }
+    }
     
-    // Добавляем идентификаторы пользователя, если они известны
     if (userData && userData.id) {
-        body.user_id = userData.id;
+        bodyObj.user_id = userData.id;
     }
     if (userData && userData.tg_id) {
-        body.tg_id = userData.tg_id;
+        bodyObj.tg_id = userData.tg_id;
     }
     
     const fetchOptions = {
-        ...options,
+        method: method,
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {})
@@ -65,26 +74,17 @@ window.apiRequest = async function(endpoint, options = {}) {
     };
     
     if (method === 'GET') {
-        // Для GET запросов добавляем параметры в URL
         const params = new URLSearchParams();
-        if (body.user_id) params.append('user_id', body.user_id);
-        if (body.tg_id) params.append('tg_id', body.tg_id);
-        // Удаляем user_id и tg_id из тела, чтобы не отправлять их в body
-        delete body.user_id;
-        delete body.tg_id;
-        // Добавляем остальные параметры из body (если есть)
-        for (const [key, value] of Object.entries(body)) {
+        for (const [key, value] of Object.entries(bodyObj)) {
             if (value !== undefined && value !== null) {
                 params.append(key, value);
             }
         }
         const separator = url.includes('?') ? '&' : '?';
-        const newUrl = url + separator + params.toString();
-        delete fetchOptions.body;
-        return fetch(newUrl, fetchOptions);
+        const finalUrl = url + separator + params.toString();
+        return fetch(finalUrl, fetchOptions);
     } else {
-        // Для POST, PUT и т.д. отправляем body с добавленными полями
-        fetchOptions.body = JSON.stringify(body);
+        fetchOptions.body = JSON.stringify(bodyObj);
         return fetch(url, fetchOptions);
     }
 };

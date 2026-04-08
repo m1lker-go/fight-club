@@ -72,7 +72,7 @@ function showAuthModal() {
     document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
 }
 
-// ========== TELEGRAM OAuth через OpenID Connect (рабочая версия) ==========
+// ========== TELEGRAM OAuth через OpenID Connect (полностью рабочий) ==========
 function loginWithTelegramOIDC() {
     if (telegramLoginInProgress) {
         showToast('Вход через Telegram уже выполняется', 1500);
@@ -82,14 +82,17 @@ function loginWithTelegramOIDC() {
 
     const clientId = '8215458077';
     const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/telegram/callback');
-    const state = Math.random().toString(36).substring(2);
-    localStorage.setItem('telegram_oauth_state', state);
     
-    // Генерируем code_verifier и code_challenge (PKCE)
+    // Генерируем случайный state и code_verifier
+    const state = Math.random().toString(36).substring(2);
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
+    
+    // Сохраняем в localStorage для последующей проверки на сервере (state не используется на сервере, но можно)
+    localStorage.setItem('telegram_oauth_state', state);
     localStorage.setItem('telegram_code_verifier', codeVerifier);
     
+    // Формируем URL авторизации
     const url = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
     window.location.href = url;
 }

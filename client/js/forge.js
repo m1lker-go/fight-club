@@ -153,7 +153,7 @@ function getRarityColor(rarity) {
     return colors[rarity] || '#aaa';
 }
 
-function addToForge(item) {
+async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
     if (forgeItems.length >= slotCount) {
         showToast('Все слоты заняты', 1500);
@@ -163,33 +163,25 @@ function addToForge(item) {
         showToast('Предмет уже в кузнице', 1500);
         return;
     }
-    console.log('[addToForge] Sending request for item', item.id, 'tab', currentForgeTab);
-    window.apiRequest('/forge/add', {
-        method: 'POST',
-        body: JSON.stringify({ 
-            item_id: item.id,
-            tab: currentForgeTab
-        })
-    })
-    .then(async res => {
-        console.log('[addToForge] Response status:', res.status);
+    try {
+        const res = await window.apiRequest('/forge/add', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                item_id: item.id,
+                tab: currentForgeTab
+            })
+        });
         const data = await res.json();
-        console.log('[addToForge] Response data:', data);
         if (res.ok) {
-            forgeItems.push(item.id);
-            console.log('[addToForge] forgeItems after push:', forgeItems);
+            // После успешного добавления просто обновляем данные – экран перерисуется сам
             await refreshData();
-            console.log('[addToForge] after refreshData, inventory length:', inventory.length);
-            renderForgeSlots();
-            loadForgeInventory();
         } else {
             showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
         }
-    })
-    .catch(err => {
+    } catch (err) {
         console.error('[addToForge] Fetch error:', err);
         showToast('Ошибка соединения', 1500);
-    });
+    }
 }
 
 function buildStatsArray(item) {

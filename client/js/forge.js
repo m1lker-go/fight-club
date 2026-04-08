@@ -1,6 +1,9 @@
-// forge.js (исправленная версия)
+// forge.js (финальная исправленная версия)
 
 let currentForgeTab = 'forge';
+
+// Глобальное хранилище ID предметов в текущей вкладке кузницы
+window.forgeItems = [];
 
 async function renderForge() {
     const content = document.getElementById('content');
@@ -48,18 +51,23 @@ async function refreshForgeUI() {
 }
 
 async function loadCurrentForgeItems() {
-    if (!userData || !userData.id) return;
+    if (!userData || !userData.id) {
+        window.forgeItems = [];
+        return;
+    }
     try {
         const res = await window.apiRequest('/forge/current', {
             method: 'GET',
             body: { tab: currentForgeTab }
         });
         if (res.ok) {
-            window.forgeItems = await res.json();
+            const data = await res.json();
+            window.forgeItems = Array.isArray(data) ? data : [];
         } else {
             window.forgeItems = [];
         }
     } catch (e) {
+        console.error('[loadCurrentForgeItems] error:', e);
         window.forgeItems = [];
     }
 }
@@ -72,7 +80,7 @@ function renderForgeSlots() {
 
     let html = '';
     for (let i = 0; i < slotCount; i++) {
-        const itemId = window.forgeItems?.[i];
+        const itemId = window.forgeItems[i];
         const item = inventory.find(it => it.id === itemId);
         html += `
             <div class="forge-slot" data-slot-index="${i}" data-rarity="${item ? item.rarity : ''}">
@@ -84,8 +92,8 @@ function renderForgeSlots() {
 
     document.querySelectorAll('.forge-slot').forEach(slot => {
         slot.addEventListener('click', () => {
-            const index = slot.dataset.slotIndex;
-            const itemId = window.forgeItems?.[index];
+            const index = parseInt(slot.dataset.slotIndex);
+            const itemId = window.forgeItems[index];
             if (itemId) {
                 const item = inventory.find(it => it.id === itemId);
                 if (item) showForgeItemDetails(item, 'slot', index);
@@ -163,11 +171,11 @@ function getRarityColor(rarity) {
 
 async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    if (forgeItems.length >= slotCount) {
+    if (window.forgeItems.length >= slotCount) {
         showToast('Все слоты заняты', 1500);
         return;
     }
-    if (forgeItems.includes(item.id)) {
+    if (window.forgeItems.includes(item.id)) {
         showToast('Предмет уже в кузнице', 1500);
         return;
     }
@@ -181,13 +189,16 @@ async function addToForge(item) {
         });
         const data = await res.json();
         if (res.ok) {
-            // Принудительно перезагружаем страницу, чтобы гарантированно обновить состояние
-            location.reload();
+            // Обновляем данные пользователя и перерисовываем кузницу
+            await refreshData();
+            if (currentScreen === 'forge') {
+                await refreshForgeUI();
+            }
         } else {
             showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
         }
     } catch (err) {
-        console.error(err);
+        console.error('[addToForge] error:', err);
         showToast('Ошибка соединения', 1500);
     }
 }
@@ -320,24 +331,30 @@ function showClassChoiceForCraft(itemIds) {
 async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
-    const res = await window.apiRequest('/forge/craft', {
-        method: 'POST',
-        body: JSON.stringify({
-            item_ids: itemIds,
-            chosen_class: chosenClass
-        })
-    });
-    const data = await res.json();
-    if (data.success) {
-        showChestResult(data.item);
-        await refreshData();
-        if (currentScreen === 'forge') {
-            await refreshForgeUI();
+    try {
+        const res = await window.apiRequest('/forge/craft', {
+            method: 'POST',
+            body: JSON.stringify({
+                item_ids: itemIds,
+                chosen_class: chosenClass
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showChestResult(data.item);
+            await refreshData();
+            if (currentScreen === 'forge') {
+                await refreshForgeUI();
+            }
+        } else {
+            showToast('Ошибка: ' + data.error, 1500);
         }
-    } else {
-        showToast('Ошибка: ' + data.error, 1500);
+    } catch (err) {
+        console.error('[performCraft] error:', err);
+        showToast('Ошибка соединения', 1500);
+    } finally {
+        actionBtn.disabled = false;
     }
-    actionBtn.disabled = false;
 }
 
 async function performForgeAction() {
@@ -357,29 +374,36 @@ async function performForgeAction() {
             return;
         }
         showClassChoiceForCraft(window.forgeItems);
+        actionBtn.disabled = false; // кнопка разблокируется после закрытия модалки, но лучше сразу
     } else {
         if (!window.forgeItems || window.forgeItems.length === 0) {
             actionBtn.disabled = false;
             return;
         }
-        const res = await window.apiRequest('/forge/smelt', {
-            method: 'POST',
-            body: JSON.stringify({
-                item_ids: window.forgeItems
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
-            await refreshData();
-            if (currentScreen === 'forge') {
-                await refreshForgeUI();
+        try {
+            const res = await window.apiRequest('/forge/smelt', {
+                method: 'POST',
+                body: JSON.stringify({
+                    item_ids: window.forgeItems
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
+                await refreshData();
+                if (currentScreen === 'forge') {
+                    await refreshForgeUI();
+                }
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
             }
-        } else {
-            showToast('Ошибка: ' + data.error, 1500);
+        } catch (err) {
+            console.error('[performForgeAction] error:', err);
+            showToast('Ошибка соединения', 1500);
+        } finally {
+            actionBtn.disabled = false;
         }
     }
-    actionBtn.disabled = false;
 }
 
 window.renderForge = renderForge;

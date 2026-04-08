@@ -2,15 +2,22 @@
   "headers": [
     {
       "source": "/style.css",
-      "headers": [
-        { "key": "Content-Type", "value": "text/css" }
-      ]
+      "headers": [{ "key": "Content-Type", "value": "text/css" }]
+    },
+    {
+      "source": "/assets/favicon.png",
+      "headers": [{ "key": "Content-Type", "value": "image/png" }]
+    },
+    {
+      "source": "/assets/apple-touch-icon.png",
+      "headers": [{ "key": "Content-Type", "value": "image/png" }]
     }
   ],
   "routes": [
     { "src": "/style.css", "dest": "/client/style.css" },
-    { "src": "/js/(.*)", "dest": "/client/js/$1" },
+    { "src": "/favicon.ico", "dest": "/client/favicon.ico" },
     { "src": "/assets/(.*)", "dest": "/client/assets/$1" },
+    { "src": "/js/(.*)", "dest": "/client/js/$1" },
     { "src": "/(.*).js", "dest": "/client/$1.js" },
     { "src": "/(.*)", "dest": "/client/index.html" }
   ]

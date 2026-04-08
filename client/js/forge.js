@@ -1,6 +1,5 @@
-// forge.js (исправленный)
+// forge.js (исправленная версия)
 
-let forgeItems = [];
 let currentForgeTab = 'forge';
 
 async function renderForge() {
@@ -22,17 +21,14 @@ async function renderForge() {
         </div>
     `;
 
-    await loadCurrentForgeItems(currentForgeTab);
+    await refreshForgeUI();
 
     document.querySelectorAll('.forge-tab').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const newTab = e.target.dataset.forgeTab;
             if (newTab === currentForgeTab) return;
             currentForgeTab = newTab;
-            forgeItems = [];
-            await loadCurrentForgeItems(currentForgeTab);
-            renderForgeSlots();
-            loadForgeInventory();
+            await refreshForgeUI();
             document.querySelectorAll('.forge-tab').forEach(b => {
                 b.classList.toggle('active', b.dataset.forgeTab === currentForgeTab);
             });
@@ -42,33 +38,41 @@ async function renderForge() {
     });
 
     document.getElementById('forgeHelpBtn').addEventListener('click', showForgeHelp);
-
-    renderForgeSlots();
-    loadForgeInventory();
 }
 
-async function loadCurrentForgeItems(tab) {
+async function refreshForgeUI() {
+    await loadCurrentForgeItems();
+    renderForgeSlots();
+    loadForgeInventory();
+    updateForgeActionButton();
+}
+
+async function loadCurrentForgeItems() {
     if (!userData || !userData.id) return;
     try {
-        const res = await window.apiRequest(`/forge/current`, {
+        const res = await window.apiRequest('/forge/current', {
             method: 'GET',
-            body: { tab: tab }  // apiRequest добавит user_id и tg_id в query
+            body: { tab: currentForgeTab }
         });
-        if (res.ok) forgeItems = await res.json();
-        else forgeItems = [];
+        if (res.ok) {
+            window.forgeItems = await res.json();
+        } else {
+            window.forgeItems = [];
+        }
     } catch (e) {
-        forgeItems = [];
+        window.forgeItems = [];
     }
 }
 
 function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
+    if (!slotsContainer) return;
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
     slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, 70px)`;
 
     let html = '';
     for (let i = 0; i < slotCount; i++) {
-        const itemId = forgeItems[i];
+        const itemId = window.forgeItems?.[i];
         const item = inventory.find(it => it.id === itemId);
         html += `
             <div class="forge-slot" data-slot-index="${i}" data-rarity="${item ? item.rarity : ''}">
@@ -81,19 +85,22 @@ function renderForgeSlots() {
     document.querySelectorAll('.forge-slot').forEach(slot => {
         slot.addEventListener('click', () => {
             const index = slot.dataset.slotIndex;
-            const itemId = forgeItems[index];
+            const itemId = window.forgeItems?.[index];
             if (itemId) {
                 const item = inventory.find(it => it.id === itemId);
                 if (item) showForgeItemDetails(item, 'slot', index);
             }
         });
     });
+}
 
+function updateForgeActionButton() {
     const actionBtn = document.getElementById('forgeActionBtn');
+    if (!actionBtn) return;
     if (currentForgeTab === 'forge') {
-        actionBtn.disabled = forgeItems.length !== 3;
+        actionBtn.disabled = !window.forgeItems || window.forgeItems.length !== 3;
     } else {
-        actionBtn.disabled = forgeItems.length === 0;
+        actionBtn.disabled = !window.forgeItems || window.forgeItems.length === 0;
     }
     actionBtn.onclick = performForgeAction;
 }
@@ -105,6 +112,7 @@ async function loadForgeInventory() {
 
 function renderForgeInventory(items) {
     const container = document.getElementById('forgeInventory');
+    if (!container) return;
     container.innerHTML = '';
     items.forEach(item => {
         const statsArray = buildStatsArray(item);
@@ -155,11 +163,11 @@ function getRarityColor(rarity) {
 
 async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    if (forgeItems.length >= slotCount) {
+    if (window.forgeItems && window.forgeItems.length >= slotCount) {
         showToast('Все слоты заняты', 1500);
         return;
     }
-    if (forgeItems.includes(item.id)) {
+    if (window.forgeItems && window.forgeItems.includes(item.id)) {
         showToast('Предмет уже в кузнице', 1500);
         return;
     }
@@ -173,8 +181,10 @@ async function addToForge(item) {
         });
         const data = await res.json();
         if (res.ok) {
-            // После успешного добавления просто обновляем данные – экран перерисуется сам
             await refreshData();
+            if (currentScreen === 'forge') {
+                await refreshForgeUI();
+            }
         } else {
             showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
         }
@@ -228,16 +238,15 @@ function showForgeItemDetails(item, source, slotIndex = null) {
         document.getElementById('forgeAddBtn').addEventListener('click', () => addToForge(item));
     } else if (source === 'slot') {
         document.getElementById('forgeRemoveBtn').addEventListener('click', async () => {
-            const index = forgeItems.indexOf(item.id);
-            if (index > -1) forgeItems.splice(index, 1);
             const res = await window.apiRequest('/forge/remove', {
                 method: 'POST',
                 body: JSON.stringify({ item_id: item.id })
             });
             if (res.ok) {
                 await refreshData();
-                renderForgeSlots();
-                loadForgeInventory();
+                if (currentScreen === 'forge') {
+                    await refreshForgeUI();
+                }
                 modal.style.display = 'none';
             } else {
                 const err = await res.json();
@@ -323,11 +332,10 @@ async function performCraft(itemIds, chosenClass) {
     const data = await res.json();
     if (data.success) {
         showChestResult(data.item);
-        forgeItems = [];
         await refreshData();
-        await loadCurrentForgeItems(currentForgeTab);
-        renderForgeSlots();
-        loadForgeInventory();
+        if (currentScreen === 'forge') {
+            await refreshForgeUI();
+        }
     } else {
         showToast('Ошибка: ' + data.error, 1500);
     }
@@ -338,33 +346,37 @@ async function performForgeAction() {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
     if (currentForgeTab === 'forge') {
-        if (forgeItems.length !== 3) {
+        if (!window.forgeItems || window.forgeItems.length !== 3) {
             showToast('Нужно ровно 3 предмета', 1500);
+            actionBtn.disabled = false;
             return;
         }
-        const items = forgeItems.map(id => inventory.find(it => it.id === id));
+        const items = window.forgeItems.map(id => inventory.find(it => it.id === id));
         const rarities = items.map(it => it.rarity);
         if (!rarities.every(r => r === rarities[0])) {
             showToast('Предметы должны быть одной редкости', 1500);
+            actionBtn.disabled = false;
             return;
         }
-        showClassChoiceForCraft(forgeItems);
+        showClassChoiceForCraft(window.forgeItems);
     } else {
-        if (forgeItems.length === 0) return;
+        if (!window.forgeItems || window.forgeItems.length === 0) {
+            actionBtn.disabled = false;
+            return;
+        }
         const res = await window.apiRequest('/forge/smelt', {
             method: 'POST',
             body: JSON.stringify({
-                item_ids: forgeItems
+                item_ids: window.forgeItems
             })
         });
         const data = await res.json();
         if (data.success) {
             showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
-            forgeItems = [];
             await refreshData();
-            await loadCurrentForgeItems(currentForgeTab);
-            renderForgeSlots();
-            loadForgeInventory();
+            if (currentScreen === 'forge') {
+                await refreshForgeUI();
+            }
         } else {
             showToast('Ошибка: ' + data.error, 1500);
         }

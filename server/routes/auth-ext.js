@@ -54,13 +54,13 @@ async function handleTelegramLogin(initData, referralCode, client) {
 
     let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
     let userData;
-    let needNickname = false;
+    let needusername = false;
 
     if (userRes.rows.length === 0) {
         // Проверка по email (если есть) – чтобы не создавать дубликат
         let existingUser = null;
         if (user.email) {
-            const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [user.email]);
+            const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [user.email]);
             if (existing.rows.length > 0) {
                 existingUser = existing.rows[0];
             }
@@ -75,7 +75,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
                 [userId, String(tgId), user.email || null, JSON.stringify(user)]
             );
             userData = (await client.query('SELECT * FROM users WHERE id = $1', [userId])).rows[0];
-            needNickname = !userData.nickname;
+            needusername = !userData.username;
         } else {
             const newReferralCode = Math.random().toString(36).substring(2, 10);
             let referredById = null;
@@ -92,7 +92,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
                 [tgId, username, newReferralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true, referredById]
             );
             userData = newUser.rows[0];
-            needNickname = true;
+            needusername = true;
 
             const classes = ['warrior', 'assassin', 'mage'];
             for (let cls of classes) {
@@ -109,22 +109,22 @@ async function handleTelegramLogin(initData, referralCode, client) {
         }
     } else {
         userData = userRes.rows[0];
-        needNickname = !userData.nickname;
+        needusername = !userData.username;
     }
 
     const sessionToken = generateToken();
     await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-    return { sessionToken, needNickname, userId: userData.id, user: userData };
+    return { sessionToken, needusername, userId: userData.id, user: userData };
 }
 
 // ========== МАРШРУТЫ ==========
 
-router.get('/check-nickname', async (req, res) => {
-    const { nickname } = req.query;
-    if (!nickname) return res.status(400).json({ error: 'Nickname required' });
+router.get('/check-username', async (req, res) => {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: 'username required' });
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT id FROM users WHERE nickname = $1', [nickname]);
+        const result = await client.query('SELECT id FROM users WHERE username = $1', [username]);
         res.json({ available: result.rows.length === 0 });
     } finally { client.release(); }
 });
@@ -164,7 +164,7 @@ router.post('/verify-email', async (req, res) => {
         if (ver.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired code' });
 
         let userRes = await client.query('SELECT * FROM users WHERE email = $1', [email]);
-        let userData, needNickname = false;
+        let userData, needusername = false;
         if (userRes.rows.length === 0) {
             const referralCode = Math.random().toString(36).substring(2, 10);
             let tempUsername = email.split('@')[0];
@@ -174,7 +174,7 @@ router.post('/verify-email', async (req, res) => {
                 [email, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
             );
             userData = newUser.rows[0];
-            needNickname = true;
+            needusername = true;
             const classes = ['warrior', 'assassin', 'mage'];
             for (let cls of classes) {
                 await client.query(
@@ -188,7 +188,7 @@ router.post('/verify-email', async (req, res) => {
             );
         } else {
             userData = userRes.rows[0];
-            needNickname = !userData.nickname;
+            needusername = !userData.username;
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, email) VALUES ($1, 'email', $2) ON CONFLICT (user_id, provider) DO UPDATE SET email = $2`,
                 [userData.id, email]
@@ -201,7 +201,7 @@ router.post('/verify-email', async (req, res) => {
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
         await client.query('DELETE FROM email_verifications WHERE email = $1', [email]);
-        res.json({ success: true, sessionToken, needNickname, user: userData });
+        res.json({ success: true, sessionToken, needusername, user: userData });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -215,10 +215,10 @@ router.post('/telegram-oauth', async (req, res) => {
     if (!initData) return res.status(400).json({ error: 'No initData' });
     const client = await pool.connect();
     try {
-        const { sessionToken, needNickname, userId, user } = await handleTelegramLogin(initData, null, client);
+        const { sessionToken, needusername, userId, user } = await handleTelegramLogin(initData, null, client);
         await rechargeEnergy(client, user.id);
         const freshUser = await client.query('SELECT * FROM users WHERE id = $1', [user.id]);
-        res.json({ success: true, sessionToken, needNickname, userId, user: freshUser.rows[0] });
+        res.json({ success: true, sessionToken, needusername, userId, user: freshUser.rows[0] });
     } catch (err) {
         res.status(401).json({ error: err.message });
     } finally {
@@ -231,10 +231,10 @@ router.post('/telegram-auto', async (req, res) => {
     if (!initData) return res.status(400).json({ error: 'No initData' });
     const client = await pool.connect();
     try {
-        const { sessionToken, needNickname, userId, user } = await handleTelegramLogin(initData, referral_code, client);
+        const { sessionToken, needusername, userId, user } = await handleTelegramLogin(initData, referral_code, client);
         await rechargeEnergy(client, user.id);
         const freshUser = await client.query('SELECT * FROM users WHERE id = $1', [user.id]);
-        res.json({ success: true, sessionToken, needNickname, userId, user: freshUser.rows[0] });
+        res.json({ success: true, sessionToken, needusername, userId, user: freshUser.rows[0] });
     } catch (err) {
         res.status(401).json({ error: err.message });
     } finally {
@@ -282,12 +282,12 @@ router.get('/telegram/callback', async (req, res) => {
         try {
             let userRes = await client.query('SELECT * FROM users WHERE tg_id = $1', [tgId]);
             let userData;
-            let needNickname = false;
+            let needusername = false;
             if (userRes.rows.length === 0) {
                 // Проверка по email (если есть)
                 let existingUser = null;
                 if (payload.email) {
-                    const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [payload.email]);
+                    const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [payload.email]);
                     if (existing.rows.length > 0) {
                         existingUser = existing.rows[0];
                     }
@@ -301,7 +301,7 @@ router.get('/telegram/callback', async (req, res) => {
                         [userId, String(tgId), payload.email || null, JSON.stringify(payload)]
                     );
                     userData = (await client.query('SELECT * FROM users WHERE id = $1', [userId])).rows[0];
-                    needNickname = !userData.nickname;
+                    needusername = !userData.username;
                 } else {
                     const referralCode = Math.random().toString(36).substring(2, 10);
                     const newUser = await client.query(
@@ -310,7 +310,7 @@ router.get('/telegram/callback', async (req, res) => {
                         [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                     );
                     userData = newUser.rows[0];
-                    needNickname = true;
+                    needusername = true;
 
                     const classes = ['warrior', 'assassin', 'mage'];
                     for (let cls of classes) {
@@ -324,13 +324,13 @@ router.get('/telegram/callback', async (req, res) => {
                 }
             } else {
                 userData = userRes.rows[0];
-                needNickname = !userData.nickname;
+                needusername = !userData.username;
             }
 
             const sessionToken = generateToken();
             await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
-            const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
+            const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionToken}&needusername=${needusername}&userId=${userData.id}`;
             res.redirect(redirectUrl);
         } finally {
             client.release();
@@ -356,19 +356,19 @@ router.post('/vk-lowcode', async (req, res) => {
         );
 
         let userData;
-        let needNickname = false;
+        let needusername = false;
 
         if (existingConnection.rows.length > 0) {
             const userId = existingConnection.rows[0].user_id;
             await rechargeEnergy(client, userId);
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
-            needNickname = !userData.nickname;
+            needusername = !userData.username;
         } else {
             // Проверяем, нет ли пользователя с таким же email
             let existingUser = null;
             if (email) {
-                const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [email]);
+                const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [email]);
                 if (existing.rows.length > 0) {
                     existingUser = existing.rows[0];
                 }
@@ -382,13 +382,13 @@ router.post('/vk-lowcode', async (req, res) => {
                      VALUES ($1, 'vk', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
                     [userId, String(user_id), email || null, JSON.stringify({ access_token, user_id, email })]
                 );
-                if (!existingUser.nickname && email) {
+                if (!existingUser.username && email) {
                     let tempUsername = email.split('@')[0];
                     await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
                 }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 userData = userRes.rows[0];
-                needNickname = !userData.nickname;
+                needusername = !userData.username;
             } else {
                 // Создаём нового пользователя
                 const referralCode = Math.random().toString(36).substring(2, 10);
@@ -399,7 +399,7 @@ router.post('/vk-lowcode', async (req, res) => {
                     [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
                 userData = newUser.rows[0];
-                needNickname = true;
+                needusername = true;
 
                 const classes = ['warrior', 'assassin', 'mage'];
                 for (let cls of classes) {
@@ -422,7 +422,7 @@ router.post('/vk-lowcode', async (req, res) => {
         res.json({
             success: true,
             sessionToken,
-            needNickname,
+            needusername,
             userId: userData.id,
             user: userData
         });
@@ -460,14 +460,14 @@ router.post('/google', async (req, res) => {
                 const userData = userRes.rows[0];
                 const sessionToken = generateToken();
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-                const needNickname = !userData.nickname;
-                return res.json({ success: true, sessionToken, needNickname, user: userData });
+                const needusername = !userData.username;
+                return res.json({ success: true, sessionToken, needusername, user: userData });
             }
 
             // Проверка по email
             let existingUser = null;
             if (email) {
-                const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [email]);
+                const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [email]);
                 if (existing.rows.length > 0) {
                     existingUser = existing.rows[0];
                 }
@@ -480,7 +480,7 @@ router.post('/google', async (req, res) => {
                      VALUES ($1, 'google', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
                     [userId, googleId, email, JSON.stringify(payload)]
                 );
-                if (!existingUser.nickname && email) {
+                if (!existingUser.username && email) {
                     let tempUsername = email.split('@')[0];
                     await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
                 }
@@ -488,8 +488,8 @@ router.post('/google', async (req, res) => {
                 const userData = userRes.rows[0];
                 const sessionToken = generateToken();
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-                const needNickname = !userData.nickname;
-                return res.json({ success: true, sessionToken, needNickname, user: userData });
+                const needusername = !userData.username;
+                return res.json({ success: true, sessionToken, needusername, user: userData });
             } else {
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
@@ -513,7 +513,7 @@ router.post('/google', async (req, res) => {
                 }
                 const sessionToken = generateToken();
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-                res.json({ success: true, sessionToken, needNickname: true, user: userData });
+                res.json({ success: true, sessionToken, needusername: true, user: userData });
             }
         } finally {
             client.release();
@@ -574,20 +574,20 @@ router.get('/profile', async (req, res) => {
 });
 
 router.post('/update-settings', async (req, res) => {
-    const { token, sound_enabled, music_enabled, nickname } = req.body;
+    const { token, sound_enabled, music_enabled, username } = req.body;
     if (!token) return res.status(401).json({ error: 'No token' });
     const client = await pool.connect();
     try {
         const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
         if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
         const userId = userRes.rows[0].id;
-        if (nickname) {
-            const nickCheck = await client.query('SELECT id FROM users WHERE nickname = $1 AND id != $2', [nickname, userId]);
-            if (nickCheck.rows.length > 0) return res.status(400).json({ error: 'Nickname already taken' });
-            await client.query('UPDATE users SET nickname = $1 WHERE id = $2', [nickname, userId]);
+        if (username) {
+            const nickCheck = await client.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
+            if (nickCheck.rows.length > 0) return res.status(400).json({ error: 'username already taken' });
+            await client.query('UPDATE users SET username = $1 WHERE id = $2', [username, userId]);
             await client.query(
                 `UPDATE users SET username = $1 WHERE id = $2 AND (username IS NULL OR username LIKE 'user_%')`,
-                [nickname, userId]
+                [username, userId]
             );
         }
         if (sound_enabled !== undefined) {
@@ -881,13 +881,13 @@ router.get('/google-callback', async (req, res) => {
             'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
             ['google', googleId]
         );
-        let userData, needNickname = false;
+        let userData, needusername = false;
         if (existingConnection.rows.length > 0) {
             const userId = existingConnection.rows[0].user_id;
             await rechargeEnergy(client, userId);
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
-            needNickname = !userData.nickname;
+            needusername = !userData.username;
         } else {
             // Проверка по email
             let existingUser = null;
@@ -906,7 +906,7 @@ router.get('/google-callback', async (req, res) => {
                 );
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 userData = userRes.rows[0];
-                needNickname = !userData.nickname;
+                needusername = !userData.username;
                 if (email && !userData.email) {
                     await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userId]);
                 }
@@ -925,7 +925,7 @@ router.get('/google-callback', async (req, res) => {
                     [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
                 userData = newUser.rows[0];
-                needNickname = true;
+                needusername = true;
                 const classes = ['warrior', 'assassin', 'mage'];
                 for (let cls of classes) {
                     await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
@@ -942,7 +942,7 @@ router.get('/google-callback', async (req, res) => {
         
         const sessionToken = generateToken();
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-        const redirectUrl = `${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needNickname=${needNickname}&userId=${userData.id}`;
+        const redirectUrl = `${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needusername=${needusername}&userId=${userData.id}`;
         res.redirect(redirectUrl);
     } catch (err) {
         console.error('❌ Error in google-callback:', err);

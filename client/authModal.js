@@ -35,9 +35,9 @@ function showAuthModal() {
                     <button class="auth-submit-btn" id="verifyCodeBtn">Подтвердить</button>
                 </div>
             </div>
-            <div class="auth-nickname" style="display:none;">
-                <input type="text" id="authNickname" placeholder="Придумайте никнейм (англ.)" maxlength="20" class="auth-input">
-                <button class="auth-submit-btn" id="submitNickname">Продолжить</button>
+            <div class="auth-username" style="display:none;">
+                <input type="text" id="authusername" placeholder="Придумайте никнейм (англ.)" maxlength="20" class="auth-input">
+                <button class="auth-submit-btn" id="submitusername">Продолжить</button>
             </div>
         </div>
     `;
@@ -69,7 +69,7 @@ function showAuthModal() {
     });
     document.getElementById('sendCodeBtn')?.addEventListener('click', sendEmailCode);
     document.getElementById('verifyCodeBtn')?.addEventListener('click', verifyEmailCode);
-    document.getElementById('submitNickname')?.addEventListener('click', submitNickname);
+    document.getElementById('submitusername')?.addEventListener('click', submitusername);
 }
 
 // ========== TELEGRAM OAuth через OpenID Connect (полностью рабочий) ==========
@@ -176,8 +176,8 @@ async function loginWithVK() {
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needNickname && typeof showNicknameModal === 'function') {
-                        showNicknameModal(data.userId);
+                    if (data.needusername && typeof showusernameModal === 'function') {
+                        showusernameModal(data.userId);
                     } else {
                         location.reload();
                     }
@@ -242,8 +242,8 @@ async function verifyEmailCode() {
         if (data.success) {
             tempSessionToken = data.sessionToken;
             tempUserId = data.user.id;
-            if (!data.user.nickname) {
-                showNicknameStep();
+            if (!data.user.username) {
+                showusernameStep();
             } else {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 location.reload();
@@ -257,18 +257,18 @@ async function verifyEmailCode() {
     }
 }
 
-function showNicknameStep() {
+function showusernameStep() {
     document.querySelector('.auth-methods').style.display = 'none';
     document.querySelector('.auth-email-form').style.display = 'none';
-    const nicknameDiv = document.querySelector('.auth-nickname');
-    nicknameDiv.style.display = 'block';
+    const usernameDiv = document.querySelector('.auth-username');
+    usernameDiv.style.display = 'block';
 }
 
-async function submitNickname() {
-    const nickname = document.getElementById('authNickname').value.trim();
-    if (!nickname) return;
+async function submitusername() {
+    const username = document.getElementById('authusername').value.trim();
+    if (!username) return;
     try {
-        const check = await fetch(`${window.API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+        const check = await fetch(`${window.API_BASE}/auth/check-username?username=${encodeURIComponent(username)}`);
         const { available } = await check.json();
         if (!available) {
             showToast('Никнейм уже занят', 1500);
@@ -277,7 +277,7 @@ async function submitNickname() {
         const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: tempSessionToken, nickname })
+            body: JSON.stringify({ token: tempSessionToken, username })
         });
         if (res.ok) {
             localStorage.setItem('sessionToken', tempSessionToken);
@@ -292,25 +292,25 @@ async function submitNickname() {
     }
 }
 
-function showNicknameModal(userId) {
+function showusernameModal(userId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Выберите никнейм';
     modalBody.innerHTML = `
-        <div class="auth-nickname">
-            <input type="text" id="nicknameInput" placeholder="Английские буквы и цифры" maxlength="20" class="auth-input">
-            <button class="auth-submit-btn" id="saveNicknameBtn">Сохранить</button>
+        <div class="auth-username">
+            <input type="text" id="usernameInput" placeholder="Английские буквы и цифры" maxlength="20" class="auth-input">
+            <button class="auth-submit-btn" id="saveusernameBtn">Сохранить</button>
         </div>
     `;
     modal.style.display = 'flex';
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
-    document.getElementById('saveNicknameBtn').addEventListener('click', async () => {
-        const nickname = document.getElementById('nicknameInput').value.trim();
-        if (!nickname) return;
+    document.getElementById('saveusernameBtn').addEventListener('click', async () => {
+        const username = document.getElementById('usernameInput').value.trim();
+        if (!username) return;
         try {
-            const check = await fetch(`${window.API_BASE}/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+            const check = await fetch(`${window.API_BASE}/auth/check-username?username=${encodeURIComponent(username)}`);
             const { available } = await check.json();
             if (!available) {
                 showToast('Никнейм уже занят', 1500);
@@ -320,7 +320,7 @@ function showNicknameModal(userId) {
             const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, nickname })
+                body: JSON.stringify({ token, username })
             });
             if (res.ok) {
                 modal.style.display = 'none';
@@ -337,4 +337,4 @@ function showNicknameModal(userId) {
 }
 
 window.showAuthModal = showAuthModal;
-window.showNicknameModal = showNicknameModal;
+window.showusernameModal = showusernameModal;

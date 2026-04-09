@@ -3397,7 +3397,7 @@ input:checked + .slider:before {
 
 /* Изменить имя пользователя */
 
-.nickname-row {
+.-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3405,13 +3405,13 @@ input:checked + .slider:before {
     padding: 12px;
     border-radius: 12px;
 }
-.nickname-value {
+.username-value {
     flex: 1;
     text-align: center;
     color: white;
     font-weight: bold;
 }
-.edit-nickname-btn {
+.edit-username-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
@@ -3421,7 +3421,7 @@ input:checked + .slider:before {
     color: #aaa;
     transition: all 0.2s;
 }
-.edit-nickname-btn:hover {
+.edit-username-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
 }

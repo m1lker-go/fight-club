@@ -25,10 +25,11 @@ function calculateClassStats(className, classData, inventory, subclass) {
         int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
-        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
+        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 50),
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0)
     };
+  
 
     let gearBonuses = {
         hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
@@ -60,7 +61,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
         vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
         reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
     };
-
+    if (final.critDmg > 4.5) final.critDmg = 4.5;
     let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
 
     if (className === 'warrior') {

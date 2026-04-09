@@ -66,11 +66,13 @@ async function handleTelegramLogin(initData, referralCode, client) {
                 await client.query('UPDATE users SET coins = coins + 100 WHERE id = $1', [referredById]);
             }
         }
-        const newUser = await client.query(
-            `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, referred_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-            [tgId, username, newReferralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true, referredById]
-        );
+       // Генерируем временный username (если есть email – берём локальную часть, иначе user_<VK_ID>)
+let tempUsername = email ? email.split('@')[0] : `user_${user_id}`;
+const newUser = await client.query(
+    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+    [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+);
         userData = newUser.rows[0];
         needNickname = true;
 
@@ -414,11 +416,12 @@ router.post('/google', async (req, res) => {
             }
 
             const referralCode = Math.random().toString(36).substring(2, 10);
-            const newUser = await client.query(
-                `INSERT INTO users (email, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-                [email || null, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
-            );
+            let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
+const newUser = await client.query(
+    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+    [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+);
             const userData = newUser.rows[0];
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)

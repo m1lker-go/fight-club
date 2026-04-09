@@ -57,35 +57,56 @@ async function handleTelegramLogin(initData, referralCode, client) {
     let needNickname = false;
 
     if (userRes.rows.length === 0) {
-        const newReferralCode = Math.random().toString(36).substring(2, 10);
-        let referredById = null;
-        if (referralCode) {
-            const referrer = await client.query('SELECT id FROM users WHERE referral_code = $1', [referralCode]);
-            if (referrer.rows.length) {
-                referredById = referrer.rows[0].id;
-                await client.query('UPDATE users SET coins = coins + 100 WHERE id = $1', [referredById]);
+        // Проверка по email (если есть) – чтобы не создавать дубликат
+        let existingUser = null;
+        if (user.email) {
+            const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [user.email]);
+            if (existing.rows.length > 0) {
+                existingUser = existing.rows[0];
             }
         }
-        const newUser = await client.query(
-            `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, referred_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-            [tgId, username, newReferralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true, referredById]
-        );
-        userData = newUser.rows[0];
-        needNickname = true;
-
-        const classes = ['warrior', 'assassin', 'mage'];
-        for (let cls of classes) {
+        if (existingUser) {
+            const userId = existingUser.id;
+            // Привязываем Telegram к существующему пользователю
+            await client.query('UPDATE users SET tg_id = $1, username = $2 WHERE id = $3', [tgId, username, userId]);
             await client.query(
-                `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                [userData.id, cls]
+                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                 VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
+                [userId, String(tgId), user.email || null, JSON.stringify(user)]
+            );
+            userData = (await client.query('SELECT * FROM users WHERE id = $1', [userId])).rows[0];
+            needNickname = !userData.nickname;
+        } else {
+            const newReferralCode = Math.random().toString(36).substring(2, 10);
+            let referredById = null;
+            if (referralCode) {
+                const referrer = await client.query('SELECT id FROM users WHERE referral_code = $1', [referralCode]);
+                if (referrer.rows.length) {
+                    referredById = referrer.rows[0].id;
+                    await client.query('UPDATE users SET coins = coins + 100 WHERE id = $1', [referredById]);
+                }
+            }
+            const newUser = await client.query(
+                `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, referred_by)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+                [tgId, username, newReferralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true, referredById]
+            );
+            userData = newUser.rows[0];
+            needNickname = true;
+
+            const classes = ['warrior', 'assassin', 'mage'];
+            for (let cls of classes) {
+                await client.query(
+                    `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                    [userData.id, cls]
+                );
+            }
+            await client.query(
+                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                 VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
+                [userData.id, String(tgId), user.email || null, JSON.stringify(user)]
             );
         }
-        await client.query(
-            `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-             VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
-            [userData.id, String(tgId), user.email || null, JSON.stringify(user)]
-        );
     } else {
         userData = userRes.rows[0];
         needNickname = !userData.nickname;
@@ -263,24 +284,44 @@ router.get('/telegram/callback', async (req, res) => {
             let userData;
             let needNickname = false;
             if (userRes.rows.length === 0) {
-                const referralCode = Math.random().toString(36).substring(2, 10);
-                const newUser = await client.query(
-                    `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-                    [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
-                );
-                userData = newUser.rows[0];
-                needNickname = true;
-
-                const classes = ['warrior', 'assassin', 'mage'];
-                for (let cls of classes) {
-                    await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
+                // Проверка по email (если есть)
+                let existingUser = null;
+                if (payload.email) {
+                    const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [payload.email]);
+                    if (existing.rows.length > 0) {
+                        existingUser = existing.rows[0];
+                    }
                 }
-                await client.query(
-                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-                     VALUES ($1, 'telegram', $2, $3, $4)`,
-                    [userData.id, String(tgId), null, JSON.stringify(payload)]
-                );
+                if (existingUser) {
+                    const userId = existingUser.id;
+                    await client.query('UPDATE users SET tg_id = $1, username = $2 WHERE id = $3', [tgId, username, userId]);
+                    await client.query(
+                        `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                         VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT DO NOTHING`,
+                        [userId, String(tgId), payload.email || null, JSON.stringify(payload)]
+                    );
+                    userData = (await client.query('SELECT * FROM users WHERE id = $1', [userId])).rows[0];
+                    needNickname = !userData.nickname;
+                } else {
+                    const referralCode = Math.random().toString(36).substring(2, 10);
+                    const newUser = await client.query(
+                        `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                        [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                    );
+                    userData = newUser.rows[0];
+                    needNickname = true;
+
+                    const classes = ['warrior', 'assassin', 'mage'];
+                    for (let cls of classes) {
+                        await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
+                    }
+                    await client.query(
+                        `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                         VALUES ($1, 'telegram', $2, $3, $4)`,
+                        [userData.id, String(tgId), payload.email || null, JSON.stringify(payload)]
+                    );
+                }
             } else {
                 userData = userRes.rows[0];
                 needNickname = !userData.nickname;
@@ -300,7 +341,7 @@ router.get('/telegram/callback', async (req, res) => {
     }
 });
 
-// ========== VK LOW-CODE ВХОД (принимает access_token с клиента) ==========
+// ========== VK LOW-CODE ВХОД (с предотвращением дублирования) ==========
 router.post('/vk-lowcode', async (req, res) => {
     const { access_token, user_id, email } = req.body;
     if (!access_token || !user_id) {
@@ -324,35 +365,55 @@ router.post('/vk-lowcode', async (req, res) => {
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         } else {
+            // Проверяем, нет ли пользователя с таким же email
+            let existingUser = null;
             if (email) {
-                const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-                if (emailUser.rows.length > 0) {
-                    return res.status(409).json({ error: 'Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.' });
+                const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [email]);
+                if (existing.rows.length > 0) {
+                    existingUser = existing.rows[0];
                 }
             }
 
-            const referralCode = Math.random().toString(36).substring(2, 10);
-            let tempUsername = email ? email.split('@')[0] : `user_${user_id}`;
-            const newUser = await client.query(
-                `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-                [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
-            );
-            userData = newUser.rows[0];
-            needNickname = true;
-
-            const classes = ['warrior', 'assassin', 'mage'];
-            for (let cls of classes) {
+            if (existingUser) {
+                const userId = existingUser.id;
+                // Привязываем VK к существующему пользователю
                 await client.query(
-                    `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                    [userData.id, cls]
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'vk', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
+                    [userId, String(user_id), email || null, JSON.stringify({ access_token, user_id, email })]
+                );
+                if (!existingUser.nickname && email) {
+                    let tempUsername = email.split('@')[0];
+                    await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
+                }
+                const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+                userData = userRes.rows[0];
+                needNickname = !userData.nickname;
+            } else {
+                // Создаём нового пользователя
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                let tempUsername = email ? email.split('@')[0] : `user_${user_id}`;
+                const newUser = await client.query(
+                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                );
+                userData = newUser.rows[0];
+                needNickname = true;
+
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(
+                        `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                        [userData.id, cls]
+                    );
+                }
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'vk', $2, $3, $4)`,
+                    [userData.id, String(user_id), email || null, JSON.stringify({ access_token, user_id, email })]
                 );
             }
-            await client.query(
-                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-                 VALUES ($1, 'vk', $2, $3, $4)`,
-                [userData.id, String(user_id), email || null, JSON.stringify({ access_token, user_id, email })]
-            );
         }
 
         const sessionToken = generateToken();
@@ -373,7 +434,7 @@ router.post('/vk-lowcode', async (req, res) => {
     }
 });
 
-// Google OAuth через One Tap (получение idToken)
+// Google OAuth через One Tap (с предотвращением дублирования)
 router.post('/google', async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ error: 'No idToken' });
@@ -403,36 +464,57 @@ router.post('/google', async (req, res) => {
                 return res.json({ success: true, sessionToken, needNickname, user: userData });
             }
 
+            // Проверка по email
+            let existingUser = null;
             if (email) {
-                const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-                if (emailUser.rows.length > 0) {
-                    return res.status(409).json({ error: 'Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.' });
+                const existing = await client.query('SELECT id, nickname FROM users WHERE email = $1', [email]);
+                if (existing.rows.length > 0) {
+                    existingUser = existing.rows[0];
                 }
             }
 
-            const referralCode = Math.random().toString(36).substring(2, 10);
-            let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
-            const newUser = await client.query(
-                `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-                [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
-            );
-            const userData = newUser.rows[0];
-            await client.query(
-                `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
-                 VALUES ($1, 'google', $2, $3, $4)`,
-                [userData.id, googleId, email, JSON.stringify(payload)]
-            );
-            const classes = ['warrior', 'assassin', 'mage'];
-            for (let cls of classes) {
+            if (existingUser) {
+                const userId = existingUser.id;
                 await client.query(
-                    `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-                    [userData.id, cls]
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'google', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
+                    [userId, googleId, email, JSON.stringify(payload)]
                 );
+                if (!existingUser.nickname && email) {
+                    let tempUsername = email.split('@')[0];
+                    await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
+                }
+                const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+                const userData = userRes.rows[0];
+                const sessionToken = generateToken();
+                await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+                const needNickname = !userData.nickname;
+                return res.json({ success: true, sessionToken, needNickname, user: userData });
+            } else {
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
+                const newUser = await client.query(
+                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                );
+                const userData = newUser.rows[0];
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'google', $2, $3, $4)`,
+                    [userData.id, googleId, email, JSON.stringify(payload)]
+                );
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(
+                        `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                        [userData.id, cls]
+                    );
+                }
+                const sessionToken = generateToken();
+                await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+                res.json({ success: true, sessionToken, needNickname: true, user: userData });
             }
-            const sessionToken = generateToken();
-            await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
-            res.json({ success: true, sessionToken, needNickname: true, user: userData });
         } finally {
             client.release();
         }
@@ -503,7 +585,6 @@ router.post('/update-settings', async (req, res) => {
             const nickCheck = await client.query('SELECT id FROM users WHERE nickname = $1 AND id != $2', [nickname, userId]);
             if (nickCheck.rows.length > 0) return res.status(400).json({ error: 'Nickname already taken' });
             await client.query('UPDATE users SET nickname = $1 WHERE id = $2', [nickname, userId]);
-            // Обновляем username, если он NULL или был временным (начинается с 'user_')
             await client.query(
                 `UPDATE users SET username = $1 WHERE id = $2 AND (username IS NULL OR username LIKE 'user_%')`,
                 [nickname, userId]
@@ -808,24 +889,47 @@ router.get('/google-callback', async (req, res) => {
             userData = userRes.rows[0];
             needNickname = !userData.nickname;
         } else {
+            // Проверка по email
+            let existingUser = null;
             if (email) {
-                const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-                if (emailUser.rows.length > 0) {
-                    return res.status(409).send('Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.');
+                const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+                if (existing.rows.length > 0) {
+                    existingUser = existing.rows[0];
                 }
             }
-            const referralCode = Math.random().toString(36).substring(2, 10);
-            let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
-            const newUser = await client.query(
-                `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-                [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
-            );
-            userData = newUser.rows[0];
-            needNickname = true;
-            const classes = ['warrior', 'assassin', 'mage'];
-            for (let cls of classes) {
-                await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
+            if (existingUser) {
+                const userId = existingUser.id;
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'google', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
+                    [userId, googleId, email, JSON.stringify(payload)]
+                );
+                const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+                userData = userRes.rows[0];
+                needNickname = !userData.nickname;
+                if (email && !userData.email) {
+                    await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userId]);
+                }
+            } else {
+                if (email) {
+                    const emailUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+                    if (emailUser.rows.length > 0) {
+                        return res.status(409).send('Этот email уже зарегистрирован. Войдите через другой способ или привяжите аккаунт в настройках.');
+                    }
+                }
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
+                const newUser = await client.query(
+                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                );
+                userData = newUser.rows[0];
+                needNickname = true;
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
+                }
             }
         }
         await client.query(

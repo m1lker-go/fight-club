@@ -105,7 +105,7 @@ function calculateStats(classData, inventory, subclass) {
         int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
-        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 100),
+        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 50),
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,

@@ -57,12 +57,12 @@ async function renderSettings() {
             <div class="settings-container">
                 <div class="settings-header">
                     <img src="/assets/${user.avatar || 'cat_heroweb.png'}" class="settings-avatar">
-                    <span class="settings-username">${escapeHtml(user.nickname || user.username || 'Игрок')}</span>
+                    <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}</span>
                 </div>
-                <div class="settings-row nickname-row">
+                <div class="settings-row username-row">
                     <span>Никнейм</span>
-                    <span class="nickname-value">${escapeHtml(user.nickname || user.username || 'Игрок')}</span>
-                    <button class="edit-nickname-btn" id="editNicknameBtn"><i class="fas fa-pencil-alt"></i></button>
+                    <span class="username-value">${escapeHtml(user.username || user.username || 'Игрок')}</span>
+                    <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
                 </div>
                 <div class="settings-row">
                     <span>Музыка</span>
@@ -120,10 +120,10 @@ async function renderSettings() {
             });
         }
 
-        const editNicknameBtn = document.getElementById('editNicknameBtn');
-        if (editNicknameBtn) {
-            editNicknameBtn.addEventListener('click', () => {
-                showNicknameEditModal(user.nickname || user.username || '');
+        const editusernameBtn = document.getElementById('editusernameBtn');
+        if (editusernameBtn) {
+            editusernameBtn.addEventListener('click', () => {
+                showusernameEditModal(user.username || user.username || '');
             });
         }
 
@@ -180,39 +180,39 @@ async function updateSettings(updates) {
     }
 }
 
-function showNicknameEditModal(currentNickname) {
+function showusernameEditModal(currentusername) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Изменить никнейм';
     modalBody.innerHTML = `
         <div style="text-align: center;">
-            <input type="text" id="editNicknameInput" class="auth-input" placeholder="Новый никнейм (англ. буквы и цифры, подчёркивание)" value="${escapeHtml(currentNickname)}" maxlength="20">
+            <input type="text" id="editusernameInput" class="auth-input" placeholder="Новый никнейм (англ. буквы и цифры, подчёркивание)" value="${escapeHtml(currentusername)}" maxlength="20">
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                <button class="modal-btn save-nickname-btn" style="background-color: #00aaff;">Сохранить</button>
-                <button class="modal-btn cancel-nickname-btn">Отмена</button>
+                <button class="modal-btn save-username-btn" style="background-color: #00aaff;">Сохранить</button>
+                <button class="modal-btn cancel-username-btn">Отмена</button>
             </div>
         </div>
     `;
     modal.style.display = 'flex';
-    const input = document.getElementById('editNicknameInput');
-    const saveBtn = modalBody.querySelector('.save-nickname-btn');
-    const cancelBtn = modalBody.querySelector('.cancel-nickname-btn');
+    const input = document.getElementById('editusernameInput');
+    const saveBtn = modalBody.querySelector('.save-username-btn');
+    const cancelBtn = modalBody.querySelector('.cancel-username-btn');
     const closeX = modal.querySelector('.close');
     const closeModal = () => modal.style.display = 'none';
     
     saveBtn.addEventListener('click', async () => {
-        const newNickname = input.value.trim();
-        if (!newNickname) {
+        const newusername = input.value.trim();
+        if (!newusername) {
             showToast('Введите никнейм', 1500);
             return;
         }
-        if (!/^[a-zA-Z0-9_]+$/.test(newNickname)) {
+        if (!/^[a-zA-Z0-9_]+$/.test(newusername)) {
             showToast('Никнейм может содержать только английские буквы, цифры и подчёркивание', 1500);
             return;
         }
         const token = localStorage.getItem('sessionToken');
-        const checkRes = await window.apiRequest(`/auth/check-nickname?nickname=${encodeURIComponent(newNickname)}`, { method: 'GET' });
+        const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(newusername)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
             showToast('Никнейм уже занят', 1500);
@@ -220,7 +220,7 @@ function showNicknameEditModal(currentNickname) {
         }
         const res = await window.apiRequest('/auth/update-settings', {
             method: 'POST',
-            body: JSON.stringify({ token, nickname: newNickname })
+            body: JSON.stringify({ token, username: newusername })
         });
         if (res.ok) {
             showToast('Никнейм изменён', 1500);

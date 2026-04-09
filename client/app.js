@@ -137,8 +137,8 @@ async function autoLoginTelegram() {
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 sessionToken = data.sessionToken;
-                if (data.needNickname && typeof showNicknameModal === 'function') {
-                    showNicknameModal(data.userId);
+                if (data.need && typeof showusernameModal === 'function') {
+                    showusernameModal(data.userId);
                     return true;
                 } else {
                     await loadUserDataByToken(data.sessionToken);
@@ -464,12 +464,12 @@ function handleExternalAuth() {
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
-        const needNickname = urlParams.get('needNickname') === 'true';
+        const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
         if (sessionToken) {
             localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
+            if (needusername && typeof showusernameModal === 'function') {
+                showusernameModal(userId);
             } else {
                 window.location.replace(window.location.pathname);
             }
@@ -489,12 +489,12 @@ function handleExternalAuth() {
     const vkAuth = urlParams.get('vk_auth');
     if (vkAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
-        const needNickname = urlParams.get('needNickname') === 'true';
+        const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
         if (sessionToken) {
             localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
+            if (needusername && typeof showusernameModal === 'function') {
+                showusernameModal(userId);
             } else {
                 window.location.replace(window.location.pathname);
             }
@@ -514,12 +514,12 @@ function handleExternalAuth() {
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
-        const needNickname = urlParams.get('needNickname') === 'true';
+        const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
         if (sessionToken) {
             localStorage.setItem('sessionToken', sessionToken);
-            if (needNickname && typeof showNicknameModal === 'function') {
-                showNicknameModal(userId);
+            if (needusername && typeof showusernameModal === 'function') {
+                showusernameModal(userId);
             } else {
                 window.location.replace(window.location.pathname);
             }

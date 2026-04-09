@@ -151,6 +151,7 @@ function calculateStats(classData, inventory, subclass) {
     stats.def = Math.min(70, stats.def);
     stats.crit = Math.min(100, stats.crit);
     stats.agi = Math.min(70, stats.agi);
+    stats.critDmg = Math.min(stats.critDmg, 4.5);
     return stats;
 }
 

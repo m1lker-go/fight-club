@@ -587,8 +587,10 @@ function showAvatarModal(avatar) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    // Используем перевод имени скина
-    const translatedName = translateSkinName(avatar.name);
+    // Переводим имя скина, если функция доступна
+    const translatedName = (typeof translateSkinName === 'function') 
+        ? translateSkinName(avatar.name) 
+        : avatar.name;
     modalTitle.innerText = translatedName;
     modalBody.innerHTML = `
         <div style="text-align: center;">

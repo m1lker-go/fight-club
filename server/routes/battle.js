@@ -398,23 +398,26 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
             type = 'heal';
             break;
-      case 'berserker':
-    // Если берсерк мёртв – не используем ультимейт
+            
+     case 'berserker':
     if (attackerState.hp <= 0) {
         return { damage:0, heal:0, log: '<strong>' + attackerName + '</strong> не может использовать умение.', selfDamage:0, stateChanges:{}, type: 'none' };
     }
-    // Урон врагу (всегда)
-    damage = attackerStats.atk * 2;
-    // Самоповреждение: 60% от текущего HP, но не убивает (оставляет 1 HP)
-    let selfDamageCalc = Math.floor(attackerState.hp * 0.6);
-    selfDamageCalc = Math.min(selfDamageCalc, attackerState.hp - 1);
-    // Формируем лог
+    // Базовый урон (удвоенная атака)
+    let baseDamage = attackerStats.atk * 2;
+    // Гарантированный крит + дополнительный бонус +50% к крит. урону
+    let bonusCritDmg = 0.5;
+    let damage = Math.floor(baseDamage * (attackerStats.critDmg + bonusCritDmg));
+    // Самоповреждение: 60% от текущего HP, но не убивает
+    let selfDamage = Math.floor(attackerState.hp * 0.6);
+    selfDamage = Math.min(selfDamage, attackerState.hp - 1);
+    attackerState.hp -= selfDamage;
     log = ultPhrases.berserker.replace('%s', '<strong>' + attackerName + '</strong>')
                                .replace('%d', damage)
-                               .replace('%d', selfDamageCalc);
+                               .replace('%d', selfDamage);
     type = 'damage_self';
-    // Возвращаем урон врагу и самоповреждение, НЕ меняя attackerState.hp здесь
-    return { damage, heal:0, log, selfDamage: selfDamageCalc, stateChanges:{}, type };
+    break;
+            
         case 'knight':
             attackerState.reflectBuff = 2;
             attackerState.reflectBonus = 50;

@@ -400,15 +400,15 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'heal';
             break;
             
-     case 'berserker':
+    case 'berserker':
     if (attackerState.hp <= 0) {
         return { damage:0, heal:0, log: '<strong>' + attackerName + '</strong> не может использовать умение.', selfDamage:0, stateChanges:{}, type: 'none' };
     }
     // Базовый урон (удвоенная атака)
-    let baseDamage = attackerStats.atk * 2;
+    let baseDamageBerserker = attackerStats.atk * 2;
     // Гарантированный крит + дополнительный бонус +50% к крит. урону
     let bonusCritDmg = 0.5;
-    let damage = Math.floor(baseDamage * (attackerStats.critDmg + bonusCritDmg));
+    let damage = Math.floor(baseDamageBerserker * (attackerStats.critDmg + bonusCritDmg));
     console.log('Berserker: current HP =', attackerState.hp, 'max HP =', attackerStats.hp);        
     // Самоповреждение: 60% от текущего HP, но не убивает
     let selfDamage = Math.floor(attackerState.hp * 0.6);

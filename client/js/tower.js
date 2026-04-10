@@ -1,4 +1,4 @@
-// js/tower.js (исправленный)
+// js/tower.js (полностью исправленный)
 
 let towerStatus = null;
 let selectedClass = null;
@@ -14,7 +14,6 @@ async function loadTowerStatus() {
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
 
-        // Проверяем, что необходимые функции определены
         if (typeof getClassNameRu !== 'function') {
             console.warn('getClassNameRu not defined, using fallback');
             window.getClassNameRu = (cls) => cls === 'warrior' ? 'Воин' : (cls === 'assassin' ? 'Ассасин' : 'Маг');
@@ -187,7 +186,7 @@ async function startTowerBattle() {
     try {
         const res = await window.apiRequest('/tower/battle', {
             method: 'POST',
-            body: JSON.stringify({})  // user_id добавится автоматически
+            body: JSON.stringify({})
         });
         const data = await res.json();
         if (!res.ok) {
@@ -353,7 +352,6 @@ async function handleTowerBattleEnd(battleData) {
     towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
-    // Проверяем, повысился ли уровень
     if (battleData.leveledUp) {
         await refreshData();
         showLevelUpModal(towerStatus.chosenClass || userData.current_class);
@@ -410,7 +408,8 @@ function showTowerResultScreen(battleData) {
     };
 
     rewardsGrid.appendChild(addRewardItem('Этаж', `${passedFloor}`, 'fas fa-chess-rook'));
-      if (reward) {
+
+    if (reward) {
         if (reward.type === 'coins') {
             rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
         } else if (reward.type === 'avatar') {
@@ -424,13 +423,19 @@ function showTowerResultScreen(battleData) {
             eyeBtn.className = 'fas fa-eye';
             eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
             eyeBtn.addEventListener('click', async () => {
+                try {
+                    const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
+                    const avatar = await res.json();
+                    showAvatarModal(avatar);
+                } catch (err) { console.error(err); }
+            });
             span.appendChild(eyeBtn);
             avatarItem.appendChild(icon);
             avatarItem.appendChild(span);
             rewardsGrid.appendChild(avatarItem);
         }
     }
-    
+
     if (victory) {
         rewardsGrid.appendChild(addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'));
     }
@@ -478,7 +483,7 @@ function showTowerResultScreen(battleData) {
         const statsHtml = `
             <table class="stats-battle">
                 <thead>
-                    <th>Игрок</th><th>Параметр</th><th>Соперник</th>
+                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
                 </thead>
                 <tbody>
                     <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
@@ -571,7 +576,6 @@ function showAvatarModal(avatar) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    // Используем перевод из глобального объекта skinNameTranslations
     const translatedName = (typeof skinNameTranslations !== 'undefined' && skinNameTranslations[avatar.name]) 
         ? skinNameTranslations[avatar.name] 
         : avatar.name;

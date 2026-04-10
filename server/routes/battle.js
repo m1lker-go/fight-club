@@ -392,6 +392,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     let type = 'ult';
 
     switch (attackerSubclass) {
+       
         case 'guardian':
             heal = Math.floor(attackerStats.hp * 0.2);
             log = ultPhrases.guardian.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', heal);
@@ -408,6 +409,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     // Гарантированный крит + дополнительный бонус +50% к крит. урону
     let bonusCritDmg = 0.5;
     let damage = Math.floor(baseDamage * (attackerStats.critDmg + bonusCritDmg));
+    console.log('Berserker: current HP =', attackerState.hp, 'max HP =', attackerStats.hp);        
     // Самоповреждение: 60% от текущего HP, но не убивает
     let selfDamage = Math.floor(attackerState.hp * 0.6);
     selfDamage = Math.min(selfDamage, attackerState.hp - 1);

@@ -413,27 +413,30 @@ function showTowerResultScreen(battleData) {
     if (reward) {
         if (reward.type === 'coins') {
             rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
-        } else if (reward.type === 'avatar') {
-            const avatarItem = document.createElement('div');
-            avatarItem.className = 'reward-item';
-            const icon = document.createElement('i');
-            icon.className = 'fas fa-tshirt';
-            const span = document.createElement('span');
-            span.innerHTML = `Награда: <span id="avatarName">...</span> `;
-            const eyeBtn = document.createElement('i');
-            eyeBtn.className = 'fas fa-eye';
-            eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
-            eyeBtn.addEventListener('click', async () => {
-                try {
-                    const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
-                    const avatar = await res.json();
-                    showAvatarModal(avatar);
-                } catch (err) { console.error(err); }
-            });
-            span.appendChild(eyeBtn);
-            avatarItem.appendChild(icon);
-            avatarItem.appendChild(span);
-            rewardsGrid.appendChild(avatarItem);
+       } else if (reward.type === 'avatar') {
+    const avatarItem = document.createElement('div');
+    avatarItem.className = 'reward-item';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-tshirt';
+    const span = document.createElement('span');
+    // Вместо "Награда: skin11" пишем "Новый скин"
+    span.innerHTML = 'Новый скин ';
+    const eyeBtn = document.createElement('i');
+    eyeBtn.className = 'fas fa-eye';
+    eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
+    eyeBtn.addEventListener('click', async () => {
+        try {
+            const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
+            const avatar = await res.json();
+            // Передаём имя аватара в модалку с переводом
+            showAvatarModal(avatar);
+        } catch (err) { console.error(err); }
+    });
+    span.appendChild(eyeBtn);
+    avatarItem.appendChild(icon);
+    avatarItem.appendChild(span);
+    rewardsGrid.appendChild(avatarItem);
+}
 
             window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' })
                 .then(res => res.json())

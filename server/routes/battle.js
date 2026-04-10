@@ -414,10 +414,16 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'buff';
             break;
         case 'assassin':
-            damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
-            log = ultPhrases.assassin.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
-            type = 'damage';
-            break;
+    damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
+    // Временно увеличиваем крит. урон на 150% (множитель +1.5)
+    attackerState.critDmgBuff = 1.5;
+    attackerState.critDmgBuffDuration = 1; // действует только на этот удар
+    // Гарантированный крит: умножаем на (текущий critDmg + buff)
+    let currentCritDmg = attackerStats.critDmg + (attackerState.critDmgBuff || 0);
+    damage = Math.floor(damage * currentCritDmg);
+    log = ultPhrases.assassin.replace(...);
+    type = 'damage';
+    break;
         case 'venom_blade':
             let baseDamage = attackerStats.atk;
             let isCrit = Math.random() * 100 < attackerStats.crit;
@@ -431,12 +437,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'poison_ult';
             break;
         case 'blood_hunter':
-            damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
-            attackerState.vampBuff = 2;
-            attackerState.vampBonus = 50;
-            log = ultPhrases.blood_hunter.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', damage);
-            type = 'damage';
-            break;
+    damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
+    attackerState.vampBuff = 2;
+    attackerState.vampBonus = 50;
+    attackerState.critDmgBuff = 1.0;   // +100% к крит. урону
+    attackerState.critDmgBuffDuration = 2;
+    log = ultPhrases.blood_hunter.replace(...);
+    type = 'damage';
+    break;
         case 'pyromancer':
             damage = Math.floor(attackerStats.int * 1.8) + ((defenderState.burnStacks || 0) * 2);
             log = ultPhrases.pyromancer.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);

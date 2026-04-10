@@ -61,6 +61,10 @@ function calculateClassStats(className, classData, inventory, subclass) {
         vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
         reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
     };
+   // Постоянный бонус для подкласса Ассасин (убийца)
+    if (subclass === 'assassin') {
+        final.critDmg += 0.5; // +50% к критическому урону
+    }
     if (final.critDmg > 4.5) final.critDmg = 4.5;
     let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
 

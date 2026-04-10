@@ -231,11 +231,14 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     }
 
     let isCrit = false;
-    let critMultiplier = attackerStats.critDmg;
-    if (attackerSubclass === 'assassin' && rolePassives.assassin && rolePassives.assassin.critMultiplier) critMultiplier = rolePassives.assassin.critMultiplier;
+    // Учитываем временный бонус крит. урона
+    let effectiveCritDmg = attackerStats.critDmg;
+    if (attackerState.critDmgBuff && attackerState.critDmgBuffDuration > 0) {
+        effectiveCritDmg += attackerState.critDmgBuff;
+    }
     if (Math.random() * 100 < attackerStats.crit) {
         isCrit = true;
-        damage *= critMultiplier;
+        damage *= effectiveCritDmg;
     }
 
     // Cryomancer physical reduction
@@ -414,16 +417,17 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'buff';
             break;
         case 'assassin':
-    damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
-    // Временно увеличиваем крит. урон на 150% (множитель +1.5)
-    attackerState.critDmgBuff = 1.5;
-    attackerState.critDmgBuffDuration = 1; // действует только на этот удар
-    // Гарантированный крит: умножаем на (текущий critDmg + buff)
-    let currentCritDmg = attackerStats.critDmg + (attackerState.critDmgBuff || 0);
-    damage = Math.floor(damage * currentCritDmg);
-    log = ultPhrases.assassin.replace(...);
-    type = 'damage';
-    break;
+            damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
+            attackerState.critDmgBuff = 1.5;
+            attackerState.critDmgBuffDuration = 1;
+            let currentCritDmg = attackerStats.critDmg + (attackerState.critDmgBuff || 0);
+            damage = Math.floor(damage * currentCritDmg);
+            log = ultPhrases.assassin
+                .replace('%s', '<strong>' + attackerName + '</strong>')
+                .replace('%s', '<strong>' + defenderName + '</strong>')
+                .replace('%d', damage);
+            type = 'damage';
+            break;
         case 'venom_blade':
             let baseDamage = attackerStats.atk;
             let isCrit = Math.random() * 100 < attackerStats.crit;
@@ -437,14 +441,16 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'poison_ult';
             break;
         case 'blood_hunter':
-    damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
-    attackerState.vampBuff = 2;
-    attackerState.vampBonus = 50;
-    attackerState.critDmgBuff = 1.0;   // +100% к крит. урону
-    attackerState.critDmgBuffDuration = 2;
-    log = ultPhrases.blood_hunter.replace(...);
-    type = 'damage';
-    break;
+            damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
+            attackerState.vampBuff = 2;
+            attackerState.vampBonus = 50;
+            attackerState.critDmgBuff = 1.0;
+            attackerState.critDmgBuffDuration = 2;
+            log = ultPhrases.blood_hunter
+                .replace('%s', '<strong>' + attackerName + '</strong>')
+                .replace('%d', damage);
+            type = 'damage';
+            break;
         case 'pyromancer':
             damage = Math.floor(attackerStats.int * 1.8) + ((defenderState.burnStacks || 0) * 2);
             log = ultPhrases.pyromancer.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
@@ -557,8 +563,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     const messages = [];
     const states = [];
 
-    let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false };
-    let enemyState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: enemyHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false };
+    let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false, critDmgBuff:0, critDmgBuffDuration:0 };
+    let enemyState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: enemyHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false, critDmgBuff:0, critDmgBuffDuration:0 };
 
     let playerActedThisRound = false;
     let enemyActedThisRound = false;
@@ -781,6 +787,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = true;
         }
 
+        // Уменьшаем длительность баффов крит. урона
+        if (playerState.critDmgBuffDuration > 0) {
+            playerState.critDmgBuffDuration--;
+            if (playerState.critDmgBuffDuration === 0) playerState.critDmgBuff = 0;
+        }
+        if (enemyState.critDmgBuffDuration > 0) {
+            enemyState.critDmgBuffDuration--;
+            if (enemyState.critDmgBuffDuration === 0) enemyState.critDmgBuff = 0;
+        }
+
         if (playerState.invincible > 0) playerState.invincible--;
         if (enemyState.invincible > 0) enemyState.invincible--;
 
@@ -998,7 +1014,6 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
     };
 }
 
-// ========== ИСПРАВЛЕННЫЙ МАРШРУТ /start ==========
 router.post('/start', async (req, res) => {
     const { tg_id, user_id } = req.body;
     const client = await pool.connect();
@@ -1053,7 +1068,6 @@ router.post('/start', async (req, res) => {
         }
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
 
-        // Обновляем ежедневную серию
         let dailyStreakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userData.id]);
         let dailyStreak = dailyStreakRes.rows[0].daily_win_streak || 0;
         if (isVictory) {

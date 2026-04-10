@@ -587,7 +587,9 @@ function showAvatarModal(avatar) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = avatar.name;
+    // Используем перевод имени скина
+    const translatedName = translateSkinName(avatar.name);
+    modalTitle.innerText = translatedName;
     modalBody.innerHTML = `
         <div style="text-align: center;">
             <img src="/assets/${avatar.filename}" style="max-width: 200px; border-radius: 10px; margin-bottom: 15px;">

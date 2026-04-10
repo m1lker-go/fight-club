@@ -413,38 +413,30 @@ function showTowerResultScreen(battleData) {
     if (reward) {
         if (reward.type === 'coins') {
             rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
-      } else if (reward.type === 'avatar') {
-    const avatarItem = document.createElement('div');
-    avatarItem.className = 'reward-item';
-    const icon = document.createElement('i');
-    icon.className = 'fas fa-tshirt';
-    const span = document.createElement('span');
-    span.innerHTML = 'Новый скин ';
-    const eyeBtn = document.createElement('i');
-    eyeBtn.className = 'fas fa-eye';
-    eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
-    eyeBtn.addEventListener('click', async () => {
-        try {
-            const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
-            const avatar = await res.json();
-            showAvatarModal(avatar);
-        } catch (err) { console.error(err); }
-    });
-    span.appendChild(eyeBtn);
-    avatarItem.appendChild(icon);
-    avatarItem.appendChild(span);
-    rewardsGrid.appendChild(avatarItem);
-}
-
-            window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' })
-                .then(res => res.json())
-                .then(avatar => {
-                    const nameSpan = document.querySelector('#avatarName');
-                    if (nameSpan) nameSpan.innerText = avatar.name;
-                })
-                .catch(err => console.error(err));
+        } else if (reward.type === 'avatar') {
+            const avatarItem = document.createElement('div');
+            avatarItem.className = 'reward-item';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-tshirt';
+            const span = document.createElement('span');
+            span.innerHTML = 'Новый скин ';
+            const eyeBtn = document.createElement('i');
+            eyeBtn.className = 'fas fa-eye';
+            eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
+            eyeBtn.addEventListener('click', async () => {
+                try {
+                    const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
+                    const avatar = await res.json();
+                    showAvatarModal(avatar);
+                } catch (err) { console.error(err); }
+            });
+            span.appendChild(eyeBtn);
+            avatarItem.appendChild(icon);
+            avatarItem.appendChild(span);
+            rewardsGrid.appendChild(avatarItem);
         }
     }
+    
     if (victory) {
         rewardsGrid.appendChild(addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'));
     }

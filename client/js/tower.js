@@ -410,7 +410,7 @@ function showTowerResultScreen(battleData) {
     };
 
     rewardsGrid.appendChild(addRewardItem('Этаж', `${passedFloor}`, 'fas fa-chess-rook'));
-    if (reward) {
+      if (reward) {
         if (reward.type === 'coins') {
             rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
         } else if (reward.type === 'avatar') {

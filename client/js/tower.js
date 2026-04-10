@@ -413,13 +413,12 @@ function showTowerResultScreen(battleData) {
     if (reward) {
         if (reward.type === 'coins') {
             rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
-       } else if (reward.type === 'avatar') {
+      } else if (reward.type === 'avatar') {
     const avatarItem = document.createElement('div');
     avatarItem.className = 'reward-item';
     const icon = document.createElement('i');
     icon.className = 'fas fa-tshirt';
     const span = document.createElement('span');
-    // Вместо "Награда: skin11" пишем "Новый скин"
     span.innerHTML = 'Новый скин ';
     const eyeBtn = document.createElement('i');
     eyeBtn.className = 'fas fa-eye';
@@ -428,7 +427,6 @@ function showTowerResultScreen(battleData) {
         try {
             const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
             const avatar = await res.json();
-            // Передаём имя аватара в модалку с переводом
             showAvatarModal(avatar);
         } catch (err) { console.error(err); }
     });
@@ -587,9 +585,9 @@ function showAvatarModal(avatar) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    // Переводим имя скина, если функция доступна
-    const translatedName = (typeof translateSkinName === 'function') 
-        ? translateSkinName(avatar.name) 
+    // Используем перевод из глобального объекта skinNameTranslations
+    const translatedName = (typeof skinNameTranslations !== 'undefined' && skinNameTranslations[avatar.name]) 
+        ? skinNameTranslations[avatar.name] 
         : avatar.name;
     modalTitle.innerText = translatedName;
     modalBody.innerHTML = `

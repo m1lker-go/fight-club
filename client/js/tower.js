@@ -424,12 +424,6 @@ function showTowerResultScreen(battleData) {
             eyeBtn.className = 'fas fa-eye';
             eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
             eyeBtn.addEventListener('click', async () => {
-                try {
-                    const res = await window.apiRequest(`/avatars/${reward.avatarId}`, { method: 'GET' });
-                    const avatar = await res.json();
-                    showAvatarModal(avatar);
-                } catch (err) { console.error(err); }
-            });
             span.appendChild(eyeBtn);
             avatarItem.appendChild(icon);
             avatarItem.appendChild(span);

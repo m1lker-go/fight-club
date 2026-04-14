@@ -109,7 +109,7 @@ function calculateStats(classData, inventory, subclass) {
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,
-        manaRegen: classData.class === 'warrior' ? 15 : (classData.class === 'assassin' ? 15 : 20)
+        manaRegen: 15 // базовая регенерация для всех классов 15
     };
 
     classInventory.forEach(item => {
@@ -129,7 +129,7 @@ function calculateStats(classData, inventory, subclass) {
     if (classData.class === 'assassin') stats.spd += Math.floor(stats.agi / 5);
     if (classData.class === 'mage') {
         stats.agi += Math.floor(stats.int / 5);
-        stats.manaRegen += Math.floor(stats.int / 5) * 2;
+        stats.manaRegen += Math.floor(stats.int / 5) * 2; // маг получает +2 маны за каждые 5 интеллекта
     }
 
     const roleBonus = rolePassives[subclass] || {};
@@ -366,6 +366,19 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         attackPhrase += ' (двойной удар)';
     }
 
+    // ========== НОВАЯ МЕХАНИКА МАНЫ ПРИ ПРОМАХЕ ==========
+    if (isDodge) {
+        // Атакующий теряет 10 маны
+        attackerState.mana = Math.max(0, (attackerState.mana || 0) - 10);
+        // Уклонившийся получает +5 маны
+        defenderState.mana = Math.min(100, (defenderState.mana || 0) + 5);
+        extraLogs.push({
+            text: `${attackerName} промахивается и теряет 10 маны. ${defenderName} восстанавливает 5 маны.`,
+            type: 'mana_change',
+            attacker: isPlayerAttacker ? 'player' : 'enemy'
+        });
+    }
+
     return {
         hit: true,
         damage,
@@ -382,7 +395,8 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         },
         berserkerBonus,
         extraLogs,
-        rageInfo: rageInfo
+        rageInfo: rageInfo,
+        isCritFlag: isCrit // флаг для обработки критического удара в simulateBattle
     };
 }
 
@@ -528,6 +542,12 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         default:
             return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
     }
+    
+    // ========== НОВАЯ МЕХАНИКА МАНЫ ПОСЛЕ УЛЬТИМЕЙТА ==========
+    // После использования ультимейта на следующий ход регенерация маны = 0
+    attackerState.manaRegenDisabled = true;
+    attackerState.manaRegenDisabledDuration = 1;
+    
     return { damage, heal, log, selfDamage, stateChanges, type };
 }
 
@@ -571,8 +591,26 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     const messages = [];
     const states = [];
 
-    let playerState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: playerHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false, critDmgBuff:0, critDmgBuffDuration:0 };
-    let enemyState = { poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, hp: enemyHp, mirageCounter:0, mana:0, alchemistPoison:0, alchemistPoisonDuration:0, invincible:0, invisible:0, revived:false, critDmgBuff:0, critDmgBuffDuration:0 };
+    let playerState = { 
+        poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, 
+        reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, 
+        hp: playerHp, mirageCounter:0, mana:0, 
+        alchemistPoison:0, alchemistPoisonDuration:0, 
+        invincible:0, invisible:0, revived:false, 
+        critDmgBuff:0, critDmgBuffDuration:0,
+        manaRegenDisabled: false, manaRegenDisabledDuration: 0,
+        manaRegenHalved: false, manaRegenHalvedDuration: 0
+    };
+    let enemyState = { 
+        poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0, 
+        reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0, 
+        hp: enemyHp, mirageCounter:0, mana:0, 
+        alchemistPoison:0, alchemistPoisonDuration:0, 
+        invincible:0, invisible:0, revived:false, 
+        critDmgBuff:0, critDmgBuffDuration:0,
+        manaRegenDisabled: false, manaRegenDisabledDuration: 0,
+        manaRegenHalved: false, manaRegenHalvedDuration: 0
+    };
 
     let playerActedThisRound = false;
     let enemyActedThisRound = false;
@@ -616,7 +654,24 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 continue;
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
-            playerMana += playerStats.manaRegen;
+            
+            // ========== РЕГЕНЕРАЦИЯ МАНЫ С УЧЁТОМ ШТРАФОВ ==========
+            let regen = playerStats.manaRegen;
+            if (playerState.manaRegenDisabled && playerState.manaRegenDisabledDuration > 0) {
+                regen = 0;
+                playerState.manaRegenDisabledDuration--;
+                if (playerState.manaRegenDisabledDuration === 0) playerState.manaRegenDisabled = false;
+                messages.push({ text: `${playerName} не восстанавливает ману из-за последствий ультимейта.`, type: 'mana_effect', attacker: 'player' });
+            } else if (playerState.manaRegenHalved && playerState.manaRegenHalvedDuration > 0) {
+                regen = Math.floor(regen / 2);
+                playerState.manaRegenHalvedDuration--;
+                if (playerState.manaRegenHalvedDuration === 0) playerState.manaRegenHalved = false;
+                messages.push({ text: `${playerName} восстанавливает только ${regen} маны из-за критического удара.`, type: 'mana_effect', attacker: 'player' });
+            }
+            playerMana += regen;
+            if (playerMana > 100) playerMana = 100;
+            playerState.mana = playerMana;
+            
             let actionLog = null;
 
             if (playerMana >= 100) {
@@ -633,6 +688,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 messages.push(actionLog);
                 pushState();
                 playerMana -= 100;
+                playerState.mana = playerMana;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
             } else {
                 const attackResult = performAttack(
@@ -686,6 +742,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     }
                     messages.push(actionLog);
                     pushState();
+                    
+                    // ========== ОБРАБОТКА КРИТИЧЕСКОГО УДАРА ==========
+                    if (attackResult.isCritFlag) {
+                        // Цель (враг) получает -50% к регенерации маны на следующий ход
+                        enemyState.manaRegenHalved = true;
+                        enemyState.manaRegenHalvedDuration = 1;
+                        messages.push({ text: `${enemyName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'player' });
+                    }
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
                     messages.push(actionLog);
@@ -714,7 +778,24 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 continue;
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
-            enemyMana += enemyStats.manaRegen;
+            
+            // ========== РЕГЕНЕРАЦИЯ МАНЫ ВРАГА С УЧЁТОМ ШТРАФОВ ==========
+            let regen = enemyStats.manaRegen;
+            if (enemyState.manaRegenDisabled && enemyState.manaRegenDisabledDuration > 0) {
+                regen = 0;
+                enemyState.manaRegenDisabledDuration--;
+                if (enemyState.manaRegenDisabledDuration === 0) enemyState.manaRegenDisabled = false;
+                messages.push({ text: `${enemyName} не восстанавливает ману из-за последствий ультимейта.`, type: 'mana_effect', attacker: 'enemy' });
+            } else if (enemyState.manaRegenHalved && enemyState.manaRegenHalvedDuration > 0) {
+                regen = Math.floor(regen / 2);
+                enemyState.manaRegenHalvedDuration--;
+                if (enemyState.manaRegenHalvedDuration === 0) enemyState.manaRegenHalved = false;
+                messages.push({ text: `${enemyName} восстанавливает только ${regen} маны из-за критического удара.`, type: 'mana_effect', attacker: 'enemy' });
+            }
+            enemyMana += regen;
+            if (enemyMana > 100) enemyMana = 100;
+            enemyState.mana = enemyMana;
+            
             let actionLog = null;
 
             if (enemyMana >= 100) {
@@ -731,6 +812,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 messages.push(actionLog);
                 pushState();
                 enemyMana -= 100;
+                enemyState.mana = enemyMana;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
             } else {
                 const attackResult = performAttack(
@@ -783,6 +865,14 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     }
                     messages.push(actionLog);
                     pushState();
+                    
+                    // ========== ОБРАБОТКА КРИТИЧЕСКОГО УДАРА ==========
+                    if (attackResult.isCritFlag) {
+                        // Цель (игрок) получает -50% к регенерации маны на следующий ход
+                        playerState.manaRegenHalved = true;
+                        playerState.manaRegenHalvedDuration = 1;
+                        messages.push({ text: `${playerName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'enemy' });
+                    }
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'enemy' };
                     messages.push(actionLog);

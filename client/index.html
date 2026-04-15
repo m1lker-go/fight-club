@@ -4,145 +4,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cat Fighting</title>
+    <!-- Иконка сайта -->
+    <link rel="icon" href="assets/favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://vk.com/js/api/openapi.js?169" type="text/javascript"></script>
-    <!-- VK ID SDK (альтернативный, может пригодиться) -->
-    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
-    <!-- Иконки сайта -->
-    <link rel="icon" type="image/png" href="/assets/favicon.png">
-    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <!-- FontAwesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div id="splash-screen">
-        <div class="splash-content">
-            <h1 class="splash-title">Загрузка</h1>
-            <p class="splash-subtitle">Пожалуйста, подождите</p>
-            <div class="spinner"></div>
-        </div>
-    </div>
-
     <div id="app">
+        <!-- Заставка загрузки -->
+        <div id="splash-screen">
+            <div class="splash-content">
+                <h1 class="splash-title">Cat Fighting</h1>
+                <p class="splash-subtitle">Загрузка...</p>
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Верхняя панель -->
         <div class="top-bar">
-            <div class="power"><i class="fas fa-fist-raised"></i> <span id="power">0</span></div>
-            <div class="rating"><i class="fas fa-trophy"></i> <span id="rating">1000</span></div>
-            <div class="coins"><i class="fas fa-coins"></i> <span id="coinCount">0</span></div>
-            <div class="diamonds"><i class="fas fa-gem"></i> <span id="diamondCount">0</span></div>
-            <div class="energy"><i class="fas fa-bolt"></i> <span id="energy">20</span></div>
+            <div class="power"><i class="fas fa-shield-alt"></i> <span id="power">0</span></div>
+            <div class="stats">
+                <span><i class="fas fa-trophy"></i> <span id="rating">0</span></span>
+                <span><i class="fas fa-bolt"></i> <span id="energy">0</span></span>
+            </div>
+            <div class="wallet">
+                <span><i class="fas fa-gem"></i> <span id="diamondCount">0</span></span>
+                <span><i class="fas fa-coins"></i> <span id="coinCount">0</span></span>
+            </div>
         </div>
 
-        <div id="content" class="content"></div>
+        <!-- Основной контент -->
+        <div id="content"></div>
 
+        <!-- Нижнее меню -->
         <div class="bottom-menu">
-            <div class="menu-item" data-screen="main"><i class="fas fa-home"></i></div>
+            <div class="menu-item active" data-screen="main"><i class="fas fa-home"></i></div>
+            <div class="menu-item" data-screen="equip"><i class="fas fa-tshirt"></i></div>
             <div class="menu-item" data-screen="tower"><i class="fas fa-chess-rook"></i></div>
-            <div class="menu-item" data-screen="tasks"><i class="fas fa-tasks"></i></div>
-            <div class="menu-item" data-screen="rating"><i class="fas fa-trophy"></i></div>
+            <div class="menu-item" data-screen="forge"><i class="fas fa-hammer"></i></div>
+            <div class="menu-item" data-screen="tasks"><i class="fas fa-calendar-alt"></i></div>
+            <div class="menu-item" data-screen="trade"><i class="fas fa-store"></i></div>
+            <div class="menu-item" data-screen="rating"><i class="fas fa-chart-line"></i></div>
+            <div class="menu-item" data-screen="profile"><i class="fas fa-user"></i></div>
+            <div class="menu-item" data-screen="settings"><i class="fas fa-cog"></i></div>
         </div>
     </div>
 
-    <!-- Модальные окна (перенесены ПЕРЕД скриптами) -->
-    <div id="roleModal" class="modal" style="display: none;">
+    <!-- Модальные окна (скрыты) -->
+    <div id="roleModal" class="modal">
         <div class="modal-content">
+            <span class="close">&times;</span>
             <div class="modal-header">
-                <h2 id="modalTitle">Роли класса</h2>
-                <span class="close">&times;</span>
+                <h2 id="modalTitle"></h2>
             </div>
-            <div class="modal-body" id="modalBody"></div>
+            <div id="modalBody" class="modal-body"></div>
         </div>
     </div>
 
-    <div id="chestResultModal" class="modal" style="display: none;">
+    <div id="chestResultModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>Поздравляем!</h2>
-                <span class="close" onclick="document.getElementById('chestResultModal').style.display='none'">&times;</span>
-            </div>
-            <div class="modal-body" id="chestResultBody"></div>
+            <span class="close">&times;</span>
+            <div class="modal-header"><h2>Получен предмет!</h2></div>
+            <div id="chestResultBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="equipCompareModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close">&times;</span>
+            <div class="modal-header"><h2>Сравнение предметов</h2></div>
+            <div id="equipCompareBody" class="modal-body" style="display: flex; gap: 20px; justify-content: center;"></div>
+        </div>
+    </div>
+
+    <div id="levelUpModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header"><h2>Уровень повышен!</h2></div>
+            <div id="levelUpBody" class="modal-body"></div>
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn" onclick="document.getElementById('chestResultModal').style.display='none'">ОК</button>
+                <button class="btn" id="levelUpUpgradeBtn">Распределить</button>
+                <button class="btn" id="levelUpLaterBtn">Позже</button>
             </div>
         </div>
     </div>
 
-    <div id="levelUpModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Поздравляем!</h2>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body" id="levelUpBody"></div>
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button class="btn" id="levelUpUpgradeBtn">Улучшить</button>
-                <button class="btn" id="levelUpLaterBtn">Потом</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="equipCompareModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2>Сравнение предметов</h2>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body" id="equipCompareBody" style="display: flex; gap: 20px; justify-content: center;"></div>
-        </div>
-    </div>
-
-    <!-- Скрипты приложения (порядок важен) -->
+    <!-- СКРИПТЫ (Порядок важен!) -->
+    <!-- 1. Telegram WebApp API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- 2. Глобальные константы КЛИЕНТА (не сервера!) -->
     <script src="js/constants.js"></script>
+    
+    <!-- 3. Вспомогательные функции и логика -->
     <script src="js/helpers.js"></script>
+    <script src="js/app.js"></script>
     <script src="js/screens.js"></script>
-    <script src="authModal.js"></script>
-    <script src="settings.js"></script>
-    <script src="js/battleLog.js"></script>
     <script src="js/battleUI.js"></script>
+    <script src="js/battleLog.js"></script>
     <script src="js/task-up.js"></script>
-    <script src="js/forge.js"></script>
     <script src="js/tower.js"></script>
-    <script src="app.js"></script>
-
-    <!-- Вспомогательный скрипт для VK Low-code (глобальная callback-функция) -->
-    <script>
-        // Эта функция будет вызвана виджетом VK после успешной авторизации
-        window.vkAuthCallback = function(response) {
-            if (response && response.session) {
-                const user = response.session.user;
-                // Отправляем данные на сервер для входа
-                fetch('https://fight-club-api-4och.onrender.com/auth/vk-lowcode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user: user, access_token: response.session.sid })
-                }).then(res => res.json()).then(data => {
-                    if (data.success) {
-                        localStorage.setItem('sessionToken', data.sessionToken);
-                        if (data.needNickname) {
-                            if (typeof showNicknameModal === 'function') showNicknameModal(data.userId);
-                        } else {
-                            location.reload();
-                        }
-                    } else {
-                        alert('Ошибка входа через VK: ' + data.error);
-                    }
-                }).catch(err => console.error('VK lowcode fetch error:', err));
-            }
-        };
-
-        // Инициализация виджета (будет вызвана из loginWithVK при необходимости)
-        window.initVKWidget = function(containerId) {
-            if (typeof VK !== 'undefined' && VK.Widgets) {
-                VK.Widgets.Auth(containerId, {
-                    onAuth: window.vkAuthCallback,
-                    authUrl: '/auth/vk-lowcode' // не используется напрямую, но оставим
-                });
-            } else {
-                console.error('VK API не загружен');
-            }
-        };
-    </script>
+    <script src="js/forge.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/authModal.js"></script>
+    <script src="js/profile.js"></script>
 </body>
 </html>

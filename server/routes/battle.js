@@ -1,11 +1,9 @@
-// server/routes/battle.js
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
-const { baseStats, rolePassives, subclassOptions, clamp, GAME_LIMITS } = require('../game-balance');
-
+const { rechargeEnergy } = require('../utils/energy');
 const {
     attackPhrases,
     dodgePhrases,
@@ -25,11 +23,41 @@ const {
     ultPhrases
 } = require('../data/battlePhrases');
 
+const subclassOptions = {
+    warrior: ['guardian', 'berserker', 'knight'],
+    assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+    mage: ['pyromancer', 'cryomancer', 'illusionist']
+};
+
 function getRandomSubclass(className) {
     const options = subclassOptions[className];
     if (!options || options.length === 0) return 'guardian';
     return options[Math.floor(Math.random() * options.length)];
 }
+
+const baseStats = {
+    warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+};
+
+const rolePassives = {
+    guardian: { damageReduction: 10, blockChance: 20 },
+    berserker: { rage: true },
+    knight: { reflect: 20 },
+    assassin: { critMultiplier: 2.0 },
+    venom_blade: { poison: true },
+    blood_hunter: { vamp: 20 },
+    pyromancer: { burn: true },
+    cryomancer: { freezeChance: 25, physReduction: 30 },
+    illusionist: { mirageGuaranteed: true },
+    mouse_necromancer: { revive: true },
+    mouse_blade: { doubleAttack: true, ultimateIgnoreDef: true, ultimateVamp: 100 },
+    mouse_antimag: { manaSteal: 5, ultimateManaDependent: true },
+    mouse_paladin: { damageReduction: 50, invincible: true },
+    mouse_alchemist: { poisonOnHit: true, poisonDamagePercent: 50, ultimatePoison: true },
+    mouse_shadow: { dodgeChance: 90, invisibility: true }
+};
 
 const recentOpponents = new Map();
 
@@ -75,7 +103,7 @@ function calculateStats(classData, inventory, subclass) {
         int: base.int + (classData.int_points || 0),
         spd: base.spd + (classData.spd_points || 0),
         crit: base.crit + (classData.crit_points || 0),
-        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 50), // ✅ Синхронизировано с клиентом: делитель 50
+        critDmg: 1.5 + ((classData.crit_dmg_points || 0) / 50),
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,
@@ -95,7 +123,6 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // Классовые особенности — ✅ синхронизировано с клиентом: Воин *5
     if (classData.class === 'warrior') stats.hp += Math.floor(stats.def / 5) * 5;
     if (classData.class === 'assassin') stats.spd += Math.floor(stats.agi / 5);
     if (classData.class === 'mage') {
@@ -107,32 +134,28 @@ function calculateStats(classData, inventory, subclass) {
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
-    // Классовые множители + лимиты через clamp()
     if (classData.class === 'warrior') {
-        stats.def = clamp(stats.def * 1.5, GAME_LIMITS.def.min, GAME_LIMITS.def.max);
+        stats.def = Math.min(70, stats.def * 1.5);
         stats.hp = Math.floor(stats.hp * 1.1);
     } else if (classData.class === 'assassin') {
         stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = clamp(stats.crit * 1.25, GAME_LIMITS.crit.min, GAME_LIMITS.crit.max);
-        stats.agi = clamp(stats.agi * 1.1, GAME_LIMITS.agi.min, GAME_LIMITS.agi.max);
+        stats.crit = Math.min(100, stats.crit * 1.25);
+        stats.agi = Math.min(100, stats.agi * 1.1);
     } else if (classData.class === 'mage') {
         stats.atk = Math.floor(stats.atk * 1.2);
         stats.int = stats.int * 1.2;
     }
 
-    // Финальные капы через clamp()
-    stats.def = clamp(stats.def, GAME_LIMITS.def.min, GAME_LIMITS.def.max);
-    stats.crit = clamp(stats.crit, GAME_LIMITS.crit.min, GAME_LIMITS.crit.max);
-    stats.agi = clamp(stats.agi, GAME_LIMITS.agi.min, GAME_LIMITS.agi.max);
-    stats.critDmg = clamp(stats.critDmg, GAME_LIMITS.critDmg.min, GAME_LIMITS.critDmg.max);
-
+    stats.def = Math.min(70, stats.def);
+    stats.crit = Math.min(100, stats.crit);
+    stats.agi = Math.min(70, stats.agi);
+    stats.critDmg = Math.min(stats.critDmg, 4.5);
     return stats;
 }
 
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
     let extraLogs = [];
 
-    // Illusionist mirage
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist && rolePassives.illusionist.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
         if (defenderState.mirageCounter >= 4) {
@@ -144,7 +167,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Shadow dodge (90%)
     if (defenderSubclass === 'mouse_shadow') {
         const dodgeChance = rolePassives.mouse_shadow.dodgeChance;
         if (Math.random() * 100 < dodgeChance) {
@@ -155,7 +177,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Standard dodge based on agility
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
     const isDodge = Math.random() * 100 > hitChance;
     if (isDodge) {
@@ -170,7 +191,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let rageInfo = null;
     let selfDamage = 0;
 
-    // Berserker self damage
     if (attackerSubclass === 'berserker' && rolePassives.berserker && rolePassives.berserker.rage) {
         const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
         const rage = getBerserkerRage(hpPercent);
@@ -214,16 +234,13 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage *= effectiveCritDmg;
     }
 
-    // Cryomancer physical reduction
     if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer && rolePassives.cryomancer.physReduction)
         damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
 
-    // Paladin damage reduction (50%)
     if (defenderSubclass === 'mouse_paladin') {
         damage = Math.floor(damage * (1 - rolePassives.mouse_paladin.damageReduction / 100));
     }
 
-    // Apply defense reduction
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
@@ -233,7 +250,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let reflectDamage = 0;
     if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
 
-    // Mana steal for Antimag
     if (attackerSubclass === 'mouse_antimag') {
         const steal = rolePassives.mouse_antimag.manaSteal;
         const currentMana = defenderState.mana || 0;
@@ -246,7 +262,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         });
     }
 
-    // Poison for Alchemist (passive)
     if (attackerSubclass === 'mouse_alchemist') {
         if (!defenderState.alchemistPoison) defenderState.alchemistPoison = 0;
         defenderState.alchemistPoison = Math.floor(damage * 0.5);
@@ -258,14 +273,12 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         });
     }
 
-    // Double attack for Blade
     let doubleAttack = false;
     if (attackerSubclass === 'mouse_blade') {
         doubleAttack = true;
         damage *= 2;
     }
 
-    // Venom blade poison
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
@@ -279,7 +292,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Pyromancer burn
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
@@ -293,7 +305,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Cryomancer freeze
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
@@ -339,7 +350,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         attackPhrase += ' (двойной удар)';
     }
 
-    // Механика маны при промахе
     if (isDodge) {
         attackerState.mana = Math.max(0, (attackerState.mana || 0) - 10);
         defenderState.mana = Math.min(100, (defenderState.mana || 0) + 5);
@@ -467,7 +477,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'damage';
             break;
             
-        // Mouse bosses
         case 'mouse_blade':
             damage = attackerStats.atk * 2;
             log = `<strong>${attackerName}</strong> использует Уязвимость и наносит ${damage} урона, игнорируя защиту!`;
@@ -511,7 +520,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
     }
     
-    // После ультимейта регенерация маны = 0 на следующий ход
     attackerState.manaRegenDisabled = true;
     attackerState.manaRegenDisabledDuration = 1;
     
@@ -614,7 +622,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
             
-            // Регенерация маны с учётом штрафов
             let regen = playerStats.manaRegen;
             if (playerState.manaRegenDisabled && playerState.manaRegenDisabledDuration > 0) {
                 regen = 0;
@@ -700,7 +707,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     messages.push(actionLog);
                     pushState();
                     
-                    // Обработка критического удара: -50% к регенерации маны цели
                     if (attackResult.isCritFlag) {
                         enemyState.manaRegenHalved = true;
                         enemyState.manaRegenHalvedDuration = 1;
@@ -717,7 +723,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turn = 'enemy';
             playerActedThisRound = true;
         } else {
-            // === ХОД ВРАГА ===
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
@@ -732,7 +737,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
             
-            // Регенерация маны врага с учётом штрафов
             let regen = enemyStats.manaRegen;
             if (enemyState.manaRegenDisabled && enemyState.manaRegenDisabledDuration > 0) {
                 regen = 0;
@@ -817,7 +821,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     messages.push(actionLog);
                     pushState();
                     
-                    // Обработка критического удара: -50% к регенерации маны цели
                     if (attackResult.isCritFlag) {
                         playerState.manaRegenHalved = true;
                         playerState.manaRegenHalvedDuration = 1;
@@ -835,7 +838,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = true;
         }
 
-        // Уменьшаем длительность баффов крит. урона
         if (playerState.critDmgBuffDuration > 0) {
             playerState.critDmgBuffDuration--;
             if (playerState.critDmgBuffDuration === 0) playerState.critDmgBuff = 0;
@@ -901,7 +903,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = false;
         }
 
-        // Воскрешение Некроманта
         if (enemyHp <= 0 && !enemyState.revived && enemySubclass === 'mouse_necromancer') {
             enemyHp = Math.floor(enemyStats.hp * 0.1);
             enemyState.revived = true;

@@ -22,6 +22,7 @@
     { "src": "/tower/(.*)", "dest": "/server/routes/tower-server.js" },
     { "src": "/rank/(.*)", "dest": "/server/routes/rank.js" },
     { "src": "/style.css", "dest": "/client/style.css" },
+    { "src": "/favicon.ico", "dest": "/client/favicon.ico" },
     { "src": "/assets/(.*)", "dest": "/client/assets/$1" },
     { "src": "/js/(.*)", "dest": "/client/js/$1" },
     { "src": "/(.*)", "dest": "/client/index.html" }

@@ -203,8 +203,16 @@ async function showBattleResult(battleData, timeOut = false) {
 
     // Проверяем, повысился ли уровень (сервер уже начислил опыт)
     if (battleData.reward?.leveledUp) {
-        await refreshData(); // обновляем данные пользователя
+        await refreshData();
         showLevelUpModal(userData.current_class);
+    }
+
+    // ✅ Фолбэк: мгновенно применяем класс "defeated", если бой уже завершён
+    if (battleData.result.playerHpRemain <= 0) {
+        document.querySelector('.hero-card')?.classList.add('defeated');
+    }
+    if (battleData.result.enemyHpRemain <= 0) {
+        document.querySelector('.enemy-card')?.classList.add('defeated');
     }
 
     // Обновление заданий через apiRequest

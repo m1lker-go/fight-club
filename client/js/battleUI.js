@@ -60,7 +60,7 @@ function showBattleScreen(battleData) {
     battleData.playerClass = userData.current_class;
     battleData.enemyClass = battleData.opponent.class;
     battleData.playerSubclass = userData.subclass;
-    battleData.enemySubclass = battleData.opponent.subclass;
+   battleData.enemySubclass = battleData.opponent.subclass;
 
     const getRoleNameRu = (role) => {
         const roles = {

@@ -148,28 +148,18 @@ const BattleLog = {
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
-        if (state.playerHp <= 0 && heroCard && !heroCard.classList.contains('defeated')) {
-            if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-            this.deathTimerHero = setTimeout(() => {
-                if (heroCard) heroCard.classList.add('defeated');
-            }, 2000);
-        }
-        if (state.playerHp > 0 && heroCard && heroCard.classList.contains('defeated')) {
-            if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-            heroCard.classList.remove('defeated');
-        }
+       const applyDefeatState = (card, hp) => {
+    if (!card) return;
+    if (hp <= 0 && !card.classList.contains('defeated')) {
+        // Небольшая задержка, чтобы игрок успел увидеть момент падения HP
+        setTimeout(() => card.classList.add('defeated'), 800);
+    } else if (hp > 0 && card.classList.contains('defeated')) {
+        card.classList.remove('defeated');
+    }
+};
 
-        if (state.enemyHp <= 0 && enemyCard && !enemyCard.classList.contains('defeated')) {
-            if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-            this.deathTimerEnemy = setTimeout(() => {
-                if (enemyCard) enemyCard.classList.add('defeated');
-            }, 2000);
-        }
-        if (state.enemyHp > 0 && enemyCard && enemyCard.classList.contains('defeated')) {
-            if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-            enemyCard.classList.remove('defeated');
-        }
-    },
+applyDefeatState(document.querySelector('.hero-card'), state.playerHp);
+applyDefeatState(document.querySelector('.enemy-card'), state.enemyHp);,
 
     buildEffectsList(side) {
         const effects = [];

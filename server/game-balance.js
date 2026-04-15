@@ -1,5 +1,6 @@
-// game-balance.js (сервер)
-// Единый источник игровых констант и лимитов
+// server/game-balance.js
+// Единый источник констант и лимитов для бэкенда
+// Значения baseStats синхронизированы с client/js/constants.js
 
 const baseStats = {
     warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
@@ -17,6 +18,7 @@ const rolePassives = {
     pyromancer: { burn: true },
     cryomancer: { freezeChance: 25, physReduction: 30 },
     illusionist: { mirageGuaranteed: true },
+    // Боссы-мыши
     mouse_necromancer: { revive: true },
     mouse_blade: { doubleAttack: true, ultimateIgnoreDef: true, ultimateVamp: 100 },
     mouse_antimag: { manaSteal: 5, ultimateManaDependent: true },

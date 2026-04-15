@@ -257,21 +257,21 @@ applyDefeatState(document.querySelector('.enemy-card'), state.enemyHp);,
         if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
     },
 
-    formatLogText(text) {
-        text = text.replace(/(Урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-        text = text.replace(/(Крит\. урон -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-        text = text.replace(/(Урон от огня -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-        text = text.replace(/(Урон от яда -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-        text = text.replace(/(Отражение -)(\d+)/g, '$1<span class="damage-number">$2</span>');
-        text = text.replace(/(Вампиризм \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
-        text = text.replace(/(Здоровье \+)(\d+)/g, '$1<span class="heal-number">$2</span>');
-        text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
-        return text;
-    },
+   formatLogText(text) {
+    text = text.replace(/(Урон -)(\d+)/g, '$1 <span class="damage-number">$2</span>');
+    text = text.replace(/(Крит\. урон -)(\d+)/g, '$1 <span class="damage-number">$2</span>');
+    text = text.replace(/(Урон от огня -)(\d+)/g, '$1 <span class="damage-number">$2</span>');
+    text = text.replace(/(Урон от яда -)(\d+)/g, '$1 <span class="damage-number">$2</span>');
+    text = text.replace(/(Отражение -)(\d+)/g, '$1 <span class="damage-number">$2</span>');
+    text = text.replace(/(Вампиризм \+)(\d+)/g, '$1 <span class="heal-number">$2</span>');
+    text = text.replace(/(Здоровье \+)(\d+)/g, '$1 <span class="heal-number">$2</span>');
+    text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
+    text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
+    text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
+    text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
+    text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
+    return text;
+},
     playNext() {
         if (this.stopped) {
             console.log('[BattleLog] stopped, ignoring');

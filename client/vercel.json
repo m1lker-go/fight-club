@@ -1,16 +1,25 @@
 {
   "headers": [
-    { "source": "/style.css", "headers": [{ "key": "Content-Type", "value": "text/css" }] },
-    { "source": "/assets/favicon.png", "headers": [{ "key": "Content-Type", "value": "image/png" }] },
-    { "source": "/assets/apple-touch-icon.png", "headers": [{ "key": "Content-Type", "value": "image/png" }] }
+    {
+      "source": "/style.css",
+      "headers": [{ "key": "Content-Type", "value": "text/css" }]
+    },
+    {
+      "source": "/assets/favicon.png",
+      "headers": [{ "key": "Content-Type", "value": "image/png" }]
+    },
+    {
+      "source": "/assets/apple-touch-icon.png",
+      "headers": [{ "key": "Content-Type", "value": "image/png" }]
+    }
   ],
   "routes": [
     { "src": "/auth/telegram/callback", "dest": "https://api.cat-fight.ru/auth/telegram/callback" },
-    { "src": "/style.css", "dest": "/client/style.css" },
-    { "src": "/favicon.ico", "dest": "/client/favicon.ico" },
-    { "src": "/assets/(.*)", "dest": "/client/assets/$1" },
-    { "src": "/js/(.*)", "dest": "/client/js/$1" },
-    { "src": "/(.*).js", "dest": "/client/$1.js" },
-    { "src": "/(.*)", "dest": "/client/index.html" }
+    { "src": "/style.css", "dest": "/style.css" },
+    { "src": "/favicon.ico", "dest": "/favicon.ico" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/js/(.*)", "dest": "/js/$1" },
+    { "src": "/(.*)\\.js", "dest": "/$1.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

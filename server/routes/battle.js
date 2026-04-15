@@ -1049,8 +1049,6 @@ async function addExp(client, userId, className, expGain) {
 }
 function getCoinReward(streak) { return streak>=25 ? 20 : streak>=10 ? 10 : streak>=5 ? 7 : 5; }
 function getRatingChange(streak) { return streak>=20 ? 30 : streak>=10 ? 25 : streak>=5 ? 20 : 15; }
-async function rechargeEnergy(client, userId) { /* ... */ }
-async function getPlayerRatingPosition(client, userId) { /* ... */ }
 
 async function selectPvPOpponent(client, currentUserId, currentLevel) {
     const ratingRes = await client.query('SELECT id, rating FROM users WHERE rating > 0 ORDER BY rating DESC');

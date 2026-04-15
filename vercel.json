@@ -1,0 +1,29 @@
+{
+  "headers": [
+    {
+      "source": "/style.css",
+      "headers": [{ "key": "Content-Type", "value": "text/css" }]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Content-Type", "value": "image/png" }]
+    }
+  ],
+  "routes": [
+    { "src": "/auth/(.*)", "dest": "/server/routes/auth-ext.js" },
+    { "src": "/player/(.*)", "dest": "/server/routes/player.js" },
+    { "src": "/inventory/(.*)", "dest": "/server/routes/inventory.js" },
+    { "src": "/shop/(.*)", "dest": "/server/routes/shop.js" },
+    { "src": "/market/(.*)", "dest": "/server/routes/market.js" },
+    { "src": "/battle/(.*)", "dest": "/server/routes/battle.js" },
+    { "src": "/tasks/(.*)", "dest": "/server/routes/tasks.js" },
+    { "src": "/avatars/(.*)", "dest": "/server/routes/avatars.js" },
+    { "src": "/forge/(.*)", "dest": "/server/routes/forge-server.js" },
+    { "src": "/tower/(.*)", "dest": "/server/routes/tower-server.js" },
+    { "src": "/rank/(.*)", "dest": "/server/routes/rank.js" },
+    { "src": "/style.css", "dest": "/client/style.css" },
+    { "src": "/assets/(.*)", "dest": "/client/assets/$1" },
+    { "src": "/js/(.*)", "dest": "/client/js/$1" },
+    { "src": "/(.*)", "dest": "/client/index.html" }
+  ]
+}

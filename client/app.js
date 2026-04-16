@@ -447,16 +447,16 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 // Функции, которые будут переопределены в screens.js, объявляем глобально
-window.renderMain = renderMain;
-window.renderEquip = renderEquip;
-window.renderTrade = renderTrade;
-window.renderMarket = renderMarket;
-window.renderRating = renderRating;
-window.renderProfile = renderProfile;
-window.renderTasks = renderTasks;
-window.renderSkins = renderSkins;
-window.renderSkills = renderSkills;
-window.renderProfileBonuses = renderProfileBonuses;
+if (typeof renderMain === 'function') window.renderMain = renderMain;
+if (typeof renderEquip === 'function') window.renderEquip = renderEquip;
+if (typeof renderTrade === 'function') window.renderTrade = renderTrade;
+if (typeof renderMarket === 'function') window.renderMarket = renderMarket;
+if (typeof renderRating === 'function') window.renderRating = renderRating;
+if (typeof renderProfile === 'function') window.renderProfile = renderProfile;
+if (typeof renderTasks === 'function') window.renderTasks = renderTasks;
+if (typeof renderSkins === 'function') window.renderSkins = renderSkins;
+if (typeof renderSkills === 'function') window.renderSkills = renderSkills;
+if (typeof renderProfileBonuses === 'function') window.renderProfileBonuses = renderProfileBonuses;
 
 // Обработка внешней авторизации (возврат из OAuth-потоков Google, VK, Telegram)
 function handleExternalAuth() {

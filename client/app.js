@@ -389,7 +389,13 @@ function showScreen(screen) {
                 renderForgeFallback();
             }
             break;
-        case 'tasks': renderTasks(); break;
+case 'tasks':
+    if (typeof renderTasks === 'function') {
+        renderTasks();
+    } else {
+        content.innerHTML = '<p style="text-align:center; color:#aaa;">Задания временно недоступны</p>';
+    }
+    break;
         case 'rating': renderRating(); break;
         case 'profile': renderProfile(); break;
         case 'tower': 

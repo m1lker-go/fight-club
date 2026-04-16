@@ -253,12 +253,19 @@ async function checkAuth() {
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
     console.log('[hideSplashScreen] splash element:', splash);
+    console.log('[hideSplashScreen] classList before:', splash?.classList);
+    
     if (splash) {
         splash.classList.add('hidden');
+        splash.style.display = 'none'; // ← Принудительно
+        
+        console.log('[hideSplashScreen] classList after:', splash.classList);
+        console.log('[hideSplashScreen] style.display:', splash.style.display);
+        
         setTimeout(() => {
-            splash.style.display = 'none';
-            console.log('[hideSplashScreen] splash hidden');
-        }, 500);
+            console.log('[hideSplashScreen] Final check - display:', 
+                getComputedStyle(splash).display);
+        }, 100);
     }
 }
 

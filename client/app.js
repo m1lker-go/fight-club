@@ -267,6 +267,8 @@ function showErrorSplash() {
     if (splash) {
         splash.classList.remove('hidden');
         splash.style.display = 'flex';
+        
+        // ✅ ИСПРАВЛЕНО: innerHTML без пробелов
         splash.innerHTML = `
             <div class="splash-content">
                 <h1 class="splash-title">Ошибка соединения</h1>
@@ -275,6 +277,7 @@ function showErrorSplash() {
                 <button class="btn" id="retryBtn" style="margin-top: 10px;">Повторить</button>
             </div>
         `;
+        
         const retryBtn = document.getElementById('retryBtn');
         if (retryBtn) {
             retryBtn.addEventListener('click', () => {

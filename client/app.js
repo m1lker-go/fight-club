@@ -216,6 +216,14 @@ async function checkAuth() {
                 updateMainMenuNewIcons();
                 checkAdvent();
                 hideSplashScreen();
+                
+                // ✅ Диагностика ВНУТРИ успешной авторизации
+                console.log('=== AUTH SUCCESS DIAGNOSTICS ===');
+                console.log('userData:', userData ? 'OK' : 'NULL');
+                console.log('userClasses:', userClasses.length);
+                console.log('inventory:', inventory.length);
+                console.log('renderMain type:', typeof window.renderMain);
+                
                 console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {
@@ -256,15 +264,24 @@ function hideSplashScreen() {
     console.log('[hideSplashScreen] classList before:', splash?.classList);
     
     if (splash) {
+        // ✅ Принудительное скрытие с !important через inline-стили
         splash.classList.add('hidden');
-        splash.style.display = 'none'; // ← Принудительно
+        splash.style.display = 'none';
+        splash.style.visibility = 'hidden';
+        splash.style.opacity = '0';
+        splash.style.pointerEvents = 'none';
         
         console.log('[hideSplashScreen] classList after:', splash.classList);
         console.log('[hideSplashScreen] style.display:', splash.style.display);
         
+        // Проверка через 100мс
         setTimeout(() => {
-            console.log('[hideSplashScreen] Final check - display:', 
-                getComputedStyle(splash).display);
+            const computedStyle = getComputedStyle(splash);
+            console.log('[hideSplashScreen] Final check:', {
+                display: computedStyle.display,
+                visibility: computedStyle.visibility,
+                opacity: computedStyle.opacity
+            });
         }, 100);
     }
 }
@@ -581,25 +598,5 @@ handleExternalAuth();
 // Запуск приложения
 checkAuth();
 
-// === ДИАГНОСТИКА ПОСЛЕ ЗАГРУЗКИ ===
-setTimeout(() => {
-    console.log('=== DIAGNOSTICS ===');
-    console.log('userData:', userData ? 'OK' : 'NULL');
-    console.log('userClasses:', Array.isArray(userClasses) ? userClasses.length : 'NOT ARRAY');
-    console.log('inventory:', Array.isArray(inventory) ? inventory.length : 'NOT ARRAY');
-    console.log('renderMain type:', typeof window.renderMain);
-    console.log('content element:', document.getElementById('content'));
-    
-    if (typeof window.renderMain === 'function') {
-        try {
-            console.log('[DIAG] Calling renderMain manually...');
-            window.renderMain();
-            console.log('[DIAG] renderMain completed');
-        } catch (e) {
-            console.error('[DIAG] renderMain error:', e);
-            console.error('Stack:', e.stack);
-        }
-    } else {
-        console.log('[DIAG] renderMain not ready yet (screens.js may not be loaded)');
-    }
-}, 5000);
+// ✅ Диагностика перенесена ВНУТрь checkAuth() после успешной авторизации
+// Этот блок удалён из конца файла, чтобы не вызывать ошибки до загрузки данных

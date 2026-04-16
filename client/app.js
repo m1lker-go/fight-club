@@ -548,19 +548,25 @@ handleExternalAuth();
 // Запуск приложения
 checkAuth();
 
-// === ТЕСТОВЫЙ БЛОК (удалить после отладки) ===
+// === ДИАГНОСТИКА ПОСЛЕ ЗАГРУЗКИ ===
 setTimeout(() => {
-    const content = document.getElementById('content');
-    const splash = document.getElementById('splash-screen');
-    console.log('[TEST] content:', !!content, 'splash:', !!splash);
-    if (content && splash && splash.style.display !== 'none') {
-        console.log('[TEST] Forcing main screen...');
-        splash.style.display = 'none';
-        if (typeof renderMain === 'function') {
+    console.log('=== DIAGNOSTICS ===');
+    console.log('userData:', userData ? 'OK' : 'NULL');
+    console.log('userClasses:', Array.isArray(userClasses) ? userClasses.length : 'NOT ARRAY');
+    console.log('inventory:', Array.isArray(inventory) ? inventory.length : 'NOT ARRAY');
+    console.log('renderMain type:', typeof renderMain);
+    console.log('content element:', document.getElementById('content'));
+    
+    if (typeof renderMain === 'function') {
+        try {
+            console.log('[DIAG] Calling renderMain manually...');
             renderMain();
-        } else {
-            content.innerHTML = '<p style="color:red">ERROR: renderMain not defined!</p>';
+            console.log('[DIAG] renderMain completed');
+        } catch (e) {
+            console.error('[DIAG] renderMain error:', e);
+            console.error('Stack:', e.stack);
         }
+    } else {
+        console.error('[DIAG] renderMain is NOT a function!');
     }
-}, 3000);
-// === КОНЕЦ ТЕСТОВОГО БЛОКА ===
+}, 5000);

@@ -254,10 +254,13 @@ async function checkAuth() {
 
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
+    console.log('[hideSplashScreen] splash element:', splash); // ← Для отладки
     if (splash) {
         splash.classList.add('hidden');
+        // Не убирай display:flex сразу — дай время для анимации
         setTimeout(() => {
             splash.style.display = 'none';
+            console.log('[hideSplashScreen] splash hidden'); // ← Для отладки
         }, 500);
     }
 }

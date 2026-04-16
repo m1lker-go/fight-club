@@ -40,7 +40,6 @@ window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
 // ========== УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАПРОСОВ ==========
-// Автоматически добавляет user_id и tg_id в тело POST или в URL GET
 window.apiRequest = async function(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
     const method = options.method || 'GET';
@@ -89,13 +88,12 @@ window.apiRequest = async function(endpoint, options = {}) {
     }
 };
 
-// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ (с использованием apiRequest) ==========
+// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     for (let i = 0; i < retries; i++) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
-            // Используем apiRequest, если url относительный, иначе прямой fetch
             let response;
             if (url.startsWith(window.API_BASE) || url.startsWith('/')) {
                 response = await window.apiRequest(url, { ...options, signal: controller.signal });
@@ -113,7 +111,7 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
-// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM (ВНУТРИ WEBAPP) ==========
+// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM ==========
 async function autoLoginTelegram() {
     if (!tg || !tg.initData) return false;
     console.log('Auto login via Telegram initData...');
@@ -155,7 +153,7 @@ async function autoLoginTelegram() {
     return false;
 }
 
-// Загрузка данных пользователя по токену (использует apiRequest)
+// Загрузка данных пользователя по токену
 async function loadUserDataByToken(token) {
     try {
         console.log('loadUserDataByToken: fetching profile...');
@@ -254,13 +252,12 @@ async function checkAuth() {
 
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
-    console.log('[hideSplashScreen] splash element:', splash); // ← Для отладки
+    console.log('[hideSplashScreen] splash element:', splash);
     if (splash) {
         splash.classList.add('hidden');
-        // Не убирай display:flex сразу — дай время для анимации
         setTimeout(() => {
             splash.style.display = 'none';
-            console.log('[hideSplashScreen] splash hidden'); // ← Для отладки
+            console.log('[hideSplashScreen] splash hidden');
         }, 500);
     }
 }
@@ -271,7 +268,6 @@ function showErrorSplash() {
         splash.classList.remove('hidden');
         splash.style.display = 'flex';
         
-        // ✅ ИСПРАВЛЕНО: innerHTML без пробелов
         splash.innerHTML = `
             <div class="splash-content">
                 <h1 class="splash-title">Ошибка соединения</h1>
@@ -371,8 +367,9 @@ function updateTopBar() {
     document.getElementById('power').innerText = currentPower;
 }
 
-function showScreen(screen) 
- console.log('[showScreen] switching to:', screen);
+// ✅ ИСПРАВЛЕНО: добавлена открывающая { после объявления функции
+function showScreen(screen) {
+    console.log('[showScreen] switching to:', screen);
     currentScreen = screen;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
@@ -380,53 +377,73 @@ function showScreen(screen)
     });
 
     const content = document.getElementById('content');
+    if (!content) {
+        console.error('[showScreen] content element not found!');
+        return;
+    }
     content.innerHTML = '';
 
- switch (screen) {
+    switch (screen) {
         case 'main': 
-            console.log('[showScreen] calling renderMain'); // ← ДОБАВИТЬ
-            if (typeof renderMain === 'function') {
-                renderMain();
+            console.log('[showScreen] calling renderMain');
+            if (typeof window.renderMain === 'function') {
+                window.renderMain();
             } else {
                 console.error('[showScreen] renderMain is not a function!');
+                content.innerHTML = '<p style="color:red">Ошибка загрузки главного экрана</p>';
             }
             break;
-        case 'equip': renderEquip(); break;
-        case 'trade': renderTrade(); break;
+        case 'equip': 
+            if (typeof window.renderEquip === 'function') window.renderEquip(); 
+            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Экипировка временно недоступна</p>';
+            break;
+        case 'trade': 
+            if (typeof window.renderTrade === 'function') window.renderTrade(); 
+            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Торговля временно недоступна</p>';
+            break;
         case 'forge':
-            if (typeof renderForge === 'function') {
-                renderForge();
+            if (typeof window.renderForge === 'function') {
+                window.renderForge();
             } else {
                 renderForgeFallback();
             }
             break;
-case 'tasks':
-    if (typeof renderTasks === 'function') {
-        renderTasks();
-    } else {
-        content.innerHTML = '<p style="text-align:center; color:#aaa;">Задания временно недоступны</p>';
-    }
-    break;
-        case 'rating': renderRating(); break;
-        case 'profile': renderProfile(); break;
+        case 'tasks':
+            if (typeof window.renderTasks === 'function') {
+                window.renderTasks();
+            } else {
+                content.innerHTML = '<p style="text-align:center; color:#aaa;">Задания временно недоступны</p>';
+            }
+            break;
+        case 'rating': 
+            if (typeof window.renderRating === 'function') window.renderRating(); 
+            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Рейтинг временно недоступен</p>';
+            break;
+        case 'profile': 
+            if (typeof window.renderProfile === 'function') window.renderProfile(); 
+            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Профиль временно недоступен</p>';
+            break;
         case 'tower': 
-            if (typeof loadTowerStatus === 'function') {
-                loadTowerStatus();
+            if (typeof window.loadTowerStatus === 'function') {
+                window.loadTowerStatus();
             } else {
                 const script = document.createElement('script');
                 script.src = 'js/tower.js?v=1';
-                script.onload = () => loadTowerStatus();
+                script.onload = () => {
+                    if (typeof window.loadTowerStatus === 'function') window.loadTowerStatus();
+                };
                 document.head.appendChild(script);
             }
             break;
         case 'settings':
-            if (typeof renderSettings === 'function') {
-                renderSettings();
+            if (typeof window.renderSettings === 'function') {
+                window.renderSettings();
             } else {
                 content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
             }
             break;
-        default: renderMain();
+        default: 
+            if (typeof window.renderMain === 'function') window.renderMain();
     }
 
     if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
@@ -434,7 +451,7 @@ case 'tasks':
 
 function renderForgeFallback() {
     const content = document.getElementById('content');
-    content.innerHTML = '<p style="text-align:center; color:#aaa;">Кузница временно недоступна</p>';
+    if (content) content.innerHTML = '<p style="text-align:center; color:#aaa;">Кузница временно недоступна</p>';
 }
 
 async function loadAvatars() {
@@ -456,19 +473,20 @@ function getAvatarFilenameById(id) {
     return avatar ? avatar.filename : 'cat_heroweb.png';
 }
 
-// Инициализация меню и запуск
+// Инициализация меню
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
-        showScreen(item.dataset.screen);
+        const screen = item.dataset.screen;
+        if (screen) showScreen(screen);
     });
 });
 
-// Обработка внешней авторизации (возврат из OAuth-потоков Google, VK, Telegram)
+// Обработка внешней авторизации
 function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
 
-    // ---- Google OAuth (вход) ----
+    // Google OAuth (вход)
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -485,15 +503,15 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- Google OAuth (привязка) ----
+    // Google OAuth (привязка)
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
         if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
-        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        if (currentScreen === 'settings' && typeof window.renderSettings === 'function') window.renderSettings();
         handled = true;
     }
 
-    // ---- VK OAuth (вход) ----
+    // VK OAuth (вход)
     const vkAuth = urlParams.get('vk_auth');
     if (vkAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -510,15 +528,15 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- VK OAuth (привязка) ----
+    // VK OAuth (привязка)
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
         if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
-        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        if (currentScreen === 'settings' && typeof window.renderSettings === 'function') window.renderSettings();
         handled = true;
     }
 
-    // ---- Telegram OAuth (вход) ----
+    // Telegram OAuth (вход)
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -535,12 +553,12 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- Telegram OAuth (привязка) ----
+    // Telegram OAuth (привязка)
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
         if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
         if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
-        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
+        if (currentScreen === 'settings' && typeof window.renderSettings === 'function') window.renderSettings();
         handled = true;
     }
 
@@ -550,7 +568,7 @@ function handleExternalAuth() {
     return handled;
 }
 
-// Вызов обработки внешней авторизации перед запуском приложения
+// Вызов обработки внешней авторизации
 handleExternalAuth();
 
 // Запуск приложения
@@ -562,19 +580,19 @@ setTimeout(() => {
     console.log('userData:', userData ? 'OK' : 'NULL');
     console.log('userClasses:', Array.isArray(userClasses) ? userClasses.length : 'NOT ARRAY');
     console.log('inventory:', Array.isArray(inventory) ? inventory.length : 'NOT ARRAY');
-    console.log('renderMain type:', typeof renderMain);
+    console.log('renderMain type:', typeof window.renderMain);
     console.log('content element:', document.getElementById('content'));
     
-    if (typeof renderMain === 'function') {
+    if (typeof window.renderMain === 'function') {
         try {
             console.log('[DIAG] Calling renderMain manually...');
-            renderMain();
+            window.renderMain();
             console.log('[DIAG] renderMain completed');
         } catch (e) {
             console.error('[DIAG] renderMain error:', e);
             console.error('Stack:', e.stack);
         }
     } else {
-        console.error('[DIAG] renderMain is NOT a function!');
+        console.log('[DIAG] renderMain not ready yet (screens.js may not be loaded)');
     }
 }, 5000);

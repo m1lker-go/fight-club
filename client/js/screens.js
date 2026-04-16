@@ -1914,3 +1914,16 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
+
+
+// В КОНЦЕ screens.js:
+window.renderMain = renderMain;
+window.renderEquip = renderEquip;
+window.renderTrade = renderTrade;
+window.renderMarket = renderMarket;
+window.renderRating = renderRating;
+window.renderProfile = renderProfile;
+window.renderTasks = renderTasks;
+window.renderSkins = renderSkins;
+window.renderSkills = renderSkills;
+window.renderProfileBonuses = renderProfileBonuses;

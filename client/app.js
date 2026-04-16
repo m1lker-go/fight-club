@@ -598,5 +598,35 @@ handleExternalAuth();
 // Запуск приложения
 checkAuth();
 
-// ✅ Диагностика перенесена ВНУТрь checkAuth() после успешной авторизации
-// Этот блок удалён из конца файла, чтобы не вызывать ошибки до загрузки данных
+// === ЭКСТРЕННОЕ ИСПРАВЛЕНИЕ ВИДИМОСТИ ===
+setTimeout(() => {
+    const content = document.getElementById('content');
+    const splash = document.getElementById('splash-screen');
+    
+    console.log('=== EMERGENCY VISIBILITY CHECK ===');
+    console.log('content exists:', !!content);
+    console.log('content children:', content?.children.length);
+    console.log('content innerHTML length:', content?.innerHTML.length);
+    console.log('splash display:', getComputedStyle(splash).display);
+    console.log('content display:', getComputedStyle(content).display);
+    
+    // Принудительно скрываем splash
+    if (splash) {
+        splash.style.display = 'none';
+        splash.style.visibility = 'hidden';
+        splash.style.opacity = '0';
+    }
+    
+    // Если контент есть, но не виден — делаем его видимым
+    if (content && content.innerHTML.length > 100) {
+        content.style.display = 'block';
+        content.style.visibility = 'visible';
+        content.style.opacity = '1';
+        content.style.minHeight = '400px';
+        content.style.background = '#17212b';
+        content.style.color = 'white';
+        content.style.padding = '10px';
+        
+        console.log('[EMERGENCY] Forced content visibility');
+    }
+}, 2000);

@@ -1915,6 +1915,92 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         });
 }
 
+// ==================== ЗАДАНИЯ ====================
+async function renderTasks(container) {
+    const content = container || document.getElementById('content');
+    if (!content) return;
+    
+    content.innerHTML = '<div style="text-align:center; padding: 20px; color: #aaa;">Загрузка заданий...</div>';
+    
+    try {
+        const res = await window.apiRequest('/tasks/daily/list');
+        const data = await res.json();
+        
+        if (!data.tasks || !Array.isArray(data.tasks)) {
+            content.innerHTML = '<div style="text-align:center; color:#e74c3c; padding: 20px;">Ошибка загрузки заданий</div>';
+            return;
+        }
+        
+        let html = '<div class="tasks-container">';
+        html += '<div class="tasks-header">Ежедневные задания</div>';
+        
+        for (const task of data.tasks) {
+            const progressPercent = task.target_value > 0 
+                ? Math.min(100, Math.round((task.progress / task.target_value) * 100)) 
+                : 0;
+            const isCompleted = task.completed || progressPercent >= 100;
+            
+            html += `
+                <div class="task-item ${isCompleted ? 'completed' : ''}" data-task-id="${task.id}">
+                    <div class="task-info">
+                        <div class="task-name">${escapeHtml(task.name)}</div>
+                        <div class="task-desc">${escapeHtml(task.description)}</div>
+                        <div class="task-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <span class="progress-text">${task.progress}/${task.target_value}</span>
+                        </div>
+                    </div>
+                    <div class="task-reward">
+                        <span class="reward-amount">+${task.reward_amount}</span>
+                        <i class="fas ${task.reward_type === 'coins' ? 'fa-coins' : 'fa-star'}"></i>
+                    </div>
+                    <button class="claim-btn" ${!isCompleted ? 'disabled' : ''}>
+                        ${isCompleted ? 'Забрать' : 'В процессе'}
+                    </button>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        content.innerHTML = html;
+        
+        // Обработчики кнопок "Забрать"
+        content.querySelectorAll('.claim-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const taskItem = e.target.closest('.task-item');
+                const taskId = taskItem?.dataset.taskId;
+                if (!taskId) return;
+                
+                try {
+                    const res = await window.apiRequest('/tasks/daily/claim', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            task_id: parseInt(taskId),
+                            class_choice: userData.current_class
+                        })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast('Награда получена!', 1500);
+                        if (window.refreshData) await window.refreshData();
+                        renderTasks();
+                    } else {
+                        showToast('Ошибка: ' + result.error, 1500);
+                    }
+                } catch (err) {
+                    console.error('Claim error:', err);
+                    showToast('Ошибка соединения', 1500);
+                }
+            });
+        });
+        
+    } catch (err) {
+        console.error('Tasks load error:', err);
+        content.innerHTML = '<div style="text-align:center; color:#e74c3c; padding: 20px;">Ошибка загрузки заданий</div>';
+    }
+}
 
 // В КОНЦЕ screens.js:
 window.renderMain = renderMain;

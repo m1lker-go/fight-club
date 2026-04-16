@@ -32,8 +32,12 @@ function getRoleNameRu(role) {
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 function renderMain() {
+    console.log('[renderMain] START');
     const content = document.getElementById('content');
-    if (!content) return;
+    if (!content) {
+        console.error('[renderMain] content element not found!');
+        return;
+    }
 
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;

@@ -371,7 +371,8 @@ function updateTopBar() {
     document.getElementById('power').innerText = currentPower;
 }
 
-function showScreen(screen) {
+function showScreen(screen) 
+ console.log('[showScreen] switching to:', screen);
     currentScreen = screen;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
@@ -381,8 +382,15 @@ function showScreen(screen) {
     const content = document.getElementById('content');
     content.innerHTML = '';
 
-    switch (screen) {
-        case 'main': renderMain(); break;
+ switch (screen) {
+        case 'main': 
+            console.log('[showScreen] calling renderMain'); // ← ДОБАВИТЬ
+            if (typeof renderMain === 'function') {
+                renderMain();
+            } else {
+                console.error('[showScreen] renderMain is not a function!');
+            }
+            break;
         case 'equip': renderEquip(); break;
         case 'trade': renderTrade(); break;
         case 'forge':

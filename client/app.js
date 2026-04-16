@@ -544,3 +544,20 @@ handleExternalAuth();
 
 // Запуск приложения
 checkAuth();
+
+// === ТЕСТОВЫЙ БЛОК (удалить после отладки) ===
+setTimeout(() => {
+    const content = document.getElementById('content');
+    const splash = document.getElementById('splash-screen');
+    console.log('[TEST] content:', !!content, 'splash:', !!splash);
+    if (content && splash && splash.style.display !== 'none') {
+        console.log('[TEST] Forcing main screen...');
+        splash.style.display = 'none';
+        if (typeof renderMain === 'function') {
+            renderMain();
+        } else {
+            content.innerHTML = '<p style="color:red">ERROR: renderMain not defined!</p>';
+        }
+    }
+}, 3000);
+// === КОНЕЦ ТЕСТОВОГО БЛОКА ===

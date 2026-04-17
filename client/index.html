@@ -10,7 +10,7 @@
 </head>
 <body>
     <div id="app">
-        <!-- Заставка загрузки -->
+        <!-- Заставка -->
         <div id="splash-screen">
             <div class="splash-content">
                 <h1 class="splash-title">Cat Fighting</h1>
@@ -48,9 +48,7 @@
     <div id="roleModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <div class="modal-header">
-                <h2 id="modalTitle"></h2>
-            </div>
+            <div class="modal-header"><h2 id="modalTitle"></h2></div>
             <div id="modalBody" class="modal-body"></div>
         </div>
     </div>
@@ -85,8 +83,12 @@
 
     <!-- СКРИПТЫ -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Константы и хелперы -->
     <script src="js/constants.js"></script>
     <script src="js/helpers.js"></script>
+    
+    <!-- Основная логика -->
     <script src="app.js"></script>
     <script src="js/task-up.js"></script>
     <script src="js/screens.js"></script>
@@ -94,8 +96,26 @@
     <script src="js/battleLog.js"></script>
     <script src="js/tower.js"></script>
     <script src="js/forge.js"></script>
+    
+    <!-- Настройки и Авторизация (ВАЖНО: порядок!) -->
     <script src="settings.js"></script>
     <script src="authModal.js"></script>
+    
+    <!-- Остальные модули -->
     <script src="js/profile.js"></script>
+
+    <script>
+        // Финальная проверка после загрузки всех скриптов
+        window.addEventListener('load', () => {
+            if (typeof showAuthModal !== 'function') {
+                console.error('КРИТИЧЕСКАЯ ОШИБКА: Функция showAuthModal не найдена! Проверьте файл authModal.js');
+                // Попытка аварийного восстановления
+                document.getElementById('splash-screen').style.display = 'none';
+                document.getElementById('content').innerHTML = '<div style="padding:20px; color:red; text-align:center;">Ошибка загрузки модуля авторизации. Обновите страницу.</div>';
+            } else {
+                console.log('Модуль авторизации загружен успешно.');
+            }
+        });
+    </script>
 </body>
 </html>

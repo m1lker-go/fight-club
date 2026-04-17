@@ -90,7 +90,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div class="defeat-overlay">ПОРАЖЕНИЕ</div>
                         <div id="hero-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
@@ -132,7 +132,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div class="defeat-overlay">ПОРАЖЕНИЕ</div>
                         <div id="enemy-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
@@ -153,6 +153,21 @@ function showBattleScreen(battleData) {
             </div>
         </div>
     `;
+
+    // ✅ СРАЗУ применяем эффект поражения, если результат уже известен
+    setTimeout(() => {
+        const heroCard = document.querySelector('.hero-card');
+        const enemyCard = document.querySelector('.enemy-card');
+        
+        if (battleData.result.winner === 'enemy' || battleData.result.playerHpRemain <= 0) {
+            heroCard?.classList.add('defeated');
+            console.log('[BATTLE UI] Applied defeated to player');
+        }
+        if (battleData.result.winner === 'player' || battleData.result.enemyHpRemain <= 0) {
+            enemyCard?.classList.add('defeated');
+            console.log('[BATTLE UI] Applied defeated to enemy');
+        }
+    }, 100); // Небольшая задержка для гарантированного рендера
 
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
@@ -203,7 +218,7 @@ async function showBattleResult(battleData, timeOut = false) {
 
     // Проверяем, повысился ли уровень (сервер уже начислил опыт)
     if (battleData.reward?.leveledUp) {
-        await refreshData(); // обновляем данные пользователя
+        await refreshData();
         showLevelUpModal(userData.current_class);
     }
 

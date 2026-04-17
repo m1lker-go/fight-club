@@ -3604,41 +3604,64 @@ body {
     border: 1px solid rgba(255,255,255,0.1);
 }
 
-/* ========== ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ ЗАДАНИЙ ========== */
+/* ========== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ (ИСПРАВЛЕННЫЕ СТИЛИ) ========== */
 
-/* Карточка задания */
+.tasks-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding-bottom: 20px;
+}
+
+.tasks-header {
+    background-color: #1a1f2b; /* Третий темный цвет для заголовка секции */
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    padding: 12px 0;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
+/* Базовая карточка задания */
 .task-card {
-    display: flex !important;
+    display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    padding: 12px 15px;
     box-sizing: border-box;
-    /* Уменьшенные отступы */
-    padding: 10px 12px; 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background-color: rgba(42, 48, 60, 0.6); /* Полупрозрачный фон */
-    backdrop-filter: blur(5px);
+    /* Убраны border-bottom и hover эффекты */
+    transition: none; 
 }
 
-.task-card-even { background-color: rgba(42, 48, 60, 0.6); }
-.task-card-odd { background-color: rgba(35, 40, 51, 0.6); }
+/* Цвета строк: Четная и Нечетная */
+.task-card-even {
+    background-color: #2a303c;
+}
 
-/* Блок информации (слева) */
+.task-card-odd {
+    background-color: #232833;
+}
+
+/* Информация о задании (слева) */
 .task-info {
     flex: 2;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px; /* Уменьшенный отступ между заголовком и описанием */
+    gap: 4px;
+    padding-right: 10px;
 }
 
 .task-title {
     font-size: 15px;
     font-weight: bold;
+    color: white;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #ffffff;
 }
 
 .task-desc {
@@ -3652,74 +3675,81 @@ body {
     margin-top: 2px;
 }
 
-/* Блок награды (центр) */
+/* Награда (центр) */
 .task-reward {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 5px;
-    margin: 0 8px;
+    gap: 6px;
     white-space: nowrap;
-}
-
-.task-reward span {
     font-weight: bold;
     color: white;
     font-size: 14px;
 }
 
-/* Группа кнопок (справа) - ключевое изменение */
-.task-actions-group {
-    flex: 0 0 80px; /* Фиксированная ширина для зоны кнопок */
+/* Контейнер для кнопок действий (справа) */
+.task-actions {
+    flex: 0 0 auto;
     display: flex;
-    gap: 6px; /* Отступ между двумя кнопками */
     justify-content: flex-end;
+    padding-left: 10px;
 }
 
-/* Единый стиль для всех квадратных кнопок (глаз, галочка, копировать, поделиться) */
-.action-btn-square {
-    width: 37px;  /* Половина от 80px минус отступ */
-    height: 37px;
-    border: 1px solid #555;
-    background-color: rgba(30, 35, 45, 0.8);
-    color: #aaa;
-    border-radius: 6px; /* Скругленные углы */
+/* Большая кнопка (Глаз, Галочка/Крестик) */
+.action-btn-lg {
+    width: 44px;       /* Фиксированная ширина */
+    height: 44px;      /* Фиксированная высота */
+    border-radius: 30px; /* Скругление как таблетка */
+    border: none;
+    background-color: transparent;
+    color: #7f8c8d;
+    font-size: 18px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: 0.2s;
+}
+
+.action-btn-lg.active {
+    background-color: #00aaff;
+    color: white;
+}
+
+.action-btn-lg:hover:not(.active) {
+    background-color: #3a4050;
+    color: #aaa;
+}
+
+/* Контейнер для маленьких кнопок (Копировать/Поделиться) */
+.task-actions-small {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 6px; /* Отступ между двумя маленькими кнопками */
+    justify-content: flex-end;
+    padding-left: 10px;
+}
+
+/* Маленькая кнопка (половина от большой) */
+.action-btn-sm {
+    width: 20px;       /* Половина от 44px минус gap */
+    height: 44px;      /* Та же высота что у большой */
+    border-radius: 30px;
+    border: none;
+    background-color: transparent;
+    color: #7f8c8d;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 0;
-    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
 }
 
-.action-btn-square i {
-    pointer-events: none;
-}
-
-/* Состояние: Активно (галочка синяя) */
-.action-btn-square.status-active {
-    background-color: #00aaff;
-    border-color: #00aaff;
-    color: white;
-    box-shadow: 0 0 8px rgba(0, 170, 255, 0.4);
-}
-
-/* Состояние: Неактивно (крестик серый) */
-.action-btn-square.status-inactive {
-    opacity: 0.7;
-    cursor: default;
-}
-
-/* Ховер эффект только для активных кнопок и кнопок рефералки */
-.action-btn-square.status-active:hover,
-.referral-copy-btn:hover,
-.referral-share-btn:hover,
-#showAdventBtn:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.2);
+.action-btn-sm:hover {
+    background-color: #3a4050;
+    color: #aaa;
 }
 
 /* Прогресс бары */
@@ -3730,23 +3760,23 @@ body {
     gap: 8px;
 }
 
-/* Если это второй бар (альтернативный), отступ сверху минимальный */
-.task-progress-row:not(:first-child) {
-    margin-top: 2px;
+/* Уменьшенный отступ если баров два */
+.task-progress-row.mini-margin {
+    margin-top: 3px;
 }
 
 .progress-bar-bg {
     flex: 1;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: #1a1f2b; /* Темный фон бара */
     height: 6px;
-    border-radius: 3px;
+    border-radius: 5px;
     overflow: hidden;
 }
 
 .progress-bar-fill {
     background-color: #00aaff;
     height: 100%;
-    border-radius: 3px;
+    border-radius: 5px;
     transition: width 0.3s ease;
 }
 
@@ -3757,22 +3787,94 @@ body {
     text-align: right;
 }
 
-/* Специфично для кнопки глаза в адвенте (если она одна в группе) */
-#showAdventBtn {
-    width: 100%; /* Если кнопка одна, она занимает всю ширину группы */
+/* Таймер обратного отсчета */
+.countdown-container {
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: transparent; /* Прозрачный фон контейнера */
 }
-/* Но так как у нас группа имеет фиксированную ширину, а кнопка внутри flex, 
-   лучше задать ей max-width, если она одна, чтобы не растягивалась странно.
-   Однако, в текущей верстке task-actions-group имеет фикс 80px.
-   Если кнопка одна, она займет 37px по умолчанию. 
-   Чтобы она была широкой как две, нужно изменить CSS для случая одной кнопки.
-   
-   Исправление для одиночной кнопки (Глаз):
-*/
-.task-card.advent-summary-card .task-actions-group {
-    justify-content: flex-end;
+
+.countdown-card {
+    background-color: #232833;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
 }
-.task-card.advent-summary-card .action-btn-square {
-    width: 100%; /* Растянуть на всю ширину группы (80px) */
-    max-width: 80px;
+
+.countdown-message {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00aaff;
+    margin-bottom: 15px;
+}
+
+.countdown-digits {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.digit-box {
+    background-color: #1a1f2b;
+    padding: 10px;
+    border-radius: 8px;
+    min-width: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.digit-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+}
+
+.digit-unit {
+    font-size: 10px;
+    color: #aaa;
+}
+
+.colon {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    margin-top: 10px;
+}
+
+/* Модальные окна наград */
+.reward-content {
+    text-align: center;
+    padding: 10px;
+}
+.reward-icon-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.reward-amount {
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+}
+.reward-icon {
+    font-size: 32px;
+    color: #f1c40f;
+}
+.reward-text {
+    color: #aaa;
+    font-size: 14px;
+}
+.class-choice-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 15px;
 }

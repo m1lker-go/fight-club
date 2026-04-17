@@ -1,32 +1,44 @@
-// task-up.js (Исправленный: строгие классы, без inline-стилей, правильные размеры кнопок)
+// task-up.js (исправленный)
 
 let countdownInterval = null;
-let lastTasksData = null;
+let lastTasksData = null;  // храним последние данные заданий
 
+// Функция для проверки наличия неполученных наград
 function hasUnclaimedTasks() {
     if (!lastTasksData) return false;
     return lastTasksData.some(task => !task.completed && task.progress >= task.target_value);
 }
 window.hasUnclaimedTasks = hasUnclaimedTasks;
 
+function renderAdventCalendarInContainer(data, container) {
+    // Не используется
+}
+
 function renderReferral() {
     const referralDiv = document.createElement('div');
-    // Классы для четности/нечетности не нужны для реферала, он один, но добавим базовый стиль карточки
-    referralDiv.className = 'task-card'; 
-    
+    referralDiv.className = 'task-card referral-card';
+    referralDiv.style.display = 'flex';
+    referralDiv.style.alignItems = 'center';
+    referralDiv.style.justifyContent = 'space-between';
+    referralDiv.style.width = '100%';
+    referralDiv.style.marginBottom = '0';
+    referralDiv.style.padding = '12px';
+    referralDiv.style.boxSizing = 'border-box';
+    referralDiv.style.backgroundColor = '#2a303c';
+
     const referralLink = `https://t.me/${window.BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 
     referralDiv.innerHTML = `
-        <div class="task-info">
-            <div class="task-title">Пригласить друга</div>
-            <div class="task-desc">Пригласи друга и получи 100 монет</div>
+        <div style="flex: 2; min-width: 0;">
+            <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>
+            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>
         </div>
-        <div class="task-reward">
-            <span>100 <i class="fas fa-coins"></i></span>
+        <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            <span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>
         </div>
-        <div class="task-actions-small">
-            <button class="action-btn-sm referral-copy-btn" title="Копировать"><i class="fas fa-copy"></i></button>
-            <button class="action-btn-sm referral-share-btn" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+        <div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">
+            <button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
+            <button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
         </div>
     `;
 
@@ -34,7 +46,7 @@ function renderReferral() {
         navigator.clipboard.writeText(referralLink).then(() => {
             showToast('Ссылка скопирована!', 1500);
         }).catch(() => {
-            showToast('Ошибка копирования', 1500);
+            showToast('Ошибка копирования', 1500)
         });
     });
 
@@ -57,24 +69,21 @@ function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="tasks-container">
-            <!-- Карточка Адвента -->
-            <div class="task-card">
-                <div class="task-info">
-                    <div class="task-title">Адвент-календарь</div>
-                    <div class="task-desc">Ежедневные подарки каждый день декабря</div>
+            <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0; padding: 12px; box-sizing: border-box; background-color: #2a303c;">
+                <div style="flex: 2; min-width: 0;">
+                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
                 </div>
-                <div class="task-reward">
-                    <i class="fas fa-coins"></i>
-                    <span>EXP</span>
-                    <i class="fas fa-tshirt"></i>
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
+                    <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
+                    <span style="font-size: 12px; color: white;">EXP</span>
+                    <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
                 </div>
-                <div class="task-actions">
-                    <button class="action-btn-lg" id="showAdventBtn"><i class="fas fa-eye"></i></button>
+                <div style="flex: 0 0 100px; text-align: right;">
+                    <button class="advent-eye-btn" id="showAdventBtn" style="padding: 8px; width: 100%; font-size: 14px;"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
-            
             <div id="referralPlaceholder"></div>
-            
             <div class="tasks-header">Ежедневные задания</div>
             <div id="tasksList"></div>
             <div id="countdownContainer" class="countdown-container" style="display: none;"></div>
@@ -88,7 +97,10 @@ function renderTasks() {
 
     const showAdventBtn = document.getElementById('showAdventBtn');
     if (showAdventBtn) {
-        showAdventBtn.onclick = () => showAdventCalendar();
+        showAdventBtn.onclick = () => {
+            console.log('Opening advent calendar');
+            showAdventCalendar();
+        };
     }
 
     loadDailyTasks();
@@ -101,6 +113,7 @@ async function loadDailyTasks() {
     if (!tasksList) return;
 
     try {
+        // Используем apiRequest, user_id добавится автоматически
         const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
@@ -109,7 +122,10 @@ async function loadDailyTasks() {
         const totalTasksCount = data.totalTasksCount || 0;
         const completedTasksCount = data.completedTasksCount || 0;
 
-        if (!Array.isArray(tasksData)) return;
+        if (!Array.isArray(tasksData)) {
+            console.error('Ответ не является массивом:', tasksData);
+            return;
+        }
 
         const activeTasks = tasksData.filter(task => !task.completed);
         activeTasks.sort((a, b) => {
@@ -126,7 +142,7 @@ async function loadDailyTasks() {
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
-                ? `${task.reward_amount} <i class="fas fa-coins"></i>` 
+                ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
                 : `${task.reward_amount} EXP`;
 
             const translated = dailyTaskTranslations[task.name] || {};
@@ -135,27 +151,26 @@ async function loadDailyTasks() {
 
             let altDesc = '';
             let altProgressHtml = '';
-            // Доп. прогресс бар для побед
             if (task.id === 1 || task.id === 2 || task.id === 3) {
-                altDesc = '<div class="task-alt-desc">ИЛИ выиграть 10 боёв подряд</div>';
+                altDesc = '<div style="font-size: 10px; color: #88ff88;">ИЛИ выиграть 10 боёв подряд</div>';
                 const streakProgress = Math.min(dailyWinStreak, 10);
                 const streakPercent = (streakProgress / 10) * 100;
                 altProgressHtml = `
-                    <div class="task-progress-row mini-margin">
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${streakPercent}%"></div>
+                    <div style="margin-top: 2px; display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
+                            <div style="background-color: #00aaff; width: ${streakPercent}%; height: 100%; border-radius: 3px;"></div>
                         </div>
-                        <div class="progress-text">${streakProgress}/10</div>
+                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${streakProgress}/10</div>
                     </div>
                 `;
             }
 
             let progressHtml = `
-                <div class="task-progress-row">
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: ${progressPercent}%"></div>
+                <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                    <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
+                        <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
                     </div>
-                    <div class="progress-text">${clampedProgress}/${task.target_value}</div>
+                    <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
                 </div>
             `;
 
@@ -163,11 +178,11 @@ async function loadDailyTasks() {
             if (task.id === 9) {
                 const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
                 progressHtml = `
-                    <div class="task-progress-row">
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: ${championPercent}%"></div>
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
+                            <div style="background-color: #00aaff; width: ${championPercent}%; height: 100%; border-radius: 3px;"></div>
                         </div>
-                        <div class="progress-text">${completedTasksCount}/${totalTasksCount}</div>
+                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${completedTasksCount}/${totalTasksCount}</div>
                     </div>
                 `;
                 isReadyToClaim = completedTasksCount >= totalTasksCount;
@@ -176,25 +191,33 @@ async function loadDailyTasks() {
             }
 
             const taskCard = document.createElement('div');
-            // Чередование классов для цветов фона
-            taskCard.className = `task-card ${index % 2 === 0 ? 'task-card-even' : 'task-card-odd'}`;
+            taskCard.className = 'task-card';
+            taskCard.style.display = 'flex';
+            taskCard.style.alignItems = 'center';
+            taskCard.style.justifyContent = 'space-between';
+            taskCard.style.width = '100%';
+            taskCard.style.marginBottom = '0';
+            taskCard.style.padding = '12px';
+            taskCard.style.boxSizing = 'border-box';
+            taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833';
 
             taskCard.innerHTML = `
-                <div class="task-info">
-                    <div class="task-title">${displayName}</div>
-                    <div class="task-desc">${displayDesc}</div>
+                <div style="flex: 2; min-width: 0;">
+                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
                     ${altDesc}
                     ${progressHtml}
                     ${altProgressHtml}
                 </div>
-                <div class="task-reward">
-                    <span>${rewardText}</span>
+                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
+                    <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
                 </div>
-                <div class="task-actions">
-                    <button class="action-btn-lg claim-task-btn ${isReadyToClaim ? 'active' : ''}" 
+                <div style="flex: 0 0 50px; text-align: right;">
+                    <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" 
                             data-task-id="${task.id}"
                             data-reward-type="${task.reward_type}"
-                            data-reward-amount="${task.reward_amount}">
+                            data-reward-amount="${task.reward_amount}"
+                            style="padding: 8px; width: 100%; font-size: 14px;">
                         <i class="fas ${isReadyToClaim ? 'fa-check' : 'fa-times'}"></i>
                     </button>
                 </div>
@@ -204,6 +227,7 @@ async function loadDailyTasks() {
 
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             if (!btn.dataset.taskId) return;
+
             btn.addEventListener('click', async (e) => {
                 const taskId = parseInt(btn.dataset.taskId);
                 const rewardType = btn.dataset.rewardType;
@@ -239,15 +263,33 @@ async function loadDailyTasks() {
             }
         }
 
+        // Сохраняем данные заданий для проверки наличия неполученных наград
         lastTasksData = tasksData;
-        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+        if (window.updateMainMenuNewIcons) {
+            window.updateMainMenuNewIcons();
+        }
 
     } catch (e) {
         console.error('Error loading daily tasks:', e);
     }
 }
 
-// ... (Остальные функции getRemainingTime, updateCountdownDisplay, startCountdownTimer, stopCountdownTimer без изменений)
+// Функция для фоновой загрузки данных заданий без рендера
+async function refreshTasksData() {
+    if (!userData || !userData.id) return;
+    try {
+        const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
+        const data = await res.json();
+        if (data.tasks) {
+            lastTasksData = data.tasks;
+            if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+        }
+    } catch (e) {
+        console.error('Failed to refresh tasks data', e);
+    }
+}
+window.refreshTasksData = refreshTasksData;
+
 function getRemainingTime() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -290,7 +332,9 @@ function updateCountdownDisplay() {
 function startCountdownTimer() {
     if (countdownInterval) clearInterval(countdownInterval);
     updateCountdownDisplay();
-    countdownInterval = setInterval(() => updateCountdownDisplay(), 60000);
+    countdownInterval = setInterval(() => {
+        updateCountdownDisplay();
+    }, 60000);
 }
 
 function stopCountdownTimer() {
@@ -304,40 +348,46 @@ function showCoinsModal(amount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
-        <div class="reward-content">
-            <div class="reward-icon-row">
-                <span class="reward-amount">${amount}</span>
-                <i class="fas fa-coins reward-icon"></i>
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 28px; font-weight: bold; color: #ddd;">${amount}</span>
+                <i class="fas fa-coins" style="font-size: 28px; color: #ddd;"></i>
             </div>
-            <div class="reward-text">монет получено!</div>
+            <div style="font-size: 14px; color: #aaa;">монет получено!</div>
         </div>
     `;
     modal.style.display = 'block';
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
 }
 
 function showExpModal(amount, className) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
-        <div class="reward-content">
-            <div class="reward-icon-row">
-                <span class="reward-amount">+${amount}</span>
-                <i class="fas fa-star reward-icon"></i>
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="font-size: 28px; font-weight: bold; color: #ddd;">+${amount}</span>
+                <i class="fas fa-star" style="font-size: 28px; color: #ddd;"></i>
             </div>
-            <div class="reward-text">для класса <strong>${getClassNameRu(className)}</strong></div>
+            <div style="font-size: 14px; color: #aaa;">для класса <strong>${getClassNameRu(className)}</strong></div>
         </div>
     `;
     modal.style.display = 'block';
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
 }
 
 function showAdventCalendar() {
@@ -347,6 +397,7 @@ function showAdventCalendar() {
             return res.json();
         })
         .then(data => {
+            console.log('[showAdventCalendar] data received', data);
             if (data.error) throw new Error(data.error);
             renderAdventCalendar(data);
         })
@@ -360,18 +411,24 @@ function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, nextAvailable, lastClaimed, lastClaimDate } = data;
     const content = document.getElementById('content');
 
-    let html = '<h3 class="advent-title">Адвент-календарь</h3><div class="advent-grid">';
+    let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
     for (let day = 1; day <= daysInMonth; day++) {
         let className = 'advent-day';
-        if (day <= lastClaimed) className += ' claimed';
-        else if (day === nextAvailable && nextAvailable !== null) className += ' available';
-        else className += ' locked';
+        if (day <= lastClaimed) {
+            className += ' claimed';
+        } else if (day === nextAvailable && nextAvailable !== null) {
+            className += ' available';
+        } else {
+            className += ' locked';
+        }
 
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
-        if (reward.type === 'coins') iconHtml = '<i class="fas fa-coins"></i>';
-        else if (reward.type === 'exp') iconHtml = '<span class="exp-icon">EXP</span>';
-        else if (reward.type === 'item') {
+        if (reward.type === 'coins') {
+            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
+        } else if (reward.type === 'exp') {
+            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
+        } else if (reward.type === 'item') {
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';
             else if (reward.rarity === 'rare') color = '#2e86de';
@@ -389,8 +446,12 @@ function renderAdventCalendar(data) {
     content.innerHTML = html;
 
     document.querySelectorAll('.advent-day.available').forEach(div => {
-        div.addEventListener('click', () => claimAdventDay(parseInt(div.dataset.day), daysInMonth));
+        div.addEventListener('click', () => {
+            const day = parseInt(div.dataset.day);
+            claimAdventDay(day, daysInMonth);
+        });
     });
+
     document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
 }
 
@@ -398,9 +459,14 @@ let isClaiming = false;
 let reloadTimeout = null;
 
 function claimAdventDay(day, daysInMonth) {
-    if (isClaiming) return;
+    if (isClaiming) {
+        console.log('[ADVENT] Already claiming, ignoring');
+        return;
+    }
     const reward = getAdventReward(day, daysInMonth);
+
     isClaiming = true;
+    const body = {}; // не нужно явно передавать tg_id или user_id
 
     if (reward.type === 'exp') {
         showClassChoiceModalForAdvent(reward.amount);
@@ -408,15 +474,22 @@ function claimAdventDay(day, daysInMonth) {
         return;
     }
 
-    window.apiRequest('/tasks/advent/claim', { method: 'POST', body: JSON.stringify({}) })
+    window.apiRequest('/tasks/advent/claim', {
+        method: 'POST',
+        body: JSON.stringify(body)
+    })
     .then(res => res.json())
     .then(data => {
-        if (data.error) showToast(data.error, 1500);
-        else {
-            if (reward.type === 'coins') showCoinsModal(reward.amount);
-            else if (reward.type === 'item' && data.item) showChestResult(data.item);
-            else showToast('Вы получили: ' + data.reward, 2000);
-            
+        if (data.error) {
+            showToast(data.error, 1500);
+        } else {
+            if (reward.type === 'coins') {
+                showCoinsModal(reward.amount);
+            } else if (reward.type === 'item' && data.item) {
+                showChestResult(data.item);
+            } else {
+                showToast('Вы получили: ' + data.reward, 2000);
+            }
             if (reloadTimeout) clearTimeout(reloadTimeout);
             reloadTimeout = setTimeout(() => {
                 showAdventCalendar();
@@ -437,84 +510,94 @@ function showClassChoiceModalForAdvent(expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div class="class-choice-container">
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
             <button class="btn class-choice" data-class="warrior">Воин</button>
             <button class="btn class-choice" data-class="assassin">Ассасин</button>
             <button class="btn class-choice" data-class="mage">Маг</button>
         </div>
     `;
+
     modal.style.display = 'block';
+
     const classButtons = modalBody.querySelectorAll('.class-choice');
     classButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
+
+            const body = { classChoice };
             const res = await window.apiRequest('/tasks/advent/claim', {
-                method: 'POST', body: JSON.stringify({ classChoice })
+                method: 'POST',
+                body: JSON.stringify(body)
             });
             const data = await res.json();
-            if (data.error) showToast(data.error, 1500);
-            else {
+            if (data.error) {
+                showToast(data.error, 1500);
+            } else {
                 showExpModal(expAmount, classChoice);
                 await refreshData();
-                if (data.leveledUp) showLevelUpModal(classChoice);
-                setTimeout(() => showAdventCalendar(), 500);
+                if (data.leveledUp) {
+                    showLevelUpModal(classChoice);
+                }
+                setTimeout(() => {
+                    showAdventCalendar();
+                }, 500);
             }
         });
     });
-    modal.querySelector('.close').onclick = () => modal.style.display = 'none';
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
 }
 
 function claimDailyExp(taskId, expAmount) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div class="class-choice-container">
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
             <button class="btn class-choice" data-class="warrior">Воин</button>
             <button class="btn class-choice" data-class="assassin">Ассасин</button>
             <button class="btn class-choice" data-class="mage">Маг</button>
         </div>
     `;
+
     modal.style.display = 'block';
+
     const classButtons = modalBody.querySelectorAll('.class-choice');
     classButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
+
             const res = await window.apiRequest('/tasks/daily/claim', {
-                method: 'POST', body: JSON.stringify({ task_id: taskId, class_choice: classChoice })
+                method: 'POST',
+                body: JSON.stringify({ 
+                    task_id: taskId, 
+                    class_choice: classChoice 
+                })
             });
             const data = await res.json();
-            if (data.error) showToast(data.error, 1500);
-            else {
+            if (data.error) {
+                showToast(data.error, 1500);
+            } else {
                 showExpModal(expAmount, classChoice);
                 await refreshData();
-                if (data.leveledUp) showLevelUpModal(classChoice);
+                if (data.leveledUp) {
+                    showLevelUpModal(classChoice);
+                }
                 renderTasks();
             }
         });
     });
-    modal.querySelector('.close').onclick = () => modal.style.display = 'none';
-}
 
-// Вспомогательные функции заглушки, если они не определены в других файлах
-function getAdventReward(day, total) {
-    // Логика получения награды (заглушка, должна быть у вас в коде)
-    if (day === total) return { type: 'item', rarity: 'legendary' };
-    if (day % 5 === 0) return { type: 'exp', amount: 50 };
-    return { type: 'coins', amount: 100 };
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
 }
-function showChestResult(item) { /* Реализация в другом файле */ }
-function showLevelUpModal(cls) { /* Реализация в другом файле */ }
-function refreshData() { /* Реализация в app.js */ }
-function getClassNameRu(cls) { 
-    const map = { warrior: 'Воин', assassin: 'Ассасин', mage: 'Маг' }; 
-    return map[cls] || cls; 
-}
-function showToast(msg, time) { /* Реализация в helpers.js */ }

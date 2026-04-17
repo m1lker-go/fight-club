@@ -3466,3 +3466,103 @@ input:checked + .slider:before {
     overflow: hidden !important;
     border-radius: 8px;
 }
+
+
+/* СТРАНИЦА ЗАДАНИЙ */
+
+.tasks-container {
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.task-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    backdrop-filter: blur(5px);
+    transition: transform 0.2s;
+}
+
+.task-card-even { background-color: rgba(42, 48, 60, 0.9); }
+.task-card-odd { background-color: rgba(35, 40, 51, 0.9); }
+
+.task-info {
+    flex: 2;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.task-title {
+    font-size: 16px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+}
+
+.task-desc {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.task-alt-desc {
+    font-size: 10px;
+    color: #8f8;
+    margin-top: 2px;
+}
+
+.task-progress-block {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.task-reward, .task-reward-icons {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin: 0 10px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.task-actions {
+    flex: 0 0 50px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.claim-task-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #444;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.claim-task-btn.active {
+    background-color: #2ecc71;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+}
+
+.advent-header-card {
+    background-color: rgba(42, 48, 60, 0.95);
+    margin-bottom: 15px;
+}

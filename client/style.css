@@ -7,25 +7,18 @@
 }
 
 body {
-    background-color: #1a1f2b;
-    color: white;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    margin: 0;
+    padding: 0;
+    background-color: #1a1d24; /* Резервный цвет фона */
+    font-family: 'Titillium Web', sans-serif;
 }
 
 #app {
-    width: 100%;
-    max-width: 400px;
-    height: 100vh;
-    background-color: #1a1f2b;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+    position: relative; /* Обязательно для позиционирования фона внутри */
+    min-height: 100vh;
+    z-index: 1; /* Контент выше фона */
 }
 
-/* ========== ФОН ПРИЛОЖЕНИЯ ========== */
 #app::before {
     content: '';
     position: absolute;
@@ -39,7 +32,7 @@ body {
     background-repeat: no-repeat;
     opacity: 0.5;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1; /* Убираем фон НАЗАД, под контент */
 }
 
 /* ========== КОНТЕЙНЕРЫ ПОВЕРХ ФОНА ========== */
@@ -3468,33 +3461,30 @@ input:checked + .slider:before {
 }
 
 
-/* СТРАНИЦА ЗАДАНИЙ */
-
-.tasks-container {
-    padding: 10px;
-    width: 100%;
-    box-sizing: border-box;
-}
+/* ========== СТИЛИ ДЛЯ КАРТОЧЕК ЗАДАНИЙ (НАСТРАИВАЕМ СТРУКТУРУ) ========== */
+/* Эти стили нужны, так как JS теперь создает div-ы с такими классами */
 
 .task-card {
-    display: flex;
+    display: flex !important; /* Принудительно включаем Flexbox для карточки */
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    margin-bottom: 8px;
-    padding: 12px;
-    border-radius: 12px;
     box-sizing: border-box;
-    backdrop-filter: blur(5px);
-    transition: transform 0.2s;
+    background-color: #2a303c; /* Базовый цвет карточки */
+    backdrop-filter: blur(5px); /* Легкое размытие фона под карточкой */
 }
 
-.task-card-even { background-color: rgba(42, 48, 60, 0.9); }
-.task-card-odd { background-color: rgba(35, 40, 51, 0.9); }
+/* Чередование цветов для строк (если нужно) */
+.task-card-even {
+    background-color: #2a303c;
+}
+.task-card-odd {
+    background-color: #232833;
+}
 
 .task-info {
     flex: 2;
-    min-width: 0;
+    min-width: 0; /* Позволяет тексту обрезаться многоточием */
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -3506,63 +3496,119 @@ input:checked + .slider:before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #fff;
+    color: #ffffff;
 }
 
 .task-desc {
     font-size: 11px;
     color: #aaa;
+    margin-top: 2px;
 }
 
 .task-alt-desc {
     font-size: 10px;
-    color: #8f8;
+    color: #88ff88;
     margin-top: 2px;
 }
 
-.task-progress-block {
-    margin-top: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.task-reward, .task-reward-icons {
+.task-reward {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 5px;
     margin: 0 10px;
-    color: #fff;
+    white-space: nowrap;
+}
+
+.task-reward span {
     font-weight: bold;
+    color: white;
     font-size: 14px;
 }
 
 .task-actions {
-    flex: 0 0 50px;
+    flex: 0 0 50px; /* Фиксированная ширина для кнопок */
     display: flex;
     justify-content: flex-end;
 }
 
-.claim-task-btn {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 8px;
-    background-color: #444;
+/* Стили для прогресс-баров внутри задач */
+.task-progress-row {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-bg {
+    flex: 1;
+    background-color: #2f3542;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    background-color: #00aaff;
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 10px;
     color: #aaa;
-    cursor: pointer;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* Стили для модальных окон наград */
+reward-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+}
+
+.reward-icon-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.reward-amount {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ddd;
+}
+
+.reward-icon {
+    font-size: 28px;
+    color: #ddd;
+}
+
+.reward-text {
     font-size: 14px;
-    transition: all 0.2s;
+    color: #aaa;
 }
 
-.claim-task-btn.active {
-    background-color: #2ecc71;
-    color: #fff;
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+.class-choice-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
 }
 
-.advent-header-card {
-    background-color: rgba(42, 48, 60, 0.95);
-    margin-bottom: 15px;
+/* Адаптив для маленьких экранов */
+@media (max-width: 360px) {
+    .task-title { font-size: 14px; }
+    .task-desc { font-size: 10px; }
+    .task-reward span { font-size: 12px; }
+    .digit-box { min-width: 60px; padding: 8px 12px; }
+    .digit-value { font-size: 28px; }
 }

@@ -3577,35 +3577,6 @@ body {
     margin: 0;
 }
 
-/* Карточки заданий - теперь они будут плавать на фоне картинки */
-.task-card {
-    background-color: rgba(42, 48, 60, 0.85) !important; /* Темный полупрозрачный */
-    backdrop-filter: blur(5px); /* Эффект матового стекла */
-    border: 1px solid rgba(255, 255, 255, 0.05); /* Легкая рамка */
-    
-    display: flex !important;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-    transition: background-color 0.2s;
-}
-
-.task-card:hover {
-    background-color: rgba(47, 53, 66, 0.95) !important; /* Чуть светлее при наведении */
-}
-
-/* Чередование цветов (тоже делаем полупрозрачным) */
-.task-card-even {
-    background-color: rgba(42, 48, 60, 0.85) !important;
-}
-.task-card-odd {
-    background-color: rgba(35, 40, 51, 0.85) !important;
-}
-
 /* Нижнее меню - полупрозрачное */
 .bottom-menu {
     background-color: rgba(26, 31, 43, 0.9) !important;
@@ -3631,4 +3602,177 @@ body {
     backdrop-filter: blur(5px);
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ========== ОБНОВЛЕННЫЕ СТИЛИ ДЛЯ ЗАДАНИЙ ========== */
+
+/* Карточка задания */
+.task-card {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    /* Уменьшенные отступы */
+    padding: 10px 12px; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: rgba(42, 48, 60, 0.6); /* Полупрозрачный фон */
+    backdrop-filter: blur(5px);
+}
+
+.task-card-even { background-color: rgba(42, 48, 60, 0.6); }
+.task-card-odd { background-color: rgba(35, 40, 51, 0.6); }
+
+/* Блок информации (слева) */
+.task-info {
+    flex: 2;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px; /* Уменьшенный отступ между заголовком и описанием */
+}
+
+.task-title {
+    font-size: 15px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ffffff;
+}
+
+.task-desc {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.task-alt-desc {
+    font-size: 10px;
+    color: #88ff88;
+    margin-top: 2px;
+}
+
+/* Блок награды (центр) */
+.task-reward {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin: 0 8px;
+    white-space: nowrap;
+}
+
+.task-reward span {
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
+}
+
+/* Группа кнопок (справа) - ключевое изменение */
+.task-actions-group {
+    flex: 0 0 80px; /* Фиксированная ширина для зоны кнопок */
+    display: flex;
+    gap: 6px; /* Отступ между двумя кнопками */
+    justify-content: flex-end;
+}
+
+/* Единый стиль для всех квадратных кнопок (глаз, галочка, копировать, поделиться) */
+.action-btn-square {
+    width: 37px;  /* Половина от 80px минус отступ */
+    height: 37px;
+    border: 1px solid #555;
+    background-color: rgba(30, 35, 45, 0.8);
+    color: #aaa;
+    border-radius: 6px; /* Скругленные углы */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    margin: 0;
+}
+
+.action-btn-square i {
+    pointer-events: none;
+}
+
+/* Состояние: Активно (галочка синяя) */
+.action-btn-square.status-active {
+    background-color: #00aaff;
+    border-color: #00aaff;
+    color: white;
+    box-shadow: 0 0 8px rgba(0, 170, 255, 0.4);
+}
+
+/* Состояние: Неактивно (крестик серый) */
+.action-btn-square.status-inactive {
+    opacity: 0.7;
+    cursor: default;
+}
+
+/* Ховер эффект только для активных кнопок и кнопок рефералки */
+.action-btn-square.status-active:hover,
+.referral-copy-btn:hover,
+.referral-share-btn:hover,
+#showAdventBtn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
+
+/* Прогресс бары */
+.task-progress-row {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Если это второй бар (альтернативный), отступ сверху минимальный */
+.task-progress-row:not(:first-child) {
+    margin-top: 2px;
+}
+
+.progress-bar-bg {
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.3);
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    background-color: #00aaff;
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 10px;
+    color: #aaa;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* Специфично для кнопки глаза в адвенте (если она одна в группе) */
+#showAdventBtn {
+    width: 100%; /* Если кнопка одна, она занимает всю ширину группы */
+}
+/* Но так как у нас группа имеет фиксированную ширину, а кнопка внутри flex, 
+   лучше задать ей max-width, если она одна, чтобы не растягивалась странно.
+   Однако, в текущей верстке task-actions-group имеет фикс 80px.
+   Если кнопка одна, она займет 37px по умолчанию. 
+   Чтобы она была широкой как две, нужно изменить CSS для случая одной кнопки.
+   
+   Исправление для одиночной кнопки (Глаз):
+*/
+.task-card.advent-summary-card .task-actions-group {
+    justify-content: flex-end;
+}
+.task-card.advent-summary-card .action-btn-square {
+    width: 100%; /* Растянуть на всю ширину группы (80px) */
+    max-width: 80px;
 }

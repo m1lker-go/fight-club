@@ -49,7 +49,7 @@ const rolePassives = {
     venom_blade: { poison: true },
     blood_hunter: { vamp: 20 },
     pyromancer: { burn: true },
-    cryomancer: { freezeChance: 25, physReduction: 30 },
+    cryomancer: { freezeChance: 25 },
     illusionist: { mirageGuaranteed: true },
 
     // Mouse bosses

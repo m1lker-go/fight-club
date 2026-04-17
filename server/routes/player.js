@@ -182,14 +182,10 @@ router.post('/upgrade', async (req, res) => {
         if (classData.rows.length === 0) throw new Error('Class not found');
         if (classData.rows[0].skill_points < points) throw new Error('Not enough skill points');
 
-           const baseStat = stat.replace('_points', '');
-    const ALLOWED_STATS = ['hp', 'atk', 'def', 'dodge', 'int', 'spd', 'crit', 'crit_dmg', 'vamp', 'reflect'];
-    if (!ALLOWED_STATS.includes(baseStat)) throw new Error('Invalid stat parameter');
-
-    await client.query(
-        `UPDATE user_classes SET ${stat} = ${stat} + $1, skill_points = skill_points - $1 WHERE user_id = $2 AND class = $3`,
-        [points, userId, className]
-    );
+        await client.query(
+            `UPDATE user_classes SET ${stat} = ${stat} + $1, skill_points = skill_points - $1 WHERE user_id = $2 AND class = $3`,
+            [points, userId, className]
+        );
 
         await updatePlayerPower(client, userId, className);
 

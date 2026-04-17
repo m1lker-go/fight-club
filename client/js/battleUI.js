@@ -90,7 +90,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">ПОРАЖЕНИЕ</div>
+                        <div class="defeat-overlay">Проиграл</div>
                         <div id="hero-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
@@ -132,7 +132,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">ПОРАЖЕНИЕ</div>
+                        <div class="defeat-overlay">Проиграл</div>
                         <div id="enemy-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
@@ -154,9 +154,10 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
- 
+    // ✅ Инициализация лога боя
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
+    // Обработчик скорости
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         const newSpeed = BattleLog.speed === 1 ? 2 : 1;
@@ -164,6 +165,7 @@ function showBattleScreen(battleData) {
         BattleLog.setSpeed(newSpeed);
     });
 
+    // Таймер боя
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
     window.battleTimer = setInterval(() => {
@@ -432,4 +434,24 @@ async function showBattleResult(battleData, timeOut = false) {
     container.appendChild(resultContent);
 
     content.appendChild(container);
+
+    // ✅ ПОКАЗЫВАЕМ "Проиграл" ТОЛЬКО ЗДЕСЬ, СИНХРОННО С РЕЗУЛЬТАТОМ
+    setTimeout(() => {
+        const heroCard = document.querySelector('.hero-card');
+        const enemyCard = document.querySelector('.enemy-card');
+        
+        // Игрок проиграл
+        if (winner === 'enemy' || battleData.result.playerHpRemain <= 0) {
+            heroCard?.classList.add('defeated');
+        } else {
+            heroCard?.classList.remove('defeated');
+        }
+        
+        // Враг проиграл
+        if (winner === 'player' || battleData.result.enemyHpRemain <= 0) {
+            enemyCard?.classList.add('defeated');
+        } else {
+            enemyCard?.classList.remove('defeated');
+        }
+    }, 100); // Небольшая задержка для гарантированного рендера
 }

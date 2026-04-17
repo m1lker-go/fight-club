@@ -3471,3 +3471,29 @@ input:checked + .slider:before {
     border-radius: 8px;
     background-color: #0a0f19;
 }
+
+
+.hero-card .defeat-overlay,
+.enemy-card .defeat-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hero-card.defeated .defeat-overlay,
+.enemy-card.defeated .defeat-overlay {
+    opacity: 1;
+}

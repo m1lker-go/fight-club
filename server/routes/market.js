@@ -5,14 +5,6 @@ const { pool, getUserByIdentifier } = require('../db');
 // GET /market – публичный список предметов, без авторизации
 router.get('/', async (req, res) => {
     const { class: className, rarity, minPrice, maxPrice, stat } = req.query;
-    
-    // ⚠️ Whitelist допустимых колонок для защиты от SQL-инъекций
-    const ALLOWED_STATS = [
-        'atk_bonus', 'def_bonus', 'hp_bonus', 'spd_bonus',
-        'crit_bonus', 'crit_dmg_bonus', 'agi_bonus', 'int_bonus',
-        'vamp_bonus', 'reflect_bonus'
-    ];
-    
     try {
         let query = `
             SELECT i.*, u.username as seller_name, u.id as seller_id
@@ -21,7 +13,6 @@ router.get('/', async (req, res) => {
             WHERE i.for_sale = true
         `;
         const params = [];
-        
         if (className && className !== 'any') {
             params.push(className);
             query += ` AND i.owner_class = $${params.length}`;
@@ -38,11 +29,7 @@ router.get('/', async (req, res) => {
             params.push(maxPrice);
             query += ` AND i.price <= $${params.length}`;
         }
-        // ✅ Безопасная проверка параметра stat
         if (stat && stat !== 'any') {
-            if (!ALLOWED_STATS.includes(stat)) {
-                return res.status(400).json({ error: 'Invalid stat parameter', allowed: ALLOWED_STATS });
-            }
             query += ` AND i.${stat} > 0`;
         }
         query += ' ORDER BY i.price';

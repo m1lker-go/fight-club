@@ -7,18 +7,25 @@
 }
 
 body {
-    margin: 0;
-    padding: 0;
-    background-color: #1a1d24; /* Резервный цвет фона */
-    font-family: 'Titillium Web', sans-serif;
+    background-color: #1a1f2b;
+    color: white;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #app {
-    position: relative; /* Обязательно для позиционирования фона внутри */
-    min-height: 100vh;
-    z-index: 1; /* Контент выше фона */
+    width: 100%;
+    max-width: 400px;
+    height: 100vh;
+    background-color: #1a1f2b;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
+/* ========== ФОН ПРИЛОЖЕНИЯ ========== */
 #app::before {
     content: '';
     position: absolute;
@@ -32,7 +39,7 @@ body {
     background-repeat: no-repeat;
     opacity: 0.5;
     pointer-events: none;
-    z-index: -1; /* Убираем фон НАЗАД, под контент */
+    z-index: 0;
 }
 
 /* ========== КОНТЕЙНЕРЫ ПОВЕРХ ФОНА ========== */
@@ -3458,6 +3465,48 @@ input:checked + .slider:before {
     position: relative !important;
     overflow: hidden !important;
     border-radius: 8px;
+}
+
+/* ========== ИСПРАВЛЕНИЕ ФОНА ПРИЛОЖЕНИЯ ========== */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Titillium Web', sans-serif;
+    background-color: #1a1f2b; /* Цвет фона, если картинка не загрузится */
+    color: #fff;
+    overflow-x: hidden;
+    position: relative; /* Важно для позиционирования фона */
+}
+
+#app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Исправленный псевдоэлемент для фона */
+#app::before {
+    content: '';
+    position: fixed; /* Fixed вместо absolute, чтобы фон стоял на месте при скролле */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('assets/backapp.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.4; /* Чуть увеличил прозрачность, чтобы текст читался лучше */
+    z-index: -1; /* Убираем фон НАЗАД, под контент */
+    pointer-events: none;
+}
+
+/* Гарантируем, что контент выше фона */
+#content, .top-bar, .bottom-menu {
+    position: relative;
+    z-index: 2;
 }
 
 

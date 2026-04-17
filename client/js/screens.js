@@ -32,206 +32,161 @@ function getRoleNameRu(role) {
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 function renderMain() {
-    console.log('[renderMain] START');
-    try {
-        const content = document.getElementById('content');
-        if (!content) {
-            console.error('[renderMain] content element not found!');
-            return;
-        }
+    const content = document.getElementById('content');
+    if (!content) return;
 
-        // === ПРОВЕРКИ ЗАВИСИМОСТЕЙ ===
-        if (typeof getCurrentClassData !== 'function') {
-            console.error('[renderMain] getCurrentClassData not defined!');
-            content.innerHTML = '<p style="color:red">Ошибка: helpers.js не загружен</p>';
-            return;
-        }
-        if (typeof calculateClassStats !== 'function') {
-            console.error('[renderMain] calculateClassStats not defined!');
-            content.innerHTML = '<p style="color:red">Ошибка: helpers.js не загружен</p>';
-            return;
-        }
-        if (typeof escapeHtml !== 'function') {
-            console.error('[renderMain] escapeHtml not defined!');
-            content.innerHTML = '<p style="color:red">Ошибка: screens.js загружен до helpers.js</p>';
-            return;
-        }
-        if (!userData || !userData.current_class) {
-            console.error('[renderMain] userData or current_class missing!');
-            content.innerHTML = '<p style="color:red">Ошибка: данные пользователя не загружены</p>';
-            return;
-        }
-        // === КОНЕЦ ПРОВЕРОК ===
+    const classData = getCurrentClassData();
+    const currentClass = userData.current_class;
+    const level = classData.level;
+    const exp = classData.exp;
+    const nextExp = Math.floor(80 * Math.pow(level, 1.5));
+    const expPercent = nextExp > 0 ? Math.min(100, (exp / nextExp) * 100) : 0;
 
-        const classData = getCurrentClassData();
-        console.log('[renderMain] classData:', classData);
-        
-        const currentClass = userData.current_class;
-        const level = classData.level;
-        const exp = classData.exp;
-        const nextExp = Math.floor(80 * Math.pow(level, 1.5));
-        const expPercent = nextExp > 0 ? Math.min(100, (exp / nextExp) * 100) : 0;
+    const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
+    currentPower = calculatePower(currentClass, stats.final, classData.level);
+    updateTopBar();
 
-        const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
-        console.log('[renderMain] stats calculated:', stats);
-        
-        currentPower = calculatePower(currentClass, stats.final, classData.level);
-        updateTopBar();
-        console.log('[renderMain] updateTopBar called');
-
-        content.innerHTML = `
-            <!-- Верхний блок с аватаром и кнопками -->
-            <div class="main-top-container">
-                <div class="main-top-inner">
-                    <!-- Левая колонка (2×3) -->
-                    <div class="main-buttons-col left">
-                        <div class="btn-grid">
-                            <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Письмо</span></button>
-                            <button class="main-icon-btn empty-btn"></button>
-                            <button class="main-icon-btn empty-btn"></button>
-                            <button class="main-icon-btn empty-btn"></button>
-                            <button class="main-icon-btn" data-screen="settings"><i class="fas fa-cog"></i><span>Настройки</span></button>
-                            <button class="main-icon-btn empty-btn"></button>
-                        </div>
+    content.innerHTML = `
+        <!-- Верхний блок с аватаром и кнопками -->
+        <div class="main-top-container">
+            <div class="main-top-inner">
+                <!-- Левая колонка (2×3) -->
+                <div class="main-buttons-col left">
+                    <div class="btn-grid">
+                        <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Письмо</span></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn" data-screen="settings"><i class="fas fa-cog"></i><span>Настройки</span></button>
+                        <button class="main-icon-btn empty-btn"></button>
                     </div>
-                    <!-- Центр: аватар -->
-                    <div class="main-avatar-col">
-                        <div class="hero-avatar" id="avatarClick" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
-                            <img src="/assets/${escapeHtml(userData.avatar || 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
-                            <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
-                        </div>
+                </div>
+                <!-- Центр: аватар -->
+                <div class="main-avatar-col">
+                    <div class="hero-avatar" id="avatarClick" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                        <img src="/assets/${escapeHtml(userData.avatar || 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
                     </div>
-                    <!-- Правая колонка (2×3) -->
-                    <div class="main-buttons-col right">
-                        <div class="btn-grid">
-                            <button class="main-icon-btn empty-btn"></button>
-                            <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
-                            <button class="main-icon-btn empty-btn"></button>
-                            <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
-                            <button class="main-icon-btn empty-btn"></button>
-                            <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
-                        </div>
+                </div>
+                <!-- Правая колонка (2×3) -->
+                <div class="main-buttons-col right">
+                    <div class="btn-grid">
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
+                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Блок с именем пользователя (заголовок) -->
-            <div class="main-username-header">${escapeHtml(userData.username || 'Игрок')}</div>
+        <!-- Блок с именем пользователя (заголовок) -->
+        <div class="main-username-header">${escapeHtml(userData.username || 'Игрок')}</div>
 
-            <!-- Основной контент (опыт, класс, роль, кнопка боя) -->
-            <div class="main-content-container">
-                <div style="margin: 20px 20px 0 20px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                        <span>Уровень <span class="level-display">${level}</span></span>
-                        <span class="exp-display">${escapeHtml(exp)}/${escapeHtml(nextExp)} опыта</span>
-                    </div>
-                    <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
-                        <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
-                    </div>
+        <!-- Основной контент (опыт, класс, роль, кнопка боя) -->
+        <div class="main-content-container">
+            <div style="margin: 20px 20px 0 20px;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                    <span>Уровень <span class="level-display">${level}</span></span>
+                    <span class="exp-display">${escapeHtml(exp)}/${escapeHtml(nextExp)} опыта</span>
                 </div>
-
-                <div style="margin: 20px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                        <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
-                        <div class="class-selector" style="flex: 1; margin-left: 10px;">
-                            <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                            <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                            <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
-                        <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;"></select>
-                        <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
-                    </div>
+                <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
+                    <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
                 </div>
-
-                <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
-                    <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
-                </button>
             </div>
-        `;
-        console.log('[renderMain] content.innerHTML set');
 
-        updateSubclasses(currentClass);
-        console.log('[renderMain] updateSubclasses called');
+            <div style="margin: 20px;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
+                    <div class="class-selector" style="flex: 1; margin-left: 10px;">
+                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
+                    <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;"></select>
+                    <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
+                </div>
+            </div>
 
-        // Делегирование событий для кнопок классов
-        const classSelector = document.querySelector('.class-selector');
-        if (classSelector) {
-            classSelector.addEventListener('click', async (e) => {
-                const btn = e.target.closest('.class-btn');
-                if (!btn) return;
-                const newClass = btn.dataset.class;
-                if (newClass === userData.current_class) return;
+            <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
+                <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
+            </button>
+        </div>
+    `;
 
-                const res = await window.apiRequest('/player/class', {
-                    method: 'POST',
-                    body: JSON.stringify({ class: newClass })
-                });
-                if (!res.ok) return;
+    updateSubclasses(currentClass);
 
-                const firstSubclass = {
-                    warrior: 'guardian',
-                    assassin: 'assassin',
-                    mage: 'pyromancer'
-                }[newClass];
-                await window.apiRequest('/player/subclass', {
-                    method: 'POST',
-                    body: JSON.stringify({ subclass: firstSubclass })
-                });
+    // Делегирование событий для кнопок классов
+    const classSelector = document.querySelector('.class-selector');
+    if (classSelector) {
+        classSelector.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.class-btn');
+            if (!btn) return;
+            const newClass = btn.dataset.class;
+            if (newClass === userData.current_class) return;
 
-                userData.current_class = newClass;
-                userData.subclass = firstSubclass;
-                updateMainScreen();
+            const res = await window.apiRequest('/player/class', {
+                method: 'POST',
+                body: JSON.stringify({ class: newClass })
             });
-        }
+            if (!res.ok) return;
 
-        const subclassSelect = document.getElementById('subclassSelect');
-        if (subclassSelect) {
-            subclassSelect.addEventListener('change', async (e) => {
-                const newSubclass = e.target.value;
-                const res = await window.apiRequest('/player/subclass', {
-                    method: 'POST',
-                    body: JSON.stringify({ subclass: newSubclass })
-                });
-                if (res.ok) {
-                    userData.subclass = newSubclass;
-                    await refreshData();
-                }
+            const firstSubclass = {
+                warrior: 'guardian',
+                assassin: 'assassin',
+                mage: 'pyromancer'
+            }[newClass];
+            await window.apiRequest('/player/subclass', {
+                method: 'POST',
+                body: JSON.stringify({ subclass: firstSubclass })
             });
-        }
 
-        document.getElementById('fightBtn')?.addEventListener('click', () => startBattle());
-        document.getElementById('roleInfoBtn')?.addEventListener('click', () => showRoleInfoModal(userData.current_class));
-        document.getElementById('avatarClick')?.addEventListener('click', () => showScreen('profile'));
-
-        document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const screen = btn.dataset.screen;
-                if (screen) showScreen(screen);
-            });
+            userData.current_class = newClass;
+            userData.subclass = firstSubclass;
+            updateMainScreen();
         });
-
-        const mailBtn = document.getElementById('mailBtn');
-        if (mailBtn) {
-            mailBtn.addEventListener('click', () => {
-                console.log('Письмо: функционал в разработке');
-            });
-        }
-
-        updateTradeButtonIcon();
-        updateProfileAvatarIcon();
-        
-        console.log('[renderMain] END, all done'); // ← ДОБАВИТЬ В КОНЕЦ
-    } catch (e) {
-        console.error('[renderMain] FATAL ERROR:', e);
-        console.error('Stack:', e.stack);
-        const content = document.getElementById('content');
-        if (content) {
-            content.innerHTML = `<p style="color:red; padding: 20px;">Критическая ошибка:<br>${escapeHtml(e.message)}</p>`;
-        }
     }
+
+    const subclassSelect = document.getElementById('subclassSelect');
+    if (subclassSelect) {
+        subclassSelect.addEventListener('change', async (e) => {
+            const newSubclass = e.target.value;
+            const res = await window.apiRequest('/player/subclass', {
+                method: 'POST',
+                body: JSON.stringify({ subclass: newSubclass })
+            });
+            if (res.ok) {
+                userData.subclass = newSubclass;
+                await refreshData();
+            }
+        });
+    }
+
+    document.getElementById('fightBtn')?.addEventListener('click', () => startBattle());
+    document.getElementById('roleInfoBtn')?.addEventListener('click', () => showRoleInfoModal(userData.current_class));
+    document.getElementById('avatarClick')?.addEventListener('click', () => showScreen('profile'));
+
+    document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const screen = btn.dataset.screen;
+            if (screen) showScreen(screen);
+        });
+    });
+
+    const mailBtn = document.getElementById('mailBtn');
+    if (mailBtn) {
+        mailBtn.addEventListener('click', () => {
+            console.log('Письмо: функционал в разработке');
+        });
+    }
+
+    updateTradeButtonIcon();
+    updateProfileAvatarIcon();
 }
 
 function updateMainScreen() {
@@ -1666,7 +1621,7 @@ function renderProfileBonuses(container) {
                 ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
                 ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
                 ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
-                ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
+               ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
                 ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
                 ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
             </tbody>
@@ -1959,102 +1914,3 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 }
-
-// ==================== ЗАДАНИЯ ====================
-async function renderTasks(container) {
-    const content = container || document.getElementById('content');
-    if (!content) return;
-    
-    content.innerHTML = '<div style="text-align:center; padding: 20px; color: #aaa;">Загрузка заданий...</div>';
-    
-    try {
-        const res = await window.apiRequest('/tasks/daily/list');
-        const data = await res.json();
-        
-        if (!data.tasks || !Array.isArray(data.tasks)) {
-            content.innerHTML = '<div style="text-align:center; color:#e74c3c; padding: 20px;">Ошибка загрузки заданий</div>';
-            return;
-        }
-        
-        let html = '<div class="tasks-container">';
-        html += '<div class="tasks-header">Ежедневные задания</div>';
-        
-        for (const task of data.tasks) {
-            const progressPercent = task.target_value > 0 
-                ? Math.min(100, Math.round((task.progress / task.target_value) * 100)) 
-                : 0;
-            const isCompleted = task.completed || progressPercent >= 100;
-            
-            html += `
-                <div class="task-item ${isCompleted ? 'completed' : ''}" data-task-id="${task.id}">
-                    <div class="task-info">
-                        <div class="task-name">${escapeHtml(task.name)}</div>
-                        <div class="task-desc">${escapeHtml(task.description)}</div>
-                        <div class="task-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
-                            </div>
-                            <span class="progress-text">${task.progress}/${task.target_value}</span>
-                        </div>
-                    </div>
-                    <div class="task-reward">
-                        <span class="reward-amount">+${task.reward_amount}</span>
-                        <i class="fas ${task.reward_type === 'coins' ? 'fa-coins' : 'fa-star'}"></i>
-                    </div>
-                    <button class="claim-btn" ${!isCompleted ? 'disabled' : ''}>
-                        ${isCompleted ? 'Забрать' : 'В процессе'}
-                    </button>
-                </div>
-            `;
-        }
-        
-        html += '</div>';
-        content.innerHTML = html;
-        
-        // Обработчики кнопок "Забрать"
-        content.querySelectorAll('.claim-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const taskItem = e.target.closest('.task-item');
-                const taskId = taskItem?.dataset.taskId;
-                if (!taskId) return;
-                
-                try {
-                    const res = await window.apiRequest('/tasks/daily/claim', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            task_id: parseInt(taskId),
-                            class_choice: userData.current_class
-                        })
-                    });
-                    const result = await res.json();
-                    if (result.success) {
-                        showToast('Награда получена!', 1500);
-                        if (window.refreshData) await window.refreshData();
-                        renderTasks();
-                    } else {
-                        showToast('Ошибка: ' + result.error, 1500);
-                    }
-                } catch (err) {
-                    console.error('Claim error:', err);
-                    showToast('Ошибка соединения', 1500);
-                }
-            });
-        });
-        
-    } catch (err) {
-        console.error('Tasks load error:', err);
-        content.innerHTML = '<div style="text-align:center; color:#e74c3c; padding: 20px;">Ошибка загрузки заданий</div>';
-    }
-}
-
-// В КОНЦЕ screens.js:
-window.renderMain = renderMain;
-window.renderEquip = renderEquip;
-window.renderTrade = renderTrade;
-window.renderMarket = renderMarket;
-window.renderRating = renderRating;
-window.renderProfile = renderProfile;
-window.renderTasks = renderTasks;
-window.renderSkins = renderSkins;
-window.renderSkills = renderSkills;
-window.renderProfileBonuses = renderProfileBonuses;

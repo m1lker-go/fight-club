@@ -1,5 +1,22 @@
-// server/utils/botGenerator.js
-const { baseStats, rolePassives, subclassOptions, roleNames, clamp, GAME_LIMITS } = require('../game-balance');
+// utils/botGenerator.js
+
+const baseStats = {
+    warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+    assassin: { hp: 15, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+    mage: { hp: 15, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+};
+
+const rolePassives = {
+    guardian: { damageReduction: 10, blockChance: 20 },
+    berserker: { rage: true },
+    knight: { reflect: 20 },
+    assassin: { critMultiplier: 2.5 },
+    venom_blade: { poison: true },
+    blood_hunter: { vamp: 20 },
+    pyromancer: { burn: true },
+    cryomancer: { freezeChance: 25, physReduction: 30 },
+    illusionist: { mirageGuaranteed: true }
+};
 
 // Веса характеристик для каждого класса (чем выше вес, тем чаще очки будут вкладываться)
 const statWeights = {
@@ -55,6 +72,25 @@ const botTemplates = [
     { name: 'Золотой защитник', class: 'mage', subclass: 'cryomancer' },
     { name: 'Золотой защитник', class: 'mage', subclass: 'illusionist' }
 ];
+
+// Русские названия для подклассов (для генерации имени при принудительном классе)
+const roleNames = {
+    warrior: {
+        guardian: 'Страж',
+        berserker: 'Берсерк',
+        knight: 'Рыцарь'
+    },
+    assassin: {
+        assassin: 'Убийца',
+        venom_blade: 'Ядовитый клинок',
+        blood_hunter: 'Кровавый охотник'
+    },
+    mage: {
+        pyromancer: 'Поджигатель',
+        cryomancer: 'Ледяной маг',
+        illusionist: 'Иллюзионист'
+    }
+};
 
 /**
  * Вычисляет общее количество очков навыков для бота заданного уровня
@@ -115,7 +151,7 @@ function applySkillBonuses(base, dist) {
         int: base.int + (dist.int_points || 0),
         spd: base.spd + (dist.spd_points || 0),
         crit: base.crit + (dist.crit_points || 0),
-        critDmg: 1.5 + ((dist.crit_dmg_points || 0) / 50), // ✅ Синхронизировано с клиентом: делитель 50
+        critDmg: base.critDmg + ((dist.crit_dmg_points || 0) / 100),
         vamp: base.vamp + (dist.vamp_points || 0),
         reflect: base.reflect + (dist.reflect_points || 0)
     };
@@ -133,7 +169,7 @@ function applyClassBonuses(stats, className, subclass) {
 
     // Классовые особенности
     if (className === 'warrior') {
-        result.hp += Math.floor(result.def / 5) * 5; // ✅ Исправлено: было *3
+        result.hp += Math.floor(result.def / 5) * 5;
     } else if (className === 'assassin') {
         result.spd += Math.floor(result.agi / 5);
     } else if (className === 'mage') {
@@ -141,24 +177,23 @@ function applyClassBonuses(stats, className, subclass) {
         // manaRegen будет добавлен позже
     }
 
-    // Классовые множители + лимиты через clamp()
+    // Классовые множители
     if (className === 'warrior') {
-        result.def = clamp(result.def * 1.5, GAME_LIMITS.def.min, GAME_LIMITS.def.max);
+        result.def = Math.min(70, result.def * 1.5);
         result.hp = Math.floor(result.hp * 1.1);
     } else if (className === 'assassin') {
         result.atk = Math.floor(result.atk * 1.2);
-        result.crit = clamp(result.crit * 1.25, GAME_LIMITS.crit.min, GAME_LIMITS.crit.max);
-        result.agi = clamp(result.agi * 1.1, GAME_LIMITS.agi.min, GAME_LIMITS.agi.max);
+        result.crit = Math.min(100, result.crit * 1.25);
+        result.agi = Math.min(100, result.agi * 1.1);
     } else if (className === 'mage') {
         result.atk = Math.floor(result.atk * 1.2);
         result.int = result.int * 1.2;
     }
 
-    // Финальные капы через clamp()
-    result.def = clamp(result.def, GAME_LIMITS.def.min, GAME_LIMITS.def.max);
-    result.crit = clamp(result.crit, GAME_LIMITS.crit.min, GAME_LIMITS.crit.max);
-    result.agi = clamp(result.agi, GAME_LIMITS.agi.min, GAME_LIMITS.agi.max);
-    result.critDmg = clamp(result.critDmg, GAME_LIMITS.critDmg.min, GAME_LIMITS.critDmg.max);
+    // Капы
+    result.def = Math.min(70, result.def);
+    result.crit = Math.min(100, result.crit);
+    result.agi = Math.min(100, result.agi);
 
     // Округления
     result.hp = Math.round(result.hp);
@@ -240,6 +275,11 @@ function generateCybercat(playerLevel) {
     const level = Math.max(1, Math.min(60, playerLevel - 2 + Math.floor(Math.random() * 5)));
     const classes = ['warrior', 'assassin', 'mage'];
     const randomClass = classes[Math.floor(Math.random() * classes.length)];
+    const subclassOptions = {
+        warrior: ['guardian', 'berserker', 'knight'],
+        assassin: ['assassin', 'venom_blade', 'blood_hunter'],
+        mage: ['pyromancer', 'cryomancer', 'illusionist']
+    };
     const options = subclassOptions[randomClass];
     const randomSubclass = options[Math.floor(Math.random() * options.length)];
 
@@ -256,9 +296,9 @@ function generateCybercat(playerLevel) {
     stats.int += 5;
 
     // Повторные капы и округления после добавления бонусов
-    stats.def = clamp(stats.def, GAME_LIMITS.def.min, GAME_LIMITS.def.max);
-    stats.agi = clamp(stats.agi, GAME_LIMITS.agi.min, GAME_LIMITS.agi.max);
-    stats.crit = clamp(stats.crit, GAME_LIMITS.crit.min, GAME_LIMITS.crit.max);
+    stats.def = Math.min(70, stats.def);
+    stats.agi = Math.min(100, stats.agi);
+    stats.crit = Math.min(100, stats.crit);
     stats.hp = Math.round(stats.hp);
     stats.atk = Math.round(stats.atk);
     stats.spd = Math.round(stats.spd);
@@ -303,13 +343,15 @@ function generateBot(playerLevel, isCybercat = false, forcedClass = null, forced
     }
 }
 
-// ========== БОССЫ-МЫШИ ==========
+// в конце файла botGenerator.js
+
 const mouseBosses = [
     { 
         type: 'necromancer', 
         name: 'Мышь-некромант', 
         avatar: 'mouse-skin-necr.png', 
         subclass: 'mouse_necromancer',
+        // базовые характеристики для этажа 5 (далее масштабируются)
         baseHp: 80,
         baseAtk: 12,
         baseDef: 8,
@@ -385,7 +427,7 @@ function generateMouseBoss(floor) {
     const bossTemplate = mouseBosses[bossIndex];
     
     // Масштабирование характеристик с ростом этажа
-    const scale = 1 + (floor - 5) / 50;
+    const scale = 1 + (floor - 5) / 50; // к 100 этажу примерно +90% к статам
     const hp = Math.floor(bossTemplate.baseHp * scale);
     const atk = Math.floor(bossTemplate.baseAtk * scale);
     const def = Math.floor(bossTemplate.baseDef * scale);
@@ -416,4 +458,4 @@ function generateMouseBoss(floor) {
     };
 }
 
-module.exports = { generateBot, generateMouseBoss };
+module.exports = { generateBot, generateMouseBoss }; // экспортируем новую функцию

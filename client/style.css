@@ -3510,154 +3510,125 @@ body {
 }
 
 
-/* ========== СТИЛИ ДЛЯ КАРТОЧЕК ЗАДАНИЙ (НАСТРАИВАЕМ СТРУКТУРУ) ========== */
-/* Эти стили нужны, так как JS теперь создает div-ы с такими классами */
+/* ========== 1. ГЛОБАЛЬНЫЙ ФОН (КАРТИНКА НА ВЕСЬ ЭКРАН) ========== */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Titillium Web', sans-serif;
+    color: #fff;
+    overflow-x: hidden;
+    min-height: 100vh;
+    /* Картинка теперь здесь, на самом нижнем слое */
+    background-image: url('assets/backapp.png');
+    background-size: cover;       /* Растягивает картинку, сохраняя пропорции */
+    background-position: center;  /* Центрирует картинку */
+    background-repeat: no-repeat;
+    background-attachment: fixed; /* Фиксирует фон при прокрутке */
+    position: relative;
+}
 
+/* Убираем старый псевдоэлемент #app::before, если он был, чтобы не дублировать фон */
+#app::before {
+    display: none; 
+}
+
+#app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /* Сам app тоже делаем прозрачным, чтобы видно было body */
+    background-color: transparent !important;
+}
+
+/* Гарантируем, что контент выше фона */
+#content, .top-bar, .bottom-menu {
+    position: relative;
+    z-index: 2;
+}
+
+/* ========== 2. ДЕЛАЕМ БЛОКИ ПРОЗРАЧНЫМИ ========== */
+
+/* Верхняя панель - убираем сплошной цвет, оставляем только легкую подложку или прозрачность */
+.top-bar {
+    background-color: rgba(26, 31, 43, 0.6) !important; /* Полупрозрачный темный */
+    backdrop-filter: blur(5px); /* Размытие фона под панелью */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Контейнер заданий - делаем полностью прозрачным */
+.tasks-container {
+    background-color: transparent !important; /* УБИРАЕМ ЦВЕТ #2a303c */
+    margin: 0 !important;
+    width: 100% !important;
+    padding: 0;
+}
+
+/* Заголовок заданий - делаем полупрозрачным */
+.tasks-header {
+    background-color: rgba(26, 31, 43, 0.8) !important; /* Полупрозрачный */
+    backdrop-filter: blur(4px);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    margin: 0;
+}
+
+/* Карточки заданий - теперь они будут плавать на фоне картинки */
 .task-card {
-    display: flex !important; /* Принудительно включаем Flexbox для карточки */
+    background-color: rgba(42, 48, 60, 0.85) !important; /* Темный полупрозрачный */
+    backdrop-filter: blur(5px); /* Эффект матового стекла */
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Легкая рамка */
+    
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
     width: 100%;
     box-sizing: border-box;
-    background-color: #2a303c; /* Базовый цвет карточки */
-    backdrop-filter: blur(5px); /* Легкое размытие фона под карточкой */
+    margin: 0;
+    padding: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
 }
 
-/* Чередование цветов для строк (если нужно) */
+.task-card:hover {
+    background-color: rgba(47, 53, 66, 0.95) !important; /* Чуть светлее при наведении */
+}
+
+/* Чередование цветов (тоже делаем полупрозрачным) */
 .task-card-even {
-    background-color: #2a303c;
+    background-color: rgba(42, 48, 60, 0.85) !important;
 }
 .task-card-odd {
-    background-color: #232833;
+    background-color: rgba(35, 40, 51, 0.85) !important;
 }
 
-.task-info {
-    flex: 2;
-    min-width: 0; /* Позволяет тексту обрезаться многоточием */
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+/* Нижнее меню - полупрозрачное */
+.bottom-menu {
+    background-color: rgba(26, 31, 43, 0.9) !important;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.task-title {
-    font-size: 16px;
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #ffffff;
+/* Модальные окна - оставляем темными, но можно добавить прозрачность фону затемнения, если нужно */
+.modal {
+    background-color: rgba(0, 0, 0, 0.7); /* Затемнение фона за модалкой */
+}
+.modal-content {
+    background-color: #2a303c; /* Сама плашка модалки остается непрозрачной для читаемости */
+    /* Или можно сделать полупрозрачной: background-color: rgba(42, 48, 60, 0.95); */
 }
 
-.task-desc {
-    font-size: 11px;
-    color: #aaa;
-    margin-top: 2px;
+/* Таймер обратного отсчета - прозрачный фон */
+.countdown-container {
+    background-color: transparent !important;
 }
-
-.task-alt-desc {
-    font-size: 10px;
-    color: #88ff88;
-    margin-top: 2px;
-}
-
-.task-reward {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-    margin: 0 10px;
-    white-space: nowrap;
-}
-
-.task-reward span {
-    font-weight: bold;
-    color: white;
-    font-size: 14px;
-}
-
-.task-actions {
-    flex: 0 0 50px; /* Фиксированная ширина для кнопок */
-    display: flex;
-    justify-content: flex-end;
-}
-
-/* Стили для прогресс-баров внутри задач */
-.task-progress-row {
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.progress-bar-bg {
-    flex: 1;
-    background-color: #2f3542;
-    height: 6px;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-bar-fill {
-    background-color: #00aaff;
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-.progress-text {
-    font-size: 10px;
-    color: #aaa;
-    min-width: 35px;
-    text-align: right;
-}
-
-/* Стили для модальных окон наград */
-reward-content {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 20px;
-}
-
-.reward-icon-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.reward-amount {
-    font-size: 28px;
-    font-weight: bold;
-    color: #ddd;
-}
-
-.reward-icon {
-    font-size: 28px;
-    color: #ddd;
-}
-
-.reward-text {
-    font-size: 14px;
-    color: #aaa;
-}
-
-.class-choice-container {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 15px;
-    flex-wrap: wrap;
-}
-
-/* Адаптив для маленьких экранов */
-@media (max-width: 360px) {
-    .task-title { font-size: 14px; }
-    .task-desc { font-size: 10px; }
-    .task-reward span { font-size: 12px; }
-    .digit-box { min-width: 60px; padding: 8px 12px; }
-    .digit-value { font-size: 28px; }
+.countdown-card {
+    background-color: rgba(42, 48, 60, 0.8) !important;
+    backdrop-filter: blur(5px);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
 }

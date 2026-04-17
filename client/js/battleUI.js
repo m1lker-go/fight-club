@@ -154,21 +154,7 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // ✅ СРАЗУ применяем эффект поражения, если результат уже известен
-    setTimeout(() => {
-        const heroCard = document.querySelector('.hero-card');
-        const enemyCard = document.querySelector('.enemy-card');
-        
-        if (battleData.result.winner === 'enemy' || battleData.result.playerHpRemain <= 0) {
-            heroCard?.classList.add('defeated');
-            console.log('[BATTLE UI] Applied defeated to player');
-        }
-        if (battleData.result.winner === 'player' || battleData.result.enemyHpRemain <= 0) {
-            enemyCard?.classList.add('defeated');
-            console.log('[BATTLE UI] Applied defeated to enemy');
-        }
-    }, 100); // Небольшая задержка для гарантированного рендера
-
+ 
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
     const speedBtn = document.getElementById('singleSpeedBtn');

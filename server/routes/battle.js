@@ -594,17 +594,17 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         states.push({
             playerHp, enemyHp, playerMana, enemyMana,
             playerFrozen: playerState.frozen, enemyFrozen: enemyState.frozen,
-            playerShield: playerState.reflectBuff>0 ? 1:0, enemyShield: enemyState.reflectBuff>0 ? 1:0,
+            playerShield: playerState.reflectBuff > 0 ? 1 : 0, enemyShield: enemyState.reflectBuff > 0 ? 1 : 0,
             playerPoisonStacks: playerState.poisonStacks, playerBurnStacks: playerState.burnStacks, playerFreezeStacks: playerState.freezeStacks,
             enemyPoisonStacks: enemyState.poisonStacks, enemyBurnStacks: enemyState.burnStacks, enemyFreezeStacks: enemyState.freezeStacks
         });
     }
     pushState();
 
-    let turn = (playerStats.spd > enemyStats.spd) ? 'player' : (enemyStats.spd > playerStats.spd) ? 'enemy' : (Math.random()<0.5 ? 'player' : 'enemy');
+    let turn = (playerStats.spd > enemyStats.spd) ? 'player' : (enemyStats.spd > playerStats.spd) ? 'enemy' : (Math.random() < 0.5 ? 'player' : 'enemy');
     let maxTurns = 100, t = 0;
 
-    while (playerHp>0 && enemyHp>0 && t<maxTurns) {
+    while (playerHp > 0 && enemyHp > 0 && t < maxTurns) {
         t++;
 
         if (turn === 'player') {
@@ -772,8 +772,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,
-                    enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),
-                    playerStats.reflect + (playerState.reflectBuff>0 ? playerState.reflectBonus : 0),
+                    enemyStats.vamp + (enemyState.vampBuff > 0 ? enemyState.vampBonus : 0),
+                    playerStats.reflect + (playerState.reflectBuff > 0 ? playerState.reflectBonus : 0),
                     enemyName, playerName,
                     enemyClass, enemySubclass, playerSubclass,
                     enemyState, playerState,
@@ -939,7 +939,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (playerHp <= 0 || enemyHp <= 0) break;
     }
 
-    let winner = (playerHp<=0 && enemyHp<=0) ? 'draw' : (playerHp<=0) ? 'enemy' : (enemyHp<=0) ? 'player' : null;
+    let winner = (playerHp <= 0 && enemyHp <= 0) ? 'draw' : (playerHp <= 0) ? 'enemy' : (enemyHp <= 0) ? 'player' : null;
     const victoryPhrases = [
         '🎉 Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
         '⚔️ С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
@@ -958,16 +958,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     ];
 
     let finalPhrase = '';
-    if (winner === 'player') finalPhrase = victoryPhrases[Math.floor(Math.random()*victoryPhrases.length)];
-    else if (winner === 'enemy') finalPhrase = defeatPhrases[Math.floor(Math.random()*defeatPhrases.length)];
-    else finalPhrase = drawPhrases[Math.floor(Math.random()*drawPhrases.length)];
+    if (winner === 'player') finalPhrase = victoryPhrases[Math.floor(Math.random() * victoryPhrases.length)];
+    else if (winner === 'enemy') finalPhrase = defeatPhrases[Math.floor(Math.random() * defeatPhrases.length)];
+    else finalPhrase = drawPhrases[Math.floor(Math.random() * drawPhrases.length)];
     messages.push({ text: finalPhrase, type: 'final', attacker: 'none' });
     pushState();
 
     return {
         winner,
-        playerHpRemain: Math.max(0,playerHp),
-        enemyHpRemain: Math.max(0,enemyHp),
+        playerHpRemain: Math.max(0, playerHp),
+        enemyHpRemain: Math.max(0, enemyHp),
         messages,
         states,
         playerMaxHp: playerStats.hp,
@@ -1001,8 +1001,8 @@ async function addExp(client, userId, className, expGain) {
     return leveledUp;
 }
 
-function getCoinReward(streak) { return streak>=25 ? 20 : streak>=10 ? 10 : streak>=5 ? 7 : 5; }
-function getRatingChange(streak) { return streak>=20 ? 30 : streak>=10 ? 25 : streak>=5 ? 20 : 15; }
+function getCoinReward(streak) { return streak >= 25 ? 20 : streak >= 10 ? 10 : streak >= 5 ? 7 : 5; }
+function getRatingChange(streak) { return streak >= 20 ? 30 : streak >= 10 ? 25 : streak >= 5 ? 20 : 15; }
 
 async function selectPvPOpponent(client, currentUserId, currentLevel) {
     const ratingRes = await client.query('SELECT id, rating FROM users WHERE rating > 0 ORDER BY rating DESC');
@@ -1078,7 +1078,7 @@ router.post('/start', async (req, res) => {
         if (energyResult.rows[0].energy < 1) throw new Error('Недостаточно энергии');
         
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userData.id, userData.current_class]);
-        if (classData.rows.length===0) throw new Error('Class data not found');
+        if (classData.rows.length === 0) throw new Error('Class data not found');
         
         const inv = await client.query(`SELECT id, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus FROM inventory WHERE user_id = $1 AND equipped = true`, [userData.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, userData.subclass);
@@ -1091,7 +1091,7 @@ router.post('/start', async (req, res) => {
         } else if (rand < 0.8) {
             opponentData = generateBot(classData.rows[0].level, false);
         } else {
-            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random()*3)+1), true);
+            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
         }
 
         if (!opponentData || !opponentData.stats) {
@@ -1168,7 +1168,7 @@ router.post('/start', async (req, res) => {
                 class: opponentData.class,
                 subclass: opponentData.subclass,
                 level: opponentData.level,
-                is_cybercat: opponentData.is_cybercat||false
+                is_cybercat: opponentData.is_cybercat || false
             },
             result: {
                 winner: battleResult.winner,
@@ -1192,7 +1192,9 @@ router.post('/start', async (req, res) => {
         await client.query('ROLLBACK');
         console.error(e);
         res.status(400).json({ error: e.message });
-    } finally { client.release(); }
+    } finally { 
+        client.release(); 
+    }
 });
 
 module.exports = router;

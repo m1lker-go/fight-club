@@ -137,10 +137,10 @@ router.post('/init', async (req, res) => {
         const client = await pool.connect();
         try {
             await client.query('DELETE FROM email_verifications WHERE email = $1', [email]);
-              await client.query(
-      'INSERT INTO email_verifications (email, code, expires_at) VALUES ($1, $2, NOW() + $3::INTERVAL)',
-      [email, code, '10 minutes']
-    );
+            await client.query(
+                'INSERT INTO email_verifications (email, code, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'10 minutes\')',
+                [email, code]
+            );
             await sendVerificationEmail(email, code);
             res.json({ message: 'Code sent' });
         } catch (err) {

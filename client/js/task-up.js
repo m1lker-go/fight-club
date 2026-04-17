@@ -1,4 +1,4 @@
-// task-up.js (Исправленный: убираем конфликтующие inline-стили)
+// task-up.js (Исправленный: кнопки и отступы)
 
 let countdownInterval = null;
 let lastTasksData = null;
@@ -11,11 +11,11 @@ window.hasUnclaimedTasks = hasUnclaimedTasks;
 
 function renderReferral() {
     const referralDiv = document.createElement('div');
-    // Убрали inline-стили, оставили только классы для CSS
     referralDiv.className = 'task-card referral-card';
     
     const referralLink = `https://t.me/${window.BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 
+    // Изменена структура: кнопки теперь в одном контейнере с фиксированной шириной
     referralDiv.innerHTML = `
         <div class="task-info">
             <div class="task-title">Пригласить друга</div>
@@ -24,9 +24,9 @@ function renderReferral() {
         <div class="task-reward">
             <span>100 <i class="fas fa-coins"></i></span>
         </div>
-        <div class="task-actions">
-            <button class="claim-task-btn referral-copy-btn" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
-            <button class="claim-task-btn referral-share-btn" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+        <div class="task-actions-group">
+            <button class="action-btn-square referral-copy-btn" title="Копировать"><i class="fas fa-copy"></i></button>
+            <button class="action-btn-square referral-share-btn" title="Поделиться"><i class="fas fa-share-alt"></i></button>
         </div>
     `;
 
@@ -55,7 +55,6 @@ function renderReferral() {
 
 function renderTasks() {
     const content = document.getElementById('content');
-    // Используем классы вместо inline-стилей для контейнера
     content.innerHTML = `
         <div class="tasks-container">
             <div class="task-card advent-summary-card">
@@ -68,8 +67,8 @@ function renderTasks() {
                     <span>EXP</span>
                     <i class="fas fa-tshirt"></i>
                 </div>
-                <div class="task-actions">
-                    <button class="advent-eye-btn" id="showAdventBtn"><i class="fas fa-eye"></i></button>
+                <div class="task-actions-group">
+                    <button class="action-btn-square" id="showAdventBtn"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
             <div id="referralPlaceholder"></div>
@@ -139,12 +138,16 @@ async function loadDailyTasks() {
 
             let altDesc = '';
             let altProgressHtml = '';
+            
+            // Минимальный отступ для второго бара
+            const smallGapStyle = 'margin-top: 2px;'; 
+
             if (task.id === 1 || task.id === 2 || task.id === 3) {
                 altDesc = '<div class="task-alt-desc">ИЛИ выиграть 10 боёв подряд</div>';
                 const streakProgress = Math.min(dailyWinStreak, 10);
                 const streakPercent = (streakProgress / 10) * 100;
                 altProgressHtml = `
-                    <div class="task-progress-row">
+                    <div class="task-progress-row" style="${smallGapStyle}">
                         <div class="progress-bar-bg">
                             <div class="progress-bar-fill" style="width: ${streakPercent}%"></div>
                         </div>
@@ -179,8 +182,12 @@ async function loadDailyTasks() {
             }
 
             const taskCard = document.createElement('div');
-            // Добавляем классы для четных/нечетных строк, если они есть в CSS
             taskCard.className = `task-card ${index % 2 === 0 ? 'task-card-even' : 'task-card-odd'}`;
+
+            // Используем общий класс группы действий для обоих случаев
+            const actionButtonHtml = isReadyToClaim 
+                ? `<button class="action-btn-square status-active" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}"><i class="fas fa-check"></i></button>`
+                : `<button class="action-btn-square status-inactive" data-task-id="${task.id}" data-reward-type="${task.reward_type}" data-reward-amount="${task.reward_amount}"><i class="fas fa-times"></i></button>`;
 
             taskCard.innerHTML = `
                 <div class="task-info">
@@ -193,22 +200,20 @@ async function loadDailyTasks() {
                 <div class="task-reward">
                     <span>${rewardText}</span>
                 </div>
-                <div class="task-actions">
-                    <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" 
-                            data-task-id="${task.id}"
-                            data-reward-type="${task.reward_type}"
-                            data-reward-amount="${task.reward_amount}">
-                        <i class="fas ${isReadyToClaim ? 'fa-check' : 'fa-times'}"></i>
-                    </button>
+                <div class="task-actions-group">
+                    ${actionButtonHtml}
                 </div>
             `;
             tasksList.appendChild(taskCard);
         });
 
-        document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
+        document.querySelectorAll('.task-card .action-btn-square').forEach(btn => {
             if (!btn.dataset.taskId) return;
 
             btn.addEventListener('click', async (e) => {
+                // Проверка только для активных кнопок (галочка)
+                if (!btn.classList.contains('status-active')) return;
+
                 const taskId = parseInt(btn.dataset.taskId);
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);

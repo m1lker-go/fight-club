@@ -367,14 +367,6 @@ function showTowerResultScreen(battleData) {
     const passedFloor = floor;
     const expGain = battleData.expGain || 0;
 
-    // ✅ Фолбэк: мгновенно применяем класс "defeated", если бой уже завершён
-    if (result.playerHpRemain <= 0) {
-        document.querySelector('.hero-card')?.classList.add('defeated');
-    }
-    if (result.enemyHpRemain <= 0) {
-        document.querySelector('.enemy-card')?.classList.add('defeated');
-    }
-
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
 
     const logArray = result.messages.map(m => {

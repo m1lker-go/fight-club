@@ -1,44 +1,32 @@
-// task-up.js (исправленный)
+// task-up.js (Исправленный: убираем конфликтующие inline-стили)
 
 let countdownInterval = null;
-let lastTasksData = null;  // храним последние данные заданий
+let lastTasksData = null;
 
-// Функция для проверки наличия неполученных наград
 function hasUnclaimedTasks() {
     if (!lastTasksData) return false;
     return lastTasksData.some(task => !task.completed && task.progress >= task.target_value);
 }
 window.hasUnclaimedTasks = hasUnclaimedTasks;
 
-function renderAdventCalendarInContainer(data, container) {
-    // Не используется
-}
-
 function renderReferral() {
     const referralDiv = document.createElement('div');
+    // Убрали inline-стили, оставили только классы для CSS
     referralDiv.className = 'task-card referral-card';
-    referralDiv.style.display = 'flex';
-    referralDiv.style.alignItems = 'center';
-    referralDiv.style.justifyContent = 'space-between';
-    referralDiv.style.width = '100%';
-    referralDiv.style.marginBottom = '0';
-    referralDiv.style.padding = '12px';
-    referralDiv.style.boxSizing = 'border-box';
-    referralDiv.style.backgroundColor = '#2a303c';
-
+    
     const referralLink = `https://t.me/${window.BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
 
     referralDiv.innerHTML = `
-        <div style="flex: 2; min-width: 0;">
-            <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>
-            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>
+        <div class="task-info">
+            <div class="task-title">Пригласить друга</div>
+            <div class="task-desc">Пригласи друга и получи 100 монет</div>
         </div>
-        <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">
-            <span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>
+        <div class="task-reward">
+            <span>100 <i class="fas fa-coins"></i></span>
         </div>
-        <div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">
-            <button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
-            <button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+        <div class="task-actions">
+            <button class="claim-task-btn referral-copy-btn" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
+            <button class="claim-task-btn referral-share-btn" title="Поделиться"><i class="fas fa-share-alt"></i></button>
         </div>
     `;
 
@@ -46,7 +34,7 @@ function renderReferral() {
         navigator.clipboard.writeText(referralLink).then(() => {
             showToast('Ссылка скопирована!', 1500);
         }).catch(() => {
-            showToast('Ошибка копирования', 1500)
+            showToast('Ошибка копирования', 1500);
         });
     });
 
@@ -67,20 +55,21 @@ function renderReferral() {
 
 function renderTasks() {
     const content = document.getElementById('content');
+    // Используем классы вместо inline-стилей для контейнера
     content.innerHTML = `
         <div class="tasks-container">
-            <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0; padding: 12px; box-sizing: border-box; background-color: #2a303c;">
-                <div style="flex: 2; min-width: 0;">
-                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
+            <div class="task-card advent-summary-card">
+                <div class="task-info">
+                    <div class="task-title">Адвент-календарь</div>
+                    <div class="task-desc">Ежедневные подарки каждый день декабря</div>
                 </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
-                    <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
-                    <span style="font-size: 12px; color: white;">EXP</span>
-                    <i class="fas fa-tshirt" style="color: white; font-size: 16px;"></i>
+                <div class="task-reward">
+                    <i class="fas fa-coins"></i>
+                    <span>EXP</span>
+                    <i class="fas fa-tshirt"></i>
                 </div>
-                <div style="flex: 0 0 100px; text-align: right;">
-                    <button class="advent-eye-btn" id="showAdventBtn" style="padding: 8px; width: 100%; font-size: 14px;"><i class="fas fa-eye"></i></button>
+                <div class="task-actions">
+                    <button class="advent-eye-btn" id="showAdventBtn"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
             <div id="referralPlaceholder"></div>
@@ -113,7 +102,6 @@ async function loadDailyTasks() {
     if (!tasksList) return;
 
     try {
-        // Используем apiRequest, user_id добавится автоматически
         const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
@@ -142,7 +130,7 @@ async function loadDailyTasks() {
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
-                ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
+                ? `${task.reward_amount} <i class="fas fa-coins"></i>` 
                 : `${task.reward_amount} EXP`;
 
             const translated = dailyTaskTranslations[task.name] || {};
@@ -152,25 +140,25 @@ async function loadDailyTasks() {
             let altDesc = '';
             let altProgressHtml = '';
             if (task.id === 1 || task.id === 2 || task.id === 3) {
-                altDesc = '<div style="font-size: 10px; color: #88ff88;">ИЛИ выиграть 10 боёв подряд</div>';
+                altDesc = '<div class="task-alt-desc">ИЛИ выиграть 10 боёв подряд</div>';
                 const streakProgress = Math.min(dailyWinStreak, 10);
                 const streakPercent = (streakProgress / 10) * 100;
                 altProgressHtml = `
-                    <div style="margin-top: 2px; display: flex; align-items: center; gap: 10px;">
-                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${streakPercent}%; height: 100%; border-radius: 3px;"></div>
+                    <div class="task-progress-row">
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${streakPercent}%"></div>
                         </div>
-                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${streakProgress}/10</div>
+                        <div class="progress-text">${streakProgress}/10</div>
                     </div>
                 `;
             }
 
             let progressHtml = `
-                <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                    <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                        <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
+                <div class="task-progress-row">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: ${progressPercent}%"></div>
                     </div>
-                    <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
+                    <div class="progress-text">${clampedProgress}/${task.target_value}</div>
                 </div>
             `;
 
@@ -178,11 +166,11 @@ async function loadDailyTasks() {
             if (task.id === 9) {
                 const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
                 progressHtml = `
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${championPercent}%; height: 100%; border-radius: 3px;"></div>
+                    <div class="task-progress-row">
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${championPercent}%"></div>
                         </div>
-                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${completedTasksCount}/${totalTasksCount}</div>
+                        <div class="progress-text">${completedTasksCount}/${totalTasksCount}</div>
                     </div>
                 `;
                 isReadyToClaim = completedTasksCount >= totalTasksCount;
@@ -191,33 +179,25 @@ async function loadDailyTasks() {
             }
 
             const taskCard = document.createElement('div');
-            taskCard.className = 'task-card';
-            taskCard.style.display = 'flex';
-            taskCard.style.alignItems = 'center';
-            taskCard.style.justifyContent = 'space-between';
-            taskCard.style.width = '100%';
-            taskCard.style.marginBottom = '0';
-            taskCard.style.padding = '12px';
-            taskCard.style.boxSizing = 'border-box';
-            taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833';
+            // Добавляем классы для четных/нечетных строк, если они есть в CSS
+            taskCard.className = `task-card ${index % 2 === 0 ? 'task-card-even' : 'task-card-odd'}`;
 
             taskCard.innerHTML = `
-                <div style="flex: 2; min-width: 0;">
-                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
+                <div class="task-info">
+                    <div class="task-title">${displayName}</div>
+                    <div class="task-desc">${displayDesc}</div>
                     ${altDesc}
                     ${progressHtml}
                     ${altProgressHtml}
                 </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
-                    <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
+                <div class="task-reward">
+                    <span>${rewardText}</span>
                 </div>
-                <div style="flex: 0 0 50px; text-align: right;">
+                <div class="task-actions">
                     <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" 
                             data-task-id="${task.id}"
                             data-reward-type="${task.reward_type}"
-                            data-reward-amount="${task.reward_amount}"
-                            style="padding: 8px; width: 100%; font-size: 14px;">
+                            data-reward-amount="${task.reward_amount}">
                         <i class="fas ${isReadyToClaim ? 'fa-check' : 'fa-times'}"></i>
                     </button>
                 </div>
@@ -263,7 +243,6 @@ async function loadDailyTasks() {
             }
         }
 
-        // Сохраняем данные заданий для проверки наличия неполученных наград
         lastTasksData = tasksData;
         if (window.updateMainMenuNewIcons) {
             window.updateMainMenuNewIcons();
@@ -274,7 +253,6 @@ async function loadDailyTasks() {
     }
 }
 
-// Функция для фоновой загрузки данных заданий без рендера
 async function refreshTasksData() {
     if (!userData || !userData.id) return;
     try {
@@ -351,12 +329,12 @@ function showCoinsModal(amount) {
 
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
-        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="font-size: 28px; font-weight: bold; color: #ddd;">${amount}</span>
-                <i class="fas fa-coins" style="font-size: 28px; color: #ddd;"></i>
+        <div class="reward-content">
+            <div class="reward-icon-row">
+                <span class="reward-amount">${amount}</span>
+                <i class="fas fa-coins reward-icon"></i>
             </div>
-            <div style="font-size: 14px; color: #aaa;">монет получено!</div>
+            <div class="reward-text">монет получено!</div>
         </div>
     `;
     modal.style.display = 'block';
@@ -374,12 +352,12 @@ function showExpModal(amount, className) {
 
     modalTitle.innerText = 'Награда';
     modalBody.innerHTML = `
-        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="font-size: 28px; font-weight: bold; color: #ddd;">+${amount}</span>
-                <i class="fas fa-star" style="font-size: 28px; color: #ddd;"></i>
+        <div class="reward-content">
+            <div class="reward-icon-row">
+                <span class="reward-amount">+${amount}</span>
+                <i class="fas fa-star reward-icon"></i>
             </div>
-            <div style="font-size: 14px; color: #aaa;">для класса <strong>${getClassNameRu(className)}</strong></div>
+            <div class="reward-text">для класса <strong>${getClassNameRu(className)}</strong></div>
         </div>
     `;
     modal.style.display = 'block';
@@ -411,7 +389,7 @@ function renderAdventCalendar(data) {
     const { currentDay, daysInMonth, nextAvailable, lastClaimed, lastClaimDate } = data;
     const content = document.getElementById('content');
 
-    let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
+    let html = '<h3 class="advent-title">Адвент-календарь</h3><div class="advent-grid">';
     for (let day = 1; day <= daysInMonth; day++) {
         let className = 'advent-day';
         if (day <= lastClaimed) {
@@ -425,9 +403,9 @@ function renderAdventCalendar(data) {
         const reward = getAdventReward(day, daysInMonth);
         let iconHtml = '';
         if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
+            iconHtml = '<i class="fas fa-coins"></i>';
         } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
+            iconHtml = '<span class="exp-icon">EXP</span>';
         } else if (reward.type === 'item') {
             let color = '#aaa';
             if (reward.rarity === 'uncommon') color = '#2ecc71';
@@ -466,7 +444,7 @@ function claimAdventDay(day, daysInMonth) {
     const reward = getAdventReward(day, daysInMonth);
 
     isClaiming = true;
-    const body = {}; // не нужно явно передавать tg_id или user_id
+    const body = {};
 
     if (reward.type === 'exp') {
         showClassChoiceModalForAdvent(reward.amount);
@@ -514,7 +492,7 @@ function showClassChoiceModalForAdvent(expAmount) {
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+        <div class="class-choice-container">
             <button class="btn class-choice" data-class="warrior">Воин</button>
             <button class="btn class-choice" data-class="assassin">Ассасин</button>
             <button class="btn class-choice" data-class="mage">Маг</button>
@@ -562,7 +540,7 @@ function claimDailyExp(taskId, expAmount) {
     modalTitle.innerText = 'Выберите класс';
     modalBody.innerHTML = `
         <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+        <div class="class-choice-container">
             <button class="btn class-choice" data-class="warrior">Воин</button>
             <button class="btn class-choice" data-class="assassin">Ассасин</button>
             <button class="btn class-choice" data-class="mage">Маг</button>
@@ -601,90 +579,3 @@ function claimDailyExp(taskId, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
-
-// ========== РЕНДЕР ВКЛАДКИ "ЗАДАНИЯ" ==========
-window.renderTasks = async function() {
-    const content = document.getElementById('content');
-    if (!content) return;
-    
-    content.innerHTML = '<div style="text-align:center; padding: 20px; color: #aaa;">Загрузка заданий...</div>';
-    
-    try {
-        const res = await window.apiRequest('/tasks/daily/list');
-        const data = await res.json();
-        
-        if (!data.tasks || !Array.isArray(data.tasks)) {
-            content.innerHTML = '<div style="text-align:center; color:#e74c3c; padding: 20px;">Ошибка загрузки заданий</div>';
-            return;
-        }
-        
-        let html = '<div class="tasks-container">';
-        html += '<div class="tasks-header">Ежедневные задания</div>';
-        
-        for (const task of data.tasks) {
-            const progressPercent = task.target_value > 0 
-                ? Math.min(100, Math.round((task.progress / task.target_value) * 100)) 
-                : 0;
-            const isCompleted = task.completed || progressPercent >= 100;
-            
-            html += `
-                <div class="task-item ${isCompleted ? 'completed' : ''}" data-task-id="${task.id}">
-                    <div class="task-info">
-                        <div class="task-name">${task.name}</div>
-                        <div class="task-desc">${task.description}</div>
-                        <div class="task-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
-                            </div>
-                            <span class="progress-text">${task.progress}/${task.target_value}</span>
-                        </div>
-                    </div>
-                    <div class="task-reward">
-                        <span class="reward-amount">+${task.reward_amount}</span>
-                        <i class="fas ${task.reward_type === 'coins' ? 'fa-coins' : 'fa-star'}"></i>
-                    </div>
-                    <button class="claim-btn" ${!isCompleted ? 'disabled' : ''}>
-                        ${isCompleted ? 'Забрать' : 'В процессе'}
-                    </button>
-                </div>
-            `;
-        }
-        
-        html += '</div>';
-        content.innerHTML = html;
-        
-        // Обработчики кнопок "Забрать"
-        content.querySelectorAll('.claim-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const taskItem = e.target.closest('.task-item');
-                const taskId = taskItem?.dataset.taskId;
-                if (!taskId) return;
-                
-                try {
-                    const res = await window.apiRequest('/tasks/daily/claim', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            task_id: parseInt(taskId),
-                            class_choice: userData.current_class
-                        })
-                    });
-                    const result = await res.json();
-                    if (result.success) {
-                        showToast('Награда получена!', 1500);
-                        if (window.refreshData) await window.refreshData();
-                        renderTasks();
-                    } else {
-                        showToast('Ошибка: ' + result.error, 1500);
-                    }
-                } catch (err) {
-                    console.error('Claim error:', err);
-                    showToast('Ошибка соединения', 1500);
-                }
-            });
-        });
-        
-    } catch (err) {
-        console.error('Tasks load error:', err);
-        content.innerHTML = '<div style="text-align:center; color:#e74c3c; padding: 20px;">Ошибка загрузки заданий</div>';
-    }
-};

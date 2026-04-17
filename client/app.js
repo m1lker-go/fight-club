@@ -40,6 +40,7 @@ window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
 // ========== УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАПРОСОВ ==========
+// Автоматически добавляет user_id и tg_id в тело POST или в URL GET
 window.apiRequest = async function(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
     const method = options.method || 'GET';
@@ -88,12 +89,13 @@ window.apiRequest = async function(endpoint, options = {}) {
     }
 };
 
-// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
+// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ (с использованием apiRequest) ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     for (let i = 0; i < retries; i++) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
+            // Используем apiRequest, если url относительный, иначе прямой fetch
             let response;
             if (url.startsWith(window.API_BASE) || url.startsWith('/')) {
                 response = await window.apiRequest(url, { ...options, signal: controller.signal });
@@ -111,7 +113,7 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
-// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM ==========
+// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM (ВНУТРИ WEBAPP) ==========
 async function autoLoginTelegram() {
     if (!tg || !tg.initData) return false;
     console.log('Auto login via Telegram initData...');
@@ -153,7 +155,7 @@ async function autoLoginTelegram() {
     return false;
 }
 
-// Загрузка данных пользователя по токену
+// Загрузка данных пользователя по токену (использует apiRequest)
 async function loadUserDataByToken(token) {
     try {
         console.log('loadUserDataByToken: fetching profile...');
@@ -216,14 +218,6 @@ async function checkAuth() {
                 updateMainMenuNewIcons();
                 checkAdvent();
                 hideSplashScreen();
-                
-                // ✅ Диагностика ВНУТРИ успешной авторизации
-                console.log('=== AUTH SUCCESS DIAGNOSTICS ===');
-                console.log('userData:', userData ? 'OK' : 'NULL');
-                console.log('userClasses:', userClasses.length);
-                console.log('inventory:', inventory.length);
-                console.log('renderMain type:', typeof window.renderMain);
-                
                 console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {
@@ -260,29 +254,11 @@ async function checkAuth() {
 
 function hideSplashScreen() {
     const splash = document.getElementById('splash-screen');
-    console.log('[hideSplashScreen] splash element:', splash);
-    console.log('[hideSplashScreen] classList before:', splash?.classList);
-    
     if (splash) {
-        // ✅ Принудительное скрытие с !important через inline-стили
         splash.classList.add('hidden');
-        splash.style.display = 'none';
-        splash.style.visibility = 'hidden';
-        splash.style.opacity = '0';
-        splash.style.pointerEvents = 'none';
-        
-        console.log('[hideSplashScreen] classList after:', splash.classList);
-        console.log('[hideSplashScreen] style.display:', splash.style.display);
-        
-        // Проверка через 100мс
         setTimeout(() => {
-            const computedStyle = getComputedStyle(splash);
-            console.log('[hideSplashScreen] Final check:', {
-                display: computedStyle.display,
-                visibility: computedStyle.visibility,
-                opacity: computedStyle.opacity
-            });
-        }, 100);
+            splash.style.display = 'none';
+        }, 500);
     }
 }
 
@@ -291,7 +267,6 @@ function showErrorSplash() {
     if (splash) {
         splash.classList.remove('hidden');
         splash.style.display = 'flex';
-        
         splash.innerHTML = `
             <div class="splash-content">
                 <h1 class="splash-title">Ошибка соединения</h1>
@@ -300,7 +275,6 @@ function showErrorSplash() {
                 <button class="btn" id="retryBtn" style="margin-top: 10px;">Повторить</button>
             </div>
         `;
-        
         const retryBtn = document.getElementById('retryBtn');
         if (retryBtn) {
             retryBtn.addEventListener('click', () => {
@@ -391,9 +365,7 @@ function updateTopBar() {
     document.getElementById('power').innerText = currentPower;
 }
 
-// ✅ ИСПРАВЛЕНО: добавлена открывающая { после объявления функции
 function showScreen(screen) {
-    console.log('[showScreen] switching to:', screen);
     currentScreen = screen;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
@@ -401,73 +373,40 @@ function showScreen(screen) {
     });
 
     const content = document.getElementById('content');
-    if (!content) {
-        console.error('[showScreen] content element not found!');
-        return;
-    }
     content.innerHTML = '';
 
     switch (screen) {
-        case 'main': 
-            console.log('[showScreen] calling renderMain');
-            if (typeof window.renderMain === 'function') {
-                window.renderMain();
-            } else {
-                console.error('[showScreen] renderMain is not a function!');
-                content.innerHTML = '<p style="color:red">Ошибка загрузки главного экрана</p>';
-            }
-            break;
-        case 'equip': 
-            if (typeof window.renderEquip === 'function') window.renderEquip(); 
-            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Экипировка временно недоступна</p>';
-            break;
-        case 'trade': 
-            if (typeof window.renderTrade === 'function') window.renderTrade(); 
-            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Торговля временно недоступна</p>';
-            break;
+        case 'main': renderMain(); break;
+        case 'equip': renderEquip(); break;
+        case 'trade': renderTrade(); break;
         case 'forge':
-            if (typeof window.renderForge === 'function') {
-                window.renderForge();
+            if (typeof renderForge === 'function') {
+                renderForge();
             } else {
                 renderForgeFallback();
             }
             break;
-        case 'tasks':
-            if (typeof window.renderTasks === 'function') {
-                window.renderTasks();
-            } else {
-                content.innerHTML = '<p style="text-align:center; color:#aaa;">Задания временно недоступны</p>';
-            }
-            break;
-        case 'rating': 
-            if (typeof window.renderRating === 'function') window.renderRating(); 
-            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Рейтинг временно недоступен</p>';
-            break;
-        case 'profile': 
-            if (typeof window.renderProfile === 'function') window.renderProfile(); 
-            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Профиль временно недоступен</p>';
-            break;
+        case 'tasks': renderTasks(); break;
+        case 'rating': renderRating(); break;
+        case 'profile': renderProfile(); break;
         case 'tower': 
-            if (typeof window.loadTowerStatus === 'function') {
-                window.loadTowerStatus();
+            if (typeof loadTowerStatus === 'function') {
+                loadTowerStatus();
             } else {
                 const script = document.createElement('script');
                 script.src = 'js/tower.js?v=1';
-                script.onload = () => {
-                    if (typeof window.loadTowerStatus === 'function') window.loadTowerStatus();
-                };
+                script.onload = () => loadTowerStatus();
                 document.head.appendChild(script);
             }
             break;
         case 'settings':
-            if (typeof window.renderSettings === 'function') {
-                window.renderSettings();
+            if (typeof renderSettings === 'function') {
+                renderSettings();
             } else {
                 content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
             }
             break;
-        default: 
-            if (typeof window.renderMain === 'function') window.renderMain();
+        default: renderMain();
     }
 
     if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
@@ -475,7 +414,7 @@ function showScreen(screen) {
 
 function renderForgeFallback() {
     const content = document.getElementById('content');
-    if (content) content.innerHTML = '<p style="text-align:center; color:#aaa;">Кузница временно недоступна</p>';
+    content.innerHTML = '<p style="text-align:center; color:#aaa;">Кузница временно недоступна</p>';
 }
 
 async function loadAvatars() {
@@ -497,20 +436,31 @@ function getAvatarFilenameById(id) {
     return avatar ? avatar.filename : 'cat_heroweb.png';
 }
 
-// Инициализация меню
+// Инициализация меню и запуск
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
-        const screen = item.dataset.screen;
-        if (screen) showScreen(screen);
+        showScreen(item.dataset.screen);
     });
 });
 
-// Обработка внешней авторизации
+// Функции, которые будут переопределены в screens.js, объявляем глобально
+window.renderMain = renderMain;
+window.renderEquip = renderEquip;
+window.renderTrade = renderTrade;
+window.renderMarket = renderMarket;
+window.renderRating = renderRating;
+window.renderProfile = renderProfile;
+window.renderTasks = renderTasks;
+window.renderSkins = renderSkins;
+window.renderSkills = renderSkills;
+window.renderProfileBonuses = renderProfileBonuses;
+
+// Обработка внешней авторизации (возврат из OAuth-потоков Google, VK, Telegram)
 function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
 
-    // Google OAuth (вход)
+    // ---- Google OAuth (вход) ----
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -527,15 +477,15 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // Google OAuth (привязка)
+    // ---- Google OAuth (привязка) ----
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
         if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
-        if (currentScreen === 'settings' && typeof window.renderSettings === 'function') window.renderSettings();
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
 
-    // VK OAuth (вход)
+    // ---- VK OAuth (вход) ----
     const vkAuth = urlParams.get('vk_auth');
     if (vkAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -552,15 +502,15 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // VK OAuth (привязка)
+    // ---- VK OAuth (привязка) ----
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
         if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
-        if (currentScreen === 'settings' && typeof window.renderSettings === 'function') window.renderSettings();
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
 
-    // Telegram OAuth (вход)
+    // ---- Telegram OAuth (вход) ----
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -577,12 +527,12 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // Telegram OAuth (привязка)
+    // ---- Telegram OAuth (привязка) ----
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
         if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
         if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
-        if (currentScreen === 'settings' && typeof window.renderSettings === 'function') window.renderSettings();
+        if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
 
@@ -592,41 +542,8 @@ function handleExternalAuth() {
     return handled;
 }
 
-// Вызов обработки внешней авторизации
+// Вызов обработки внешней авторизации перед запуском приложения
 handleExternalAuth();
 
 // Запуск приложения
 checkAuth();
-
-// === ЭКСТРЕННОЕ ИСПРАВЛЕНИЕ ВИДИМОСТИ ===
-setTimeout(() => {
-    const content = document.getElementById('content');
-    const splash = document.getElementById('splash-screen');
-    
-    console.log('=== EMERGENCY VISIBILITY CHECK ===');
-    console.log('content exists:', !!content);
-    console.log('content children:', content?.children.length);
-    console.log('content innerHTML length:', content?.innerHTML.length);
-    console.log('splash display:', getComputedStyle(splash).display);
-    console.log('content display:', getComputedStyle(content).display);
-    
-    // Принудительно скрываем splash
-    if (splash) {
-        splash.style.display = 'none';
-        splash.style.visibility = 'hidden';
-        splash.style.opacity = '0';
-    }
-    
-    // Если контент есть, но не виден — делаем его видимым
-    if (content && content.innerHTML.length > 100) {
-        content.style.display = 'block';
-        content.style.visibility = 'visible';
-        content.style.opacity = '1';
-        content.style.minHeight = '400px';
-        content.style.background = '#17212b';
-        content.style.color = 'white';
-        content.style.padding = '10px';
-        
-        console.log('[EMERGENCY] Forced content visibility');
-    }
-}, 2000);

@@ -137,7 +137,7 @@ function calculateStats(classData, inventory, subclass) {
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
     if (classData.class === 'warrior') {
-        stats.def = Math.min(70, stats.def * 1.5);
+        stats.def = Math.min(70, stats.def);
         stats.hp = Math.floor(stats.hp * 1.1);
     } else if (classData.class === 'assassin') {
         stats.atk = Math.floor(stats.atk * 1.2);

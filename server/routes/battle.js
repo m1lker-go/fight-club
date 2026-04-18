@@ -1026,8 +1026,33 @@ async function addExp(client, userId, className, expGain) {
 function getCoinReward(streak) { return streak >= 25 ? 20 : streak >= 10 ? 10 : streak >= 5 ? 7 : 5; }
 function getRatingChange(streak) { return streak >= 20 ? 30 : streak >= 10 ? 25 : streak >= 5 ? 20 : 15; }
 
+// ✅ Вставь это вместо пустой функции rechargeEnergy
 async function rechargeEnergy(client, userId) {
-    await client.query('UPDATE users SET energy = LEAST(20, energy + 1), last_energy_update = NOW() WHERE id = $1 AND energy < 20 AND last_energy_update < NOW() - INTERVAL \'15 minutes\'', [userId]);
+    try {
+        const res = await client.query('SELECT energy, last_energy_update FROM users WHERE id = $1', [userId]);
+        if (res.rows.length === 0) return;
+
+        let { energy, last_energy_update } = res.rows[0];
+        const now = new Date();
+        const lastUpdate = new Date(last_energy_update);
+        
+        // Вычисляем разницу в минутах
+        const diffMs = now - lastUpdate;
+        const diffMins = Math.floor(diffMs / 60000); // 60000 мс = 1 минута
+
+        // Если прошло больше 0 минут и энергия не полная
+        if (diffMins > 0 && energy < 20) {
+            const energyToAdd = Math.min(diffMins, 20 - energy);
+            energy += energyToAdd;
+            
+            await client.query(
+                'UPDATE users SET energy = $1, last_energy_update = NOW() WHERE id = $2',
+                [energy, userId]
+            );
+        }
+    } catch (e) {
+        console.error('Ошибка восстановления энергии:', e);
+    }
 }
 
 async function selectPvPOpponent(client, currentUserId, currentLevel) {

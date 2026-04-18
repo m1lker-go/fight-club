@@ -3,7 +3,6 @@ const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
-
 const {
     attackPhrases,
     dodgePhrases,
@@ -41,6 +40,7 @@ const baseStats = {
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
+// ✅ ИСПРАВЛЕНО: Убран physReduction: 30 у криомага
 const rolePassives = {
     guardian: { damageReduction: 10, blockChance: 20 },
     berserker: { rage: true },
@@ -49,10 +49,8 @@ const rolePassives = {
     venom_blade: { poison: true },
     blood_hunter: { vamp: 20 },
     pyromancer: { burn: true },
-    cryomancer: { freezeChance: 25 },
+    cryomancer: { freezeChance: 25 }, 
     illusionist: { mirageGuaranteed: true },
-
-    // Mouse bosses
     mouse_necromancer: { revive: true },
     mouse_blade: { doubleAttack: true, ultimateIgnoreDef: true, ultimateVamp: 100 },
     mouse_antimag: { manaSteal: 5, ultimateManaDependent: true },
@@ -109,7 +107,7 @@ function calculateStats(classData, inventory, subclass) {
         vamp: base.vamp + (classData.vamp_points || 0),
         reflect: base.reflect + (classData.reflect_points || 0),
         manaMax: 100,
-        manaRegen: 15 // базовая регенерация для всех классов 15
+        manaRegen: 15
     };
 
     classInventory.forEach(item => {
@@ -125,28 +123,30 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
+    // === ОСОБЕННОСТИ КЛАССОВ (БЕЗ МНОЖИТЕЛЕЙ, ТОЛЬКО МЕХАНИКИ) ===
+    // Воин: Стойкость (+5 ХП за 5 защиты)
     if (classData.class === 'warrior') stats.hp += Math.floor(stats.def / 5) * 5;
+    
+    // Ассасин: Стремительность (+1 скорость за 5 ловкости)
     if (classData.class === 'assassin') stats.spd += Math.floor(stats.agi / 5);
+    
+    // Маг: Магическая мощь (+1 ловкость и +2 мана за 5 интеллекта)
     if (classData.class === 'mage') {
         stats.agi += Math.floor(stats.int / 5);
-        stats.manaRegen += Math.floor(stats.int / 5) * 2; // маг получает +2 маны за каждые 5 интеллекта
+        stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
+    // Пассивные бонусы подклассов (например, +20% вампиризма у Кровавого охотника)
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
 
+    // === ИСПРАВЛЕНО: Убраны скрытые множители (x1.5 защита, x1.2 атака и т.д.) ===
+    // Оставлен только бонус здоровья Воина (+10%), так как это особенность класса.
     if (classData.class === 'warrior') {
-        stats.def = Math.min(70, stats.def);
-        stats.hp = Math.floor(stats.hp * 1.1);
-    } else if (classData.class === 'assassin') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.crit = Math.min(100, stats.crit * 1.25);
-        stats.agi = Math.min(100, stats.agi * 1.1);
-    } else if (classData.class === 'mage') {
-        stats.atk = Math.floor(stats.atk * 1.2);
-        stats.int = stats.int * 1.2;
+        stats.hp = Math.floor(stats.hp * 1.1); // +10% ХП
     }
+    // Множители для Ассасина и Мага удалены полностью.
 
     stats.def = Math.min(70, stats.def);
     stats.crit = Math.min(100, stats.crit);
@@ -231,7 +231,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     }
 
     let isCrit = false;
-    // Учитываем временный бонус крит. урона
     let effectiveCritDmg = attackerStats.critDmg;
     if (attackerState.critDmgBuff && attackerState.critDmgBuffDuration > 0) {
         effectiveCritDmg += attackerState.critDmgBuff;
@@ -241,11 +240,10 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage *= effectiveCritDmg;
     }
 
-    // Cryomancer physical reduction
-    if (defenderSubclass === 'cryomancer' && rolePassives.cryomancer && rolePassives.cryomancer.physReduction)
-        damage = Math.floor(damage * (1 - rolePassives.cryomancer.physReduction / 100));
-
-    // Paladin damage reduction (50%)
+    // ✅ ИСПРАВЛЕНО: Убрана проверка на physReduction, так как мы удалили его из rolePassives.
+    // Криомаг больше не режет урон пассивно.
+    
+    // Paladin damage reduction (50%) - Босс-механика, оставляем
     if (defenderSubclass === 'mouse_paladin') {
         damage = Math.floor(damage * (1 - rolePassives.mouse_paladin.damageReduction / 100));
     }
@@ -285,7 +283,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         });
     }
 
-    // Double attack for Blade (simulate by doubling damage and adding a log line)
+    // Double attack for Blade
     let doubleAttack = false;
     if (attackerSubclass === 'mouse_blade') {
         doubleAttack = true;
@@ -366,11 +364,9 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         attackPhrase += ' (двойной удар)';
     }
 
-    // ========== НОВАЯ МЕХАНИКА МАНЫ ПРИ ПРОМАХЕ ==========
+    // Mana logic on dodge
     if (isDodge) {
-        // Атакующий теряет 10 маны
         attackerState.mana = Math.max(0, (attackerState.mana || 0) - 10);
-        // Уклонившийся получает +5 маны
         defenderState.mana = Math.min(100, (defenderState.mana || 0) + 5);
         extraLogs.push({
             text: `${attackerName} промахивается и теряет 10 маны. ${defenderName} восстанавливает 5 маны.`,
@@ -396,7 +392,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         berserkerBonus,
         extraLogs,
         rageInfo: rageInfo,
-        isCritFlag: isCrit // флаг для обработки критического удара в simulateBattle
+        isCritFlag: isCrit
     };
 }
 
@@ -406,7 +402,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     let type = 'ult';
 
     switch (attackerSubclass) {
-       
         case 'guardian':
             heal = Math.floor(attackerStats.hp * 0.2);
             log = ultPhrases.guardian.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', heal);
@@ -414,22 +409,21 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'heal';
             break;
             
-    case 'berserker':
-    if (attackerState.hp <= 0) {
-        return { damage:0, heal:0, log: '<strong>' + attackerName + '</strong> не может использовать умение.', selfDamage:0, stateChanges:{}, type: 'none' };
-    }
-    let baseDamageBerserker = attackerStats.atk * 2;
-    let bonusCritDmg = 0.5;
-    damage = Math.floor(baseDamageBerserker * (attackerStats.critDmg + bonusCritDmg));
-    console.log('Berserker: current HP =', attackerState.hp, 'max HP =', attackerStats.hp);
-    selfDamage = Math.floor(attackerState.hp * 0.6);
-    selfDamage = Math.min(selfDamage, attackerState.hp - 1);
-    attackerState.hp -= selfDamage;
-    log = ultPhrases.berserker.replace('%s', '<strong>' + attackerName + '</strong>')
-                               .replace('%d', damage)
-                               .replace('%d', selfDamage);
-    type = 'damage_self';
-    break;
+        case 'berserker':
+            if (attackerState.hp <= 0) {
+                return { damage:0, heal:0, log: '<strong>' + attackerName + '</strong> не может использовать умение.', selfDamage:0, stateChanges:{}, type: 'none' };
+            }
+            let baseDamageBerserker = attackerStats.atk * 2;
+            let bonusCritDmg = 0.5;
+            damage = Math.floor(baseDamageBerserker * (attackerStats.critDmg + bonusCritDmg));
+            selfDamage = Math.floor(attackerState.hp * 0.6);
+            selfDamage = Math.min(selfDamage, attackerState.hp - 1);
+            attackerState.hp -= selfDamage;
+            log = ultPhrases.berserker.replace('%s', '<strong>' + attackerName + '</strong>')
+                                   .replace('%d', damage)
+                                   .replace('%d', selfDamage);
+            type = 'damage_self';
+            break;
             
         case 'knight':
             attackerState.reflectBuff = 2;
@@ -438,6 +432,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
             type = 'buff';
             break;
+            
         case 'assassin':
             damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
             attackerState.critDmgBuff = 1.5;
@@ -450,6 +445,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
                 .replace('%d', damage);
             type = 'damage';
             break;
+            
         case 'venom_blade':
             let baseDamage = attackerStats.atk;
             let isCrit = Math.random() * 100 < attackerStats.crit;
@@ -462,6 +458,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             defenderState.poisonStacks = 0;
             type = 'poison_ult';
             break;
+            
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
             attackerState.vampBuff = 2;
@@ -473,12 +470,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
                 .replace('%d', damage);
             type = 'damage';
             break;
+            
         case 'pyromancer':
             damage = Math.floor(attackerStats.int * 1.8) + ((defenderState.burnStacks || 0) * 2);
             log = ultPhrases.pyromancer.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             defenderState.burnStacks = 0;
             type = 'fire_ult';
             break;
+            
         case 'cryomancer':
             const isTargetFrozen = defenderState.frozen > 0;
             damage = Math.round(attackerStats.int * (isTargetFrozen ? 2.5 : 1.6));
@@ -493,7 +492,8 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             defenderState.freezeStacks = 0;
             type = 'ice_ult';
             break;
-       case 'illusionist':
+            
+        case 'illusionist':
             damage = applyIntBonus(defenderStats.atk * 2, attackerStats.int);
             log = ultPhrases.illusionist.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             type = 'damage';
@@ -542,12 +542,10 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         default:
             return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
     }
-    
-    // ========== НОВАЯ МЕХАНИКА МАНЫ ПОСЛЕ УЛЬТИМЕЙТА ==========
-    // После использования ультимейта на следующий ход регенерация маны = 0
+
     attackerState.manaRegenDisabled = true;
     attackerState.manaRegenDisabledDuration = 1;
-    
+
     return { damage, heal, log, selfDamage, stateChanges, type };
 }
 
@@ -585,7 +583,6 @@ function applyDotDamage(state, name) {
 
 function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
     if (!playerStats || !enemyStats) throw new Error('playerStats or enemyStats is undefined');
-
     let playerHp = playerStats.hp, enemyHp = enemyStats.hp;
     let playerMana = 0, enemyMana = 0;
     const messages = [];
@@ -619,28 +616,20 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         states.push({
             playerHp, enemyHp, playerMana, enemyMana,
             playerFrozen: playerState.frozen, enemyFrozen: enemyState.frozen,
-            playerShield: playerState.reflectBuff>0 ? 1:0, enemyShield: enemyState.reflectBuff>0 ? 1:0,
+            playerShield: playerState.reflectBuff > 0 ? 1 : 0, enemyShield: enemyState.reflectBuff > 0 ? 1 : 0,
             playerPoisonStacks: playerState.poisonStacks, playerBurnStacks: playerState.burnStacks, playerFreezeStacks: playerState.freezeStacks,
             enemyPoisonStacks: enemyState.poisonStacks, enemyBurnStacks: enemyState.burnStacks, enemyFreezeStacks: enemyState.freezeStacks
         });
     }
     pushState();
 
-    let turn = (playerStats.spd > enemyStats.spd) ? 'player' : (enemyStats.spd > playerStats.spd) ? 'enemy' : (Math.random()<0.5 ? 'player' : 'enemy');
+    let turn = (playerStats.spd > enemyStats.spd) ? 'player' : (enemyStats.spd > playerStats.spd) ? 'enemy' : (Math.random() < 0.5 ? 'player' : 'enemy');
     let maxTurns = 100, t = 0;
 
-    console.log('=== BATTLE START ===');
-    console.log('Player: ' + playerName + ', Enemy: ' + enemyName);
-    console.log('First turn: ' + turn);
-
-    while (playerHp>0 && enemyHp>0 && t<maxTurns) {
+    while (playerHp > 0 && enemyHp > 0 && t < maxTurns) {
         t++;
 
         if (turn === 'player') {
-            console.log('\n--- TURN ' + t + ' (PLAYER) ---');
-            console.log('Player HP: ' + playerHp + ', Mana: ' + playerMana + ', Stacks: poison ' + playerState.poisonStacks + ', burn ' + playerState.burnStacks + ', freeze ' + playerState.freezeStacks + ', frozen ' + playerState.frozen);
-            console.log('Enemy HP: ' + enemyHp + ', Mana: ' + enemyMana + ', Stacks: poison ' + enemyState.poisonStacks + ', burn ' + enemyState.burnStacks + ', freeze ' + enemyState.freezeStacks + ', frozen ' + enemyState.frozen);
-
             if (playerState.frozen > 0) {
                 const frozenLeft = playerState.frozen;
                 playerState.frozen--;
@@ -655,7 +644,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
             
-            // ========== РЕГЕНЕРАЦИЯ МАНЫ С УЧЁТОМ ШТРАФОВ ==========
             let regen = playerStats.manaRegen;
             if (playerState.manaRegenDisabled && playerState.manaRegenDisabledDuration > 0) {
                 regen = 0;
@@ -675,9 +663,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             let actionLog = null;
 
             if (playerMana >= 100) {
-                console.log('[SERVER] Player ULT triggered, mana before: ' + playerMana);
                 const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
-                console.log('[SERVER] ULT log: ' + skill.log + ', type: ' + skill.type);
                 if (skill.damage) enemyHp -= skill.damage;
                 if (skill.heal) playerHp += skill.heal;
                 if (skill.selfDamage) playerHp -= skill.selfDamage;
@@ -710,13 +696,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                         messages.push({ text: `<strong>${enemyName}</strong> неуязвим и не получает урона!`, type: 'buff', attacker: 'player' });
                     }
                     enemyHp -= actualDamage;
-                    playerHp += attackResult.vampHeal;
+                    playerHp += attackResult.vampHeal; 
                     playerHp -= attackResult.reflectDamage;
                     playerState.hp = playerHp;
                     enemyState.hp = enemyHp;
                     if (playerHp < 0) playerHp = 0;
                     if (enemyHp < 0) enemyHp = 0;
-                    console.log(`[DEBUG] Player attack: damage=${actualDamage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
+                    
                     let logText = attackResult.log;
 
                     if (attackResult.rageInfo) {
@@ -743,9 +729,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     messages.push(actionLog);
                     pushState();
                     
-                    // ========== ОБРАБОТКА КРИТИЧЕСКОГО УДАРА ==========
                     if (attackResult.isCritFlag) {
-                        // Цель (враг) получает -50% к регенерации маны на следующий ход
                         enemyState.manaRegenHalved = true;
                         enemyState.manaRegenHalvedDuration = 1;
                         messages.push({ text: `${enemyName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'player' });
@@ -761,10 +745,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             turn = 'enemy';
             playerActedThisRound = true;
         } else {
-            console.log('\n--- TURN ' + t + ' (ENEMY) ---');
-            console.log('Player HP: ' + playerHp + ', Mana: ' + playerMana + ', Stacks: poison ' + playerState.poisonStacks + ', burn ' + playerState.burnStacks + ', freeze ' + playerState.freezeStacks + ', frozen ' + playerState.frozen);
-            console.log('Enemy HP: ' + enemyHp + ', Mana: ' + enemyMana + ', Stacks: poison ' + enemyState.poisonStacks + ', burn ' + enemyState.burnStacks + ', freeze ' + enemyState.freezeStacks + ', frozen ' + enemyState.frozen);
-
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
@@ -779,7 +759,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             }
             playerState.hp = playerHp; enemyState.hp = enemyHp;
             
-            // ========== РЕГЕНЕРАЦИЯ МАНЫ ВРАГА С УЧЁТОМ ШТРАФОВ ==========
             let regen = enemyStats.manaRegen;
             if (enemyState.manaRegenDisabled && enemyState.manaRegenDisabledDuration > 0) {
                 regen = 0;
@@ -799,9 +778,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             let actionLog = null;
 
             if (enemyMana >= 100) {
-                console.log('[SERVER] Enemy ULT triggered, mana before: ' + enemyMana);
                 const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
-                console.log('[SERVER] ULT log: ' + skill.log + ', type: ' + skill.type);
                 if (skill.damage) playerHp -= skill.damage;
                 if (skill.heal) enemyHp += skill.heal;
                 if (skill.selfDamage) enemyHp -= skill.selfDamage;
@@ -817,8 +794,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,
-                    enemyStats.vamp + (enemyState.vampBuff>0 ? enemyState.vampBonus : 0),
-                    playerStats.reflect + (playerState.reflectBuff>0 ? playerState.reflectBonus : 0),
+                    enemyStats.vamp + (enemyState.vampBuff > 0 ? enemyState.vampBonus : 0),
+                    playerStats.reflect + (playerState.reflectBuff > 0 ? playerState.reflectBonus : 0),
                     enemyName, playerName,
                     enemyClass, enemySubclass, playerSubclass,
                     enemyState, playerState,
@@ -840,7 +817,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     enemyState.hp = enemyHp;
                     if (playerHp < 0) playerHp = 0;
                     if (enemyHp < 0) enemyHp = 0;
-                    console.log(`[DEBUG] Enemy attack: damage=${actualDamage}, selfDamage=${attackResult.selfDamage || 0}, vamp=${attackResult.vampHeal}, reflect=${attackResult.reflectDamage}, new player HP=${playerHp}, new enemy HP=${enemyHp}`);
+                    
                     let logText = attackResult.log;
 
                     if (attackResult.rageInfo) {
@@ -866,9 +843,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     messages.push(actionLog);
                     pushState();
                     
-                    // ========== ОБРАБОТКА КРИТИЧЕСКОГО УДАРА ==========
                     if (attackResult.isCritFlag) {
-                        // Цель (игрок) получает -50% к регенерации маны на следующий ход
                         playerState.manaRegenHalved = true;
                         playerState.manaRegenHalvedDuration = 1;
                         messages.push({ text: `${playerName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'enemy' });
@@ -885,7 +860,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = true;
         }
 
-        // Уменьшаем длительность баффов крит. урона
         if (playerState.critDmgBuffDuration > 0) {
             playerState.critDmgBuffDuration--;
             if (playerState.critDmgBuffDuration === 0) playerState.critDmgBuff = 0;
@@ -987,7 +961,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (playerHp <= 0 || enemyHp <= 0) break;
     }
 
-    let winner = (playerHp<=0 && enemyHp<=0) ? 'draw' : (playerHp<=0) ? 'enemy' : (enemyHp<=0) ? 'player' : null;
+    let winner = (playerHp <= 0 && enemyHp <= 0) ? 'draw' : (playerHp <= 0) ? 'enemy' : (enemyHp <= 0) ? 'player' : null;
     const victoryPhrases = [
         '🎉 Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
         '⚔️ С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
@@ -1006,16 +980,16 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     ];
 
     let finalPhrase = '';
-    if (winner === 'player') finalPhrase = victoryPhrases[Math.floor(Math.random()*victoryPhrases.length)];
-    else if (winner === 'enemy') finalPhrase = defeatPhrases[Math.floor(Math.random()*defeatPhrases.length)];
-    else finalPhrase = drawPhrases[Math.floor(Math.random()*drawPhrases.length)];
+    if (winner === 'player') finalPhrase = victoryPhrases[Math.floor(Math.random() * victoryPhrases.length)];
+    else if (winner === 'enemy') finalPhrase = defeatPhrases[Math.floor(Math.random() * defeatPhrases.length)];
+    else finalPhrase = drawPhrases[Math.floor(Math.random() * drawPhrases.length)];
     messages.push({ text: finalPhrase, type: 'final', attacker: 'none' });
     pushState();
 
     return {
         winner,
-        playerHpRemain: Math.max(0,playerHp),
-        enemyHpRemain: Math.max(0,enemyHp),
+        playerHpRemain: Math.max(0, playerHp),
+        enemyHpRemain: Math.max(0, enemyHp),
         messages,
         states,
         playerMaxHp: playerStats.hp,
@@ -1024,6 +998,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
 }
 
 function expNeeded(level) { return Math.floor(80 * Math.pow(level, 1.5)); }
+
 async function addExp(client, userId, className, expGain) {
     const classRes = await client.query(
         'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
@@ -1047,10 +1022,13 @@ async function addExp(client, userId, className, expGain) {
     );
     return leveledUp;
 }
-function getCoinReward(streak) { return streak>=25 ? 20 : streak>=10 ? 10 : streak>=5 ? 7 : 5; }
-function getRatingChange(streak) { return streak>=20 ? 30 : streak>=10 ? 25 : streak>=5 ? 20 : 15; }
-async function rechargeEnergy(client, userId) { /* ... */ }
-async function getPlayerRatingPosition(client, userId) { /* ... */ }
+
+function getCoinReward(streak) { return streak >= 25 ? 20 : streak >= 10 ? 10 : streak >= 5 ? 7 : 5; }
+function getRatingChange(streak) { return streak >= 20 ? 30 : streak >= 10 ? 25 : streak >= 5 ? 20 : 15; }
+
+async function rechargeEnergy(client, userId) {
+    await client.query('UPDATE users SET energy = LEAST(20, energy + 1), last_energy_update = NOW() WHERE id = $1 AND energy < 20 AND last_energy_update < NOW() - INTERVAL \'15 minutes\'', [userId]);
+}
 
 async function selectPvPOpponent(client, currentUserId, currentLevel) {
     const ratingRes = await client.query('SELECT id, rating FROM users WHERE rating > 0 ORDER BY rating DESC');
@@ -1120,11 +1098,14 @@ router.post('/start', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
         const userData = user;
+
         await rechargeEnergy(client, userData.id);
         const energyResult = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
         if (energyResult.rows[0].energy < 1) throw new Error('Недостаточно энергии');
+
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userData.id, userData.current_class]);
-        if (classData.rows.length===0) throw new Error('Class data not found');
+        if (classData.rows.length === 0) throw new Error('Class data not found');
+
         const inv = await client.query(`SELECT id, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus FROM inventory WHERE user_id = $1 AND equipped = true`, [userData.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, userData.subclass);
 
@@ -1136,7 +1117,7 @@ router.post('/start', async (req, res) => {
         } else if (rand < 0.8) {
             opponentData = generateBot(classData.rows[0].level, false);
         } else {
-            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random()*3)+1), true);
+            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
         }
 
         if (!opponentData || !opponentData.stats) {
@@ -1149,10 +1130,11 @@ router.post('/start', async (req, res) => {
             userData.username, opponentData.username,
             userData.subclass, opponentData.subclass
         );
-       
+
         let isVictory = battleResult.winner === 'player';
         let newStreak = userData.win_streak || 0;
         let ratingChange = -15;
+
         if (isVictory) {
             newStreak++;
             const coinReward = getCoinReward(newStreak);
@@ -1212,7 +1194,7 @@ router.post('/start', async (req, res) => {
                 class: opponentData.class,
                 subclass: opponentData.subclass,
                 level: opponentData.level,
-                is_cybercat: opponentData.is_cybercat||false
+                is_cybercat: opponentData.is_cybercat || false
             },
             result: {
                 winner: battleResult.winner,
@@ -1236,7 +1218,9 @@ router.post('/start', async (req, res) => {
         await client.query('ROLLBACK');
         console.error(e);
         res.status(400).json({ error: e.message });
-    } finally { client.release(); }
+    } finally { 
+        client.release(); 
+    }
 });
 
 module.exports = router;

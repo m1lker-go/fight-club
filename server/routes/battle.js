@@ -42,7 +42,7 @@ const baseStats = {
 
 // ✅ ИСПРАВЛЕНО: Убран physReduction: 30 у криомага
 const rolePassives = {
-    guardian: { damageReduction: 10, blockChance: 20 },
+    guardian: { defenseBonus: 10, blockChance: 20 },
     berserker: { rage: true },
     knight: { reflect: 20 },
     assassin: { critMultiplier: 2.0 },

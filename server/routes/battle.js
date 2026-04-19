@@ -40,7 +40,7 @@ const baseStats = {
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// ✅ ИСПРАВЛЕНО: Убран physReduction: 30 у криомага
+// ✅ ИСПРАВЛЕНО: Убран physReduction: 30 у криомага, добавлен defenseBonus: 10 у Стража
 const rolePassives = {
     guardian: { defenseBonus: 10, blockChance: 20 },
     berserker: { rage: true },
@@ -124,13 +124,13 @@ function calculateStats(classData, inventory, subclass) {
     });
 
     // === ОСОБЕННОСТИ КЛАССОВ (БЕЗ МНОЖИТЕЛЕЙ, ТОЛЬКО МЕХАНИКИ) ===
-    // Воин: Стойкость (+5 ХП за 5 защиты)
+    // Воин: Стойкость (+5 ХП за каждые 5 защиты)
     if (classData.class === 'warrior') stats.hp += Math.floor(stats.def / 5) * 5;
     
-    // Ассасин: Стремительность (+1 скорость за 5 ловкости)
+    // Ассасин: Стремительность (+1 скорость за каждые 5 ловкости)
     if (classData.class === 'assassin') stats.spd += Math.floor(stats.agi / 5);
     
-    // Маг: Магическая мощь (+1 ловкость и +2 мана за 5 интеллекта)
+    // Маг: Магическая мощь (+1 ловкость и +2 мана за каждые 5 интеллекта)
     if (classData.class === 'mage') {
         stats.agi += Math.floor(stats.int / 5);
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
@@ -140,6 +140,11 @@ function calculateStats(classData, inventory, subclass) {
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
+    
+    // ✅ Страж: +10 к защите (сверх лимита 70, максимум 80)
+    if (classData.class === 'warrior' && subclass === 'guardian') {
+        stats.def = Math.min(80, stats.def + 10);
+    }
 
     // === ИСПРАВЛЕНО: Убраны скрытые множители (x1.5 защита, x1.2 атака и т.д.) ===
     // Оставлен только бонус здоровья Воина (+10%), так как это особенность класса.
@@ -148,10 +153,12 @@ function calculateStats(classData, inventory, subclass) {
     }
     // Множители для Ассасина и Мага удалены полностью.
 
-    stats.def = Math.min(70, stats.def);
+    // Капы характеристик
+    stats.def = Math.min(80, stats.def); // ✅ Страж может иметь до 80 защиты
     stats.crit = Math.min(100, stats.crit);
     stats.agi = Math.min(70, stats.agi);
     stats.critDmg = Math.min(stats.critDmg, 4.5);
+    
     return stats;
 }
 
@@ -189,6 +196,23 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             .replace('%s', '<strong>' + defenderName + '</strong>')
             .replace('%s', '<strong>' + attackerName + '</strong>');
         return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
+    }
+
+    // ✅ НОВАЯ ПРОВЕРКА: Блок Стража (20% шанс полного блока, как уворот)
+    if (defenderSubclass === 'guardian') {
+        const blockChance = rolePassives.guardian.blockChance;
+        if (Math.random() * 100 < blockChance) {
+            return { 
+                hit: false, 
+                damage: 0, 
+                isCrit: false, 
+                log: `<strong>${defenderName}</strong> полностью избежал урона - БЛОК`, 
+                reflectDamage: 0, 
+                vampHeal: 0, 
+                stateChanges: {}, 
+                extraLogs 
+            };
+        }
     }
 
     let damage = attackerStats.atk;

@@ -458,17 +458,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
             
         case 'assassin':
-            damage = applyIntBonus(attackerStats.atk * 3.0, attackerStats.int);
-            attackerState.critDmgBuff = 1.5;
-            attackerState.critDmgBuffDuration = 1;
-            let currentCritDmg = attackerStats.critDmg + (attackerState.critDmgBuff || 0);
-            damage = Math.floor(damage * currentCritDmg);
-            log = ultPhrases.assassin
-                .replace('%s', '<strong>' + attackerName + '</strong>')
-                .replace('%s', '<strong>' + defenderName + '</strong>')
-                .replace('%d', damage);
-            type = 'damage';
-            break;
+    // Урон = атака * (крит. множитель + 1.5)
+    damage = Math.floor(attackerStats.atk * (attackerStats.critDmg + 1.5));
+    log = ultPhrases.assassin
+        .replace('%s', '<strong>' + attackerName + '</strong>')
+        .replace('%s', '<strong>' + defenderName + '</strong>')
+        .replace('%d', damage);
+    type = 'damage';
+    break;
             
         case 'venom_blade':
             let baseDamage = attackerStats.atk;

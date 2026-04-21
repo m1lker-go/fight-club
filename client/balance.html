@@ -168,7 +168,7 @@
         <div class="stats-grid" id="skills"></div>
         <div id="freePointsDisplay" class="free-points">📊 Свободные очки: 0</div>
         <div class="button-group">
-            <button id="equalResetBtn" class="action-btn">⟳ Равномерно</button>
+            <button id="equalResetBtn" class="action-btn">🎲 Случайно</button>
             <button id="fullResetBtn" class="action-btn danger-btn">🗑 Сбросить всё</button>
         </div>
         <button id="simulateBtn" class="fight-btn">▶ Симуляция 1000 боёв (все механики)</button>
@@ -766,33 +766,132 @@
         updateStatsDisplay();
     }
 
-    function resetToEqual() {
-        let perStat = Math.floor(totalPoints / skillKeys.length);
-        let remainder = totalPoints - perStat * skillKeys.length;
-        const base = baseStats[currentClassName];
-        for (let key of skillKeys) {
-            let baseVal = 0;
-            if (key === 'hp') baseVal = base.hp;
-            else if (key === 'atk') baseVal = base.atk;
-            else if (key === 'def') baseVal = base.def;
-            else if (key === 'dodge') baseVal = base.agi;
-            else if (key === 'int') baseVal = base.int;
-            else if (key === 'spd') baseVal = base.spd;
-            else if (key === 'crit') baseVal = base.crit;
-            else if (key === 'critDmg') baseVal = base.critDmg;
-            else if (key === 'vamp') baseVal = base.vamp;
-            else if (key === 'reflect') baseVal = base.reflect;
-            const maxPoints = getMaxPointsForStat(key, baseVal);
-            let val = Math.min(perStat, maxPoints);
-            currentDistribution[key] = val;
-        }
-        let spent = 0;
-        for (let key of skillKeys) spent += currentDistribution[key];
-        freePoints = totalPoints - spent;
-        if (freePoints < 0) freePoints = 0;
-        updateUI();
-        updateStatsDisplay();
+   // Случайное распределение очков навыков с учётом приоритетов класса
+function randomizeDistribution() {
+    // Обнуляем текущее распределение
+    for (let key of skillKeys) {
+        currentDistribution[key] = 0;
     }
+    
+    // Веса для каждого класса (чем выше вес, тем больше шанс получить очки)
+    const classWeights = {
+        warrior: {
+            hp: 30, atk: 25, def: 25, dodge: 5, int: 2, spd: 3, crit: 5, critDmg: 3, vamp: 1, reflect: 1
+        },
+        assassin: {
+            hp: 15, atk: 30, def: 3, dodge: 25, int: 2, spd: 5, crit: 12, critDmg: 5, vamp: 2, reflect: 1
+        },
+        mage: {
+            hp: 15, atk: 8, def: 3, dodge: 20, int: 35, spd: 5, crit: 8, critDmg: 4, vamp: 1, reflect: 1
+        }
+    };
+    
+    const weights = classWeights[currentClassName];
+    let remaining = totalPoints;
+    let attempts = 0;
+    const maxAttempts = 5000;
+    
+    // Сначала распределяем очки с учётом весов
+    while (remaining > 0 && attempts < maxAttempts) {
+        // Выбираем случайную характеристику с учётом весов
+        let totalWeight = 0;
+        for (let key of skillKeys) {
+            totalWeight += weights[key];
+        }
+        let rand = Math.random() * totalWeight;
+        let cumulative = 0;
+        let selectedKey = null;
+        for (let key of skillKeys) {
+            cumulative += weights[key];
+            if (rand <= cumulative) {
+                selectedKey = key;
+                break;
+            }
+        }
+        if (!selectedKey) selectedKey = skillKeys[0];
+        
+        // Проверяем, можно ли добавить очко
+        const base = baseStats[currentClassName];
+        let baseVal = 0;
+        if (selectedKey === 'hp') baseVal = base.hp;
+        else if (selectedKey === 'atk') baseVal = base.atk;
+        else if (selectedKey === 'def') baseVal = base.def;
+        else if (selectedKey === 'dodge') baseVal = base.agi;
+        else if (selectedKey === 'int') baseVal = base.int;
+        else if (selectedKey === 'spd') baseVal = base.spd;
+        else if (selectedKey === 'crit') baseVal = base.crit;
+        else if (selectedKey === 'critDmg') baseVal = base.critDmg;
+        else if (selectedKey === 'vamp') baseVal = base.vamp;
+        else if (selectedKey === 'reflect') baseVal = base.reflect;
+        
+        const maxPoints = Math.max(0, absoluteMax[selectedKey] - baseVal);
+        const currentVal = currentDistribution[selectedKey] || 0;
+        if (currentVal < maxPoints) {
+            currentDistribution[selectedKey] = currentVal + 1;
+            remaining--;
+        }
+        attempts++;
+    }
+    
+    // Если остались очки – равномерно добиваем по всем, кто не достиг максимума
+    if (remaining > 0) {
+        let keys = skillKeys.filter(k => {
+            const baseVal = (k === 'hp') ? baseStats[currentClassName].hp :
+                           (k === 'atk') ? baseStats[currentClassName].atk :
+                           (k === 'def') ? baseStats[currentClassName].def :
+                           (k === 'dodge') ? baseStats[currentClassName].agi :
+                           (k === 'int') ? baseStats[currentClassName].int :
+                           (k === 'spd') ? baseStats[currentClassName].spd :
+                           (k === 'crit') ? baseStats[currentClassName].crit :
+                           (k === 'critDmg') ? baseStats[currentClassName].critDmg :
+                           (k === 'vamp') ? baseStats[currentClassName].vamp :
+                           baseStats[currentClassName].reflect;
+            return (currentDistribution[k] || 0) < (absoluteMax[k] - baseVal);
+        });
+        while (remaining > 0 && keys.length) {
+            for (let k of keys) {
+                if (remaining <= 0) break;
+                const baseVal = (k === 'hp') ? baseStats[currentClassName].hp :
+                               (k === 'atk') ? baseStats[currentClassName].atk :
+                               (k === 'def') ? baseStats[currentClassName].def :
+                               (k === 'dodge') ? baseStats[currentClassName].agi :
+                               (k === 'int') ? baseStats[currentClassName].int :
+                               (k === 'spd') ? baseStats[currentClassName].spd :
+                               (k === 'crit') ? baseStats[currentClassName].crit :
+                               (k === 'critDmg') ? baseStats[currentClassName].critDmg :
+                               (k === 'vamp') ? baseStats[currentClassName].vamp :
+                               baseStats[currentClassName].reflect;
+                const maxPoints = absoluteMax[k] - baseVal;
+                if ((currentDistribution[k] || 0) < maxPoints) {
+                    currentDistribution[k] = (currentDistribution[k] || 0) + 1;
+                    remaining--;
+                }
+            }
+            keys = skillKeys.filter(k => {
+                const baseVal = (k === 'hp') ? baseStats[currentClassName].hp :
+                               (k === 'atk') ? baseStats[currentClassName].atk :
+                               (k === 'def') ? baseStats[currentClassName].def :
+                               (k === 'dodge') ? baseStats[currentClassName].agi :
+                               (k === 'int') ? baseStats[currentClassName].int :
+                               (k === 'spd') ? baseStats[currentClassName].spd :
+                               (k === 'crit') ? baseStats[currentClassName].crit :
+                               (k === 'critDmg') ? baseStats[currentClassName].critDmg :
+                               (k === 'vamp') ? baseStats[currentClassName].vamp :
+                               baseStats[currentClassName].reflect;
+                return (currentDistribution[k] || 0) < (absoluteMax[k] - baseVal);
+            });
+        }
+    }
+    
+    // Пересчитываем свободные очки (должны быть 0, так как распределили все)
+    let spent = 0;
+    for (let key of skillKeys) spent += currentDistribution[key] || 0;
+    freePoints = totalPoints - spent;
+    if (freePoints < 0) freePoints = 0;
+    
+    updateUI();
+    updateStatsDisplay();
+}
 
     function resetAll() {
         for (let key of skillKeys) currentDistribution[key] = 0;
@@ -923,7 +1022,7 @@
     function init() {
         resetAll();
         renderSkillsUI();
-        document.getElementById('equalResetBtn').addEventListener('click', resetToEqual);
+       document.getElementById('equalResetBtn').addEventListener('click', randomizeDistribution);
         document.getElementById('fullResetBtn').addEventListener('click', resetAll);
         document.getElementById('simulateBtn').addEventListener('click', runSimulation);
         document.querySelectorAll('.class-btn').forEach(btn => {

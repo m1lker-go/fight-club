@@ -436,7 +436,7 @@
             } else {
                 defenderState.freezeStacks = (defenderState.freezeStacks || 0) + 1;
                 if (defenderState.freezeStacks >= 3) {
-                    defenderState.frozen = 2;
+                    defenderState.frozen = 1;
                     defenderState.freezeStacks = 0;
                     extraLogs.push({
                         text: `<strong>${defenderName}</strong> замерзает и пропускает ход!`,

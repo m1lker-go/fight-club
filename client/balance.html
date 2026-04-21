@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Fighting Balance Calculator</title>
+    <title>Cat Fighting Balance Calculator — полная механика</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1a1f2b;
@@ -13,8 +15,14 @@
             margin: 0;
             padding: 20px;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
-        h1 { color: #00aaff; text-align: center; }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00aaff;
+            text-align: center;
+        }
         .builder {
             background: #232833;
             border-radius: 12px;
@@ -66,7 +74,10 @@
             display: flex;
             justify-content: space-between;
         }
-        .slider { width: 100%; margin: 5px 0; }
+        .slider {
+            width: 100%;
+            margin: 5px 0;
+        }
         input[type="number"] {
             width: 70px;
             background: #1a1f2b;
@@ -107,20 +118,8 @@
             cursor: pointer;
             margin-top: 10px;
         }
-        .fight-btn:hover { opacity: 0.9; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: center;
-            border-bottom: 1px solid #3a4050;
-        }
-        th {
-            background: #1a1f2b;
-            color: #00aaff;
+        .fight-btn:hover {
+            opacity: 0.9;
         }
         .button-group {
             display: flex;
@@ -152,11 +151,46 @@
             background: #ff5555;
             color: #1a1f2b;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #3a4050;
+        }
+        th {
+            background: #1a1f2b;
+            color: #00aaff;
+        }
+        .sim-result {
+            margin-top: 20px;
+            background: #1a1f2b;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #00aaff;
+        }
+        .mana-bar-container {
+            background: #2f3542;
+            border-radius: 6px;
+            height: 6px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .mana-bar {
+            background: #00aaff;
+            width: 0%;
+            height: 100%;
+            transition: width 0.2s;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 <div class="container">
-    <h1>⚖️ Баланс классов — интерактивный калькулятор</h1>
+    <h1>⚖️ Калькулятор баланса (полная механика)</h1>
     <div class="builder">
         <div class="class-selector">
             <button class="class-btn" data-class="warrior">Воин</button>
@@ -174,30 +208,32 @@
         <div class="stats-grid" id="skills"></div>
         <div id="freePointsDisplay" class="free-points">📊 Свободные очки: 0</div>
         <div class="button-group">
-            <button id="equalResetBtn" class="action-btn">⟳ Сбросить к равномерному</button>
-            <button id="fullResetBtn" class="action-btn danger-btn">🗑 СБРОСИТЬ ВСЁ</button>
+            <button id="equalResetBtn" class="action-btn">⟳ Равномерно</button>
+            <button id="fullResetBtn" class="action-btn danger-btn">🗑 Сбросить всё</button>
         </div>
-        <button id="simulateBtn" class="fight-btn">▶ Симуляция боя с 1000 противников</button>
+        <button id="simulateBtn" class="fight-btn">▶ Симуляция 1000 боёв (все механики)</button>
         <div id="result" class="result-panel"></div>
-    </div>
-    <div class="result-panel">
-        <h3>📊 Сравнение билдов (10 предустановленных)</h3>
-        <div id="variations"></div>
     </div>
 </div>
 
 <script>
-    // ---------- БАЗОВЫЕ ДАННЫЕ ----------
+    // ==================== БАЗОВЫЕ ДАННЫЕ (ИЗ ВАШЕГО КОДА) ====================
     const baseStats = {
-        warrior: { hp: 35, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
-        assassin: { hp: 20, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
-        mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
+        warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
+        assassin: { hp: 15, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
+        mage: { hp: 15, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
     };
 
-    const subclassBonuses = {
-        guardian: {}, berserker: {}, knight: { reflect: 20 },
-        assassin: { critDmgBonus: 0.5 }, venom_blade: {}, blood_hunter: { vamp: 20 },
-        pyromancer: {}, cryomancer: {}, illusionist: {}
+    const rolePassives = {
+        guardian: { defenseBonus: 10, blockChance: 20 },
+        berserker: { rage: true },
+        knight: { reflect: 20 },
+        assassin: { critMultiplier: 2.5 },
+        venom_blade: { poison: true },
+        blood_hunter: { vamp: 20 },
+        pyromancer: { burn: true },
+        cryomancer: { freezeChance: 25 },
+        illusionist: { mirageGuaranteed: true }
     };
 
     const subclasses = {
@@ -217,29 +253,20 @@
         hp: 'Здоровье', atk: 'Атака', def: 'Защита', dodge: 'Ловкость', int: 'Интеллект',
         spd: 'Скорость', crit: 'Шанс крита', critDmg: 'Крит. урон', vamp: 'Вампиризм', reflect: 'Отражение'
     };
-
     const skillMax = { hp: 272, atk: 272, def: 70, dodge: 70, int: 272, spd: 272, crit: 100, critDmg: 272, vamp: 272, reflect: 272 };
 
+    // Количество очков навыков по уровням (как в вашей игре)
     function getSkillPointsByLevel(level) {
         if (level <= 1) return 0;
         let points = 0;
         for (let lvl = 2; lvl <= level; lvl++) {
-            points += (lvl <= 14) ? 3 : 5;
+            if (lvl <= 14) points += 3;
+            else points += 5;
         }
         return points;
     }
 
-    // ---------- СОСТОЯНИЕ ----------
-    let currentClassName = 'warrior';
-    let currentSubclass = 'guardian';
-    let currentLevel = 60;
-    let totalPoints = getSkillPointsByLevel(60);
-    let currentDistribution = {};
-    let freePoints = totalPoints;
-    let sliders = {};
-    let numberInputs = {};
-
-    // ---------- РАСЧЁТ СТАТОВ ----------
+    // ==================== РАСЧЁТ СТАТОВ (ПОЛНОСТЬЮ КАК В ВАШЕМ simulateBattle) ====================
     function calculateStats(className, subclass, distribution, level) {
         const base = baseStats[className];
         let stats = {
@@ -252,13 +279,17 @@
             crit: base.crit + (distribution.crit || 0),
             critDmg: 1.5 + (distribution.critDmg || 0) / 50,
             vamp: base.vamp + (distribution.vamp || 0),
-            reflect: base.reflect + (distribution.reflect || 0)
+            reflect: base.reflect + (distribution.reflect || 0),
+            manaMax: 100,
+            manaRegen: className === 'warrior' ? 15 : (className === 'assassin' ? 18 : 30)
         };
-        const bonus = subclassBonuses[subclass] || {};
-        if (bonus.critDmgBonus) stats.critDmg += bonus.critDmgBonus;
+
+        // Пассивные бонусы подклассов
+        const bonus = rolePassives[subclass] || {};
         if (bonus.vamp) stats.vamp += bonus.vamp;
         if (bonus.reflect) stats.reflect += bonus.reflect;
 
+        // Особенности классов
         if (className === 'warrior') {
             stats.hp += Math.floor(stats.def / 5) * 5;
             stats.hp = Math.floor(stats.hp * 1.1);
@@ -268,228 +299,492 @@
         }
         if (className === 'mage') {
             stats.agi += Math.floor(stats.int / 5);
+            stats.manaRegen += Math.floor(stats.int / 5) * 2;
         }
 
-        stats.def = Math.min(70, stats.def);
+        // Страж: +10 к защите (макс 80)
+        if (className === 'warrior' && subclass === 'guardian') {
+            stats.def = Math.min(80, stats.def + 10);
+        }
+
+        // Лимиты
+        stats.def = Math.min(80, stats.def);
         stats.agi = Math.min(70, stats.agi);
         stats.crit = Math.min(100, stats.crit);
         stats.critDmg = Math.min(4.5, stats.critDmg);
         stats.level = level;
+
+        // Округления
+        stats.hp = Math.round(stats.hp);
+        stats.atk = Math.round(stats.atk);
+        stats.def = Math.round(stats.def * 10) / 10;
+        stats.agi = Math.round(stats.agi * 10) / 10;
+        stats.int = Math.round(stats.int * 10) / 10;
+        stats.spd = Math.round(stats.spd);
+        stats.crit = Math.round(stats.crit * 10) / 10;
+        stats.critDmg = Math.round(stats.critDmg * 100) / 100;
+        stats.vamp = Math.round(stats.vamp);
+        stats.reflect = Math.round(stats.reflect);
+
         return stats;
     }
 
-    function calculatePower(stats) {
-        let power = 0;
-        power += stats.hp;
-        power += stats.atk * 2;
-        power += stats.def * 2;
-        power += stats.agi * 2;
-        power += stats.int * 2;
-        power += stats.spd * 2;
-        power += stats.crit * 3;
-        power += (stats.critDmg - 1.5) * 100;
-        power += stats.vamp * 3;
-        power += stats.reflect * 2;
-        power += stats.level * 10;
-        return Math.round(power);
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ БОЯ ====================
+    function getBerserkerRage(hpPercent) {
+        if (hpPercent < 20) return { level: 5, bonus: 100 };
+        if (hpPercent < 35) return { level: 4, bonus: 60 };
+        if (hpPercent < 50) return { level: 3, bonus: 45 };
+        if (hpPercent < 65) return { level: 2, bonus: 30 };
+        if (hpPercent < 80) return { level: 1, bonus: 15 };
+        return { level: 0, bonus: 0 };
     }
 
-    // Функция для симуляции одного удара с учётом защиты, уклонения, вампиризма, отражения
-    function performAttack(attacker, defender, isAttacker) {
-        // Уклонение
-        let dodgeChance = defender.agi / 100;
-        if (Math.random() < dodgeChance) return 0; // промах
-        
-        let crit = Math.random() < (attacker.crit / 100);
-        let rawDamage = attacker.atk * (crit ? attacker.critDmg : 1);
-        let reduction = defender.def / (defender.def + 100);
-        let finalDamage = Math.max(1, Math.floor(rawDamage * (1 - reduction)));
-        
-        // Вампиризм атакующего
-        if (finalDamage > 0 && attacker.vamp > 0) {
-            let heal = Math.floor(finalDamage * (attacker.vamp / 100));
-            // heal будет применён после расчёта урона, но в пошаговой логике мы добавляем здоровье атакующему
-            // возвращаем объект, чтобы обработать и урон, и лечение
-            return { damage: finalDamage, vampHeal: heal };
-        }
-        return { damage: finalDamage, vampHeal: 0 };
-    }
+    // Атака с учётом защиты, уклонения, вампиризма, отражения, берсерка
+    function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
+        let extraLogs = [];
 
-    // Полноценный бой с учётом всех механик
-    function fight(playerStats, enemyStats) {
-        let hpPlayer = playerStats.hp;
-        let hpEnemy = enemyStats.hp;
-        
-        while (hpPlayer > 0 && hpEnemy > 0) {
-            // Ход игрока
-            let attackResult = performAttack(playerStats, enemyStats, true);
-            let dmg = attackResult.damage;
-            hpEnemy -= dmg;
-            if (attackResult.vampHeal > 0) {
-                hpPlayer = Math.min(playerStats.hp, hpPlayer + attackResult.vampHeal);
+        // Иллюзионист: гарантированный уворот каждые 4 хода
+        if (defenderSubclass === 'illusionist') {
+            defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
+            if (defenderState.mirageCounter >= 4) {
+                defenderState.mirageCounter = 0;
+                return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> исчезает в мираже и уклоняется!`, reflectDamage: 0, vampHeal: 0, stateChanges: { mirageCounter: 0 }, extraLogs };
             }
-            // Отражение врага
-            if (dmg > 0 && enemyStats.reflect > 0) {
-                let reflectDmg = Math.floor(dmg * (enemyStats.reflect / 100));
-                hpPlayer -= reflectDmg;
-            }
-            if (hpEnemy <= 0) return true;
-            
-            // Ход врага
-            let enemyAttack = performAttack(enemyStats, playerStats, false);
-            let dmgE = enemyAttack.damage;
-            hpPlayer -= dmgE;
-            if (enemyAttack.vampHeal > 0) {
-                hpEnemy = Math.min(enemyStats.hp, hpEnemy + enemyAttack.vampHeal);
-            }
-            // Отражение игрока
-            if (dmgE > 0 && playerStats.reflect > 0) {
-                let reflectDmgP = Math.floor(dmgE * (playerStats.reflect / 100));
-                hpEnemy -= reflectDmgP;
-            }
-            if (hpPlayer <= 0) return false;
         }
-        return hpPlayer > 0;
-    }
 
-    // ---------- ГЕНЕРАЦИЯ ПРОТИВНИКОВ (используют все очки) ----------
-    function generateBuildForClass(className, totalPts) {
-        let dist = {};
-        skillKeys.forEach(k => dist[k] = 0);
-        let remaining = totalPts;
-        
-        function addPoints(stat, maxVal, priorityPercent) {
-            if (remaining <= 0) return;
-            let maxForStat = Math.min(maxVal, skillMax[stat]);
-            let current = dist[stat] || 0;
-            let possible = maxForStat - current;
-            if (possible <= 0) return;
-            let take = Math.floor(remaining * (priorityPercent / 100));
-            take = Math.min(possible, take);
-            if (take > 0) {
-                dist[stat] = current + take;
-                remaining -= take;
-            }
+        // Стандартное уклонение от ловкости
+        const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
+        const isDodge = Math.random() * 100 > hitChance;
+        if (isDodge) {
+            return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> уклоняется от атаки!`, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
         }
-        
-        if (className === 'warrior') {
-            while (remaining > 0) {
-                let oldRem = remaining;
-                addPoints('hp', 272, 30);
-                addPoints('def', 70, 25);
-                addPoints('atk', 272, 20);
-                addPoints('reflect', 272, 10);
-                addPoints('crit', 100, 8);
-                addPoints('vamp', 272, 7);
-                if (remaining === oldRem) break;
-            }
-        } 
-        else if (className === 'assassin') {
-            while (remaining > 0) {
-                let oldRem = remaining;
-                addPoints('dodge', 70, 25);
-                addPoints('atk', 272, 20);
-                addPoints('crit', 100, 20);
-                addPoints('critDmg', 272, 15);
-                addPoints('vamp', 272, 10);
-                addPoints('hp', 272, 5);
-                addPoints('spd', 272, 5);
-                if (remaining === oldRem) break;
-            }
+
+        // Блок Стража
+        if (defenderSubclass === 'guardian' && Math.random() * 100 < 20) {
+            return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> блокирует удар!`, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
         }
-        else if (className === 'mage') {
-            while (remaining > 0) {
-                let oldRem = remaining;
-                addPoints('int', 272, 45);
-                addPoints('dodge', 70, 20);
-                addPoints('hp', 272, 20);
-                addPoints('crit', 100, 10);
-                addPoints('spd', 272, 5);
-                if (remaining === oldRem) break;
+
+        let damage = attackerStats.atk;
+        let berserkerBonus = 0;
+        let selfDamage = 0;
+
+        // Берсерк: урон себе и бонус ярости
+        if (attackerSubclass === 'berserker') {
+            const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
+            const rage = getBerserkerRage(hpPercent);
+            if (rage.bonus > 0) {
+                damage += Math.ceil(attackerStats.atk * rage.bonus / 100);
+                berserkerBonus = rage.bonus;
             }
+            selfDamage = Math.max(1, Math.ceil(damage * 0.16));
+            attackerState.hp = Math.max(1, attackerState.hp - selfDamage);
+            extraLogs.push({
+                text: `<strong>${attackerName}</strong> наносит себе ${selfDamage} урона от ярости!`,
+                type: 'damage_self',
+                attacker: isPlayerAttacker ? 'player' : 'enemy'
+            });
         }
-        
-        // Оставшиеся очки распределяем равномерно по всем, кто не достиг лимита
-        if (remaining > 0) {
-            let keys = skillKeys.filter(k => (dist[k] || 0) < skillMax[k]);
-            while (remaining > 0 && keys.length) {
-                for (let k of keys) {
-                    if (remaining <= 0) break;
-                    if ((dist[k] || 0) < skillMax[k]) {
-                        dist[k] = (dist[k] || 0) + 1;
-                        remaining--;
-                    }
+
+        let isCrit = false;
+        let effectiveCritDmg = attackerStats.critDmg;
+        if (attackerState.critDmgBuff && attackerState.critDmgBuffDuration > 0) {
+            effectiveCritDmg += attackerState.critDmgBuff;
+        }
+        if (Math.random() * 100 < attackerStats.crit) {
+            isCrit = true;
+            damage *= effectiveCritDmg;
+        }
+
+        // Защита
+        damage = damage * (1 - defenderStats.def / 100);
+        damage = Math.max(1, Math.floor(damage));
+
+        let vampHeal = 0;
+        if (attackerVamp > 0) vampHeal = Math.floor(damage * attackerVamp / 100);
+
+        let reflectDamage = 0;
+        if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
+
+        // Яд от venom_blade
+        if (attackerSubclass === 'venom_blade') {
+            defenderState.poisonStacks = Math.min(5, (defenderState.poisonStacks || 0) + 1);
+            extraLogs.push({
+                text: `<strong>${defenderName}</strong> отравлен! Стаков яда: ${defenderState.poisonStacks}/5`,
+                type: 'poison_stack',
+                attacker: isPlayerAttacker ? 'player' : 'enemy'
+            });
+        }
+
+        // Поджог от pyromancer
+        if (attackerSubclass === 'pyromancer') {
+            defenderState.burnStacks = Math.min(5, (defenderState.burnStacks || 0) + 1);
+            extraLogs.push({
+                text: `<strong>${defenderName}</strong> подожжён! Стаков огня: ${defenderState.burnStacks}/5`,
+                type: 'burn_stack',
+                attacker: isPlayerAttacker ? 'player' : 'enemy'
+            });
+        }
+
+        // Заморозка от cryomancer
+        if (attackerSubclass === 'cryomancer') {
+            if (defenderState.frozen > 0) {
+                extraLogs.push({
+                    text: `<strong>${defenderName}</strong> уже заморожен.`,
+                    type: 'frozen_already',
+                    attacker: isPlayerAttacker ? 'player' : 'enemy'
+                });
+            } else {
+                defenderState.freezeStacks = (defenderState.freezeStacks || 0) + 1;
+                if (defenderState.freezeStacks >= 3) {
+                    defenderState.frozen = 2;
+                    defenderState.freezeStacks = 0;
+                    extraLogs.push({
+                        text: `<strong>${defenderName}</strong> замерзает и пропускает ход!`,
+                        type: 'frozen_enter',
+                        attacker: isPlayerAttacker ? 'player' : 'enemy'
+                    });
+                } else {
+                    extraLogs.push({
+                        text: `Лед накапливается: ${defenderState.freezeStacks}/3.`,
+                        type: 'freeze_stack',
+                        attacker: isPlayerAttacker ? 'player' : 'enemy'
+                    });
                 }
-                keys = skillKeys.filter(k => (dist[k] || 0) < skillMax[k]);
             }
         }
-        
-        for (let k of skillKeys) {
-            if (dist[k] > skillMax[k]) dist[k] = skillMax[k];
-        }
-        return dist;
+
+        const critText = isCrit ? 'КРИТИЧЕСКИЙ УДАР! ' : '';
+        let logText = `<strong>${attackerName}</strong> ${critText}наносит ${damage} урона <strong>${defenderName}</strong>.`;
+        if (berserkerBonus > 0) logText += ` (Ярость +${berserkerBonus}%)`;
+
+        return {
+            hit: true,
+            damage,
+            isCrit,
+            log: logText,
+            reflectDamage,
+            vampHeal,
+            selfDamage,
+            stateChanges: { poisonStacks: defenderState.poisonStacks, burnStacks: defenderState.burnStacks, freezeStacks: defenderState.freezeStacks, frozen: defenderState.frozen },
+            extraLogs
+        };
     }
 
-    function getRandomClassAndSubclass() {
+    // АКТИВНЫЕ УЛЬТИМЕЙТЫ (полностью по вашему описанию)
+    function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass) {
+        let damage = 0, heal = 0, selfDamage = 0, log = '', type = 'ult';
+        const intBonus = 1 + attackerStats.int / 100;
+
+        switch (attackerSubclass) {
+            case 'guardian':
+                heal = Math.floor(attackerStats.hp * 0.2);
+                log = `<strong>${attackerName}</strong> использует Несокрушимость и восстанавливает ${heal} HP, снимая все негативные эффекты.`;
+                attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
+                type = 'heal';
+                break;
+            case 'berserker':
+                if (attackerState.hp <= 0) return { damage:0, heal:0, log: `${attackerName} не может использовать умение.`, selfDamage:0, stateChanges:{}, type:'none' };
+                damage = Math.floor(attackerStats.atk * 2 * (attackerStats.critDmg + 0.5));
+                selfDamage = Math.floor(attackerState.hp * 0.6);
+                selfDamage = Math.min(selfDamage, attackerState.hp - 1);
+                attackerState.hp -= selfDamage;
+                log = `<strong>${attackerName}</strong> использует Кровопускание, теряет ${selfDamage} HP и наносит ${damage} урона с гарантированным критом!`;
+                type = 'damage_self';
+                break;
+            case 'knight':
+                attackerState.reflectBuff = 2;
+                attackerState.reflectBonus = 50;
+                log = `<strong>${attackerName}</strong> активирует Щит правосудия: +50% отражения на 2 хода, снятие негативных эффектов.`;
+                attackerState.poisonStacks = attackerState.burnStacks = attackerState.freezeStacks = attackerState.frozen = 0;
+                type = 'buff';
+                break;
+            case 'assassin':
+                damage = Math.floor(attackerStats.atk * (attackerStats.critDmg + 1.5));
+                log = `<strong>${attackerName}</strong> наносит Смертельный удар: ${damage} урона!`;
+                type = 'damage';
+                break;
+            case 'venom_blade':
+                let baseDamage = Math.max(1, Math.floor(attackerStats.atk * (1 - defenderStats.def/100)));
+                let poisonDamage = (defenderState.poisonStacks || 0) * 5;
+                damage = baseDamage + poisonDamage;
+                log = `<strong>${attackerName}</strong> использует Ядовитую волну: ${damage} урона (${poisonDamage} от яда).`;
+                defenderState.poisonStacks = 0;
+                type = 'poison_ult';
+                break;
+            case 'blood_hunter':
+                damage = Math.floor(attackerStats.atk * 1.5 * (1 + attackerStats.int/100));
+                attackerState.vampBuff = 2;
+                attackerState.vampBonus = 50;
+                attackerState.critDmgBuff = 1.0;
+                attackerState.critDmgBuffDuration = 2;
+                log = `<strong>${attackerName}</strong> активирует Кровавую жатву: +50% вампиризма и +100% крит. урона на 2 хода, наносит ${damage} урона.`;
+                type = 'damage';
+                break;
+            case 'pyromancer':
+                damage = Math.floor(attackerStats.int * 1.8) + ((defenderState.burnStacks || 0) * 2);
+                log = `<strong>${attackerName}</strong> призывает Огненный шторм: ${damage} урона!`;
+                defenderState.burnStacks = 0;
+                type = 'fire_ult';
+                break;
+            case 'cryomancer':
+                const isTargetFrozen = defenderState.frozen > 0;
+                damage = Math.round(attackerStats.int * (isTargetFrozen ? 2.5 : 1.6));
+                log = `<strong>${attackerName}</strong> использует Вечную зиму: ${damage} урона${isTargetFrozen ? ' (замороженная цель x2.5)' : ''}.`;
+                if (!isTargetFrozen) defenderState.frozen = 1;
+                defenderState.freezeStacks = 0;
+                type = 'ice_ult';
+                break;
+            case 'illusionist':
+                damage = Math.floor(defenderStats.atk * 2 * (1 + attackerStats.int/100));
+                log = `<strong>${attackerName}</strong> использует Зазеркалье: заставляет <strong>${defenderName}</strong> атаковать себя на ${damage} урона!`;
+                type = 'damage';
+                break;
+            default:
+                return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type:'none' };
+        }
+
+        // Отключение регенерации маны на 1 ход после ульты
+        attackerState.manaRegenDisabled = true;
+        attackerState.manaRegenDisabledDuration = 1;
+
+        return { damage, heal, log, selfDamage, stateChanges: { poisonStacks: defenderState.poisonStacks, burnStacks: defenderState.burnStacks, freezeStacks: defenderState.freezeStacks, frozen: defenderState.frozen }, type };
+    }
+
+    // Урон от яда и огня в конце раунда
+    function applyDotDamage(state, name) {
+        let totalDamage = 0, logs = [];
+        if (state.poisonStacks > 0) {
+            const dmg = state.poisonStacks * 2;
+            totalDamage += dmg;
+            logs.push({ text: `<strong>${name}</strong> получает ${dmg} урона от яда.`, type: 'poison_dot' });
+        }
+        if (state.burnStacks > 0) {
+            const dmg = state.burnStacks * 2;
+            totalDamage += dmg;
+            logs.push({ text: `<strong>${name}</strong> получает ${dmg} урона от огня.`, type: 'burn_dot' });
+        }
+        return { damage: totalDamage, logs };
+    }
+
+    // ==================== ПОЛНАЯ СИМУЛЯЦИЯ БОЯ (ПОШАГОВО) ====================
+    function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
+        let playerHp = playerStats.hp, enemyHp = enemyStats.hp;
+        let playerMana = 0, enemyMana = 0;
+        let messages = [];
+
+        let playerState = { 
+            poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0,
+            reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0,
+            mirageCounter:0, mana:0, hp: playerHp,
+            critDmgBuff:0, critDmgBuffDuration:0,
+            manaRegenDisabled: false, manaRegenDisabledDuration: 0
+        };
+        let enemyState = { 
+            poisonStacks:0, burnStacks:0, freezeStacks:0, frozen:0,
+            reflectBuff:0, reflectBonus:0, vampBuff:0, vampBonus:0,
+            mirageCounter:0, mana:0, hp: enemyHp,
+            critDmgBuff:0, critDmgBuffDuration:0,
+            manaRegenDisabled: false, manaRegenDisabledDuration: 0
+        };
+
+        let turn = (playerStats.spd > enemyStats.spd) ? 'player' : (enemyStats.spd > playerStats.spd) ? 'enemy' : (Math.random() < 0.5 ? 'player' : 'enemy');
+        let maxTurns = 200, t = 0;
+
+        while (playerHp > 0 && enemyHp > 0 && t < maxTurns) {
+            t++;
+            if (turn === 'player') {
+                if (playerState.frozen > 0) {
+                    playerState.frozen--;
+                    messages.push({ text: `<strong>${playerName}</strong> заморожен и пропускает ход.`, type: 'frozen_continue', attacker: 'player' });
+                    turn = 'enemy';
+                    continue;
+                }
+                // Регенерация маны
+                let regen = playerStats.manaRegen;
+                if (playerState.manaRegenDisabled && playerState.manaRegenDisabledDuration > 0) {
+                    regen = 0;
+                    playerState.manaRegenDisabledDuration--;
+                    if (playerState.manaRegenDisabledDuration === 0) playerState.manaRegenDisabled = false;
+                }
+                playerMana = Math.min(100, playerMana + regen);
+                playerState.mana = playerMana;
+
+                let actionLog = null;
+                if (playerMana >= 100) {
+                    const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
+                    if (skill.damage) enemyHp -= skill.damage;
+                    if (skill.heal) playerHp += skill.heal;
+                    if (skill.selfDamage) playerHp -= skill.selfDamage;
+                    playerHp = Math.max(0, playerHp);
+                    enemyHp = Math.max(0, enemyHp);
+                    actionLog = { text: skill.log, type: skill.type, attacker: 'player' };
+                    messages.push(actionLog);
+                    playerMana -= 100;
+                    playerState.mana = playerMana;
+                    if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
+                } else {
+                    const attackResult = performAttack(
+                        playerStats, enemyStats,
+                        playerStats.vamp + (playerState.vampBuff > 0 ? playerState.vampBonus : 0),
+                        enemyStats.reflect + (enemyState.reflectBuff > 0 ? enemyState.reflectBonus : 0),
+                        playerName, enemyName, playerClass, playerSubclass, enemySubclass,
+                        playerState, enemyState, true
+                    );
+                    if (attackResult.hit) {
+                        enemyHp -= attackResult.damage;
+                        playerHp += attackResult.vampHeal;
+                        playerHp -= attackResult.reflectDamage;
+                        playerHp = Math.max(0, playerHp);
+                        enemyHp = Math.max(0, enemyHp);
+                        actionLog = { text: attackResult.log, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
+                        if (attackResult.vampHeal > 0) actionLog.text += ` Вампиризм +${attackResult.vampHeal}.`;
+                        if (attackResult.reflectDamage > 0) actionLog.text += ` Отражение -${attackResult.reflectDamage}.`;
+                        messages.push(actionLog);
+                        if (attackResult.extraLogs) attackResult.extraLogs.forEach(extra => messages.push(extra));
+                    } else {
+                        messages.push({ text: attackResult.log, type: 'dodge', attacker: 'player' });
+                    }
+                    if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
+                }
+                turn = 'enemy';
+            } else { // Ход врага
+                if (enemyState.frozen > 0) {
+                    enemyState.frozen--;
+                    messages.push({ text: `<strong>${enemyName}</strong> заморожен и пропускает ход.`, type: 'frozen_continue', attacker: 'enemy' });
+                    turn = 'player';
+                    continue;
+                }
+                let regen = enemyStats.manaRegen;
+                if (enemyState.manaRegenDisabled && enemyState.manaRegenDisabledDuration > 0) {
+                    regen = 0;
+                    enemyState.manaRegenDisabledDuration--;
+                    if (enemyState.manaRegenDisabledDuration === 0) enemyState.manaRegenDisabled = false;
+                }
+                enemyMana = Math.min(100, enemyMana + regen);
+                enemyState.mana = enemyMana;
+
+                let actionLog = null;
+                if (enemyMana >= 100) {
+                    const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
+                    if (skill.damage) playerHp -= skill.damage;
+                    if (skill.heal) enemyHp += skill.heal;
+                    if (skill.selfDamage) enemyHp -= skill.selfDamage;
+                    playerHp = Math.max(0, playerHp);
+                    enemyHp = Math.max(0, enemyHp);
+                    actionLog = { text: skill.log, type: skill.type, attacker: 'enemy' };
+                    messages.push(actionLog);
+                    enemyMana -= 100;
+                    enemyState.mana = enemyMana;
+                    if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
+                } else {
+                    const attackResult = performAttack(
+                        enemyStats, playerStats,
+                        enemyStats.vamp + (enemyState.vampBuff > 0 ? enemyState.vampBonus : 0),
+                        playerStats.reflect + (playerState.reflectBuff > 0 ? playerState.reflectBonus : 0),
+                        enemyName, playerName, enemyClass, enemySubclass, playerSubclass,
+                        enemyState, playerState, false
+                    );
+                    if (attackResult.hit) {
+                        playerHp -= attackResult.damage;
+                        enemyHp += attackResult.vampHeal;
+                        enemyHp -= attackResult.reflectDamage;
+                        playerHp = Math.max(0, playerHp);
+                        enemyHp = Math.max(0, enemyHp);
+                        actionLog = { text: attackResult.log, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'enemy' };
+                        if (attackResult.vampHeal > 0) actionLog.text += ` Вампиризм +${attackResult.vampHeal}.`;
+                        if (attackResult.reflectDamage > 0) actionLog.text += ` Отражение -${attackResult.reflectDamage}.`;
+                        messages.push(actionLog);
+                        if (attackResult.extraLogs) attackResult.extraLogs.forEach(extra => messages.push(extra));
+                    } else {
+                        messages.push({ text: attackResult.log, type: 'dodge', attacker: 'enemy' });
+                    }
+                    if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
+                }
+                turn = 'player';
+            }
+
+            // Снижение длительности баффов
+            if (playerState.critDmgBuffDuration > 0) playerState.critDmgBuffDuration--;
+            if (enemyState.critDmgBuffDuration > 0) enemyState.critDmgBuffDuration--;
+            if (playerState.reflectBuff > 0) playerState.reflectBuff--;
+            if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
+
+            // DOT урон в конце полного раунда (после хода обоих)
+            if (turn === 'player') { // значит только что завершился ход врага, т.е. раунд окончен
+                const playerDot = applyDotDamage(playerState, playerName);
+                const enemyDot = applyDotDamage(enemyState, enemyName);
+                if (playerDot.damage > 0) {
+                    playerHp = Math.max(0, playerHp - playerDot.damage);
+                    playerDot.logs.forEach(log => messages.push(log));
+                }
+                if (enemyDot.damage > 0) {
+                    enemyHp = Math.max(0, enemyHp - enemyDot.damage);
+                    enemyDot.logs.forEach(log => messages.push(log));
+                }
+            }
+        }
+
+        let winner = (playerHp <= 0 && enemyHp <= 0) ? 'draw' : (playerHp <= 0) ? 'enemy' : (enemyHp <= 0) ? 'player' : 'draw';
+        return { winner, playerHpRemain: playerHp, enemyHpRemain: enemyHp, messages };
+    }
+
+    // ==================== ГЕНЕРАЦИЯ ПРОТИВНИКОВ (РАЗУМНОЕ РАСПРЕДЕЛЕНИЕ ОЧКОВ) ====================
+    function generateRandomOpponent(level) {
         const classes = ['warrior', 'assassin', 'mage'];
-        const randClass = classes[Math.floor(Math.random() * 3)];
-        const subList = subclasses[randClass];
-        const randSub = subList[Math.floor(Math.random() * subList.length)];
-        return { className: randClass, subclass: randSub };
-    }
-
-    function generateEnemies(level) {
-        const totalPts = getSkillPointsByLevel(level);
-        const enemies = [];
-        for (let i = 0; i < 1000; i++) {
-            const { className, subclass } = getRandomClassAndSubclass();
-            const distribution = generateBuildForClass(className, totalPts);
-            enemies.push({ className, subclass, distribution, level });
-        }
-        return enemies;
-    }
-
-    // ---------- СИМУЛЯЦИЯ ----------
-    async function runSimulation() {
-        const btn = document.getElementById('simulateBtn');
-        btn.disabled = true;
-        btn.textContent = '⏳ Симуляция... 0/1000';
-        
-        const playerStats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
-        const enemies = generateEnemies(currentLevel);
-        let wins = 0;
-        
-        for (let i = 0; i < enemies.length; i++) {
-            const e = enemies[i];
-            const enemyStats = calculateStats(e.className, e.subclass, e.distribution, e.level);
-            if (fight(playerStats, enemyStats)) wins++;
-            if ((i + 1) % 100 === 0 || i === enemies.length - 1) {
-                btn.textContent = `⏳ Симуляция... ${i+1}/1000`;
-                await new Promise(r => setTimeout(r, 5));
+        const className = classes[Math.floor(Math.random() * 3)];
+        const subOptions = subclasses[className];
+        const subclass = subOptions[Math.floor(Math.random() * subOptions.length)];
+        const totalPoints = getSkillPointsByLevel(level);
+        // Простое распределение: приоритеты по весам
+        const weights = {
+            warrior: { hp: 30, atk: 20, def: 25, dodge: 5, int: 2, spd: 5, crit: 8, critDmg: 5, vamp: 0, reflect: 0 },
+            assassin: { hp: 15, atk: 25, def: 5, dodge: 20, int: 2, spd: 10, crit: 15, critDmg: 8, vamp: 0, reflect: 0 },
+            mage: { hp: 15, atk: 10, def: 5, dodge: 15, int: 30, spd: 10, crit: 10, critDmg: 5, vamp: 0, reflect: 0 }
+        };
+        const w = weights[className];
+        let dist = {};
+        for (let key of skillKeys) dist[key] = 0;
+        let remaining = totalPoints;
+        let attempts = 0;
+        while (remaining > 0 && attempts < 1000) {
+            for (let key of skillKeys) {
+                if (remaining <= 0) break;
+                let maxAdd = Math.min(remaining, skillMax[key] - dist[key]);
+                if (maxAdd <= 0) continue;
+                let prob = w[key] || 1;
+                let add = Math.min(maxAdd, Math.max(1, Math.floor(remaining * prob / 100)));
+                if (add > 0) {
+                    dist[key] += add;
+                    remaining -= add;
+                }
             }
+            attempts++;
         }
-        
-        const winRate = (wins / 10).toFixed(1);
-        const resultDiv = document.getElementById('result');
-        const simBlock = document.createElement('div');
-        simBlock.style.marginTop = '20px';
-        simBlock.style.background = '#1a1f2b';
-        simBlock.style.padding = '12px';
-        simBlock.style.borderRadius = '8px';
-        simBlock.style.borderLeft = '4px solid #00aaff';
-        simBlock.innerHTML = `⚔️ РЕЗУЛЬТАТ СИМУЛЯЦИИ (1000 уникальных противников, уровень ${currentLevel})<br>
-                              🏆 Побед: ${wins} из 1000 (${winRate}%)<br>
-                              📊 Противники используют все очки навыков (${totalPoints} очков) с разумными приоритетами.`;
-        const oldSim = resultDiv.querySelector('.sim-result');
-        if (oldSim) oldSim.remove();
-        simBlock.className = 'sim-result';
-        resultDiv.appendChild(simBlock);
-        
-        btn.disabled = false;
-        btn.textContent = '▶ Симуляция боя с 1000 противников';
+        // Оставшиеся очки раскидываем равномерно
+        let keys = skillKeys.filter(k => dist[k] < skillMax[k]);
+        while (remaining > 0 && keys.length) {
+            for (let k of keys) {
+                if (remaining <= 0) break;
+                if (dist[k] < skillMax[k]) {
+                    dist[k]++;
+                    remaining--;
+                }
+            }
+            keys = skillKeys.filter(k => dist[k] < skillMax[k]);
+        }
+        const stats = calculateStats(className, subclass, dist, level);
+        return { className, subclass, stats, name: `${subclassNames[subclass]} ${Math.floor(Math.random()*100)}` };
     }
 
-    // ---------- UI ОБНОВЛЕНИЯ ----------
+    // ==================== UI ЛОГИКА КАЛЬКУЛЯТОРА ====================
+    let currentClassName = 'warrior';
+    let currentSubclass = 'guardian';
+    let currentLevel = 60;
+    let totalPoints = getSkillPointsByLevel(60);
+    let currentDistribution = {};
+    let freePoints = totalPoints;
+    let sliders = {}, numberInputs = {};
+
     function updateUI() {
         for (let key of skillKeys) {
             const val = currentDistribution[key] || 0;
@@ -499,29 +794,6 @@
             }
         }
         document.getElementById('freePointsDisplay').innerHTML = `📊 Свободные очки: ${freePoints}`;
-    }
-
-    function refreshStats() {
-        const stats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
-        const power = calculatePower(stats);
-        const resultDiv = document.getElementById('result');
-        const oldSim = resultDiv.querySelector('.sim-result');
-        resultDiv.innerHTML = `
-            <div class="result-row"><strong>${subclassNames[currentSubclass]} (${currentClassName === 'warrior' ? 'Воин' : currentClassName === 'assassin' ? 'Ассасин' : 'Маг'})</strong></div>
-            <div class="result-row">❤️ HP: ${stats.hp}</div>
-            <div class="result-row">⚔️ Атака: ${stats.atk}</div>
-            <div class="result-row">🛡️ Защита: ${stats.def}%</div>
-            <div class="result-row">🏃 Ловкость: ${stats.agi}%</div>
-            <div class="result-row">🧠 Интеллект: ${stats.int}%</div>
-            <div class="result-row">⚡ Скорость: ${stats.spd}</div>
-            <div class="result-row">🎯 Шанс крита: ${stats.crit}%</div>
-            <div class="result-row">💥 Крит. урон: ${(stats.critDmg*100).toFixed(0)}%</div>
-            <div class="result-row">🩸 Вампиризм: ${stats.vamp}%</div>
-            <div class="result-row">🛡️ Отражение: ${stats.reflect}%</div>
-            <div class="result-row">📊 Сила (Power): ${power}</div>
-        `;
-        if (oldSim) resultDiv.appendChild(oldSim);
-        renderVariations();
     }
 
     function adjustStat(statKey, delta) {
@@ -542,15 +814,14 @@
             freePoints += -realDelta;
         }
         updateUI();
-        refreshStats();
+        updateStatsDisplay();
     }
 
     function resetToEqual() {
         let perStat = Math.floor(totalPoints / skillKeys.length);
         let remainder = totalPoints - perStat * skillKeys.length;
         for (let key of skillKeys) {
-            let val = perStat;
-            if (val > skillMax[key]) val = skillMax[key];
+            let val = Math.min(perStat, skillMax[key]);
             currentDistribution[key] = val;
         }
         let spent = 0;
@@ -558,17 +829,70 @@
         freePoints = totalPoints - spent;
         if (freePoints < 0) freePoints = 0;
         updateUI();
-        refreshStats();
+        updateStatsDisplay();
     }
 
     function resetAll() {
         for (let key of skillKeys) currentDistribution[key] = 0;
         freePoints = totalPoints;
         updateUI();
-        refreshStats();
+        updateStatsDisplay();
     }
 
-    function renderSkills() {
+    function updateStatsDisplay() {
+        const stats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
+            <div class="result-row"><strong>${subclassNames[currentSubclass]} (${currentClassName === 'warrior' ? 'Воин' : currentClassName === 'assassin' ? 'Ассасин' : 'Маг'})</strong></div>
+            <div class="result-row">❤️ HP: ${stats.hp}</div>
+            <div class="result-row">⚔️ Атака: ${stats.atk}</div>
+            <div class="result-row">🛡️ Защита: ${stats.def}%</div>
+            <div class="result-row">🏃 Ловкость: ${stats.agi}%</div>
+            <div class="result-row">🧠 Интеллект: ${stats.int}%</div>
+            <div class="result-row">⚡ Скорость: ${stats.spd}</div>
+            <div class="result-row">🎯 Шанс крита: ${stats.crit}%</div>
+            <div class="result-row">💥 Крит. урон: ${(stats.critDmg*100).toFixed(0)}%</div>
+            <div class="result-row">🩸 Вампиризм: ${stats.vamp}%</div>
+            <div class="result-row">🛡️ Отражение: ${stats.reflect}%</div>
+            <div class="result-row">🌀 Мана: ${stats.manaMax} | Реген: ${stats.manaRegen}/ход</div>
+        `;
+    }
+
+    async function runSimulation() {
+        const btn = document.getElementById('simulateBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Симуляция... 0/1000';
+        const playerStats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
+        let wins = 0;
+        for (let i = 0; i < 1000; i++) {
+            const enemy = generateRandomOpponent(currentLevel);
+            const result = simulateBattle(
+                playerStats, enemy.stats,
+                currentClassName, enemy.className,
+                subclassNames[currentSubclass], enemy.name,
+                currentSubclass, enemy.subclass
+            );
+            if (result.winner === 'player') wins++;
+            if ((i+1) % 100 === 0) {
+                btn.textContent = `⏳ Симуляция... ${i+1}/1000`;
+                await new Promise(r => setTimeout(r, 5));
+            }
+        }
+        const winRate = (wins / 10).toFixed(1);
+        const resultDiv = document.getElementById('result');
+        const simBlock = document.createElement('div');
+        simBlock.className = 'sim-result';
+        simBlock.innerHTML = `⚔️ РЕЗУЛЬТАТ СИМУЛЯЦИИ (1000 противников, уровень ${currentLevel})<br>
+                              🏆 Побед: ${wins} из 1000 (${winRate}%)<br>
+                              📊 Противники имеют случайные классы/подклассы и разумное распределение очков.`;
+        const oldSim = resultDiv.querySelector('.sim-result');
+        if (oldSim) oldSim.remove();
+        resultDiv.appendChild(simBlock);
+        btn.disabled = false;
+        btn.textContent = '▶ Симуляция 1000 боёв (все механики)';
+    }
+
+    function renderSkillsUI() {
         const container = document.getElementById('skills');
         container.innerHTML = '';
         for (let key of skillKeys) {
@@ -609,78 +933,34 @@
         const list = subclasses[currentClassName];
         select.innerHTML = list.map(sc => `<option value="${sc}" ${currentSubclass === sc ? 'selected' : ''}>${subclassNames[sc]}</option>`).join('');
         currentSubclass = select.value;
-        refreshStats();
+        updateStatsDisplay();
     }
 
     function updateLevel() {
         currentLevel = parseInt(document.getElementById('level').value);
-        const newTotalPoints = getSkillPointsByLevel(currentLevel);
+        totalPoints = getSkillPointsByLevel(currentLevel);
         let spent = 0;
         for (let key of skillKeys) spent += currentDistribution[key] || 0;
-        if (newTotalPoints !== totalPoints) {
-            totalPoints = newTotalPoints;
-            if (spent > totalPoints) {
-                let ratio = totalPoints / spent;
-                for (let key of skillKeys) {
-                    let newVal = Math.floor((currentDistribution[key] || 0) * ratio);
-                    newVal = Math.min(skillMax[key], newVal);
-                    currentDistribution[key] = newVal;
-                }
-                let newSpent = 0;
-                for (let key of skillKeys) newSpent += currentDistribution[key];
-                freePoints = totalPoints - newSpent;
-                if (freePoints < 0) freePoints = 0;
-            } else {
-                freePoints = totalPoints - spent;
+        if (spent > totalPoints) {
+            let ratio = totalPoints / spent;
+            for (let key of skillKeys) {
+                currentDistribution[key] = Math.floor((currentDistribution[key] || 0) * ratio);
+                if (currentDistribution[key] > skillMax[key]) currentDistribution[key] = skillMax[key];
             }
-            updateUI();
-            refreshStats();
+            spent = 0;
+            for (let key of skillKeys) spent += currentDistribution[key];
+            freePoints = totalPoints - spent;
+            if (freePoints < 0) freePoints = 0;
+        } else {
+            freePoints = totalPoints - spent;
         }
+        updateUI();
+        updateStatsDisplay();
     }
 
-    // Предустановленные билды для таблицы сравнения
-    function generateVariations() {
-        const pts = totalPoints;
-        let base = {};
-        skillKeys.forEach(k => base[k] = 0);
-        let v1 = { ...base }; v1.atk = Math.min(272, Math.floor(pts * 0.35)); v1.crit = Math.min(100, Math.floor(pts * 0.25)); v1.critDmg = pts - v1.atk - v1.crit; 
-        let v2 = { ...base }; v2.def = Math.min(70, Math.floor(pts * 0.4)); v2.hp = pts - v2.def; 
-        let v3 = { ...base }; v3.spd = Math.min(272, Math.floor(pts * 0.45)); v3.dodge = pts - v3.spd; 
-        let v4 = { ...base }; v4.vamp = Math.min(272, Math.floor(pts * 0.3)); v4.reflect = Math.min(272, Math.floor(pts * 0.3)); v4.atk = pts - v4.vamp - v4.reflect; 
-        let v5 = { ...base }; v5.int = Math.min(272, Math.floor(pts * 0.6)); v5.crit = pts - v5.int; 
-        let v6 = { ...base }; let each = Math.floor(pts / skillKeys.length); skillKeys.forEach(k => v6[k] = each); 
-        let v7 = { ...base }; v7.atk = Math.floor(pts * 0.5); v7.def = Math.min(70, pts - v7.atk); 
-        let v8 = { ...base }; v8.crit = Math.min(100, Math.floor(pts * 0.4)); v8.critDmg = pts - v8.crit; 
-        let v9 = { ...base }; v9.hp = Math.floor(pts * 0.55); v9.vamp = pts - v9.hp; 
-        let v10 = { ...base }; v10.dodge = Math.min(70, Math.floor(pts * 0.5)); v10.int = pts - v10.dodge; 
-        return [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10];
-    }
-    
-    function renderVariations() {
-        const container = document.getElementById('variations');
-        const variations = generateVariations();
-        const results = [];
-        for (let i = 0; i < variations.length; i++) {
-            const dist = variations[i];
-            const stats = calculateStats(currentClassName, currentSubclass, dist, currentLevel);
-            const power = calculatePower(stats);
-            results.push({ name: `Билд ${i+1}`, power, atk: stats.atk, def: stats.def, spd: stats.spd, critDmg: stats.critDmg });
-        }
-        results.sort((a,b) => b.power - a.power);
-        let html = '<thead><tr><th>Билд</th><th>Сила</th><th>Атака</th><th>Защита</th><th>Скорость</th><th>Крит. урон</th></tr></thead><tbody>';
-        results.forEach(r => {
-            html += `<tr><td>${r.name}</td><td>${r.power}</td><td>${r.atk}</td><td>${r.def}%</td><td>${r.spd}</td><td>${(r.critDmg*100).toFixed(0)}%</td></tr>`;
-        });
-        html += '</tbody>';
-        container.innerHTML = html;
-    }
-
-    // ---------- ИНИЦИАЛИЗАЦИЯ ----------
     function init() {
-        currentLevel = 60;
-        totalPoints = getSkillPointsByLevel(60);
         resetAll();
-        renderSkills();
+        renderSkillsUI();
         document.getElementById('equalResetBtn').addEventListener('click', resetToEqual);
         document.getElementById('fullResetBtn').addEventListener('click', resetAll);
         document.getElementById('simulateBtn').addEventListener('click', runSimulation);
@@ -690,17 +970,17 @@
                 btn.classList.add('active');
                 currentClassName = btn.dataset.class;
                 updateSubclassSelect();
-                refreshStats();
+                updateStatsDisplay();
             });
         });
         document.getElementById('subclass').addEventListener('change', (e) => {
             currentSubclass = e.target.value;
-            refreshStats();
+            updateStatsDisplay();
         });
         document.getElementById('level').addEventListener('change', () => updateLevel());
         document.querySelector('.class-btn[data-class="warrior"]').classList.add('active');
         updateSubclassSelect();
-        refreshStats();
+        updateStatsDisplay();
     }
     init();
 </script>

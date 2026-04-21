@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cat Fighting Balance Calculator</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1a1f2b;
@@ -30,6 +33,8 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
         }
         .class-btn {
             background: #2f3542;
@@ -44,7 +49,7 @@
             background: #00aaff;
             color: white;
         }
-        .subclass-select {
+        .subclass-select, .level-select {
             background: #2f3542;
             color: white;
             border: 1px solid #00aaff;
@@ -54,7 +59,7 @@
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 15px;
             margin: 20px 0;
         }
@@ -66,23 +71,30 @@
         .stat-label {
             font-weight: bold;
             margin-bottom: 5px;
-        }
-        .stat-value {
-            font-size: 1.2em;
-            color: #00aaff;
+            display: flex;
+            justify-content: space-between;
         }
         .slider {
             width: 100%;
             margin: 5px 0;
         }
         input[type="number"] {
-            width: 60px;
+            width: 70px;
             background: #1a1f2b;
             color: white;
             border: 1px solid #00aaff;
             border-radius: 4px;
             padding: 4px;
             text-align: center;
+        }
+        .free-points {
+            background: #00aaff20;
+            border: 1px solid #00aaff;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
         }
         .result-panel {
             background: #2a303c;
@@ -133,7 +145,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>⚖️ Баланс классов — калькулятор</h1>
+    <h1>⚖️ Баланс классов — интерактивный калькулятор</h1>
 
     <div class="builder">
         <div class="class-selector">
@@ -141,14 +153,24 @@
             <button class="class-btn" data-class="assassin">Ассасин</button>
             <button class="class-btn" data-class="mage">Маг</button>
             <select id="subclass" class="subclass-select"></select>
+            <select id="level" class="level-select">
+                <option value="1">Уровень 1</option>
+                <option value="15">Уровень 15</option>
+                <option value="30">Уровень 30</option>
+                <option value="45">Уровень 45</option>
+                <option value="60" selected>Уровень 60</option>
+            </select>
         </div>
+
         <div class="stats-grid" id="skills"></div>
-        <button id="simulateBtn" class="fight-btn">▶ Симулировать бой с эталоном</button>
+        <div id="freePointsDisplay" class="free-points">📊 Свободные очки: 0</div>
+
+        <button id="simulateBtn" class="fight-btn">▶ Симуляция боя с эталоном</button>
         <div id="result" class="result-panel"></div>
     </div>
 
     <div class="result-panel">
-        <h3>📊 Сравнение билдов (10 вариаций)</h3>
+        <h3>📊 Сравнение билдов (10 предустановленных)</h3>
         <div id="variations"></div>
     </div>
 </div>
@@ -161,27 +183,19 @@
         mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
     };
 
-    const rolePassives = {
-        // Пассивки, влияющие на статы (не боевые эффекты)
-        assassin: { critDmgBonus: 0.5 },   // +50% крит урона для подкласса "Убийца"
-        // остальные пассивки (блок, ярость и т.д.) не влияют на статы, только на механику боя
-    };
-
-    // Для простоты симуляции учитываем только постоянные пассивки, влияющие на статы
-    // Для подклассов, которые дают вампиризм/отражение, добавим их в статы
+    // Бонусы подклассов (влияющие на статы)
     const subclassBonuses = {
-        guardian: { hpBonus: 0 }, // не стат
-        berserker: { },
+        guardian: {},
+        berserker: {},
         knight: { reflect: 20 },
         assassin: { critDmgBonus: 0.5 },
-        venom_blade: { },
+        venom_blade: {},
         blood_hunter: { vamp: 20 },
-        pyromancer: { },
-        cryomancer: { },
-        illusionist: { }
+        pyromancer: {},
+        cryomancer: {},
+        illusionist: {}
     };
 
-    // Подклассы для каждого класса
     const subclasses = {
         warrior: ['guardian', 'berserker', 'knight'],
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
@@ -194,36 +208,49 @@
         pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
     };
 
-    // Функция расчёта статов (аналог calculateClassStats из helpers.js)
-    function calculateStats(className, subclass, skillPointsDistribution, level = 60) {
-        const base = baseStats[className];
-        let classData = {
-            hp_points: 0, atk_points: 0, def_points: 0, dodge_points: 0, int_points: 0,
-            spd_points: 0, crit_points: 0, crit_dmg_points: 0, vamp_points: 0, reflect_points: 0
-        };
-        // Распределяем очки навыков
-        classData.hp_points = skillPointsDistribution.hp || 0;
-        classData.atk_points = skillPointsDistribution.atk || 0;
-        classData.def_points = skillPointsDistribution.def || 0;
-        classData.dodge_points = skillPointsDistribution.dodge || 0;
-        classData.int_points = skillPointsDistribution.int || 0;
-        classData.spd_points = skillPointsDistribution.spd || 0;
-        classData.crit_points = skillPointsDistribution.crit || 0;
-        classData.crit_dmg_points = skillPointsDistribution.critDmg || 0;
-        classData.vamp_points = skillPointsDistribution.vamp || 0;
-        classData.reflect_points = skillPointsDistribution.reflect || 0;
+    // Список характеристик для прокачки (ключи и названия)
+    const skillKeys = ['hp', 'atk', 'def', 'dodge', 'int', 'spd', 'crit', 'critDmg', 'vamp', 'reflect'];
+    const skillNames = {
+        hp: 'Здоровье', atk: 'Атака', def: 'Защита', dodge: 'Ловкость', int: 'Интеллект',
+        spd: 'Скорость', crit: 'Шанс крита', critDmg: 'Крит. урон', vamp: 'Вампиризм', reflect: 'Отражение'
+    };
 
+    // Количество очков навыков в зависимости от уровня
+    function getSkillPointsByLevel(level) {
+        if (level <= 1) return 0;
+        let points = 0;
+        for (let lvl = 2; lvl <= level; lvl++) {
+            points += (lvl <= 14) ? 3 : 5;
+        }
+        return points;
+    }
+
+    // Текущее состояние
+    let currentClassName = 'warrior';
+    let currentSubclass = 'guardian';
+    let currentLevel = 60;
+    let totalPoints = getSkillPointsByLevel(60);
+    let currentDistribution = {};   // очки, вложенные в каждую характеристику
+    let freePoints = totalPoints;    // свободные очки
+
+    // DOM-элементы
+    let sliders = {};
+    let numberInputs = {};
+
+    // Функция расчёта статов (аналог calculateClassStats)
+    function calculateStats(className, subclass, distribution, level) {
+        const base = baseStats[className];
         let stats = {
-            hp: base.hp + classData.hp_points * 5,
-            atk: base.atk + classData.atk_points,
-            def: base.def + classData.def_points,
-            agi: base.agi + classData.dodge_points,
-            int: base.int + classData.int_points,
-            spd: base.spd + classData.spd_points,
-            crit: base.crit + classData.crit_points,
-            critDmg: 1.5 + classData.crit_dmg_points / 50,
-            vamp: base.vamp + classData.vamp_points,
-            reflect: base.reflect + classData.reflect_points
+            hp: base.hp + (distribution.hp || 0) * 5,
+            atk: base.atk + (distribution.atk || 0),
+            def: base.def + (distribution.def || 0),
+            agi: base.agi + (distribution.dodge || 0),
+            int: base.int + (distribution.int || 0),
+            spd: base.spd + (distribution.spd || 0),
+            crit: base.crit + (distribution.crit || 0),
+            critDmg: 1.5 + (distribution.critDmg || 0) / 50,
+            vamp: base.vamp + (distribution.vamp || 0),
+            reflect: base.reflect + (distribution.reflect || 0)
         };
 
         // Бонусы подкласса
@@ -248,28 +275,24 @@
         stats.def = Math.min(70, stats.def);
         stats.agi = Math.min(70, stats.agi);
         stats.crit = Math.min(100, stats.crit);
-        stats.critDmg = Math.min(stats.critDmg, 4.5); // кап 450%
-
-        // Добавим уровень в статы для расчёта силы (power)
+        stats.critDmg = Math.min(stats.critDmg, 4.5);
         stats.level = level;
         return stats;
     }
 
-    // Расчёт силы (power) по формуле из игры
-    function calculatePower(stats, className) {
-        // Коэффициенты importance (временно возьмём одинаковые для всех, но можно потом уточнить)
-        const coeff = { hp: 1, atk: 1, def: 1, agi: 1, int: 1, spd: 1, crit: 1, critDmg: 1, vamp: 1, reflect: 1 };
+    // Расчёт силы (power) по упрощённой формуле (все коэффициенты = 1 для простоты, можно уточнить)
+    function calculatePower(stats) {
         let power = 0;
-        power += stats.hp * coeff.hp;
-        power += stats.atk * coeff.atk * 2;
-        power += stats.def * coeff.def * 2;
-        power += stats.agi * coeff.agi * 2;
-        power += stats.int * coeff.int * 2;
-        power += stats.spd * coeff.spd * 2;
-        power += stats.crit * coeff.crit * 3;
-        power += (stats.critDmg - 1.5) * 100 * coeff.critDmg;
-        power += stats.vamp * coeff.vamp * 3;
-        power += stats.reflect * coeff.reflect * 2;
+        power += stats.hp;
+        power += stats.atk * 2;
+        power += stats.def * 2;
+        power += stats.agi * 2;
+        power += stats.int * 2;
+        power += stats.spd * 2;
+        power += stats.crit * 3;
+        power += (stats.critDmg - 1.5) * 100;
+        power += stats.vamp * 3;
+        power += stats.reflect * 2;
         power += stats.level * 10;
         return Math.round(power);
     }
@@ -278,190 +301,207 @@
     function effectiveHP(stats) {
         let reduction = stats.def / (stats.def + 100);
         let dodgeChance = stats.agi / (stats.agi + 100);
-        // Средний множитель урона = (1 - dodgeChance) * (1 - reduction)
-        let avgDamageMultiplier = (1 - dodgeChance / 100) * (1 - reduction);
+        let avgDamageMultiplier = (1 - dodgeChance) * (1 - reduction);
         if (avgDamageMultiplier <= 0) avgDamageMultiplier = 0.01;
         return Math.round(stats.hp / avgDamageMultiplier);
     }
 
-    // Генерация всех вариаций распределения очков (10 вариантов)
-    // Всего очков навыков на 60 уровне: 14*3 + 46*5 = 272
-    const TOTAL_SKILL_POINTS = 272;
-    // Возможные характеристики для прокачки (исключаем интеллект для воина и ассасина? Оставим все)
-    const statsKeys = ['hp', 'atk', 'def', 'dodge', 'int', 'spd', 'crit', 'critDmg', 'vamp', 'reflect'];
-    // Создаём 10 различных билдов, меняя распределение
-    function generateVariations(className) {
-        let variations = [];
-        // Базовое равномерное распределение
-        let baseDist = {};
-        statsKeys.forEach(key => baseDist[key] = 0);
-        // Вариант 1: чистый урон (атака, крит, крит урон)
-        let dist1 = { ...baseDist };
-        dist1.atk = 100; dist1.crit = 50; dist1.critDmg = 122; // 272
-        variations.push(dist1);
-        // Вариант 2: защита + HP
-        let dist2 = { ...baseDist };
-        dist2.def = 100; dist2.hp = 172;
-        variations.push(dist2);
-        // Вариант 3: скорость + уклонение
-        let dist3 = { ...baseDist };
-        dist3.spd = 100; dist3.dodge = 172;
-        variations.push(dist3);
-        // Вариант 4: вампиризм + отражение + атака
-        let dist4 = { ...baseDist };
-        dist4.vamp = 80; dist4.reflect = 80; dist4.atk = 112;
-        variations.push(dist4);
-        // Вариант 5: интеллект (для мага) + крит
-        let dist5 = { ...baseDist };
-        dist5.int = 150; dist5.crit = 122;
-        variations.push(dist5);
-        // Вариант 6: сбалансированный (все понемногу)
-        let dist6 = { ...baseDist };
-        let each = Math.floor(272 / 10);
-        statsKeys.forEach(key => dist6[key] = each);
-        variations.push(dist6);
-        // Вариант 7: атака + защита (50/50)
-        let dist7 = { ...baseDist };
-        dist7.atk = 136; dist7.def = 136;
-        variations.push(dist7);
-        // Вариант 8: крит + крит урон (максимальный крит)
-        let dist8 = { ...baseDist };
-        dist8.crit = 100; dist8.critDmg = 172;
-        variations.push(dist8);
-        // Вариант 9: HP + вампиризм
-        let dist9 = { ...baseDist };
-        dist9.hp = 150; dist9.vamp = 122;
-        variations.push(dist9);
-        // Вариант 10: ловкость + интеллект (для мага)
-        let dist10 = { ...baseDist };
-        dist10.dodge = 136; dist10.int = 136;
-        variations.push(dist10);
-        return variations;
+    // Обновить все ползунки и числа в соответствии с currentDistribution
+    function updateUI() {
+        for (let key of skillKeys) {
+            const val = currentDistribution[key] || 0;
+            if (sliders[key]) {
+                sliders[key].value = val;
+                numberInputs[key].value = val;
+            }
+        }
+        document.getElementById('freePointsDisplay').innerHTML = `📊 Свободные очки: ${freePoints}`;
     }
 
-    // Рендер интерфейса для выбора распределения навыков
-    function renderSkills(className, subclass) {
-        const container = document.getElementById('skills');
-        container.innerHTML = '';
-        const skills = ['hp', 'atk', 'def', 'dodge', 'int', 'spd', 'crit', 'critDmg', 'vamp', 'reflect'];
-        const skillNames = {
-            hp: 'Здоровье', atk: 'Атака', def: 'Защита', dodge: 'Ловкость', int: 'Интеллект',
-            spd: 'Скорость', crit: 'Шанс крита', critDmg: 'Крит. урон', vamp: 'Вампиризм', reflect: 'Отражение'
-        };
-        skills.forEach(skill => {
-            const div = document.createElement('div');
-            div.className = 'stat-item';
-            div.innerHTML = `
-                <div class="stat-label">${skillNames[skill]}</div>
-                <input type="range" id="skill_${skill}" class="slider" min="0" max="272" value="0" step="1">
-                <input type="number" id="num_${skill}" style="width:70px" value="0"> очков
-            `;
-            container.appendChild(div);
-            const slider = div.querySelector(`#skill_${skill}`);
-            const number = div.querySelector(`#num_${skill}`);
-            slider.addEventListener('input', () => {
-                number.value = slider.value;
-                updateStats();
-            });
-            number.addEventListener('input', () => {
-                let val = parseInt(number.value) || 0;
-                if (val > 272) val = 272;
-                slider.value = val;
-                updateStats();
-            });
-        });
-    }
-
-    let currentClassName = 'warrior';
-    let currentSubclass = 'guardian';
-    let currentStats = null;
-
-    function updateStats() {
-        let distribution = {};
-        const skills = ['hp', 'atk', 'def', 'dodge', 'int', 'spd', 'crit', 'critDmg', 'vamp', 'reflect'];
-        skills.forEach(skill => {
-            const val = parseInt(document.getElementById(`skill_${skill}`)?.value) || 0;
-            distribution[skill] = val;
-        });
-        // Проверка суммы (необязательно)
-        currentStats = calculateStats(currentClassName, currentSubclass, distribution, 60);
-        const power = calculatePower(currentStats, currentClassName);
-        const eHP = effectiveHP(currentStats);
-        document.getElementById('result').innerHTML = `
+    // Пересчитать статы и обновить результаты
+    function refreshStats() {
+        const stats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
+        const power = calculatePower(stats);
+        const eHP = effectiveHP(stats);
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
             <div class="result-row"><strong>${subclassNames[currentSubclass]} (${currentClassName === 'warrior' ? 'Воин' : currentClassName === 'assassin' ? 'Ассасин' : 'Маг'})</strong></div>
-            <div class="result-row">❤️ HP: ${currentStats.hp}</div>
-            <div class="result-row">⚔️ Атака: ${currentStats.atk}</div>
-            <div class="result-row">🛡️ Защита: ${currentStats.def}%</div>
-            <div class="result-row">🏃 Ловкость: ${currentStats.agi}% (уклонение)</div>
-            <div class="result-row">🧠 Интеллект: ${currentStats.int}%</div>
-            <div class="result-row">⚡ Скорость: ${currentStats.spd}</div>
-            <div class="result-row">🎯 Шанс крита: ${currentStats.crit}%</div>
-            <div class="result-row">💥 Крит. урон: ${(currentStats.critDmg*100).toFixed(0)}%</div>
-            <div class="result-row">🩸 Вампиризм: ${currentStats.vamp}%</div>
-            <div class="result-row">🛡️ Отражение: ${currentStats.reflect}%</div>
+            <div class="result-row">❤️ HP: ${stats.hp}</div>
+            <div class="result-row">⚔️ Атака: ${stats.atk}</div>
+            <div class="result-row">🛡️ Защита: ${stats.def}%</div>
+            <div class="result-row">🏃 Ловкость: ${stats.agi}% (уклонение)</div>
+            <div class="result-row">🧠 Интеллект: ${stats.int}%</div>
+            <div class="result-row">⚡ Скорость: ${stats.spd}</div>
+            <div class="result-row">🎯 Шанс крита: ${stats.crit}%</div>
+            <div class="result-row">💥 Крит. урон: ${(stats.critDmg*100).toFixed(0)}%</div>
+            <div class="result-row">🩸 Вампиризм: ${stats.vamp}%</div>
+            <div class="result-row">🛡️ Отражение: ${stats.reflect}%</div>
             <div class="result-row">📊 Сила (Power): ${power}</div>
             <div class="result-row">🛡️ Эффективный HP: ${eHP}</div>
         `;
+        renderVariations(); // обновляем таблицу предустановленных билдов
+    }
+
+    // Изменение характеристики: delta = +1 или -1 (забираем из свободных или добавляем в свободные)
+    function adjustStat(statKey, delta) {
+        let oldVal = currentDistribution[statKey] || 0;
+        let newVal = oldVal + delta;
+        if (newVal < 0) newVal = 0;
+        // Ограничение по максимуму (условное, но не жёсткое – пусть игрок сам решает, но статы потом ограничатся в расчётах)
+        if (newVal > 272) newVal = 272;
+        if (delta > 0) {
+            // Увеличиваем – нужно взять очки из свободных
+            if (freePoints >= delta) {
+                currentDistribution[statKey] = newVal;
+                freePoints -= delta;
+            } else {
+                // Недостаточно свободных очков
+                return;
+            }
+        } else {
+            // Уменьшаем – освободившиеся очки добавляем в свободные
+            currentDistribution[statKey] = newVal;
+            freePoints += delta; // delta отрицательный, так что прибавляем
+        }
+        updateUI();
+        refreshStats();
+    }
+
+    // Сброс распределения к равномерному (каждой характеристике поровну, остаток в свободные)
+    function resetToEqual() {
+        let perStat = Math.floor(totalPoints / skillKeys.length);
+        let remainder = totalPoints - perStat * skillKeys.length;
+        for (let key of skillKeys) {
+            currentDistribution[key] = perStat;
+        }
+        freePoints = remainder;
+        updateUI();
+        refreshStats();
+    }
+
+    // Создание интерфейса ползунков
+    function renderSkills() {
+        const container = document.getElementById('skills');
+        container.innerHTML = '';
+        for (let key of skillKeys) {
+            const div = document.createElement('div');
+            div.className = 'stat-item';
+            div.innerHTML = `
+                <div class="stat-label">
+                    <span>${skillNames[key]}</span>
+                    <input type="number" id="num_${key}" class="stat-number" value="0" min="0" max="272" step="1">
+                </div>
+                <input type="range" id="sld_${key}" class="slider" min="0" max="272" value="0" step="1">
+            `;
+            container.appendChild(div);
+            const slider = div.querySelector(`#sld_${key}`);
+            const number = div.querySelector(`#num_${key}`);
+            sliders[key] = slider;
+            numberInputs[key] = number;
+
+            slider.addEventListener('input', (e) => {
+                const newVal = parseInt(e.target.value);
+                const oldVal = currentDistribution[key] || 0;
+                const delta = newVal - oldVal;
+                if (delta !== 0) adjustStat(key, delta);
+            });
+            number.addEventListener('input', (e) => {
+                let newVal = parseInt(e.target.value);
+                if (isNaN(newVal)) newVal = 0;
+                if (newVal < 0) newVal = 0;
+                if (newVal > 272) newVal = 272;
+                const oldVal = currentDistribution[key] || 0;
+                const delta = newVal - oldVal;
+                if (delta !== 0) adjustStat(key, delta);
+            });
+        }
+        // Кнопка сброса
+        const resetBtn = document.createElement('button');
+        resetBtn.textContent = '⟳ Сбросить к равномерному распределению';
+        resetBtn.style.marginTop = '10px';
+        resetBtn.style.padding = '8px 16px';
+        resetBtn.style.background = '#2f3542';
+        resetBtn.style.border = '1px solid #00aaff';
+        resetBtn.style.borderRadius = '20px';
+        resetBtn.style.color = 'white';
+        resetBtn.style.cursor = 'pointer';
+        resetBtn.addEventListener('click', resetToEqual);
+        container.appendChild(resetBtn);
     }
 
     function updateSubclassSelect() {
         const select = document.getElementById('subclass');
         const list = subclasses[currentClassName];
-        select.innerHTML = list.map(sc => `<option value="${sc}">${subclassNames[sc]}</option>`).join('');
-        currentSubclass = list[0];
-        if (currentClassName === 'assassin') currentSubclass = 'assassin';
-        updateStats();
+        select.innerHTML = list.map(sc => `<option value="${sc}" ${currentSubclass === sc ? 'selected' : ''}>${subclassNames[sc]}</option>`).join('');
+        currentSubclass = select.value;
+        refreshStats();
     }
 
-    // Симуляция боя (упрощённая, только средний урон за ход и выживаемость)
-    // Для сравнения билдов
-    function simulateFight(stats1, stats2) {
-        // Очень простая модель: кто больше урона наносит за ход с учётом скорости
-        let dmg1 = stats1.atk * (1 + stats1.crit/100 * (stats1.critDmg - 1));
-        let dmg2 = stats2.atk * (1 + stats2.crit/100 * (stats2.critDmg - 1));
-        let speed1 = stats1.spd;
-        let speed2 = stats2.spd;
-        // Количество ходов за условную единицу времени
-        let turns1 = speed1;
-        let turns2 = speed2;
-        let totalDmg1 = dmg1 * turns1;
-        let totalDmg2 = dmg2 * turns2;
-        let effectiveHP1 = effectiveHP(stats1);
-        let effectiveHP2 = effectiveHP(stats2);
-        let wins1 = 0, wins2 = 0;
-        // Симуляция 1000 боёв (очень упрощённо)
-        for (let i = 0; i < 1000; i++) {
-            let hp1 = effectiveHP1, hp2 = effectiveHP2;
-            while (hp1 > 0 && hp2 > 0) {
-                // Ход игрока 1
-                let crit = Math.random() < stats1.crit/100;
-                let damage = stats1.atk * (crit ? stats1.critDmg : 1);
-                hp2 -= damage;
-                if (hp2 <= 0) { wins1++; break; }
-                // Ход игрока 2
-                crit = Math.random() < stats2.crit/100;
-                damage = stats2.atk * (crit ? stats2.critDmg : 1);
-                hp1 -= damage;
-                if (hp1 <= 0) { wins2++; break; }
-            }
+    function updateLevel() {
+        currentLevel = parseInt(document.getElementById('level').value);
+        totalPoints = getSkillPointsByLevel(currentLevel);
+        // Пересчитываем свободные очки: текущее распределение может превышать totalPoints
+        let spent = 0;
+        for (let key of skillKeys) {
+            spent += currentDistribution[key] || 0;
         }
-        return { wins1, wins2 };
+        if (spent > totalPoints) {
+            // Если потрачено больше, чем доступно для нового уровня – обрезаем
+            let ratio = totalPoints / spent;
+            for (let key of skillKeys) {
+                currentDistribution[key] = Math.floor((currentDistribution[key] || 0) * ratio);
+            }
+            spent = totalPoints;
+        }
+        freePoints = totalPoints - spent;
+        updateUI();
+        refreshStats();
+    }
+
+    // Предустановленные билды (10 вариантов)
+    function generateVariations() {
+        const variations = [];
+        // Базовое равномерное
+        let base = {};
+        skillKeys.forEach(k => base[k] = 0);
+        // 1. Урон (атака, крит, крит урон)
+        let v1 = { ...base }; v1.atk = 100; v1.crit = 50; v1.critDmg = 122; variations.push(v1);
+        // 2. Защита + HP
+        let v2 = { ...base }; v2.def = 100; v2.hp = 172; variations.push(v2);
+        // 3. Скорость + ловкость
+        let v3 = { ...base }; v3.spd = 100; v3.dodge = 172; variations.push(v3);
+        // 4. Вампиризм + отражение + атака
+        let v4 = { ...base }; v4.vamp = 80; v4.reflect = 80; v4.atk = 112; variations.push(v4);
+        // 5. Интеллект + крит
+        let v5 = { ...base }; v5.int = 150; v5.crit = 122; variations.push(v5);
+        // 6. Сбалансированный (все поровну)
+        let v6 = { ...base }; let each = Math.floor(totalPoints / skillKeys.length);
+        skillKeys.forEach(k => v6[k] = each); variations.push(v6);
+        // 7. Атака + защита
+        let v7 = { ...base }; v7.atk = 136; v7.def = 136; variations.push(v7);
+        // 8. Крит + крит урон
+        let v8 = { ...base }; v8.crit = 100; v8.critDmg = 172; variations.push(v8);
+        // 9. HP + вампиризм
+        let v9 = { ...base }; v9.hp = 150; v9.vamp = 122; variations.push(v9);
+        // 10. Ловкость + интеллект
+        let v10 = { ...base }; v10.dodge = 136; v10.int = 136; variations.push(v10);
+        return variations;
     }
 
     function renderVariations() {
         const container = document.getElementById('variations');
-        const variations = generateVariations(currentClassName);
+        const variations = generateVariations();
         const results = [];
         for (let i = 0; i < variations.length; i++) {
             const dist = variations[i];
-            const stats = calculateStats(currentClassName, currentSubclass, dist, 60);
-            const power = calculatePower(stats, currentClassName);
+            // Сумма очков может не совпадать с totalPoints, но для сравнения используем как есть
+            const stats = calculateStats(currentClassName, currentSubclass, dist, currentLevel);
+            const power = calculatePower(stats);
             const eHP = effectiveHP(stats);
             results.push({ name: `Билд ${i+1}`, power, eHP, atk: stats.atk, def: stats.def, spd: stats.spd, critDmg: stats.critDmg });
         }
-        // Сортируем по силе
         results.sort((a,b) => b.power - a.power);
-        let html = '<table><thead><tr><th>Билд</th><th>Сила (Power)</th><th>Эфф. HP</th><th>Атака</th><th>Защита</th><th>Скорость</th><th>Крит. урон</th></tr></thead><tbody>';
+        let html = '</table><thead><tr><th>Билд</th><th>Сила (Power)</th><th>Эфф. HP</th><th>Атака</th><th>Защита</th><th>Скорость</th><th>Крит. урон</th></tr></thead><tbody>';
         results.forEach(r => {
             html += `<tr><td>${r.name}</td><td>${r.power}</td><td>${r.eHP}</td><td>${r.atk}</td><td>${r.def}%</td><td>${r.spd}</td><td>${(r.critDmg*100).toFixed(0)}%</td></tr>`;
         });
@@ -469,36 +509,66 @@
         container.innerHTML = html;
     }
 
+    // Симуляция боя (упрощённая)
+    function simulateFight(stats1, stats2) {
+        let wins1 = 0, wins2 = 0;
+        for (let i = 0; i < 1000; i++) {
+            let hp1 = effectiveHP(stats1);
+            let hp2 = effectiveHP(stats2);
+            while (hp1 > 0 && hp2 > 0) {
+                let crit1 = Math.random() < stats1.crit/100;
+                let dmg1 = stats1.atk * (crit1 ? stats1.critDmg : 1);
+                hp2 -= dmg1;
+                if (hp2 <= 0) { wins1++; break; }
+                let crit2 = Math.random() < stats2.crit/100;
+                let dmg2 = stats2.atk * (crit2 ? stats2.critDmg : 1);
+                hp1 -= dmg2;
+                if (hp1 <= 0) { wins2++; break; }
+            }
+        }
+        return { wins1, wins2 };
+    }
+
+    function onSimulate() {
+        const stats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
+        // Эталон: воин-страж, 100 HP, 50 атака, 122 защиты, остальное 0
+        const distRef = { hp: 100, atk: 50, def: 122, dodge:0, int:0, spd:0, crit:0, critDmg:0, vamp:0, reflect:0 };
+        const refStats = calculateStats('warrior', 'guardian', distRef, 60);
+        const result = simulateFight(stats, refStats);
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML += `<div style="margin-top:20px; background:#2a303c; padding:10px; border-radius:8px;">📊 Результат симуляции 1000 боёв: Побед вашего билда: ${result.wins1}, побед эталона: ${result.wins2} (${(result.wins1/10).toFixed(1)}%)</div>`;
+    }
+
+    // Инициализация
     function init() {
+        currentLevel = 60;
+        totalPoints = getSkillPointsByLevel(60);
+        resetToEqual();
+
+        renderSkills();
+
         document.querySelectorAll('.class-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentClassName = btn.dataset.class;
                 updateSubclassSelect();
-                renderSkills(currentClassName, currentSubclass);
-                updateStats();
-                renderVariations();
+                refreshStats();
             });
         });
         document.getElementById('subclass').addEventListener('change', (e) => {
             currentSubclass = e.target.value;
-            updateStats();
-            renderVariations();
+            refreshStats();
         });
-        document.getElementById('simulateBtn').addEventListener('click', () => {
-            // Берём эталонного противника (например, воина-стража со стандартным распределением)
-            const distRef = { hp: 100, atk: 50, def: 122, dodge:0, int:0, spd:0, crit:0, critDmg:0, vamp:0, reflect:0 };
-            const refStats = calculateStats('warrior', 'guardian', distRef, 60);
-            const result = simulateFight(currentStats, refStats);
-            document.getElementById('result').innerHTML += `<div style="margin-top:20px; background:#2a303c; padding:10px; border-radius:8px;">📊 Результат симуляции 1000 боёв: Побед вашего билда: ${result.wins1}, побед эталона: ${result.wins2} (${(result.wins1/10).toFixed(1)}%)</div>`;
+        document.getElementById('level').addEventListener('change', () => {
+            updateLevel();
         });
-        // Инициализация
+        document.getElementById('simulateBtn').addEventListener('click', onSimulate);
+
+        // Устанавливаем активный класс по умолчанию
         document.querySelector('.class-btn[data-class="warrior"]').classList.add('active');
         updateSubclassSelect();
-        renderSkills('warrior', 'guardian');
-        updateStats();
-        renderVariations();
+        refreshStats();
     }
 
     init();

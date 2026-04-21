@@ -141,6 +141,36 @@
             margin-top: 20px;
             text-align: center;
         }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .action-btn {
+            background: #2f3542;
+            border: 1px solid #00aaff;
+            padding: 8px 20px;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn:hover {
+            background: #00aaff;
+            color: #1a1f2b;
+            border-color: white;
+        }
+        .danger-btn {
+            border-color: #ff5555;
+            color: #ffaaaa;
+        }
+        .danger-btn:hover {
+            background: #ff5555;
+            color: #1a1f2b;
+        }
     </style>
 </head>
 <body>
@@ -164,6 +194,12 @@
 
         <div class="stats-grid" id="skills"></div>
         <div id="freePointsDisplay" class="free-points">📊 Свободные очки: 0</div>
+        
+        <!-- Группа кнопок управления распределением -->
+        <div class="button-group">
+            <button id="equalResetBtn" class="action-btn">⟳ Сбросить к равномерному</button>
+            <button id="fullResetBtn" class="action-btn danger-btn">🗑 СБРОСИТЬ ВСЁ</button>
+        </div>
 
         <button id="simulateBtn" class="fight-btn">▶ Симуляция боя с эталоном</button>
         <div id="result" class="result-panel"></div>
@@ -324,6 +360,8 @@
         const power = calculatePower(stats);
         const eHP = effectiveHP(stats);
         const resultDiv = document.getElementById('result');
+        // Не удаляем предыдущий результат симуляции, но перезаписываем основную информацию
+        // Оставим только панель статов, а результат симуляции будет добавляться отдельно при клике, но чтобы не дублировать, очистим
         resultDiv.innerHTML = `
             <div class="result-row"><strong>${subclassNames[currentSubclass]} (${currentClassName === 'warrior' ? 'Воин' : currentClassName === 'assassin' ? 'Ассасин' : 'Маг'})</strong></div>
             <div class="result-row">❤️ HP: ${stats.hp}</div>
@@ -344,25 +382,34 @@
 
     // Изменение характеристики: delta = +1 или -1 (забираем из свободных или добавляем в свободные)
     function adjustStat(statKey, delta) {
+        if (delta === 0) return;
+        
         let oldVal = currentDistribution[statKey] || 0;
         let newVal = oldVal + delta;
+        
+        // Ограничения: не меньше 0, и не больше 272 (максимальное значение для ползунка)
         if (newVal < 0) newVal = 0;
-        // Ограничение по максимуму (условное, но не жёсткое – пусть игрок сам решает, но статы потом ограничатся в расчётах)
         if (newVal > 272) newVal = 272;
-        if (delta > 0) {
-            // Увеличиваем – нужно взять очки из свободных
-            if (freePoints >= delta) {
+        
+        const realDelta = newVal - oldVal; // скорректированная дельта (на случай ограничений)
+        if (realDelta === 0) return;
+        
+        if (realDelta > 0) {
+            // Увеличиваем навык: нужно потратить freePoints
+            if (freePoints >= realDelta) {
                 currentDistribution[statKey] = newVal;
-                freePoints -= delta;
+                freePoints -= realDelta;
             } else {
-                // Недостаточно свободных очков
+                // Недостаточно свободных очков — ничего не меняем
                 return;
             }
         } else {
-            // Уменьшаем – освободившиеся очки добавляем в свободные
+            // Уменьшаем навык: освобождаем очки (добавляем обратно в свободные)
+            // realDelta отрицательный, например -5. Освобождаем 5 очков: freePoints += (-realDelta)
             currentDistribution[statKey] = newVal;
-            freePoints += delta; // delta отрицательный, так что прибавляем
+            freePoints += -realDelta;   // прибавляем модуль изменения
         }
+        
         updateUI();
         refreshStats();
     }
@@ -379,7 +426,17 @@
         refreshStats();
     }
 
-    // Создание интерфейса ползунков
+    // ПОЛНЫЙ СБРОС: все очки в свободные, распределение обнуляется
+    function resetAll() {
+        for (let key of skillKeys) {
+            currentDistribution[key] = 0;
+        }
+        freePoints = totalPoints;
+        updateUI();
+        refreshStats();
+    }
+
+    // Создание интерфейса ползунков (без дублирования кнопок, они вынесены в отдельную группу)
     function renderSkills() {
         const container = document.getElementById('skills');
         container.innerHTML = '';
@@ -415,18 +472,7 @@
                 if (delta !== 0) adjustStat(key, delta);
             });
         }
-        // Кнопка сброса
-        const resetBtn = document.createElement('button');
-        resetBtn.textContent = '⟳ Сбросить к равномерному распределению';
-        resetBtn.style.marginTop = '10px';
-        resetBtn.style.padding = '8px 16px';
-        resetBtn.style.background = '#2f3542';
-        resetBtn.style.border = '1px solid #00aaff';
-        resetBtn.style.borderRadius = '20px';
-        resetBtn.style.color = 'white';
-        resetBtn.style.cursor = 'pointer';
-        resetBtn.addEventListener('click', resetToEqual);
-        container.appendChild(resetBtn);
+        // Кнопки больше не добавляем внутрь stats-grid, они вынесены в отдельный блок .button-group
     }
 
     function updateSubclassSelect() {
@@ -439,52 +485,109 @@
 
     function updateLevel() {
         currentLevel = parseInt(document.getElementById('level').value);
-        totalPoints = getSkillPointsByLevel(currentLevel);
-        // Пересчитываем свободные очки: текущее распределение может превышать totalPoints
+        const newTotalPoints = getSkillPointsByLevel(currentLevel);
+        
+        // Подсчитываем текущие потраченные очки
         let spent = 0;
         for (let key of skillKeys) {
             spent += currentDistribution[key] || 0;
         }
-        if (spent > totalPoints) {
-            // Если потрачено больше, чем доступно для нового уровня – обрезаем
-            let ratio = totalPoints / spent;
-            for (let key of skillKeys) {
-                currentDistribution[key] = Math.floor((currentDistribution[key] || 0) * ratio);
+        
+        if (newTotalPoints !== totalPoints) {
+            totalPoints = newTotalPoints;
+            if (spent > totalPoints) {
+                // Если потрачено больше, чем доступно для нового уровня – пропорционально уменьшаем распределение
+                let ratio = totalPoints / spent;
+                for (let key of skillKeys) {
+                    currentDistribution[key] = Math.floor((currentDistribution[key] || 0) * ratio);
+                }
+                // Пересчитываем потраченные после округления
+                let newSpent = 0;
+                for (let key of skillKeys) {
+                    newSpent += currentDistribution[key] || 0;
+                }
+                // Если остались лишние очки из-за округления, добавляем их в свободные
+                freePoints = totalPoints - newSpent;
+                if (freePoints < 0) freePoints = 0;
+            } else {
+                freePoints = totalPoints - spent;
             }
-            spent = totalPoints;
+            updateUI();
+            refreshStats();
         }
-        freePoints = totalPoints - spent;
-        updateUI();
-        refreshStats();
     }
 
-    // Предустановленные билды (10 вариантов)
+    // Предустановленные билды (10 вариантов) с учётом текущего totalPoints для адекватности
     function generateVariations() {
         const variations = [];
+        // Используем актуальное количество очков для генерации билдов, чтобы они были в рамках лимита
+        const pts = totalPoints;
         // Базовое равномерное
         let base = {};
         skillKeys.forEach(k => base[k] = 0);
+        
         // 1. Урон (атака, крит, крит урон)
-        let v1 = { ...base }; v1.atk = 100; v1.crit = 50; v1.critDmg = 122; variations.push(v1);
+        let v1 = { ...base }; 
+        v1.atk = Math.min(272, Math.floor(pts * 0.35)); 
+        v1.crit = Math.min(100, Math.floor(pts * 0.25)); 
+        v1.critDmg = Math.min(272, pts - v1.atk - v1.crit); 
+        variations.push(v1);
+        
         // 2. Защита + HP
-        let v2 = { ...base }; v2.def = 100; v2.hp = 172; variations.push(v2);
+        let v2 = { ...base }; 
+        v2.def = Math.min(70, Math.floor(pts * 0.4)); 
+        v2.hp = pts - v2.def; 
+        variations.push(v2);
+        
         // 3. Скорость + ловкость
-        let v3 = { ...base }; v3.spd = 100; v3.dodge = 172; variations.push(v3);
+        let v3 = { ...base }; 
+        v3.spd = Math.min(272, Math.floor(pts * 0.45)); 
+        v3.dodge = pts - v3.spd; 
+        variations.push(v3);
+        
         // 4. Вампиризм + отражение + атака
-        let v4 = { ...base }; v4.vamp = 80; v4.reflect = 80; v4.atk = 112; variations.push(v4);
+        let v4 = { ...base }; 
+        v4.vamp = Math.min(272, Math.floor(pts * 0.3)); 
+        v4.reflect = Math.min(272, Math.floor(pts * 0.3)); 
+        v4.atk = pts - v4.vamp - v4.reflect; 
+        variations.push(v4);
+        
         // 5. Интеллект + крит
-        let v5 = { ...base }; v5.int = 150; v5.crit = 122; variations.push(v5);
+        let v5 = { ...base }; 
+        v5.int = Math.min(272, Math.floor(pts * 0.6)); 
+        v5.crit = pts - v5.int; 
+        variations.push(v5);
+        
         // 6. Сбалансированный (все поровну)
-        let v6 = { ...base }; let each = Math.floor(totalPoints / skillKeys.length);
-        skillKeys.forEach(k => v6[k] = each); variations.push(v6);
+        let v6 = { ...base }; 
+        let each = Math.floor(pts / skillKeys.length);
+        skillKeys.forEach(k => v6[k] = each);
+        variations.push(v6);
+        
         // 7. Атака + защита
-        let v7 = { ...base }; v7.atk = 136; v7.def = 136; variations.push(v7);
+        let v7 = { ...base }; 
+        v7.atk = Math.floor(pts * 0.5); 
+        v7.def = Math.min(70, pts - v7.atk); 
+        variations.push(v7);
+        
         // 8. Крит + крит урон
-        let v8 = { ...base }; v8.crit = 100; v8.critDmg = 172; variations.push(v8);
+        let v8 = { ...base }; 
+        v8.crit = Math.min(100, Math.floor(pts * 0.4)); 
+        v8.critDmg = pts - v8.crit; 
+        variations.push(v8);
+        
         // 9. HP + вампиризм
-        let v9 = { ...base }; v9.hp = 150; v9.vamp = 122; variations.push(v9);
+        let v9 = { ...base }; 
+        v9.hp = Math.floor(pts * 0.55); 
+        v9.vamp = pts - v9.hp; 
+        variations.push(v9);
+        
         // 10. Ловкость + интеллект
-        let v10 = { ...base }; v10.dodge = 136; v10.int = 136; variations.push(v10);
+        let v10 = { ...base }; 
+        v10.dodge = Math.floor(pts * 0.5); 
+        v10.int = pts - v10.dodge; 
+        variations.push(v10);
+        
         return variations;
     }
 
@@ -494,18 +597,17 @@
         const results = [];
         for (let i = 0; i < variations.length; i++) {
             const dist = variations[i];
-            // Сумма очков может не совпадать с totalPoints, но для сравнения используем как есть
             const stats = calculateStats(currentClassName, currentSubclass, dist, currentLevel);
             const power = calculatePower(stats);
             const eHP = effectiveHP(stats);
             results.push({ name: `Билд ${i+1}`, power, eHP, atk: stats.atk, def: stats.def, spd: stats.spd, critDmg: stats.critDmg });
         }
         results.sort((a,b) => b.power - a.power);
-        let html = '</table><thead><tr><th>Билд</th><th>Сила (Power)</th><th>Эфф. HP</th><th>Атака</th><th>Защита</th><th>Скорость</th><th>Крит. урон</th></tr></thead><tbody>';
+        let html = '<thead><tr><th>Билд</th><th>Сила (Power)</th><th>Эфф. HP</th><th>Атака</th><th>Защита</th><th>Скорость</th><th>Крит. урон</th></tr></thead><tbody>';
         results.forEach(r => {
             html += `<tr><td>${r.name}</td><td>${r.power}</td><td>${r.eHP}</td><td>${r.atk}</td><td>${r.def}%</td><td>${r.spd}</td><td>${(r.critDmg*100).toFixed(0)}%</td></tr>`;
         });
-        html += '</tbody></table>';
+        html += '</tbody>';
         container.innerHTML = html;
     }
 
@@ -531,22 +633,38 @@
 
     function onSimulate() {
         const stats = calculateStats(currentClassName, currentSubclass, currentDistribution, currentLevel);
-        // Эталон: воин-страж, 100 HP, 50 атака, 122 защиты, остальное 0
+        // Эталон: воин-страж, распределение примерно 100 HP, 50 атака, 122 защиты (в сумме ~272 очка для 60 уровня)
         const distRef = { hp: 100, atk: 50, def: 122, dodge:0, int:0, spd:0, crit:0, critDmg:0, vamp:0, reflect:0 };
         const refStats = calculateStats('warrior', 'guardian', distRef, 60);
         const result = simulateFight(stats, refStats);
         const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML += `<div style="margin-top:20px; background:#2a303c; padding:10px; border-radius:8px;">📊 Результат симуляции 1000 боёв: Побед вашего билда: ${result.wins1}, побед эталона: ${result.wins2} (${(result.wins1/10).toFixed(1)}%)</div>`;
+        // Добавляем результат симуляции в конец панели, не затирая основные статы
+        const simBlock = document.createElement('div');
+        simBlock.style.marginTop = '20px';
+        simBlock.style.background = '#1a1f2b';
+        simBlock.style.padding = '10px';
+        simBlock.style.borderRadius = '8px';
+        simBlock.style.borderLeft = '3px solid #00aaff';
+        simBlock.innerHTML = `📊 Результат симуляции 1000 боёв: Побед вашего билда: ${result.wins1}, побед эталона: ${result.wins2} (${(result.wins1/10).toFixed(1)}%)`;
+        // Удаляем предыдущий блок симуляции, если есть
+        const oldSim = resultDiv.querySelector('.sim-result');
+        if (oldSim) oldSim.remove();
+        simBlock.className = 'sim-result';
+        resultDiv.appendChild(simBlock);
     }
 
     // Инициализация
     function init() {
         currentLevel = 60;
         totalPoints = getSkillPointsByLevel(60);
-        resetToEqual();
-
+        resetAll(); // начинаем с чистого листа (все очки свободны)
+        
         renderSkills();
-
+        
+        // Навешиваем обработчики на кнопки управления
+        document.getElementById('equalResetBtn').addEventListener('click', resetToEqual);
+        document.getElementById('fullResetBtn').addEventListener('click', resetAll);
+        
         document.querySelectorAll('.class-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
@@ -564,7 +682,7 @@
             updateLevel();
         });
         document.getElementById('simulateBtn').addEventListener('click', onSimulate);
-
+        
         // Устанавливаем активный класс по умолчанию
         document.querySelector('.class-btn[data-class="warrior"]').classList.add('active');
         updateSubclassSelect();

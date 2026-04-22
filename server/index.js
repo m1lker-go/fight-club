@@ -247,6 +247,57 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
+// ==================== ФУНКЦИЯ ПЕРЕПОДКЛЮЧЕНИЯ СЛУШАТЕЛЯ ====================
+let currentListener = null;
+let reconnectTimeout = null;
+
+async function setupListener() {
+    // Закрываем старое соединение, если есть
+    if (currentListener) {
+        try {
+            await currentListener.release();
+        } catch (e) {}
+        currentListener = null;
+    }
+    if (reconnectTimeout) clearTimeout(reconnectTimeout);
+
+    try {
+        const dbClient = await pool.connect();
+        await dbClient.query('LISTEN message_inserted');
+        dbClient.on('notification', async (msg) => {
+            try {
+                const payload = JSON.parse(msg.payload);
+                const { user_id, subject, body, reward_type, reward_amount } = payload;
+                const userRes = await pool.query('SELECT telegram_chat_id FROM users WHERE id = $1', [user_id]);
+                const chatId = userRes.rows[0]?.telegram_chat_id;
+                if (chatId) {
+                    let rewardText = '';
+                    if (reward_type && reward_amount) {
+                        if (reward_type === 'coins') rewardText = `${reward_amount} монет`;
+                        else if (reward_type === 'diamonds') rewardText = `${reward_amount} алмазов`;
+                        else if (reward_type === 'exp') rewardText = `${reward_amount} опыта`;
+                        else rewardText = `${reward_amount} ${reward_type}`;
+                    }
+                    await sendTelegramNotification(chatId, subject, body, rewardText);
+                }
+            } catch (err) {
+                console.error('Ошибка при обработке уведомления:', err);
+            }
+        });
+        dbClient.on('error', (err) => {
+            console.error('Слушатель потерял соединение:', err.message);
+            // Пытаемся переподключиться через 5 секунд
+            reconnectTimeout = setTimeout(setupListener, 5000);
+        });
+        currentListener = dbClient;
+        console.log('✅ Слушатель уведомлений PostgreSQL запущен');
+    } catch (err) {
+        console.error('❌ Ошибка при создании слушателя:', err.message);
+        // Повторим попытку через 10 секунд
+        reconnectTimeout = setTimeout(setupListener, 10000);
+    }
+}
+
 // ==================== ЗАПУСК СЕРВЕРА И НАСТРОЙКА УВЕДОМЛЕНИЙ ====================
 async function startServer() {
     try {
@@ -273,37 +324,16 @@ async function startServer() {
         `);
 
         await pool.query(`
-            CREATE OR REPLACE TRIGGER message_inserted_trigger
+            DROP TRIGGER IF EXISTS message_inserted_trigger ON user_messages;
+            CREATE TRIGGER message_inserted_trigger
             AFTER INSERT ON user_messages
             FOR EACH ROW
             EXECUTE FUNCTION notify_message_inserted();
         `);
         console.log('✅ Триггер и функция для уведомлений созданы');
 
-        // Подключаемся к БД для LISTEN
-        const dbClient = await pool.connect();
-        dbClient.query('LISTEN message_inserted');
-        dbClient.on('notification', async (msg) => {
-            try {
-                const payload = JSON.parse(msg.payload);
-                const { user_id, subject, body, reward_type, reward_amount } = payload;
-                const userRes = await pool.query('SELECT telegram_chat_id FROM users WHERE id = $1', [user_id]);
-                const chatId = userRes.rows[0]?.telegram_chat_id;
-                if (chatId) {
-                    let rewardText = '';
-                    if (reward_type && reward_amount) {
-                        if (reward_type === 'coins') rewardText = `${reward_amount} монет`;
-                        else if (reward_type === 'diamonds') rewardText = `${reward_amount} алмазов`;
-                        else if (reward_type === 'exp') rewardText = `${reward_amount} опыта`;
-                        else rewardText = `${reward_amount} ${reward_type}`;
-                    }
-                    await sendTelegramNotification(chatId, subject, body, rewardText);
-                }
-            } catch (err) {
-                console.error('Ошибка при обработке уведомления:', err);
-            }
-        });
-        console.log('✅ Слушатель уведомлений PostgreSQL запущен');
+        // Запускаем слушатель (с автоматическим переподключением)
+        await setupListener();
 
         // Запускаем HTTP-сервер
         app.listen(PORT, '0.0.0.0', () => {

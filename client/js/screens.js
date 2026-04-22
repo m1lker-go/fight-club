@@ -1918,10 +1918,15 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 }
 
 
- // ==================== СООБЩЕНИЯ ====================
+
+// ==================== СООБЩЕНИЯ ====================
 async function loadMessages() {
     try {
-        const res = await window.apiRequest('/messages', { method: 'GET' });
+        const token = localStorage.getItem('sessionToken');
+        const res = await window.apiRequest('/auth/messages', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         window.messagesList = data.messages || [];
         window.unreadMessagesCount = window.messagesList.filter(m => !m.is_read).length;
@@ -1989,12 +1994,19 @@ async function renderMessageDetail(messageId) {
     const msg = window.messagesList.find(m => m.id == messageId);
     if (!msg) return;
     
+    const token = localStorage.getItem('sessionToken');
+    if (!token) {
+        showToast('Ошибка: сессия не найдена', 1500);
+        return;
+    }
+    
     if (!msg.is_read) {
         msg.is_read = true;
         window.unreadMessagesCount--;
         updateMessagesBadge();
-        await window.apiRequest('/messages/read', {
+        await window.apiRequest('/auth/messages/read', {
             method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ message_id: messageId })
         });
     }
@@ -2029,8 +2041,9 @@ async function renderMessageDetail(messageId) {
     document.getElementById('backToMessagesBtn').addEventListener('click', () => renderMessages());
     document.getElementById('deleteMessageBtn').addEventListener('click', async () => {
         if (confirm('Удалить сообщение?')) {
-            await window.apiRequest('/messages/delete', {
+            await window.apiRequest('/auth/messages/delete', {
                 method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ message_id: messageId })
             });
             window.messagesList = window.messagesList.filter(m => m.id != messageId);
@@ -2050,11 +2063,6 @@ async function renderMessageDetail(messageId) {
         classChoiceBtns.forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const chosenClass = btn.dataset.class;
-                const token = localStorage.getItem('sessionToken');
-                if (!token) {
-                    showToast('Ошибка: сессия не найдена', 1500);
-                    return;
-                }
                 try {
                     const res = await window.apiRequest('/auth/claim-class-reward', {
                         method: 'POST',
@@ -2066,8 +2074,8 @@ async function renderMessageDetail(messageId) {
                         const classNameRu = chosenClass === 'warrior' ? 'Воин' : (chosenClass === 'assassin' ? 'Ассасин' : 'Маг');
                         showToast(`Вы выбрали класс ${classNameRu} и получили 5 очков навыков!`, 2000);
                         msg.is_claimed = true;
-                        await refreshData(); // обновит данные, чтобы маячок появился
-                        renderMessageDetail(messageId); // перерисовываем письмо (кнопки исчезнут)
+                        await refreshData();
+                        renderMessageDetail(messageId);
                     } else {
                         showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 1500);
                     }
@@ -2081,8 +2089,9 @@ async function renderMessageDetail(messageId) {
     
     if (document.getElementById('claimRewardBtn')) {
         document.getElementById('claimRewardBtn').addEventListener('click', async () => {
-            const res = await window.apiRequest('/messages/claim', {
+            const res = await window.apiRequest('/auth/messages/claim', {
                 method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ message_id: messageId })
             });
             const data = await res.json();

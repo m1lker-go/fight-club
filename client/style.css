@@ -3685,3 +3685,18 @@ input:checked + .slider:before {
     background-color: #00aaff;
     color: #1a1f2b;
 }
+
+.message-reward-info {
+    background-color: #2a303c;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px 0;
+    color: #f1c40f;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.reward-icon {
+    display: inline-flex;
+    align-items: center;
+}

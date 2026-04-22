@@ -33,6 +33,8 @@ let lastBattleLog = null;
 let profileTab = 'bonuses';
 let tradeTab = 'shop';
 let ratingTab = 'rating';
+let messagesList = [];
+let unreadMessagesCount = 0;
 
 // Глобальный базовый URL для API
 window.API_BASE = 'https://api.cat-fight.ru';
@@ -379,6 +381,7 @@ function showScreen(screen) {
         case 'main': renderMain(); break;
         case 'equip': renderEquip(); break;
         case 'trade': renderTrade(); break;
+        case 'messages': renderMessages(); break;   
         case 'forge':
             if (typeof renderForge === 'function') {
                 renderForge();
@@ -442,6 +445,34 @@ document.querySelectorAll('.menu-item').forEach(item => {
         showScreen(item.dataset.screen);
     });
 });
+
+function updateMessagesBadge() {
+    const menuIcon = document.querySelector('.menu-item[data-screen="messages"] i');
+    const mainMailBtn = document.getElementById('mailBtn');
+    if (unreadMessagesCount > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'messages-badge';
+        badge.textContent = unreadMessagesCount > 9 ? '9+' : unreadMessagesCount;
+        if (menuIcon && !menuIcon.parentNode.querySelector('.messages-badge')) {
+            menuIcon.parentNode.style.position = 'relative';
+            menuIcon.parentNode.appendChild(badge.cloneNode(true));
+        }
+        if (mainMailBtn && !mainMailBtn.querySelector('.messages-badge')) {
+            mainMailBtn.style.position = 'relative';
+            mainMailBtn.appendChild(badge.cloneNode(true));
+        }
+    } else {
+        if (menuIcon) {
+            const old = menuIcon.parentNode.querySelector('.messages-badge');
+            if (old) old.remove();
+        }
+        if (mainMailBtn) {
+            const old = mainMailBtn.querySelector('.messages-badge');
+            if (old) old.remove();
+        }
+    }
+}
+
 
 // Функции, которые будут переопределены в screens.js, объявляем глобально
 window.renderMain = renderMain;

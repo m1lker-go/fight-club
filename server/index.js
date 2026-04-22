@@ -265,6 +265,7 @@ async function setupListener() {
         const dbClient = await pool.connect();
         await dbClient.query('LISTEN message_inserted');
         dbClient.on('notification', async (msg) => {
+            console.log('📩 Получено уведомление от БД:', msg.payload);
             try {
                 const payload = JSON.parse(msg.payload);
                 const { user_id, subject, body, reward_type, reward_amount } = payload;
@@ -279,13 +280,16 @@ async function setupListener() {
                         else rewardText = `${reward_amount} ${reward_type}`;
                     }
                     await sendTelegramNotification(chatId, subject, body, rewardText);
+                    console.log(`✅ Уведомление отправлено в Telegram для chatId ${chatId}`);
+                } else {
+                    console.log(`⚠️ Нет telegram_chat_id для user_id ${user_id}`);
                 }
             } catch (err) {
                 console.error('Ошибка при обработке уведомления:', err);
             }
         });
         dbClient.on('error', (err) => {
-            console.error('Слушатель потерял соединение:', err.message);
+            console.error('❌ Ошибка соединения слушателя:', err.message);
             // Пытаемся переподключиться через 5 секунд
             reconnectTimeout = setTimeout(setupListener, 5000);
         });

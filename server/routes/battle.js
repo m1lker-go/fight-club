@@ -463,20 +463,16 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'damage';
             break;
             
-        case 'venom_blade':
-    // 1. Обычная атака (с учётом защиты, крита)
+       case 'venom_blade':
+    // Базовая атака (без учёта защиты, без крита)
     let baseDamage = attackerStats.atk;
-    let isCrit = Math.random() * 100 < attackerStats.crit;
-    if (isCrit) baseDamage *= attackerStats.critDmg;
-    baseDamage = baseDamage * (1 - defenderStats.def / 100);
-    baseDamage = Math.max(1, Math.floor(baseDamage));
     
-    // 2. Урон от всех накопленных стаков яда (игнорирует защиту)
+    // Урон от всех накопленных стаков яда
     const stacks = defenderState.poisonStacks || 0;
     const poisonPerStack = 2 + Math.floor(attackerStats.agi / 5);
     const poisonDamage = stacks * poisonPerStack;
     
-    // 3. Бонус за сжигание стаков (прогрессия)
+    // Бонус за сжигание стаков
     let bonusDamage = 0;
     if (stacks === 1) bonusDamage = 5;
     else if (stacks === 2) bonusDamage = 10;
@@ -484,6 +480,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     else if (stacks === 4) bonusDamage = 20;
     else if (stacks >= 5) bonusDamage = 30;
     
+    // Итоговый чистый урон
     const totalDamage = baseDamage + poisonDamage + bonusDamage;
     damage = totalDamage;
     
@@ -492,7 +489,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
         .replace('%d', damage)
         + ` (яд: ${poisonDamage}, бонус: ${bonusDamage})`;
     
-    defenderState.poisonStacks = 0;   // Сжигаем все стаки
+    defenderState.poisonStacks = 0;   // сжигаем все стаки
     type = 'poison_ult';
     break;
             

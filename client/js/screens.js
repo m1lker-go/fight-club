@@ -1923,10 +1923,10 @@ async function loadMessages() {
     try {
         const res = await window.apiRequest('/messages', { method: 'GET' });
         const data = await res.json();
-        messagesList = data.messages || [];
-        unreadMessagesCount = messagesList.filter(m => !m.is_read).length;
+        window.messagesList = data.messages || [];
+        window.unreadMessagesCount = window.messagesList.filter(m => !m.is_read).length;
         if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
-        return messagesList;
+        return window.messagesList;
     } catch (e) {
         console.error('Ошибка загрузки сообщений:', e);
         return [];
@@ -1986,12 +1986,12 @@ async function renderMessages() {
 }
 
 async function renderMessageDetail(messageId) {
-    const msg = messagesList.find(m => m.id == messageId);
+    const msg = window.messagesList.find(m => m.id == messageId);
     if (!msg) return;
     
     if (!msg.is_read) {
         msg.is_read = true;
-        unreadMessagesCount--;
+        window.unreadMessagesCount--;
         updateMessagesBadge();
         await window.apiRequest('/messages/read', {
             method: 'POST',
@@ -2027,7 +2027,7 @@ async function renderMessageDetail(messageId) {
                 method: 'POST',
                 body: JSON.stringify({ message_id: messageId })
             });
-            messagesList = messagesList.filter(m => m.id != messageId);
+            window.messagesList = window.messagesList.filter(m => m.id != messageId);
             renderMessages();
         }
     });
@@ -2053,4 +2053,4 @@ async function renderMessageDetail(messageId) {
             }
         });
     }
-} 
+}

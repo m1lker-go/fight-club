@@ -112,6 +112,9 @@ async function handleTelegramLogin(initData, referralCode, client) {
         needusername = !userData.username;
     }
 
+    // ✅ СОХРАНЯЕМ TELEGRAM_CHAT_ID
+    await client.query('UPDATE users SET telegram_chat_id = $1 WHERE id = $2', [tgId, userData.id]);
+
     const sessionToken = generateToken();
     await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
     return { sessionToken, needusername, userId: userData.id, user: userData };

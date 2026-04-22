@@ -1914,7 +1914,11 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             showToast('Ошибка загрузки данных аватара', 1500);
         });
 
-   // ==================== СООБЩЕНИЯ ====================
+  
+}
+
+
+ // ==================== СООБЩЕНИЯ ====================
 async function loadMessages() {
     try {
         const res = await window.apiRequest('/messages', { method: 'GET' });
@@ -2050,4 +2054,3 @@ async function renderMessageDetail(messageId) {
         });
     }
 } 
-}

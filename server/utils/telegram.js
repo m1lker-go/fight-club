@@ -3,12 +3,21 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const CLIENT_URL = process.env.CLIENT_URL || 'https://fight-club-ecru.vercel.app';
 
 async function sendTelegramNotification(chatId, subject, body, rewardText = null) {
-    if (!chatId || !BOT_TOKEN) return;
+    console.log(`🔔 sendTelegramNotification вызван: chatId=${chatId}, subject=${subject}`);
+    if (!chatId) {
+        console.error('❌ Нет chatId');
+        return;
+    }
+    if (!BOT_TOKEN) {
+        console.error('❌ Нет BOT_TOKEN в переменных окружения');
+        return;
+    }
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     let text = `📬 Новое сообщение в игре!\n\n📝 ${subject}\n${body}`;
     if (rewardText) {
         text += `\n🎁 Награда: ${rewardText}`;
     }
+    console.log(`📤 Отправка в Telegram: ${url}, chatId=${chatId}, text=${text.substring(0, 100)}...`);
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -23,11 +32,14 @@ async function sendTelegramNotification(chatId, subject, body, rewardText = null
                 }
             })
         });
-        if (!response.ok) {
-            console.error('Telegram notification error:', await response.text());
+        const responseText = await response.text();
+        if (response.ok) {
+            console.log(`✅ Уведомление успешно отправлено в Telegram для chatId ${chatId}`);
+        } else {
+            console.error(`❌ Ошибка Telegram API: ${response.status} - ${responseText}`);
         }
     } catch (err) {
-        console.error('Failed to send Telegram notification:', err);
+        console.error('❌ Исключение при отправке уведомления:', err);
     }
 }
 

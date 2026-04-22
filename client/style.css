@@ -3470,3 +3470,197 @@ input:checked + .slider:before {
     overflow: hidden !important;
     border-radius: 8px;
 }
+
+/* ========== СООБЩЕНИЯ ========== */
+.messages-container {
+    background-color: #2a303c;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.messages-header {
+    background-color: #1a1f2b;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    font-size: 16px;
+    border-bottom: 1px solid #00aaff;
+}
+.messages-header i {
+    margin-right: 8px;
+    color: #00aaff;
+}
+.messages-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.message-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid #1a1f2b;
+    background-color: #232833;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.message-row:nth-child(even) {
+    background-color: #2a303c;
+}
+.message-row:hover {
+    background-color: #2f3542;
+}
+.message-icon {
+    width: 32px;
+    text-align: center;
+    font-size: 20px;
+}
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    background-color: #1a1f2b;
+    border: 1px solid #00aaff;
+    flex-shrink: 0;
+}
+.message-info {
+    flex: 1;
+    min-width: 0;
+}
+.message-sender {
+    font-weight: bold;
+    color: white;
+    margin-bottom: 4px;
+}
+.message-preview {
+    font-size: 12px;
+    color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.message-read-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: #aaa;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.message-read-btn:hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.empty-messages {
+    text-align: center;
+    padding: 40px;
+    color: #aaa;
+    font-size: 16px;
+}
+.message-detail-container {
+    background-color: #2a303c;
+    border-radius: 12px;
+    padding: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.message-detail-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.back-btn, .delete-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: #aaa;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.back-btn:hover, .delete-btn:hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.message-detail-sender {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #3a4050;
+}
+.sender-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid #00aaff;
+}
+.sender-name {
+    font-weight: bold;
+    font-size: 18px;
+    color: white;
+}
+.message-date {
+    font-size: 12px;
+    color: #aaa;
+    margin-left: auto;
+}
+.message-detail-subject {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 16px;
+}
+.message-detail-body {
+    font-size: 14px;
+    color: #ddd;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    flex: 1;
+}
+.message-detail-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+}
+.reply-btn, .claim-btn {
+    background-color: #2f3542;
+    border: 1px solid #00aaff;
+    border-radius: 30px;
+    padding: 10px 24px;
+    color: #00aaff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.reply-btn:hover, .claim-btn:hover {
+    background-color: #00aaff;
+    color: white;
+}
+.messages-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: #ff4444;
+    color: white;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1;
+}

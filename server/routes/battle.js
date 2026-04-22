@@ -40,16 +40,16 @@ const baseStats = {
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// ✅ ИСПРАВЛЕНО: Убран physReduction: 30 у криомага, добавлен defenseBonus: 10 у Стража
+// === БАЛАНСНЫЕ ПРАВКИ: страж (блок 10%, +5 защиты), убийца (+50% крит урона) ===
 const rolePassives = {
-    guardian: { defenseBonus: 10, blockChance: 20 },
+    guardian: { defenseBonus: 5, blockChance: 10 },
     berserker: { rage: true },
     knight: { reflect: 20 },
-    assassin: { critMultiplier: 2.0 },
+    assassin: { critMultiplier: 2.5 },
     venom_blade: { poison: true },
     blood_hunter: { vamp: 20 },
     pyromancer: { burn: true },
-    cryomancer: { freezeChance: 25 }, 
+    cryomancer: { freezeChance: 25 },
     illusionist: { mirageGuaranteed: true },
     mouse_necromancer: { revive: true },
     mouse_blade: { doubleAttack: true, ultimateIgnoreDef: true, ultimateVamp: 100 },
@@ -72,13 +72,14 @@ function applyIntBonus(damage, int) {
     return Math.floor(damage * (1 + int / 100));
 }
 
+// === УСИЛЕННАЯ ЯРОСТЬ (бонус урона и крита) ===
 function getBerserkerRage(hpPercent) {
-    if (hpPercent < 20) return { level: 5, bonus: 100 };
-    if (hpPercent < 35) return { level: 4, bonus: 60 };
-    if (hpPercent < 50) return { level: 3, bonus: 45 };
-    if (hpPercent < 65) return { level: 2, bonus: 30 };
-    if (hpPercent < 80) return { level: 1, bonus: 15 };
-    return { level: 0, bonus: 0 };
+    if (hpPercent < 20) return { level: 5, bonus: 150, critBonus: 20 };
+    if (hpPercent < 35) return { level: 4, bonus: 80, critBonus: 15 };
+    if (hpPercent < 50) return { level: 3, bonus: 60, critBonus: 10 };
+    if (hpPercent < 65) return { level: 2, bonus: 40, critBonus: 7 };
+    if (hpPercent < 80) return { level: 1, bonus: 20, critBonus: 5 };
+    return { level: 0, bonus: 0, critBonus: 0 };
 }
 
 function getBerserkerAtkBonus(currentHp, maxHp, baseAtk) {
@@ -123,41 +124,35 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // === ОСОБЕННОСТИ КЛАССОВ (БЕЗ МНОЖИТЕЛЕЙ, ТОЛЬКО МЕХАНИКИ) ===
-    // Воин: Стойкость (+5 ХП за каждые 5 защиты)
+    // === ОСОБЕННОСТИ КЛАССОВ ===
     if (classData.class === 'warrior') stats.hp += Math.floor(stats.def / 5) * 5;
-    
-    // Ассасин: Стремительность (+1 скорость за каждые 5 ловкости)
     if (classData.class === 'assassin') stats.spd += Math.floor(stats.agi / 5);
-    
-    // Маг: Магическая мощь (+1 ловкость и +2 мана за каждые 5 интеллекта)
     if (classData.class === 'mage') {
         stats.agi += Math.floor(stats.int / 5);
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
-    // Пассивные бонусы подклассов (например, +20% вампиризма у Кровавого охотника)
+    // Пассивные бонусы подклассов
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
     
-    // ✅ Страж: +10 к защите (сверх лимита 70, максимум 80)
+    // Страж: +5 к защите (макс 75)
     if (classData.class === 'warrior' && subclass === 'guardian') {
-        stats.def = Math.min(80, stats.def + 10);
+        stats.def = Math.min(75, stats.def + 5);
     }
 
-    // === ИСПРАВЛЕНО: Убраны скрытые множители (x1.5 защита, x1.2 атака и т.д.) ===
-    // Оставлен только бонус здоровья Воина (+10%), так как это особенность класса.
+    // Воин: +10% HP
     if (classData.class === 'warrior') {
-        stats.hp = Math.floor(stats.hp * 1.1); // +10% ХП
+        stats.hp = Math.floor(stats.hp * 1.1);
     }
-    // Множители для Ассасина и Мага удалены полностью.
 
     // Капы характеристик
-    stats.def = Math.min(80, stats.def); // ✅ Страж может иметь до 80 защиты
+    stats.def = Math.min(75, stats.def);
     stats.crit = Math.min(100, stats.crit);
     stats.agi = Math.min(70, stats.agi);
     stats.critDmg = Math.min(stats.critDmg, 4.5);
+    stats.manaRegen = Math.min(40, stats.manaRegen);   // реген маны не более 40
     
     return stats;
 }
@@ -198,7 +193,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
     }
 
-    // ✅ НОВАЯ ПРОВЕРКА: Блок Стража (20% шанс полного блока, как уворот)
+    // Блок Стража (только от физических атак)
     if (defenderSubclass === 'guardian') {
         const blockChance = rolePassives.guardian.blockChance;
         if (Math.random() * 100 < blockChance) {
@@ -219,8 +214,9 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let berserkerBonus = 0;
     let rageInfo = null;
     let selfDamage = 0;
+    let berserkerCritBonus = 0;
 
-    // Berserker self damage
+    // Berserker self damage (10% от наносимого урона, не менее 1)
     if (attackerSubclass === 'berserker' && rolePassives.berserker && rolePassives.berserker.rage) {
         const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
         const rage = getBerserkerRage(hpPercent);
@@ -230,7 +226,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             currentDamage += Math.ceil(attackerStats.atk * rage.bonus / 100);
         }
         
-        selfDamage = Math.max(1, Math.ceil(currentDamage * 0.16));
+        selfDamage = Math.max(1, Math.ceil(currentDamage * 0.10));
         attackerState.hp = Math.max(1, attackerState.hp - selfDamage);
         
         extraLogs.push({
@@ -250,24 +246,23 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         
         if (newRage.level > 0) {
             berserkerBonus = Math.ceil(attackerStats.atk * newRage.bonus / 100);
+            berserkerCritBonus = newRage.critBonus;
             rageInfo = { level: newRage.level, bonus: newRage.bonus, added: berserkerBonus };
         }
     }
 
     let isCrit = false;
+    let effectiveCritChance = attackerStats.crit + berserkerCritBonus;
     let effectiveCritDmg = attackerStats.critDmg;
     if (attackerState.critDmgBuff && attackerState.critDmgBuffDuration > 0) {
         effectiveCritDmg += attackerState.critDmgBuff;
     }
-    if (Math.random() * 100 < attackerStats.crit) {
+    if (Math.random() * 100 < effectiveCritChance) {
         isCrit = true;
         damage *= effectiveCritDmg;
     }
 
-    // ✅ ИСПРАВЛЕНО: Убрана проверка на physReduction, так как мы удалили его из rolePassives.
-    // Криомаг больше не режет урон пассивно.
-    
-    // Paladin damage reduction (50%) - Босс-механика, оставляем
+    // Paladin damage reduction (50%)
     if (defenderSubclass === 'mouse_paladin') {
         damage = Math.floor(damage * (1 - rolePassives.mouse_paladin.damageReduction / 100));
     }
@@ -314,35 +309,37 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage *= 2;
     }
 
-    // Venom blade poison
+    // Venom blade poison (урон стака зависит от ловкости)
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
         defenderState.poisonStacks = Math.min(5, defenderState.poisonStacks + 1);
         if (defenderState.poisonStacks > oldStacks) {
+            const poisonDmgPerStack = 2 + Math.floor(attackerStats.agi / 5);
             extraLogs.push({
-                text: poisonStackPhrase.replace('%d', defenderState.poisonStacks),
+                text: `${defenderName} отравлен! Стаков: ${defenderState.poisonStacks}/5 (урон стака ${poisonDmgPerStack}).`,
                 type: 'poison_stack',
                 attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
         }
     }
 
-    // Pyromancer burn
+    // Pyromancer burn (урон стака зависит от ловкости)
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
         defenderState.burnStacks = Math.min(5, defenderState.burnStacks + 1);
         if (defenderState.burnStacks > oldStacks) {
+            const burnDmgPerStack = 2 + Math.floor(attackerStats.agi / 5);
             extraLogs.push({
-                text: burnStackPhrase.replace('%d', defenderState.burnStacks),
+                text: `${defenderName} подожжён! Стаков: ${defenderState.burnStacks}/5 (урон стака ${burnDmgPerStack}).`,
                 type: 'burn_stack',
                 attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
         }
     }
 
-    // Cryomancer freeze
+    // Cryomancer freeze (заморозка на 1 ход)
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
@@ -355,7 +352,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             defenderState.freezeStacks++;
             let stackText;
             if (defenderState.freezeStacks >= 3) {
-                defenderState.frozen = 2;
+                defenderState.frozen = 1;
                 defenderState.freezeStacks = 0;
                 stackText = 'Лед накапливается 3/3. <strong>' + defenderName + '</strong> замораживается и пропускает 1 ход.';
             } else {
@@ -440,7 +437,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             let baseDamageBerserker = attackerStats.atk * 2;
             let bonusCritDmg = 0.5;
             damage = Math.floor(baseDamageBerserker * (attackerStats.critDmg + bonusCritDmg));
-            selfDamage = Math.floor(attackerState.hp * 0.6);
+            selfDamage = Math.floor(attackerState.hp * 0.30);
             selfDamage = Math.min(selfDamage, attackerState.hp - 1);
             attackerState.hp -= selfDamage;
             log = ultPhrases.berserker.replace('%s', '<strong>' + attackerName + '</strong>')
@@ -458,14 +455,13 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
             
         case 'assassin':
-    // Урон = атака * (крит. множитель + 1.5)
-    damage = Math.floor(attackerStats.atk * (attackerStats.critDmg + 1.5));
-    log = ultPhrases.assassin
-        .replace('%s', '<strong>' + attackerName + '</strong>')
-        .replace('%s', '<strong>' + defenderName + '</strong>')
-        .replace('%d', damage);
-    type = 'damage';
-    break;
+            damage = Math.floor(attackerStats.atk * (attackerStats.critDmg + 1.5));
+            log = ultPhrases.assassin
+                .replace('%s', '<strong>' + attackerName + '</strong>')
+                .replace('%s', '<strong>' + defenderName + '</strong>')
+                .replace('%d', damage);
+            type = 'damage';
+            break;
             
         case 'venom_blade':
             let baseDamage = attackerStats.atk;
@@ -515,7 +511,9 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
             
         case 'illusionist':
-            damage = applyIntBonus(defenderStats.atk * 2, attackerStats.int);
+            let baseIllusionDamage = defenderStats.atk * 2;
+            let calculatedDamage = Math.floor(baseIllusionDamage * (1 + attackerStats.int / 100));
+            damage = Math.max(12, calculatedDamage);
             log = ultPhrases.illusionist.replace('%s', '<strong>' + attackerName + '</strong>').replace('%s', '<strong>' + defenderName + '</strong>').replace('%d', damage);
             type = 'damage';
             break;
@@ -570,21 +568,23 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     return { damage, heal, log, selfDamage, stateChanges, type };
 }
 
-function applyDotDamage(state, name) {
+function applyDotDamage(state, name, attackerAgi) {
     let totalDamage = 0, logs = [];
     if (state.poisonStacks > 0) {
-        const dmg = state.poisonStacks * 2;
+        const dmgPerStack = 2 + Math.floor(attackerAgi / 5);
+        const dmg = state.poisonStacks * dmgPerStack;
         totalDamage += dmg;
         logs.push({
-            text: poisonDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg),
+            text: poisonDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg) + ` (${dmgPerStack} за стак)`,
             type: 'poison_dot'
         });
     }
     if (state.burnStacks > 0) {
-        const dmg = state.burnStacks * 2;
+        const dmgPerStack = 2 + Math.floor(attackerAgi / 5);
+        const dmg = state.burnStacks * dmgPerStack;
         totalDamage += dmg;
         logs.push({
-            text: burnDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg),
+            text: burnDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg) + ` (${dmgPerStack} за стак)`,
             type: 'burn_dot'
         });
     }
@@ -894,8 +894,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (enemyState.invincible > 0) enemyState.invincible--;
 
         if (playerActedThisRound && enemyActedThisRound) {
-            const playerDot = applyDotDamage(playerState, playerName);
-            const enemyDot = applyDotDamage(enemyState, enemyName);
+            const playerDot = applyDotDamage(playerState, playerName, enemyStats.agi);
+            const enemyDot = applyDotDamage(enemyState, enemyName, playerStats.agi);
             if (playerDot.damage > 0) {
                 playerHp -= playerDot.damage;
                 if (playerHp < 0) playerHp = 0;
@@ -1047,29 +1047,22 @@ async function addExp(client, userId, className, expGain) {
 function getCoinReward(streak) { return streak >= 25 ? 20 : streak >= 10 ? 10 : streak >= 5 ? 7 : 5; }
 function getRatingChange(streak) { return streak >= 20 ? 30 : streak >= 10 ? 25 : streak >= 5 ? 20 : 15; }
 
-// ✅ Замени пустую функцию rechargeEnergy на эту:
 async function rechargeEnergy(client, userId) {
     try {
         const res = await client.query('SELECT energy, last_energy_update FROM users WHERE id = $1', [userId]);
         if (res.rows.length === 0) return;
 
         let { energy, last_energy_update } = res.rows[0];
-        
-        // Если время последнего обновления не задано, считаем его "сейчас"
         if (!last_energy_update) last_energy_update = new Date().toISOString();
 
         const now = new Date();
         const lastUpdate = new Date(last_energy_update);
         const diffMs = now - lastUpdate;
-        const diffMinutes = Math.floor(diffMs / 60000); // Переводим мс в минуты
-
-        // 1 единица энергии каждые 15 минут
+        const diffMinutes = Math.floor(diffMs / 60000);
         const energyToAdd = Math.floor(diffMinutes / 15);
 
         if (energyToAdd > 0) {
-            // Максимум энергии = 20 (как в твоей логике)
             const newEnergy = Math.min(20, energy + energyToAdd);
-            
             await client.query(
                 'UPDATE users SET energy = $1, last_energy_update = NOW() WHERE id = $2',
                 [newEnergy, userId]

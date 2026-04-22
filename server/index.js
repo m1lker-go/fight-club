@@ -255,15 +255,25 @@ async function setupListener() {
     // Закрываем старое соединение, если есть
     if (currentListener) {
         try {
-            await currentListener.release();
+            await currentListener.end();
         } catch (e) {}
         currentListener = null;
     }
     if (reconnectTimeout) clearTimeout(reconnectTimeout);
 
     try {
-        const dbClient = await pool.connect();
+        // Создаём отдельное подключение к БД (не из пула) для LISTEN
+        const { Pool } = require('pg');
+        const dedicatedPool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 10000,
+        });
+        const dbClient = await dedicatedPool.connect();
         await dbClient.query('LISTEN message_inserted');
+        console.log('✅ Успешно подписались на канал message_inserted');
+        
         dbClient.on('notification', async (msg) => {
             console.log('📩 Получено уведомление от БД:', msg.payload);
             try {
@@ -290,14 +300,12 @@ async function setupListener() {
         });
         dbClient.on('error', (err) => {
             console.error('❌ Ошибка соединения слушателя:', err.message);
-            // Пытаемся переподключиться через 5 секунд
-            reconnectTimeout = setTimeout(setupListener, 5000);
+            setTimeout(setupListener, 5000);
         });
         currentListener = dbClient;
         console.log('✅ Слушатель уведомлений PostgreSQL запущен');
     } catch (err) {
         console.error('❌ Ошибка при создании слушателя:', err.message);
-        // Повторим попытку через 10 секунд
         reconnectTimeout = setTimeout(setupListener, 10000);
     }
 }
@@ -305,10 +313,9 @@ async function setupListener() {
 // ==================== ЗАПУСК СЕРВЕРА И НАСТРОЙКА УВЕДОМЛЕНИЙ ====================
 async function startServer() {
     try {
-        // Инициализация базы данных
         await initDB();
 
-        // Создаём функцию и триггер для отправки уведомлений (если их нет)
+        // Создаём функцию и триггер для отправки уведомлений
         await pool.query(`
             CREATE OR REPLACE FUNCTION notify_message_inserted()
             RETURNS TRIGGER AS $$
@@ -339,7 +346,6 @@ async function startServer() {
         // Запускаем слушатель (с автоматическим переподключением)
         await setupListener();
 
-        // Запускаем HTTP-сервер
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Server running on port ${PORT}`);
         });

@@ -1089,4 +1089,28 @@ router.get('/messages', async (req, res) => {
     }
 });
 
+router.post('/messages/read', async (req, res) => {
+    const { message_id } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userId = userRes.rows[0].id;
+
+        await client.query(
+            'UPDATE user_messages SET is_read = true WHERE id = $1 AND user_id = $2',
+            [message_id, userId]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

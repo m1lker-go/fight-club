@@ -1,6 +1,6 @@
-// utils/telegram.js
+// server/utils/telegram.js
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const CLIENT_URL = process.env.CLIENT_URL || 'https://ваш-домен.com'; // замените на ваш URL
+const CLIENT_URL = process.env.CLIENT_URL || 'https://fight-club-ecru.vercel.app';
 
 async function sendTelegramNotification(chatId, subject, body, rewardText = null) {
     if (!chatId || !BOT_TOKEN) return;

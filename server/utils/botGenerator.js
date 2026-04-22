@@ -4,9 +4,9 @@ const baseStats = {
     mage: { hp: 15, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// ✅ ИСПРАВЛЕНО: Убран physReduction: 30 у криомага
+// === БАЛАНСНЫЕ ПРАВКИ: страж (блок 10%, +5 защиты), убийца (+50% крит урона) ===
 const rolePassives = {
-    guardian: { damageReduction: 10, blockChance: 20 },
+    guardian: { defenseBonus: 5, blockChance: 10 },
     berserker: { rage: true },
     knight: { reflect: 20 },
     assassin: { critMultiplier: 2.5 },
@@ -145,16 +145,13 @@ function applySkillBonuses(base, dist) {
 function applyClassBonuses(stats, className, subclass) {
     let result = { ...stats };
 
-    // === ОСОБЕННОСТИ КЛАССОВ (БЕЗ МНОЖИТЕЛЕЙ) ===
-    // Воин: Стойкость (+5 ХП за 5 защиты)
+    // === ОСОБЕННОСТИ КЛАССОВ ===
     if (className === 'warrior') {
         result.hp += Math.floor(result.def / 5) * 5;
     } 
-    // Ассасин: Стремительность (+1 скорость за 5 ловкости)
     else if (className === 'assassin') {
         result.spd += Math.floor(result.agi / 5);
     } 
-    // Маг: Магическая мощь (+1 ловкость и +2 мана за 5 интеллекта)
     else if (className === 'mage') {
         result.agi += Math.floor(result.int / 5);
         result.manaRegen += Math.floor(result.int / 5) * 2;
@@ -164,16 +161,21 @@ function applyClassBonuses(stats, className, subclass) {
     if (roleBonus.vamp) result.vamp += roleBonus.vamp;
     if (roleBonus.reflect) result.reflect += roleBonus.reflect;
 
-    // === ИСПРАВЛЕНО: Убраны скрытые множители (x1.5 защита, x1.2 атака и т.д.) ===
-    // Оставлен только бонус здоровья Воина (+10%), так как это особенность класса.
-    if (className === 'warrior') {
-        result.hp = Math.floor(result.hp * 1.1); // +10% ХП
+    // Страж: +5 защиты (макс 75)
+    if (className === 'warrior' && subclass === 'guardian') {
+        result.def = Math.min(75, result.def + 5);
     }
-    // Множители для Ассасина и Мага удалены полностью.
 
-    result.def = Math.min(70, result.def);
-    result.agi = Math.min(100, result.agi);
+    // Бонус здоровья Воина (+10%)
+    if (className === 'warrior') {
+        result.hp = Math.floor(result.hp * 1.1);
+    }
+
+    // Лимиты
+    result.def = Math.min(75, result.def);
+    result.agi = Math.min(70, result.agi);
     result.crit = Math.min(100, result.crit);
+    result.manaRegen = Math.min(40, result.manaRegen || 0);
     
     result.hp = Math.round(result.hp);
     result.atk = Math.round(result.atk);
@@ -216,6 +218,7 @@ function generateNormalBot(playerLevel, forcedClass = null, forcedSubclass = nul
     if (className === 'mage') {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
+    stats.manaRegen = Math.min(40, stats.manaRegen); // ограничение регенерации
 
     let username;
     if (template) {
@@ -258,8 +261,8 @@ function generateCybercat(playerLevel) {
     stats.def += 5;
     stats.int += 5;
 
-    stats.def = Math.min(70, stats.def);
-    stats.agi = Math.min(100, stats.agi);
+    stats.def = Math.min(75, stats.def);
+    stats.agi = Math.min(70, stats.agi);
     stats.crit = Math.min(100, stats.crit);
     stats.hp = Math.round(stats.hp);
     stats.atk = Math.round(stats.atk);
@@ -277,6 +280,7 @@ function generateCybercat(playerLevel) {
     if (randomClass === 'mage') {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
+    stats.manaRegen = Math.min(40, stats.manaRegen);
 
     return {
         username: 'Киберкот',

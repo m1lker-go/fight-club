@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Fighting Balance Calculator — балансная версия</title>
+    <title>Cat Fighting Balance Calculator — полная балансная версия</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -146,12 +145,17 @@
             border-radius: 8px;
             border-left: 4px solid #00aaff;
         }
+        .skill-desc-tooltip {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 <div class="container">
-    <h1>⚖️ Калькулятор баланса (полная механика, балансная версия)</h1>
+    <h1>⚖️ Калькулятор баланса (финальная балансная версия)</h1>
     <div class="builder">
         <div class="class-selector">
             <button class="class-btn" data-class="warrior">Воин</button>
@@ -178,7 +182,7 @@
 </div>
 
 <script>
-    // ==================== БАЗОВЫЕ ДАННЫЕ ====================
+    // ==================== БАЗОВЫЕ ДАННЫЕ (С БАЛАНСНЫМИ ПРАВКАМИ) ====================
     const baseStats = {
         warrior: { hp: 30, atk: 3, def: 5, agi: 2, int: 0, spd: 10, crit: 2, critDmg: 1.5, vamp: 0, reflect: 0 },
         assassin: { hp: 15, atk: 4, def: 1, agi: 5, int: 0, spd: 14, crit: 5, critDmg: 1.5, vamp: 0, reflect: 0 },
@@ -186,7 +190,7 @@
     };
 
     const rolePassives = {
-        guardian: { defenseBonus: 5, blockChance: 10 },   // изменено: +5 защиты (макс 75), блок 10%
+        guardian: { defenseBonus: 5, blockChance: 10 },
         berserker: { rage: true },
         knight: { reflect: 20 },
         assassin: { critMultiplier: 2.5 },
@@ -271,7 +275,7 @@
         stats.agi = Math.min(70, stats.agi);
         stats.crit = Math.min(100, stats.crit);
         stats.critDmg = Math.min(4.5, stats.critDmg);
-        stats.manaRegen = Math.min(40, stats.manaRegen);  // реген маны не более 40
+        stats.manaRegen = Math.min(40, stats.manaRegen);
         stats.level = level;
 
         stats.hp = Math.round(stats.hp);
@@ -298,14 +302,8 @@
         return { level: 0, bonusDmg: 0, bonusCrit: 0 };
     }
 
-    // Урон яда от ловкости
-    function poisonDamagePerStack(agi) {
-        return 2 + Math.floor(agi / 5);
-    }
-    // Урон поджога от ловкости (используем ловкость, как у яда)
-    function burnDamagePerStack(agi) {
-        return 2 + Math.floor(agi / 5);
-    }
+    function poisonDamagePerStack(agi) { return 2 + Math.floor(agi / 5); }
+    function burnDamagePerStack(agi) { return 2 + Math.floor(agi / 5); }
 
     function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
         let extraLogs = [];
@@ -332,10 +330,8 @@
             return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> уклоняется от атаки!`, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
         }
 
-        // Блок Стража (только от физических атак, не от ультимейтов/ДОТ)
-        let isBlock = false;
+        // Блок Стража (только физические атаки)
         if (defenderSubclass === 'guardian' && Math.random() * 100 < 10) {
-            isBlock = true;
             return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> блокирует удар!`, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
         }
 
@@ -344,7 +340,7 @@
         let selfDamage = 0;
         let berserkerCritBonus = 0;
 
-        // Берсерк: самоурон 10% (не менее 1) и бонус ярости
+        // Берсерк: самоурон 10%
         if (attackerSubclass === 'berserker') {
             const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
             const rage = getBerserkerRage(hpPercent);
@@ -367,7 +363,7 @@
             damage *= effectiveCritDmg;
         }
 
-        // Защита снижает урон только физический (яд и огонь не снижаются, но это не здесь)
+        // Защита
         damage = damage * (1 - defenderStats.def / 100);
         damage = Math.max(1, Math.floor(damage));
 
@@ -382,13 +378,13 @@
             const dmgPer = poisonDamagePerStack(attackerStats.agi);
             extraLogs.push({ text: `<strong>${defenderName}</strong> отравлен! Стаков яда: ${defenderState.poisonStacks}/5 (урон стака ${dmgPer}).`, type: 'poison_stack', attacker: isPlayerAttacker ? 'player' : 'enemy' });
         }
-        // Поджог pyromancer (зависит от ловкости)
+        // Поджог pyromancer
         if (attackerSubclass === 'pyromancer') {
             defenderState.burnStacks = Math.min(5, (defenderState.burnStacks || 0) + 1);
             const dmgPer = burnDamagePerStack(attackerStats.agi);
             extraLogs.push({ text: `<strong>${defenderName}</strong> подожжён! Стаков огня: ${defenderState.burnStacks}/5 (урон стака ${dmgPer}).`, type: 'burn_stack', attacker: isPlayerAttacker ? 'player' : 'enemy' });
         }
-        // Заморозка cryomancer
+        // Заморозка cryomancer (заморозка на 1 ход)
         if (attackerSubclass === 'cryomancer') {
             if (defenderState.frozen > 0) {
                 extraLogs.push({ text: `<strong>${defenderName}</strong> уже заморожен.`, type: 'frozen_already', attacker: isPlayerAttacker ? 'player' : 'enemy' });
@@ -448,10 +444,19 @@
                 type = 'damage';
                 break;
             case 'venom_blade':
-                let baseDamage = Math.max(1, Math.floor(attackerStats.atk * (1 - defenderStats.def/100)));
-                let poisonDamage = (defenderState.poisonStacks || 0) * 5;  // ультимейт не меняем
-                damage = baseDamage + poisonDamage;
-                log = `<strong>${attackerName}</strong> использует Ядовитую волну: ${damage} урона (${poisonDamage} от яда).`;
+                // Чистый урон: атака + урон от стаков + бонус, игнорирует защиту/отражение/вампиризм
+                let baseDmg = attackerStats.atk;
+                const stacks = defenderState.poisonStacks || 0;
+                const poisonPerStack = 2 + Math.floor(attackerStats.agi / 5);
+                const poisonDmg = stacks * poisonPerStack;
+                let bonusDmg = 0;
+                if (stacks === 1) bonusDmg = 5;
+                else if (stacks === 2) bonusDmg = 10;
+                else if (stacks === 3) bonusDmg = 15;
+                else if (stacks === 4) bonusDmg = 20;
+                else if (stacks >= 5) bonusDmg = 30;
+                damage = baseDmg + poisonDmg + bonusDmg;
+                log = `<strong>${attackerName}</strong> использует Ядовитую волну и наносит ${damage} чистого урона (яд: ${poisonDmg}, бонус: ${bonusDmg}).`;
                 defenderState.poisonStacks = 0;
                 type = 'poison_ult';
                 break;
@@ -479,9 +484,8 @@
                 type = 'ice_ult';
                 break;
             case 'illusionist':
-                // Урон: минимум 12, иначе атака*2*(1+инт/100)
-                let baseDmg = defenderStats.atk * 2 * (1 + attackerStats.int/100);
-                damage = Math.max(12, Math.floor(baseDmg));
+                let baseIllusion = defenderStats.atk * 2 * (1 + attackerStats.int/100);
+                damage = Math.max(12, Math.floor(baseIllusion));
                 log = `<strong>${attackerName}</strong> использует Зазеркалье: заставляет <strong>${defenderName}</strong> атаковать себя на ${damage} урона!`;
                 type = 'damage';
                 break;
@@ -650,11 +654,9 @@
             if (playerState.reflectBuff > 0) playerState.reflectBuff--;
             if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
 
-            // DOT урон в конце полного раунда (после хода обоих)
             if (turn === 'player') {
-                // Для яда и поджога используем ловкость того, кто наложил эффект? В упрощении – используем статы цели (но лучше attackerAgi хранить в состоянии). Упростим: для простоты используем ловкость владельца эффекта, но в state не храним. Для баланса используем ловкость цели (игрока/врага) – допустим.
-                const playerDot = applyDotDamage(playerState, playerName, playerStats.agi);
-                const enemyDot = applyDotDamage(enemyState, enemyName, enemyStats.agi);
+                const playerDot = applyDotDamage(playerState, playerName, enemyStats.agi);
+                const enemyDot = applyDotDamage(enemyState, enemyName, playerStats.agi);
                 if (playerDot.damage > 0) {
                     playerHp = Math.max(0, playerHp - playerDot.damage);
                     playerDot.logs.forEach(log => messages.push(log));
@@ -1012,4 +1014,3 @@
 </script>
 </body>
 </html>
-```

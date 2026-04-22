@@ -1059,4 +1059,34 @@ router.post('/claim-class-reward', async (req, res) => {
     }
 });
 
+// ========== ПОЛУЧЕНИЕ СПИСКА СООБЩЕНИЙ ПОЛЬЗОВАТЕЛЯ ==========
+router.get('/messages', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const client = await pool.connect();
+    try {
+        // Находим пользователя по токену
+        const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userId = userRes.rows[0].id;
+
+        // Получаем все сообщения пользователя
+        const messages = await client.query(
+            `SELECT id, from_text, sender_avatar, subject, body, reward_type, reward_amount, is_read, is_claimed, created_at
+             FROM user_messages
+             WHERE user_id = $1
+             ORDER BY created_at DESC`,
+            [userId]
+        );
+
+        res.json({ messages: messages.rows });
+    } catch (err) {
+        console.error('Ошибка при получении сообщений:', err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

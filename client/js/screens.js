@@ -1928,7 +1928,11 @@ async function loadMessages() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        window.messagesList = data.messages || [];
+        // Приводим поля к единому виду: from_text -> from
+        window.messagesList = (data.messages || []).map(msg => ({
+            ...msg,
+            from: msg.from_text || msg.from || 'Система'
+        }));
         window.unreadMessagesCount = window.messagesList.filter(m => !m.is_read).length;
         if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
         return window.messagesList;
@@ -2033,7 +2037,7 @@ async function renderMessageDetail(messageId) {
                         <button class="class-choice-btn" data-class="assassin">Ассасин</button>
                         <button class="class-choice-btn" data-class="mage">Маг</button>
                     </div>
-                ` : (msg.from === 'Мастер кошачьих боёв' && !msg.is_claimed && msg.reward_type ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : '')}
+                ` : (!msg.is_claimed && msg.reward_type && msg.reward_amount ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : '')}
             </div>
         </div>
     `;
@@ -2087,8 +2091,10 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    if (document.getElementById('claimRewardBtn')) {
-        document.getElementById('claimRewardBtn').addEventListener('click', async () => {
+    // Обработка обычной кнопки "Забрать награду"
+    const claimBtn = document.getElementById('claimRewardBtn');
+    if (claimBtn) {
+        claimBtn.addEventListener('click', async () => {
             const res = await window.apiRequest('/auth/messages/claim', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -2096,7 +2102,12 @@ async function renderMessageDetail(messageId) {
             });
             const data = await res.json();
             if (data.success) {
-                showToast(`Вы получили награду: ${data.reward_text}`, 2000);
+                // Показываем тост с иконкой монет/алмазов
+                let icon = '';
+                if (msg.reward_type === 'coins') icon = '<i class="fas fa-coins"></i> ';
+                else if (msg.reward_type === 'diamonds') icon = '<i class="fas fa-gem"></i> ';
+                else icon = '';
+                showToast(`${icon}Вы получили: ${data.reward_text}`, 2000);
                 msg.is_claimed = true;
                 await refreshData();
                 renderMessageDetail(messageId);

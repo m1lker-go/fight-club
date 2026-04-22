@@ -1113,4 +1113,72 @@ router.post('/messages/read', async (req, res) => {
     }
 });
 
+router.post('/messages/delete', async (req, res) => {
+    const { message_id } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userId = userRes.rows[0].id;
+
+        await client.query('DELETE FROM user_messages WHERE id = $1 AND user_id = $2', [message_id, userId]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+router.post('/messages/claim', async (req, res) => {
+    const { message_id } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userId = userRes.rows[0].id;
+
+        // Получаем сообщение
+        const msgRes = await client.query(
+            'SELECT reward_type, reward_amount, is_claimed FROM user_messages WHERE id = $1 AND user_id = $2',
+            [message_id, userId]
+        );
+        if (msgRes.rows.length === 0) return res.status(404).json({ error: 'Message not found' });
+        const msg = msgRes.rows[0];
+        if (msg.is_claimed) return res.status(400).json({ error: 'Reward already claimed' });
+
+        // Начисляем награду в зависимости от типа
+        let rewardText = '';
+        if (msg.reward_type === 'coins') {
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_amount, userId]);
+            rewardText = `${msg.reward_amount} монет`;
+        } else if (msg.reward_type === 'diamonds') {
+            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_amount, userId]);
+            rewardText = `${msg.reward_amount} алмазов`;
+        } else if (msg.reward_type === 'exp') {
+            // Начисление опыта – сложнее, можно добавить позже
+            rewardText = `${msg.reward_amount} опыта`;
+        } else {
+            rewardText = `${msg.reward_amount} ${msg.reward_type}`;
+        }
+
+        // Помечаем как полученное
+        await client.query('UPDATE user_messages SET is_claimed = true WHERE id = $1', [message_id]);
+
+        res.json({ success: true, reward_text: rewardText });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

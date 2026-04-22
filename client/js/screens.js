@@ -1928,11 +1928,7 @@ async function loadMessages() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        // Приводим поля к единому виду: from_text -> from
-        window.messagesList = (data.messages || []).map(msg => ({
-            ...msg,
-            from: msg.from_text || msg.from || 'Система'
-        }));
+        window.messagesList = data.messages || [];
         window.unreadMessagesCount = window.messagesList.filter(m => !m.is_read).length;
         if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
         return window.messagesList;
@@ -1973,9 +1969,12 @@ async function renderMessages() {
         
         const info = document.createElement('div');
         info.className = 'message-info';
+        // Показываем иконку подарка, если есть неполученная награда
+        const rewardIcon = (!msg.is_claimed && msg.reward_type && msg.reward_amount) ? 
+            `<span class="reward-icon" style="margin-left: 8px;"><i class="fas fa-gift" style="color:#f1c40f;"></i></span>` : '';
         info.innerHTML = `
             <div class="message-sender">${escapeHtml(msg.from)}</div>
-            <div class="message-preview">${escapeHtml(msg.subject)}</div>
+            <div class="message-preview">${escapeHtml(msg.subject)} ${rewardIcon}</div>
         `;
         
         const readBtn = document.createElement('button');
@@ -2015,6 +2014,21 @@ async function renderMessageDetail(messageId) {
         });
     }
     
+    // Формируем строку награды для отображения
+    let rewardDisplay = '';
+    if (!msg.is_claimed && msg.reward_type && msg.reward_amount) {
+        let rewardText = '';
+        if (msg.reward_type === 'coins') rewardText = `${msg.reward_amount} монет`;
+        else if (msg.reward_type === 'diamonds') rewardText = `${msg.reward_amount} алмазов`;
+        else if (msg.reward_type === 'exp') rewardText = `${msg.reward_amount} опыта`;
+        else rewardText = `${msg.reward_amount} ${msg.reward_type}`;
+        rewardDisplay = `
+            <div class="message-reward-info">
+                <i class="fas fa-gift"></i> Награда: ${rewardText}
+            </div>
+        `;
+    }
+    
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="message-detail-container">
@@ -2029,6 +2043,7 @@ async function renderMessageDetail(messageId) {
             </div>
             <div class="message-detail-subject">${escapeHtml(msg.subject)}</div>
             <div class="message-detail-body">${escapeHtml(msg.body)}</div>
+            ${rewardDisplay}
             <div class="message-detail-actions">
                 <button class="reply-btn" id="replyBtn">Ответить</button>
                 ${!msg.is_claimed && msg.reward_type === 'skill_points_choice' ? `
@@ -2061,7 +2076,7 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    // Обработка кнопок выбора класса для skill_points_choice
+    // Обработка кнопок выбора класса
     const classChoiceBtns = document.querySelectorAll('.class-choice-btn');
     if (classChoiceBtns.length) {
         classChoiceBtns.forEach(btn => {
@@ -2102,11 +2117,10 @@ async function renderMessageDetail(messageId) {
             });
             const data = await res.json();
             if (data.success) {
-                // Показываем тост с иконкой монет/алмазов
                 let icon = '';
                 if (msg.reward_type === 'coins') icon = '<i class="fas fa-coins"></i> ';
                 else if (msg.reward_type === 'diamonds') icon = '<i class="fas fa-gem"></i> ';
-                else icon = '';
+                else icon = '<i class="fas fa-gift"></i> ';
                 showToast(`${icon}Вы получили: ${data.reward_text}`, 2000);
                 msg.is_claimed = true;
                 await refreshData();

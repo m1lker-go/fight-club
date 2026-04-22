@@ -1,23 +1,23 @@
-// server/utils/telegram.js
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CLIENT_URL = process.env.CLIENT_URL || 'https://fight-club-ecru.vercel.app';
 
 async function sendTelegramNotification(chatId, subject, body, rewardText = null) {
-    console.log(`🔔 sendTelegramNotification вызван: chatId=${chatId}, subject=${subject}`);
+    console.log(`[Telegram] Попытка отправить сообщение chatId=${chatId}, subject=${subject}`);
     if (!chatId) {
-        console.error('❌ Нет chatId');
+        console.error('[Telegram] Ошибка: chatId отсутствует');
         return;
     }
     if (!BOT_TOKEN) {
-        console.error('❌ Нет BOT_TOKEN в переменных окружения');
+        console.error('[Telegram] Ошибка: BOT_TOKEN не задан в переменных окружения');
         return;
     }
+
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     let text = `📬 Новое сообщение в игре!\n\n📝 ${subject}\n${body}`;
     if (rewardText) {
         text += `\n🎁 Награда: ${rewardText}`;
     }
-    console.log(`📤 Отправка в Telegram: ${url}, chatId=${chatId}, text=${text.substring(0, 100)}...`);
+
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -32,14 +32,15 @@ async function sendTelegramNotification(chatId, subject, body, rewardText = null
                 }
             })
         });
+
         const responseText = await response.text();
         if (response.ok) {
-            console.log(`✅ Уведомление успешно отправлено в Telegram для chatId ${chatId}`);
+            console.log(`[Telegram] Уведомление успешно отправлено в Telegram для chatId ${chatId}. Ответ: ${responseText.substring(0, 200)}`);
         } else {
-            console.error(`❌ Ошибка Telegram API: ${response.status} - ${responseText}`);
+            console.error(`[Telegram] Ошибка при отправке: статус ${response.status}, ответ: ${responseText}`);
         }
     } catch (err) {
-        console.error('❌ Исключение при отправке уведомления:', err);
+        console.error('[Telegram] Исключение при отправке:', err.message);
     }
 }
 

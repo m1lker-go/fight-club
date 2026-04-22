@@ -7,6 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { rechargeEnergy } = require('../utils/energy');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const { sendTelegramNotification } = require('../utils/telegram');
 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -954,5 +955,34 @@ router.get('/google-callback', async (req, res) => {
         client.release();
     }
 });
+
+// Эндпоинт для отправки уведомления о новом сообщении
+router.post('/notify-message', async (req, res) => {
+    const { user_id, subject, body, reward_type, reward_amount } = req.body;
+    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT telegram_chat_id FROM users WHERE id = $1', [user_id]);
+        const chatId = userRes.rows[0]?.telegram_chat_id;
+        if (chatId) {
+            let rewardText = '';
+            if (reward_type && reward_amount) {
+                if (reward_type === 'coins') rewardText = `${reward_amount} монет`;
+                else if (reward_type === 'diamonds') rewardText = `${reward_amount} алмазов`;
+                else if (reward_type === 'exp') rewardText = `${reward_amount} опыта`;
+                else rewardText = `${reward_amount} ${reward_type}`;
+            }
+            await sendTelegramNotification(chatId, subject, body, rewardText);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 
 module.exports = router;

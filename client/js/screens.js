@@ -1913,4 +1913,141 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             console.error('Error loading avatar details:', err);
             showToast('Ошибка загрузки данных аватара', 1500);
         });
+
+   // ==================== СООБЩЕНИЯ ====================
+async function loadMessages() {
+    try {
+        const res = await window.apiRequest('/messages', { method: 'GET' });
+        const data = await res.json();
+        messagesList = data.messages || [];
+        unreadMessagesCount = messagesList.filter(m => !m.is_read).length;
+        if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
+        return messagesList;
+    } catch (e) {
+        console.error('Ошибка загрузки сообщений:', e);
+        return [];
+    }
+}
+
+async function renderMessages() {
+    const content = document.getElementById('content');
+    if (!content) return;
+    content.innerHTML = `
+        <div class="messages-container">
+            <div class="messages-header"><i class="fas fa-envelope"></i> Сообщения</div>
+            <div class="messages-list" id="messagesList"></div>
+        </div>
+    `;
+    const listContainer = document.getElementById('messagesList');
+    const messages = await loadMessages();
+    if (!messages.length) {
+        listContainer.innerHTML = '<div class="empty-messages">📭 ПУСТО</div>';
+        return;
+    }
+    listContainer.innerHTML = '';
+    messages.forEach(msg => {
+        const row = document.createElement('div');
+        row.className = `message-row ${msg.is_read ? 'read' : 'unread'}`;
+        row.dataset.id = msg.id;
+        
+        const icon = document.createElement('div');
+        icon.className = 'message-icon';
+        icon.innerHTML = msg.is_read ? '<i class="far fa-envelope"></i>' : '<i class="fas fa-envelope" style="color:#00aaff;"></i>';
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.style.backgroundImage = `url('/assets/${msg.sender_avatar || 'cat_heroweb.png'}')`;
+        
+        const info = document.createElement('div');
+        info.className = 'message-info';
+        info.innerHTML = `
+            <div class="message-sender">${escapeHtml(msg.from)}</div>
+            <div class="message-preview">${escapeHtml(msg.subject)}</div>
+        `;
+        
+        const readBtn = document.createElement('button');
+        readBtn.className = 'message-read-btn';
+        readBtn.textContent = 'Читать';
+        readBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            renderMessageDetail(msg.id);
+        });
+        
+        row.appendChild(icon);
+        row.appendChild(avatar);
+        row.appendChild(info);
+        row.appendChild(readBtn);
+        listContainer.appendChild(row);
+    });
+}
+
+async function renderMessageDetail(messageId) {
+    const msg = messagesList.find(m => m.id == messageId);
+    if (!msg) return;
+    
+    if (!msg.is_read) {
+        msg.is_read = true;
+        unreadMessagesCount--;
+        updateMessagesBadge();
+        await window.apiRequest('/messages/read', {
+            method: 'POST',
+            body: JSON.stringify({ message_id: messageId })
+        });
+    }
+    
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div class="message-detail-container">
+            <div class="message-detail-header">
+                <button class="back-btn" id="backToMessagesBtn"><i class="fas fa-arrow-left"></i> Назад</button>
+                <button class="delete-btn" id="deleteMessageBtn"><i class="fas fa-trash-alt"></i> Удалить</button>
+            </div>
+            <div class="message-detail-sender">
+                <div class="sender-avatar" style="background-image: url('/assets/${msg.sender_avatar || 'cat_heroweb.png'}')"></div>
+                <div class="sender-name">${escapeHtml(msg.from)}</div>
+                <div class="message-date">${new Date(msg.created_at).toLocaleString()}</div>
+            </div>
+            <div class="message-detail-subject">${escapeHtml(msg.subject)}</div>
+            <div class="message-detail-body">${escapeHtml(msg.body)}</div>
+            <div class="message-detail-actions">
+                <button class="reply-btn" id="replyBtn">Ответить</button>
+                ${msg.from === 'Мастер кошачьих боёв' && !msg.is_claimed && msg.reward_type ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : ''}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('backToMessagesBtn').addEventListener('click', () => renderMessages());
+    document.getElementById('deleteMessageBtn').addEventListener('click', async () => {
+        if (confirm('Удалить сообщение?')) {
+            await window.apiRequest('/messages/delete', {
+                method: 'POST',
+                body: JSON.stringify({ message_id: messageId })
+            });
+            messagesList = messagesList.filter(m => m.id != messageId);
+            renderMessages();
+        }
+    });
+    if (document.getElementById('replyBtn')) {
+        document.getElementById('replyBtn').addEventListener('click', () => {
+            showToast('Функция ответа в разработке', 1500);
+        });
+    }
+    if (document.getElementById('claimRewardBtn')) {
+        document.getElementById('claimRewardBtn').addEventListener('click', async () => {
+            const res = await window.apiRequest('/messages/claim', {
+                method: 'POST',
+                body: JSON.stringify({ message_id: messageId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Вы получили награду: ${data.reward_text}`, 2000);
+                msg.is_claimed = true;
+                await refreshData();
+                renderMessageDetail(messageId);
+            } else {
+                showToast('Ошибка: ' + data.error, 1500);
+            }
+        });
+    }
+} 
 }

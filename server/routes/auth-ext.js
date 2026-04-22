@@ -1071,9 +1071,9 @@ router.get('/messages', async (req, res) => {
         if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
         const userId = userRes.rows[0].id;
 
-        // Получаем все сообщения пользователя
+        // Получаем все сообщения пользователя (с алиасом "from")
         const messages = await client.query(
-            `SELECT id, from_text, sender_avatar, subject, body, reward_type, reward_amount, is_read, is_claimed, created_at
+            `SELECT id, from_text as "from", sender_avatar, subject, body, reward_type, reward_amount, is_read, is_claimed, created_at
              FROM user_messages
              WHERE user_id = $1
              ORDER BY created_at DESC`,

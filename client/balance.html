@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cat Fighting Balance Calculator — полная механика (финал)</title>
+    <title>Cat Fighting Balance Calculator — балансная версия</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -150,7 +151,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>⚖️ Калькулятор баланса (полная механика)</h1>
+    <h1>⚖️ Калькулятор баланса (полная механика, балансная версия)</h1>
     <div class="builder">
         <div class="class-selector">
             <button class="class-btn" data-class="warrior">Воин</button>
@@ -168,7 +169,7 @@
         <div class="stats-grid" id="skills"></div>
         <div id="freePointsDisplay" class="free-points">📊 Свободные очки: 0</div>
         <div class="button-group">
-            <button id="equalResetBtn" class="action-btn">🎲 Случайно</button>
+            <button id="randomResetBtn" class="action-btn">🎲 Случайно</button>
             <button id="fullResetBtn" class="action-btn danger-btn">🗑 Сбросить всё</button>
         </div>
         <button id="simulateBtn" class="fight-btn">▶ Симуляция 1000 боёв (все механики)</button>
@@ -185,10 +186,10 @@
     };
 
     const rolePassives = {
-        guardian: { defenseBonus: 10, blockChance: 20 },
+        guardian: { defenseBonus: 5, blockChance: 10 },   // изменено: +5 защиты (макс 75), блок 10%
         berserker: { rage: true },
         knight: { reflect: 20 },
-        assassin: { critMultiplier: 2.5 },      // +50% крит урона
+        assassin: { critMultiplier: 2.5 },
         venom_blade: { poison: true },
         blood_hunter: { vamp: 20 },
         pyromancer: { burn: true },
@@ -213,7 +214,6 @@
         hp: 'Здоровье', atk: 'Атака', def: 'Защита', dodge: 'Ловкость', int: 'Интеллект',
         spd: 'Скорость', crit: 'Шанс крита', critDmg: 'Крит. урон', vamp: 'Вампиризм', reflect: 'Отражение'
     };
-    // Абсолютные максимумы (без учёта базы)
     const absoluteMax = { hp: 272, atk: 272, def: 70, dodge: 70, int: 272, spd: 272, crit: 100, critDmg: 272, vamp: 272, reflect: 272 };
 
     function getSkillPointsByLevel(level) {
@@ -243,11 +243,10 @@
             manaRegen: className === 'warrior' ? 15 : (className === 'assassin' ? 18 : 30)
         };
 
-        // Пассивки подклассов
         const bonus = rolePassives[subclass] || {};
         if (bonus.vamp) stats.vamp += bonus.vamp;
         if (bonus.reflect) stats.reflect += bonus.reflect;
-        if (subclass === 'assassin') stats.critDmg += 0.5; // убийца: +50% крит урона
+        if (subclass === 'assassin') stats.critDmg += 0.5;
 
         // Классовые особенности
         if (className === 'warrior') {
@@ -262,21 +261,19 @@
             stats.manaRegen += Math.floor(stats.int / 5) * 2;
         }
 
-        // Страж: +10 защиты (макс 80)
+        // Страж: +5 защиты (макс 75)
         if (className === 'warrior' && subclass === 'guardian') {
-            stats.def = Math.min(80, stats.def + 10);
+            stats.def = Math.min(75, stats.def + 5);
         }
 
         // Лимиты
-        stats.def = Math.min(80, stats.def);
+        stats.def = Math.min(75, stats.def);
         stats.agi = Math.min(70, stats.agi);
         stats.crit = Math.min(100, stats.crit);
         stats.critDmg = Math.min(4.5, stats.critDmg);
-        // Реген маны не более 45
-        stats.manaRegen = Math.min(45, stats.manaRegen);
+        stats.manaRegen = Math.min(40, stats.manaRegen);  // реген маны не более 40
         stats.level = level;
 
-        // Округления
         stats.hp = Math.round(stats.hp);
         stats.atk = Math.round(stats.atk);
         stats.def = Math.round(stats.def * 10) / 10;
@@ -293,12 +290,21 @@
 
     // ==================== БОЕВЫЕ ФУНКЦИИ ====================
     function getBerserkerRage(hpPercent) {
-        if (hpPercent < 20) return { level: 5, bonus: 100 };
-        if (hpPercent < 35) return { level: 4, bonus: 60 };
-        if (hpPercent < 50) return { level: 3, bonus: 45 };
-        if (hpPercent < 65) return { level: 2, bonus: 30 };
-        if (hpPercent < 80) return { level: 1, bonus: 15 };
-        return { level: 0, bonus: 0 };
+        if (hpPercent < 20) return { level: 5, bonusDmg: 150, bonusCrit: 20 };
+        if (hpPercent < 35) return { level: 4, bonusDmg: 80, bonusCrit: 15 };
+        if (hpPercent < 50) return { level: 3, bonusDmg: 60, bonusCrit: 10 };
+        if (hpPercent < 65) return { level: 2, bonusDmg: 40, bonusCrit: 7 };
+        if (hpPercent < 80) return { level: 1, bonusDmg: 20, bonusCrit: 5 };
+        return { level: 0, bonusDmg: 0, bonusCrit: 0 };
+    }
+
+    // Урон яда от ловкости
+    function poisonDamagePerStack(agi) {
+        return 2 + Math.floor(agi / 5);
+    }
+    // Урон поджога от ловкости (используем ловкость, как у яда)
+    function burnDamagePerStack(agi) {
+        return 2 + Math.floor(agi / 5);
     }
 
     function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
@@ -309,7 +315,6 @@
             defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
             if (defenderState.mirageCounter >= 4) {
                 defenderState.mirageCounter = 0;
-                // При увороте: атакующий теряет 10 маны, защитник получает 5
                 attackerState.mana = Math.max(0, (attackerState.mana || 0) - 10);
                 defenderState.mana = Math.min(100, (defenderState.mana || 0) + 5);
                 extraLogs.push({ text: `${attackerName} промахивается и теряет 10 маны. ${defenderName} восстанавливает 5 маны.`, type: 'mana_effect', attacker: isPlayerAttacker ? 'player' : 'enemy' });
@@ -327,36 +332,42 @@
             return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> уклоняется от атаки!`, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
         }
 
-        // Блок Стража
-        if (defenderSubclass === 'guardian' && Math.random() * 100 < 20) {
+        // Блок Стража (только от физических атак, не от ультимейтов/ДОТ)
+        let isBlock = false;
+        if (defenderSubclass === 'guardian' && Math.random() * 100 < 10) {
+            isBlock = true;
             return { hit: false, damage: 0, isCrit: false, log: `<strong>${defenderName}</strong> блокирует удар!`, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
         }
 
         let damage = attackerStats.atk;
         let berserkerBonus = 0;
         let selfDamage = 0;
+        let berserkerCritBonus = 0;
 
-        // Берсерк
+        // Берсерк: самоурон 10% (не менее 1) и бонус ярости
         if (attackerSubclass === 'berserker') {
             const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
             const rage = getBerserkerRage(hpPercent);
-            if (rage.bonus > 0) {
-                damage += Math.ceil(attackerStats.atk * rage.bonus / 100);
-                berserkerBonus = rage.bonus;
+            if (rage.bonusDmg > 0) {
+                damage += Math.ceil(attackerStats.atk * rage.bonusDmg / 100);
+                berserkerBonus = rage.bonusDmg;
+                berserkerCritBonus = rage.bonusCrit;
             }
-            selfDamage = Math.max(1, Math.ceil(damage * 0.16));
+            selfDamage = Math.max(1, Math.ceil(damage * 0.10));
             attackerState.hp = Math.max(1, attackerState.hp - selfDamage);
             extraLogs.push({ text: `<strong>${attackerName}</strong> наносит себе ${selfDamage} урона от ярости!`, type: 'damage_self', attacker: isPlayerAttacker ? 'player' : 'enemy' });
         }
 
         let isCrit = false;
+        let effectiveCritChance = attackerStats.crit + berserkerCritBonus;
         let effectiveCritDmg = attackerStats.critDmg;
         if (attackerState.critDmgBuff && attackerState.critDmgBuffDuration > 0) effectiveCritDmg += attackerState.critDmgBuff;
-        if (Math.random() * 100 < attackerStats.crit) {
+        if (Math.random() * 100 < effectiveCritChance) {
             isCrit = true;
             damage *= effectiveCritDmg;
         }
 
+        // Защита снижает урон только физический (яд и огонь не снижаются, но это не здесь)
         damage = damage * (1 - defenderStats.def / 100);
         damage = Math.max(1, Math.floor(damage));
 
@@ -365,15 +376,17 @@
         let reflectDamage = 0;
         if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
 
-        // Яд venom_blade
+        // Яд venom_blade (зависит от ловкости)
         if (attackerSubclass === 'venom_blade') {
             defenderState.poisonStacks = Math.min(5, (defenderState.poisonStacks || 0) + 1);
-            extraLogs.push({ text: `<strong>${defenderName}</strong> отравлен! Стаков яда: ${defenderState.poisonStacks}/5`, type: 'poison_stack', attacker: isPlayerAttacker ? 'player' : 'enemy' });
+            const dmgPer = poisonDamagePerStack(attackerStats.agi);
+            extraLogs.push({ text: `<strong>${defenderName}</strong> отравлен! Стаков яда: ${defenderState.poisonStacks}/5 (урон стака ${dmgPer}).`, type: 'poison_stack', attacker: isPlayerAttacker ? 'player' : 'enemy' });
         }
-        // Поджог pyromancer
+        // Поджог pyromancer (зависит от ловкости)
         if (attackerSubclass === 'pyromancer') {
             defenderState.burnStacks = Math.min(5, (defenderState.burnStacks || 0) + 1);
-            extraLogs.push({ text: `<strong>${defenderName}</strong> подожжён! Стаков огня: ${defenderState.burnStacks}/5`, type: 'burn_stack', attacker: isPlayerAttacker ? 'player' : 'enemy' });
+            const dmgPer = burnDamagePerStack(attackerStats.agi);
+            extraLogs.push({ text: `<strong>${defenderName}</strong> подожжён! Стаков огня: ${defenderState.burnStacks}/5 (урон стака ${dmgPer}).`, type: 'burn_stack', attacker: isPlayerAttacker ? 'player' : 'enemy' });
         }
         // Заморозка cryomancer
         if (attackerSubclass === 'cryomancer') {
@@ -394,6 +407,7 @@
         const critText = isCrit ? 'КРИТИЧЕСКИЙ УДАР! ' : '';
         let logText = `<strong>${attackerName}</strong> ${critText}наносит ${damage} урона <strong>${defenderName}</strong>.`;
         if (berserkerBonus > 0) logText += ` (Ярость +${berserkerBonus}%)`;
+        if (berserkerCritBonus > 0) logText += ` (Крит +${berserkerCritBonus}%)`;
 
         return {
             hit: true, damage, isCrit, log: logText,
@@ -414,10 +428,10 @@
                 break;
             case 'berserker':
                 if (attackerState.hp <= 0) return { damage:0, heal:0, log: `${attackerName} не может использовать умение.`, selfDamage:0, stateChanges:{}, type:'none' };
-                damage = Math.floor(attackerStats.atk * 2 * (attackerStats.critDmg + 0.5));
-                selfDamage = Math.floor(attackerState.hp * 0.6);
+                selfDamage = Math.floor(attackerState.hp * 0.30);
                 selfDamage = Math.min(selfDamage, attackerState.hp - 1);
                 attackerState.hp -= selfDamage;
+                damage = Math.floor(attackerStats.atk * 2 * (attackerStats.critDmg + 0.5));
                 log = `<strong>${attackerName}</strong> использует Кровопускание, теряет ${selfDamage} HP и наносит ${damage} урона с гарантированным критом!`;
                 type = 'damage_self';
                 break;
@@ -435,7 +449,7 @@
                 break;
             case 'venom_blade':
                 let baseDamage = Math.max(1, Math.floor(attackerStats.atk * (1 - defenderStats.def/100)));
-                let poisonDamage = (defenderState.poisonStacks || 0) * 5;
+                let poisonDamage = (defenderState.poisonStacks || 0) * 5;  // ультимейт не меняем
                 damage = baseDamage + poisonDamage;
                 log = `<strong>${attackerName}</strong> использует Ядовитую волну: ${damage} урона (${poisonDamage} от яда).`;
                 defenderState.poisonStacks = 0;
@@ -465,7 +479,9 @@
                 type = 'ice_ult';
                 break;
             case 'illusionist':
-                damage = Math.floor(defenderStats.atk * 2 * (1 + attackerStats.int/100));
+                // Урон: минимум 12, иначе атака*2*(1+инт/100)
+                let baseDmg = defenderStats.atk * 2 * (1 + attackerStats.int/100);
+                damage = Math.max(12, Math.floor(baseDmg));
                 log = `<strong>${attackerName}</strong> использует Зазеркалье: заставляет <strong>${defenderName}</strong> атаковать себя на ${damage} урона!`;
                 type = 'damage';
                 break;
@@ -477,17 +493,19 @@
         return { damage, heal, log, selfDamage, stateChanges: { poisonStacks: defenderState.poisonStacks, burnStacks: defenderState.burnStacks, freezeStacks: defenderState.freezeStacks, frozen: defenderState.frozen }, type };
     }
 
-    function applyDotDamage(state, name) {
+    function applyDotDamage(state, name, attackerAgi) {
         let totalDamage = 0, logs = [];
         if (state.poisonStacks > 0) {
-            const dmg = state.poisonStacks * 2;
+            const dmgPer = poisonDamagePerStack(attackerAgi);
+            const dmg = state.poisonStacks * dmgPer;
             totalDamage += dmg;
-            logs.push({ text: `<strong>${name}</strong> получает ${dmg} урона от яда.`, type: 'poison_dot' });
+            logs.push({ text: `<strong>${name}</strong> получает ${dmg} урона от яда (${dmgPer} за стак).`, type: 'poison_dot' });
         }
         if (state.burnStacks > 0) {
-            const dmg = state.burnStacks * 2;
+            const dmgPer = burnDamagePerStack(attackerAgi);
+            const dmg = state.burnStacks * dmgPer;
             totalDamage += dmg;
-            logs.push({ text: `<strong>${name}</strong> получает ${dmg} урона от огня.`, type: 'burn_dot' });
+            logs.push({ text: `<strong>${name}</strong> получает ${dmg} урона от огня (${dmgPer} за стак).`, type: 'burn_dot' });
         }
         return { damage: totalDamage, logs };
     }
@@ -632,9 +650,11 @@
             if (playerState.reflectBuff > 0) playerState.reflectBuff--;
             if (enemyState.reflectBuff > 0) enemyState.reflectBuff--;
 
+            // DOT урон в конце полного раунда (после хода обоих)
             if (turn === 'player') {
-                const playerDot = applyDotDamage(playerState, playerName);
-                const enemyDot = applyDotDamage(enemyState, enemyName);
+                // Для яда и поджога используем ловкость того, кто наложил эффект? В упрощении – используем статы цели (но лучше attackerAgi хранить в состоянии). Упростим: для простоты используем ловкость владельца эффекта, но в state не храним. Для баланса используем ловкость цели (игрока/врага) – допустим.
+                const playerDot = applyDotDamage(playerState, playerName, playerStats.agi);
+                const enemyDot = applyDotDamage(enemyState, enemyName, enemyStats.agi);
                 if (playerDot.damage > 0) {
                     playerHp = Math.max(0, playerHp - playerDot.damage);
                     playerDot.logs.forEach(log => messages.push(log));
@@ -658,9 +678,9 @@
         const subclass = subOptions[Math.floor(Math.random() * subOptions.length)];
         const totalPoints = getSkillPointsByLevel(level);
         const weights = {
-            warrior: { hp: 30, atk: 20, def: 25, dodge: 5, int: 2, spd: 5, crit: 8, critDmg: 5, vamp: 0, reflect: 0 },
-            assassin: { hp: 15, atk: 25, def: 5, dodge: 20, int: 2, spd: 10, crit: 15, critDmg: 8, vamp: 0, reflect: 0 },
-            mage: { hp: 15, atk: 10, def: 5, dodge: 15, int: 30, spd: 10, crit: 10, critDmg: 5, vamp: 0, reflect: 0 }
+            warrior: { hp: 30, atk: 25, def: 25, dodge: 5, int: 2, spd: 3, crit: 5, critDmg: 3, vamp: 1, reflect: 1 },
+            assassin: { hp: 15, atk: 30, def: 3, dodge: 25, int: 2, spd: 5, crit: 12, critDmg: 5, vamp: 2, reflect: 1 },
+            mage: { hp: 15, atk: 8, def: 3, dodge: 20, int: 35, spd: 5, crit: 8, critDmg: 4, vamp: 1, reflect: 1 }
         };
         const w = weights[className];
         let dist = {};
@@ -703,7 +723,6 @@
     let sliders = {}, numberInputs = {};
 
     function getMaxPointsForStat(statKey, baseValue) {
-        // Максимальное количество ОЧКОВ, которые можно вложить в эту характеристику
         return Math.max(0, absoluteMax[statKey] - baseValue);
     }
 
@@ -766,132 +785,76 @@
         updateStatsDisplay();
     }
 
-   // Случайное распределение очков навыков с учётом приоритетов класса
-function randomizeDistribution() {
-    // Обнуляем текущее распределение
-    for (let key of skillKeys) {
-        currentDistribution[key] = 0;
-    }
-    
-    // Веса для каждого класса (чем выше вес, тем больше шанс получить очки)
-    const classWeights = {
-        warrior: {
-            hp: 30, atk: 25, def: 25, dodge: 5, int: 2, spd: 3, crit: 5, critDmg: 3, vamp: 1, reflect: 1
-        },
-        assassin: {
-            hp: 15, atk: 30, def: 3, dodge: 25, int: 2, spd: 5, crit: 12, critDmg: 5, vamp: 2, reflect: 1
-        },
-        mage: {
-            hp: 15, atk: 8, def: 3, dodge: 20, int: 35, spd: 5, crit: 8, critDmg: 4, vamp: 1, reflect: 1
-        }
-    };
-    
-    const weights = classWeights[currentClassName];
-    let remaining = totalPoints;
-    let attempts = 0;
-    const maxAttempts = 5000;
-    
-    // Сначала распределяем очки с учётом весов
-    while (remaining > 0 && attempts < maxAttempts) {
-        // Выбираем случайную характеристику с учётом весов
-        let totalWeight = 0;
-        for (let key of skillKeys) {
-            totalWeight += weights[key];
-        }
-        let rand = Math.random() * totalWeight;
-        let cumulative = 0;
-        let selectedKey = null;
-        for (let key of skillKeys) {
-            cumulative += weights[key];
-            if (rand <= cumulative) {
-                selectedKey = key;
-                break;
+    function randomizeDistribution() {
+        for (let key of skillKeys) currentDistribution[key] = 0;
+        const classWeights = {
+            warrior: { hp: 30, atk: 25, def: 25, dodge: 5, int: 2, spd: 3, crit: 5, critDmg: 3, vamp: 1, reflect: 1 },
+            assassin: { hp: 15, atk: 30, def: 3, dodge: 25, int: 2, spd: 5, crit: 12, critDmg: 5, vamp: 2, reflect: 1 },
+            mage: { hp: 15, atk: 8, def: 3, dodge: 20, int: 35, spd: 5, crit: 8, critDmg: 4, vamp: 1, reflect: 1 }
+        };
+        const weights = classWeights[currentClassName];
+        let remaining = totalPoints;
+        let attempts = 0;
+        const maxAttempts = 5000;
+        while (remaining > 0 && attempts < maxAttempts) {
+            let totalWeight = 0;
+            for (let key of skillKeys) totalWeight += weights[key];
+            let rand = Math.random() * totalWeight;
+            let cumulative = 0;
+            let selectedKey = null;
+            for (let key of skillKeys) {
+                cumulative += weights[key];
+                if (rand <= cumulative) { selectedKey = key; break; }
             }
-        }
-        if (!selectedKey) selectedKey = skillKeys[0];
-        
-        // Проверяем, можно ли добавить очко
-        const base = baseStats[currentClassName];
-        let baseVal = 0;
-        if (selectedKey === 'hp') baseVal = base.hp;
-        else if (selectedKey === 'atk') baseVal = base.atk;
-        else if (selectedKey === 'def') baseVal = base.def;
-        else if (selectedKey === 'dodge') baseVal = base.agi;
-        else if (selectedKey === 'int') baseVal = base.int;
-        else if (selectedKey === 'spd') baseVal = base.spd;
-        else if (selectedKey === 'crit') baseVal = base.crit;
-        else if (selectedKey === 'critDmg') baseVal = base.critDmg;
-        else if (selectedKey === 'vamp') baseVal = base.vamp;
-        else if (selectedKey === 'reflect') baseVal = base.reflect;
-        
-        const maxPoints = Math.max(0, absoluteMax[selectedKey] - baseVal);
-        const currentVal = currentDistribution[selectedKey] || 0;
-        if (currentVal < maxPoints) {
-            currentDistribution[selectedKey] = currentVal + 1;
-            remaining--;
-        }
-        attempts++;
-    }
-    
-    // Если остались очки – равномерно добиваем по всем, кто не достиг максимума
-    if (remaining > 0) {
-        let keys = skillKeys.filter(k => {
-            const baseVal = (k === 'hp') ? baseStats[currentClassName].hp :
-                           (k === 'atk') ? baseStats[currentClassName].atk :
-                           (k === 'def') ? baseStats[currentClassName].def :
-                           (k === 'dodge') ? baseStats[currentClassName].agi :
-                           (k === 'int') ? baseStats[currentClassName].int :
-                           (k === 'spd') ? baseStats[currentClassName].spd :
-                           (k === 'crit') ? baseStats[currentClassName].crit :
-                           (k === 'critDmg') ? baseStats[currentClassName].critDmg :
-                           (k === 'vamp') ? baseStats[currentClassName].vamp :
-                           baseStats[currentClassName].reflect;
-            return (currentDistribution[k] || 0) < (absoluteMax[k] - baseVal);
-        });
-        while (remaining > 0 && keys.length) {
-            for (let k of keys) {
-                if (remaining <= 0) break;
-                const baseVal = (k === 'hp') ? baseStats[currentClassName].hp :
-                               (k === 'atk') ? baseStats[currentClassName].atk :
-                               (k === 'def') ? baseStats[currentClassName].def :
-                               (k === 'dodge') ? baseStats[currentClassName].agi :
-                               (k === 'int') ? baseStats[currentClassName].int :
-                               (k === 'spd') ? baseStats[currentClassName].spd :
-                               (k === 'crit') ? baseStats[currentClassName].crit :
-                               (k === 'critDmg') ? baseStats[currentClassName].critDmg :
-                               (k === 'vamp') ? baseStats[currentClassName].vamp :
-                               baseStats[currentClassName].reflect;
-                const maxPoints = absoluteMax[k] - baseVal;
-                if ((currentDistribution[k] || 0) < maxPoints) {
-                    currentDistribution[k] = (currentDistribution[k] || 0) + 1;
-                    remaining--;
-                }
+            if (!selectedKey) selectedKey = skillKeys[0];
+            const base = baseStats[currentClassName];
+            let baseVal = 0;
+            if (selectedKey === 'hp') baseVal = base.hp;
+            else if (selectedKey === 'atk') baseVal = base.atk;
+            else if (selectedKey === 'def') baseVal = base.def;
+            else if (selectedKey === 'dodge') baseVal = base.agi;
+            else if (selectedKey === 'int') baseVal = base.int;
+            else if (selectedKey === 'spd') baseVal = base.spd;
+            else if (selectedKey === 'crit') baseVal = base.crit;
+            else if (selectedKey === 'critDmg') baseVal = base.critDmg;
+            else if (selectedKey === 'vamp') baseVal = base.vamp;
+            else if (selectedKey === 'reflect') baseVal = base.reflect;
+            const maxPoints = Math.max(0, absoluteMax[selectedKey] - baseVal);
+            const currentVal = currentDistribution[selectedKey] || 0;
+            if (currentVal < maxPoints) {
+                currentDistribution[selectedKey] = currentVal + 1;
+                remaining--;
             }
-            keys = skillKeys.filter(k => {
-                const baseVal = (k === 'hp') ? baseStats[currentClassName].hp :
-                               (k === 'atk') ? baseStats[currentClassName].atk :
-                               (k === 'def') ? baseStats[currentClassName].def :
-                               (k === 'dodge') ? baseStats[currentClassName].agi :
-                               (k === 'int') ? baseStats[currentClassName].int :
-                               (k === 'spd') ? baseStats[currentClassName].spd :
-                               (k === 'crit') ? baseStats[currentClassName].crit :
-                               (k === 'critDmg') ? baseStats[currentClassName].critDmg :
-                               (k === 'vamp') ? baseStats[currentClassName].vamp :
-                               baseStats[currentClassName].reflect;
+            attempts++;
+        }
+        if (remaining > 0) {
+            let keys = skillKeys.filter(k => {
+                const baseVal = (k === 'hp') ? baseStats[currentClassName].hp : (k === 'atk') ? baseStats[currentClassName].atk : (k === 'def') ? baseStats[currentClassName].def : (k === 'dodge') ? baseStats[currentClassName].agi : (k === 'int') ? baseStats[currentClassName].int : (k === 'spd') ? baseStats[currentClassName].spd : (k === 'crit') ? baseStats[currentClassName].crit : (k === 'critDmg') ? baseStats[currentClassName].critDmg : (k === 'vamp') ? baseStats[currentClassName].vamp : baseStats[currentClassName].reflect;
                 return (currentDistribution[k] || 0) < (absoluteMax[k] - baseVal);
             });
+            while (remaining > 0 && keys.length) {
+                for (let k of keys) {
+                    if (remaining <= 0) break;
+                    const baseVal = (k === 'hp') ? baseStats[currentClassName].hp : (k === 'atk') ? baseStats[currentClassName].atk : (k === 'def') ? baseStats[currentClassName].def : (k === 'dodge') ? baseStats[currentClassName].agi : (k === 'int') ? baseStats[currentClassName].int : (k === 'spd') ? baseStats[currentClassName].spd : (k === 'crit') ? baseStats[currentClassName].crit : (k === 'critDmg') ? baseStats[currentClassName].critDmg : (k === 'vamp') ? baseStats[currentClassName].vamp : baseStats[currentClassName].reflect;
+                    const maxPoints = absoluteMax[k] - baseVal;
+                    if ((currentDistribution[k] || 0) < maxPoints) {
+                        currentDistribution[k] = (currentDistribution[k] || 0) + 1;
+                        remaining--;
+                    }
+                }
+                keys = skillKeys.filter(k => {
+                    const baseVal = (k === 'hp') ? baseStats[currentClassName].hp : (k === 'atk') ? baseStats[currentClassName].atk : (k === 'def') ? baseStats[currentClassName].def : (k === 'dodge') ? baseStats[currentClassName].agi : (k === 'int') ? baseStats[currentClassName].int : (k === 'spd') ? baseStats[currentClassName].spd : (k === 'crit') ? baseStats[currentClassName].crit : (k === 'critDmg') ? baseStats[currentClassName].critDmg : (k === 'vamp') ? baseStats[currentClassName].vamp : baseStats[currentClassName].reflect;
+                    return (currentDistribution[k] || 0) < (absoluteMax[k] - baseVal);
+                });
+            }
         }
+        let spent = 0;
+        for (let key of skillKeys) spent += currentDistribution[key] || 0;
+        freePoints = totalPoints - spent;
+        if (freePoints < 0) freePoints = 0;
+        updateUI();
+        updateStatsDisplay();
     }
-    
-    // Пересчитываем свободные очки (должны быть 0, так как распределили все)
-    let spent = 0;
-    for (let key of skillKeys) spent += currentDistribution[key] || 0;
-    freePoints = totalPoints - spent;
-    if (freePoints < 0) freePoints = 0;
-    
-    updateUI();
-    updateStatsDisplay();
-}
 
     function resetAll() {
         for (let key of skillKeys) currentDistribution[key] = 0;
@@ -946,7 +909,7 @@ function randomizeDistribution() {
         simBlock.innerHTML = `⚔️ РЕЗУЛЬТАТ СИМУЛЯЦИИ (1000 противников, уровень ${currentLevel})<br>
                               🏆 Побед: ${wins} из 1000 (${winRate}%)<br>
                               📊 Противники имеют случайные классы/подклассы и разумное распределение очков.<br>
-                              🌀 Увороты: атакующий теряет 10 маны, защитник получает 5 маны. Реген маны ≤45.`;
+                              🌀 Увороты: атакующий теряет 10 маны, защитник получает 5 маны. Реген маны ≤40.`;
         const oldSim = resultDiv.querySelector('.sim-result');
         if (oldSim) oldSim.remove();
         resultDiv.appendChild(simBlock);
@@ -1022,7 +985,7 @@ function randomizeDistribution() {
     function init() {
         resetAll();
         renderSkillsUI();
-       document.getElementById('equalResetBtn').addEventListener('click', randomizeDistribution);
+        document.getElementById('randomResetBtn').addEventListener('click', randomizeDistribution);
         document.getElementById('fullResetBtn').addEventListener('click', resetAll);
         document.getElementById('simulateBtn').addEventListener('click', runSimulation);
         document.querySelectorAll('.class-btn').forEach(btn => {
@@ -1031,7 +994,7 @@ function randomizeDistribution() {
                 btn.classList.add('active');
                 currentClassName = btn.dataset.class;
                 updateSubclassSelect();
-                resetAll(); // сброс распределения при смене класса
+                resetAll();
                 updateUI();
                 updateStatsDisplay();
             });
@@ -1049,3 +1012,4 @@ function randomizeDistribution() {
 </script>
 </body>
 </html>
+```

@@ -1,4 +1,4 @@
-// helpers.js – исправленная версия с apiRequest и поддержкой user_id
+// helpers.js – исправленная версия с балансными правками
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
@@ -30,9 +30,8 @@ function calculateClassStats(className, classData, inventory, subclass) {
         reflect: base.reflect + (classData.reflect_points || 0)
     };
   
-
     let gearBonuses = {
-        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0
+        hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0, manaRegen: 0
     };
 
     const equippedItems = inventory.filter(item => item.equipped && item.owner_class === className);
@@ -59,40 +58,54 @@ function calculateClassStats(className, classData, inventory, subclass) {
         crit: baseStatsWithSkills.crit + gearBonuses.crit,
         critDmg: baseStatsWithSkills.critDmg + gearBonuses.critDmg,
         vamp: baseStatsWithSkills.vamp + gearBonuses.vamp,
-        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect
+        reflect: baseStatsWithSkills.reflect + gearBonuses.reflect,
+        manaRegen: (className === 'warrior' ? 15 : (className === 'assassin' ? 18 : 30)) + gearBonuses.manaRegen
     };
-   // Постоянный бонус для подкласса Ассасин (убийца)
+
+    // Постоянный бонус для подкласса Ассасин (убийца)
     if (subclass === 'assassin') {
         final.critDmg += 0.5; // +50% к критическому урону
     }
     if (final.critDmg > 4.5) final.critDmg = 4.5;
-    let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0 };
 
+    let classBonus = { hp: 0, atk: 0, def: 0, agi: 0, int: 0, spd: 0, crit: 0, critDmg: 0, vamp: 0, reflect: 0, manaRegen: 0 };
+
+    // Классовые особенности
     if (className === 'warrior') {
         const bonusHp = Math.floor(final.def / 5) * 5;
         classBonus.hp = bonusHp;
         final.hp += bonusHp;
     }
-
     if (className === 'assassin') {
         const bonusSpd = Math.floor(final.agi / 5);
         classBonus.spd = bonusSpd;
         final.spd += bonusSpd;
     }
-
     if (className === 'mage') {
         const bonusAgi = Math.floor(final.int / 5);
         classBonus.agi = bonusAgi;
         final.agi += bonusAgi;
+        const bonusManaRegen = Math.floor(final.int / 5) * 2;
+        classBonus.manaRegen = bonusManaRegen;
+        final.manaRegen += bonusManaRegen;
     }
 
+    // Страж: +5 защиты (макс 75)
+    if (className === 'warrior' && subclass === 'guardian') {
+        final.def = Math.min(75, final.def + 5);
+        classBonus.def = 5;
+    }
+
+    // Воин: +10% HP
     if (className === 'warrior') {
         final.hp = Math.floor(final.hp * 1.1);
     }
 
-    final.def = Math.min(70, final.def);
+    // Лимиты
+    final.def = Math.min(75, final.def);
     final.agi = Math.min(70, final.agi);
     final.crit = Math.min(100, final.crit);
+    final.manaRegen = Math.min(40, final.manaRegen); // реген маны не более 40
 
     final.hp = Math.round(final.hp);
     final.atk = Math.round(final.atk);
@@ -104,6 +117,7 @@ function calculateClassStats(className, classData, inventory, subclass) {
     final.critDmg = Math.round(final.critDmg * 100) / 100;
     final.vamp = Math.round(final.vamp * 10) / 10;
     final.reflect = Math.round(final.reflect * 10) / 10;
+    final.manaRegen = Math.round(final.manaRegen);
 
     return { base: baseStatsWithSkills, gear: gearBonuses, classBonus, final };
 }

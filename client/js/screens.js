@@ -178,12 +178,12 @@ function renderMain() {
         });
     });
 
-    const mailBtn = document.getElementById('mailBtn');
-    if (mailBtn) {
-        mailBtn.addEventListener('click', () => {
-            console.log('Письмо: функционал в разработке');
-        });
-    }
+   const mailBtn = document.getElementById('mailBtn');
+if (mailBtn) {
+    mailBtn.addEventListener('click', () => {
+        showScreen('messages');
+    });
+}
 
     updateTradeButtonIcon();
     updateProfileAvatarIcon();

@@ -32,6 +32,17 @@ async function sendVerificationEmail(email, code) {
     });
 }
 
+// Вспомогательная функция для создания приветственного сообщения с выбором класса
+async function createWelcomeMessage(client, userId) {
+    await client.query(
+        `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+         VALUES ($1, 'Мастер кошачьих боёв', 'Привет, разбойник!', 
+         'Я рад, что ты присоединился к игре! За это я дарю тебе очки навыков для твоего героя! Выбери класс, который получит дополнительно 5 очков навыков. НО запомни, выбрать можно один раз!', 
+         'skill_points_choice', 5, false, false)`,
+        [userId]
+    );
+}
+
 // ========== TELEGRAM (только по tg_id, без объединения по email) ==========
 async function handleTelegramLogin(initData, referralCode, client) {
     const botToken = process.env.BOT_TOKEN;
@@ -107,13 +118,15 @@ async function handleTelegramLogin(initData, referralCode, client) {
                  VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
                 [userData.id, String(tgId), user.email || null, JSON.stringify(user)]
             );
+            // Приветственное сообщение для нового пользователя
+            await createWelcomeMessage(client, userData.id);
         }
     } else {
         userData = userRes.rows[0];
         needusername = !userData.username;
     }
 
-    // ✅ СОХРАНЯЕМ TELEGRAM_CHAT_ID
+    // Сохраняем telegram_chat_id
     await client.query('UPDATE users SET telegram_chat_id = $1 WHERE id = $2', [tgId, userData.id]);
 
     const sessionToken = generateToken();
@@ -190,6 +203,8 @@ router.post('/verify-email', async (req, res) => {
                 `INSERT INTO user_connections (user_id, provider, email) VALUES ($1, 'email', $2) ON CONFLICT (user_id, provider) DO NOTHING`,
                 [userData.id, email]
             );
+            // Приветственное сообщение для нового пользователя
+            await createWelcomeMessage(client, userData.id);
         } else {
             userData = userRes.rows[0];
             needusername = !userData.username;
@@ -325,6 +340,8 @@ router.get('/telegram/callback', async (req, res) => {
                          VALUES ($1, 'telegram', $2, $3, $4)`,
                         [userData.id, String(tgId), payload.email || null, JSON.stringify(payload)]
                     );
+                    // Приветственное сообщение для нового пользователя
+                    await createWelcomeMessage(client, userData.id);
                 }
             } else {
                 userData = userRes.rows[0];
@@ -345,7 +362,7 @@ router.get('/telegram/callback', async (req, res) => {
     }
 });
 
-// ========== VK LOW-CODE ВХОД (с предотвращением дублирования) ==========
+// ========== VK LOW-CODE ВХОД ==========
 router.post('/vk-lowcode', async (req, res) => {
     const { access_token, user_id, email } = req.body;
     if (!access_token || !user_id) {
@@ -417,6 +434,8 @@ router.post('/vk-lowcode', async (req, res) => {
                      VALUES ($1, 'vk', $2, $3, $4)`,
                     [userData.id, String(user_id), email || null, JSON.stringify({ access_token, user_id, email })]
                 );
+                // Приветственное сообщение для нового пользователя
+                await createWelcomeMessage(client, userData.id);
             }
         }
 
@@ -515,6 +534,8 @@ router.post('/google', async (req, res) => {
                         [userData.id, cls]
                     );
                 }
+                // Приветственное сообщение для нового пользователя
+                await createWelcomeMessage(client, userData.id);
                 const sessionToken = generateToken();
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
                 res.json({ success: true, sessionToken, needusername: true, user: userData });
@@ -934,6 +955,8 @@ router.get('/google-callback', async (req, res) => {
                 for (let cls of classes) {
                     await client.query(`INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userData.id, cls]);
                 }
+                // Приветственное сообщение для нового пользователя
+                await createWelcomeMessage(client, userData.id);
             }
         }
         await client.query(
@@ -956,7 +979,7 @@ router.get('/google-callback', async (req, res) => {
     }
 });
 
-// Эндпоинт для отправки уведомления о новом сообщении
+// ========== УВЕДОМЛЕНИЕ О НОВОМ СООБЩЕНИИ ==========
 router.post('/notify-message', async (req, res) => {
     const { user_id, subject, body, reward_type, reward_amount } = req.body;
     if (!user_id) return res.status(400).json({ error: 'user_id required' });
@@ -984,5 +1007,56 @@ router.post('/notify-message', async (req, res) => {
     }
 });
 
+// ========== ВЫБОР КЛАССА ДЛЯ НАГРАДЫ (очки навыков) ==========
+router.post('/claim-class-reward', async (req, res) => {
+    const { message_id, chosen_class } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const client = await pool.connect();
+    try {
+        // Проверяем токен и получаем user_id
+        const userRes = await client.query('SELECT id FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userId = userRes.rows[0].id;
+
+        // Проверяем сообщение
+        const msgRes = await client.query(
+            `SELECT id, reward_type, reward_amount, is_claimed 
+             FROM user_messages 
+             WHERE id = $1 AND user_id = $2`,
+            [message_id, userId]
+        );
+        if (msgRes.rows.length === 0) return res.status(404).json({ error: 'Message not found' });
+        const msg = msgRes.rows[0];
+        if (msg.is_claimed) return res.status(400).json({ error: 'Reward already claimed' });
+        if (msg.reward_type !== 'skill_points_choice') return res.status(400).json({ error: 'Invalid reward type' });
+
+        // Проверяем корректность выбранного класса
+        const validClasses = ['warrior', 'assassin', 'mage'];
+        if (!validClasses.includes(chosen_class)) return res.status(400).json({ error: 'Invalid class' });
+
+        // Добавляем очки навыков к выбранному классу
+        await client.query(
+            `UPDATE user_classes 
+             SET skill_points = skill_points + $1 
+             WHERE user_id = $2 AND class = $3`,
+            [msg.reward_amount, userId, chosen_class]
+        );
+
+        // Помечаем сообщение как полученное и запоминаем выбранный класс
+        await client.query(
+            `UPDATE user_messages SET is_claimed = true, chosen_class = $1 WHERE id = $2`,
+            [chosen_class, message_id]
+        );
+
+        res.json({ success: true, chosen_class });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
 
 module.exports = router;

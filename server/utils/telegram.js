@@ -1,16 +1,16 @@
 // utils/telegram.js
-const BOT_TOKEN = 'ВАШ_ТОКЕН_ОТ_BOTFATHER'; // Замените на реальный токен
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const CLIENT_URL = process.env.CLIENT_URL || 'https://ваш-домен.com'; // замените на ваш URL
 
 async function sendTelegramNotification(chatId, subject, body, rewardText = null) {
-    if (!chatId) return;
+    if (!chatId || !BOT_TOKEN) return;
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     let text = `📬 Новое сообщение в игре!\n\n📝 ${subject}\n${body}`;
     if (rewardText) {
         text += `\n🎁 Награда: ${rewardText}`;
     }
-    const webAppUrl = 'https://ваш-домен.com'; // Замените на ваш URL мини-приложения
     try {
-        await fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -18,13 +18,16 @@ async function sendTelegramNotification(chatId, subject, body, rewardText = null
                 text: text,
                 reply_markup: {
                     inline_keyboard: [[
-                        { text: '📬 Открыть игру', web_app: { url: webAppUrl } }
+                        { text: '📬 Открыть игру', web_app: { url: CLIENT_URL } }
                     ]]
                 }
             })
         });
+        if (!response.ok) {
+            console.error('Telegram notification error:', await response.text());
+        }
     } catch (err) {
-        console.error('Ошибка отправки уведомления в Telegram:', err);
+        console.error('Failed to send Telegram notification:', err);
     }
 }
 

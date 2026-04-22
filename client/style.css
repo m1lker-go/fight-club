@@ -3664,3 +3664,24 @@ input:checked + .slider:before {
     text-align: center;
     line-height: 1;
 }
+
+.class-choice-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+}
+.class-choice-btn {
+    background-color: #2f3542;
+    border: 2px solid #00aaff;
+    border-radius: 30px;
+    padding: 10px 20px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.class-choice-btn:hover {
+    background-color: #00aaff;
+    color: #1a1f2b;
+}

@@ -11,6 +11,7 @@ const initDB = async () => {
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       tg_id BIGINT UNIQUE,
+      telegram_chat_id BIGINT,
       username TEXT,
       class TEXT DEFAULT 'warrior',
       subclass TEXT DEFAULT 'guardian',
@@ -107,6 +108,14 @@ const initDB = async () => {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  
+  // Добавляем колонку telegram_chat_id, если её нет (миграция для существующих таблиц)
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT`);
+    console.log('✅ Колонка telegram_chat_id добавлена или уже существует');
+  } catch (err) {
+    console.warn('⚠️ Не удалось добавить telegram_chat_id (возможно, уже есть):', err.message);
+  }
   
   // Добавляем начальные предметы, если таблица пуста
   const itemsCount = await pool.query('SELECT COUNT(*) FROM items');

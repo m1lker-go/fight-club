@@ -53,7 +53,7 @@ function renderMain() {
                 <!-- Левая колонка (2×3) -->
                 <div class="main-buttons-col left">
                     <div class="btn-grid">
-                        <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Письмо</span></button>
+                        <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Почта</span></button>
                         <button class="main-icon-btn empty-btn"></button>
                         <button class="main-icon-btn empty-btn"></button>
                         <button class="main-icon-btn empty-btn"></button>

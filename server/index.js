@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
+const { sendTelegramNotification } = require('./utils/telegram');
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -246,12 +247,72 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-initDB().then(() => {
-    console.log('Database initialized');
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}).catch(err => {
-    console.error('Failed to initialize database:', err);
-    process.exit(1);
-});
+// ==================== ЗАПУСК СЕРВЕРА И НАСТРОЙКА УВЕДОМЛЕНИЙ ====================
+async function startServer() {
+    try {
+        // Инициализация базы данных
+        await initDB();
+
+        // Создаём функцию и триггер для отправки уведомлений (если их нет)
+        await pool.query(`
+            CREATE OR REPLACE FUNCTION notify_message_inserted()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                PERFORM pg_notify('message_inserted', 
+                    json_build_object(
+                        'user_id', NEW.user_id,
+                        'subject', NEW.subject,
+                        'body', NEW.body,
+                        'reward_type', NEW.reward_type,
+                        'reward_amount', NEW.reward_amount
+                    )::text
+                );
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+        `);
+
+        await pool.query(`
+            CREATE OR REPLACE TRIGGER message_inserted_trigger
+            AFTER INSERT ON user_messages
+            FOR EACH ROW
+            EXECUTE FUNCTION notify_message_inserted();
+        `);
+        console.log('✅ Триггер и функция для уведомлений созданы');
+
+        // Подключаемся к БД для LISTEN
+        const dbClient = await pool.connect();
+        dbClient.query('LISTEN message_inserted');
+        dbClient.on('notification', async (msg) => {
+            try {
+                const payload = JSON.parse(msg.payload);
+                const { user_id, subject, body, reward_type, reward_amount } = payload;
+                const userRes = await pool.query('SELECT telegram_chat_id FROM users WHERE id = $1', [user_id]);
+                const chatId = userRes.rows[0]?.telegram_chat_id;
+                if (chatId) {
+                    let rewardText = '';
+                    if (reward_type && reward_amount) {
+                        if (reward_type === 'coins') rewardText = `${reward_amount} монет`;
+                        else if (reward_type === 'diamonds') rewardText = `${reward_amount} алмазов`;
+                        else if (reward_type === 'exp') rewardText = `${reward_amount} опыта`;
+                        else rewardText = `${reward_amount} ${reward_type}`;
+                    }
+                    await sendTelegramNotification(chatId, subject, body, rewardText);
+                }
+            } catch (err) {
+                console.error('Ошибка при обработке уведомления:', err);
+            }
+        });
+        console.log('✅ Слушатель уведомлений PostgreSQL запущен');
+
+        // Запускаем HTTP-сервер
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
+    } catch (err) {
+        console.error('❌ Ошибка при запуске сервера:', err);
+        process.exit(1);
+    }
+}
+
+startServer();

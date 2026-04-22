@@ -1920,6 +1920,15 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
 
 // ==================== СООБЩЕНИЯ ====================
+// ==================== СООБЩЕНИЯ ====================
+function recalcUnprocessedCount() {
+    if (!window.messagesList) return;
+    const unread = window.messagesList.filter(m => !m.is_read).length;
+    const unclaimedRewards = window.messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
+    window.unreadMessagesCount = unread + unclaimedRewards;
+    if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
+}
+
 async function loadMessages() {
     try {
         const token = localStorage.getItem('sessionToken');
@@ -1929,8 +1938,7 @@ async function loadMessages() {
         });
         const data = await res.json();
         window.messagesList = data.messages || [];
-        window.unreadMessagesCount = window.messagesList.filter(m => !m.is_read).length;
-        if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
+        recalcUnprocessedCount();
         return window.messagesList;
     } catch (e) {
         console.error('Ошибка загрузки сообщений:', e);
@@ -1969,7 +1977,6 @@ async function renderMessages() {
         
         const info = document.createElement('div');
         info.className = 'message-info';
-        // Показываем иконку подарка, если есть неполученная награда
         const rewardIcon = (!msg.is_claimed && msg.reward_type && msg.reward_amount) ? 
             `<span class="reward-icon" style="margin-left: 8px;"><i class="fas fa-gift" style="color:#f1c40f;"></i></span>` : '';
         info.innerHTML = `
@@ -2005,16 +2012,15 @@ async function renderMessageDetail(messageId) {
     
     if (!msg.is_read) {
         msg.is_read = true;
-        window.unreadMessagesCount--;
-        updateMessagesBadge();
         await window.apiRequest('/auth/messages/read', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ message_id: messageId })
         });
+        recalcUnprocessedCount();
     }
     
-    // Формируем строку награды для отображения
+    // Блок информации о награде
     let rewardDisplay = '';
     if (!msg.is_claimed && msg.reward_type && msg.reward_amount) {
         let rewardText = '';
@@ -2066,6 +2072,7 @@ async function renderMessageDetail(messageId) {
                 body: JSON.stringify({ message_id: messageId })
             });
             window.messagesList = window.messagesList.filter(m => m.id != messageId);
+            recalcUnprocessedCount();
             renderMessages();
         }
     });
@@ -2076,7 +2083,7 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    // Обработка кнопок выбора класса
+    // Кнопки выбора класса
     const classChoiceBtns = document.querySelectorAll('.class-choice-btn');
     if (classChoiceBtns.length) {
         classChoiceBtns.forEach(btn => {
@@ -2094,6 +2101,7 @@ async function renderMessageDetail(messageId) {
                         showToast(`Вы выбрали класс ${classNameRu} и получили 5 очков навыков!`, 2000);
                         msg.is_claimed = true;
                         await refreshData();
+                        recalcUnprocessedCount();
                         renderMessageDetail(messageId);
                     } else {
                         showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 1500);
@@ -2106,7 +2114,7 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    // Обработка обычной кнопки "Забрать награду"
+    // Обычная кнопка "Забрать награду"
     const claimBtn = document.getElementById('claimRewardBtn');
     if (claimBtn) {
         claimBtn.addEventListener('click', async () => {
@@ -2124,10 +2132,20 @@ async function renderMessageDetail(messageId) {
                 showToast(`${icon}Вы получили: ${data.reward_text}`, 2000);
                 msg.is_claimed = true;
                 await refreshData();
+                recalcUnprocessedCount();
                 renderMessageDetail(messageId);
             } else {
                 showToast('Ошибка: ' + data.error, 1500);
             }
         });
     }
+}
+
+
+function recalcUnprocessedCount() {
+    if (!window.messagesList) return;
+    const unread = window.messagesList.filter(m => !m.is_read).length;
+    const unclaimedRewards = window.messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
+    window.unreadMessagesCount = unread + unclaimedRewards; // используем ту же переменную
+    if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
 }

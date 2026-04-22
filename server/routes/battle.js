@@ -464,17 +464,37 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
             
         case 'venom_blade':
-            let baseDamage = attackerStats.atk;
-            let isCrit = Math.random() * 100 < attackerStats.crit;
-            if (isCrit) baseDamage *= attackerStats.critDmg;
-            baseDamage = baseDamage * (1 - defenderStats.def / 100);
-            baseDamage = Math.max(1, Math.floor(baseDamage));
-            let poisonDamage = (defenderState.poisonStacks || 0) * 5;
-            damage = baseDamage + poisonDamage;
-            log = ultPhrases.venom_blade.replace('%s', '<strong>' + attackerName + '</strong>').replace('%d', damage);
-            defenderState.poisonStacks = 0;
-            type = 'poison_ult';
-            break;
+    // 1. Обычная атака (с учётом защиты, крита)
+    let baseDamage = attackerStats.atk;
+    let isCrit = Math.random() * 100 < attackerStats.crit;
+    if (isCrit) baseDamage *= attackerStats.critDmg;
+    baseDamage = baseDamage * (1 - defenderStats.def / 100);
+    baseDamage = Math.max(1, Math.floor(baseDamage));
+    
+    // 2. Урон от всех накопленных стаков яда (игнорирует защиту)
+    const stacks = defenderState.poisonStacks || 0;
+    const poisonPerStack = 2 + Math.floor(attackerStats.agi / 5);
+    const poisonDamage = stacks * poisonPerStack;
+    
+    // 3. Бонус за сжигание стаков (прогрессия)
+    let bonusDamage = 0;
+    if (stacks === 1) bonusDamage = 5;
+    else if (stacks === 2) bonusDamage = 10;
+    else if (stacks === 3) bonusDamage = 15;
+    else if (stacks === 4) bonusDamage = 20;
+    else if (stacks >= 5) bonusDamage = 30;
+    
+    const totalDamage = baseDamage + poisonDamage + bonusDamage;
+    damage = totalDamage;
+    
+    log = ultPhrases.venom_blade
+        .replace('%s', '<strong>' + attackerName + '</strong>')
+        .replace('%d', damage)
+        + ` (яд: ${poisonDamage}, бонус: ${bonusDamage})`;
+    
+    defenderState.poisonStacks = 0;   // Сжигаем все стаки
+    type = 'poison_ult';
+    break;
             
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);

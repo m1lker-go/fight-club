@@ -2015,13 +2015,13 @@ async function renderMessageDetail(messageId) {
             <div class="message-detail-body">${escapeHtml(msg.body)}</div>
             <div class="message-detail-actions">
                 <button class="reply-btn" id="replyBtn">Ответить</button>
-               ${!msg.is_claimed && msg.reward_type === 'skill_points_choice' ? `
-    <div class="class-choice-buttons">
-        <button class="class-choice-btn" data-class="warrior">Воин</button>
-        <button class="class-choice-btn" data-class="assassin">Ассасин</button>
-        <button class="class-choice-btn" data-class="mage">Маг</button>
-    </div>
-` : (msg.from === 'Мастер кошачьих боёв' && !msg.is_claimed && msg.reward_type ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : '')}
+                ${!msg.is_claimed && msg.reward_type === 'skill_points_choice' ? `
+                    <div class="class-choice-buttons">
+                        <button class="class-choice-btn" data-class="warrior">Воин</button>
+                        <button class="class-choice-btn" data-class="assassin">Ассасин</button>
+                        <button class="class-choice-btn" data-class="mage">Маг</button>
+                    </div>
+                ` : (msg.from === 'Мастер кошачьих боёв' && !msg.is_claimed && msg.reward_type ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : '')}
             </div>
         </div>
     `;
@@ -2037,11 +2037,48 @@ async function renderMessageDetail(messageId) {
             renderMessages();
         }
     });
+    
     if (document.getElementById('replyBtn')) {
         document.getElementById('replyBtn').addEventListener('click', () => {
             showToast('Функция ответа в разработке', 1500);
         });
     }
+    
+    // Обработка кнопок выбора класса для skill_points_choice
+    const classChoiceBtns = document.querySelectorAll('.class-choice-btn');
+    if (classChoiceBtns.length) {
+        classChoiceBtns.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const chosenClass = btn.dataset.class;
+                const token = localStorage.getItem('sessionToken');
+                if (!token) {
+                    showToast('Ошибка: сессия не найдена', 1500);
+                    return;
+                }
+                try {
+                    const res = await window.apiRequest('/auth/claim-class-reward', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ message_id: messageId, chosen_class: chosenClass })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const classNameRu = chosenClass === 'warrior' ? 'Воин' : (chosenClass === 'assassin' ? 'Ассасин' : 'Маг');
+                        showToast(`Вы выбрали класс ${classNameRu} и получили 5 очков навыков!`, 2000);
+                        msg.is_claimed = true;
+                        await refreshData(); // обновит данные, чтобы маячок появился
+                        renderMessageDetail(messageId); // перерисовываем письмо (кнопки исчезнут)
+                    } else {
+                        showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 1500);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Ошибка соединения', 1500);
+                }
+            });
+        });
+    }
+    
     if (document.getElementById('claimRewardBtn')) {
         document.getElementById('claimRewardBtn').addEventListener('click', async () => {
             const res = await window.apiRequest('/messages/claim', {

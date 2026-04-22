@@ -2015,7 +2015,13 @@ async function renderMessageDetail(messageId) {
             <div class="message-detail-body">${escapeHtml(msg.body)}</div>
             <div class="message-detail-actions">
                 <button class="reply-btn" id="replyBtn">Ответить</button>
-                ${msg.from === 'Мастер кошачьих боёв' && !msg.is_claimed && msg.reward_type ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : ''}
+               ${!msg.is_claimed && msg.reward_type === 'skill_points_choice' ? `
+    <div class="class-choice-buttons">
+        <button class="class-choice-btn" data-class="warrior">Воин</button>
+        <button class="class-choice-btn" data-class="assassin">Ассасин</button>
+        <button class="class-choice-btn" data-class="mage">Маг</button>
+    </div>
+` : (msg.from === 'Мастер кошачьих боёв' && !msg.is_claimed && msg.reward_type ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : '')}
             </div>
         </div>
     `;

@@ -449,30 +449,25 @@ document.querySelectorAll('.menu-item').forEach(item => {
 function updateMessagesBadge() {
     const menuIcon = document.querySelector('.menu-item[data-screen="messages"] i');
     const mainMailBtn = document.getElementById('mailBtn');
-    const badgeText = unreadMessagesCount > 0 ? (unreadMessagesCount > 9 ? '9+' : unreadMessagesCount) : null;
+    const hasNew = unreadMessagesCount > 0;  // просто флаг: есть ли что-то новое
     
-    const setBadge = (element) => {
+    const setDot = (element) => {
         if (!element) return;
         let parent = element.parentNode;
         if (!parent) return;
-        let existingBadge = parent.querySelector('.messages-badge');
-        if (badgeText) {
-            if (!existingBadge) {
-                const badge = document.createElement('span');
-                badge.className = 'messages-badge';
-                badge.textContent = badgeText;
-                parent.style.position = 'relative';
-                parent.appendChild(badge);
-            } else {
-                existingBadge.textContent = badgeText;
-            }
-        } else {
-            if (existingBadge) existingBadge.remove();
+        let existingDot = parent.querySelector('.messages-dot');
+        if (hasNew && !existingDot) {
+            const dot = document.createElement('span');
+            dot.className = 'messages-dot';
+            parent.style.position = 'relative';
+            parent.appendChild(dot);
+        } else if (!hasNew && existingDot) {
+            existingDot.remove();
         }
     };
     
-    setBadge(menuIcon);
-    setBadge(mainMailBtn);
+    setDot(menuIcon);
+    setDot(mainMailBtn);
 }
 
 

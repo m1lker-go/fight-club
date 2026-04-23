@@ -177,15 +177,22 @@ router.post('/battle', async (req, res) => {
         progress.attempts_today = newAttemptsToday;
         console.log('[BATTLE UPDATE] user ' + userId + ': newAttemptsToday=' + newAttemptsToday + ', date=' + today);
 
-        // Обновляем задание "Башня" (всегда)
-        if (tasksModule.updateTowerTask) {
-            await tasksModule.updateTowerTask(client, userId);
+        // === НОВАЯ ЛОГИКА: после 3-го использованного билета обновляем задание "Башня" ===
+        let towerTaskCompleted = false;
+        if (newAttemptsToday === 3) {
+            if (tasksModule.updateTowerTask) {
+                await tasksModule.updateTowerTask(client, userId);
+                towerTaskCompleted = true;
+                console.log('[BATTLE] Tower task completed after 3 tickets for user ' + userId);
+            } else {
+                console.warn('[tower] updateTowerTask not found');
+            }
         } else {
-            console.warn('[tower] updateTowerTask not found');
+            // Для обратной совместимости: вызываем updateTowerTask всегда, но он должен сам проверять прогресс
+            if (tasksModule.updateTowerTask) {
+                await tasksModule.updateTowerTask(client, userId);
+            }
         }
-
-        const dateCheck = await client.query('SELECT last_attempt_date FROM tower_progress WHERE user_id = $1', [userId]);
-        console.log('[BATTLE] after update, DB last_attempt_date = ' + dateCheck.rows[0].last_attempt_date);
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
@@ -371,7 +378,8 @@ router.post('/battle', async (req, res) => {
             attemptsLeft: 10 - newAttemptsToday,
             expGain: isVictory ? expGain : 0,
             leveledUp: leveledUp,
-            newLevel: newLevel
+            newLevel: newLevel,
+            towerTaskCompleted: towerTaskCompleted  // новый флаг для клиента (если нужно)
         });
 
     } catch (e) {

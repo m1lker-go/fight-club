@@ -3701,3 +3701,15 @@ input:checked + .slider:before {
     align-items: center;
 }
 
+.messages-dot {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    background-image: url('/assets/icons/icon-new.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 10;
+}
+

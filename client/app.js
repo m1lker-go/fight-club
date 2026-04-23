@@ -575,6 +575,8 @@ function handleExternalAuth() {
     return handled;
 }
 
+window.updateMessagesBadge = updateMessagesBadge;
+
 // Вызов обработки внешней авторизации перед запуском приложения
 handleExternalAuth();
 

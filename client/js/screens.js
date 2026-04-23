@@ -187,6 +187,7 @@ if (mailBtn) {
 
     updateTradeButtonIcon();
     updateProfileAvatarIcon();
+    updateMessagesBadge();
 }
 
 function updateMainScreen() {

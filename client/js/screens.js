@@ -1927,7 +1927,8 @@ function recalcUnprocessedCount() {
     const unread = window.messagesList.filter(m => !m.is_read).length;
     const unclaimedRewards = window.messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
     window.unreadMessagesCount = unread + unclaimedRewards;
-    if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
+    console.log('recalcUnprocessedCount: unread=', unread, 'unclaimed=', unclaimedRewards, 'total=', window.unreadMessagesCount);
+    if (window.updateMessagesBadge) window.updateMessagesBadge();
 }
 
 async function loadMessages() {

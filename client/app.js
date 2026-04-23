@@ -447,30 +447,31 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 function updateMessagesBadge() {
+    console.log('updateMessagesBadge called, unreadMessagesCount =', unreadMessagesCount);
     const mainMailBtn = document.getElementById('mailBtn');
     const hasNew = unreadMessagesCount > 0;
+    console.log('mainMailBtn:', mainMailBtn, 'hasNew:', hasNew);
     
-    const setIcon = (element) => {
-        if (!element) return;
-        let existingIcon = element.querySelector('.messages-new-icon');
-        if (hasNew && !existingIcon) {
-            const icon = document.createElement('img');
-            icon.src = '/assets/icons/icon-new.png';
-            icon.className = 'messages-new-icon';
-            icon.style.position = 'absolute';
-            icon.style.top = '-5px';
-            icon.style.right = '-5px';
-            icon.style.width = '16px';
-            icon.style.height = '16px';
-            icon.style.pointerEvents = 'none';
-            element.style.position = 'relative';
-            element.appendChild(icon);
-        } else if (!hasNew && existingIcon) {
-            existingIcon.remove();
-        }
-    };
+    if (!mainMailBtn) return;
     
-    setIcon(mainMailBtn);
+    let existingIcon = mainMailBtn.querySelector('.messages-new-icon');
+    if (hasNew && !existingIcon) {
+        const icon = document.createElement('img');
+        icon.src = '/assets/icons/icon-new.png';
+        icon.className = 'messages-new-icon';
+        icon.style.position = 'absolute';
+        icon.style.top = '-5px';
+        icon.style.right = '-5px';
+        icon.style.width = '16px';
+        icon.style.height = '16px';
+        icon.style.pointerEvents = 'none';
+        mainMailBtn.style.position = 'relative';
+        mainMailBtn.appendChild(icon);
+        console.log('Иконка добавлена');
+    } else if (!hasNew && existingIcon) {
+        existingIcon.remove();
+        console.log('Иконка удалена');
+    }
 }
 
 

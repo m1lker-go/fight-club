@@ -176,6 +176,7 @@ async function loadUserDataByToken(token) {
             recalculatePower();
             updateTopBar();
             showScreen('main');
+            if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
             updateMainMenuNewIcons();
             checkAdvent();
             hideSplashScreen();

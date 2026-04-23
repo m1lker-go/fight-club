@@ -178,17 +178,23 @@ function renderMain() {
         });
     });
 
-   const mailBtn = document.getElementById('mailBtn');
-if (mailBtn) {
-    mailBtn.addEventListener('click', () => {
-        showScreen('messages');
-    });
-}
+    const mailBtn = document.getElementById('mailBtn');
+    if (mailBtn) {
+        mailBtn.addEventListener('click', () => {
+            showScreen('messages');
+        });
+    }
 
     updateTradeButtonIcon();
     updateProfileAvatarIcon();
-   if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
+    if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
+    
+    // Фоновая загрузка сообщений для обновления бейджа
+    if (typeof loadMessagesSilent === 'function') {
+        loadMessagesSilent();
+    }
 }
+
 
 function updateMainScreen() {
     const classData = getCurrentClassData();

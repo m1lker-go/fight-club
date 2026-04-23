@@ -447,27 +447,30 @@ document.querySelectorAll('.menu-item').forEach(item => {
 });
 
 function updateMessagesBadge() {
-    const menuIcon = document.querySelector('.menu-item[data-screen="messages"] i');
     const mainMailBtn = document.getElementById('mailBtn');
-    const hasNew = unreadMessagesCount > 0;  // просто флаг: есть ли что-то новое
+    const hasNew = unreadMessagesCount > 0;
     
-    const setDot = (element) => {
+    const setIcon = (element) => {
         if (!element) return;
-        let parent = element.parentNode;
-        if (!parent) return;
-        let existingDot = parent.querySelector('.messages-dot');
-        if (hasNew && !existingDot) {
-            const dot = document.createElement('span');
-            dot.className = 'messages-dot';
-            parent.style.position = 'relative';
-            parent.appendChild(dot);
-        } else if (!hasNew && existingDot) {
-            existingDot.remove();
+        let existingIcon = element.querySelector('.messages-new-icon');
+        if (hasNew && !existingIcon) {
+            const icon = document.createElement('img');
+            icon.src = '/assets/icons/icon-new.png';
+            icon.className = 'messages-new-icon';
+            icon.style.position = 'absolute';
+            icon.style.top = '-5px';
+            icon.style.right = '-5px';
+            icon.style.width = '16px';
+            icon.style.height = '16px';
+            icon.style.pointerEvents = 'none';
+            element.style.position = 'relative';
+            element.appendChild(icon);
+        } else if (!hasNew && existingIcon) {
+            existingIcon.remove();
         }
     };
     
-    setDot(menuIcon);
-    setDot(mainMailBtn);
+    setIcon(mainMailBtn);
 }
 
 

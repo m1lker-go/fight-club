@@ -2159,6 +2159,7 @@ function recalcUnprocessedCount() {
 }
 
 async function loadMessagesSilent() {
+    console.log('loadMessagesSilent: начало загрузки');
     try {
         const token = localStorage.getItem('sessionToken');
         const res = await window.apiRequest('/auth/messages', {
@@ -2167,8 +2168,11 @@ async function loadMessagesSilent() {
         });
         const data = await res.json();
         window.messagesList = data.messages || [];
-        recalcUnprocessedCount(); // это вызовет updateMessagesBadge
+        console.log('loadMessagesSilent: загружено сообщений', window.messagesList.length);
+        recalcUnprocessedCount(); // обновит бейдж
     } catch (e) {
         console.error('Ошибка фоновой загрузки сообщений:', e);
     }
 }
+
+window.loadMessagesSilent = loadMessagesSilent;

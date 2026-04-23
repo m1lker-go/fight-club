@@ -1949,9 +1949,9 @@ function recalcUnprocessedCount() {
     if (!window.messagesList) return;
     const unread = window.messagesList.filter(m => !m.is_read).length;
     const unclaimedRewards = window.messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
-    window.unreadMessagesCount = unread + unclaimedRewards;
-    console.log('recalcUnprocessedCount: unread=', unread, 'unclaimed=', unclaimedRewards, 'total=', window.unreadMessagesCount);
-    if (window.updateMessagesBadge) window.updateMessagesBadge();
+    unreadMessagesCount = unread + unclaimedRewards;  // без window.
+    console.log('recalcUnprocessedCount: unread=', unread, 'unclaimed=', unclaimedRewards, 'total=', unreadMessagesCount);
+    if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
 }
 
 async function loadMessages() {

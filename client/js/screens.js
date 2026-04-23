@@ -2151,3 +2151,18 @@ function recalcUnprocessedCount() {
     window.unreadMessagesCount = unread + unclaimedRewards;
     if (window.updateMessagesBadge) window.updateMessagesBadge();
 }
+
+async function loadMessagesSilent() {
+    try {
+        const token = localStorage.getItem('sessionToken');
+        const res = await window.apiRequest('/auth/messages', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        window.messagesList = data.messages || [];
+        recalcUnprocessedCount(); // это вызовет updateMessagesBadge
+    } catch (e) {
+        console.error('Ошибка фоновой загрузки сообщений:', e);
+    }
+}

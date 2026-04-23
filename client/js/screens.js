@@ -1945,7 +1945,6 @@ async function loadMessagesSilent() {
     }
 }
 
-
 function recalcUnprocessedCount() {
     if (!window.messagesList) return;
     const unread = window.messagesList.filter(m => !m.is_read).length;
@@ -2167,4 +2166,5 @@ async function renderMessageDetail(messageId) {
     }
 }
 
-
+// Экспортируем функцию для глобального доступа
+window.loadMessagesSilent = loadMessagesSilent;

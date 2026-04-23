@@ -449,28 +449,30 @@ document.querySelectorAll('.menu-item').forEach(item => {
 function updateMessagesBadge() {
     const menuIcon = document.querySelector('.menu-item[data-screen="messages"] i');
     const mainMailBtn = document.getElementById('mailBtn');
-    if (unreadMessagesCount > 0) {
-        const badge = document.createElement('span');
-        badge.className = 'messages-badge';
-        badge.textContent = unreadMessagesCount > 9 ? '9+' : unreadMessagesCount;
-        if (menuIcon && !menuIcon.parentNode.querySelector('.messages-badge')) {
-            menuIcon.parentNode.style.position = 'relative';
-            menuIcon.parentNode.appendChild(badge.cloneNode(true));
+    const badgeText = unreadMessagesCount > 0 ? (unreadMessagesCount > 9 ? '9+' : unreadMessagesCount) : null;
+    
+    const setBadge = (element) => {
+        if (!element) return;
+        let parent = element.parentNode;
+        if (!parent) return;
+        let existingBadge = parent.querySelector('.messages-badge');
+        if (badgeText) {
+            if (!existingBadge) {
+                const badge = document.createElement('span');
+                badge.className = 'messages-badge';
+                badge.textContent = badgeText;
+                parent.style.position = 'relative';
+                parent.appendChild(badge);
+            } else {
+                existingBadge.textContent = badgeText;
+            }
+        } else {
+            if (existingBadge) existingBadge.remove();
         }
-        if (mainMailBtn && !mainMailBtn.querySelector('.messages-badge')) {
-            mainMailBtn.style.position = 'relative';
-            mainMailBtn.appendChild(badge.cloneNode(true));
-        }
-    } else {
-        if (menuIcon) {
-            const old = menuIcon.parentNode.querySelector('.messages-badge');
-            if (old) old.remove();
-        }
-        if (mainMailBtn) {
-            const old = mainMailBtn.querySelector('.messages-badge');
-            if (old) old.remove();
-        }
-    }
+    };
+    
+    setBadge(menuIcon);
+    setBadge(mainMailBtn);
 }
 
 

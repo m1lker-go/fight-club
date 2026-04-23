@@ -2150,29 +2150,4 @@ async function renderMessageDetail(messageId) {
 }
 
 
-function recalcUnprocessedCount() {
-    if (!window.messagesList) return;
-    const unread = window.messagesList.filter(m => !m.is_read).length;
-    const unclaimedRewards = window.messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
-    window.unreadMessagesCount = unread + unclaimedRewards;
-    if (window.updateMessagesBadge) window.updateMessagesBadge();
-}
-
-async function loadMessagesSilent() {
-    console.log('loadMessagesSilent: начало загрузки');
-    try {
-        const token = localStorage.getItem('sessionToken');
-        const res = await window.apiRequest('/auth/messages', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        window.messagesList = data.messages || [];
-        console.log('loadMessagesSilent: загружено сообщений', window.messagesList.length);
-        recalcUnprocessedCount(); // обновит бейдж
-    } catch (e) {
-        console.error('Ошибка фоновой загрузки сообщений:', e);
-    }
-}
-
 window.loadMessagesSilent = loadMessagesSilent;

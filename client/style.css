@@ -3518,6 +3518,12 @@ input:checked + .slider:before {
     text-align: center;
     font-size: 20px;
 }
+.message-icon .far.fa-envelope {
+    color: #aaa; /* светло-серый для прочитанных */
+}
+.message-icon .fas.fa-envelope {
+    color: #00aaff; /* синий для непрочитанных */
+}
 .message-avatar {
     width: 40px;
     height: 40px;
@@ -3650,21 +3656,6 @@ input:checked + .slider:before {
     background-color: #00aaff;
     color: white;
 }
-.messages-badge {
-    position: absolute;
-    top: -5px;
-    right: -8px;
-    background-color: #ff4444;
-    color: white;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 6px;
-    min-width: 18px;
-    text-align: center;
-    line-height: 1;
-}
-
 .class-choice-buttons {
     display: flex;
     gap: 12px;
@@ -3685,7 +3676,6 @@ input:checked + .slider:before {
     background-color: #00aaff;
     color: #1a1f2b;
 }
-
 .message-reward-info {
     background-color: #2a303c;
     padding: 10px;
@@ -3700,19 +3690,6 @@ input:checked + .slider:before {
     display: inline-flex;
     align-items: center;
 }
-
-.messages-dot {
-    position: absolute;
-    top: -5px;
-    right: -8px;
-    width: 16px;
-    height: 16px;
-    background-image: url('/assets/icons/icon-new.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    z-index: 10;
-}
-
 .messages-new-icon {
     position: absolute;
     top: -5px;
@@ -3722,4 +3699,3 @@ input:checked + .slider:before {
     pointer-events: none;
     z-index: 10;
 }
-

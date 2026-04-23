@@ -187,7 +187,7 @@ if (mailBtn) {
 
     updateTradeButtonIcon();
     updateProfileAvatarIcon();
-    updateMessagesBadge();
+   if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
 }
 
 function updateMainScreen() {
@@ -1920,7 +1920,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
 
 
-// ==================== СООБЩЕНИЯ ====================
+
 // ==================== СООБЩЕНИЯ ====================
 function recalcUnprocessedCount() {
     if (!window.messagesList) return;

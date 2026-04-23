@@ -461,8 +461,8 @@ function updateMessagesBadge() {
         icon.src = '/assets/icons/icon-new.png';
         icon.className = 'messages-new-icon';
         icon.style.position = 'absolute';
-        icon.style.top = '-5px';
-        icon.style.right = '-5px';
+        icon.style.top = '-12px';
+        icon.style.right = '-12px';
         icon.style.width = '16px';
         icon.style.height = '16px';
         icon.style.pointerEvents = 'none';

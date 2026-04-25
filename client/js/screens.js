@@ -722,9 +722,13 @@ function renderShop(target = null) {
                 showToast('Ошибка ответа сервера', 1500);
                 return;
             }
-            if (data.item) {
+          if (data.item) {
                 showChestResult(data.item);
                 await refreshData();
+                // Обновляем данные заданий для отображения маячка
+                if (typeof refreshTasksData === 'function') {
+                    await refreshTasksData();
+                }
                 if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
                 if (chest === 'common') updateCommonChestPrice();
 

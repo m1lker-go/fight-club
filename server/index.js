@@ -12,21 +12,9 @@ console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 
-// Настройка CORS с проверкой источников
-const allowedOrigins = [
-    'https://cat-fight.ru',
-    'https://fight-club-ecru.vercel.app',
-    'https://fight-club-api-4och.onrender.com'
-];
+// Временное упрощение CORS – разрешить все источники
 app.use(cors({
-    origin: function(origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
+    origin: '*',
     credentials: true
 }));
 app.use(express.json());
@@ -66,7 +54,8 @@ app.post('/webhook', async (req, res) => {
         }
     }
 
-    let webAppUrl = 'https://fight-club-ecru.vercel.app';
+    // Исправлено: теперь используется правильный домен, а не vercel
+    let webAppUrl = 'https://cat-fight.ru';
     if (referralCode) {
         webAppUrl += `?startapp=${referralCode}`;
     }
@@ -252,7 +241,6 @@ let currentListener = null;
 let reconnectTimeout = null;
 
 async function setupListener() {
-    // Закрываем старое соединение, если есть
     if (currentListener) {
         try {
             await currentListener.end();
@@ -262,7 +250,6 @@ async function setupListener() {
     if (reconnectTimeout) clearTimeout(reconnectTimeout);
 
     try {
-        // Создаём отдельное подключение к БД (не из пула) для LISTEN
         const { Pool } = require('pg');
         const dedicatedPool = new Pool({
             connectionString: process.env.DATABASE_URL,
@@ -315,7 +302,6 @@ async function startServer() {
     try {
         await initDB();
 
-        // Создаём функцию и триггер для отправки уведомлений
         await pool.query(`
             CREATE OR REPLACE FUNCTION notify_message_inserted()
             RETURNS TRIGGER AS $$
@@ -343,7 +329,6 @@ async function startServer() {
         `);
         console.log('✅ Триггер и функция для уведомлений созданы');
 
-        // Запускаем слушатель (с автоматическим переподключением)
         await setupListener();
 
         app.listen(PORT, '0.0.0.0', () => {

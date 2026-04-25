@@ -224,6 +224,8 @@ async function showBattleResult(battleData, timeOut = false) {
             body: JSON.stringify({ exp_gained: expGain })
         });
     } catch (err) { console.error(err); }
+     
+    await refreshTasksOnly();
 
     // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

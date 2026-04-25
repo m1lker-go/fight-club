@@ -1,14 +1,19 @@
 // profile.js
 
 // ==================== ПРОФИЛЬ ====================
-function renderProfile() {
+async function renderProfile() {
     const content = document.getElementById('content');
 
-    fetch('https://fight-club-api-4och.onrender.com/tasks/daily/update/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tg_id: userData.tg_id })
-    }).catch(err => console.error('Failed to update profile task', err));
+    // Обновляем задание "Посещение профиля"
+    try {
+        await window.apiRequest('/tasks/daily/update/profile', { method: 'POST' });
+        // Обновляем данные заданий, чтобы кнопка стала активной
+        if (typeof refreshTasksData === 'function') {
+            await refreshTasksData();
+        }
+    } catch (err) {
+        console.error('Failed to update profile task', err);
+    }
 
     // Проверяем, есть ли нераспределённые очки у текущего класса
     const currentClassData = getCurrentClassData();

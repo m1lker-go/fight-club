@@ -37,7 +37,7 @@ let messagesList = [];
 let unreadMessagesCount = 0;
 
 // Глобальный базовый URL для API
-window.API_BASE = 'http://195.208.2.253:5001';
+window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 

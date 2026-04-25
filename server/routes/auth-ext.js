@@ -5,6 +5,11 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
 const { rechargeEnergy } = require('../utils/energy');
+const { SocksProxyAgent } = require('socks-proxy-agent');
+
+// Настройки SOCKS5 прокси (замените на свои, если нужно)
+const proxyUrl = 'socks5://XtrYph:GneBKv@193.187.147.243:8000';
+const agent = new SocksProxyAgent(proxyUrl);
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { sendTelegramNotification } = require('../utils/telegram');
@@ -69,7 +74,6 @@ async function handleTelegramLogin(initData, referralCode, client) {
     let needusername = false;
 
     if (userRes.rows.length === 0) {
-        // Проверка по email (если есть) – чтобы не создавать дубликат
         let existingUser = null;
         if (user.email) {
             const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [user.email]);
@@ -79,7 +83,6 @@ async function handleTelegramLogin(initData, referralCode, client) {
         }
         if (existingUser) {
             const userId = existingUser.id;
-            // Привязываем Telegram к существующему пользователю
             await client.query('UPDATE users SET tg_id = $1, username = $2 WHERE id = $3', [tgId, username, userId]);
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
@@ -118,7 +121,6 @@ async function handleTelegramLogin(initData, referralCode, client) {
                  VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
                 [userData.id, String(tgId), user.email || null, JSON.stringify(user)]
             );
-            // Приветственное сообщение для нового пользователя
             await createWelcomeMessage(client, userData.id);
         }
     } else {
@@ -126,13 +128,13 @@ async function handleTelegramLogin(initData, referralCode, client) {
         needusername = !userData.username;
     }
 
-    // Сохраняем telegram_chat_id
     await client.query('UPDATE users SET telegram_chat_id = $1 WHERE id = $2', [tgId, userData.id]);
 
     const sessionToken = generateToken();
     await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
     return { sessionToken, needusername, userId: userData.id, user: userData };
 }
+
 
 // ========== МАРШРУТЫ ==========
 
@@ -203,7 +205,6 @@ router.post('/verify-email', async (req, res) => {
                 `INSERT INTO user_connections (user_id, provider, email) VALUES ($1, 'email', $2) ON CONFLICT (user_id, provider) DO NOTHING`,
                 [userData.id, email]
             );
-            // Приветственное сообщение для нового пользователя
             await createWelcomeMessage(client, userData.id);
         } else {
             userData = userRes.rows[0];
@@ -261,13 +262,12 @@ router.post('/telegram-auto', async (req, res) => {
     }
 });
 
-// Telegram OpenID Connect callback
+// Telegram OpenID Connect callback (с прокси)
 router.get('/telegram/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('Missing code');
 
-    let stateStr = state;
-    console.log('Telegram state:', stateStr);
+    console.log('Telegram state:', state);
 
     const clientId = process.env.TELEGRAM_CLIENT_ID;
     const clientSecret = process.env.TELEGRAM_CLIENT_SECRET;
@@ -284,7 +284,8 @@ router.get('/telegram/callback', async (req, res) => {
         const tokenResponse = await fetch('https://oauth.telegram.org/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams(tokenParams)
+            body: new URLSearchParams(tokenParams),
+            agent: agent   // ← добавлен прокси
         });
         const tokenData = await tokenResponse.json();
         if (tokenData.error) {
@@ -303,7 +304,6 @@ router.get('/telegram/callback', async (req, res) => {
             let userData;
             let needusername = false;
             if (userRes.rows.length === 0) {
-                // Проверка по email (если есть)
                 let existingUser = null;
                 if (payload.email) {
                     const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [payload.email]);
@@ -340,7 +340,6 @@ router.get('/telegram/callback', async (req, res) => {
                          VALUES ($1, 'telegram', $2, $3, $4)`,
                         [userData.id, String(tgId), payload.email || null, JSON.stringify(payload)]
                     );
-                    // Приветственное сообщение для нового пользователя
                     await createWelcomeMessage(client, userData.id);
                 }
             } else {

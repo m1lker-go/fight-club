@@ -352,6 +352,11 @@ async function handleTowerBattleEnd(battleData) {
     towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
+    // ✅ Обновляем данные заданий (например, задание "Башня")
+    if (typeof refreshTasksData === 'function') {
+        await refreshTasksData();
+    }
+
     if (battleData.leveledUp) {
         await refreshData();
         showLevelUpModal(towerStatus.chosenClass || userData.current_class);

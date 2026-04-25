@@ -1,0 +1,8 @@
+version: 1
+build:
+  nodejs: 18
+start:
+  cmd: npm start
+env:
+  - PORT=5001
+  - NODE_ENV=production

@@ -359,6 +359,28 @@ async function refreshData() {
     }
 }
 
+async function refreshTasksOnly() {
+    if (!userData || !userData.id) return;
+    try {
+        const response = await fetchWithRetry('/auth/refresh', {
+            method: 'POST',
+            body: JSON.stringify({ tg_id: userData.tg_id, user_id: userData.id })
+        });
+        const data = await response.json();
+        if (data.user) {
+            userData = data.user;
+            userClasses = data.classes || [];
+            inventory = data.inventory || [];
+            if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+            if (currentScreen === 'tasks' && typeof renderTasks === 'function') {
+                renderTasks();
+            }
+        }
+    } catch (e) {
+        console.error('Refresh tasks error:', e);
+    }
+}
+
 function updateTopBar() {
     if (!userData) return;
     document.getElementById('coinCount').innerText = userData.coins;

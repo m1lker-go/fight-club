@@ -1,5 +1,10 @@
+const { SocksProxyAgent } = require('socks-proxy-agent');
+
+const proxyUrl = 'socks5://XtrYph:GneBKv@193.187.147.243:8000';
+const agent = new SocksProxyAgent(proxyUrl);
+
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const CLIENT_URL = process.env.CLIENT_URL || 'https://fight-club-ecru.vercel.app';
+const CLIENT_URL = process.env.CLIENT_URL || 'https://cat-fight.ru';
 
 async function sendTelegramNotification(chatId, subject, body, rewardText = null) {
     console.log(`[Telegram] Попытка отправить сообщение chatId=${chatId}, subject=${subject}`);
@@ -30,17 +35,18 @@ async function sendTelegramNotification(chatId, subject, body, rewardText = null
                         { text: '📬 Открыть игру', web_app: { url: CLIENT_URL } }
                     ]]
                 }
-            })
+            }),
+            agent: agent
         });
 
         const responseText = await response.text();
         if (response.ok) {
-            console.log(`[Telegram] Уведомление успешно отправлено в Telegram для chatId ${chatId}. Ответ: ${responseText.substring(0, 200)}`);
+            console.log(`[Telegram] Успешно отправлено для chatId ${chatId}. Ответ: ${responseText.substring(0, 200)}`);
         } else {
-            console.error(`[Telegram] Ошибка при отправке: статус ${response.status}, ответ: ${responseText}`);
+            console.error(`[Telegram] Ошибка: статус ${response.status}, ответ: ${responseText}`);
         }
     } catch (err) {
-        console.error('[Telegram] Исключение при отправке:', err.message);
+        console.error('[Telegram] Исключение:', err.message);
     }
 }
 

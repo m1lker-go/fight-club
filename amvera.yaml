@@ -5,9 +5,10 @@ meta:
     version: 18
 
 build:
+  root: server
   artifacts:
-    "*": /
+    - "*"
 
 run:
-  scriptName: server/index.js
+  scriptName: index.js
   persistenceMount: /data

@@ -4,11 +4,6 @@ meta:
     name: npm
     version: 18
 
-build:
-  root: server
-  artifacts:
-    - "*"
-
 run:
-  scriptName: index.js
+  scriptName: server/index.js
   persistenceMount: /data

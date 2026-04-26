@@ -121,7 +121,6 @@ router.get('/advent', async (req, res) => {
         const currentDay = mskTime.getDate();
         const todayStr = getMoscowDate();
         
-        // Сброс при смене месяца/года
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
             lastClaimDate = null;
@@ -429,7 +428,7 @@ router.get('/daily/list', async (req, res) => {
     }
 });
 
-// ================== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК CLAIM ==================
+// ================== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК CLAIM (без сброса прогресса) ==================
 router.post('/daily/claim', async (req, res) => {
     const { tg_id, user_id, task_id, class_choice } = req.body;
     if ((!tg_id && !user_id) || !task_id) return res.status(400).json({ error: 'Missing data' });
@@ -446,18 +445,11 @@ router.post('/daily/claim', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
-        let lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-        
-        // Вместо выбрасывания ошибки – автоматический сброс
+        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
-                ['{}', today, userId]
-            );
-            // Обновляем локальные данные пользователя для дальнейшей обработки
-            user.daily_tasks_mask = 0;
-            user.daily_tasks_progress = '{}';
-            // Если после сброса задание уже помечено как выполненное – такого быть не может, но перестрахуемся
+            // Просто обновляем дату сброса, не трогая прогресс и маску
+            await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
+            user.last_daily_reset = today; // обновляем локально для дальнейшей логики
         }
 
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {

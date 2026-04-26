@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db'); // добавлен getUserByIdentifier
+const { pool, getUserByIdentifier } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
@@ -297,7 +297,6 @@ router.post('/advent/claim', async (req, res) => {
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 
 async function updateTowerTask(client, userId) {
-    // Оставляем как есть, но userId уже передан
     const userRes = await client.query(
         'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
         [userId]
@@ -430,6 +429,7 @@ router.get('/daily/list', async (req, res) => {
     }
 });
 
+// ================== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК CLAIM ==================
 router.post('/daily/claim', async (req, res) => {
     const { tg_id, user_id, task_id, class_choice } = req.body;
     if ((!tg_id && !user_id) || !task_id) return res.status(400).json({ error: 'Missing data' });
@@ -446,9 +446,18 @@ router.post('/daily/claim', async (req, res) => {
         const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const today = moscowNow.toISOString().split('T')[0];
 
-        const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        let lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+        
+        // Вместо выбрасывания ошибки – автоматический сброс
         if (lastResetStr !== today) {
-            throw new Error('Daily reset needed, please refresh');
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
+                ['{}', today, userId]
+            );
+            // Обновляем локальные данные пользователя для дальнейшей обработки
+            user.daily_tasks_mask = 0;
+            user.daily_tasks_progress = '{}';
+            // Если после сброса задание уже помечено как выполненное – такого быть не может, но перестрахуемся
         }
 
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {

@@ -548,9 +548,11 @@ router.post('/daily/update/battle', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату
+            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
+            // Читаем актуальный прогресс пользователя (он не сброшен)
+            progress = parseProgress(user.daily_tasks_progress);
         } else {
             progress = parseProgress(user.daily_tasks_progress);
         }
@@ -597,9 +599,10 @@ router.post('/daily/update/exp', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату
+            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
+            progress = parseProgress(user.daily_tasks_progress);
         } else {
             progress = parseProgress(user.daily_tasks_progress);
         }
@@ -640,9 +643,10 @@ router.post('/daily/update/chest', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату
+            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
+            progress = parseProgress(user.daily_tasks_progress);
         } else {
             progress = parseProgress(user.daily_tasks_progress);
         }
@@ -684,9 +688,10 @@ router.post('/daily/update/profile', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату
+            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
+            progress = parseProgress(user.daily_tasks_progress);
         } else {
             progress = parseProgress(user.daily_tasks_progress);
         }

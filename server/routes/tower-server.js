@@ -326,17 +326,28 @@ router.post('/battle', async (req, res) => {
                 rewardAmount = coinsReward;
             }
 
-            if (coinsReward > 0) {
-                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
-                await client.query('INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)', [userId, floor, 'coins', coinsReward]);
-                console.log('[REWARD] user ' + userId + ' floor ' + floor + ' +' + coinsReward + ' coins');
-            } else if (avatarReward) {
-                await client.query('INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount) VALUES ($1, $2, $3, $4)', [userId, floor, 'avatar', avatarReward]);
-                console.log('[REWARD] user ' + userId + ' floor ' + floor + ' received avatar ' + avatarReward);
-            }
+if (coinsReward > 0) {
+    await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
+    await client.query(
+        `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id, floor) DO NOTHING`,
+        [userId, floor, 'coins', coinsReward]
+    );
+    console.log('[REWARD] user ' + userId + ' floor ' + floor + ' +' + coinsReward + ' coins');
+} else if (avatarReward) {
+    await client.query(
+        `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id, floor) DO NOTHING`,
+        [userId, floor, 'avatar', avatarReward]
+    );
+    console.log('[REWARD] user ' + userId + ' floor ' + floor + ' received avatar ' + avatarReward);
+}
 
-            await client.query('UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1', [userId]);
+await client.query('UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1', [userId]);
 
+            
             // Обновляем рекорд в лидерборде башни (только если новый этаж больше предыдущего)
             await client.query(
                 `INSERT INTO tower_leaderboard (user_id, floor, achieved_at)

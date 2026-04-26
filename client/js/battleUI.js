@@ -183,6 +183,10 @@ function showBattleScreen(battleData) {
 }
 
 async function showBattleResult(battleData, timeOut = false) {
+    console.log('=== showBattleResult START ===');
+console.log('battleData:', battleData);
+console.log('userData:', userData);
+console.log('typeof refreshTasksData:', typeof refreshTasksData);
     if (window.battleTimer) {
         clearInterval(window.battleTimer);
         window.battleTimer = null;

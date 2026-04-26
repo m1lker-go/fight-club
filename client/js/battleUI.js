@@ -14,7 +14,6 @@ async function startBattle() {
     }
 
     try {
-        // Используем apiRequest, user_id добавится автоматически
         const response = await window.apiRequest('/battle/start', {
             method: 'POST',
             body: JSON.stringify({ 
@@ -225,7 +224,10 @@ async function showBattleResult(battleData, timeOut = false) {
         });
     } catch (err) { console.error(err); }
      
-    await refreshTasksOnly();
+    // Заменён вызов на refreshTasksData, чтобы гарантированно обновился интерфейс заданий
+    if (typeof refreshTasksData === 'function') {
+        await refreshTasksData();
+    }
 
     // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
@@ -455,5 +457,5 @@ async function showBattleResult(battleData, timeOut = false) {
         } else {
             enemyCard?.classList.remove('defeated');
         }
-    }, 100); // Небольшая задержка для гарантированного рендера
+    }, 100);
 }

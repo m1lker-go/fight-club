@@ -1,5 +1,3 @@
-// profile.js
-
 // ==================== ПРОФИЛЬ ====================
 async function renderProfile() {
     const content = document.getElementById('content');
@@ -93,10 +91,9 @@ function renderProfileBonuses(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            const res = await fetch('https://fight-club-api-4och.onrender.com/player/class', {
+            const res = await window.apiRequest('/player/class', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+                body: JSON.stringify({ class: newClass })
             });
             if (res.ok) {
                 userData.current_class = newClass;
@@ -152,10 +149,9 @@ function renderSkills(container) {
         btn.addEventListener('click', async (e) => {
             const newClass = e.target.dataset.class;
             if (newClass === currentClass) return;
-            await fetch('https://fight-club-api-4och.onrender.com/player/class', {
+            await window.apiRequest('/player/class', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tg_id: userData.tg_id, class: newClass })
+                body: JSON.stringify({ class: newClass })
             });
             userData.current_class = newClass;
             renderSkills(container);
@@ -165,11 +161,9 @@ function renderSkills(container) {
     container.querySelectorAll('.skill-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = e.target.dataset.stat;
-            const res = await fetch('https://fight-club-api-4och.onrender.com/player/upgrade', {
+            const res = await window.apiRequest('/player/upgrade', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    tg_id: userData.tg_id,
                     class: currentClass,
                     stat: stat,
                     points: 1
@@ -218,14 +212,8 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 // ==================== СКИНЫ ====================
 function renderSkins(container) {
     Promise.all([
-        fetch('https://fight-club-api-4och.onrender.com/avatars').then(res => {
-            if (!res.ok) throw new Error('Failed to fetch avatars');
-            return res.json();
-        }),
-        fetch(`https://fight-club-api-4och.onrender.com/avatars/user/${userData.tg_id}`).then(res => {
-            if (!res.ok) throw new Error('Failed to fetch owned avatars');
-            return res.json();
-        })
+        window.apiRequest('/avatars', { method: 'GET' }).then(res => res.json()),
+        window.apiRequest(`/avatars/user/${userData.tg_id}`, { method: 'GET' }).then(res => res.json())
     ])
     .then(([allAvatars, ownedIds]) => {
         const activeAvatarId = userData.avatar_id || 1;
@@ -288,7 +276,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    fetch('https://fight-club-api-4och.onrender.com/avatars')
+    window.apiRequest('/avatars', { method: 'GET' })
         .then(res => res.json())
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
@@ -332,10 +320,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (!owned && !isActive) {
                 document.getElementById('buySkin').addEventListener('click', async () => {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/avatars/buy', {
+                    const res = await window.apiRequest('/avatars/buy', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                        body: JSON.stringify({ avatar_id: avatarId })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -350,10 +337,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
             if (owned && !isActive) {
                 document.getElementById('activateSkin').addEventListener('click', async () => {
-                    const res = await fetch('https://fight-club-api-4och.onrender.com/player/avatar', {
+                    const res = await window.apiRequest('/player/avatar', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tg_id: userData.tg_id, avatar_id: avatarId })
+                        body: JSON.stringify({ avatar_id: avatarId })
                     });
                     const data = await res.json();
                     if (data.success) {

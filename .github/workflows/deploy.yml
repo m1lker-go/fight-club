@@ -24,3 +24,19 @@ jobs:
             npm install
             pm2 restart fight-api
             cp -r /var/www/fight-club/client/* /var/www/html/
+
+      - name: Wait for API to be ready
+        run: |
+          echo "⏳ Ожидание, пока API перезапустится..."
+          sleep 10
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 https://api.cat-fight.ru/auth/profile)
+            if [ "$STATUS" = "401" ]; then
+              echo "✅ API ответил 401 (ожидаемо), деплой успешен!"
+              exit 0
+            fi
+            echo "Попытка $i: статус $STATUS, ждём..."
+            sleep 15
+          done
+          echo "❌ API не ответил за отведённое время"
+          exit 1

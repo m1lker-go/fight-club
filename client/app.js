@@ -400,6 +400,18 @@ function showScreen(screen) {
     const content = document.getElementById('content');
     content.innerHTML = '';
 
+    // Автоматическое обновление задания "Посещение профиля"
+    if (screen === 'profile' && userData && userData.id) {
+        window.apiRequest('/tasks/daily/update/profile', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && typeof refreshTasksData === 'function') {
+                    refreshTasksData(); // обновляем данные заданий и маячок
+                }
+            })
+            .catch(e => console.warn('Не удалось обновить задание профиля:', e));
+    }
+
     switch (screen) {
         case 'main': renderMain(); break;
         case 'equip': renderEquip(); break;

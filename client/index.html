@@ -113,7 +113,7 @@
             if (response && response.session) {
                 const user = response.session.user;
                 // Отправляем данные на сервер для входа
-                fetch('https://fight-club-api-4och.onrender.com/auth/vk-lowcode', {
+                fetch('https://api.cat-fight.ru/auth/vk-lowcode', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user: user, access_token: response.session.sid })

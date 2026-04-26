@@ -207,30 +207,36 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // Проверяем, повысился ли уровень (сервер уже начислил опыт)
-    if (battleData.reward?.leveledUp) {
-        await refreshData();
-        showLevelUpModal(userData.current_class);
-    }
-
-    // Обновление заданий через apiRequest
+     // 1. Сначала обновляем задания, чтобы не зависеть от refreshData
+    console.log('battleUI: отправляю update/battle...');
     try {
         await window.apiRequest('/tasks/daily/update/battle', {
             method: 'POST',
             body: JSON.stringify({ class_played: userData.current_class, is_victory: isVictory })
         });
-    } catch (err) { console.error(err); }
+        console.log('battleUI: update/battle успех');
+    } catch (err) { console.error('update/battle ошибка:', err); }
 
+    console.log('battleUI: отправляю update/exp...');
     try {
         await window.apiRequest('/tasks/daily/update/exp', {
             method: 'POST',
             body: JSON.stringify({ exp_gained: expGain })
         });
-    } catch (err) { console.error(err); }
+        console.log('battleUI: update/exp успех');
+    } catch (err) { console.error('update/exp ошибка:', err); }
      
-    // Заменён вызов на refreshTasksData, чтобы гарантированно обновился интерфейс заданий
     if (typeof refreshTasksData === 'function') {
         await refreshTasksData();
+        console.log('battleUI: refreshTasksData выполнен');
+    }
+
+    // 2. Теперь можно проверить повышение уровня (это не помешает обновлению заданий)
+    if (battleData.reward?.leveledUp) {
+        try {
+            await refreshData();
+        } catch(e) { console.error('refreshData ошибка:', e); }
+        showLevelUpModal(userData.current_class);
     }
 
     // Подсчёт статистики

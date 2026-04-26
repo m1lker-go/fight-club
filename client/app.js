@@ -446,7 +446,7 @@ function renderForgeFallback() {
 async function loadAvatars() {
     if (avatarsList) return avatarsList;
     try {
-        const res = await fetch(`${window.API_BASE}/avatars`);
+       const res = await window.apiRequest('/avatars');
         if (!res.ok) throw new Error('Failed to fetch avatars');
         avatarsList = await res.json();
         return avatarsList;

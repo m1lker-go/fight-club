@@ -131,7 +131,6 @@ function renderTasks() {
 }
 
 async function loadDailyTasks() {
-    if (currentScreen !== 'tasks') return;
     const tasksList = document.getElementById('tasksList');
     const countdownContainer = document.getElementById('countdownContainer');
     if (!tasksList) return;
@@ -303,6 +302,10 @@ async function refreshTasksData() {
         if (data.tasks) {
             lastTasksData = data.tasks;
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+            // Принудительно перерисовываем задания, если мы на странице задач
+            if (typeof loadDailyTasks === 'function') {
+                loadDailyTasks();
+            }
         }
     } catch (e) {
         console.error('Failed to refresh tasks data', e);

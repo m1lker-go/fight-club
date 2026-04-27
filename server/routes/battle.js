@@ -714,6 +714,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 playerMana -= 100;
                 playerState.mana = playerMana;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
+                
+                // Мгновенный выход при смерти
+                if (enemyHp <= 0 || playerHp <= 0) break;
             } else {
                 const attackResult = performAttack(
                     playerStats, enemyStats,
@@ -772,6 +775,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                         enemyState.manaRegenHalvedDuration = 1;
                         messages.push({ text: `${enemyName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'player' });
                     }
+
+                    // Мгновенный выход при смерти
+                    if (enemyHp <= 0 || playerHp <= 0) break;
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
                     messages.push(actionLog);
@@ -780,9 +786,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
             }
 
+            // Проверка после хода (если не вышли ранее)
+            if (playerHp <= 0 || enemyHp <= 0) break;
+
             turn = 'enemy';
             playerActedThisRound = true;
         } else {
+            // Ход врага (аналогично добавлены break)
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
@@ -829,6 +839,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 enemyMana -= 100;
                 enemyState.mana = enemyMana;
                 if (skill.stateChanges) Object.assign(playerState, skill.stateChanges);
+                
+                if (playerHp <= 0 || enemyHp <= 0) break;
             } else {
                 const attackResult = performAttack(
                     enemyStats, playerStats,
@@ -886,6 +898,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                         playerState.manaRegenHalvedDuration = 1;
                         messages.push({ text: `${playerName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'enemy' });
                     }
+
+                    if (playerHp <= 0 || enemyHp <= 0) break;
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'enemy' };
                     messages.push(actionLog);
@@ -894,10 +908,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.stateChanges) Object.assign(playerState, attackResult.stateChanges);
             }
 
+            if (playerHp <= 0 || enemyHp <= 0) break;
+
             turn = 'player';
             enemyActedThisRound = true;
         }
 
+        // Обновление длительности баффов
         if (playerState.critDmgBuffDuration > 0) {
             playerState.critDmgBuffDuration--;
             if (playerState.critDmgBuffDuration === 0) playerState.critDmgBuff = 0;
@@ -910,7 +927,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (playerState.invincible > 0) playerState.invincible--;
         if (enemyState.invincible > 0) enemyState.invincible--;
 
-        if (playerActedThisRound && enemyActedThisRound) {
+        // DOT и скрытые атаки только если оба живы
+        if (playerHp > 0 && enemyHp > 0 && playerActedThisRound && enemyActedThisRound) {
             const playerDot = applyDotDamage(playerState, playerName, enemyStats.agi);
             const enemyDot = applyDotDamage(enemyState, enemyName, playerStats.agi);
             if (playerDot.damage > 0) {
@@ -922,6 +940,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     messages.push(entry);
                 });
                 pushState();
+                if (playerHp <= 0) break;
             }
             if (enemyDot.damage > 0) {
                 enemyHp -= enemyDot.damage;
@@ -932,6 +951,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     messages.push(entry);
                 });
                 pushState();
+                if (enemyHp <= 0) break;
             }
             if (enemyState.invisible > 0 && enemyState.invisible === 1) {
                 const dmg = Math.floor(enemyStats.atk * 2);
@@ -945,6 +965,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 });
                 enemyState.invisible = 0;
                 pushState();
+                if (playerHp <= 0) break;
             }
             if (playerState.invisible > 0 && playerState.invisible === 1) {
                 const dmg = Math.floor(playerStats.atk * 2);
@@ -958,11 +979,13 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 });
                 playerState.invisible = 0;
                 pushState();
+                if (enemyHp <= 0) break;
             }
             playerActedThisRound = false;
             enemyActedThisRound = false;
         }
 
+        // Воскрешение некроманта
         if (enemyHp <= 0 && !enemyState.revived && enemySubclass === 'mouse_necromancer') {
             enemyHp = Math.floor(enemyStats.hp * 0.1);
             enemyState.revived = true;
@@ -996,6 +1019,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             pushState();
         }
 
+        // Окончательная проверка
         if (playerHp <= 0 || enemyHp <= 0) break;
     }
 

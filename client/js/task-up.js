@@ -70,7 +70,7 @@ function showRewardToast(title, iconClass, subtitle) {
     subtitle = subtitle || '';
     const toast = document.createElement('div');
     toast.className = 'reward-toast';
-    let inner = '<div class="reward-toast-content"><i class="fas ' + iconClass + '" style="font-size:20px; color:#f1c40f;"></i><div><div class="reward-toast-title">' + title + '</div>';
+   let inner = '<div class="reward-toast-content"><i class="fas ' + iconClass + '" style="font-size:20px;"></i><div><div class="reward-toast-title">' + title + '</div>';
     if (subtitle) {
         inner += '<div class="reward-toast-sub">' + subtitle + '</div>';
     }

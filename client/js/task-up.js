@@ -1,4 +1,4 @@
-// task-up.js (исправленный)
+// task-up.js (исправленный) – с авто-исчезающими модалками наград
 
 let countdownInterval = null;
 let lastTasksData = null;  // храним последние данные заданий
@@ -63,6 +63,56 @@ function renderReferral() {
     });
 
     return referralDiv;
+}
+
+// Автоматическое модальное окно награды (исчезает через 2 секунды)
+function showAutoReward(title, iconClass = 'fa-coins', subtitle = '') {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const closeBtn = modal.querySelector('.close');
+    
+    // Прячем крестик на время показа
+    if (closeBtn) closeBtn.style.display = 'none';
+    modalTitle.innerHTML = '';  // убираем заголовок
+
+    modalBody.innerHTML = `
+        <div style="text-align:center; color:white;">
+            <i class="fas ${iconClass}" style="font-size:36px; color:#f1c40f; margin-bottom:12px; display:block;"></i>
+            <div style="font-size:18px; font-weight:bold;">${title}</div>
+            ${subtitle ? `<div style="font-size:14px; color:#aaa; margin-top:6px;">${subtitle}</div>` : ''}
+        </div>
+    `;
+    
+    // Добавляем класс для анимации (использует существующие стили .modal)
+    modal.classList.add('auto-reward-modal');
+    modal.style.display = 'flex';
+    
+    // Плавно скрываем через 2 секунды
+    setTimeout(() => {
+        modal.classList.add('fade-out');
+        modal.addEventListener('transitionend', function handler() {
+            modal.removeEventListener('transitionend', handler);
+            modal.style.display = 'none';
+            modal.classList.remove('auto-reward-modal', 'fade-out');
+            if (closeBtn) closeBtn.style.display = '';
+        });
+        // Fallback на случай отсутствия transitionend
+        setTimeout(() => {
+            if (modal.classList.contains('fade-out')) {
+                modal.style.display = 'none';
+                modal.classList.remove('auto-reward-modal', 'fade-out');
+                if (closeBtn) closeBtn.style.display = '';
+            }
+        }, 500);
+    }, 2000);
+
+    // Закрытие по клику на затемнённый фон (опционально)
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.add('fade-out');
+        }
+    };
 }
 
 function renderTasks() {
@@ -244,7 +294,7 @@ async function loadDailyTasks() {
                     if (data.error) {
                        showToast(data.error, 1500);
                     } else {
-                        showCoinsModal(rewardAmount);
+                        showAutoReward(`+${rewardAmount} монет`, 'fa-coins');
                         loadDailyTasks();
                         refreshData();
                     }
@@ -289,6 +339,7 @@ async function refreshTasksData() {
     }
 }
 window.refreshTasksData = refreshTasksData;
+window.loadDailyTasks = loadDailyTasks;
 
 function getRemainingTime() {
     const now = new Date();
@@ -342,52 +393,6 @@ function stopCountdownTimer() {
         clearInterval(countdownInterval);
         countdownInterval = null;
     }
-}
-
-function showCoinsModal(amount) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.innerText = 'Награда';
-    modalBody.innerHTML = `
-        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="font-size: 28px; font-weight: bold; color: #ddd;">${amount}</span>
-                <i class="fas fa-coins" style="font-size: 28px; color: #ddd;"></i>
-            </div>
-            <div style="font-size: 14px; color: #aaa;">монет получено!</div>
-        </div>
-    `;
-    modal.style.display = 'block';
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target === modal) modal.style.display = 'none';
-    };
-}
-
-function showExpModal(amount, className) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.innerText = 'Награда';
-    modalBody.innerHTML = `
-        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="font-size: 28px; font-weight: bold; color: #ddd;">+${amount}</span>
-                <i class="fas fa-star" style="font-size: 28px; color: #ddd;"></i>
-            </div>
-            <div style="font-size: 14px; color: #aaa;">для класса <strong>${getClassNameRu(className)}</strong></div>
-        </div>
-    `;
-    modal.style.display = 'block';
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target === modal) modal.style.display = 'none';
-    };
 }
 
 function showAdventCalendar() {
@@ -484,7 +489,7 @@ function claimAdventDay(day, daysInMonth) {
             showToast(data.error, 1500);
         } else {
             if (reward.type === 'coins') {
-                showCoinsModal(reward.amount);
+                showAutoReward(`+${reward.amount} монет`, 'fa-coins');
             } else if (reward.type === 'item' && data.item) {
                 showChestResult(data.item);
             } else {
@@ -538,7 +543,7 @@ function showClassChoiceModalForAdvent(expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                showExpModal(expAmount, classChoice);
+                showAutoReward(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
                 await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
@@ -588,7 +593,7 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                showExpModal(expAmount, classChoice);
+                showAutoReward(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
                 await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);

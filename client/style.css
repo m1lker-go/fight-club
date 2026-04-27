@@ -3699,3 +3699,19 @@ input:checked + .slider:before {
     pointer-events: none;
     z-index: 10;
 }
+
+.auto-reward-modal {
+    display: flex !important;        /* перекрывает display:none у .modal */
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+.auto-reward-modal.fade-out {
+    opacity: 0;
+}
+.auto-reward-modal .modal-content {
+    animation: popIn 0.3s ease forwards;
+}
+@keyframes popIn {
+    from { transform: scale(0.9); }
+    to { transform: scale(1); }
+}

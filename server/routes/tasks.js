@@ -367,13 +367,9 @@ router.get('/daily/list', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Ежедневный сброс: обнуляем маску выполненных заданий и прогресс
-            await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
-                ['{}', today, userId]
-            );
-            user.daily_tasks_mask = 0;
-            user.daily_tasks_progress = '{}';
+            // Не сбрасываем прогресс, только обновляем дату сброса и серию побед
+            await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
+            user.last_daily_reset = today;
             dailyWinStreak = 0;
         }
 

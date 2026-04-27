@@ -1,4 +1,5 @@
-// task-up.js (исправленный) – с авто-исчезающими модалками наград
+```javascript
+// task-up.js (исправленный) – с авто-исчезающими уведомлениями наград
 
 let countdownInterval = null;
 let lastTasksData = null;  // храним последние данные заданий
@@ -65,54 +66,30 @@ function renderReferral() {
     return referralDiv;
 }
 
-// Автоматическое модальное окно награды (исчезает через 2 секунды)
-function showAutoReward(title, iconClass = 'fa-coins', subtitle = '') {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    const closeBtn = modal.querySelector('.close');
-    
-    // Прячем крестик на время показа
-    if (closeBtn) closeBtn.style.display = 'none';
-    modalTitle.innerHTML = '';  // убираем заголовок
-
-    modalBody.innerHTML = `
-        <div style="text-align:center; color:white;">
-            <i class="fas ${iconClass}" style="font-size:36px; color:#f1c40f; margin-bottom:12px; display:block;"></i>
-            <div style="font-size:18px; font-weight:bold;">${title}</div>
-            ${subtitle ? `<div style="font-size:14px; color:#aaa; margin-top:6px;">${subtitle}</div>` : ''}
+// Всплывающее уведомление о награде (без затемнения, без крестика)
+function showRewardToast(title, iconClass = 'fa-coins', subtitle = '') {
+    const toast = document.createElement('div');
+    toast.className = 'reward-toast';
+    toast.innerHTML = `
+        <div class="reward-toast-content">
+            <i class="fas ${iconClass}" style="font-size:20px; color:#f1c40f;"></i>
+            <div>
+                <div class="reward-toast-title">${title}</div>
+                ${subtitle ? `<div class="reward-toast-sub">${subtitle}</div>` : ''}
+            </div>
         </div>
     `;
-    
-    // Добавляем класс для анимации (использует существующие стили .modal)
-    modal.classList.add('auto-reward-modal');
-    modal.style.display = 'flex';
-    
-    // Плавно скрываем через 2 секунды
-    setTimeout(() => {
-        modal.classList.add('fade-out');
-        modal.addEventListener('transitionend', function handler() {
-            modal.removeEventListener('transitionend', handler);
-            modal.style.display = 'none';
-            modal.classList.remove('auto-reward-modal', 'fade-out');
-            if (closeBtn) closeBtn.style.display = '';
-        });
-        // Fallback на случай отсутствия transitionend
-        setTimeout(() => {
-            if (modal.classList.contains('fade-out')) {
-                modal.style.display = 'none';
-                modal.classList.remove('auto-reward-modal', 'fade-out');
-                if (closeBtn) closeBtn.style.display = '';
-            }
-        }, 500);
-    }, 2000);
+    document.body.appendChild(toast);
 
-    // Закрытие по клику на затемнённый фон (опционально)
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            modal.classList.add('fade-out');
-        }
-    };
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.addEventListener('transitionend', () => toast.remove());
+            // fallback remove
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 400);
+        }, 2000);
+    });
 }
 
 function renderTasks() {
@@ -294,7 +271,7 @@ async function loadDailyTasks() {
                     if (data.error) {
                        showToast(data.error, 1500);
                     } else {
-                        showAutoReward(`+${rewardAmount} монет`, 'fa-coins');
+                        showRewardToast(`+${rewardAmount} монет`, 'fa-coins');
                         loadDailyTasks();
                         refreshData();
                     }
@@ -471,7 +448,7 @@ function claimAdventDay(day, daysInMonth) {
     const reward = getAdventReward(day, daysInMonth);
 
     isClaiming = true;
-    const body = {}; // не нужно явно передавать tg_id или user_id
+    const body = {};
 
     if (reward.type === 'exp') {
         showClassChoiceModalForAdvent(reward.amount);
@@ -487,21 +464,28 @@ function claimAdventDay(day, daysInMonth) {
     .then(data => {
         if (data.error) {
             showToast(data.error, 1500);
+            isClaiming = false;
         } else {
             if (reward.type === 'coins') {
-                showAutoReward(`+${reward.amount} монет`, 'fa-coins');
+                showRewardToast(`+${reward.amount} монет`, 'fa-coins');
             } else if (reward.type === 'item' && data.item) {
                 showChestResult(data.item);
             } else {
                 showToast('Вы получили: ' + data.reward, 2000);
             }
-            if (reloadTimeout) clearTimeout(reloadTimeout);
-            reloadTimeout = setTimeout(() => {
-                showAdventCalendar();
-                refreshData();
-                isClaiming = false;
-                reloadTimeout = null;
-            }, 1500);
+            // Запрашиваем актуальный статус календаря с сервера
+            window.apiRequest('/tasks/advent', { method: 'GET' })
+                .then(res => res.json())
+                .then(updatedData => {
+                    renderAdventCalendar(updatedData);
+                    refreshData();
+                    isClaiming = false;
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Ошибка обновления календаря', 1500);
+                    isClaiming = false;
+                });
         }
     })
     .catch(err => {
@@ -543,14 +527,15 @@ function showClassChoiceModalForAdvent(expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                showAutoReward(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
+                showRewardToast(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
                 await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
                 }
-                setTimeout(() => {
-                    showAdventCalendar();
-                }, 500);
+                // Обновляем календарь
+                window.apiRequest('/tasks/advent', { method: 'GET' })
+                    .then(res => res.json())
+                    .then(updatedData => renderAdventCalendar(updatedData));
             }
         });
     });
@@ -593,7 +578,7 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                showAutoReward(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
+                showRewardToast(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
                 await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
@@ -606,3 +591,4 @@ function claimDailyExp(taskId, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
+```

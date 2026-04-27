@@ -1,4 +1,3 @@
-```javascript
 // task-up.js (исправленный) – с авто-исчезающими уведомлениями наград
 
 let countdownInterval = null;
@@ -27,21 +26,20 @@ function renderReferral() {
     referralDiv.style.boxSizing = 'border-box';
     referralDiv.style.backgroundColor = '#2a303c';
 
-    const referralLink = `https://t.me/${window.BOT_USERNAME}?start=${userData.referral_code || 'ref'}`;
+    const referralLink = 'https://t.me/' + (window.BOT_USERNAME || 'CatFightingBot') + '?start=' + (userData.referral_code || 'ref');
 
-    referralDiv.innerHTML = `
-        <div style="flex: 2; min-width: 0;">
-            <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>
-            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>
-        </div>
-        <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">
-            <span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>
-        </div>
-        <div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">
-            <button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>
-            <button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>
-        </div>
-    `;
+    referralDiv.innerHTML =
+        '<div style="flex: 2; min-width: 0;">' +
+            '<div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>' +
+            '<div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>' +
+        '</div>' +
+        '<div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">' +
+            '<span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>' +
+        '</div>' +
+        '<div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">' +
+            '<button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>' +
+            '<button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>' +
+        '</div>';
 
     referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(referralLink).then(() => {
@@ -55,7 +53,7 @@ function renderReferral() {
         if (window.Telegram?.WebApp?.shareURL) {
             window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
         } else if (window.Telegram?.WebApp?.openTelegramLink) {
-            window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}`);
+            window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
         } else {
             navigator.clipboard.writeText(referralLink).then(() => {
                 showToast('Ссылка скопирована!', 1500);
@@ -67,18 +65,17 @@ function renderReferral() {
 }
 
 // Всплывающее уведомление о награде (без затемнения, без крестика)
-function showRewardToast(title, iconClass = 'fa-coins', subtitle = '') {
+function showRewardToast(title, iconClass, subtitle) {
+    iconClass = iconClass || 'fa-coins';
+    subtitle = subtitle || '';
     const toast = document.createElement('div');
     toast.className = 'reward-toast';
-    toast.innerHTML = `
-        <div class="reward-toast-content">
-            <i class="fas ${iconClass}" style="font-size:20px; color:#f1c40f;"></i>
-            <div>
-                <div class="reward-toast-title">${title}</div>
-                ${subtitle ? `<div class="reward-toast-sub">${subtitle}</div>` : ''}
-            </div>
-        </div>
-    `;
+    let inner = '<div class="reward-toast-content"><i class="fas ' + iconClass + '" style="font-size:20px; color:#f1c40f;"></i><div><div class="reward-toast-title">' + title + '</div>';
+    if (subtitle) {
+        inner += '<div class="reward-toast-sub">' + subtitle + '</div>';
+    }
+    inner += '</div></div>';
+    toast.innerHTML = inner;
     document.body.appendChild(toast);
 
     requestAnimationFrame(() => {
@@ -142,7 +139,7 @@ async function loadDailyTasks() {
     try {
         // Используем apiRequest, user_id добавится автоматически
         const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        if (!res.ok) throw new Error('HTTP error! status: ' + res.status);
         const data = await res.json();
         const tasksData = data.tasks;
         const dailyWinStreak = data.dailyWinStreak || 0;
@@ -169,8 +166,8 @@ async function loadDailyTasks() {
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
             const rewardText = task.reward_type === 'coins' 
-                ? `${task.reward_amount} <i class="fas fa-coins" style="color:white;"></i>` 
-                : `${task.reward_amount} EXP`;
+                ? task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>' 
+                : task.reward_amount + ' EXP';
 
             const translated = dailyTaskTranslations[task.name] || {};
             const displayName = translated.name || task.name;
@@ -182,36 +179,33 @@ async function loadDailyTasks() {
                 altDesc = '<div style="font-size: 10px; color: #88ff88;">ИЛИ выиграть 10 боёв подряд</div>';
                 const streakProgress = Math.min(dailyWinStreak, 10);
                 const streakPercent = (streakProgress / 10) * 100;
-                altProgressHtml = `
-                    <div style="margin-top: 2px; display: flex; align-items: center; gap: 10px;">
-                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${streakPercent}%; height: 100%; border-radius: 3px;"></div>
-                        </div>
-                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${streakProgress}/10</div>
-                    </div>
-                `;
+                altProgressHtml = 
+                    '<div style="margin-top: 2px; display: flex; align-items: center; gap: 10px;">' +
+                        '<div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">' +
+                            '<div style="background-color: #00aaff; width: ' + streakPercent + '%; height: 100%; border-radius: 3px;"></div>' +
+                        '</div>' +
+                        '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + streakProgress + '/10</div>' +
+                    '</div>';
             }
 
-            let progressHtml = `
-                <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                    <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                        <div style="background-color: #00aaff; width: ${progressPercent}%; height: 100%; border-radius: 3px;"></div>
-                    </div>
-                    <div style="font-size: 10px; color: #aaa; min-width: 35px;">${clampedProgress}/${task.target_value}</div>
-                </div>
-            `;
+            let progressHtml = 
+                '<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">' +
+                    '<div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">' +
+                        '<div style="background-color: #00aaff; width: ' + progressPercent + '%; height: 100%; border-radius: 3px;"></div>' +
+                    '</div>' +
+                    '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + clampedProgress + '/' + task.target_value + '</div>' +
+                '</div>';
 
             let isReadyToClaim = false;
             if (task.id === 9) {
                 const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
-                progressHtml = `
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">
-                        <div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">
-                            <div style="background-color: #00aaff; width: ${championPercent}%; height: 100%; border-radius: 3px;"></div>
-                        </div>
-                        <div style="font-size: 10px; color: #aaa; min-width: 35px;">${completedTasksCount}/${totalTasksCount}</div>
-                    </div>
-                `;
+                progressHtml = 
+                    '<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">' +
+                        '<div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">' +
+                            '<div style="background-color: #00aaff; width: ' + championPercent + '%; height: 100%; border-radius: 3px;"></div>' +
+                        '</div>' +
+                        '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + completedTasksCount + '/' + totalTasksCount + '</div>' +
+                    '</div>';
                 isReadyToClaim = completedTasksCount >= totalTasksCount;
             } else {
                 isReadyToClaim = task.progress >= task.target_value;
@@ -228,27 +222,26 @@ async function loadDailyTasks() {
             taskCard.style.boxSizing = 'border-box';
             taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833';
 
-            taskCard.innerHTML = `
-                <div style="flex: 2; min-width: 0;">
-                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${displayDesc}</div>
-                    ${altDesc}
-                    ${progressHtml}
-                    ${altProgressHtml}
-                </div>
-                <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">
-                    <span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">${rewardText}</span>
-                </div>
-                <div style="flex: 0 0 50px; text-align: right;">
-                    <button class="claim-task-btn ${isReadyToClaim ? 'active' : ''}" 
-                            data-task-id="${task.id}"
-                            data-reward-type="${task.reward_type}"
-                            data-reward-amount="${task.reward_amount}"
-                            style="padding: 8px; width: 100%; font-size: 14px;">
-                        <i class="fas ${isReadyToClaim ? 'fa-check' : 'fa-times'}"></i>
-                    </button>
-                </div>
-            `;
+            taskCard.innerHTML = 
+                '<div style="flex: 2; min-width: 0;">' +
+                    '<div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + displayName + '</div>' +
+                    '<div style="font-size: 11px; color: #aaa; margin-top: 2px;">' + displayDesc + '</div>' +
+                    altDesc +
+                    progressHtml +
+                    altProgressHtml +
+                '</div>' +
+                '<div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">' +
+                    '<span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">' + rewardText + '</span>' +
+                '</div>' +
+                '<div style="flex: 0 0 50px; text-align: right;">' +
+                    '<button class="claim-task-btn ' + (isReadyToClaim ? 'active' : '') + '" ' +
+                            'data-task-id="' + task.id + '" ' +
+                            'data-reward-type="' + task.reward_type + '" ' +
+                            'data-reward-amount="' + task.reward_amount + '" ' +
+                            'style="padding: 8px; width: 100%; font-size: 14px;">' +
+                        '<i class="fas ' + (isReadyToClaim ? 'fa-check' : 'fa-times') + '"></i>' +
+                    '</button>' +
+                '</div>';
             tasksList.appendChild(taskCard);
         });
 
@@ -271,7 +264,7 @@ async function loadDailyTasks() {
                     if (data.error) {
                        showToast(data.error, 1500);
                     } else {
-                        showRewardToast(`+${rewardAmount} монет`, 'fa-coins');
+                        showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
                         loadDailyTasks();
                         refreshData();
                     }
@@ -327,34 +320,33 @@ function getRemainingTime() {
     const diffMs = nextDay - moscowTime;
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    return { hours, minutes };
+    return { hours: hours, minutes: minutes };
 }
 
 function updateCountdownDisplay() {
     const container = document.getElementById('countdownContainer');
     if (!container) return;
-    const { hours, minutes } = getRemainingTime();
-    const hoursStr = hours.toString().padStart(2, '0');
-    const minutesStr = minutes.toString().padStart(2, '0');
-    container.innerHTML = `
-        <div class="countdown-card">
-            <div class="countdown-message">Вы выполнили ВСЕ задания!</div>
-            <div class="countdown-timer-wrapper">
-                <div class="countdown-label">Новые задания появятся через:</div>
-                <div class="countdown-digits">
-                    <div class="digit-box">
-                        <div class="digit-value">${hoursStr}</div>
-                        <div class="digit-unit">часов</div>
-                    </div>
-                    <div class="colon">:</div>
-                    <div class="digit-box">
-                        <div class="digit-value">${minutesStr}</div>
-                        <div class="digit-unit">минут</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    const time = getRemainingTime();
+    const hoursStr = time.hours.toString().padStart(2, '0');
+    const minutesStr = time.minutes.toString().padStart(2, '0');
+    container.innerHTML = 
+        '<div class="countdown-card">' +
+            '<div class="countdown-message">Вы выполнили ВСЕ задания!</div>' +
+            '<div class="countdown-timer-wrapper">' +
+                '<div class="countdown-label">Новые задания появятся через:</div>' +
+                '<div class="countdown-digits">' +
+                    '<div class="digit-box">' +
+                        '<div class="digit-value">' + hoursStr + '</div>' +
+                        '<div class="digit-unit">часов</div>' +
+                    '</div>' +
+                    '<div class="colon">:</div>' +
+                    '<div class="digit-box">' +
+                        '<div class="digit-value">' + minutesStr + '</div>' +
+                        '<div class="digit-unit">минут</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
 }
 
 function startCountdownTimer() {
@@ -375,7 +367,7 @@ function stopCountdownTimer() {
 function showAdventCalendar() {
     window.apiRequest('/tasks/advent', { method: 'GET' })
         .then(res => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.json();
         })
         .then(data => {
@@ -390,7 +382,10 @@ function showAdventCalendar() {
 }
 
 function renderAdventCalendar(data) {
-    const { currentDay, daysInMonth, nextAvailable, lastClaimed, lastClaimDate } = data;
+    const currentDay = data.currentDay;
+    const daysInMonth = data.daysInMonth;
+    const nextAvailable = data.nextAvailable;
+    const lastClaimed = data.lastClaimed;
     const content = document.getElementById('content');
 
     let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
@@ -416,13 +411,10 @@ function renderAdventCalendar(data) {
             else if (reward.rarity === 'rare') color = '#2e86de';
             else if (reward.rarity === 'epic') color = '#9b59b6';
             else if (reward.rarity === 'legendary') color = '#f1c40f';
-            iconHtml = `<i class="fas fa-tshirt" style="color: ${color};"></i>`;
+            iconHtml = '<i class="fas fa-tshirt" style="color: ' + color + ';"></i>';
         }
 
-        html += `<div class="${className}" data-day="${day}">
-            <div class="advent-icon">${iconHtml}</div>
-            <div class="advent-day-number">${day}</div>
-        </div>`;
+        html += '<div class="' + className + '" data-day="' + day + '"><div class="advent-icon">' + iconHtml + '</div><div class="advent-day-number">' + day + '</div></div>';
     }
     html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
     content.innerHTML = html;
@@ -438,7 +430,6 @@ function renderAdventCalendar(data) {
 }
 
 let isClaiming = false;
-let reloadTimeout = null;
 
 function claimAdventDay(day, daysInMonth) {
     if (isClaiming) {
@@ -467,7 +458,7 @@ function claimAdventDay(day, daysInMonth) {
             isClaiming = false;
         } else {
             if (reward.type === 'coins') {
-                showRewardToast(`+${reward.amount} монет`, 'fa-coins');
+                showRewardToast('+' + reward.amount + ' монет', 'fa-coins');
             } else if (reward.type === 'item' && data.item) {
                 showChestResult(data.item);
             } else {
@@ -501,14 +492,13 @@ function showClassChoiceModalForAdvent(expAmount) {
     const modalBody = document.getElementById('modalBody');
 
     modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
-        </div>
-    `;
+    modalBody.innerHTML = 
+        '<p>Вы получили ' + expAmount + ' опыта. Какому классу хотите его вручить?</p>' +
+        '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">' +
+            '<button class="btn class-choice" data-class="warrior">Воин</button>' +
+            '<button class="btn class-choice" data-class="assassin">Ассасин</button>' +
+            '<button class="btn class-choice" data-class="mage">Маг</button>' +
+        '</div>';
 
     modal.style.display = 'block';
 
@@ -518,7 +508,7 @@ function showClassChoiceModalForAdvent(expAmount) {
             const classChoice = e.target.dataset.class;
             modal.style.display = 'none';
 
-            const body = { classChoice };
+            const body = { classChoice: classChoice };
             const res = await window.apiRequest('/tasks/advent/claim', {
                 method: 'POST',
                 body: JSON.stringify(body)
@@ -527,7 +517,7 @@ function showClassChoiceModalForAdvent(expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                showRewardToast(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
+                showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
@@ -550,14 +540,13 @@ function claimDailyExp(taskId, expAmount) {
     const modalBody = document.getElementById('modalBody');
 
     modalTitle.innerText = 'Выберите класс';
-    modalBody.innerHTML = `
-        <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
-        </div>
-    `;
+    modalBody.innerHTML = 
+        '<p>Вы получили ' + expAmount + ' опыта. Какому классу хотите его вручить?</p>' +
+        '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">' +
+            '<button class="btn class-choice" data-class="warrior">Воин</button>' +
+            '<button class="btn class-choice" data-class="assassin">Ассасин</button>' +
+            '<button class="btn class-choice" data-class="mage">Маг</button>' +
+        '</div>';
 
     modal.style.display = 'block';
 
@@ -578,7 +567,7 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                showRewardToast(`+${expAmount} опыта`, 'fa-star', `для класса ${getClassNameRu(classChoice)}`);
+                showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
@@ -591,4 +580,3 @@ function claimDailyExp(taskId, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
-```

@@ -3471,6 +3471,11 @@ input:checked + .slider:before {
     border-radius: 8px;
 }
 
+/* Отражение аватара игрока (смотрит на врага) */
+.hero-card > div:first-child img {
+    transform: scaleX(-1);
+}
+
 /* ========== СООБЩЕНИЯ ========== */
 .messages-container {
     background-color: #2a303c;

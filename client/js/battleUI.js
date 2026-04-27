@@ -208,20 +208,29 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
     const newStreak = battleData.reward?.newStreak || 0;
 
      // 1. Сначала обновляем задания, чтобы не зависеть от refreshData
-    console.log('battleUI: отправляю update/battle...');
+      console.log('battleUI: отправляю update/battle...');
     try {
         await window.apiRequest('/tasks/daily/update/battle', {
             method: 'POST',
-            body: JSON.stringify({ class_played: userData.current_class, is_victory: isVictory })
+            body: JSON.stringify({ 
+                class_played: userData.current_class, 
+                is_victory: isVictory,
+                user_id: userData.id,
+                tg_id: userData.tg_id || 0
+            })
         });
         console.log('battleUI: update/battle успех');
     } catch (err) { console.error('update/battle ошибка:', err); }
 
-    console.log('battleUI: отправляю update/exp...');
+      console.log('battleUI: отправляю update/exp...');
     try {
         await window.apiRequest('/tasks/daily/update/exp', {
             method: 'POST',
-            body: JSON.stringify({ exp_gained: expGain })
+            body: JSON.stringify({ 
+                exp_gained: expGain,
+                user_id: userData.id,
+                tg_id: userData.tg_id || 0
+            })
         });
         console.log('battleUI: update/exp успех');
     } catch (err) { console.error('update/exp ошибка:', err); }

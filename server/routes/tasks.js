@@ -97,7 +97,7 @@ function getAdventReward(day, daysInMonth) {
     return { type: 'coins', amount: 100 };
 }
 
-// ==================== АДВЕНТ ====================
+// ==================== АДВЕНТ (ИСПРАВЛЕННЫЙ) ====================
 
 router.get('/advent', async (req, res) => {
     const { tg_id, user_id } = req.query;
@@ -110,7 +110,7 @@ router.get('/advent', async (req, res) => {
         
         const userId = user.id;
         let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date;
+        let lastClaimDate = user.advent_last_claim_date; // теперь строка или null
         let adventMonth = user.advent_month;
         let adventYear = user.advent_year;
         
@@ -139,21 +139,20 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
         
-        const lastClaimDateStr = lastClaimDate ? new Date(lastClaimDate).toISOString().split('T')[0] : null;
-        
+        // lastClaimDate теперь строка, сравниваем напрямую с todayStr
         let availableDay = null;
-        if (nextDay <= currentDay && (!lastClaimDateStr || lastClaimDateStr !== todayStr)) {
+        if (nextDay <= currentDay && (!lastClaimDate || lastClaimDate !== todayStr)) {
             availableDay = nextDay;
         }
         
-        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDateStr}, nextDay=${nextDay}, availableDay=${availableDay}`);
+        console.log(`[ADVENT GET] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDate}, nextDay=${nextDay}, availableDay=${availableDay}`);
         
         res.json({
             currentDay,
             daysInMonth,
             nextAvailable: availableDay,
             lastClaimed: lastClaimed,
-            lastClaimDate: lastClaimDateStr
+            lastClaimDate: lastClaimDate
         });
     } finally {
         client.release();
@@ -172,7 +171,7 @@ router.post('/advent/claim', async (req, res) => {
         if (!user) throw new Error('User not found');
         const userId = user.id;
         let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date;
+        let lastClaimDate = user.advent_last_claim_date; // строка или null
         let adventMonth = user.advent_month;
         let adventYear = user.advent_year;
         
@@ -198,14 +197,13 @@ router.post('/advent/claim', async (req, res) => {
         }
         
         const nextDay = lastClaimed + 1;
-        const lastClaimDateStr = lastClaimDate ? new Date(lastClaimDate).toISOString().split('T')[0] : null;
         
-        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDateStr}, todayStr=${todayStr}, currentDay=${currentDay}`);
+        console.log(`[ADVENT CLAIM] user=${userId}, lastClaimed=${lastClaimed}, lastClaimDate=${lastClaimDate}, todayStr=${todayStr}, currentDay=${currentDay}`);
         
         if (nextDay > currentDay) {
             throw new Error('This day is not available yet');
         }
-        if (lastClaimDateStr && lastClaimDateStr === todayStr) {
+        if (lastClaimDate && lastClaimDate === todayStr) {
             throw new Error('You have already claimed today\'s reward');
         }
         

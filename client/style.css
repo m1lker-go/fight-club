@@ -3723,16 +3723,15 @@ input:checked + .slider:before {
   top: 20px;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: rgba(0, 0, 0, 0.85);
+  background: #1a1f2b;               /* как фон заголовков */
   color: white;
-  padding: 12px 24px;
-  border-radius: 12px;
+  padding: 14px 24px;
+  border-radius: 12px;               /* скруглённые углы со всех сторон */
   z-index: 10000;
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00aaff;         /* синяя окантовка, как у многих элементов */
   max-width: 90%;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   white-space: nowrap;
@@ -3745,6 +3744,10 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.reward-toast-content i {
+  color: white !important;           /* иконки белые */
+  font-size: 20px;
 }
 .reward-toast-title {
   font-size: 16px;

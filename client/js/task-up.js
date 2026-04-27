@@ -138,7 +138,7 @@ async function loadDailyTasks() {
 
     try {
         // Используем apiRequest, user_id добавится автоматически
-        const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
+        const res = await window.apiRequest(`/tasks/daily/list?_t=${Date.now()}`, { method: 'GET' });
         if (!res.ok) throw new Error('HTTP error! status: ' + res.status);
         const data = await res.json();
         const tasksData = data.tasks;
@@ -298,7 +298,7 @@ async function loadDailyTasks() {
 async function refreshTasksData() {
     if (!userData || !userData.id) return;
     try {
-        const res = await window.apiRequest('/tasks/daily/list', { method: 'GET' });
+        const res = await window.apiRequest(`/tasks/daily/list?_t=${Date.now()}`, { method: 'GET' });
         const data = await res.json();
         if (data.tasks) {
             lastTasksData = data.tasks;

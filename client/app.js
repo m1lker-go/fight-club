@@ -423,8 +423,12 @@ function showScreen(screen) {
             } else {
                 renderForgeFallback();
             }
-            break;
-        case 'tasks': renderTasks(); break;
+            break;case 'tasks': 
+    renderTasks();
+    if (typeof loadDailyTasks === 'function') {
+        loadDailyTasks();
+    }
+    break;
         case 'rating': renderRating(); break;
         case 'profile': renderProfile(); break;
         case 'tower': 

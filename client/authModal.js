@@ -1,6 +1,7 @@
 let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;
+let authMode = 'login'; // 'login' или 'register'
 
 let googleLoginInProgress = false;
 let telegramLoginInProgress = false;
@@ -23,22 +24,22 @@ function showAuthModal() {
                 <button class="auth-btn vk-btn" id="vkAuthBtn">
                     <i class="fab fa-vk"></i> Войти через VK
                 </button>
-                <button class="auth-btn credentials-btn" id="credentialsAuthBtn">
+                <button class="auth-btn credentials-btn" id="loginCredentialsBtn">
                     <i class="fas fa-key"></i> Войти по логину и паролю
                 </button>
             </div>
-            <div class="auth-credentials-form" style="display:none;">
+            <div class="auth-credentials-form" style="display:none; margin-top: 10px;">
+                <div class="auth-toggle-group">
+                    <button class="auth-toggle-btn top" id="toggleLogin">Вход</button>
+                    <button class="auth-toggle-btn bottom" id="toggleRegister">Регистрация</button>
+                </div>
                 <input type="email" id="credentialsEmail" placeholder="Email" class="auth-input">
                 <input type="password" id="credentialsPassword" placeholder="Пароль" class="auth-input">
-                <button class="auth-submit-btn" id="credentialsLoginBtn">Войти</button>
-                <button class="auth-submit-btn" id="credentialsRegisterBtn">Зарегистрироваться</button>
-                <p style="text-align:center; margin-top:10px;">
+                <button class="auth-submit-btn" id="credentialsSubmitBtn">Продолжить</button>
+                <div style="text-align:center; margin-top:5px;">
                     <a href="#" id="forgotPasswordLink" style="color:#00aaff; font-size:14px;">Забыли пароль?</a>
-                </p>
-            </div>
-            <div class="auth-username" style="display:none;">
-                <input type="text" id="authusername" placeholder="Придумайте никнейм (англ.)" maxlength="20" class="auth-input">
-                <button class="auth-submit-btn" id="submitusername">Продолжить</button>
+                </div>
+                <div id="authError" style="color:#e74c3c; margin-top:10px; display:none;"></div>
             </div>
         </div>
     `;
@@ -48,7 +49,7 @@ function showAuthModal() {
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
 
-    // Определяем, открыто ли приложение внутри Telegram WebApp
+    // Telegram (как было)
     const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
@@ -63,107 +64,126 @@ function showAuthModal() {
 
     document.getElementById('googleAuthBtn')?.addEventListener('click', loginWithGoogle);
     document.getElementById('vkAuthBtn')?.addEventListener('click', loginWithVK);
-    
-    // Обработчик для кнопки "Войти по логину и паролю"
-    document.getElementById('credentialsAuthBtn')?.addEventListener('click', () => {
+
+    // Открываем форму логина/регистрации
+    document.getElementById('loginCredentialsBtn')?.addEventListener('click', () => {
         document.querySelector('.auth-methods').style.display = 'none';
         document.querySelector('.auth-credentials-form').style.display = 'block';
+        setAuthMode('login');
     });
 
-    // Вход по паролю
-    document.getElementById('credentialsLoginBtn')?.addEventListener('click', async () => {
-        const email = document.getElementById('credentialsEmail').value.trim();
-        const password = document.getElementById('credentialsPassword').value;
-        if (!email || !password) {
-            showToast('Введите email и пароль', 1500);
-            return;
-        }
-        try {
-            const res = await fetch(`${window.API_BASE}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (data.success) {
-                localStorage.setItem('sessionToken', data.sessionToken);
-                if (data.needusername && typeof showusernameModal === 'function') {
-                    showusernameModal(data.userId);
-                } else {
-                    location.reload();
-                }
-            } else {
-                showToast(data.error || 'Ошибка входа', 1500);
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Ошибка соединения', 1500);
-        }
-    });
+    // Переключение режима
+    document.getElementById('toggleLogin')?.addEventListener('click', () => setAuthMode('login'));
+    document.getElementById('toggleRegister')?.addEventListener('click', () => setAuthMode('register'));
 
-    // Регистрация
-    document.getElementById('credentialsRegisterBtn')?.addEventListener('click', async () => {
-        const email = document.getElementById('credentialsEmail').value.trim();
-        const password = document.getElementById('credentialsPassword').value;
-        if (!email || !password) {
-            showToast('Введите email и пароль', 1500);
-            return;
-        }
-        if (password.length < 6) {
-            showToast('Пароль минимум 6 символов', 1500);
-            return;
-        }
-        try {
-            const res = await fetch(`${window.API_BASE}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (data.success) {
-                localStorage.setItem('sessionToken', data.sessionToken);
-                if (data.needusername && typeof showusernameModal === 'function') {
-                    showusernameModal(data.userId);
-                } else {
-                    location.reload();
-                }
-            } else {
-                showToast(data.error || 'Ошибка регистрации', 1500);
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Ошибка соединения', 1500);
-        }
-    });
+    // Отправка формы
+    document.getElementById('credentialsSubmitBtn')?.addEventListener('click', handleCredentialsSubmit);
 
     // Забыли пароль
     document.getElementById('forgotPasswordLink')?.addEventListener('click', (e) => {
         e.preventDefault();
-        const email = document.getElementById('credentialsEmail').value.trim();
-        if (!email) {
-            showToast('Введите email для восстановления', 1500);
-            return;
-        }
-        fetch(`${window.API_BASE}/auth/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) {
-                showToast('Инструкция отправлена на почту', 2000);
-            } else {
-                showToast(d.error || 'Ошибка', 1500);
-            }
-        })
-        .catch(e => {
-            console.error(e);
-            showToast('Ошибка соединения', 1500);
-        });
+        showForgotPasswordModal();
     });
 
-    document.getElementById('submitusername')?.addEventListener('click', submitusername);
+    setAuthMode('login'); // начальный режим
+}
+
+function setAuthMode(mode) {
+    authMode = mode;
+    const loginBtn = document.getElementById('toggleLogin');
+    const registerBtn = document.getElementById('toggleRegister');
+    const submitBtn = document.getElementById('credentialsSubmitBtn');
+    if (!loginBtn || !registerBtn || !submitBtn) return;
+
+    loginBtn.classList.toggle('active', mode === 'login');
+    registerBtn.classList.toggle('active', mode === 'register');
+    submitBtn.textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
+}
+
+async function handleCredentialsSubmit() {
+    const email = document.getElementById('credentialsEmail').value.trim();
+    const password = document.getElementById('credentialsPassword').value;
+    const errorDiv = document.getElementById('authError');
+    errorDiv.style.display = 'none';
+
+    if (!email || !password) {
+        errorDiv.textContent = 'Заполните email и пароль';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    if (password.length < 6) {
+        errorDiv.textContent = 'Пароль должен быть не менее 6 символов';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const endpoint = authMode === 'login' ? '/auth/login' : '/auth/register';
+    try {
+        const res = await fetch(`${window.API_BASE}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('sessionToken', data.sessionToken);
+            if (data.needusername && typeof showusernameModal === 'function') {
+                showusernameModal(data.userId);
+            } else {
+                location.reload();
+            }
+        } else {
+            errorDiv.textContent = data.error || 'Ошибка';
+            errorDiv.style.display = 'block';
+        }
+    } catch (err) {
+        console.error(err);
+        errorDiv.textContent = 'Ошибка соединения';
+        errorDiv.style.display = 'block';
+    }
+}
+
+function showForgotPasswordModal() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Восстановление пароля';
+    modalBody.innerHTML = `
+        <div style="text-align:center;">
+            <p style="color:#aaa;">Введите email, указанный при регистрации</p>
+            <input type="email" id="forgotEmail" class="auth-input" placeholder="Email">
+            <button class="auth-submit-btn" id="sendResetBtn">Отправить инструкцию</button>
+            <div id="forgotMsg" style="margin-top:10px; display:none;"></div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+    document.getElementById('sendResetBtn').addEventListener('click', async () => {
+        const email = document.getElementById('forgotEmail').value.trim();
+        const msg = document.getElementById('forgotMsg');
+        if (!email) {
+            msg.textContent = 'Введите email';
+            msg.style.display = 'block';
+            return;
+        }
+        try {
+            const res = await fetch(`${window.API_BASE}/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            msg.textContent = data.message || (data.error || 'Инструкция отправлена');
+            msg.style.display = 'block';
+        } catch (err) {
+            console.error(err);
+            msg.textContent = 'Ошибка соединения';
+            msg.style.display = 'block';
+        }
+    });
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) closeBtn.style.display = 'block';
+    closeBtn?.addEventListener('click', () => modal.style.display = 'none');
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 }
 
 // ========== TELEGRAM OAuth через OpenID Connect (полностью рабочий) ==========

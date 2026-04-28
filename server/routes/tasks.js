@@ -363,12 +363,13 @@ router.get('/daily/list', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-     if (lastResetStr !== today) {
-    // Не сбрасываем прогресс, только обновляем дату сброса и серию побед
-    await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
-    user.last_daily_reset = today;
-    dailyWinStreak = 0;
-}
+        if (lastResetStr !== today) {
+            // НЕ СБРАСЫВАЕМ ПРОГРЕСС! Только обновляем дату сброса и дневную серию побед
+            await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
+            user.last_daily_reset = today;
+            dailyWinStreak = 0;
+        }
+
         let progressObj = parseProgress(user.daily_tasks_progress);
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;
@@ -436,8 +437,6 @@ router.post('/daily/claim', async (req, res) => {
             // Обновляем дату сброса, не трогая прогресс и маску
             await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
-            // Дальше используем актуальный прогресс пользователя
-            // (прогресс не сбрасывается, так как сброс делает /daily/list при первой загрузке)
         }
 
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {

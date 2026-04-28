@@ -235,8 +235,12 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
         console.log('battleUI: update/exp успех');
     } catch (err) { console.error('update/exp ошибка:', err); }
      
-    if (typeof refreshTasksData === 'function') {
+      if (typeof refreshTasksData === 'function') {
         await refreshTasksData();
+        // Принудительно обновляем список заданий, даже если мы не на экране "tasks"
+        if (typeof loadDailyTasks === 'function') {
+            loadDailyTasks();
+        }
         console.log('battleUI: refreshTasksData выполнен');
     }
 

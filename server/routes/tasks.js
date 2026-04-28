@@ -363,16 +363,12 @@ router.get('/daily/list', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-        if (lastResetStr !== today) {
-            await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
-                ['{}', today, userId]
-            );
-            user.daily_tasks_mask = 0;
-            user.daily_tasks_progress = '{}';
-            dailyWinStreak = 0;
-        }
-
+     if (lastResetStr !== today) {
+    // Не сбрасываем прогресс, только обновляем дату сброса и серию побед
+    await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
+    user.last_daily_reset = today;
+    dailyWinStreak = 0;
+}
         let progressObj = parseProgress(user.daily_tasks_progress);
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;

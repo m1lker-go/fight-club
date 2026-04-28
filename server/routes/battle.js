@@ -1220,66 +1220,76 @@ router.post('/start', async (req, res) => {
         let newStreak = userData.win_streak || 0;
         let ratingChange = -15;
 
+        // ─────────────────────────────────────────────
+        // 1. Ежедневная серия побед (daily_win_streak)
+        // ─────────────────────────────────────────────
+        let dailyStreakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userData.id]);
+        let dailyStreak = dailyStreakRes.rows[0].daily_win_streak || 0;
         if (isVictory) {
-    newStreak++;
-    const coinReward = getCoinReward(newStreak);
-    const ratingGain = getRatingChange(newStreak);
-    ratingChange = ratingGain;
-    await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
-    
-    // === Единоразовые награды за достижение 100 и 500 побед ===
-    let bonusCoins = 0;
-    if (newStreak === 100 && !userData.reward_100_streak) {
-        bonusCoins = 1500;
-        await client.query('UPDATE users SET reward_100_streak = TRUE WHERE id = $1', [userData.id]);
-    } else if (newStreak === 500 && !userData.reward_500_streak) {
-        bonusCoins = 5000;
-        await client.query('UPDATE users SET reward_500_streak = TRUE WHERE id = $1', [userData.id]);
-    }
-    if (bonusCoins > 0) {
-        await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [bonusCoins, userData.id]);
-        // Если хотите добавить сообщение в лог боя (без слова "дополнительно"):
-        // battleResult.messages.push({ text: `🏆 За серию ${newStreak} побед вы получаете ${bonusCoins} монет.`, type: 'reward', attacker: 'none' });
-    }
-    
-    await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, userData.id]);
-} else {
-    newStreak = 0;
-    await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [userData.id]);
-}
-await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
-
-let dailyStreakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userData.id]);
-let dailyStreak = dailyStreakRes.rows[0].daily_win_streak || 0;
-if (isVictory) {
-    dailyStreak++;
-} else {
-    dailyStreak = 0;
-}
-await client.query('UPDATE users SET daily_win_streak = $1 WHERE id = $2', [dailyStreak, userData.id]);
-
-if (dailyStreak >= 10) {
-    const userTasks = await client.query(
-        'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1',
-        [userData.id]
-    );
-    let mask = userTasks.rows[0].daily_tasks_mask;
-    let progress = userTasks.rows[0].daily_tasks_progress;
-    if (!progress) progress = {};
-    else if (typeof progress === 'string') progress = JSON.parse(progress);
-
-    for (let taskId of [1, 2, 3]) {
-        const bit = 1 << (taskId - 1);
-        if (!(mask & bit)) {
-            progress[taskId] = 5;
+            dailyStreak++;
+        } else {
+            dailyStreak = 0;
         }
-    }
-    await client.query(
-        'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
-        [JSON.stringify(progress), userData.id]
-    );
-}
+        await client.query('UPDATE users SET daily_win_streak = $1 WHERE id = $2', [dailyStreak, userData.id]);
 
+        // ─────────────────────────────────────────────
+        // 2. Обработка победы / поражения
+        // ─────────────────────────────────────────────
+        if (isVictory) {
+            newStreak++;
+            const coinReward = getCoinReward(newStreak);
+            const ratingGain = getRatingChange(newStreak);
+            ratingChange = ratingGain;
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
+
+            // Единоразовые награды за 100 / 500 побед
+            let bonusCoins = 0;
+            if (newStreak === 100 && !userData.reward_100_streak) {
+                bonusCoins = 1500;
+                await client.query('UPDATE users SET reward_100_streak = TRUE WHERE id = $1', [userData.id]);
+            } else if (newStreak === 500 && !userData.reward_500_streak) {
+                bonusCoins = 5000;
+                await client.query('UPDATE users SET reward_500_streak = TRUE WHERE id = $1', [userData.id]);
+            }
+            if (bonusCoins > 0) {
+                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [bonusCoins, userData.id]);
+            }
+
+            await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, userData.id]);
+        } else {
+            newStreak = 0;
+            await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [userData.id]);
+        }
+        await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
+
+        // ─────────────────────────────────────────────
+        // 3. Автоматическое выполнение заданий при 10 победах подряд
+        // ─────────────────────────────────────────────
+        if (dailyStreak >= 10) {
+            const userTasks = await client.query(
+                'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1',
+                [userData.id]
+            );
+            let mask = userTasks.rows[0].daily_tasks_mask;
+            let progress = userTasks.rows[0].daily_tasks_progress;
+            if (!progress) progress = {};
+            else if (typeof progress === 'string') progress = JSON.parse(progress);
+
+            for (let taskId of [1, 2, 3]) {
+                const bit = 1 << (taskId - 1);
+                if (!(mask & bit)) {
+                    progress[taskId] = 5;
+                }
+            }
+            await client.query(
+                'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
+                [JSON.stringify(progress), userData.id]
+            );
+        }
+
+        // ─────────────────────────────────────────────
+        // 4. Начисление опыта
+        // ─────────────────────────────────────────────
         const expGain = isVictory ? getExpReward(newStreak) : 3;
         const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
         if (leveledUp) await updatePlayerPower(client, userData.id, userData.current_class);

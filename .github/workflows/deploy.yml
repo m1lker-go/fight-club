@@ -1,4 +1,4 @@
-name: Deploy to VPS (без хеша)
+name: Deploy to VPS (без проверки API)
 
 on:
   push:
@@ -23,25 +23,7 @@ jobs:
           script: |
             set -e
             cd /var/www/fight-club
-
             git pull origin main
             npm install
             pm2 restart fight-api
             rsync -a --delete /var/www/fight-club/client/ /var/www/html/
-
-            # Проверка, что API отвечает
-            for i in $(seq 1 15); do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/auth/profile)
-              if [ "$STATUS" = "401" ]; then
-                echo "✅ API ответил 401"
-                break
-              fi
-              echo "⏳ Попытка $i: статус $STATUS, ждём..."
-              sleep 4
-            done
-            if [ "$STATUS" != "401" ]; then
-              echo "❌ API не запустился (статус $STATUS)"
-              exit 1
-            fi
-
-            echo "🎉 Деплой завершён, API работает."

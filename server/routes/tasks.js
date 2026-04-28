@@ -110,7 +110,7 @@ router.get('/advent', async (req, res) => {
         
         const userId = user.id;
         let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date; // теперь строка или null
+        let lastClaimDate = user.advent_last_claim_date;
         let adventMonth = user.advent_month;
         let adventYear = user.advent_year;
         
@@ -139,7 +139,6 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
         
-        // lastClaimDate теперь строка, сравниваем напрямую с todayStr
         let availableDay = null;
         if (nextDay <= currentDay && (!lastClaimDate || lastClaimDate !== todayStr)) {
             availableDay = nextDay;
@@ -171,7 +170,7 @@ router.post('/advent/claim', async (req, res) => {
         if (!user) throw new Error('User not found');
         const userId = user.id;
         let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date; // строка или null
+        let lastClaimDate = user.advent_last_claim_date;
         let adventMonth = user.advent_month;
         let adventYear = user.advent_year;
         
@@ -303,7 +302,6 @@ async function updateTowerTask(client, userId) {
     const today = getMoscowDate();
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
     if (lastResetStr !== today) {
-        // Не сбрасываем прогресс, только обновляем дату
         await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
         user.last_daily_reset = today;
     }
@@ -329,7 +327,6 @@ async function updateLuckyTask(client, userId) {
     const today = getMoscowDate();
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
     if (lastResetStr !== today) {
-        // Не сбрасываем прогресс, только обновляем дату
         await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
         user.last_daily_reset = today;
     }
@@ -367,15 +364,15 @@ router.get('/daily/list', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-    // Ежедневный сброс: обнуляем маску выполненных заданий и прогресс
-    await client.query(
-        'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
-        ['{}', today, userId]
-    );
-    user.daily_tasks_mask = 0;
-    user.daily_tasks_progress = '{}';
-    dailyWinStreak = 0;
-}
+            await client.query(
+                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
+                ['{}', today, userId]
+            );
+            user.daily_tasks_mask = 0;
+            user.daily_tasks_progress = '{}';
+            dailyWinStreak = 0;
+        }
+
         let progressObj = parseProgress(user.daily_tasks_progress);
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;
@@ -421,7 +418,7 @@ router.get('/daily/list', async (req, res) => {
     }
 });
 
-// ================== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК CLAIM (без сброса прогресса) ==================
+// ================== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК CLAIM ==================
 router.post('/daily/claim', async (req, res) => {
     const { tg_id, user_id, task_id, class_choice } = req.body;
     if ((!tg_id && !user_id) || !task_id) return res.status(400).json({ error: 'Missing data' });
@@ -440,17 +437,11 @@ router.post('/daily/claim', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Если дата сброса не совпадает, значит сброс не выполнялся. Прежде чем дать claim, нужно сбросить, но тогда прогресс обнулится и claim не пройдёт.
-            // Поэтому просто обновляем дату, чтобы избежать ошибки, но claim всё равно не должен проходить, т.к. задания не выполнены.
-            // Лучше выполнить сброс сейчас, чтобы пользователь увидел актуальные задания.
-            await client.query(
-                'UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2, daily_win_streak = 0 WHERE id = $3',
-                ['{}', today, userId]
-            );
-            user.daily_tasks_mask = 0;
-            user.daily_tasks_progress = '{}';
-            // После сброса задание не может быть выполнено, выбрасываем ошибку
-            throw new Error('Daily reset performed, please refresh');
+            // Обновляем дату сброса, не трогая прогресс и маску
+            await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
+            user.last_daily_reset = today;
+            // Дальше используем актуальный прогресс пользователя
+            // (прогресс не сбрасывается, так как сброс делает /daily/list при первой загрузке)
         }
 
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {
@@ -557,10 +548,8 @@ router.post('/daily/update/battle', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
-            // Читаем актуальный прогресс пользователя (он не сброшен, т.к. сброс будет в /daily/list)
             progress = parseProgress(user.daily_tasks_progress);
         } else {
             progress = parseProgress(user.daily_tasks_progress);
@@ -608,7 +597,6 @@ router.post('/daily/update/exp', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
             progress = parseProgress(user.daily_tasks_progress);
@@ -652,7 +640,6 @@ router.post('/daily/update/chest', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
             progress = parseProgress(user.daily_tasks_progress);
@@ -697,7 +684,6 @@ router.post('/daily/update/profile', async (req, res) => {
         let progress = {};
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Не сбрасываем прогресс, только обновляем дату и серию побед
             await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
             progress = parseProgress(user.daily_tasks_progress);

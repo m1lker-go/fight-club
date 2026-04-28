@@ -218,7 +218,8 @@ const skinNameTranslations = {
     'skin10': 'Страж королевства',
      'firelegend': 'Разрушитель',
     'skin11': 'Ледяной тигр',
-     'skin12': 'Топор ярости'
+     'skin12': 'Топор ярости',
+     'skin13': 'Токсичный сталкер'
 };
 
 function translateSkinName(englishName) {

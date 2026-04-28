@@ -51,6 +51,9 @@ async function renderSettings() {
         const user = data.user;
         const connections = data.connections || [];
 
+        // Определяем, установлен ли пароль
+        const hasPassword = !!user.password_hash;
+
         const content = document.getElementById('content');
         if (!content) return;
         content.innerHTML = `
@@ -99,6 +102,13 @@ async function renderSettings() {
                             <span>${user.email || '—'}</span>
                             <button class="link-btn" data-provider="email">${user.email ? 'Сменить' : 'Привязать'}</button>
                         </div>
+                        <!-- Смена пароля (только если пароль установлен) -->
+                        ${hasPassword ? `
+                        <div class="connection-row">
+                            <span>Пароль</span>
+                            <span>••••••</span>
+                            <button class="link-btn" data-action="change-password">Изменить</button>
+                        </div>` : ''}
                     </div>
                 </div>
                 <div class="settings-logout">
@@ -130,14 +140,18 @@ async function renderSettings() {
         document.querySelectorAll('.link-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const provider = btn.dataset.provider;
-                if (provider === 'telegram') {
+                const action = btn.dataset.action;
+
+                if (action === 'change-password') {
+                    showChangePasswordModal();
+                } else if (provider === 'telegram') {
                     linkTelegram();
                 } else if (provider === 'google') {
                     linkGoogle();
-                } else if (provider === 'email') {
-                    showToast('Привязка email в разработке', 1500);
                 } else if (provider === 'vk') {
                     linkVK();
+                } else if (provider === 'email') {
+                    showToast('Привязка email в разработке', 1500);
                 } else {
                     showToast(`Привязка ${provider} в разработке`, 1500);
                 }
@@ -232,6 +246,76 @@ function showusernameEditModal(currentusername) {
             showToast('Ошибка: ' + (err.error || 'неизвестная'), 1500);
         }
     });
+    cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
+}
+
+// ========== СМЕНА ПАРОЛЯ ==========
+function showChangePasswordModal() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Изменить пароль';
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <input type="password" id="oldPassword" class="auth-input" placeholder="Старый пароль">
+            <input type="password" id="newPassword1" class="auth-input" placeholder="Новый пароль (мин. 6 символов)">
+            <input type="password" id="newPassword2" class="auth-input" placeholder="Повторите новый пароль">
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+                <button class="modal-btn" id="savePasswordBtn" style="background-color: #00aaff;">Сохранить</button>
+                <button class="modal-btn cancel-password-btn">Отмена</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+    const saveBtn = document.getElementById('savePasswordBtn');
+    const cancelBtn = modalBody.querySelector('.cancel-password-btn');
+    const closeX = modal.querySelector('.close');
+    const closeModal = () => modal.style.display = 'none';
+
+    saveBtn.addEventListener('click', async () => {
+        const oldPwd = document.getElementById('oldPassword').value;
+        const new1 = document.getElementById('newPassword1').value;
+        const new2 = document.getElementById('newPassword2').value;
+        if (!oldPwd || !new1 || !new2) {
+            showToast('Заполните все поля', 1500);
+            return;
+        }
+        if (new1.length < 6) {
+            showToast('Новый пароль должен быть не менее 6 символов', 1500);
+            return;
+        }
+        if (new1 !== new2) {
+            showToast('Новые пароли не совпадают', 1500);
+            return;
+        }
+        const token = localStorage.getItem('sessionToken');
+        try {
+            const res = await fetch(`${window.API_BASE}/auth/change-password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ oldPassword: oldPwd, newPassword: new1 })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Пароль изменён', 1500);
+                closeModal();
+                renderSettings();
+            } else {
+                showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Ошибка соединения', 1500);
+        }
+    });
+
     cancelBtn.addEventListener('click', closeModal);
     closeX.addEventListener('click', closeModal);
     window.onclick = (event) => {
@@ -341,7 +425,7 @@ function linkVK() {
             console.error('VK login error:', error);
             showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
         });
-} // ← ЗАКРЫВАЮЩАЯ СКОБКА ДЛЯ linkVK
+}
 
 function linkGoogle() {
     if (googleLinkingInProgress) {

@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy to VPS (полная сверка)
 
 on:
   push:
@@ -11,35 +11,61 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to VPS via SSH
+      # Вычисляем хеш дерева репозитория (уникален для каждого состояния)
+      - name: Compute repository tree hash
+        id: repo_hash
+        run: |
+          HASH=$(git log -1 --format="%T" HEAD)
+          echo "tree=$HASH" >> $GITHUB_OUTPUT
+          echo "Repository tree hash: $HASH"
+
+      - name: Deploy, restart, and full integrity check
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
+
             cd /var/www/fight-club
+
+            # 1. Подтянуть код
             git pull origin main
+
+            # 2. Зависимости
             cd server
             npm install
+
+            # 3. Перезапустить API
             pm2 restart fight-api
+
+            # 4. Скопировать статику
             cp -r /var/www/fight-club/client/* /var/www/html/
 
-      - name: Wait for API locally (надежнее)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
+            # 5. Дождаться ответа API
             for i in $(seq 1 15); do
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/auth/profile)
               if [ "$STATUS" = "401" ]; then
-                echo "✅ API локально ответил 401, деплой успешен!"
-                exit 0
+                echo "✅ API ответил 401"
+                break
               fi
-              echo "Попытка $i: статус $STATUS, ждём..."
+              echo "⏳ Попытка $i: статус $STATUS, ждём..."
               sleep 4
             done
-            echo "❌ API не запустился за отведённое время"
-            exit 1
+            if [ "$STATUS" != "401" ]; then
+              echo "❌ API не запустился (статус $STATUS)"
+              exit 1
+            fi
+
+            # 6. Сверить хеш всего репозитория (дерево)
+            REMOTE_HASH=$(git log -1 --format="%T" HEAD)
+            LOCAL_HASH="${{ steps.repo_hash.outputs.tree }}"
+            if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+              echo "❌ Хеш репозитория не совпадает! Код на сервере отличается от репозитория."
+              echo "   Ожидался: $LOCAL_HASH"
+              echo "   На сервере: $REMOTE_HASH"
+              exit 1
+            fi
+
+            echo "🎉 Полный код идентичен репозиторию. Деплой успешен."

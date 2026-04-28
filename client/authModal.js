@@ -23,17 +23,18 @@ function showAuthModal() {
                 <button class="auth-btn vk-btn" id="vkAuthBtn">
                     <i class="fab fa-vk"></i> Войти через VK
                 </button>
-                <button class="auth-btn email-btn" id="emailAuthBtn">
-                    <i class="fas fa-envelope"></i> Войти по email
+                <button class="auth-btn credentials-btn" id="credentialsAuthBtn">
+                    <i class="fas fa-key"></i> Войти по логину и паролю
                 </button>
             </div>
-            <div class="auth-email-form" style="display:none;">
-                <input type="email" id="authEmail" placeholder="Email" class="auth-input">
-                <button class="auth-submit-btn" id="sendCodeBtn">Отправить код</button>
-                <div id="codeSection" style="display:none;">
-                    <input type="text" id="authCode" placeholder="Код из письма" class="auth-input">
-                    <button class="auth-submit-btn" id="verifyCodeBtn">Подтвердить</button>
-                </div>
+            <div class="auth-credentials-form" style="display:none;">
+                <input type="email" id="credentialsEmail" placeholder="Email" class="auth-input">
+                <input type="password" id="credentialsPassword" placeholder="Пароль" class="auth-input">
+                <button class="auth-submit-btn" id="credentialsLoginBtn">Войти</button>
+                <button class="auth-submit-btn" id="credentialsRegisterBtn">Зарегистрироваться</button>
+                <p style="text-align:center; margin-top:10px;">
+                    <a href="#" id="forgotPasswordLink" style="color:#00aaff; font-size:14px;">Забыли пароль?</a>
+                </p>
             </div>
             <div class="auth-username" style="display:none;">
                 <input type="text" id="authusername" placeholder="Придумайте никнейм (англ.)" maxlength="20" class="auth-input">
@@ -52,28 +53,116 @@ function showAuthModal() {
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
         if (isTelegramWebApp) {
-            // Внутри Telegram автовход работает через checkAuth, кнопка не нужна
             telegramBtn.style.display = 'none';
         } else {
-            // ВРЕМЕННО: при клике на кнопку "Войти через Telegram" открываем ссылку на бота
             telegramBtn.addEventListener('click', () => {
                 window.open('https://t.me/CatFightingBot', '_blank');
             });
-            /* ОРИГИНАЛЬНАЯ АВТОРИЗАЦИЯ (отключена до окончания модерации)
-            telegramBtn.addEventListener('click', loginWithTelegramOIDC);
-            */
         }
     }
 
     document.getElementById('googleAuthBtn')?.addEventListener('click', loginWithGoogle);
     document.getElementById('vkAuthBtn')?.addEventListener('click', loginWithVK);
-    document.getElementById('emailAuthBtn')?.addEventListener('click', () => {
-        currentStep = 'email';
+    
+    // Обработчик для кнопки "Войти по логину и паролю"
+    document.getElementById('credentialsAuthBtn')?.addEventListener('click', () => {
         document.querySelector('.auth-methods').style.display = 'none';
-        document.querySelector('.auth-email-form').style.display = 'block';
+        document.querySelector('.auth-credentials-form').style.display = 'block';
     });
-    document.getElementById('sendCodeBtn')?.addEventListener('click', sendEmailCode);
-    document.getElementById('verifyCodeBtn')?.addEventListener('click', verifyEmailCode);
+
+    // Вход по паролю
+    document.getElementById('credentialsLoginBtn')?.addEventListener('click', async () => {
+        const email = document.getElementById('credentialsEmail').value.trim();
+        const password = document.getElementById('credentialsPassword').value;
+        if (!email || !password) {
+            showToast('Введите email и пароль', 1500);
+            return;
+        }
+        try {
+            const res = await fetch(`${window.API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('sessionToken', data.sessionToken);
+                if (data.needusername && typeof showusernameModal === 'function') {
+                    showusernameModal(data.userId);
+                } else {
+                    location.reload();
+                }
+            } else {
+                showToast(data.error || 'Ошибка входа', 1500);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Ошибка соединения', 1500);
+        }
+    });
+
+    // Регистрация
+    document.getElementById('credentialsRegisterBtn')?.addEventListener('click', async () => {
+        const email = document.getElementById('credentialsEmail').value.trim();
+        const password = document.getElementById('credentialsPassword').value;
+        if (!email || !password) {
+            showToast('Введите email и пароль', 1500);
+            return;
+        }
+        if (password.length < 6) {
+            showToast('Пароль минимум 6 символов', 1500);
+            return;
+        }
+        try {
+            const res = await fetch(`${window.API_BASE}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('sessionToken', data.sessionToken);
+                if (data.needusername && typeof showusernameModal === 'function') {
+                    showusernameModal(data.userId);
+                } else {
+                    location.reload();
+                }
+            } else {
+                showToast(data.error || 'Ошибка регистрации', 1500);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Ошибка соединения', 1500);
+        }
+    });
+
+    // Забыли пароль
+    document.getElementById('forgotPasswordLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('credentialsEmail').value.trim();
+        if (!email) {
+            showToast('Введите email для восстановления', 1500);
+            return;
+        }
+        fetch(`${window.API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                showToast('Инструкция отправлена на почту', 2000);
+            } else {
+                showToast(d.error || 'Ошибка', 1500);
+            }
+        })
+        .catch(e => {
+            console.error(e);
+            showToast('Ошибка соединения', 1500);
+        });
+    });
+
     document.getElementById('submitusername')?.addEventListener('click', submitusername);
 }
 
@@ -204,71 +293,7 @@ async function loginWithVK() {
         });
 }
 
-// ========== EMAIL ==========
-async function sendEmailCode() {
-    const email = document.getElementById('authEmail').value;
-    if (!email) {
-        showToast('Введите email', 1500);
-        return;
-    }
-    try {
-        const res = await fetch(`${window.API_BASE}/auth/init`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ method: 'email', email })
-        });
-        if (res.ok) {
-            document.getElementById('codeSection').style.display = 'block';
-            showToast('Код отправлен на почту', 1500);
-        } else {
-            const err = await res.json();
-            showToast(err.error || 'Ошибка отправки кода', 1500);
-        }
-    } catch (err) {
-        console.error(err);
-        showToast('Ошибка соединения', 1500);
-    }
-}
-
-async function verifyEmailCode() {
-    const email = document.getElementById('authEmail').value;
-    const code = document.getElementById('authCode').value;
-    if (!email || !code) {
-        showToast('Введите email и код', 1500);
-        return;
-    }
-    try {
-        const res = await fetch(`${window.API_BASE}/auth/verify-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code })
-        });
-        const data = await res.json();
-        if (data.success) {
-            tempSessionToken = data.sessionToken;
-            tempUserId = data.user.id;
-            if (!data.user.username) {
-                showusernameStep();
-            } else {
-                localStorage.setItem('sessionToken', data.sessionToken);
-                location.reload();
-            }
-        } else {
-            showToast(data.error, 1500);
-        }
-    } catch (err) {
-        console.error(err);
-        showToast('Ошибка соединения', 1500);
-    }
-}
-
-function showusernameStep() {
-    document.querySelector('.auth-methods').style.display = 'none';
-    document.querySelector('.auth-email-form').style.display = 'none';
-    const usernameDiv = document.querySelector('.auth-username');
-    usernameDiv.style.display = 'block';
-}
-
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 async function submitusername() {
     const username = document.getElementById('authusername').value.trim();
     if (!username) return;

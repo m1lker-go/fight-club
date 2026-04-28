@@ -13,6 +13,7 @@
     "nodemailer": "^6.9.7",
     "google-auth-library": "^9.4.1",
     "socks-proxy-agent": "6.1.0",
+    "jsonwebtoken": "^9.0.0",
     "bcrypt": "^5.1.1"
   }
 }

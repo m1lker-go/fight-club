@@ -3764,3 +3764,37 @@ input:checked + .slider:before {
   color: #aaa;
   margin-top: 4px;
 }
+
+/* Группа кнопок переключения Вход/Регистрация */
+.auth-toggle-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    width: 100%;
+}
+.auth-toggle-btn {
+    background: #1a1f2b;
+    border: 1px solid #aaa;
+    color: #aaa;
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.auth-toggle-btn.top {
+    border-radius: 12px 12px 0 0;
+    border-bottom-width: 1px;
+}
+.auth-toggle-btn.bottom {
+    border-radius: 0 0 12px 12px;
+    border-top-width: 1px;
+}
+.auth-toggle-btn.active {
+    background: #2f3542;
+    color: white;
+    border-color: #00aaff;
+}

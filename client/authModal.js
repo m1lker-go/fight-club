@@ -55,8 +55,13 @@ function showAuthModal() {
             // Внутри Telegram автовход работает через checkAuth, кнопка не нужна
             telegramBtn.style.display = 'none';
         } else {
-            // В браузере используем OIDC
+            // ВРЕМЕННО: при клике на кнопку "Войти через Telegram" открываем ссылку на бота
+            telegramBtn.addEventListener('click', () => {
+                window.open('https://t.me/CatFightingBot', '_blank');
+            });
+            /* ОРИГИНАЛЬНАЯ АВТОРИЗАЦИЯ (отключена до окончания модерации)
             telegramBtn.addEventListener('click', loginWithTelegramOIDC);
+            */
         }
     }
 

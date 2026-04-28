@@ -300,11 +300,22 @@ async function updateTowerTask(client, userId) {
     );
     const user = userRes.rows[0];
     const today = getMoscowDate();
-    const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-    if (lastResetStr !== today) {
-        await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
-        user.last_daily_reset = today;
-    }
+  const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+if (lastResetStr !== today) {
+    // Сброс ежедневных заданий: обнуляем маску и прогресс
+    await client.query(
+        `UPDATE users 
+         SET daily_tasks_mask = 0, 
+             daily_tasks_progress = $1, 
+             last_daily_reset = $2 
+         WHERE id = $3`,
+        [JSON.stringify({}), today, userId]
+    );
+    user.daily_tasks_mask = 0;
+    user.daily_tasks_progress = {};
+    user.last_daily_reset = today;
+    // daily_win_streak НЕ сбрасываем — он управляется в battle.js
+}
     let progress = parseProgress(user.daily_tasks_progress);
     const taskId = 8;
     if (!(user.daily_tasks_mask & (1 << (taskId - 1)))) {

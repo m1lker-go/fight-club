@@ -14,7 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Вычисляем хеш дерева репозитория (уникален для каждого состояния)
       - name: Compute repository tree hash
         id: repo_hash
         run: |
@@ -36,15 +35,14 @@ jobs:
             # 1. Подтянуть код
             git pull origin main
 
-            # 2. Зависимости
-            cd server
+            # 2. Установить зависимости (package.json в корне)
             npm install
 
             # 3. Перезапустить API
             pm2 restart fight-api
 
-            # 4. Скопировать статику
-            cp -r /var/www/fight-club/client/* /var/www/html/
+            # 4. Синхронизировать статику (с удалением лишнего)
+            rsync -a --delete /var/www/fight-club/client/ /var/www/html/
 
             # 5. Дождаться ответа API
             for i in $(seq 1 15); do

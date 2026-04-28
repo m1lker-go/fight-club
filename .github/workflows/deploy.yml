@@ -1,4 +1,4 @@
-name: Deploy to VPS (без проверки API)
+name: Deploy to VPS (сверка коммита)
 
 on:
   push:
@@ -14,7 +14,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy and restart
+      - name: Get expected commit hash
+        id: expected_commit
+        run: |
+          HASH=$(git rev-parse HEAD)
+          echo "commit=$HASH" >> $GITHUB_OUTPUT
+          echo "Expected commit: $HASH"
+
+      - name: Deploy and verify commit hash
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -23,7 +30,18 @@ jobs:
           script: |
             set -e
             cd /var/www/fight-club
+
             git pull origin main
             npm install
             pm2 restart fight-api
             rsync -a --delete /var/www/fight-club/client/ /var/www/html/
+
+            EXPECTED="${{ steps.expected_commit.outputs.commit }}"
+            CURRENT=$(git rev-parse HEAD)
+            if [ "$EXPECTED" != "$CURRENT" ]; then
+              echo "❌ Хеш коммита не совпадает!"
+              echo "   Ожидался: $EXPECTED"
+              echo "   На сервере: $CURRENT"
+              exit 1
+            fi
+            echo "✅ Код идентичен репозиторию (коммит $CURRENT)"

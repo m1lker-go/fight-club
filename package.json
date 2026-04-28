@@ -12,6 +12,7 @@
     "dotenv": "^16.3.1",
     "nodemailer": "^6.9.7",
     "google-auth-library": "^9.4.1",
-    "socks-proxy-agent": "6.1.0"
+    "socks-proxy-agent": "6.1.0",
+    "bcrypt": "^5.1.1"
   }
 }

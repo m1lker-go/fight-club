@@ -363,13 +363,13 @@ router.get('/daily/list', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-        if (lastResetStr !== today) {
-            // НЕ СБРАСЫВАЕМ ПРОГРЕСС! Только обновляем дату сброса и дневную серию побед
-            await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
+                if (lastResetStr !== today) {
+            // НЕ СБРАСЫВАЕМ ПРОГРЕСС И ДНЕВНУЮ СЕРИЮ! Только обновляем дату сброса
+            await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
             user.last_daily_reset = today;
-            dailyWinStreak = 0;
+            // dailyWinStreak остаётся без изменений — он управляется только в battle.js
         }
-
+        
         let progressObj = parseProgress(user.daily_tasks_progress);
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;

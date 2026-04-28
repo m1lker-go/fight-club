@@ -14,6 +14,9 @@ const agent = new SocksProxyAgent(proxyUrl);
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { sendTelegramNotification } = require('../utils/telegram');
 
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
@@ -1179,5 +1182,191 @@ router.post('/messages/claim', async (req, res) => {
         client.release();
     }
 });
+
+// ==================== РЕГИСТРАЦИЯ / ВХОД ПО ПАРОЛЮ ====================
+
+// Регистрация
+router.post('/register', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email и пароль обязательны' });
+    if (password.length < 6) return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+
+    const client = await pool.connect();
+    try {
+        // Проверяем, не существует ли уже пользователь с таким email
+        const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (existing.rows.length > 0) return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        // Генерируем уникальный реферальный код и временный username
+        const referralCode = Math.random().toString(36).substring(2, 10);
+        let tempUsername = email.split('@')[0];
+
+        const newUser = await client.query(
+            `INSERT INTO users (email, password_hash, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, registered_via)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'credentials') RETURNING *`,
+            [email, passwordHash, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+        );
+        const userData = newUser.rows[0];
+
+        // Создаём классы для нового пользователя
+        const classes = ['warrior', 'assassin', 'mage'];
+        for (let cls of classes) {
+            await client.query(
+                `INSERT INTO user_classes (user_id, class) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                [userData.id, cls]
+            );
+        }
+
+        // Приветственное сообщение
+        await client.query(
+            `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+             VALUES ($1, 'Мастер кошачьих боёв', 'Привет, разбойник!', 'Я рад, что ты присоединился к игре! За это я дарю тебе очки навыков для твоего героя! Выбери класс, который получит дополнительно 5 очков навыков. НО запомни, выбрать можно один раз!', 'skill_points_choice', 5, false, false)`,
+            [userData.id]
+        );
+
+        // Генерируем JWT токен
+        const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        // Сохраняем токен в БД
+        await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [token, userData.id]);
+
+        res.json({ success: true, sessionToken: token, needusername: true, user: userData });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка регистрации' });
+    } finally {
+        client.release();
+    }
+});
+
+// Вход по паролю
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email и пароль обязательны' });
+
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT * FROM users WHERE email = $1 AND password_hash IS NOT NULL', [email]);
+        if (result.rows.length === 0) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+        const user = result.rows[0];
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+        // Обновляем энергию
+        await rechargeEnergy(client, user.id);
+        const freshUser = await client.query('SELECT * FROM users WHERE id = $1', [user.id]);
+        const userData = freshUser.rows[0];
+
+        const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [token, userData.id]);
+
+        const needusername = !userData.username;
+        res.json({ success: true, sessionToken: token, needusername, user: userData });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка входа' });
+    } finally {
+        client.release();
+    }
+});
+
+// Смена пароля (требуется сессионный токен)
+router.put('/change-password', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Old and new passwords required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Новый пароль должен быть не менее 6 символов' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT id, password_hash FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const user = userRes.rows[0];
+        if (!user.password_hash) return res.status(400).json({ error: 'У вас не установлен пароль' });
+
+        const valid = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!valid) return res.status(401).json({ error: 'Неверный старый пароль' });
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка смены пароля' });
+    } finally {
+        client.release();
+    }
+});
+
+// Забыли пароль — отправка ссылки для сброса
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT id FROM users WHERE email = $1 AND password_hash IS NOT NULL', [email]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'Пользователь с таким email не найден или пароль не установлен' });
+        const userId = userRes.rows[0].id;
+
+        // Генерируем токен сброса (действителен 1 час)
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetExpires = new Date(Date.now() + 3600000); // 1 час
+
+        await client.query(
+            'UPDATE users SET password_reset_token = $1, password_reset_expires = $2 WHERE id = $3',
+            [resetToken, resetExpires, userId]
+        );
+
+        // Отправляем письмо со ссылкой
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: 'Сброс пароля в Cat Fighting',
+            text: `Для сброса пароля перейдите по ссылке: ${resetLink}\n\nСсылка действительна 1 час. Если вы не запрашивали сброс, просто проигнорируйте это письмо.`,
+        });
+
+        res.json({ success: true, message: 'Инструкция отправлена на email' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка при отправке инструкции' });
+    } finally {
+        client.release();
+    }
+});
+
+// Сброс пароля по токену из ссылки
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query(
+            'SELECT id, password_reset_expires FROM users WHERE password_reset_token = $1 AND password_reset_expires > NOW()',
+            [token]
+        );
+        if (userRes.rows.length === 0) return res.status(400).json({ error: 'Недействительный или устаревший токен' });
+
+        const userId = userRes.rows[0].id;
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await client.query(
+            'UPDATE users SET password_hash = $1, password_reset_token = NULL, password_reset_expires = NULL WHERE id = $2',
+            [newHash, userId]
+        );
+        res.json({ success: true, message: 'Пароль успешно изменён' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка сброса пароля' });
+    } finally {
+        client.release();
+    }
+});
+
 
 module.exports = router;

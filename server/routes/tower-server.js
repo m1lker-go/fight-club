@@ -3,7 +3,7 @@ const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot, generateMouseBoss } = require('../utils/botGenerator');
-const dailyTasks = require('../utils/dailyTasks'); // используем сервис заданий
+const dailyTasks = require('../utils/dailyTasks');
 
 console.log('✅ tower-server.js loaded (full version with user_id support)');
 
@@ -184,7 +184,6 @@ router.post('/battle', async (req, res) => {
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
 
-        // Получаем или создаём бота для этого этажа
         let botRes = await client.query('SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2', [userId, progress.current_floor]);
         let bot;
         if (botRes.rows.length > 0) {
@@ -196,7 +195,6 @@ router.post('/battle', async (req, res) => {
             } else {
                 bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
             }
-            // Вставка с защитой от дубликатов
             await client.query(
                 `INSERT INTO tower_bots (user_id, floor, bot_data)
                  VALUES ($1, $2, $3)

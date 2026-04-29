@@ -3,7 +3,7 @@ const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot, generateMouseBoss } = require('../utils/botGenerator');
-const tasksModule = require('./tasks');
+const dailyTasks = require('../utils/dailyTasks'); // используем сервис заданий
 
 console.log('✅ tower-server.js loaded (full version with user_id support)');
 
@@ -68,15 +68,14 @@ async function getRandomAvatar(client) {
 
 function getBotLevel(floor) {
     if (floor <= 20) return floor;
-    if (floor <= 76) {
-        return 20 + Math.round((floor - 20) * (57 - 20) / (76 - 20));
-    }
+    if (floor <= 76) return 20 + Math.round((floor - 20) * (57 - 20) / (76 - 20));
     if (floor <= 80) return 57;
     if (floor <= 86) return 58;
     if (floor <= 91) return 59;
     return 60;
 }
 
+// ========== ПОЛУЧЕНИЕ СТАТУСА БАШНИ ==========
 router.get('/status', async (req, res) => {
     const { tg_id, user_id } = req.query;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -107,6 +106,7 @@ router.get('/status', async (req, res) => {
     }
 });
 
+// ========== ВЫБОР КЛАССА НА СЕЗОН ==========
 router.post('/select-class', async (req, res) => {
     const { tg_id, user_id, class: className, subclass } = req.body;
     if ((!tg_id && !user_id) || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
@@ -137,6 +137,7 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
+// ========== БОЙ В БАШНЕ ==========
 router.post('/battle', async (req, res) => {
     const { tg_id, user_id } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -173,23 +174,17 @@ router.post('/battle', async (req, res) => {
 
         let towerTaskCompleted = false;
         if (newAttemptsToday === 3) {
-            if (tasksModule.updateTowerTask) {
-                await tasksModule.updateTowerTask(client, userId);
-                towerTaskCompleted = true;
-                console.log('[BATTLE] Tower task completed after 3 tickets for user ' + userId);
-            } else {
-                console.warn('[tower] updateTowerTask not found');
-            }
+            await dailyTasks.updateTowerTask(userId);
+            towerTaskCompleted = true;
+            console.log('[BATTLE] Tower task completed after 3 tickets for user ' + userId);
         } else {
-            if (tasksModule.updateTowerTask) {
-                await tasksModule.updateTowerTask(client, userId);
-            }
+            await dailyTasks.updateTowerTask(userId);
         }
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
 
-        // Проверяем, существует ли уже бот для этого этажа
+        // Получаем или создаём бота для этого этажа
         let botRes = await client.query('SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2', [userId, progress.current_floor]);
         let bot;
         if (botRes.rows.length > 0) {
@@ -201,9 +196,11 @@ router.post('/battle', async (req, res) => {
             } else {
                 bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
             }
-            // Простая вставка без ON CONFLICT (первичный ключ id генерируется автоматически)
+            // Вставка с защитой от дубликатов
             await client.query(
-                'INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)',
+                `INSERT INTO tower_bots (user_id, floor, bot_data)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (user_id, floor) DO NOTHING`,
                 [userId, progress.current_floor, bot]
             );
         }

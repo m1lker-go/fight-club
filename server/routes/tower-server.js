@@ -7,7 +7,6 @@ const tasksModule = require('./tasks');
 
 console.log('✅ tower-server.js loaded (full version with user_id support)');
 
-// Функция для получения московской даты (YYYY-MM-DD)
 function getMoscowDate() {
     const now = new Date();
     const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -16,7 +15,6 @@ function getMoscowDate() {
     return result;
 }
 
-// Группы классов для циклического перебора (9 комбинаций)
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
     { class: 'assassin', subclasses: ['assassin', 'venom_blade', 'blood_hunter'] },
@@ -158,7 +156,6 @@ router.post('/battle', async (req, res) => {
         let progress = await getOrCreateProgress(client, userId);
         await checkAndResetAttempts(client, userId, progress);
 
-        // Проверяем, что класс для башни выбран
         if (!progress.chosen_class || !progress.chosen_subclass) {
             throw new Error('Class not selected for tower. Please select a class first.');
         }
@@ -177,7 +174,6 @@ router.post('/battle', async (req, res) => {
         progress.attempts_today = newAttemptsToday;
         console.log('[BATTLE UPDATE] user ' + userId + ': newAttemptsToday=' + newAttemptsToday + ', date=' + today);
 
-        // === НОВАЯ ЛОГИКА: после 3-го использованного билета обновляем задание "Башня" ===
         let towerTaskCompleted = false;
         if (newAttemptsToday === 3) {
             if (tasksModule.updateTowerTask) {
@@ -188,7 +184,6 @@ router.post('/battle', async (req, res) => {
                 console.warn('[tower] updateTowerTask not found');
             }
         } else {
-            // Для обратной совместимости: вызываем updateTowerTask всегда, но он должен сам проверять прогресс
             if (tasksModule.updateTowerTask) {
                 await tasksModule.updateTowerTask(client, userId);
             }
@@ -197,19 +192,34 @@ router.post('/battle', async (req, res) => {
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
 
-        const botRes = await client.query('SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2', [userId, progress.current_floor]);
-
+        // ИСПРАВЛЕНИЕ: проверяем существование бота для этого этажа
+        let botRes = await client.query('SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2', [userId, progress.current_floor]);
         let bot;
         if (botRes.rows.length > 0) {
             bot = botRes.rows[0].bot_data;
+            console.log('[BATTLE] using existing bot for floor', progress.current_floor);
         } else {
-            // Проверяем, боссовый ли этаж (каждые 5 этажей, начиная с 5)
             if (progress.current_floor % 5 === 0 && progress.current_floor >= 5) {
                 bot = generateMouseBoss(progress.current_floor);
             } else {
                 bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
             }
-            await client.query('INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)', [userId, progress.current_floor, bot]);
+            // Вставка с безопасным автоинкрементом + защита от дубликатов id на случай сбитой последовательности
+            const insertResult = await client.query(
+                `INSERT INTO tower_bots (user_id, floor, bot_data)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (id) DO NOTHING
+                 RETURNING id`,
+                [userId, progress.current_floor, bot]
+            );
+            if (insertResult.rowCount === 0) {
+                // Конфликт id – обновляем существующую запись (такая же пара user_id/floor)
+                await client.query(
+                    `UPDATE tower_bots SET bot_data = $1
+                     WHERE user_id = $2 AND floor = $3`,
+                    [bot, userId, progress.current_floor]
+                );
+            }
         }
 
         const opponent = {
@@ -223,11 +233,9 @@ router.post('/battle', async (req, res) => {
             is_mouse: bot.is_mouse || false
         };
 
-        // Получаем данные для ВЫБРАННОГО класса (chosenClass)
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userId, chosenClass]);
         if (classData.rows.length === 0) throw new Error('Class data not found for chosen class');
 
-        // Инвентарь – все надетые предметы, calculateStats сам отфильтрует по owner_class
         const inv = await client.query(
             `SELECT id, name, type, rarity, class_restriction, owner_class, 
                     atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus,
@@ -267,7 +275,6 @@ router.post('/battle', async (req, res) => {
         if (isVictory) {
             expGain = 20;
 
-            // Начисление опыта выбранному классу
             const classRes = await client.query(
                 'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
                 [userId, chosenClass]
@@ -326,29 +333,27 @@ router.post('/battle', async (req, res) => {
                 rewardAmount = coinsReward;
             }
 
-if (coinsReward > 0) {
-    await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
-    await client.query(
-        `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (user_id, floor) DO NOTHING`,
-        [userId, floor, 'coins', coinsReward]
-    );
-    console.log('[REWARD] user ' + userId + ' floor ' + floor + ' +' + coinsReward + ' coins');
-} else if (avatarReward) {
-    await client.query(
-        `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (user_id, floor) DO NOTHING`,
-        [userId, floor, 'avatar', avatarReward]
-    );
-    console.log('[REWARD] user ' + userId + ' floor ' + floor + ' received avatar ' + avatarReward);
-}
+            if (coinsReward > 0) {
+                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinsReward, userId]);
+                await client.query(
+                    `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (user_id, floor) DO NOTHING`,
+                    [userId, floor, 'coins', coinsReward]
+                );
+                console.log('[REWARD] user ' + userId + ' floor ' + floor + ' +' + coinsReward + ' coins');
+            } else if (avatarReward) {
+                await client.query(
+                    `INSERT INTO tower_rewards (user_id, floor, reward_type, reward_amount)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (user_id, floor) DO NOTHING`,
+                    [userId, floor, 'avatar', avatarReward]
+                );
+                console.log('[REWARD] user ' + userId + ' floor ' + floor + ' received avatar ' + avatarReward);
+            }
 
-await client.query('UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1', [userId]);
+            await client.query('UPDATE tower_progress SET current_floor = current_floor + 1, max_floor = GREATEST(max_floor, current_floor + 1) WHERE user_id = $1', [userId]);
 
-            
-            // Обновляем рекорд в лидерборде башни (только если новый этаж больше предыдущего)
             await client.query(
                 `INSERT INTO tower_leaderboard (user_id, floor, achieved_at)
                  VALUES ($1, $2, NOW())
@@ -390,7 +395,7 @@ await client.query('UPDATE tower_progress SET current_floor = current_floor + 1,
             expGain: isVictory ? expGain : 0,
             leveledUp: leveledUp,
             newLevel: newLevel,
-            towerTaskCompleted: towerTaskCompleted  // новый флаг для клиента (если нужно)
+            towerTaskCompleted: towerTaskCompleted
         });
 
     } catch (e) {

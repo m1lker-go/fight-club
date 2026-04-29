@@ -1,7 +1,5 @@
 const { pool } = require('../db');
 
-// ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ========================
-
 function debugLog(context, message, data = null) {
     console.log(`[DAILY_DEBUG] ${context}: ${message}`);
     if (data !== null) console.log(`[DAILY_DEBUG] data:`, data);
@@ -25,8 +23,6 @@ function parseProgress(progress) {
     }
 }
 
-// ======================== СБРОС ДНЯ ========================
-
 async function resetDailyTasks(client, userId, today) {
     debugLog('resetDailyTasks', `user ${userId}, date ${today}`);
     await client.query(
@@ -36,7 +32,6 @@ async function resetDailyTasks(client, userId, today) {
     debugLog('resetDailyTasks', `Сброс выполнен (mask=0, progress={}, last_reset=${today})`);
 }
 
-// Функция для сброса, если уже есть объект user (используется в /daily/list и /daily/claim)
 async function checkAndResetDay(client, user) {
     const today = getMoscowDate();
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
@@ -53,7 +48,6 @@ async function checkAndResetDay(client, user) {
     return user;
 }
 
-// Функция для сброса по userId (используется в update-маршрутах)
 async function resetIfNeeded(userId) {
     debugLog('resetIfNeeded', `start for user ${userId}`);
     const client = await pool.connect();
@@ -77,8 +71,6 @@ async function resetIfNeeded(userId) {
         client.release();
     }
 }
-
-// ======================== ПОЛУЧЕНИЕ СПИСКА ЗАДАНИЙ ========================
 
 async function getTasksList(user) {
     debugLog('getTasksList', `start for user ${user.id}`);
@@ -111,8 +103,7 @@ async function getTasksList(user) {
     }
 }
 
-// ======================== ОБНОВЛЕНИЕ ПРОГРЕССА ========================
-
+// Упрощённая версия updateTaskProgress – без транзакций, без FOR UPDATE
 async function updateTaskProgress(userId, taskId, increment = 1) {
     debugLog('updateTaskProgress', `user ${userId}, task ${taskId}, +${increment}`);
     const client = await pool.connect();
@@ -121,7 +112,7 @@ async function updateTaskProgress(userId, taskId, increment = 1) {
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
         if (user.daily_tasks_mask & (1 << (taskId - 1))) {
-            debugLog('updateTaskProgress', `task already completed, skip`);
+            debugLog('updateTaskProgress', `task ${taskId} already completed, skip`);
             return false;
         }
         let progress = parseProgress(user.daily_tasks_progress);
@@ -138,41 +129,23 @@ async function updateTaskProgress(userId, taskId, increment = 1) {
     }
 }
 
-// ======================== ОБНОВЛЕНИЕ ПО СОБЫТИЯМ ========================
-
 async function updateBattleProgress(userId, classPlayed, isVictory) {
     debugLog('updateBattleProgress', `user ${userId}, class ${classPlayed}, victory ${isVictory}`);
-    if (!isVictory) {
-        debugLog('updateBattleProgress', 'Поражение – прогресс не увеличивается');
-        return;
-    }
-    // Задание 5: количество боёв
+    if (!isVictory) return;
     await updateTaskProgress(userId, 5, 1);
-    // Задания 1-3: победы конкретным классом
-    let taskId = null;
-    if (classPlayed === 'warrior') taskId = 1;
-    else if (classPlayed === 'assassin') taskId = 2;
-    else if (classPlayed === 'mage') taskId = 3;
-    if (taskId) {
-        await updateTaskProgress(userId, taskId, 1);
-    } else {
-        debugLog('updateBattleProgress', `Неизвестный класс ${classPlayed}, задание не обновлено`);
-    }
+    let taskId = classPlayed === 'warrior' ? 1 : (classPlayed === 'assassin' ? 2 : (classPlayed === 'mage' ? 3 : null));
+    if (taskId) await updateTaskProgress(userId, taskId, 1);
 }
 
 async function updateExpProgress(userId, expGained) {
-    debugLog('updateExpProgress', `user ${userId}, expGained=${expGained}`);
-    if (expGained > 0) {
-        await updateTaskProgress(userId, 4, expGained);
-    }
+    debugLog('updateExpProgress', `user ${userId}, exp ${expGained}`);
+    if (expGained > 0) await updateTaskProgress(userId, 4, expGained);
 }
 
 async function updateChestProgress(userId, itemRarity) {
-    debugLog('updateChestProgress', `user ${userId}, rarity=${itemRarity}`);
+    debugLog('updateChestProgress', `user ${userId}, rarity ${itemRarity}`);
     if (['rare', 'epic', 'legendary'].includes(itemRarity)) {
         await updateTaskProgress(userId, 7, 1);
-    } else {
-        debugLog('updateChestProgress', 'Редкость не подходит, задание 7 не обновлено');
     }
 }
 
@@ -185,8 +158,6 @@ async function updateTowerTask(userId) {
     debugLog('updateTowerTask', `user ${userId}`);
     await updateTaskProgress(userId, 8, 1);
 }
-
-// ======================== ЭКСПОРТ ========================
 
 module.exports = {
     getMoscowDate,

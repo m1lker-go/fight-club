@@ -16,31 +16,6 @@ function parseProgress(p) {
     try { return typeof p === 'string' ? JSON.parse(p) : p; } catch { return {}; }
 }
 
-// Единственная функция сброса дня
-async function resetIfNeeded(userId) {
-    const client = await pool.connect();
-    try {
-        const res = await client.query('SELECT last_daily_reset FROM users WHERE id=$1', [userId]);
-        if (res.rows.length === 0) return;
-        const last = res.rows[0].last_daily_reset;
-        const today = getMoscowDate();
-        const lastStr = last ? new Date(last).toISOString().split('T')[0] : null;
-        if (lastStr !== today) {
-            log(`Сброс для ${userId} (было ${lastStr}, стало ${today})`);
-            // Обнуляем маску и прогресс
-            await client.query(
-                `UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1 WHERE id = $2`,
-                [JSON.stringify({}), userId]
-            );
-            // Обновляем дату сброса отдельно – гарантированно
-            await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
-            log(`Сброс выполнен, last_daily_reset = ${today}`);
-        } else {
-            log(`Сброс не нужен для ${userId} (last_daily_reset уже ${lastStr})`);
-        }
-    } finally { client.release(); }
-}
-
 async function getTasksList(user) {
     const client = await pool.connect();
     try {
@@ -62,27 +37,27 @@ async function getTasksList(user) {
 }
 
 async function updateTaskProgress(userId, taskId, inc) {
-    log(`Обновление: user=${userId}, task=${taskId}, +${inc}`);
+    log(`updateTaskProgress: user ${userId}, task ${taskId}, +${inc}`);
     const client = await pool.connect();
     try {
         const res = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id=$1', [userId]);
         if (res.rows.length === 0) return false;
         const { daily_tasks_mask, daily_tasks_progress } = res.rows[0];
         if (daily_tasks_mask & (1 << (taskId-1))) {
-            log(`Задание ${taskId} уже выполнено`);
+            log(`task ${taskId} already completed, skip`);
             return false;
         }
         let prog = parseProgress(daily_tasks_progress);
         const old = prog[taskId] || 0;
         prog[taskId] = old + inc;
         await client.query('UPDATE users SET daily_tasks_progress=$1 WHERE id=$2', [JSON.stringify(prog), userId]);
-        log(`Прогресс ${taskId}: ${old} → ${prog[taskId]}`);
+        log(`task ${taskId}: ${old} → ${prog[taskId]}`);
         return true;
     } finally { client.release(); }
 }
 
 async function updateBattleProgress(userId, cls, victory) {
-    log(`Бой: userId=${userId}, class=${cls}, victory=${victory}`);
+    log(`updateBattleProgress: user ${userId}, class ${cls}, victory ${victory}`);
     if (!victory) return;
     await updateTaskProgress(userId, 5, 1);
     let taskId = cls === 'warrior' ? 1 : (cls === 'assassin' ? 2 : (cls === 'mage' ? 3 : null));
@@ -90,28 +65,32 @@ async function updateBattleProgress(userId, cls, victory) {
 }
 
 async function updateExpProgress(userId, exp) {
-    log(`Опыт: userId=${userId}, exp=${exp}`);
+    log(`updateExpProgress: user ${userId}, exp ${exp}`);
     if (exp > 0) await updateTaskProgress(userId, 4, exp);
 }
 
 async function updateChestProgress(userId, rarity) {
-    if (['rare', 'epic', 'legendary'].includes(rarity)) await updateTaskProgress(userId, 7, 1);
+    if (['rare', 'epic', 'legendary'].includes(rarity)) {
+        await updateTaskProgress(userId, 7, 1);
+    }
 }
+
 async function updateProfileProgress(userId) {
     await updateTaskProgress(userId, 6, 1);
 }
+
 async function updateTowerTask(userId) {
     await updateTaskProgress(userId, 8, 1);
 }
 
 module.exports = {
-    resetIfNeeded,
+    getMoscowDate,
+    parseProgress,
     getTasksList,
+    updateTaskProgress,
     updateBattleProgress,
     updateExpProgress,
     updateChestProgress,
     updateProfileProgress,
-    updateTowerTask,
-    getMoscowDate,
-    parseProgress
+    updateTowerTask
 };

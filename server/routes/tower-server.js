@@ -7,14 +7,6 @@ const dailyTasks = require('../utils/dailyTasks');
 
 console.log('✅ tower-server.js loaded (full version with user_id support)');
 
-function getMoscowDate() {
-    const now = new Date();
-    const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-    const result = moscowTime.toISOString().split('T')[0];
-    console.log('[getMoscowDate] now=' + now.toISOString() + ', moscowTime=' + moscowTime + ', result=' + result);
-    return result;
-}
-
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
     { class: 'assassin', subclasses: ['assassin', 'venom_blade', 'blood_hunter'] },
@@ -36,26 +28,12 @@ async function getOrCreateProgress(client, userId) {
     const res = await client.query('SELECT * FROM tower_progress WHERE user_id = $1', [userId]);
     if (res.rows.length === 0) {
         await client.query(
-            'INSERT INTO tower_progress (user_id, current_floor, max_floor, attempts_today, last_attempt_date) VALUES ($1, 1, 0, 0, NULL)',
+            'INSERT INTO tower_progress (user_id, current_floor, max_floor, attempts_today) VALUES ($1, 1, 0, 0)',
             [userId]
         );
-        return { current_floor: 1, max_floor: 0, attempts_today: 0, last_attempt_date: null, chosen_class: null, chosen_subclass: null };
+        return { current_floor: 1, max_floor: 0, attempts_today: 0, chosen_class: null, chosen_subclass: null };
     }
     return res.rows[0];
-}
-
-async function checkAndResetAttempts(client, userId, progress) {
-    const today = getMoscowDate();
-    const lastDateStr = progress.last_attempt_date ? new Date(progress.last_attempt_date).toISOString().split('T')[0] : null;
-    console.log('[checkAndResetAttempts] user ' + userId + ': last_attempt_date=' + lastDateStr + ', today=' + today);
-    if (lastDateStr !== today) {
-        await client.query('UPDATE tower_progress SET attempts_today = 0, last_attempt_date = $1 WHERE user_id = $2', [today, userId]);
-        progress.attempts_today = 0;
-        progress.last_attempt_date = today;
-        console.log('[checkAndResetAttempts] user ' + userId + ': reset to 0 (new day ' + today + ')');
-    } else {
-        console.log('[checkAndResetAttempts] user ' + userId + ': no reset');
-    }
 }
 
 async function getRandomAvatar(client) {
@@ -87,9 +65,8 @@ router.get('/status', async (req, res) => {
         const userId = user.id;
 
         let progress = await getOrCreateProgress(client, userId);
-        await checkAndResetAttempts(client, userId, progress);
-
-        console.log('[STATUS] user ' + userId + ': attempts_today=' + progress.attempts_today + ', last_attempt_date=' + progress.last_attempt_date + ', attemptsLeft=' + (10 - progress.attempts_today));
+        // Сброс больше не выполняется – только чтение
+        console.log('[STATUS] user ' + userId + ': attempts_today=' + progress.attempts_today + ', attemptsLeft=' + (10 - progress.attempts_today));
 
         res.json({
             currentFloor: progress.current_floor,
@@ -152,8 +129,7 @@ router.post('/battle', async (req, res) => {
         const username = user.username || 'Player';
 
         let progress = await getOrCreateProgress(client, userId);
-        await checkAndResetAttempts(client, userId, progress);
-
+        // Сброс не выполняется – только проверка лимита
         if (!progress.chosen_class || !progress.chosen_subclass) {
             throw new Error('Class not selected for tower. Please select a class first.');
         }
@@ -161,16 +137,15 @@ router.post('/battle', async (req, res) => {
         const chosenClass = progress.chosen_class;
         const chosenSubclass = progress.chosen_subclass;
 
-        const today = getMoscowDate();
-        console.log('[BATTLE] before update: attempts_today=' + progress.attempts_today + ', last_attempt_date=' + progress.last_attempt_date + ', today=' + today);
+        console.log('[BATTLE] before update: attempts_today=' + progress.attempts_today);
         const updateRes = await client.query(
-            'UPDATE tower_progress SET attempts_today = attempts_today + 1, last_attempt_date = $1 WHERE user_id = $2 AND attempts_today < 10 RETURNING attempts_today',
-            [today, userId]
+            'UPDATE tower_progress SET attempts_today = attempts_today + 1 WHERE user_id = $1 AND attempts_today < 10 RETURNING attempts_today',
+            [userId]
         );
         if (updateRes.rowCount === 0) throw new Error('No tickets left today');
         const newAttemptsToday = updateRes.rows[0].attempts_today;
         progress.attempts_today = newAttemptsToday;
-        console.log('[BATTLE UPDATE] user ' + userId + ': newAttemptsToday=' + newAttemptsToday + ', date=' + today);
+        console.log('[BATTLE UPDATE] user ' + userId + ': newAttemptsToday=' + newAttemptsToday);
 
         let towerTaskCompleted = false;
         if (newAttemptsToday === 3) {

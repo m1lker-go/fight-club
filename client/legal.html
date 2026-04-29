@@ -51,30 +51,23 @@
         a:hover {
             text-decoration: underline;
         }
-        .buttons {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            margin-top: 30px;
-            flex-wrap: wrap;
-        }
         .btn {
+            display: block;
             background-color: #2f3542;
             border: 2px solid #00aaff;
             border-radius: 40px;
-            padding: 12px 24px;
+            padding: 12px 0;
             font-size: 16px;
             font-weight: bold;
             color: white;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            margin-top: 30px;
+            width: 100%;
         }
         .btn i {
-            font-size: 18px;
+            margin-right: 8px;
             color: #00aaff;
         }
         .btn:hover {
@@ -104,18 +97,12 @@
 
     <h2>Договор-оферта</h2>
     <p>
-        Все покупки регулируются условиями 
-        <a href="/legal/terms.pdf" target="_blank">Публичной оферты (PDF)</a>.
+        Все покупки регулируются условиями публичной оферты.
     </p>
 
-    <div class="buttons">
-        <a href="/legal/terms.pdf" download class="btn">
-            <i class="fas fa-download"></i> Скачать PDF
-        </a>
-        <a href="shop.html" class="btn">
-            <i class="fas fa-store"></i> Магазин в игре
-        </a>
-    </div>
+    <a href="shop.html" class="btn">
+        <i class="fas fa-store"></i> Магазин в игре
+    </a>
 
     <div class="footer">
         <i class="fas fa-gavel"></i> Возврат средств возможен только в соответствии с условиями оферты.

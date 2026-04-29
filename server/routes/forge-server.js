@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
-
-const tasksModule = require('./tasks');
+const dailyTasks = require('../utils/dailyTasks');
 
 function generateItemByRarity(rarity, ownerClass = null) {
     const classes = ['warrior', 'assassin', 'mage'];
@@ -163,7 +162,7 @@ router.get('/current', async (req, res) => {
     }
 });
 
-// Ковка
+// Ковка (объединение трех предметов одного качества в предмет следующего качества)
 router.post('/craft', async (req, res) => {
     const { tg_id, user_id, item_ids, chosen_class } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length !== 3) {
@@ -222,10 +221,9 @@ router.post('/craft', async (req, res) => {
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
-        if (newRarity === 'rare' || newRarity === 'epic' || newRarity === 'legendary') {
-            if (tasksModule.updateLuckyTask) {
-                await tasksModule.updateLuckyTask(client, userId);
-            }
+        // Обновляем задание "Счастливчик", если получен предмет редкий или выше
+        if (['rare', 'epic', 'legendary'].includes(newRarity)) {
+            await dailyTasks.updateChestProgress(userId, newRarity);
         }
 
         await client.query('COMMIT');
@@ -239,7 +237,7 @@ router.post('/craft', async (req, res) => {
     }
 });
 
-// Плавка
+// Плавка (разбор предметов на ресурсы)
 router.post('/smelt', async (req, res) => {
     const { tg_id, user_id, item_ids } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length === 0 || item_ids.length > 5) {

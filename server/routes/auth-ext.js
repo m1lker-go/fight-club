@@ -81,7 +81,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
         }
         if (existingUser) {
             const userId = existingUser.id;
-            await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, 'warrior') WHERE id = $3', [tgId, username, userId]);
+            await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
@@ -327,7 +327,7 @@ router.get('/telegram/callback', async (req, res) => {
                 }
                 if (existingUser) {
                     const userId = existingUser.id;
-                    await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, 'warrior') WHERE id = $3', [tgId, username, userId]);
+                    await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
                     await client.query(
                         `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                          VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT DO NOTHING`,

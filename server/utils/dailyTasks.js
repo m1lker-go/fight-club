@@ -17,8 +17,7 @@ function parseProgress(progress) {
     if (!progress) return {};
     try {
         return typeof progress === 'string' ? JSON.parse(progress) : progress;
-    } catch (e) {
-        debugLog('parseProgress', `Ошибка парсинга: ${e.message}, возвращаем {}`);
+    } catch {
         return {};
     }
 }
@@ -29,27 +28,24 @@ async function resetDailyTasks(client, userId, today) {
         `UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1, last_daily_reset = $2 WHERE id = $3`,
         [JSON.stringify({}), today, userId]
     );
-    debugLog('resetDailyTasks', `Сброс выполнен (mask=0, progress={}, last_reset=${today})`);
 }
 
 async function checkAndResetDay(client, user) {
     const today = getMoscowDate();
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-    debugLog('checkAndResetDay', `user ${user.id}, last_reset=${lastResetStr}, today=${today}`);
     if (lastResetStr !== today) {
         await resetDailyTasks(client, user.id, today);
         user.daily_tasks_mask = 0;
         user.daily_tasks_progress = {};
         user.last_daily_reset = today;
-        debugLog('checkAndResetDay', `Сброс выполнен (обновлён объект user)`);
+        debugLog('checkAndResetDay', `reset performed for user ${user.id}`);
     } else {
-        debugLog('checkAndResetDay', `Сброс не требуется`);
+        debugLog('checkAndResetDay', `no reset needed for user ${user.id}`);
     }
     return user;
 }
 
 async function resetIfNeeded(userId) {
-    debugLog('resetIfNeeded', `start for user ${userId}`);
     const client = await pool.connect();
     try {
         const userRes = await client.query('SELECT id, last_daily_reset FROM users WHERE id = $1', [userId]);
@@ -57,29 +53,23 @@ async function resetIfNeeded(userId) {
         const user = userRes.rows[0];
         const today = getMoscowDate();
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-        debugLog('resetIfNeeded', `user ${userId}, last_reset=${lastResetStr}, today=${today}`);
         if (lastResetStr !== today) {
             await resetDailyTasks(client, userId, today);
-            debugLog('resetIfNeeded', `Сброс выполнен`);
+            debugLog('resetIfNeeded', `reset performed for user ${userId}`);
         } else {
-            debugLog('resetIfNeeded', `Сброс не требуется`);
+            debugLog('resetIfNeeded', `no reset needed for user ${userId}`);
         }
-    } catch (err) {
-        debugLog('resetIfNeeded', `Ошибка: ${err.message}`);
-        throw err;
     } finally {
         client.release();
     }
 }
 
 async function getTasksList(user) {
-    debugLog('getTasksList', `start for user ${user.id}`);
     const client = await pool.connect();
     try {
         const tasksRes = await client.query('SELECT * FROM daily_tasks ORDER BY id');
         const tasks = tasksRes.rows;
         const progressObj = parseProgress(user.daily_tasks_progress);
-        debugLog('getTasksList', `mask=${user.daily_tasks_mask}, progressObj=${JSON.stringify(progressObj)}`);
         const result = [];
         for (const task of tasks) {
             const completed = !!(user.daily_tasks_mask & (1 << (task.id - 1)));
@@ -103,7 +93,6 @@ async function getTasksList(user) {
     }
 }
 
-// Упрощённая версия updateTaskProgress – без транзакций, без FOR UPDATE
 async function updateTaskProgress(userId, taskId, increment = 1) {
     debugLog('updateTaskProgress', `user ${userId}, task ${taskId}, +${increment}`);
     const client = await pool.connect();
@@ -112,7 +101,7 @@ async function updateTaskProgress(userId, taskId, increment = 1) {
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
         if (user.daily_tasks_mask & (1 << (taskId - 1))) {
-            debugLog('updateTaskProgress', `task ${taskId} already completed, skip`);
+            debugLog('updateTaskProgress', `task already completed, skip`);
             return false;
         }
         let progress = parseProgress(user.daily_tasks_progress);

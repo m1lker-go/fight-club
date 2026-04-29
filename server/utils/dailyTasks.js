@@ -16,7 +16,7 @@ function parseProgress(p) {
     try { return typeof p === 'string' ? JSON.parse(p) : p; } catch { return {}; }
 }
 
-// Единственная функция для сброса дня (вызывается в /daily/list и /daily/update/battle)
+// Единственная функция сброса дня
 async function resetIfNeeded(userId) {
     const client = await pool.connect();
     try {
@@ -26,17 +26,17 @@ async function resetIfNeeded(userId) {
         const today = getMoscowDate();
         const lastStr = last ? new Date(last).toISOString().split('T')[0] : null;
         if (lastStr !== today) {
-            log(`Сброс для пользователя ${userId} (было ${lastStr}, стало ${today})`);
+            log(`Сброс для ${userId} (было ${lastStr}, стало ${today})`);
             // Обнуляем маску и прогресс
             await client.query(
                 `UPDATE users SET daily_tasks_mask = 0, daily_tasks_progress = $1 WHERE id = $2`,
                 [JSON.stringify({}), userId]
             );
-            // Принудительно обновляем дату сброса
+            // Обновляем дату сброса отдельно – гарантированно
             await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
-            log(`Сброс выполнен, last_daily_reset обновлён на ${today}`);
+            log(`Сброс выполнен, last_daily_reset = ${today}`);
         } else {
-            log(`Сброс не нужен для ${userId}, last_daily_reset уже ${lastStr}`);
+            log(`Сброс не нужен для ${userId} (last_daily_reset уже ${lastStr})`);
         }
     } finally { client.release(); }
 }

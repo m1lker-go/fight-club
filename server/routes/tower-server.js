@@ -77,7 +77,6 @@ function getBotLevel(floor) {
     return 60;
 }
 
-// ========== ПОЛУЧЕНИЕ СТАТУСА БАШНИ ==========
 router.get('/status', async (req, res) => {
     const { tg_id, user_id } = req.query;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -108,7 +107,6 @@ router.get('/status', async (req, res) => {
     }
 });
 
-// ========== ВЫБОР КЛАССА НА СЕЗОН ==========
 router.post('/select-class', async (req, res) => {
     const { tg_id, user_id, class: className, subclass } = req.body;
     if ((!tg_id && !user_id) || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
@@ -139,7 +137,6 @@ router.post('/select-class', async (req, res) => {
     }
 });
 
-// ========== БОЙ В БАШНЕ ==========
 router.post('/battle', async (req, res) => {
     const { tg_id, user_id } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -192,7 +189,7 @@ router.post('/battle', async (req, res) => {
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
 
-        // ИСПРАВЛЕНИЕ: проверяем существование бота для этого этажа
+        // Проверяем, существует ли уже бот для этого этажа
         let botRes = await client.query('SELECT bot_data FROM tower_bots WHERE user_id = $1 AND floor = $2', [userId, progress.current_floor]);
         let bot;
         if (botRes.rows.length > 0) {
@@ -204,22 +201,11 @@ router.post('/battle', async (req, res) => {
             } else {
                 bot = generateBot(botLevel, false, enemyType.class, enemyType.subclass);
             }
-            // Вставка с безопасным автоинкрементом + защита от дубликатов id на случай сбитой последовательности
-            const insertResult = await client.query(
-                `INSERT INTO tower_bots (user_id, floor, bot_data)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (id) DO NOTHING
-                 RETURNING id`,
+            // Простая вставка без ON CONFLICT (первичный ключ id генерируется автоматически)
+            await client.query(
+                'INSERT INTO tower_bots (user_id, floor, bot_data) VALUES ($1, $2, $3)',
                 [userId, progress.current_floor, bot]
             );
-            if (insertResult.rowCount === 0) {
-                // Конфликт id – обновляем существующую запись (такая же пара user_id/floor)
-                await client.query(
-                    `UPDATE tower_bots SET bot_data = $1
-                     WHERE user_id = $2 AND floor = $3`,
-                    [bot, userId, progress.current_floor]
-                );
-            }
         }
 
         const opponent = {

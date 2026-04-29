@@ -179,7 +179,7 @@ router.get('/daily/list', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        await dailyTasks.resetIfNeeded(user.id);  // используем resetIfNeeded вместо checkAndResetDay
+        // Убрали resetIfNeeded – сброс теперь в cron
         const tasks = await dailyTasks.getTasksList(user);
         const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
         const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
@@ -207,7 +207,7 @@ router.post('/daily/claim', async (req, res) => {
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        await dailyTasks.resetIfNeeded(user.id);  // заменяем checkAndResetDay
+        // Убрали resetIfNeeded
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {
             throw new Error('Task already claimed');
         }
@@ -287,7 +287,7 @@ router.post('/daily/update/battle', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        await dailyTasks.resetIfNeeded(user.id);
+        // Убрали resetIfNeeded
         await dailyTasks.updateBattleProgress(user.id, class_played, is_victory);
         res.json({ success: true });
     } catch (e) {
@@ -305,7 +305,6 @@ router.post('/daily/update/exp', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        // resetIfNeeded не вызываем – сброс уже сделан в /battle
         await dailyTasks.updateExpProgress(user.id, exp_gained);
         res.json({ success: true });
     } catch (e) {

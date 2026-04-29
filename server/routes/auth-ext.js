@@ -128,7 +128,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
         needusername = !userData.username;
         // Убедимся, что current_class установлен
         if (!userData.current_class) {
-            await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
+            await client.query('UPDATE users SET current_class = COALESCE(current_class, \'warrior\') WHERE id = $1', [userData.id]);
             userData.current_class = 'warrior';
         }
     }
@@ -217,8 +217,9 @@ router.post('/verify-email', async (req, res) => {
         } else {
             userData = userRes.rows[0];
             needusername = !userData.username;
+            // Исправлено: обновляем current_class без несуществующих переменных
             if (!userData.current_class) {
-                await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
+                await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
                 userData.current_class = 'warrior';
             }
             await client.query(
@@ -365,7 +366,7 @@ router.get('/telegram/callback', async (req, res) => {
                 userData = userRes.rows[0];
                 needusername = !userData.username;
                 if (!userData.current_class) {
-                    await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
+                    await client.query('UPDATE users SET current_class = COALESCE(current_class, \'warrior\') WHERE id = $1', [userData.id]);
                     userData.current_class = 'warrior';
                 }
             }
@@ -1202,7 +1203,7 @@ router.post('/messages/claim', async (req, res) => {
 
 // ==================== РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ EMAIL ====================
 
-// Временное хранение данных регистрации (лучше в БД, но для простоты используем объект в памяти с очисткой)
+// Временное хранение данных регистрации (в памяти, с очисткой)
 const pendingRegistrations = new Map(); // key: email, value: { passwordHash, referralCode, tempUsername, code, expires }
 
 // Очистка просроченных каждые 10 минут
@@ -1266,6 +1267,12 @@ router.post('/verify-registration', async (req, res) => {
 
     const client = await pool.connect();
     try {
+        // Повторная проверка, что email всё ещё свободен (на случай, если за время ввода кода кто-то зарегистрировался)
+        const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (existing.rows.length > 0) {
+            return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
+        }
+
         const pending = pendingRegistrations.get(email);
         if (!pending) {
             return res.status(400).json({ error: 'Код не найден или истёк. Запросите регистрацию заново.' });
@@ -1298,6 +1305,14 @@ router.post('/verify-registration', async (req, res) => {
             );
         }
 
+        // Добавляем связь с email в user_connections
+        await client.query(
+            `INSERT INTO user_connections (user_id, provider, email)
+             VALUES ($1, 'email', $2)
+             ON CONFLICT (user_id, provider) DO NOTHING`,
+            [userData.id, email]
+        );
+
         // Приветственное сообщение
         await client.query(
             `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
@@ -1320,7 +1335,6 @@ router.post('/verify-registration', async (req, res) => {
         client.release();
     }
 });
-
 
 // Вход по паролю
 router.post('/login', async (req, res) => {

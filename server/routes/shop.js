@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
+const dailyTasks = require('../utils/dailyTasks');  // добавлено для обновления заданий
 
 // Функция генерации предмета из сундука
 function generateItemFromChest(chestType) {
@@ -167,6 +168,12 @@ router.post('/buychest', async (req, res) => {
              item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
         );
         console.log('Предмет добавлен в инвентарь пользователя', userId);
+
+        // Обновляем задание "Счастливчик" (id 7), если предмет редкий/эпический/легендарный
+        if (item.rarity === 'rare' || item.rarity === 'epic' || item.rarity === 'legendary') {
+            await dailyTasks.updateChestProgress(userId, item.rarity);
+            console.log(`Задание "Счастливчик" обновлено для пользователя ${userId}, редкость ${item.rarity}`);
+        }
 
         await client.query('COMMIT');
         console.log('=== ТРАНЗАКЦИЯ ЗАВЕРШЕНА, предмет добавлен ===');

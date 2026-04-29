@@ -288,6 +288,7 @@ router.post('/daily/update/battle', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
+        await dailyTasks.resetIfNeeded(user.id);  // <-- ДОБАВЛЕНО
         await dailyTasks.updateBattleProgress(user.id, class_played, is_victory);
         res.json({ success: true });
     } catch (e) {
@@ -305,6 +306,7 @@ router.post('/daily/update/exp', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
+        await dailyTasks.resetIfNeeded(user.id);  // <-- ДОБАВЛЕНО
         await dailyTasks.updateExpProgress(user.id, exp_gained);
         res.json({ success: true });
     } catch (e) {

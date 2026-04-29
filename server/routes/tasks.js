@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const dailyTasks = require('../utils/dailyTasks');
-const { generateItemByRarity } = require('../utils/botGenerator'); // для адвента
-const { itemNames, fixedBonuses } = require('../data/itemData');   // для генерации предметов
+const { generateItemByRarity } = require('../utils/botGenerator');
+const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ АДВЕНТА ========================
 
@@ -30,7 +30,7 @@ function getAdventReward(day, daysInMonth) {
     return { type: 'coins', amount: 100 };
 }
 
-// ======================== АДВЕНТ-КАЛЕНДАРЬ (без изменений) ========================
+// ======================== АДВЕНТ-КАЛЕНДАРЬ ========================
 
 router.get('/advent', async (req, res) => {
     const { tg_id, user_id } = req.query;
@@ -170,7 +170,7 @@ router.post('/advent/claim', async (req, res) => {
     }
 });
 
-// ======================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ (через утилиту) ========================
+// ======================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========================
 
 router.get('/daily/list', async (req, res) => {
     const { tg_id, user_id } = req.query;
@@ -287,7 +287,7 @@ router.post('/daily/update/battle', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        await dailyTasks.resetIfNeeded(user.id);   // ← сброс только здесь
+        await dailyTasks.resetIfNeeded(user.id);
         await dailyTasks.updateBattleProgress(user.id, class_played, is_victory);
         res.json({ success: true });
     } catch (e) {

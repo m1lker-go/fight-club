@@ -305,7 +305,7 @@ router.post('/daily/update/exp', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        // вызов resetIfNeeded УДАЛЁН – чтобы не сбрасывать прогресс повторно
+        // resetIfNeeded не вызываем – сброс уже сделан в /battle
         await dailyTasks.updateExpProgress(user.id, exp_gained);
         res.json({ success: true });
     } catch (e) {

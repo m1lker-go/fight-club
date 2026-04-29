@@ -179,7 +179,7 @@ router.get('/daily/list', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        await dailyTasks.checkAndResetDay(client, user);
+        await dailyTasks.resetIfNeeded(user.id);  // используем resetIfNeeded вместо checkAndResetDay
         const tasks = await dailyTasks.getTasksList(user);
         const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
         const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
@@ -207,7 +207,7 @@ router.post('/daily/claim', async (req, res) => {
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        await dailyTasks.checkAndResetDay(client, user);
+        await dailyTasks.resetIfNeeded(user.id);  // заменяем checkAndResetDay
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {
             throw new Error('Task already claimed');
         }

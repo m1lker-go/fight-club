@@ -2,28 +2,100 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Реквизиты и оферта – Cat Fighting</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1a1f2b;
             color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            max-width: 600px;
-            margin: 50px auto;
             line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        a {
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: #2a303c;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid #00aaff;
+        }
+        h1 {
             color: #00aaff;
+            font-size: 24px;
+            margin-bottom: 16px;
+            text-align: center;
         }
         h2 {
             color: #00aaff;
+            margin: 20px 0 10px;
+            font-size: 18px;
+        }
+        p {
+            margin-bottom: 12px;
+        }
+        a {
+            color: #00aaff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background-color: #2f3542;
+            border: 2px solid #00aaff;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn i {
+            font-size: 18px;
+            color: #00aaff;
+        }
+        .btn:hover {
+            background-color: #00aaff;
+            color: #1a1f2b;
+        }
+        .btn:hover i {
+            color: #1a1f2b;
+        }
+        .footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <h1>Реквизиты и правовая информация</h1>
+<div class="container">
+    <h1><i class="fas fa-file-contract"></i> Реквизиты и оферта</h1>
 
     <h2>Продавец</h2>
     <p><strong>Самозанятый:</strong> Лисовский Руслан Олегович</p>
@@ -33,11 +105,21 @@
     <h2>Договор-оферта</h2>
     <p>
         Все покупки регулируются условиями 
-        <a href="/legal/terms.pdf" target="_blank">Публичной оферты</a>.
+        <a href="/legal/terms.pdf" target="_blank">Публичной оферты (PDF)</a>.
     </p>
 
-    <p style="margin-top: 30px; color: #aaa; font-size: 14px;">
-        Возврат средств возможен только в соответствии с условиями оферты.
-    </p>
+    <div class="buttons">
+        <a href="/legal/terms.pdf" download class="btn">
+            <i class="fas fa-download"></i> Скачать PDF
+        </a>
+        <a href="shop.html" class="btn">
+            <i class="fas fa-store"></i> Магазин в игре
+        </a>
+    </div>
+
+    <div class="footer">
+        <i class="fas fa-gavel"></i> Возврат средств возможен только в соответствии с условиями оферты.
+    </div>
+</div>
 </body>
 </html>

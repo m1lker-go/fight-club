@@ -128,7 +128,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
         needusername = !userData.username;
         // Убедимся, что current_class установлен
         if (!userData.current_class) {
-            await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+            await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
             userData.current_class = 'warrior';
         }
     }
@@ -218,7 +218,7 @@ router.post('/verify-email', async (req, res) => {
             userData = userRes.rows[0];
             needusername = !userData.username;
             if (!userData.current_class) {
-                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+                await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
                 userData.current_class = 'warrior';
             }
             await client.query(
@@ -365,7 +365,7 @@ router.get('/telegram/callback', async (req, res) => {
                 userData = userRes.rows[0];
                 needusername = !userData.username;
                 if (!userData.current_class) {
-                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+                    await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
                     userData.current_class = 'warrior';
                 }
             }
@@ -408,7 +408,7 @@ router.post('/vk-lowcode', async (req, res) => {
             userData = userRes.rows[0];
             needusername = !userData.username;
             if (!userData.current_class) {
-                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                 userData.current_class = 'warrior';
             }
         } else {
@@ -432,7 +432,7 @@ router.post('/vk-lowcode', async (req, res) => {
                     await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
                 }
                 if (!existingUser.current_class) {
-                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                    await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                 }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 userData = userRes.rows[0];
@@ -509,7 +509,7 @@ router.post('/google', async (req, res) => {
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 const userData = userRes.rows[0];
                 if (!userData.current_class) {
-                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                    await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                     userData.current_class = 'warrior';
                 }
                 const sessionToken = generateToken();
@@ -538,7 +538,7 @@ router.post('/google', async (req, res) => {
                     await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
                 }
                 if (!existingUser.current_class) {
-                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                    await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                 }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 const userData = userRes.rows[0];
@@ -938,7 +938,7 @@ router.get('/google-callback', async (req, res) => {
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
             if (!userData.current_class) {
-                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                 userData.current_class = 'warrior';
             }
             needusername = !userData.username;
@@ -958,7 +958,7 @@ router.get('/google-callback', async (req, res) => {
                     [userId, googleId, email, JSON.stringify(payload)]
                 );
                 if (!existingUser.current_class) {
-                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                    await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                 }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 userData = userRes.rows[0];
@@ -1273,7 +1273,7 @@ router.post('/login', async (req, res) => {
 
         // Убеждаемся, что current_class установлен
         if (!user.current_class) {
-            await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [user.id]);
+            await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [user.id]);
             user.current_class = 'warrior';
         }
 
@@ -1404,7 +1404,6 @@ router.post('/change-class', async (req, res) => {
         const userRes = await client.query('SELECT id, current_class FROM users WHERE session_token = $1', [token]);
         if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
         const userId = userRes.rows[0].id;
-        const oldClass = userRes.rows[0].current_class;
 
         // Проверяем, что выбранный класс существует у пользователя
         const classCheck = await client.query(

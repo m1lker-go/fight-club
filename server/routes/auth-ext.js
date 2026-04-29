@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
 const { rechargeEnergy } = require('../utils/energy');
-// Прокси удалён, так как он не работает и не нужен
+// Прокси удалён
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { sendTelegramNotification } = require('../utils/telegram');
@@ -46,7 +46,7 @@ async function createWelcomeMessage(client, userId) {
     );
 }
 
-// ========== TELEGRAM (только по tg_id, без объединения по email) ==========
+// ========== TELEGRAM ==========
 async function handleTelegramLogin(initData, referralCode, client) {
     const botToken = process.env.BOT_TOKEN;
     const urlParams = new URLSearchParams(initData);
@@ -81,7 +81,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
         }
         if (existingUser) {
             const userId = existingUser.id;
-            await client.query('UPDATE users SET tg_id = $1, username = $2 WHERE id = $3', [tgId, username, userId]);
+            await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, 'warrior') WHERE id = $3', [tgId, username, userId]);
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                  VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
@@ -100,8 +100,8 @@ async function handleTelegramLogin(initData, referralCode, client) {
                 }
             }
             const newUser = await client.query(
-                `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, referred_by)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+                `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, referred_by, current_class)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'warrior') RETURNING *`,
                 [tgId, username, newReferralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true, referredById]
             );
             userData = newUser.rows[0];
@@ -126,6 +126,11 @@ async function handleTelegramLogin(initData, referralCode, client) {
     } else {
         userData = userRes.rows[0];
         needusername = !userData.username;
+        // Убедимся, что current_class установлен
+        if (!userData.current_class) {
+            await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+            userData.current_class = 'warrior';
+        }
     }
 
     await client.query('UPDATE users SET telegram_chat_id = $1 WHERE id = $2', [tgId, userData.id]);
@@ -189,8 +194,8 @@ router.post('/verify-email', async (req, res) => {
             const referralCode = Math.random().toString(36).substring(2, 10);
             let tempUsername = email.split('@')[0];
             const newUser = await client.query(
-                `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
                 [email, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
             );
             userData = newUser.rows[0];
@@ -212,6 +217,10 @@ router.post('/verify-email', async (req, res) => {
         } else {
             userData = userRes.rows[0];
             needusername = !userData.username;
+            if (!userData.current_class) {
+                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+                userData.current_class = 'warrior';
+            }
             await client.query(
                 `INSERT INTO user_connections (user_id, provider, email) VALUES ($1, 'email', $2) ON CONFLICT (user_id, provider) DO UPDATE SET email = $2`,
                 [userData.id, email]
@@ -268,7 +277,7 @@ router.post('/telegram-auto', async (req, res) => {
     }
 });
 
-// Telegram OpenID Connect callback (без прокси)
+// Telegram OpenID Connect callback
 router.get('/telegram/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('Missing code');
@@ -291,7 +300,6 @@ router.get('/telegram/callback', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(tokenParams)
-            // прокси удалён
         });
         const tokenData = await tokenResponse.json();
         if (tokenData.error) {
@@ -319,7 +327,7 @@ router.get('/telegram/callback', async (req, res) => {
                 }
                 if (existingUser) {
                     const userId = existingUser.id;
-                    await client.query('UPDATE users SET tg_id = $1, username = $2 WHERE id = $3', [tgId, username, userId]);
+                    await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, 'warrior') WHERE id = $3', [tgId, username, userId]);
                     await client.query(
                         `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
                          VALUES ($1, 'telegram', $2, $3, $4) ON CONFLICT DO NOTHING`,
@@ -330,8 +338,8 @@ router.get('/telegram/callback', async (req, res) => {
                 } else {
                     const referralCode = Math.random().toString(36).substring(2, 10);
                     const newUser = await client.query(
-                        `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                        `INSERT INTO users (tg_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
                         [tgId, username, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                     );
                     userData = newUser.rows[0];
@@ -356,6 +364,10 @@ router.get('/telegram/callback', async (req, res) => {
             } else {
                 userData = userRes.rows[0];
                 needusername = !userData.username;
+                if (!userData.current_class) {
+                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+                    userData.current_class = 'warrior';
+                }
             }
 
             const sessionToken = generateToken();
@@ -372,7 +384,7 @@ router.get('/telegram/callback', async (req, res) => {
     }
 });
 
-// ========== VK LOW-CODE ВХОД ==========
+// ========== VK LOW-CODE ==========
 router.post('/vk-lowcode', async (req, res) => {
     const { access_token, user_id, email } = req.body;
     if (!access_token || !user_id) {
@@ -395,6 +407,10 @@ router.post('/vk-lowcode', async (req, res) => {
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
             needusername = !userData.username;
+            if (!userData.current_class) {
+                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                userData.current_class = 'warrior';
+            }
         } else {
             let existingUser = null;
             if (email) {
@@ -415,6 +431,9 @@ router.post('/vk-lowcode', async (req, res) => {
                     let tempUsername = email.split('@')[0];
                     await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
                 }
+                if (!existingUser.current_class) {
+                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 userData = userRes.rows[0];
                 needusername = !userData.username;
@@ -422,8 +441,8 @@ router.post('/vk-lowcode', async (req, res) => {
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 let tempUsername = email ? email.split('@')[0] : `user_${user_id}`;
                 const newUser = await client.query(
-                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
                     [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
                 userData = newUser.rows[0];
@@ -465,7 +484,7 @@ router.post('/vk-lowcode', async (req, res) => {
     }
 });
 
-// Google OAuth через One Tap (с предотвращением дублирования)
+// Google OAuth через One Tap
 router.post('/google', async (req, res) => {
     const { idToken } = req.body;
     if (!idToken) return res.status(400).json({ error: 'No idToken' });
@@ -489,6 +508,10 @@ router.post('/google', async (req, res) => {
                 await rechargeEnergy(client, userId);
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 const userData = userRes.rows[0];
+                if (!userData.current_class) {
+                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                    userData.current_class = 'warrior';
+                }
                 const sessionToken = generateToken();
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
                 const needusername = !userData.username;
@@ -514,6 +537,9 @@ router.post('/google', async (req, res) => {
                     let tempUsername = email.split('@')[0];
                     await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
                 }
+                if (!existingUser.current_class) {
+                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 const userData = userRes.rows[0];
                 const sessionToken = generateToken();
@@ -524,8 +550,8 @@ router.post('/google', async (req, res) => {
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
                 const newUser = await client.query(
-                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
                     [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
                 const userData = newUser.rows[0];
@@ -618,10 +644,6 @@ router.post('/update-settings', async (req, res) => {
             const nickCheck = await client.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
             if (nickCheck.rows.length > 0) return res.status(400).json({ error: 'username already taken' });
             await client.query('UPDATE users SET username = $1 WHERE id = $2', [username, userId]);
-            await client.query(
-                `UPDATE users SET username = $1 WHERE id = $2 AND (username IS NULL OR username LIKE 'user_%')`,
-                [username, userId]
-            );
         }
         if (sound_enabled !== undefined) {
             await client.query('UPDATE users SET sound_enabled = $1 WHERE id = $2', [sound_enabled, userId]);
@@ -915,6 +937,10 @@ router.get('/google-callback', async (req, res) => {
             await rechargeEnergy(client, userId);
             const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
             userData = userRes.rows[0];
+            if (!userData.current_class) {
+                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                userData.current_class = 'warrior';
+            }
             needusername = !userData.username;
         } else {
             let existingUser = null;
@@ -931,6 +957,9 @@ router.get('/google-callback', async (req, res) => {
                      VALUES ($1, 'google', $2, $3, $4) ON CONFLICT (user_id, provider) DO NOTHING`,
                     [userId, googleId, email, JSON.stringify(payload)]
                 );
+                if (!existingUser.current_class) {
+                    await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userId]);
+                }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 userData = userRes.rows[0];
                 needusername = !userData.username;
@@ -941,8 +970,8 @@ router.get('/google-callback', async (req, res) => {
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 let tempUsername = email ? email.split('@')[0] : `user_${Date.now()}`;
                 const newUser = await client.query(
-                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+                    `INSERT INTO users (email, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
                     [email || null, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
                 userData = newUser.rows[0];
@@ -1175,7 +1204,7 @@ router.post('/messages/claim', async (req, res) => {
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email и пароль обязательны' });
-    if (password.length < 6) return res.status(400). json({ error: 'Пароль должен быть не менее 6 символов' });
+    if (password.length < 6) return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
 
     const client = await pool.connect();
     try {
@@ -1192,8 +1221,8 @@ router.post('/register', async (req, res) => {
         let tempUsername = email.split('@')[0];
 
         const newUser = await client.query(
-            `INSERT INTO users (email, password_hash, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, registered_via)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'credentials') RETURNING *`,
+            `INSERT INTO users (email, password_hash, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, registered_via, current_class)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'credentials', 'warrior') RETURNING *`,
             [email, passwordHash, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
         );
         const userData = newUser.rows[0];
@@ -1241,6 +1270,12 @@ router.post('/login', async (req, res) => {
         const user = result.rows[0];
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+        // Убеждаемся, что current_class установлен
+        if (!user.current_class) {
+            await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [user.id]);
+            user.current_class = 'warrior';
+        }
 
         await rechargeEnergy(client, user.id);
         const freshUser = await client.query('SELECT * FROM users WHERE id = $1', [user.id]);
@@ -1348,6 +1383,42 @@ router.post('/reset-password', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Ошибка сброса пароля' });
+    } finally {
+        client.release();
+    }
+});
+
+// ========== ДОБАВЛЕН ЭНДПОИНТ ДЛЯ СМЕНЫ ТЕКУЩЕГО КЛАССА ==========
+router.post('/change-class', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const { class_name } = req.body;
+    if (!class_name) return res.status(400).json({ error: 'Class name required' });
+
+    const validClasses = ['warrior', 'assassin', 'mage'];
+    if (!validClasses.includes(class_name)) return res.status(400).json({ error: 'Invalid class' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT id, current_class FROM users WHERE session_token = $1', [token]);
+        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userId = userRes.rows[0].id;
+        const oldClass = userRes.rows[0].current_class;
+
+        // Проверяем, что выбранный класс существует у пользователя
+        const classCheck = await client.query(
+            'SELECT id FROM user_classes WHERE user_id = $1 AND class = $2',
+            [userId, class_name]
+        );
+        if (classCheck.rows.length === 0) return res.status(400).json({ error: 'Class not found for this user' });
+
+        await client.query('UPDATE users SET current_class = $1 WHERE id = $2', [class_name, userId]);
+
+        res.json({ success: true, current_class: class_name });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     } finally {
         client.release();
     }

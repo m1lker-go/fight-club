@@ -97,7 +97,20 @@ function getAdventReward(day, daysInMonth) {
     return { type: 'coins', amount: 100 };
 }
 
-// ==================== АДВЕНТ (ИСПРАВЛЕННЫЙ) ====================
+// ==================== ФУНКЦИЯ СБРОСА ЕЖЕДНЕВНЫХ ЗАДАНИЙ ====================
+
+async function resetDailyTasks(client, userId, today) {
+    await client.query(
+        `UPDATE users 
+         SET daily_tasks_mask = 0, 
+             daily_tasks_progress = $1, 
+             last_daily_reset = $2 
+         WHERE id = $3`,
+        [JSON.stringify({}), today, userId]
+    );
+}
+
+// ==================== АДВЕНТ ====================
 
 router.get('/advent', async (req, res) => {
     const { tg_id, user_id } = req.query;
@@ -121,7 +134,6 @@ router.get('/advent', async (req, res) => {
         const currentDay = mskTime.getDate();
         const todayStr = getMoscowDate();
         
-        // Сброс при смене месяца/года
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
             lastClaimDate = null;
@@ -300,22 +312,13 @@ async function updateTowerTask(client, userId) {
     );
     const user = userRes.rows[0];
     const today = getMoscowDate();
-  const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-if (lastResetStr !== today) {
-    // Сброс ежедневных заданий: обнуляем маску и прогресс
-    await client.query(
-        `UPDATE users 
-         SET daily_tasks_mask = 0, 
-             daily_tasks_progress = $1, 
-             last_daily_reset = $2 
-         WHERE id = $3`,
-        [JSON.stringify({}), today, userId]
-    );
-    user.daily_tasks_mask = 0;
-    user.daily_tasks_progress = {};
-    user.last_daily_reset = today;
-    // daily_win_streak НЕ сбрасываем — он управляется в battle.js
-}
+    const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+    if (lastResetStr !== today) {
+        await resetDailyTasks(client, userId, today);
+        user.daily_tasks_mask = 0;
+        user.daily_tasks_progress = {};
+        user.last_daily_reset = today;
+    }
     let progress = parseProgress(user.daily_tasks_progress);
     const taskId = 8;
     if (!(user.daily_tasks_mask & (1 << (taskId - 1)))) {
@@ -338,7 +341,9 @@ async function updateLuckyTask(client, userId) {
     const today = getMoscowDate();
     const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
     if (lastResetStr !== today) {
-        await client.query('UPDATE users SET last_daily_reset = $1, daily_win_streak = 0 WHERE id = $2', [today, userId]);
+        await resetDailyTasks(client, userId, today);
+        user.daily_tasks_mask = 0;
+        user.daily_tasks_progress = {};
         user.last_daily_reset = today;
     }
     let progress = parseProgress(user.daily_tasks_progress);
@@ -374,11 +379,13 @@ router.get('/daily/list', async (req, res) => {
         const today = moscowNow.toISOString().split('T')[0];
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
-                if (lastResetStr !== today) {
-            // НЕ СБРАСЫВАЕМ ПРОГРЕСС И ДНЕВНУЮ СЕРИЮ! Только обновляем дату сброса
-            await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
+        if (lastResetStr !== today) {
+            // Полный сброс ежедневных заданий
+            await resetDailyTasks(client, userId, today);
+            user.daily_tasks_mask = 0;
+            user.daily_tasks_progress = {};
             user.last_daily_reset = today;
-            // dailyWinStreak остаётся без изменений — он управляется только в battle.js
+            // daily_win_streak НЕ сбрасываем — он управляется в battle.js
         }
         
         let progressObj = parseProgress(user.daily_tasks_progress);
@@ -426,7 +433,6 @@ router.get('/daily/list', async (req, res) => {
     }
 });
 
-// ================== ИСПРАВЛЕННЫЙ ОБРАБОТЧИК CLAIM ==================
 router.post('/daily/claim', async (req, res) => {
     const { tg_id, user_id, task_id, class_choice } = req.body;
     if ((!tg_id && !user_id) || !task_id) return res.status(400).json({ error: 'Missing data' });
@@ -445,8 +451,10 @@ router.post('/daily/claim', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Обновляем дату сброса, не трогая прогресс и маску
-            await client.query('UPDATE users SET last_daily_reset = $1 WHERE id = $2', [today, userId]);
+            // Полный сброс ежедневных заданий
+            await resetDailyTasks(client, userId, today);
+            user.daily_tasks_mask = 0;
+            user.daily_tasks_progress = {};
             user.last_daily_reset = today;
         }
 
@@ -537,6 +545,7 @@ router.post('/daily/claim', async (req, res) => {
 // ==================== МАРШРУТЫ ОБНОВЛЕНИЯ ПРОГРЕССА ====================
 
 router.post('/daily/update/battle', async (req, res) => {
+    // ... без изменений ...
     const { tg_id, user_id, class_played, is_victory } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
@@ -586,6 +595,7 @@ router.post('/daily/update/battle', async (req, res) => {
 });
 
 router.post('/daily/update/exp', async (req, res) => {
+    // ... без изменений ...
     const { tg_id, user_id, exp_gained } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
@@ -629,6 +639,7 @@ router.post('/daily/update/exp', async (req, res) => {
 });
 
 router.post('/daily/update/chest', async (req, res) => {
+    // ... без изменений ...
     const { tg_id, user_id, item_rarity } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
@@ -673,6 +684,7 @@ router.post('/daily/update/chest', async (req, res) => {
 });
 
 router.post('/daily/update/profile', async (req, res) => {
+    // ... без изменений ...
     const { tg_id, user_id } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     

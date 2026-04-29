@@ -128,7 +128,7 @@ async function handleTelegramLogin(initData, referralCode, client) {
         needusername = !userData.username;
         // Убедимся, что current_class установлен
         if (!userData.current_class) {
-            await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
+            await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
             userData.current_class = 'warrior';
         }
     }
@@ -218,7 +218,7 @@ router.post('/verify-email', async (req, res) => {
             userData = userRes.rows[0];
             needusername = !userData.username;
             if (!userData.current_class) {
-                await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
+                await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
                 userData.current_class = 'warrior';
             }
             await client.query(
@@ -365,7 +365,7 @@ router.get('/telegram/callback', async (req, res) => {
                 userData = userRes.rows[0];
                 needusername = !userData.username;
                 if (!userData.current_class) {
-                    await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
+                    await client.query('UPDATE users SET tg_id = $1, username = $2, current_class = COALESCE(current_class, \'warrior\') WHERE id = $3', [tgId, username, userId]);
                     userData.current_class = 'warrior';
                 }
             }

@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');           // добавлено
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
 const { sendTelegramNotification } = require('./utils/telegram');
+const { resetDailyTasks, resetSeason } = require('./utils/scheduler'); // добавлено
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -15,7 +17,6 @@ const app = express();
 const allowedOrigins = ['https://cat-fight.ru', 'https://www.cat-fight.ru'];
 app.use(cors({
     origin: function (origin, callback) {
-        // Запросы без origin (мобильные приложения, curl) разрешены
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
@@ -41,20 +42,16 @@ app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
 
-// Заглушка для VK callback (на случай редиректа)
 app.post('/auth/vk/callback', (req, res) => {
     console.log('Received VK callback (unexpected, low-code uses callback mode)');
     res.status(400).json({ error: 'This endpoint is not used. Please use low-code flow.' });
 });
 
-// Webhook для Telegram
 app.post('/webhook', async (req, res) => {
     const { message } = req.body;
     if (!message) return res.sendStatus(200);
-
     const chatId = message.chat.id;
     let text = message.text || '';
-
     let referralCode = null;
     if (text.startsWith('/start')) {
         const parts = text.split(' ');
@@ -62,13 +59,10 @@ app.post('/webhook', async (req, res) => {
             referralCode = parts[1];
         }
     }
-
-    // Исправлено: теперь используется правильный домен, а не vercel
     let webAppUrl = 'https://cat-fight.ru';
     if (referralCode) {
         webAppUrl += `?startapp=${referralCode}`;
     }
-
     const inlineKeyboard = {
         inline_keyboard: [[
             {
@@ -77,7 +71,6 @@ app.post('/webhook', async (req, res) => {
             }
         ]]
     };
-
     const welcomeMessage = `
 😺 **МЯУ! Добро пожаловать в Кошачий Файтинг!**  
 
@@ -91,7 +84,6 @@ app.post('/webhook', async (req, res) => {
 
 Готов начать? Жми кнопку ниже и покажи всем, на что способен твой кот! 😼
     `;
-
     try {
         await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
             method: 'POST',
@@ -106,11 +98,9 @@ app.post('/webhook', async (req, res) => {
     } catch (error) {
         console.error('Failed to send welcome message:', error);
     }
-
     res.sendStatus(200);
 });
 
-// Временный маршрут для обновления старых предметов
 app.get('/admin/update-items', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -136,7 +126,6 @@ app.get('/admin/update-items', async (req, res) => {
                 crit: 15, crit_dmg: 40, agi: 15, int: 15, vamp: 15, reflect: 15
             }
         };
-
         const fields = [
             'atk_bonus', 'def_bonus', 'hp_bonus', 'spd_bonus',
             'crit_bonus', 'crit_dmg_bonus', 'agi_bonus', 'int_bonus',
@@ -154,19 +143,15 @@ app.get('/admin/update-items', async (req, res) => {
             vamp_bonus: 'vamp',
             reflect_bonus: 'reflect'
         };
-
         const items = await client.query('SELECT * FROM items');
         let itemsUpdated = 0;
         for (const item of items.rows) {
             const rarity = item.rarity;
             if (!fixedBonuses[rarity]) continue;
-
             const activeFields = fields.filter(f => item[f] > 0);
             if (activeFields.length === 0) continue;
-
             const zeroQuery = `UPDATE items SET ${fields.map(f => `${f} = 0`).join(', ')} WHERE id = $1`;
             await client.query(zeroQuery, [item.id]);
-
             for (const field of activeFields) {
                 const stat = fieldToStat[field];
                 const bonus = fixedBonuses[rarity][stat];
@@ -177,19 +162,15 @@ app.get('/admin/update-items', async (req, res) => {
             }
             itemsUpdated++;
         }
-
         const invItems = await client.query('SELECT * FROM inventory');
         let invUpdated = 0;
         for (const inv of invItems.rows) {
             const rarity = inv.rarity;
             if (!fixedBonuses[rarity]) continue;
-
             const activeFields = fields.filter(f => inv[f] > 0);
             if (activeFields.length === 0) continue;
-
             const zeroQuery = `UPDATE inventory SET ${fields.map(f => `${f} = 0`).join(', ')} WHERE id = $1`;
             await client.query(zeroQuery, [inv.id]);
-
             for (const field of activeFields) {
                 const stat = fieldToStat[field];
                 const bonus = fixedBonuses[rarity][stat];
@@ -200,7 +181,6 @@ app.get('/admin/update-items', async (req, res) => {
             }
             invUpdated++;
         }
-
         res.send(`Обновлено предметов: ${itemsUpdated} в items, ${invUpdated} в inventory`);
     } catch (e) {
         console.error(e);
@@ -210,7 +190,6 @@ app.get('/admin/update-items', async (req, res) => {
     }
 });
 
-// Временный маршрут для пересчёта силы всех пользователей
 app.get('/admin/recalc-power', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -232,12 +211,10 @@ app.get('/admin/recalc-power', async (req, res) => {
     }
 });
 
-// Обработка 404
 app.use((req, res) => {
     res.status(404).json({ error: 'Not found' });
 });
 
-// Глобальный обработчик ошибок
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -245,7 +222,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-// ==================== ФУНКЦИЯ ПЕРЕПОДКЛЮЧЕНИЯ СЛУШАТЕЛЯ ====================
 let currentListener = null;
 let reconnectTimeout = null;
 
@@ -257,7 +233,6 @@ async function setupListener() {
         currentListener = null;
     }
     if (reconnectTimeout) clearTimeout(reconnectTimeout);
-
     try {
         const { Pool } = require('pg');
         const dedicatedPool = new Pool({
@@ -269,7 +244,6 @@ async function setupListener() {
         const dbClient = await dedicatedPool.connect();
         await dbClient.query('LISTEN message_inserted');
         console.log('✅ Успешно подписались на канал message_inserted');
-        
         dbClient.on('notification', async (msg) => {
             console.log('📩 Получено уведомление от БД:', msg.payload);
             try {
@@ -306,11 +280,9 @@ async function setupListener() {
     }
 }
 
-// ==================== ЗАПУСК СЕРВЕРА И НАСТРОЙКА УВЕДОМЛЕНИЙ ====================
 async function startServer() {
     try {
         await initDB();
-
         await pool.query(`
             CREATE OR REPLACE FUNCTION notify_message_inserted()
             RETURNS TRIGGER AS $$
@@ -328,7 +300,6 @@ async function startServer() {
             END;
             $$ LANGUAGE plpgsql;
         `);
-
         await pool.query(`
             DROP TRIGGER IF EXISTS message_inserted_trigger ON user_messages;
             CREATE TRIGGER message_inserted_trigger
@@ -337,12 +308,14 @@ async function startServer() {
             EXECUTE FUNCTION notify_message_inserted();
         `);
         console.log('✅ Триггер и функция для уведомлений созданы');
-
         await setupListener();
-
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Server running on port ${PORT}`);
         });
+        // ========== ПЛАНИРОВЩИК CRON ==========
+        cron.schedule('0 0 * * *', resetDailyTasks, { timezone: 'Europe/Moscow' });
+        cron.schedule('0 0 1 * *', resetSeason, { timezone: 'Europe/Moscow' });
+        console.log('✅ Планировщик cron запущен (ежедневный сброс в 00:00, ежемесячный 1-го числа)');
     } catch (err) {
         console.error('❌ Ошибка при запуске сервера:', err);
         process.exit(1);

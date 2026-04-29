@@ -97,19 +97,6 @@ function getAdventReward(day, daysInMonth) {
     return { type: 'coins', amount: 100 };
 }
 
-// ==================== ФУНКЦИЯ СБРОСА ЕЖЕДНЕВНЫХ ЗАДАНИЙ ====================
-
-async function resetDailyTasks(client, userId, today) {
-    await client.query(
-        `UPDATE users 
-         SET daily_tasks_mask = 0, 
-             daily_tasks_progress = $1, 
-             last_daily_reset = $2 
-         WHERE id = $3`,
-        [JSON.stringify({}), today, userId]
-    );
-}
-
 // ==================== АДВЕНТ ====================
 
 router.get('/advent', async (req, res) => {
@@ -305,6 +292,18 @@ router.post('/advent/claim', async (req, res) => {
 
 // ==================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ====================
 
+// Функция сброса заданий (без экспорта, только локально)
+async function resetDailyTasks(client, userId, today) {
+    await client.query(
+        `UPDATE users 
+         SET daily_tasks_mask = 0, 
+             daily_tasks_progress = $1, 
+             last_daily_reset = $2 
+         WHERE id = $3`,
+        [JSON.stringify({}), today, userId]
+    );
+}
+
 async function updateTowerTask(client, userId) {
     const userRes = await client.query(
         'SELECT daily_tasks_mask, daily_tasks_progress, last_daily_reset FROM users WHERE id = $1',
@@ -451,7 +450,6 @@ router.post('/daily/claim', async (req, res) => {
 
         const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
         if (lastResetStr !== today) {
-            // Полный сброс ежедневных заданий
             await resetDailyTasks(client, userId, today);
             user.daily_tasks_mask = 0;
             user.daily_tasks_progress = {};
@@ -545,7 +543,6 @@ router.post('/daily/claim', async (req, res) => {
 // ==================== МАРШРУТЫ ОБНОВЛЕНИЯ ПРОГРЕССА ====================
 
 router.post('/daily/update/battle', async (req, res) => {
-    // ... без изменений ...
     const { tg_id, user_id, class_played, is_victory } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
@@ -595,7 +592,6 @@ router.post('/daily/update/battle', async (req, res) => {
 });
 
 router.post('/daily/update/exp', async (req, res) => {
-    // ... без изменений ...
     const { tg_id, user_id, exp_gained } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
@@ -639,7 +635,6 @@ router.post('/daily/update/exp', async (req, res) => {
 });
 
 router.post('/daily/update/chest', async (req, res) => {
-    // ... без изменений ...
     const { tg_id, user_id, item_rarity } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     
@@ -684,7 +679,6 @@ router.post('/daily/update/chest', async (req, res) => {
 });
 
 router.post('/daily/update/profile', async (req, res) => {
-    // ... без изменений ...
     const { tg_id, user_id } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     

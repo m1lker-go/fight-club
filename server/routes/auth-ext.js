@@ -1199,7 +1199,21 @@ router.post('/messages/claim', async (req, res) => {
     }
 });
 
-// ==================== РЕГИСТРАЦИЯ / ВХОД ПО ПАРОЛЮ ====================
+
+// ==================== РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ EMAIL ====================
+
+// Временное хранение данных регистрации (лучше в БД, но для простоты используем объект в памяти с очисткой)
+const pendingRegistrations = new Map(); // key: email, value: { passwordHash, referralCode, tempUsername, code, expires }
+
+// Очистка просроченных каждые 10 минут
+setInterval(() => {
+    const now = Date.now();
+    for (const [email, data] of pendingRegistrations.entries()) {
+        if (data.expires < now) {
+            pendingRegistrations.delete(email);
+        }
+    }
+}, 600000);
 
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
@@ -1208,25 +1222,72 @@ router.post('/register', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
-
+        // Проверяем, не зарегистрирован ли уже email
         const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
         if (existing.rows.length > 0) {
-            await client.query('ROLLBACK');
             return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
         }
 
+        // Генерируем код подтверждения
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
         const passwordHash = await bcrypt.hash(password, 10);
         const referralCode = Math.random().toString(36).substring(2, 10);
         let tempUsername = email.split('@')[0];
 
+        // Сохраняем в Map
+        pendingRegistrations.set(email, {
+            passwordHash,
+            referralCode,
+            tempUsername,
+            code,
+            expires: Date.now() + 10 * 60 * 1000 // 10 минут
+        });
+
+        // Отправляем код на email
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: 'Подтверждение регистрации в Cat Fighting',
+            text: `Ваш код подтверждения: ${code}. Действителен 10 минут.`
+        });
+
+        res.json({ success: true, message: 'Код отправлен на email' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка отправки кода' });
+    } finally {
+        client.release();
+    }
+});
+
+router.post('/verify-registration', async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ error: 'Email и код обязательны' });
+
+    const client = await pool.connect();
+    try {
+        const pending = pendingRegistrations.get(email);
+        if (!pending) {
+            return res.status(400).json({ error: 'Код не найден или истёк. Запросите регистрацию заново.' });
+        }
+        if (pending.code !== code) {
+            return res.status(400).json({ error: 'Неверный код подтверждения' });
+        }
+        if (pending.expires < Date.now()) {
+            pendingRegistrations.delete(email);
+            return res.status(400).json({ error: 'Код истёк. Запросите регистрацию заново.' });
+        }
+
+        // Создаём пользователя
+        await client.query('BEGIN');
         const newUser = await client.query(
             `INSERT INTO users (email, password_hash, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, registered_via, current_class)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'credentials', 'warrior') RETURNING *`,
-            [email, passwordHash, tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+            [email, pending.passwordHash, pending.tempUsername, pending.referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
         );
         const userData = newUser.rows[0];
 
+        // Создаём классы
         const classes = ['warrior', 'assassin', 'mage'];
         for (let cls of classes) {
             await client.query(
@@ -1237,6 +1298,7 @@ router.post('/register', async (req, res) => {
             );
         }
 
+        // Приветственное сообщение
         await client.query(
             `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
              VALUES ($1, 'Мастер кошачьих боёв', 'Привет, разбойник!', 'Я рад, что ты присоединился к игре! За это я дарю тебе очки навыков для твоего героя! Выбери класс, который получит дополнительно 5 очков навыков. НО запомни, выбрать можно один раз!', 'skill_points_choice', 5, false, false)`,
@@ -1247,6 +1309,8 @@ router.post('/register', async (req, res) => {
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [token, userData.id]);
 
         await client.query('COMMIT');
+        pendingRegistrations.delete(email);
+
         res.json({ success: true, sessionToken: token, needusername: true, user: userData });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -1256,6 +1320,7 @@ router.post('/register', async (req, res) => {
         client.release();
     }
 });
+
 
 // Вход по паролю
 router.post('/login', async (req, res) => {

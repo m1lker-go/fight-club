@@ -30,7 +30,23 @@ async function resetDailyTasks(client, userId, today) {
     );
 }
 
-// Новая функция: сбрасывает задания, если нужно, и возвращает обновлённого пользователя
+// Основная функция для сброса дня (используется в маршрутах)
+async function checkAndResetDay(client, user) {
+    const today = getMoscowDate();
+    const lastResetStr = user.last_daily_reset ? new Date(user.last_daily_reset).toISOString().split('T')[0] : null;
+    if (lastResetStr !== today) {
+        await resetDailyTasks(client, user.id, today);
+        user.daily_tasks_mask = 0;
+        user.daily_tasks_progress = {};
+        user.last_daily_reset = today;
+        debugLog('checkAndResetDay', `reset performed for user ${user.id}`);
+    } else {
+        debugLog('checkAndResetDay', `no reset needed for user ${user.id}`);
+    }
+    return user;
+}
+
+// Альтернативная функция, принимающая только userId (для update маршрутов)
 async function resetIfNeeded(userId) {
     const client = await pool.connect();
     try {
@@ -84,14 +100,13 @@ async function updateTaskProgress(userId, taskId, increment = 1) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // Получаем текущие данные пользователя (без автоматического сброса)
+        // Получаем user с блокировкой
         const userRes = await client.query(
             'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
             [userId]
         );
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
-        // Проверяем, не выполнено ли уже задание
         if (user.daily_tasks_mask & (1 << (taskId - 1))) {
             debugLog('updateTaskProgress', `task ${taskId} already completed, skip`);
             await client.query('COMMIT');
@@ -149,8 +164,8 @@ async function updateTowerTask(userId) {
 module.exports = {
     getMoscowDate,
     parseProgress,
-    resetDailyTasks,
-    resetIfNeeded,          // новая функция
+    checkAndResetDay,
+    resetIfNeeded,
     getTasksList,
     updateTaskProgress,
     updateBattleProgress,

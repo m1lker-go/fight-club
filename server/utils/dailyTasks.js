@@ -117,34 +117,21 @@ async function updateTaskProgress(userId, taskId, increment = 1) {
     debugLog('updateTaskProgress', `user ${userId}, task ${taskId}, +${increment}`);
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
-        // Блокируем строку, чтобы избежать race condition
-        const userRes = await client.query(
-            'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
-            [userId]
-        );
+        const userRes = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
-        debugLog('updateTaskProgress', `Текущие: mask=${user.daily_tasks_mask}, progress=${user.daily_tasks_progress}`);
-
         if (user.daily_tasks_mask & (1 << (taskId - 1))) {
-            debugLog('updateTaskProgress', `Задание ${taskId} уже выполнено, пропускаем`);
-            await client.query('COMMIT');
+            debugLog('updateTaskProgress', `task already completed, skip`);
             return false;
         }
         let progress = parseProgress(user.daily_tasks_progress);
         const old = progress[taskId] || 0;
         progress[taskId] = old + increment;
-        await client.query(
-            'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
-            [JSON.stringify(progress), userId]
-        );
-        debugLog('updateTaskProgress', `Прогресс обновлён: ${old} → ${progress[taskId]}`);
-        await client.query('COMMIT');
+        await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), userId]);
+        debugLog('updateTaskProgress', `progress updated: ${old} → ${progress[taskId]}`);
         return true;
     } catch (err) {
-        await client.query('ROLLBACK');
-        debugLog('updateTaskProgress', `Ошибка: ${err.message}`);
+        debugLog('updateTaskProgress', `error: ${err.message}`);
         throw err;
     } finally {
         client.release();

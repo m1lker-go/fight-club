@@ -1,12 +1,17 @@
 // app.js – основная логика приложения
 
-let tg = window.Telegram.WebApp;
-if (tg) {
+let tg = null;
+let user = null;
+
+if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
     tg.expand();
     tg.ready();
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        user = tg.initDataUnsafe.user;
+    }
 }
 
-const user = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
 if (user) {
     window.playerName = user.username || user.first_name || 'Игрок';
 } else {
@@ -14,7 +19,6 @@ if (user) {
 }
 console.log('playerName:', window.playerName);
 
-// Реферальный код из startapp (если есть)
 let referralCode = null;
 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
     referralCode = tg.initDataUnsafe.start_param;

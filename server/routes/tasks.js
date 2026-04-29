@@ -214,7 +214,6 @@ router.post('/daily/claim', async (req, res) => {
         const taskRes = await client.query('SELECT * FROM daily_tasks WHERE id = $1', [task_id]);
         if (taskRes.rows.length === 0) throw new Error('Task not found');
         const task = taskRes.rows[0];
-        // Проверка выполнения (логика из исходного кода)
         let progressObj = dailyTasks.parseProgress(user.daily_tasks_progress);
         let isCompleted = false;
         if (task_id == 9) {
@@ -288,7 +287,7 @@ router.post('/daily/update/battle', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        await dailyTasks.resetIfNeeded(user.id);  // <-- ДОБАВЛЕНО
+        await dailyTasks.resetIfNeeded(user.id);   // ← сброс только здесь
         await dailyTasks.updateBattleProgress(user.id, class_played, is_victory);
         res.json({ success: true });
     } catch (e) {
@@ -306,7 +305,7 @@ router.post('/daily/update/exp', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        await dailyTasks.resetIfNeeded(user.id);  // <-- ДОБАВЛЕНО
+        // вызов resetIfNeeded УДАЛЁН – чтобы не сбрасывать прогресс повторно
         await dailyTasks.updateExpProgress(user.id, exp_gained);
         res.json({ success: true });
     } catch (e) {

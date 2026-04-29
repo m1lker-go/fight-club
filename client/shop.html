@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Магазин — Cat Fighting</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body style="background-color: #1a1f2b; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div id="app" style="max-width: 400px; width: 100%; height: auto; min-height: 100vh; background-color: #1a1f2b; position: relative; margin: 0 auto;">
+        <!-- фон как в игре -->
+        <div style="position: absolute; top:0; left:0; width:100%; height:100%; background-image: url('assets/backapp.png'); background-size: cover; opacity:0.5; pointer-events: none; z-index:0;"></div>
+        
+        <div class="shop-page" style="position: relative; z-index: 1; padding: 16px;">
+            <!-- Кнопка назад (опционально) -->
+            <div style="margin-bottom: 8px;">
+                <button onclick="history.back()" style="background: none; border: none; color: #00aaff; font-size: 24px; cursor: pointer;"><i class="fas fa-arrow-left"></i></button>
+            </div>
+
+            <!-- Подписка VIP-Silver -->
+            <div class="subscription-card">
+                <div class="subscription-title">VIP-Silver</div>
+                <div class="subscription-price">599 ₽ <small>/ 30 дней</small></div>
+                <ul class="subscription-features">
+                    <li><i class="fas fa-ban"></i> Пропуск всей рекламы</li>
+                    <li><i class="fas fa-coins"></i> Ежедневно: 250 монет + 10 угля (письмом)</li>
+                    <li><i class="fas fa-gem"></i> При оформлении: 1500 монет, 50 угля, 100 алмазов</li>
+                    <li><i class="fas fa-chart-line"></i> +10% к опыту и монетам с боёв</li>
+                    <li><i class="fas fa-shield-alt"></i> Даже за поражение: +5 опыта и +5 монет</li>
+                </ul>
+                <button class="shop-btn" id="subscribeBtn">Оформить подписку</button>
+            </div>
+
+            <!-- Алмазные пакеты -->
+            <div style="margin: 8px 0 4px 0;"><span style="color:#00aaff; font-weight:bold;">Алмазы</span></div>
+            <div class="packs-grid">
+                <!-- 20 алмазов -->
+                <div class="pack-card" data-pack="20" data-price="149">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">20 алмазов</div>
+                    <div class="pack-price">149 ₽</div>
+                    <div class="bonus-badge">+50% при первой покупке</div>
+                </div>
+                <!-- 50 алмазов -->
+                <div class="pack-card" data-pack="50" data-price="229">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">50 алмазов</div>
+                    <div class="pack-price">229 ₽</div>
+                    <div class="bonus-badge">+50% при первой покупке</div>
+                </div>
+                <!-- 100 алмазов -->
+                <div class="pack-card" data-pack="100" data-price="399">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">100 алмазов</div>
+                    <div class="pack-price">399 ₽</div>
+                    <div class="bonus-badge">+50% при первой покупке</div>
+                </div>
+                <!-- 500 алмазов -->
+                <div class="pack-card" data-pack="500" data-price="1199">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">500 алмазов</div>
+                    <div class="pack-price">1199 ₽</div>
+                    <div class="bonus-badge">+50% при первой покупке</div>
+                </div>
+                <!-- 2000 алмазов -->
+                <div class="pack-card" data-pack="2000" data-price="2999">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">2000 алмазов</div>
+                    <div class="pack-price">2999 ₽</div>
+                    <div class="bonus-badge">+50% при первой покупке</div>
+                </div>
+                <!-- 5000 алмазов -->
+                <div class="pack-card" data-pack="5000" data-price="4999">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">5000 алмазов</div>
+                    <div class="pack-price">4999 ₽</div>
+                    <div class="bonus-badge">+50% при первой покупке</div>
+                </div>
+            </div>
+
+            <div class="shop-note">
+                <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только один раз за каждый пакет при первой покупке на аккаунт.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Заглушки для будущей интеграции с ЮKassa
+        document.getElementById('subscribeBtn').addEventListener('click', () => {
+            alert('Оформление подписки (в разработке). Скоро здесь появится оплата через ЮKassa.');
+        });
+
+        document.querySelectorAll('.pack-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const diamonds = card.dataset.pack;
+                const price = card.dataset.price;
+                alert(`Покупка ${diamonds} алмазов за ${price} ₽ (в разработке). Бонус +50% при первой покупке будет начислен автоматически.`);
+            });
+        });
+    </script>
+</body>
+</html>

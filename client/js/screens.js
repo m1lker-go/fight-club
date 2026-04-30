@@ -576,7 +576,242 @@ function renderTrade() {
     else if (tradeSubtab === 'gems') renderGemsShop(subContent);
 }
 
+
 // ==================== Магазин ====================
+function renderChestsTab(target = null) {
+    const container = target || document.getElementById('tradeContent');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="chest-table">
+            <div class="chest-row" data-chest="common">
+                <div class="chest-icon-col">
+                    <img src="/assets/common-chess.png" alt="Обычный сундук">
+                </div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Обычный сундук</div>
+                    <div class="chest-desc">
+                        <div>Обычное 85%</div>
+                        <div>Необычное 15%</div>
+                    </div>
+                </div>
+                <div class="chest-price-col">
+                    <button class="chest-buy-btn" data-chest="common">
+                        <span class="chest-price" id="commonChestPrice">?</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="chest-row" data-chest="uncommon">
+                <div class="chest-icon-col">
+                    <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
+                </div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Необычный сундук</div>
+                    <div class="chest-desc">
+                        <div>Обычное 25%</div>
+                        <div>Необычное 65%</div>
+                        <div>Редкое 10%</div>
+                    </div>
+                </div>
+                <div class="chest-price-col">
+                    <button class="chest-buy-btn" data-chest="uncommon">
+                        <span class="chest-price">250</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="chest-row" data-chest="rare">
+                <div class="chest-icon-col">
+                    <img src="/assets/rare-chess.png" alt="Редкий сундук">
+                </div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Редкий сундук</div>
+                    <div class="chest-desc">
+                        <div>Редкое 65%</div>
+                        <div>Необычное 25%</div>
+                        <div>Эпическое 10%</div>
+                    </div>
+                </div>
+                <div class="chest-price-col">
+                    <button class="chest-buy-btn" data-chest="rare">
+                        <span class="chest-price">800</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="chest-row" data-chest="epic">
+                <div class="chest-icon-col">
+                    <img src="/assets/epic-chess.png" alt="Эпический сундук">
+                </div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Эпический сундук</div>
+                    <div class="chest-desc">
+                        <div>Эпическое 65%</div>
+                        <div>Редкое 25%</div>
+                        <div>Легендарное 10%</div>
+                    </div>
+                </div>
+                <div class="chest-price-col">
+                    <button class="chest-buy-btn" data-chest="epic">
+                        <span class="chest-price">1800</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="chest-row" data-chest="legendary">
+                <div class="chest-icon-col">
+                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
+                </div>
+                <div class="chest-info-col">
+                    <div class="chest-name">Легендарный сундук</div>
+                    <div class="chest-desc">
+                        <div>Легендарное 70%</div>
+                        <div>Эпическое 30%</div>
+                    </div>
+                </div>
+                <div class="chest-price-col">
+                    <button class="chest-buy-btn" data-chest="legendary">
+                        <span class="chest-price">3500</span>
+                        <i class="fas fa-coins"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    function renderCoinMint(container) {
+    container.innerHTML = `
+        <div class="mint-list">
+            <div class="mint-item">
+                <div class="mint-info">1000 монет</div>
+                <div class="mint-price">10 <i class="fas fa-gem"></i></div>
+                <button class="buy-mint-btn" data-coins="1000" data-price="10">Купить</button>
+            </div>
+            <div class="mint-item">
+                <div class="mint-info">5000 монет</div>
+                <div class="mint-price">45 <i class="fas fa-gem"></i></div>
+                <button class="buy-mint-btn" data-coins="5000" data-price="45">Купить</button>
+            </div>
+            <div class="mint-item">
+                <div class="mint-info">10000 монет</div>
+                <div class="mint-price">80 <i class="fas fa-gem"></i></div>
+                <button class="buy-mint-btn" data-coins="10000" data-price="80">Купить</button>
+            </div>
+        </div>
+    `;
+
+    container.querySelectorAll('.buy-mint-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const coins = parseInt(btn.dataset.coins);
+            const price = parseInt(btn.dataset.price);
+            if (userData.diamonds < price) {
+                showToast('Недостаточно алмазов!', 1500);
+                return;
+            }
+            const res = await window.apiRequest('/shop/buy-coins', {
+                method: 'POST',
+                body: JSON.stringify({ coins: coins, price: price })
+            });
+            const data = await res.json();
+            if (data.success) {
+                userData.diamonds -= price;
+                userData.coins += coins;
+                updateTopBar();
+                showToast(`+${coins} монет!`, 1500);
+                renderCoinMint(container);
+            } else {
+                showToast(data.error || 'Ошибка', 1500);
+            }
+        });
+    });
+}
+
+function renderGemsShop(container) {
+    container.innerHTML = `
+        <div class="gems-items-list">
+            <div class="gems-item">
+                <div class="gems-item-info">
+                    <span>⚔️ Легендарный меч</span>
+                    <span class="gems-item-price">500 <i class="fas fa-gem"></i></span>
+                </div>
+                <button class="buy-gem-item" data-item-id="legendary_sword">Купить</button>
+            </div>
+            <div class="gems-item">
+                <div class="gems-item-info">
+                    <span>🛡️ Щит дракона</span>
+                    <span class="gems-item-price">300 <i class="fas fa-gem"></i></span>
+                </div>
+                <button class="buy-gem-item" data-item-id="dragon_shield">Купить</button>
+            </div>
+            <div class="shop-note">Больше предметов появится скоро!</div>
+        </div>
+    `;
+    // Обработчики покупки можно добавить позже
+}
+
+    async function updateCommonChestPrice() {
+        try {
+            const res = await window.apiRequest('/player/freechest');
+            const data = await res.json();
+            const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
+            const coinIcon = container.querySelector('[data-chest="common"] i');
+
+            if (data.freeAvailable) {
+                priceSpan.innerText = 'FREE';
+                coinIcon.style.display = 'none';
+            } else {
+                priceSpan.innerText = '100';
+                coinIcon.style.display = 'inline-block';
+            }
+
+            if (window.updateShopTabIcon) window.updateShopTabIcon();
+            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+        } catch (e) {
+            console.error('Failed to fetch free chest status', e);
+        }
+    }
+
+    updateCommonChestPrice();
+
+    container.querySelectorAll('.chest-buy-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const chest = btn.dataset.chest;
+            const res = await window.apiRequest('/shop/buychest', {
+                method: 'POST',
+                body: JSON.stringify({ chestType: chest })
+            });
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                showToast('Ошибка ответа сервера', 1500);
+                return;
+            }
+            if (data.item) {
+                showChestResult(data.item);
+                await refreshData();
+                if (typeof refreshTasksData === 'function') {
+                    await refreshTasksData();
+                }
+                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+                if (chest === 'common') updateCommonChestPrice();
+
+                window.apiRequest('/tasks/daily/update/chest', {
+                    method: 'POST',
+                    body: JSON.stringify({ item_rarity: data.item.rarity })
+                }).catch(err => console.error('Failed to update chest task', err));
+            } else {
+                if (data.error === 'Not enough coins') {
+                    showToast('Недостаточно средств!', 1500);
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
+            }
+        });
+    });
+}
+
 function renderShop(target = null) {
     const container = target || document.getElementById('tradeContent');
     if (!container) return;

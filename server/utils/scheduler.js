@@ -47,7 +47,6 @@ async function resetSeason() {
             ORDER BY rating DESC
         `);
 
-        // 2. Определяем места и награды
         let position = 1;
         for (let i = 0; i < users.rows.length; i++) {
             const user = users.rows[i];
@@ -80,7 +79,7 @@ async function resetSeason() {
                 placeText = `${position}-е место`;
             }
 
-            // Начисляем монеты и алмазы
+            // Начисляем награды сразу
             if (rewardCoins > 0) {
                 await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [rewardCoins, user.id]);
             }
@@ -88,27 +87,24 @@ async function resetSeason() {
                 await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [rewardDiamonds, user.id]);
             }
 
-            // Отправляем письма (отдельно для монет и для алмазов)
+            // Формируем текст письма (информационное, без кнопки "Забрать")
+            let rewardParts = [];
+            if (rewardCoins > 0) rewardParts.push(`${rewardCoins} монет`);
+            if (rewardDiamonds > 0) rewardParts.push(`${rewardDiamonds} алмазов`);
+            const rewardText = rewardParts.join(' и ');
+
             const subject = `🏆 Награда за сезон!`;
-            if (rewardCoins > 0) {
-                const bodyCoins = `Поздравляю! Ты пережил этот сезон, сражаясь как тигр! Ты занял ${placeText} в рейтинге. Забери свою заслуженную награду: ${rewardCoins} монет.`;
-                await client.query(
-                    `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
-                     VALUES ($1, 'Мастер кошачьих боёв', $2, $3, 'coins', $4, false, false)`,
-                    [user.id, subject, bodyCoins, rewardCoins]
-                );
-            }
-            if (rewardDiamonds > 0) {
-                const bodyDiamonds = `Поздравляю! Ты занял ${placeText} в рейтинге и получаешь дополнительно ${rewardDiamonds} алмазов!`;
-                await client.query(
-                    `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
-                     VALUES ($1, 'Мастер кошачьих боёв', $2, $3, 'diamonds', $4, false, false)`,
-                    [user.id, subject, bodyDiamonds, rewardDiamonds]
-                );
-            }
+            const body = `Поздравляю! Ты пережил этот сезон, сражаясь как тигр! Ты занял ${placeText} в рейтинге.\n\nВы получили: ${rewardText}.`;
+
+            // Вставляем сообщение без привязанной награды (is_claimed = true, чтобы не отображать кнопку)
+            await client.query(
+                `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+                 VALUES ($1, 'Мастер кошачьих боёв', $2, $3, NULL, NULL, false, true)`,
+                [user.id, subject, body]
+            );
         }
 
-        // 3. Сброс рейтинга всех пользователей до 1000
+        // 2. Сброс рейтинга всех пользователей до 1000
         await client.query('UPDATE users SET rating = 1000');
 
         await client.query('COMMIT');

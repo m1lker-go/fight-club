@@ -3994,63 +3994,69 @@ input:checked + .slider:before {
 }
 
 /* ========== АЛМАЗНАЯ ЛАВКА ========== */
-.gems-items-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+.gems-shop {
+    padding: 4px;
 }
-.gems-item {
+.section-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin: 10px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-title i {
+    color: #00aaff;
+}
+.packs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.pack-card {
     background-color: #2a303c;
     border-radius: 16px;
-    padding: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: transform 0.2s;
-}
-.gems-item:hover {
-    transform: translateY(-2px);
-    background-color: #2f3542;
-}
-.gems-item-info {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.gems-item-info span:first-child {
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-}
-.gems-item-price {
-    color: #00aaff;
-    font-weight: bold;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.buy-gem-item {
-    background-color: #00aaff;
-    border: none;
-    border-radius: 30px;
-    padding: 8px 20px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-.buy-gem-item:hover {
-    opacity: 0.85;
-}
-.shop-note {
-    background-color: #1a1f2b;
-    border-radius: 12px;
-    padding: 10px;
+    border: 1px solid #3a4050;
+    padding: 12px 6px;
     text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.pack-card:hover {
+    border-color: #00aaff;
+    transform: translateY(-2px);
+}
+.pack-icon {
+    font-size: 36px;
+    margin-bottom: 6px;
+    color: #00aaff;
+}
+.pack-diamonds {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+.pack-price {
     font-size: 12px;
     color: #aaa;
-    margin-top: 8px;
+    margin: 4px 0;
+}
+.first-bonus {
+    font-size: 9px;
+    color: #f1c40f;
+    background-color: #1a1f2b;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 20px;
+    margin-top: 4px;
+}
+.shop-note {
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    background-color: #232833;
+    border-radius: 12px;
+    padding: 8px;
+    margin-top: 16px;
 }

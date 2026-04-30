@@ -16,7 +16,11 @@ const sectors = [
     { type: 'exp', name: '50 опыта', amount: 50, label: 'E', display: '50' },
     { type: 'coal', name: '10 угля', amount: 10, label: 'C', display: '10' },
     { type: 'coins', name: '300 монет', amount: 300, label: 'M', display: '300' },
-    { type: 'exp', name: '20 опыта', amount: 20, label: 'E', display: '20' },
+    { type: 'exp', name: '20 опыта', amount: 20, label: 
+        '<div style="display: flex; flex-direction: column; align-items: center;">
+    <i class="fas fa-coins" style="color: #00aaff; font-size: 20px;"></i>
+    <span style="color: white; font-size: 12px;">монет</span>
+    <span style="color: white; font-size: 16px; font-weight: bold;">20</span></div>'' },
     { type: 'coins', name: '100 монет', amount: 100, label: 'M', display: '100' },
     { type: 'free_spin', name: 'Билет лотереи', amount: null, label: 'T', display: 'Билет' }
 ];

@@ -658,54 +658,43 @@ function renderCoinMint(container) {
 
 // Вкладка "Алмазная лавка"
 function renderGemsShop(container) {
-    container.innerHTML = `
+    // Соответствие картинок пакетам (порядок как в массиве)
+    const packs = [
+        { diamonds: 20, price: 149, image: 'buy_diamond_1.png' },
+        { diamonds: 50, price: 229, image: 'buy_diamond_2.png' },
+        { diamonds: 100, price: 399, image: 'buy_diamond_3.png' },
+        { diamonds: 500, price: 1199, image: 'buy_diamond_4.png' },
+        { diamonds: 2000, price: 2999, image: 'buy_diamond_5.png' },
+        { diamonds: 5000, price: 4999, image: 'buy_diamond_6.png' }
+    ];
+
+    let html = `
         <div class="gems-shop">
-            <div class="section-title" style="margin: 10px 0 5px 0;">
+            <div class="section-title">
                 <i class="fas fa-gem"></i> Алмазы
             </div>
-            <div class="packs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 8px;">
-                <div class="pack-card" data-pack="20" data-price="149">
-                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
-                    <div class="pack-diamonds">20 алмазов</div>
-                    <div class="pack-price">149 ₽</div>
-                    <div class="first-bonus">+50% при первой покупке</div>
+            <div class="packs-grid">
+    `;
+    packs.forEach(pack => {
+        html += `
+            <div class="pack-card" data-pack="${pack.diamonds}" data-price="${pack.price}">
+                <div class="pack-image">
+                    <img src="/assets/diamond/${pack.image}" alt="${pack.diamonds} алмазов">
                 </div>
-                <div class="pack-card" data-pack="50" data-price="229">
-                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
-                    <div class="pack-diamonds">50 алмазов</div>
-                    <div class="pack-price">229 ₽</div>
-                    <div class="first-bonus">+50% при первой покупке</div>
-                </div>
-                <div class="pack-card" data-pack="100" data-price="399">
-                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
-                    <div class="pack-diamonds">100 алмазов</div>
-                    <div class="pack-price">399 ₽</div>
-                    <div class="first-bonus">+50% при первой покупке</div>
-                </div>
-                <div class="pack-card" data-pack="500" data-price="1199">
-                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
-                    <div class="pack-diamonds">500 алмазов</div>
-                    <div class="pack-price">1199 ₽</div>
-                    <div class="first-bonus">+50% при первой покупке</div>
-                </div>
-                <div class="pack-card" data-pack="2000" data-price="2999">
-                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
-                    <div class="pack-diamonds">2000 алмазов</div>
-                    <div class="pack-price">2999 ₽</div>
-                    <div class="first-bonus">+50% при первой покупке</div>
-                </div>
-                <div class="pack-card" data-pack="5000" data-price="4999">
-                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
-                    <div class="pack-diamonds">5000 алмазов</div>
-                    <div class="pack-price">4999 ₽</div>
-                    <div class="first-bonus">+50% при первой покупке</div>
-                </div>
+                <div class="pack-diamonds">${pack.diamonds} алмазов</div>
+                <div class="pack-price">${pack.price} ₽</div>
+                <div class="first-bonus">+50% при первой покупке</div>
+            </div>
+        `;
+    });
+    html += `
             </div>
             <div class="shop-note">
                 <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.
             </div>
         </div>
     `;
+    container.innerHTML = html;
 
     container.querySelectorAll('.pack-card').forEach(card => {
         card.addEventListener('click', () => {

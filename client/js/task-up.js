@@ -583,3 +583,5 @@ function claimDailyExp(taskId, expAmount) {
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
 }
+
+window.renderTasks = renderTasks;

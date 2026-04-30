@@ -1,13 +1,11 @@
-// screens.js – все функции рендеринга экранов (исправленная версия с apiRequest)
-
+// screens.js – все функции рендеринга экранов
 // ==================== ГЛОБАЛЬНЫЕ НАСТРОЙКИ ====================
-// Используем window.API_BASE, заданный в app.js
-
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 let tradeSubtab = 'chests'; // 'chests', 'coins', 'gems'
+let profileTab = 'bonuses';
+let ratingTab = 'rating';
 
-// Экранирование HTML для защиты от XSS (дублируем на случай, если helpers.js не загружен)
+// Экранирование HTML
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>]/g, function(m) {
@@ -18,7 +16,7 @@ function escapeHtml(str) {
     });
 }
 
-// Проверка существования roleDescriptions
+// Проверка roleDescriptions
 if (typeof roleDescriptions === 'undefined') {
     console.error('roleDescriptions is not defined! Make sure constants.js is loaded.');
 }
@@ -33,6 +31,7 @@ function getRoleNameRu(role) {
 }
 
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
+
 function renderMain() {
     const content = document.getElementById('content');
     if (!content) return;
@@ -49,10 +48,8 @@ function renderMain() {
     updateTopBar();
 
     content.innerHTML = `
-        <!-- Верхний блок с аватаром и кнопками -->
         <div class="main-top-container">
             <div class="main-top-inner">
-                <!-- Левая колонка (2×3) -->
                 <div class="main-buttons-col left">
                     <div class="btn-grid">
                         <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Почта</span></button>
@@ -63,31 +60,25 @@ function renderMain() {
                         <button class="main-icon-btn empty-btn"></button>
                     </div>
                 </div>
-                <!-- Центр: аватар -->
                 <div class="main-avatar-col">
                     <div class="hero-avatar" id="avatarClick" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
                         <img src="/assets/${escapeHtml(userData.avatar || 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
                         <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
                     </div>
                 </div>
-                <!-- Правая колонка (2×3) -->
                 <div class="main-buttons-col right">
                     <div class="btn-grid">
-                      <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
-        <button class="main-icon-btn" data-screen="market"><i class="fas fa-exchange-alt"></i><span>Маркет</span></button>
-        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-slot-machine"></i><span>Фортуна</span></button>
-        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
-        <button class="main-icon-btn" data-screen="alchemy"><i class="fas fa-flask"></i><span>Алхимик</span></button>
-        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
+                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
+                        <button class="main-icon-btn" data-screen="market"><i class="fas fa-exchange-alt"></i><span>Маркет</span></button>
+                        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-slot-machine"></i><span>Фортуна</span></button>
+                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
+                        <button class="main-icon-btn" data-screen="alchemy"><i class="fas fa-flask"></i><span>Алхимик</span></button>
+                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Блок с именем пользователя (заголовок) -->
         <div class="main-username-header">${escapeHtml(userData.username || 'Игрок')}</div>
-
-        <!-- Основной контент (опыт, класс, роль, кнопка боя) -->
         <div class="main-content-container">
             <div style="margin: 20px 20px 0 20px;">
                 <div style="display: flex; justify-content: space-between; font-size: 14px;">
@@ -98,7 +89,6 @@ function renderMain() {
                     <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
                 </div>
             </div>
-
             <div style="margin: 20px;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px;">
                     <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
@@ -114,7 +104,6 @@ function renderMain() {
                     <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
                 </div>
             </div>
-
             <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
                 <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
             </button>
@@ -122,8 +111,7 @@ function renderMain() {
     `;
 
     updateSubclasses(currentClass);
-
-    // Делегирование событий для кнопок классов
+    // Обработчики
     const classSelector = document.querySelector('.class-selector');
     if (classSelector) {
         classSelector.addEventListener('click', async (e) => {
@@ -131,105 +119,68 @@ function renderMain() {
             if (!btn) return;
             const newClass = btn.dataset.class;
             if (newClass === userData.current_class) return;
-
-            const res = await window.apiRequest('/player/class', {
-                method: 'POST',
-                body: JSON.stringify({ class: newClass })
-            });
+            const res = await window.apiRequest('/player/class', { method: 'POST', body: JSON.stringify({ class: newClass }) });
             if (!res.ok) return;
-
-            const firstSubclass = {
-                warrior: 'guardian',
-                assassin: 'assassin',
-                mage: 'pyromancer'
-            }[newClass];
-            await window.apiRequest('/player/subclass', {
-                method: 'POST',
-                body: JSON.stringify({ subclass: firstSubclass })
-            });
-
+            const firstSubclass = { warrior: 'guardian', assassin: 'assassin', mage: 'pyromancer' }[newClass];
+            await window.apiRequest('/player/subclass', { method: 'POST', body: JSON.stringify({ subclass: firstSubclass }) });
             userData.current_class = newClass;
             userData.subclass = firstSubclass;
             updateMainScreen();
         });
     }
-
     const subclassSelect = document.getElementById('subclassSelect');
     if (subclassSelect) {
         subclassSelect.addEventListener('change', async (e) => {
             const newSubclass = e.target.value;
-            const res = await window.apiRequest('/player/subclass', {
-                method: 'POST',
-                body: JSON.stringify({ subclass: newSubclass })
-            });
+            const res = await window.apiRequest('/player/subclass', { method: 'POST', body: JSON.stringify({ subclass: newSubclass }) });
             if (res.ok) {
                 userData.subclass = newSubclass;
                 await refreshData();
             }
         });
     }
-
     document.getElementById('fightBtn')?.addEventListener('click', () => startBattle());
     document.getElementById('roleInfoBtn')?.addEventListener('click', () => showRoleInfoModal(userData.current_class));
     document.getElementById('avatarClick')?.addEventListener('click', () => showScreen('profile'));
-
     document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
         btn.addEventListener('click', () => {
             const screen = btn.dataset.screen;
             if (screen) showScreen(screen);
         });
     });
-
     const mailBtn = document.getElementById('mailBtn');
-    if (mailBtn) {
-        mailBtn.addEventListener('click', () => {
-            showScreen('messages');
-        });
-    }
-
+    if (mailBtn) mailBtn.addEventListener('click', () => showScreen('messages'));
     updateTradeButtonIcon();
     updateProfileAvatarIcon();
     if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
-    
-    // Фоновая загрузка сообщений для обновления бейджа
-    if (typeof loadMessagesSilent === 'function') {
-        loadMessagesSilent();
-    }
+    if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
 }
-
 
 function updateMainScreen() {
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
-
     const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
     currentPower = calculatePower(currentClass, stats.final, classData.level);
     updateTopBar();
-
     const level = classData.level;
     const exp = classData.exp;
     const nextExp = Math.floor(80 * Math.pow(level, 1.5));
     const expPercent = nextExp > 0 ? Math.min(100, (exp / nextExp) * 100) : 0;
-
     const levelSpan = document.querySelector('.level-display');
     const expSpan = document.querySelector('.exp-display');
     const expBarFill = document.querySelector('.exp-bar-fill');
-
     if (levelSpan) levelSpan.innerText = level;
     if (expSpan) expSpan.innerText = `${exp}/${nextExp} опыта`;
     if (expBarFill) expBarFill.style.width = expPercent + '%';
-
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.class === currentClass);
     });
-
     updateSubclasses(currentClass);
 }
 
 function updateSubclasses(className) {
     const subclassSelect = document.getElementById('subclassSelect');
     if (!subclassSelect) return;
-
     const subclasses = {
         warrior: ['guardian', 'berserker', 'knight'],
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
@@ -244,6 +195,7 @@ function updateSubclasses(className) {
 }
 
 // ==================== ЭКИПИРОВКА ====================
+
 function renderEquip() {
     const content = document.getElementById('content');
     if (!content) return;
@@ -267,6 +219,14 @@ function renderEquip() {
         accessory: 'ring',
         gloves: 'bracer'
     };
+
+    function getItemIconPath(item) {
+        if (!item) return '';
+        const folder = classFolderMap[item.owner_class];
+        const fileType = typeFileMap[item.type];
+        if (!folder || !fileType) return '';
+        return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
+    }
 
     function renderTopBar(className) {
         const classItems = inventory.filter(item => 
@@ -548,12 +508,12 @@ function renderEquip() {
         });
     });
 }
-    
-// ==================== ТОРГОВЛЯ ====================
+
+// ==================== ТОРГОВЛЯ (три вкладки) ====================
+
 function renderTrade() {
     const content = document.getElementById('content');
     if (!content) return;
-
     content.innerHTML = `
         <div class="trade-tabs-container">
             <button class="trade-tab ${tradeSubtab === 'chests' ? 'active' : ''}" data-subtab="chests">🎁 Сундуки</button>
@@ -562,156 +522,122 @@ function renderTrade() {
         </div>
         <div id="tradeSubContent" class="trade-content"></div>
     `;
-
     document.querySelectorAll('.trade-tab').forEach(btn => {
         btn.addEventListener('click', () => {
             tradeSubtab = btn.dataset.subtab;
             renderTrade();
         });
     });
-
     const subContent = document.getElementById('tradeSubContent');
     if (tradeSubtab === 'chests') renderChestsTab(subContent);
     else if (tradeSubtab === 'coins') renderCoinMint(subContent);
     else if (tradeSubtab === 'gems') renderGemsShop(subContent);
 }
 
-
-// ==================== Магазин ====================
-function renderChestsTab(target = null) {
-    const container = target || document.getElementById('tradeContent');
-    if (!container) return;
-
+// Вкладка "Сундуки"
+async function renderChestsTab(container) {
     container.innerHTML = `
         <div class="chest-table">
             <div class="chest-row" data-chest="common">
-                <div class="chest-icon-col">
-                    <img src="/assets/common-chess.png" alt="Обычный сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Обычный сундук</div>
-                    <div class="chest-desc">
-                        <div>Обычное 85%</div>
-                        <div>Необычное 15%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="common">
-                        <span class="chest-price" id="commonChestPrice">?</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
+                <div class="chest-icon-col"><img src="/assets/common-chess.png" alt="Обычный сундук"></div>
+                <div class="chest-info-col"><div class="chest-name">Обычный сундук</div><div class="chest-desc">Обычное 85%<br>Необычное 15%</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="common"><span class="chest-price" id="commonChestPrice">?</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="uncommon">
-                <div class="chest-icon-col">
-                    <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Необычный сундук</div>
-                    <div class="chest-desc">
-                        <div>Обычное 25%</div>
-                        <div>Необычное 65%</div>
-                        <div>Редкое 10%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="uncommon">
-                        <span class="chest-price">250</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
+                <div class="chest-icon-col"><img src="/assets/uncommon-chess.png" alt="Необычный сундук"></div>
+                <div class="chest-info-col"><div class="chest-name">Необычный сундук</div><div class="chest-desc">Обычное 25%<br>Необычное 65%<br>Редкое 10%</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="uncommon"><span class="chest-price">250</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="rare">
-                <div class="chest-icon-col">
-                    <img src="/assets/rare-chess.png" alt="Редкий сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Редкий сундук</div>
-                    <div class="chest-desc">
-                        <div>Редкое 65%</div>
-                        <div>Необычное 25%</div>
-                        <div>Эпическое 10%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="rare">
-                        <span class="chest-price">800</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
+                <div class="chest-icon-col"><img src="/assets/rare-chess.png" alt="Редкий сундук"></div>
+                <div class="chest-info-col"><div class="chest-name">Редкий сундук</div><div class="chest-desc">Редкое 65%<br>Необычное 25%<br>Эпическое 10%</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="rare"><span class="chest-price">800</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="epic">
-                <div class="chest-icon-col">
-                    <img src="/assets/epic-chess.png" alt="Эпический сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Эпический сундук</div>
-                    <div class="chest-desc">
-                        <div>Эпическое 65%</div>
-                        <div>Редкое 25%</div>
-                        <div>Легендарное 10%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="epic">
-                        <span class="chest-price">1800</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
+                <div class="chest-icon-col"><img src="/assets/epic-chess.png" alt="Эпический сундук"></div>
+                <div class="chest-info-col"><div class="chest-name">Эпический сундук</div><div class="chest-desc">Эпическое 65%<br>Редкое 25%<br>Легендарное 10%</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="epic"><span class="chest-price">1800</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="legendary">
-                <div class="chest-icon-col">
-                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Легендарный сундук</div>
-                    <div class="chest-desc">
-                        <div>Легендарное 70%</div>
-                        <div>Эпическое 30%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="legendary">
-                        <span class="chest-price">3500</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    function renderCoinMint(container) {
-    container.innerHTML = `
-        <div class="mint-list">
-            <div class="mint-item">
-                <div class="mint-info">1000 монет</div>
-                <div class="mint-price">10 <i class="fas fa-gem"></i></div>
-                <button class="buy-mint-btn" data-coins="1000" data-price="10">Купить</button>
-            </div>
-            <div class="mint-item">
-                <div class="mint-info">5000 монет</div>
-                <div class="mint-price">45 <i class="fas fa-gem"></i></div>
-                <button class="buy-mint-btn" data-coins="5000" data-price="45">Купить</button>
-            </div>
-            <div class="mint-item">
-                <div class="mint-info">10000 монет</div>
-                <div class="mint-price">80 <i class="fas fa-gem"></i></div>
-                <button class="buy-mint-btn" data-coins="10000" data-price="80">Купить</button>
+                <div class="chest-icon-col"><img src="/assets/leg-chess.png" alt="Легендарный сундук"></div>
+                <div class="chest-info-col"><div class="chest-name">Легендарный сундук</div><div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="legendary"><span class="chest-price">3500</span><i class="fas fa-coins"></i></button></div>
             </div>
         </div>
     `;
 
+ async function updateCommonChestPrice() {
+        try {
+            const res = await window.apiRequest('/player/freechest');
+            const data = await res.json();
+            const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
+            const coinIcon = container.querySelector('[data-chest="common"] i');
+            if (data.freeAvailable) {
+                priceSpan.innerText = 'FREE';
+                coinIcon.style.display = 'none';
+            } else {
+                priceSpan.innerText = '100';
+                coinIcon.style.display = 'inline-block';
+            }
+            if (window.updateShopTabIcon) window.updateShopTabIcon();
+            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+        } catch (e) {
+            console.error('Failed to fetch free chest status', e);
+        }
+    }
+
+    updateCommonChestPrice();
+
+    for (const btn of container.querySelectorAll('.chest-buy-btn')) {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const chest = btn.dataset.chest;
+            const res = await window.apiRequest('/shop/buychest', { method: 'POST', body: JSON.stringify({ chestType: chest }) });
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                showToast('Ошибка ответа сервера', 1500);
+                return;
+            }
+            if (data.item) {
+                showChestResult(data.item);
+                await refreshData();
+                if (typeof refreshTasksData === 'function') await refreshTasksData();
+                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+                if (chest === 'common') updateCommonChestPrice();
+                // Обновляем задание "Счастливчик" (сервер уже делает это, но для надёжности оставим клиентский вызов)
+                try {
+                    await window.apiRequest('/tasks/daily/update/chest', {
+                        method: 'POST',
+                        body: JSON.stringify({ item_rarity: data.item.rarity })
+                    });
+                } catch (err) {
+                    console.error('Failed to update chest task', err);
+                }
+            } else {
+                if (data.error === 'Not enough coins') showToast('Недостаточно средств!', 1500);
+                else showToast('Ошибка: ' + data.error, 1500);
+            }
+        });
+    }
+}
+
+// Вкладка "Монетный двор"
+function renderCoinMint(container) {
+    container.innerHTML = `
+        <div class="mint-list">
+            <div class="mint-item"><div class="mint-info">1000 монет</div><div class="mint-price">10 <i class="fas fa-gem"></i></div><button class="buy-mint-btn" data-coins="1000" data-price="10">Купить</button></div>
+            <div class="mint-item"><div class="mint-info">5000 монет</div><div class="mint-price">45 <i class="fas fa-gem"></i></div><button class="buy-mint-btn" data-coins="5000" data-price="45">Купить</button></div>
+            <div class="mint-item"><div class="mint-info">10000 монет</div><div class="mint-price">80 <i class="fas fa-gem"></i></div><button class="buy-mint-btn" data-coins="10000" data-price="80">Купить</button></div>
+        </div>
+    `;
     container.querySelectorAll('.buy-mint-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const coins = parseInt(btn.dataset.coins);
             const price = parseInt(btn.dataset.price);
-            if (userData.diamonds < price) {
-                showToast('Недостаточно алмазов!', 1500);
-                return;
-            }
-            const res = await window.apiRequest('/shop/buy-coins', {
-                method: 'POST',
-                body: JSON.stringify({ coins: coins, price: price })
-            });
+            if (userData.diamonds < price) { showToast('Недостаточно алмазов!', 1500); return; }
+            const res = await window.apiRequest('/shop/buy-coins', { method: 'POST', body: JSON.stringify({ coins, price }) });
             const data = await res.json();
             if (data.success) {
                 userData.diamonds -= price;
@@ -726,451 +652,72 @@ function renderChestsTab(target = null) {
     });
 }
 
+// Вкладка "Алмазная лавка"
 function renderGemsShop(container) {
     container.innerHTML = `
         <div class="gems-items-list">
-            <div class="gems-item">
-                <div class="gems-item-info">
-                    <span>⚔️ Легендарный меч</span>
-                    <span class="gems-item-price">500 <i class="fas fa-gem"></i></span>
-                </div>
-                <button class="buy-gem-item" data-item-id="legendary_sword">Купить</button>
-            </div>
-            <div class="gems-item">
-                <div class="gems-item-info">
-                    <span>🛡️ Щит дракона</span>
-                    <span class="gems-item-price">300 <i class="fas fa-gem"></i></span>
-                </div>
-                <button class="buy-gem-item" data-item-id="dragon_shield">Купить</button>
-            </div>
+            <div class="gems-item"><div class="gems-item-info"><span>⚔️ Легендарный меч</span><span class="gems-item-price">500 <i class="fas fa-gem"></i></span></div><button class="buy-gem-item" data-item-id="legendary_sword">Купить</button></div>
+            <div class="gems-item"><div class="gems-item-info"><span>🛡️ Щит дракона</span><span class="gems-item-price">300 <i class="fas fa-gem"></i></span></div><button class="buy-gem-item" data-item-id="dragon_shield">Купить</button></div>
             <div class="shop-note">Больше предметов появится скоро!</div>
         </div>
     `;
-    // Обработчики покупки можно добавить позже
-}
-
-    async function updateCommonChestPrice() {
-        try {
-            const res = await window.apiRequest('/player/freechest');
-            const data = await res.json();
-            const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
-            const coinIcon = container.querySelector('[data-chest="common"] i');
-
-            if (data.freeAvailable) {
-                priceSpan.innerText = 'FREE';
-                coinIcon.style.display = 'none';
-            } else {
-                priceSpan.innerText = '100';
-                coinIcon.style.display = 'inline-block';
-            }
-
-            if (window.updateShopTabIcon) window.updateShopTabIcon();
-            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
-        } catch (e) {
-            console.error('Failed to fetch free chest status', e);
-        }
-    }
-
-    updateCommonChestPrice();
-
-    container.querySelectorAll('.chest-buy-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const chest = btn.dataset.chest;
-            const res = await window.apiRequest('/shop/buychest', {
-                method: 'POST',
-                body: JSON.stringify({ chestType: chest })
-            });
-            let data;
-            try {
-                data = await res.json();
-            } catch {
-                showToast('Ошибка ответа сервера', 1500);
-                return;
-            }
-            if (data.item) {
-                showChestResult(data.item);
-                await refreshData();
-                if (typeof refreshTasksData === 'function') {
-                    await refreshTasksData();
-                }
-                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
-                if (chest === 'common') updateCommonChestPrice();
-
-                window.apiRequest('/tasks/daily/update/chest', {
-                    method: 'POST',
-                    body: JSON.stringify({ item_rarity: data.item.rarity })
-                }).catch(err => console.error('Failed to update chest task', err));
-            } else {
-                if (data.error === 'Not enough coins') {
-                    showToast('Недостаточно средств!', 1500);
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
-            }
-        });
-    });
-}
-
-function renderShop(target = null) {
-    const container = target || document.getElementById('tradeContent');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="chest-table">
-            <div class="chest-row" data-chest="common">
-                <div class="chest-icon-col">
-                    <img src="/assets/common-chess.png" alt="Обычный сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Обычный сундук</div>
-                    <div class="chest-desc">
-                        <div>Обычное 85%</div>
-                        <div>Необычное 15%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="common">
-                        <span class="chest-price" id="commonChestPrice">?</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="chest-row" data-chest="uncommon">
-                <div class="chest-icon-col">
-                    <img src="/assets/uncommon-chess.png" alt="Необычный сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Необычный сундук</div>
-                    <div class="chest-desc">
-                        <div>Обычное 25%</div>
-                        <div>Необычное 65%</div>
-                        <div>Редкое 10%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="uncommon">
-                        <span class="chest-price">250</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="chest-row" data-chest="rare">
-                <div class="chest-icon-col">
-                    <img src="/assets/rare-chess.png" alt="Редкий сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Редкий сундук</div>
-                    <div class="chest-desc">
-                        <div>Редкое 65%</div>
-                        <div>Необычное 25%</div>
-                        <div>Эпическое 10%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="rare">
-                        <span class="chest-price">800</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="chest-row" data-chest="epic">
-                <div class="chest-icon-col">
-                    <img src="/assets/epic-chess.png" alt="Эпический сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Эпический сундук</div>
-                    <div class="chest-desc">
-                        <div>Эпическое 65%</div>
-                        <div>Редкое 25%</div>
-                        <div>Легендарное 10%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="epic">
-                        <span class="chest-price">1800</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="chest-row" data-chest="legendary">
-                <div class="chest-icon-col">
-                    <img src="/assets/leg-chess.png" alt="Легендарный сундук">
-                </div>
-                <div class="chest-info-col">
-                    <div class="chest-name">Легендарный сундук</div>
-                    <div class="chest-desc">
-                        <div>Легендарное 70%</div>
-                        <div>Эпическое 30%</div>
-                    </div>
-                </div>
-                <div class="chest-price-col">
-                    <button class="chest-buy-btn" data-chest="legendary">
-                        <span class="chest-price">3500</span>
-                        <i class="fas fa-coins"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    async function updateCommonChestPrice() {
-        try {
-            const res = await window.apiRequest('/player/freechest');
-            const data = await res.json();
-            const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
-            const coinIcon = container.querySelector('[data-chest="common"] i');
-
-            if (data.freeAvailable) {
-                priceSpan.innerText = 'FREE';
-                coinIcon.style.display = 'none';
-            } else {
-                priceSpan.innerText = '100';
-                coinIcon.style.display = 'inline-block';
-            }
-
-            if (window.updateShopTabIcon) window.updateShopTabIcon();
-            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
-        } catch (e) {
-            console.error('Failed to fetch free chest status', e);
-        }
-    }
-
-    updateCommonChestPrice();
-
-    container.querySelectorAll('.chest-buy-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const chest = btn.dataset.chest;
-            const res = await window.apiRequest('/shop/buychest', {
-                method: 'POST',
-                body: JSON.stringify({ chestType: chest })
-            });
-            let data;
-            try {
-                data = await res.json();
-            } catch {
-                showToast('Ошибка ответа сервера', 1500);
-                return;
-            }
-          if (data.item) {
-                showChestResult(data.item);
-                await refreshData();
-                // Обновляем данные заданий для отображения маячка
-                if (typeof refreshTasksData === 'function') {
-                    await refreshTasksData();
-                }
-                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
-                if (chest === 'common') updateCommonChestPrice();
-
-                window.apiRequest('/tasks/daily/update/chest', {
-                    method: 'POST',
-                    body: JSON.stringify({ item_rarity: data.item.rarity })
-                }).catch(err => console.error('Failed to update chest task', err));
-            } else {
-                if (data.error === 'Not enough coins') {
-                    showToast('Недостаточно средств!', 1500);
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
-            }
-        });
-    });
 }
 
 // ==================== МАРКЕТ ====================
+
 async function renderMarket(target = null) {
     const container = target || document.getElementById('tradeContent');
     if (!container) return;
-
     container.innerHTML = `
         <div class="market-page">
             <div class="market-filters-panel">
                 <div class="filters-row">
-                    <div class="filter-group" id="filter-class-group">
-                        <button class="filter-button" id="classFilterBtn">
-                            <span id="classFilterText">Класс</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="filter-panel" id="classPanel" style="display: none;">
-                            <div class="filter-option" data-value="any">Любой класс</div>
-                            <div class="filter-option" data-value="warrior">Воин</div>
-                            <div class="filter-option" data-value="assassin">Ассасин</div>
-                            <div class="filter-option" data-value="mage">Маг</div>
-                        </div>
-                    </div>
-                    <div class="filter-group" id="filter-rarity-group">
-                        <button class="filter-button" id="rarityFilterBtn">
-                            <span id="rarityFilterText">Редкость</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="filter-panel" id="rarityPanel" style="display: none;">
-                            <div class="filter-option" data-value="any">Любая редкость</div>
-                            <div class="filter-option" data-value="common">Обычное</div>
-                            <div class="filter-option" data-value="uncommon">Необычное</div>
-                            <div class="filter-option" data-value="rare">Редкое</div>
-                            <div class="filter-option" data-value="epic">Эпическое</div>
-                            <div class="filter-option" data-value="legendary">Легендарное</div>
-                        </div>
-                    </div>
-                    <div class="filter-group" id="filter-stat-group">
-                        <button class="filter-button" id="statFilterBtn">
-                            <span id="statFilterText">Характеристика</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="filter-panel" id="statPanel" style="display: none;">
-                            <div class="filter-option" data-value="any">Любая характеристика</div>
-                            <div class="filter-option" data-value="atk_bonus">АТК</div>
-                            <div class="filter-option" data-value="def_bonus">ЗАЩ</div>
-                            <div class="filter-option" data-value="hp_bonus">ЗДОР</div>
-                            <div class="filter-option" data-value="spd_bonus">СКОР</div>
-                            <div class="filter-option" data-value="crit_bonus">КРИТ</div>
-                            <div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div>
-                            <div class="filter-option" data-value="agi_bonus">ЛОВ</div>
-                            <div class="filter-option" data-value="int_bonus">ИНТ</div>
-                            <div class="filter-option" data-value="vamp_bonus">ВАМП</div>
-                            <div class="filter-option" data-value="reflect_bonus">ОТР</div>
-                        </div>
-                    </div>
+                    <div class="filter-group" id="filter-class-group"><button class="filter-button" id="classFilterBtn"><span id="classFilterText">Класс</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="classPanel" style="display: none;"><div class="filter-option" data-value="any">Любой класс</div><div class="filter-option" data-value="warrior">Воин</div><div class="filter-option" data-value="assassin">Ассасин</div><div class="filter-option" data-value="mage">Маг</div></div></div>
+                    <div class="filter-group" id="filter-rarity-group"><button class="filter-button" id="rarityFilterBtn"><span id="rarityFilterText">Редкость</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="rarityPanel" style="display: none;"><div class="filter-option" data-value="any">Любая редкость</div><div class="filter-option" data-value="common">Обычное</div><div class="filter-option" data-value="uncommon">Необычное</div><div class="filter-option" data-value="rare">Редкое</div><div class="filter-option" data-value="epic">Эпическое</div><div class="filter-option" data-value="legendary">Легендарное</div></div></div>
+                    <div class="filter-group" id="filter-stat-group"><button class="filter-button" id="statFilterBtn"><span id="statFilterText">Характеристика</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="statPanel" style="display: none;"><div class="filter-option" data-value="any">Любая характеристика</div><div class="filter-option" data-value="atk_bonus">АТК</div><div class="filter-option" data-value="def_bonus">ЗАЩ</div><div class="filter-option" data-value="hp_bonus">ЗДОР</div><div class="filter-option" data-value="spd_bonus">СКОР</div><div class="filter-option" data-value="crit_bonus">КРИТ</div><div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div><div class="filter-option" data-value="agi_bonus">ЛОВ</div><div class="filter-option" data-value="int_bonus">ИНТ</div><div class="filter-option" data-value="vamp_bonus">ВАМП</div><div class="filter-option" data-value="reflect_bonus">ОТР</div></div></div>
                 </div>
-                <div class="apply-button-container">
-                    <button class="apply-filters-btn" id="applyFiltersBtn">Применить</button>
-                </div>
+                <div class="apply-button-container"><button class="apply-filters-btn" id="applyFiltersBtn">Применить</button></div>
             </div>
             <div class="market-items-header">Список снаряжения</div>
-            <div class="market-items-container" id="marketItemsContainer">
-                <div id="marketItemsList" class="market-items-list"></div>
-            </div>
+            <div class="market-items-container" id="marketItemsContainer"><div id="marketItemsList" class="market-items-list"></div></div>
         </div>
     `;
-
-    let currentClass = 'any';
-    let currentRarity = 'any';
-    let currentStat = 'any';
-    let openPanel = null;
-
-    function closeAllPanels() {
-        if (openPanel) {
-            const panel = document.getElementById(openPanel);
-            if (panel) panel.style.display = 'none';
-            openPanel = null;
-        }
-    }
-
-    function togglePanel(panelId) {
-        if (openPanel === panelId) {
-            closeAllPanels();
-        } else {
-            closeAllPanels();
-            const panel = document.getElementById(panelId);
-            if (panel) {
-                panel.style.display = 'block';
-                openPanel = panelId;
-            }
-        }
-    }
-
-    function handleClickOutside(e) {
-        if (!e.target.closest('.filter-group')) {
-            closeAllPanels();
-        }
-    }
-
-    document.getElementById('classFilterBtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePanel('classPanel');
-    });
-    document.getElementById('rarityFilterBtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePanel('rarityPanel');
-    });
-    document.getElementById('statFilterBtn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePanel('statPanel');
-    });
-
+    let currentClass = 'any', currentRarity = 'any', currentStat = 'any', openPanel = null;
+    function closeAllPanels() { if (openPanel) { const panel = document.getElementById(openPanel); if (panel) panel.style.display = 'none'; openPanel = null; } }
+    function togglePanel(panelId) { if (openPanel === panelId) closeAllPanels(); else { closeAllPanels(); const panel = document.getElementById(panelId); if (panel) { panel.style.display = 'block'; openPanel = panelId; } } }
+    function handleClickOutside(e) { if (!e.target.closest('.filter-group')) closeAllPanels(); }
+    document.getElementById('classFilterBtn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePanel('classPanel'); });
+    document.getElementById('rarityFilterBtn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePanel('rarityPanel'); });
+    document.getElementById('statFilterBtn')?.addEventListener('click', (e) => { e.stopPropagation(); togglePanel('statPanel'); });
     document.querySelectorAll('.filter-option').forEach(opt => {
         opt.addEventListener('click', (e) => {
             const value = e.currentTarget.dataset.value;
             const panelId = e.currentTarget.closest('.filter-panel').id;
             const optionText = e.currentTarget.innerText;
-
-            if (panelId === 'classPanel') {
-                currentClass = value;
-                const textSpan = document.getElementById('classFilterText');
-                if (textSpan) textSpan.innerText = value === 'any' ? 'Класс' : optionText;
-            } else if (panelId === 'rarityPanel') {
-                currentRarity = value;
-                const textSpan = document.getElementById('rarityFilterText');
-                if (textSpan) textSpan.innerText = value === 'any' ? 'Редкость' : optionText;
-            } else if (panelId === 'statPanel') {
-                currentStat = value;
-                const textSpan = document.getElementById('statFilterText');
-                if (textSpan) textSpan.innerText = value === 'any' ? 'Характеристика' : optionText;
-            }
+            if (panelId === 'classPanel') { currentClass = value; document.getElementById('classFilterText').innerText = value === 'any' ? 'Класс' : optionText; }
+            else if (panelId === 'rarityPanel') { currentRarity = value; document.getElementById('rarityFilterText').innerText = value === 'any' ? 'Редкость' : optionText; }
+            else if (panelId === 'statPanel') { currentStat = value; document.getElementById('statFilterText').innerText = value === 'any' ? 'Характеристика' : optionText; }
             closeAllPanels();
         });
     });
-
     document.addEventListener('click', handleClickOutside);
-
-    const applyBtn = document.getElementById('applyFiltersBtn');
-    applyBtn?.addEventListener('click', () => {
-        loadMarketItems(currentStat, currentClass, currentRarity);
-    });
-
+    document.getElementById('applyFiltersBtn')?.addEventListener('click', () => { loadMarketItems(currentStat, currentClass, currentRarity); });
     await loadMarketItems(currentStat, currentClass, currentRarity);
 }
 
 async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFilter = 'any') {
     const params = { class: classFilter, rarity: rarityFilter };
-    if (statFilter !== 'any') {
-        params.stat = statFilter;
-    }
-    const res = await window.apiRequest('/market', {
-        method: 'GET',
-        body: params
-    });
+    if (statFilter !== 'any') params.stat = statFilter;
+    const res = await window.apiRequest('/market', { method: 'GET', body: params });
     let items;
-    try {
-        items = await res.json();
-    } catch {
-        showToast('Ошибка загрузки маркета', 1500);
-        return;
-    }
-
+    try { items = await res.json(); } catch { showToast('Ошибка загрузки маркета', 1500); return; }
     const marketList = document.getElementById('marketItemsList');
     if (!marketList) return;
     marketList.innerHTML = '';
-
-    if (!Array.isArray(items)) {
-        console.error('Market returned non-array:', items);
-        marketList.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки маркета</p>';
-        return;
-    }
-
-    const classFolderMap = {
-        warrior: 'tank',
-        assassin: 'assassin',
-        mage: 'mage'
-    };
-    const typeFileMap = {
-        armor: 'armor',
-        boots: 'boots',
-        helmet: 'helmet',
-        weapon: 'weapon',
-        accessory: 'ring',
-        gloves: 'bracer'
-    };
-
-    function getItemIconPath(item) {
-        if (!item) return '';
-        const folder = classFolderMap[item.owner_class];
-        const fileType = typeFileMap[item.type];
-        if (!folder || !fileType) return '';
-        return `/assets/equip/${folder}/${folder}-${fileType}-001.png`;
-    }
-
+    if (!Array.isArray(items)) { marketList.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки маркета</p>'; return; }
+    const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
+    const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
+    function getItemIconPath(item) { if (!item) return ''; const folder = classFolderMap[item.owner_class]; const fileType = typeFileMap[item.type]; if (!folder || !fileType) return ''; return `/assets/equip/${folder}/${folder}-${fileType}-001.png`; }
     for (const item of items) {
         const stats = [];
         if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
@@ -1183,511 +730,39 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
         if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
         if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
         if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
         const isOwn = item.seller_id === userData.id;
-
         const row = document.createElement('div');
         row.className = `market-item-row ${rarityClass}`;
         row.dataset.itemId = item.id;
-
-        // Иконка
-        const iconDiv = document.createElement('div');
-        iconDiv.className = 'market-item-icon';
-        const iconImg = document.createElement('div');
-        iconImg.className = 'item-icon-img';
-        iconImg.style.backgroundImage = `url('${iconPath}')`;
-        iconDiv.appendChild(iconImg);
-
-        // Информация
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'market-item-info';
-        const nameSpan = document.createElement('div');
-        nameSpan.className = 'market-item-name';
+        const iconDiv = document.createElement('div'); iconDiv.className = 'market-item-icon'; const iconImg = document.createElement('div'); iconImg.className = 'item-icon-img'; iconImg.style.backgroundImage = `url('${iconPath}')`; iconDiv.appendChild(iconImg);
+        const infoDiv = document.createElement('div'); infoDiv.className = 'market-item-info';
+        const nameSpan = document.createElement('div'); nameSpan.className = 'market-item-name';
         const classNameRu = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
         nameSpan.innerHTML = `${escapeHtml(itemNameTranslations[item.name] || item.name)} <span class="item-class">(${escapeHtml(classNameRu)})</span>`;
-        const statsDiv = document.createElement('div');
-        statsDiv.className = 'market-item-stats';
-        statsDiv.innerText = stats.join(' • ');
-        infoDiv.appendChild(nameSpan);
-        infoDiv.appendChild(statsDiv);
-
-        // Цена
-        const priceDiv = document.createElement('div');
-        priceDiv.className = 'market-item-price';
-        priceDiv.innerHTML = `${item.price} <i class="fas fa-coins"></i>`;
-
-        // Кнопки
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'market-item-actions';
+        const statsDiv = document.createElement('div'); statsDiv.className = 'market-item-stats'; statsDiv.innerText = stats.join(' • ');
+        infoDiv.appendChild(nameSpan); infoDiv.appendChild(statsDiv);
+        const priceDiv = document.createElement('div'); priceDiv.className = 'market-item-price'; priceDiv.innerHTML = `${item.price} <i class="fas fa-coins"></i>`;
+        const actionsDiv = document.createElement('div'); actionsDiv.className = 'market-item-actions';
         if (isOwn) {
-            const editBtn = document.createElement('button');
-            editBtn.className = 'market-action-btn edit-price-btn';
-            editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
-            editBtn.title = 'Изменить цену';
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showEditPriceModal(item);
-            });
-
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'market-action-btn remove-from-market-btn';
-            removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-            removeBtn.title = 'Снять с продажи';
-            removeBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                showConfirmModal('Снять этот предмет с продажи?', async () => {
-                    const res = await window.apiRequest('/market/remove', {
-                        method: 'POST',
-                        body: JSON.stringify({ item_id: item.id })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        showToast('Предмет снят с продажи', 1500);
-                        await refreshData();
-                        loadMarketItems(statFilter, classFilter, rarityFilter);
-                    } else {
-                        showToast('Ошибка: ' + data.error, 1500);
-                    }
-                });
-            });
-            actionsDiv.appendChild(editBtn);
-            actionsDiv.appendChild(removeBtn);
+            const editBtn = document.createElement('button'); editBtn.className = 'market-action-btn edit-price-btn'; editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>'; editBtn.title = 'Изменить цену'; editBtn.addEventListener('click', (e) => { e.stopPropagation(); showEditPriceModal(item); });
+            const removeBtn = document.createElement('button'); removeBtn.className = 'market-action-btn remove-from-market-btn'; removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>'; removeBtn.title = 'Снять с продажи'; removeBtn.addEventListener('click', async (e) => { e.stopPropagation(); showConfirmModal('Снять этот предмет с продажи?', async () => { const res = await window.apiRequest('/market/remove', { method: 'POST', body: JSON.stringify({ item_id: item.id }) }); const data = await res.json(); if (data.success) { showToast('Предмет снят с продажи', 1500); await refreshData(); loadMarketItems(statFilter, classFilter, rarityFilter); } else { showToast('Ошибка: ' + data.error, 1500); } }); });
+            actionsDiv.appendChild(editBtn); actionsDiv.appendChild(removeBtn);
         } else {
-            const viewBtn = document.createElement('button');
-            viewBtn.className = 'market-action-btn view-btn';
-            viewBtn.innerHTML = '<i class="fas fa-eye"></i>';
-            viewBtn.title = 'Просмотр';
-            viewBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showItemDetailsModal(item);
-            });
+            const viewBtn = document.createElement('button'); viewBtn.className = 'market-action-btn view-btn'; viewBtn.innerHTML = '<i class="fas fa-eye"></i>'; viewBtn.title = 'Просмотр'; viewBtn.addEventListener('click', (e) => { e.stopPropagation(); showItemDetailsModal(item); });
             actionsDiv.appendChild(viewBtn);
         }
-
-        row.appendChild(iconDiv);
-        row.appendChild(infoDiv);
-        row.appendChild(priceDiv);
-        row.appendChild(actionsDiv);
+        row.appendChild(iconDiv); row.appendChild(infoDiv); row.appendChild(priceDiv); row.appendChild(actionsDiv);
         marketList.appendChild(row);
     }
 }
 
-// ========== ФОРТУНА ==========
-
-function renderFortune() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div style="text-align:center; padding:20px;">
-            <i class="fas fa-slot-machine" style="font-size:48px; color:#00aaff;"></i>
-            <h2 style="color:white;">Колесо Фортуны</h2>
-            <p style="color:#aaa;">Скоро появится! 🎡</p>
-        </div>
-    `;
-}
-
-
-// ========== АЛХИМИЯ ==========
-function renderAlchemy() {
-    const content = document.getElementById('content');
-    content.innerHTML = `
-        <div style="text-align:center; padding:20px;">
-            <i class="fas fa-flask" style="font-size:48px; color:#00aaff;"></i>
-            <h2 style="color:white;">Алхимик</h2>
-            <p style="color:#aaa;">Превращаем ресурсы в ценности! 🧪</p>
-        </div>
-    `;
-}
-
-// ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
-
-async function showItemDetailsModal(item) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    if (!modal || !modalTitle || !modalBody) return;
-
-    modalTitle.innerText = 'Осмотр снаряжения';
-
-    const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-    const classFolderMap = {
-        warrior: 'tank',
-        assassin: 'assassin',
-        mage: 'mage'
-    };
-    const typeFileMap = {
-        armor: 'armor',
-        boots: 'boots',
-        helmet: 'helmet',
-        weapon: 'weapon',
-        accessory: 'ring',
-        gloves: 'bracer'
-    };
-    const folder = classFolderMap[item.owner_class];
-    const fileType = typeFileMap[item.type];
-    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
-
-    modalBody.innerHTML = `
-        <div class="item-modal-content">
-            <div class="item-modal-icon ${item.rarity}">
-                <div class="item-icon" style="background-image: url('${iconPath}');"></div>
-            </div>
-            <div class="item-modal-name ${item.rarity}">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
-            <div class="item-modal-class">${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
-            <div class="item-modal-stats">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
-            <div class="item-modal-price">${item.price} <i class="fas fa-coins"></i></div>
-            <div class="item-modal-buttons">
-                <button class="item-modal-btn buy-item-btn">Купить</button>
-                <button class="item-modal-btn close-modal-btn">Отмена</button>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = 'flex';
-
-    const buyBtn = modalBody.querySelector('.buy-item-btn');
-    const closeBtn = modalBody.querySelector('.close-modal-btn');
-    const closeX = modal.querySelector('.close');
-
-    buyBtn.addEventListener('click', async () => {
-        const res = await window.apiRequest('/market/buy', {
-            method: 'POST',
-            body: JSON.stringify({ item_id: item.id })
-        });
-        let data;
-        try {
-            data = await res.json();
-        } catch {
-            showToast('Ошибка ответа сервера', 1500);
-            return;
-        }
-        if (data.success) {
-            modal.style.display = 'none';
-            showToast(`Вы купили "${escapeHtml(itemNameTranslations[item.name] || item.name)}" за ${item.price} монет`, 1500);
-            await refreshData();
-            const classFilter = document.getElementById('classFilterText').innerText === 'Класс' ? 'any' : 
-                (document.getElementById('classFilterText').innerText === 'Воин' ? 'warrior' : 
-                (document.getElementById('classFilterText').innerText === 'Ассасин' ? 'assassin' : 
-                (document.getElementById('classFilterText').innerText === 'Маг' ? 'mage' : 'any')));
-            const rarityFilter = document.getElementById('rarityFilterText').innerText === 'Редкость' ? 'any' : 
-                (document.getElementById('rarityFilterText').innerText === 'Обычное' ? 'common' : 
-                (document.getElementById('rarityFilterText').innerText === 'Необычное' ? 'uncommon' : 
-                (document.getElementById('rarityFilterText').innerText === 'Редкое' ? 'rare' : 
-                (document.getElementById('rarityFilterText').innerText === 'Эпическое' ? 'epic' : 
-                (document.getElementById('rarityFilterText').innerText === 'Легендарное' ? 'legendary' : 'any')))));
-            const statFilter = document.getElementById('statFilterText').innerText === 'Характеристика' ? 'any' : 
-                (document.getElementById('statFilterText').innerText === 'АТК' ? 'atk_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ЗАЩ' ? 'def_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ЗДОР' ? 'hp_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'СКОР' ? 'spd_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'КРИТ' ? 'crit_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'КР.УРОН' ? 'crit_dmg_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ЛОВ' ? 'agi_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ИНТ' ? 'int_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ВАМП' ? 'vamp_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
-            loadMarketItems(statFilter, classFilter, rarityFilter);
-        } else {
-            modal.style.display = 'none';
-            if (data.error === 'Not enough coins') {
-                showToast('Недостаточно средств!', 1500);
-            } else {
-                showToast('Ошибка: ' + data.error, 1500);
-            }
-        }
-    });
-
-    const closeModal = () => modal.style.display = 'none';
-    closeBtn.addEventListener('click', closeModal);
-    closeX.addEventListener('click', closeModal);
-    window.onclick = (event) => {
-        if (event.target === modal) closeModal();
-    };
-}
-
-function showPriceInputModal(currentPrice, onConfirm) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    if (!modal || !modalTitle || !modalBody) return;
-
-    modalTitle.innerText = 'Введите цену';
-
-    modalBody.innerHTML = `
-        <div class="edit-price-modal">
-            <div class="item-name">Цена продажи</div>
-            <input type="number" id="priceInput" class="price-input" placeholder="Цена в монетах" value="${currentPrice || ''}">
-            <div class="modal-buttons">
-                <button class="modal-btn save-price-btn">Продать</button>
-                <button class="modal-btn cancel-price-btn">Отмена</button>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = 'flex';
-
-    const saveBtn = modalBody.querySelector('.save-price-btn');
-    const cancelBtn = modalBody.querySelector('.cancel-price-btn');
-    const closeX = modal.querySelector('.close');
-
-    const closeModal = () => modal.style.display = 'none';
-
-    saveBtn.addEventListener('click', () => {
-        const price = parseInt(document.getElementById('priceInput').value);
-        if (isNaN(price) || price <= 0) {
-            showToast('Введите корректную цену', 1500);
-            return;
-        }
-        closeModal();
-        if (onConfirm) onConfirm(price);
-    });
-
-    cancelBtn.addEventListener('click', closeModal);
-    closeX.addEventListener('click', closeModal);
-    window.onclick = (event) => {
-        if (event.target === modal) closeModal();
-    };
-}
-
-function showConfirmModal(message, onConfirm, onCancel) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    if (!modal || !modalTitle || !modalBody) return;
-
-    modalTitle.innerText = 'Подтверждение';
-
-    modalBody.innerHTML = `
-        <div style="text-align: center; padding: 10px;">
-            <div style="margin-bottom: 20px; font-size: 16px;">${escapeHtml(message)}</div>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button class="modal-btn confirm-yes" style="background-color: #00aaff; color: white;">Да</button>
-                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Нет</button>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = 'flex';
-
-    const yesBtn = modalBody.querySelector('.confirm-yes');
-    const noBtn = modalBody.querySelector('.confirm-no');
-    const closeX = modal.querySelector('.close');
-
-    const closeModal = () => {
-        modal.style.display = 'none';
-        if (onCancel) onCancel();
-    };
-
-    yesBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-        if (onConfirm) onConfirm();
-    });
-
-    noBtn.addEventListener('click', closeModal);
-    closeX.addEventListener('click', closeModal);
-    window.onclick = (event) => {
-        if (event.target === modal) closeModal();
-    };
-}
-
-function showUnequipConfirmModal(item, onConfirm) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.innerText = 'Снять предмет?';
-
-    const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-
-    const classFolderMap = {
-        warrior: 'tank',
-        assassin: 'assassin',
-        mage: 'mage'
-    };
-    const typeFileMap = {
-        armor: 'armor',
-        boots: 'boots',
-        helmet: 'helmet',
-        weapon: 'weapon',
-        accessory: 'ring',
-        gloves: 'bracer'
-    };
-    const folder = classFolderMap[item.owner_class];
-    const fileType = typeFileMap[item.type];
-    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
-
-    const rarityColors = {
-        common: '#aaa',
-        uncommon: '#2ecc71',
-        rare: '#2e86de',
-        epic: '#9b59b6',
-        legendary: '#f1c40f'
-    };
-    const borderColor = rarityColors[item.rarity] || '#aaa';
-
-    modalBody.innerHTML = `
-        <div style="text-align: center;">
-            <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #1a1f2b; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor};">
-                <img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">
-            </div>
-            <div style="font-weight: bold; margin-top: 10px; font-size: 18px; color: ${borderColor};">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
-            <div class="rarity-${item.rarity}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: white; font-size: 14px; margin-bottom: 5px;">Класс: ${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
-            <div style="color: white; font-size: 14px; margin-bottom: 15px;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="modal-btn confirm-yes" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Снять</button>
-                <button class="modal-btn confirm-no" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Отмена</button>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = 'block';
-
-    const yesBtn = modalBody.querySelector('.confirm-yes');
-    const noBtn = modalBody.querySelector('.confirm-no');
-    const closeX = modal.querySelector('.close');
-
-    const closeModal = () => {
-        modal.style.display = 'none';
-    };
-
-    yesBtn.addEventListener('click', () => {
-        closeModal();
-        if (onConfirm) onConfirm();
-    });
-
-    noBtn.addEventListener('click', closeModal);
-    closeX.addEventListener('click', closeModal);
-    window.onclick = (event) => {
-        if (event.target === modal) closeModal();
-    };
-}
-
-function showEditPriceModal(item) {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    if (!modal || !modalTitle || !modalBody) return;
-
-    modalTitle.innerText = 'Изменить цену';
-
-    modalBody.innerHTML = `
-        <div class="edit-price-modal">
-            <div class="item-name">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
-            <div class="current-price">Текущая цена: ${item.price} <i class="fas fa-coins"></i></div>
-            <input type="number" id="newPriceInput" class="price-input" placeholder="Новая цена" value="${item.price}">
-            <div class="modal-buttons">
-                <button class="modal-btn save-price-btn">Сохранить</button>
-                <button class="modal-btn cancel-price-btn">Отмена</button>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = 'flex';
-
-    const saveBtn = modalBody.querySelector('.save-price-btn');
-    const cancelBtn = modalBody.querySelector('.cancel-price-btn');
-    const closeX = modal.querySelector('.close');
-
-    saveBtn.addEventListener('click', async () => {
-        const newPrice = parseInt(document.getElementById('newPriceInput').value);
-        if (isNaN(newPrice) || newPrice <= 0) {
-            showToast('Введите корректную цену', 1500);
-            return;
-        }
-        const res = await window.apiRequest('/market/update-price', {
-            method: 'POST',
-            body: JSON.stringify({ item_id: item.id, new_price: newPrice })
-        });
-        let data;
-        try {
-            data = await res.json();
-        } catch {
-            showToast('Ошибка ответа сервера', 1500);
-            return;
-        }
-        if (data.success) {
-            modal.style.display = 'none';
-            showToast('Цена изменена!', 1000);
-            await refreshData();
-            const classFilter = document.getElementById('classFilterText').innerText === 'Класс' ? 'any' : 
-                (document.getElementById('classFilterText').innerText === 'Воин' ? 'warrior' : 
-                (document.getElementById('classFilterText').innerText === 'Ассасин' ? 'assassin' : 
-                (document.getElementById('classFilterText').innerText === 'Маг' ? 'mage' : 'any')));
-            const rarityFilter = document.getElementById('rarityFilterText').innerText === 'Редкость' ? 'any' : 
-                (document.getElementById('rarityFilterText').innerText === 'Обычное' ? 'common' : 
-                (document.getElementById('rarityFilterText').innerText === 'Необычное' ? 'uncommon' : 
-                (document.getElementById('rarityFilterText').innerText === 'Редкое' ? 'rare' : 
-                (document.getElementById('rarityFilterText').innerText === 'Эпическое' ? 'epic' : 
-                (document.getElementById('rarityFilterText').innerText === 'Легендарное' ? 'legendary' : 'any')))));
-            const statFilter = document.getElementById('statFilterText').innerText === 'Характеристика' ? 'any' : 
-                (document.getElementById('statFilterText').innerText === 'АТК' ? 'atk_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ЗАЩ' ? 'def_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ЗДОР' ? 'hp_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'СКОР' ? 'spd_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'КРИТ' ? 'crit_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'КР.УРОН' ? 'crit_dmg_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ЛОВ' ? 'agi_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ИНТ' ? 'int_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ВАМП' ? 'vamp_bonus' : 
-                (document.getElementById('statFilterText').innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
-            loadMarketItems(statFilter, classFilter, rarityFilter);
-        } else {
-            showToast('Ошибка: ' + data.error, 1500);
-        }
-    });
-
-    const closeModal = () => modal.style.display = 'none';
-    cancelBtn.addEventListener('click', closeModal);
-    closeX.addEventListener('click', closeModal);
-    window.onclick = (event) => {
-        if (event.target === modal) closeModal();
-    };
-}
-
-function showToast(message, duration = 1500) {
-    const existingToast = document.querySelector('.market-toast');
-    if (existingToast) existingToast.remove();
-
-    const toast = document.createElement('div');
-    toast.className = 'market-toast';
-    toast.innerText = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
-}
-
 // ==================== РЕЙТИНГ ====================
+
 function renderRating() {
     const content = document.getElementById('content');
     if (!content) return;
-
     content.innerHTML = `
         <div class="rating-page">
             <div class="rating-tabs-container">
@@ -1695,30 +770,12 @@ function renderRating() {
                 <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn">СИЛА</button>
                 <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn">БАШНЯ</button>
             </div>
-            <div class="rating-content-container" id="ratingContentContainer">
-                <div id="ratingContent"></div>
-            </div>
+            <div class="rating-content-container" id="ratingContentContainer"><div id="ratingContent"></div></div>
         </div>
     `;
-
-    document.getElementById('ratingTabBtn')?.addEventListener('click', () => {
-        ratingTab = 'rating';
-        renderRating();
-        loadRatingData('rating');
-    });
-
-    document.getElementById('powerTabBtn')?.addEventListener('click', () => {
-        ratingTab = 'power';
-        renderRating();
-        loadRatingData('power');
-    });
-
-    document.getElementById('towerTabBtn')?.addEventListener('click', () => {
-        ratingTab = 'tower';
-        renderRating();
-        loadRatingData('tower');
-    });
-
+    document.getElementById('ratingTabBtn')?.addEventListener('click', () => { ratingTab = 'rating'; renderRating(); loadRatingData('rating'); });
+    document.getElementById('powerTabBtn')?.addEventListener('click', () => { ratingTab = 'power'; renderRating(); loadRatingData('power'); });
+    document.getElementById('towerTabBtn')?.addEventListener('click', () => { ratingTab = 'tower'; renderRating(); loadRatingData('tower'); });
     loadRatingData(ratingTab);
 }
 
@@ -1726,100 +783,59 @@ async function loadRatingData(type) {
     const container = document.getElementById('ratingContent');
     if (!container) return;
     container.innerHTML = '<p style="text-align:center;">Загрузка...</p>';
-
     try {
         const res = await window.apiRequest(`/rank/${type}`, { method: 'GET' });
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
-
-        let html = '<table class="stats-table"><thead>';
-        html += '<th>Место</th><th>Имя</th>';
-
-        if (type === 'rating' || type === 'power') {
-            html += '<th>Класс</th><th>Очки</th>';
-        } else if (type === 'tower') {
-            html += '<th>Класс</th><th>Роль</th><th>Этаж</th>';
-        }
-        html += '</thead><tbody>';
-
+        let html = '<table class="stats-table"><thead><tr><th>Место</th><th>Имя</th>';
+        if (type === 'rating' || type === 'power') html += '<th>Класс</th><th>Очки</th>';
+        else if (type === 'tower') html += '<th>Класс</th><th>Роль</th><th>Этаж</th>';
+        html += '</tr></thead><tbody>';
         data.forEach((item, index) => {
-            html += '<tr>';
-            html += `<td style="text-align:center;">${index + 1} `;
-            html += `<td>${escapeHtml(item.username)}</td>`;
-
+            html += `<tr><td style="text-align:center;">${index + 1} </td><td>${escapeHtml(item.username)}</td>`;
             if (type === 'rating') {
                 const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
-                html += `<td>${className}</td>`;
-                html += `<td style="text-align:center;">${item.rating}</td>`;
+                html += `<td>${className}</td><td style="text-align:center;">${item.rating}</td>`;
             } else if (type === 'power') {
                 const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
-                html += `<td>${className}</td>`;
-                html += `<td style="text-align:center;">${item.power}</td>`;
+                html += `<td>${className}</td><td style="text-align:center;">${item.power}</td>`;
             } else if (type === 'tower') {
                 const className = window.getClassNameRu ? getClassNameRu(item.chosen_class) : item.chosen_class;
                 const roleName = getRoleNameRu(item.chosen_subclass);
-                html += `<td>${escapeHtml(className)}</td>`;
-                html += `<td>${escapeHtml(roleName)}</td>`;
-                html += `<td style="text-align:center;">${item.floor}</td>`;
+                html += `<td>${escapeHtml(className)}</td><td>${escapeHtml(roleName)}</td><td style="text-align:center;">${item.floor}</td>`;
             }
-
             html += '</tr>';
         });
-
         html += '</tbody></table>';
         container.innerHTML = html;
-    } catch (e) {
-        console.error('Error loading rating:', e);
-        container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>';
-    }
+    } catch (e) { console.error('Error loading rating:', e); container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>'; }
 }
 
 // ==================== ПРОФИЛЬ ====================
+
 function renderProfile() {
     const content = document.getElementById('content');
     if (!content) return;
-
-    window.apiRequest('/tasks/daily/update/profile', { method: 'POST' })
-    .then(() => {
-        if (window.refreshTasksData) window.refreshTasksData();
-        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
-    })
-    .catch(err => console.error('Failed to update profile task', err));
-
+    window.apiRequest('/tasks/daily/update/profile', { method: 'POST' }).then(() => { if (window.refreshTasksData) window.refreshTasksData(); if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons(); }).catch(err => console.error('Failed to update profile task', err));
     const hasSkillPoints = hasAnyUnspentSkillPoints();
-
     content.innerHTML = `
         <div class="profile-tabs-container">
             <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
             <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
-            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade" style="position: relative;">
-                Улучшить
-                ${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="upgrade-tab-icon" alt="">' : ''}
-            </button>
+            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade" style="position: relative;">Улучшить${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="upgrade-tab-icon" alt="">' : ''}</button>
         </div>
         <div id="profileContent"></div>
     `;
-
-    document.querySelectorAll('.profile-tab').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            profileTab = e.currentTarget.dataset.tab;
-            renderProfile();
-        });
-    });
-
+    document.querySelectorAll('.profile-tab').forEach(btn => { btn.addEventListener('click', (e) => { profileTab = e.currentTarget.dataset.tab; renderProfile(); }); });
     renderProfileTab(profileTab);
 }
 
 function renderProfileTab(tab) {
     const profileContent = document.getElementById('profileContent');
     if (!profileContent) return;
-    if (tab === 'bonuses') {
-        renderProfileBonuses(profileContent);
-    } else if (tab === 'upgrade') {
-        renderSkills(profileContent);
-    } else if (tab === 'skins') {
-        renderSkins(profileContent);
-    }
+    if (tab === 'bonuses') renderProfileBonuses(profileContent);
+    else if (tab === 'upgrade') renderSkills(profileContent);
+    else if (tab === 'skins') renderSkins(profileContent);
 }
 
 function renderProfileBonuses(container) {
@@ -1992,18 +1008,7 @@ function renderSkills(container) {
 }
 
 function renderSkillItem(statName, displayName, description, currentValue, level, skillPoints) {
-    return `
-        <div class="skill-item">
-            <div class="skill-info">
-                <div class="skill-name">${escapeHtml(displayName)}</div>
-                <div class="skill-desc">${description}</div>
-            </div>
-            <div class="skill-value">${currentValue}</div>
-            <button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}>
-                <i class="fas fa-plus"></i>
-            </button>
-        </div>
-    `;
+    return `<div class="skill-item"><div class="skill-info"><div class="skill-name">${escapeHtml(displayName)}</div><div class="skill-desc">${description}</div></div><div class="skill-value">${currentValue}</div><button class="skill-btn" data-stat="${statName}" ${skillPoints < 1 ? 'disabled' : ''}><i class="fas fa-plus"></i></button></div>`;
 }
 
 function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue) {
@@ -2011,18 +1016,11 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
     const classBonusNum = parseFloat(classBonusValue) || 0;
     const gearDisplay = gearNum !== 0 ? `<span style="color:#2ecc71;">+${escapeHtml(gearValue)}</span>` : '';
     const classBonusDisplay = classBonusNum !== 0 ? `<span style="color:#00aaff;">+${escapeHtml(classBonusValue)}</span>` : '';
-    return `
-         <tr>
-            <td style="padding: 5px 0;">${escapeHtml(label)}</td>
-            <td style="text-align:center;">${baseValue}</td>
-            <td style="text-align:center;">${gearDisplay}</td>
-            <td style="text-align:center;">${classBonusDisplay}</td>
-            <td style="text-align:center; font-weight:bold;">${finalValue}</td>
-         </tr>
-    `;
+    return `<tr><td style="padding: 5px 0;">${escapeHtml(label)}</td><td style="text-align:center;">${baseValue}</td><td style="text-align:center;">${gearDisplay}</td><td style="text-align:center;">${classBonusDisplay}</td><td style="text-align:center; font-weight:bold;">${finalValue}</td></tr>`;
 }
 
 // ==================== СКИНЫ ====================
+
 function renderSkins(container) {
     if (!container) return;
     Promise.all([
@@ -2181,14 +1179,10 @@ function showSkinModal(avatarId, avatarFilename, owned) {
             console.error('Error loading avatar details:', err);
             showToast('Ошибка загрузки данных аватара', 1500);
         });
-
-  
 }
 
-
-
-
 // ==================== СООБЩЕНИЯ ====================
+
 async function loadMessagesSilent() {
     console.log('loadMessagesSilent: начало загрузки');
     try {
@@ -2210,7 +1204,7 @@ function recalcUnprocessedCount() {
     if (!window.messagesList) return;
     const unread = window.messagesList.filter(m => !m.is_read).length;
     const unclaimedRewards = window.messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
-    unreadMessagesCount = unread + unclaimedRewards;  // без window.
+    unreadMessagesCount = unread + unclaimedRewards;
     console.log('recalcUnprocessedCount: unread=', unread, 'unclaimed=', unclaimedRewards, 'total=', unreadMessagesCount);
     if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
 }
@@ -2231,7 +1225,6 @@ async function loadMessages() {
         return [];
     }
 }
-
 
 async function renderMessages() {
     const content = document.getElementById('content');
@@ -2307,7 +1300,6 @@ async function renderMessageDetail(messageId) {
         recalcUnprocessedCount();
     }
     
-    // Блок информации о награде
     let rewardDisplay = '';
     if (!msg.is_claimed && msg.reward_type && msg.reward_amount) {
         let rewardText = '';
@@ -2370,7 +1362,6 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    // Кнопки выбора класса
     const classChoiceBtns = document.querySelectorAll('.class-choice-btn');
     if (classChoiceBtns.length) {
         classChoiceBtns.forEach(btn => {
@@ -2401,7 +1392,6 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    // Обычная кнопка "Забрать награду"
     const claimBtn = document.getElementById('claimRewardBtn');
     if (claimBtn) {
         claimBtn.addEventListener('click', async () => {
@@ -2428,5 +1418,338 @@ async function renderMessageDetail(messageId) {
     }
 }
 
-// Экспортируем функцию для глобального доступа
+// ==================== ФОРТУНА И АЛХИМИЯ (заглушки) ====================
+
+function renderFortune() {
+    const content = document.getElementById('content');
+    content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-slot-machine" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Колесо Фортуны</h2><p style="color:#aaa;">Скоро появится! 🎡</p></div>`;
+}
+
+function renderAlchemy() {
+    const content = document.getElementById('content');
+    content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-flask" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Алхимик</h2><p style="color:#aaa;">Превращаем ресурсы в ценности! 🧪</p></div>`;
+}
+
+// ==================== ВСПОМОГАТЕЛЬНЫЕ МОДАЛЬНЫЕ ФУНКЦИИ ====================
+
+async function showItemDetailsModal(item) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerText = 'Осмотр снаряжения';
+
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
+    const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
+    const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
+    const folder = classFolderMap[item.owner_class];
+    const fileType = typeFileMap[item.type];
+    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
+
+    modalBody.innerHTML = `
+        <div class="item-modal-content">
+            <div class="item-modal-icon ${item.rarity}">
+                <div class="item-icon" style="background-image: url('${iconPath}');"></div>
+            </div>
+            <div class="item-modal-name ${item.rarity}">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
+            <div class="item-modal-class">${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
+            <div class="item-modal-stats">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
+            <div class="item-modal-price">${item.price} <i class="fas fa-coins"></i></div>
+            <div class="item-modal-buttons">
+                <button class="item-modal-btn buy-item-btn">Купить</button>
+                <button class="item-modal-btn close-modal-btn">Отмена</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    const buyBtn = modalBody.querySelector('.buy-item-btn');
+    const closeBtn = modalBody.querySelector('.close-modal-btn');
+    const closeX = modal.querySelector('.close');
+
+    buyBtn.addEventListener('click', async () => {
+        const res = await window.apiRequest('/market/buy', { method: 'POST', body: JSON.stringify({ item_id: item.id }) });
+        let data;
+        try { data = await res.json(); } catch { showToast('Ошибка ответа сервера', 1500); return; }
+        if (data.success) {
+            modal.style.display = 'none';
+            showToast(`Вы купили "${escapeHtml(itemNameTranslations[item.name] || item.name)}" за ${item.price} монет`, 1500);
+            await refreshData();
+            const classFilter = document.getElementById('classFilterText')?.innerText === 'Класс' ? 'any' : 
+                (document.getElementById('classFilterText')?.innerText === 'Воин' ? 'warrior' : 
+                (document.getElementById('classFilterText')?.innerText === 'Ассасин' ? 'assassin' : 
+                (document.getElementById('classFilterText')?.innerText === 'Маг' ? 'mage' : 'any')));
+            const rarityFilter = document.getElementById('rarityFilterText')?.innerText === 'Редкость' ? 'any' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Обычное' ? 'common' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Необычное' ? 'uncommon' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Редкое' ? 'rare' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Эпическое' ? 'epic' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Легендарное' ? 'legendary' : 'any')))));
+            const statFilter = document.getElementById('statFilterText')?.innerText === 'Характеристика' ? 'any' : 
+                (document.getElementById('statFilterText')?.innerText === 'АТК' ? 'atk_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ЗАЩ' ? 'def_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ЗДОР' ? 'hp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'СКОР' ? 'spd_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'КРИТ' ? 'crit_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'КР.УРОН' ? 'crit_dmg_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ЛОВ' ? 'agi_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ИНТ' ? 'int_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ВАМП' ? 'vamp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
+            loadMarketItems(statFilter, classFilter, rarityFilter);
+        } else {
+            modal.style.display = 'none';
+            if (data.error === 'Not enough coins') showToast('Недостаточно средств!', 1500);
+            else showToast('Ошибка: ' + data.error, 1500);
+        }
+    });
+
+    const closeModal = () => modal.style.display = 'none';
+    closeBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => { if (event.target === modal) closeModal(); };
+}
+
+function showPriceInputModal(currentPrice, onConfirm) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerText = 'Введите цену';
+
+    modalBody.innerHTML = `
+        <div class="edit-price-modal">
+            <div class="item-name">Цена продажи</div>
+            <input type="number" id="priceInput" class="price-input" placeholder="Цена в монетах" value="${currentPrice || ''}">
+            <div class="modal-buttons">
+                <button class="modal-btn save-price-btn">Продать</button>
+                <button class="modal-btn cancel-price-btn">Отмена</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    const saveBtn = modalBody.querySelector('.save-price-btn');
+    const cancelBtn = modalBody.querySelector('.cancel-price-btn');
+    const closeX = modal.querySelector('.close');
+
+    const closeModal = () => modal.style.display = 'none';
+
+    saveBtn.addEventListener('click', () => {
+        const price = parseInt(document.getElementById('priceInput').value);
+        if (isNaN(price) || price <= 0) {
+            showToast('Введите корректную цену', 1500);
+            return;
+        }
+        closeModal();
+        if (onConfirm) onConfirm(price);
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => { if (event.target === modal) closeModal(); };
+}
+
+function showConfirmModal(message, onConfirm, onCancel) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerText = 'Подтверждение';
+
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+            <div style="margin-bottom: 20px; font-size: 16px;">${escapeHtml(message)}</div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="modal-btn confirm-yes" style="background-color: #00aaff; color: white;">Да</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Нет</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        if (onCancel) onCancel();
+    };
+
+    yesBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        if (onConfirm) onConfirm();
+    });
+
+    noBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => { if (event.target === modal) closeModal(); };
+}
+
+function showUnequipConfirmModal(item, onConfirm) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Снять предмет?';
+
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+
+    const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
+    const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
+    const folder = classFolderMap[item.owner_class];
+    const fileType = typeFileMap[item.type];
+    const iconPath = folder && fileType ? `/assets/equip/${folder}/${folder}-${fileType}-001.png` : '';
+
+    const rarityColors = { common: '#aaa', uncommon: '#2ecc71', rare: '#2e86de', epic: '#9b59b6', legendary: '#f1c40f' };
+    const borderColor = rarityColors[item.rarity] || '#aaa';
+
+    modalBody.innerHTML = `
+        <div style="text-align: center;">
+            <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #1a1f2b; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor};">
+                <img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">
+            </div>
+            <div style="font-weight: bold; margin-top: 10px; font-size: 18px; color: ${borderColor};">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
+            <div class="rarity-${item.rarity}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div style="color: white; font-size: 14px; margin-bottom: 5px;">Класс: ${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
+            <div style="color: white; font-size: 14px; margin-bottom: 15px;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="modal-btn confirm-yes" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Снять</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Отмена</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'block';
+
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+
+    const closeModal = () => { modal.style.display = 'none'; };
+
+    yesBtn.addEventListener('click', () => {
+        closeModal();
+        if (onConfirm) onConfirm();
+    });
+
+    noBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => { if (event.target === modal) closeModal(); };
+}
+
+function showEditPriceModal(item) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerText = 'Изменить цену';
+
+    modalBody.innerHTML = `
+        <div class="edit-price-modal">
+            <div class="item-name">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
+            <div class="current-price">Текущая цена: ${item.price} <i class="fas fa-coins"></i></div>
+            <input type="number" id="newPriceInput" class="price-input" placeholder="Новая цена" value="${item.price}">
+            <div class="modal-buttons">
+                <button class="modal-btn save-price-btn">Сохранить</button>
+                <button class="modal-btn cancel-price-btn">Отмена</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    const saveBtn = modalBody.querySelector('.save-price-btn');
+    const cancelBtn = modalBody.querySelector('.cancel-price-btn');
+    const closeX = modal.querySelector('.close');
+
+    saveBtn.addEventListener('click', async () => {
+        const newPrice = parseInt(document.getElementById('newPriceInput').value);
+        if (isNaN(newPrice) || newPrice <= 0) { showToast('Введите корректную цену', 1500); return; }
+        const res = await window.apiRequest('/market/update-price', { method: 'POST', body: JSON.stringify({ item_id: item.id, new_price: newPrice }) });
+        let data;
+        try { data = await res.json(); } catch { showToast('Ошибка ответа сервера', 1500); return; }
+        if (data.success) {
+            modal.style.display = 'none';
+            showToast('Цена изменена!', 1000);
+            await refreshData();
+            const classFilter = document.getElementById('classFilterText')?.innerText === 'Класс' ? 'any' : 
+                (document.getElementById('classFilterText')?.innerText === 'Воин' ? 'warrior' : 
+                (document.getElementById('classFilterText')?.innerText === 'Ассасин' ? 'assassin' : 
+                (document.getElementById('classFilterText')?.innerText === 'Маг' ? 'mage' : 'any')));
+            const rarityFilter = document.getElementById('rarityFilterText')?.innerText === 'Редкость' ? 'any' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Обычное' ? 'common' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Необычное' ? 'uncommon' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Редкое' ? 'rare' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Эпическое' ? 'epic' : 
+                (document.getElementById('rarityFilterText')?.innerText === 'Легендарное' ? 'legendary' : 'any')))));
+            const statFilter = document.getElementById('statFilterText')?.innerText === 'Характеристика' ? 'any' : 
+                (document.getElementById('statFilterText')?.innerText === 'АТК' ? 'atk_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ЗАЩ' ? 'def_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ЗДОР' ? 'hp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'СКОР' ? 'spd_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'КРИТ' ? 'crit_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'КР.УРОН' ? 'crit_dmg_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ЛОВ' ? 'agi_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ИНТ' ? 'int_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ВАМП' ? 'vamp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
+            loadMarketItems(statFilter, classFilter, rarityFilter);
+        } else {
+            showToast('Ошибка: ' + data.error, 1500);
+        }
+    });
+
+    const closeModal = () => modal.style.display = 'none';
+    cancelBtn.addEventListener('click', closeModal);
+    closeX.addEventListener('click', closeModal);
+    window.onclick = (event) => { if (event.target === modal) closeModal(); };
+}
+
+function showToast(message, duration = 1500) {
+    const existingToast = document.querySelector('.market-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'market-toast';
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// ==================== ЭКСПОРТ ГЛОБАЛЬНЫХ ФУНКЦИЙ ====================
 window.loadMessagesSilent = loadMessagesSilent;

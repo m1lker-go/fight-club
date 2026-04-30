@@ -5,6 +5,8 @@ let isSpinning = false;
 let currentAngle = 0;
 let prizeResult = null;
 let animFrame = null;
+let countdownInterval = null;
+let currentCountdown = 0;
 const SPIN_DURATION = 7000;
 
 // Определяем сектора ГЛОБАЛЬНО
@@ -93,6 +95,32 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     }
 }
 
+function drawCenter(ctx, centerX, centerY, radius) {
+    // Рисуем центральный круг (фон как заголовок)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 0.25, 0, Math.PI * 2);
+    ctx.fillStyle = '#1a1f2b'; // цвет как у заголовка
+    ctx.fill();
+    ctx.strokeStyle = '#aaa';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Если идёт обратный отсчёт (колесо крутится) – показываем цифру
+    if (currentCountdown > 0) {
+        ctx.font = 'bold 24px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#00aaff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(currentCountdown.toString(), centerX, centerY);
+    } 
+    // Если не крутится – показываем флаг
+    else {
+        ctx.font = '32px "Font Awesome 6 Free", "FontAwesome", sans-serif';
+        ctx.fillStyle = '#ddd';
+        ctx.fillText('\uf024', centerX, centerY); // fa-flag-checkered
+    }
+}
+
 function renderWheel(angleOffset) {
     const canvas = document.getElementById('wheelCanvas');
     if (!canvas) return;
@@ -102,6 +130,9 @@ function renderWheel(angleOffset) {
     const centerY = size / 2;
     const radius = size / 2 - 15;
     drawWheel(ctx, centerX, centerY, radius, angleOffset);
+    // Рисуем центральную часть поверх колеса
+    drawCenter(ctx, centerX, centerY, radius);
+    // Указатель (оставляем как есть)
     ctx.beginPath();
     ctx.moveTo(centerX - 12, 14);
     ctx.lineTo(centerX + 12, 14);
@@ -113,6 +144,24 @@ function renderWheel(angleOffset) {
 function animateWheel(targetAngle) {
     const startAngle = currentAngle;
     const startTime = performance.now();
+    // Останавливаем предыдущий таймер, если был
+    if (countdownInterval) clearInterval(countdownInterval);
+    // Устанавливаем начальное значение таймера (7 секунд)
+    currentCountdown = 7;
+    
+    // Запускаем интервал, уменьшающий счётчик каждую секунду
+    countdownInterval = setInterval(() => {
+        if (currentCountdown > 1) {
+            currentCountdown--;
+            renderWheel(currentAngle); // перерисовываем для обновления центра
+        } else {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            currentCountdown = 0;
+            renderWheel(currentAngle);
+        }
+    }, 1000);
+    
     function step(now) {
         const elapsed = now - startTime;
         let t = Math.min(1, elapsed / SPIN_DURATION);
@@ -123,6 +172,11 @@ function animateWheel(targetAngle) {
             requestAnimationFrame(step);
         } else {
             isSpinning = false;
+            // Останавливаем таймер, если он ещё не остановлен (на всякий случай)
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = null;
+            currentCountdown = 0;
+            renderWheel(currentAngle); // финальная отрисовка без таймера
             if (prizeResult) {
                 if (prizeResult.type === 'exp') {
                     showClassChoiceModalForFortune(prizeResult.amount);
@@ -216,6 +270,13 @@ async function buyTickets() {
 
 async function fortuneSpin() {
     if (isSpinning) return;
+    // Останавливаем предыдущий таймер, если был
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    currentCountdown = 0;
+
     const total = (fortuneData?.freeSpins || 0) + (fortuneData?.paidSpins || 0);
     if (!fortuneData || total === 0) {
         showToast('Нет билетов! Купите билеты или дождитесь завтра.', 1500);

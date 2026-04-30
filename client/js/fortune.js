@@ -383,23 +383,25 @@ function renderFortune() {
                 <span><i class="fas fa-ticket-alt"></i> Билеты лотереи: <strong id="totalSpinsCount">0</strong></span>
             </div>
             <button id="spinBtn" class="fortune-spin-btn">Испытать удачу</button>
-           <div class="fortune-buy">
-    <div class="buy-header">Покупка билетов</div>
-    <div class="buy-content">
-        <div class="buy-label">Количество</div>
-        <div class="buy-controls">
-            <div class="input-group">
-                <input type="number" id="ticketCount" value="1" min="1" max="100" class="number-input">
-                <div class="ticket-buttons-group">
-                    <button id="ticketMinus" class="ticket-btn">-</button>
-                    <button id="ticketPlus" class="ticket-btn">+</button>
-                    <button id="ticketMax" class="ticket-max-btn">Max</button>
+            <div class="fortune-buy">
+                <div class="buy-header">Покупка билетов</div>
+                <div class="buy-content">
+                    <div class="buy-label">Количество</div>
+                    <div class="buy-controls">
+                        <div class="input-group">
+                            <input type="number" id="ticketCount" value="1" min="1" max="100" class="number-input">
+                            <div class="ticket-buttons-group">
+                                <button id="ticketMinus" class="ticket-btn">-</button>
+                                <button id="ticketPlus" class="ticket-btn">+</button>
+                                <button id="ticketMax" class="ticket-max-btn">Max</button>
+                            </div>
+                        </div>
+                        <button id="buyTicketsBtn" class="fortune-buy-btn">10 <i class="fas fa-gem"></i></button>
+                    </div>
                 </div>
             </div>
-            <button id="buyTicketsBtn" class="fortune-buy-btn">10 <i class="fas fa-gem"></i></button>
         </div>
-    </div>
-</div>
+    `;
     const canvas = document.getElementById('wheelCanvas');
     canvas.width = 340; canvas.height = 340;
     renderWheel(0);

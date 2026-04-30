@@ -33,10 +33,6 @@ let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
 let lastBattleLog = null;
-
-let profileTab = 'bonuses';
-let tradeTab = 'shop';
-let ratingTab = 'rating';
 let messagesList = [];
 let unreadMessagesCount = 0;
 

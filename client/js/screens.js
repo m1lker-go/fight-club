@@ -5,6 +5,8 @@
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
+let tradeSubtab = 'chests'; // 'chests', 'coins', 'gems'
+
 // Экранирование HTML для защиты от XSS (дублируем на случай, если helpers.js не загружен)
 function escapeHtml(str) {
     if (!str) return '';
@@ -554,30 +556,24 @@ function renderTrade() {
 
     content.innerHTML = `
         <div class="trade-tabs-container">
-            <button class="trade-tab ${tradeTab === 'shop' ? 'active' : ''}" id="tradeShopBtn">МАГАЗИН</button>
-            <button class="trade-tab ${tradeTab === 'market' ? 'active' : ''}" id="tradeMarketBtn">МАРКЕТ</button>
+            <button class="trade-tab ${tradeSubtab === 'chests' ? 'active' : ''}" data-subtab="chests">🎁 Сундуки</button>
+            <button class="trade-tab ${tradeSubtab === 'coins' ? 'active' : ''}" data-subtab="coins">💰 Монетный двор</button>
+            <button class="trade-tab ${tradeSubtab === 'gems' ? 'active' : ''}" data-subtab="gems">💎 Алмазная лавка</button>
         </div>
-        <div id="tradeContent" style="flex: 1; display: flex; flex-direction: column; min-height: 0;"></div>
+        <div id="tradeSubContent" class="trade-content"></div>
     `;
 
-    const tradeContent = document.getElementById('tradeContent');
-    if (!tradeContent) return;
-
-    document.getElementById('tradeShopBtn')?.addEventListener('click', () => {
-        tradeTab = 'shop';
-        renderTrade();
+    document.querySelectorAll('.trade-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            tradeSubtab = btn.dataset.subtab;
+            renderTrade();
+        });
     });
 
-    document.getElementById('tradeMarketBtn')?.addEventListener('click', () => {
-        tradeTab = 'market';
-        renderTrade();
-    });
-
-    if (tradeTab === 'shop') {
-        renderShop(tradeContent);
-    } else {
-        renderMarket(tradeContent);
-    }
+    const subContent = document.getElementById('tradeSubContent');
+    if (tradeSubtab === 'chests') renderChestsTab(subContent);
+    else if (tradeSubtab === 'coins') renderCoinMint(subContent);
+    else if (tradeSubtab === 'gems') renderGemsShop(subContent);
 }
 
 // ==================== Магазин ====================

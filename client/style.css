@@ -4093,50 +4093,68 @@ input:checked + .slider:before {
 }
 .fortune-wheel-area {
     text-align: center;
-    padding: 10px;
+    padding: 16px;
 }
 #wheelCanvas {
-    width: 400px;
-    height: 400px;
+    width: 320px;
+    height: 320px;
     margin: 0 auto;
     display: block;
-    max-width: 100%;
-    height: auto;
 }
 .fortune-stats {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
     background-color: #2a303c;
-    padding: 8px;
+    padding: 10px;
     font-size: 14px;
     color: #ddd;
-    margin: 10px 10px 0 10px;
+    margin: 0 10px 10px;
     border-radius: 14px;
+    text-align: center;
+}
+.fortune-stats span {
+    display: inline-block;
+}
+.fortune-spin-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 30px;
+    padding: 12px 0;
+    margin: 0 10px 16px;
+    color: #aaa;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    width: calc(100% - 20px);
+    transition: all 0.2s;
+}
+.fortune-spin-btn:hover:not(:disabled) {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.fortune-spin-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 .fortune-buy {
     background-color: #2a303c;
-    margin: 0 10px 10px;
+    margin: 0 10px 16px;
     padding: 12px;
     border-radius: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
 }
-.fortune-buy .buy-title {
+.buy-title {
     font-weight: bold;
-    margin-bottom: 4px;
-    color: #fff;
+    margin-bottom: 10px;
+    color: white;
+    font-size: 14px;
 }
 .buy-controls {
     display: flex;
     align-items: center;
     gap: 12px;
     justify-content: space-between;
-    flex-wrap: wrap;
 }
 .number-input {
-    width: 80px;
+    width: 70px;
     text-align: center;
     background-color: #2f3542;
     border: 1px solid #aaa;
@@ -4157,7 +4175,7 @@ input:checked + .slider:before {
     color: #aaa;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: 0.2s;
 }
 .ticket-btn:hover, .ticket-max-btn:hover {
     background-color: #3a4050;
@@ -4168,7 +4186,7 @@ input:checked + .slider:before {
     background-color: #00aaff;
     border: none;
     border-radius: 14px;
-    padding: 6px 16px;
+    padding: 8px 16px;
     color: white;
     font-weight: bold;
     cursor: pointer;
@@ -4176,28 +4194,8 @@ input:checked + .slider:before {
     align-items: center;
     gap: 6px;
     transition: opacity 0.2s;
+    white-space: nowrap;
 }
 .fortune-buy-btn:hover {
     opacity: 0.85;
-}
-.fortune-spin-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 14px;
-    padding: 12px 0;
-    margin: 0 10px 16px;
-    color: #aaa;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.fortune-spin-btn:hover:not(:disabled) {
-    background-color: #3a4050;
-    border-color: #00aaff;
-    color: #00aaff;
-}
-.fortune-spin-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }

@@ -18,9 +18,14 @@ async function resetDailyTasks() {
             SET attempts_today = 0, 
                 last_attempt_date = CURRENT_DATE
         `);
-         // Сброс лотереи
-        await client.query('UPDATE user_fortune SET free_spins_left = 3, last_reset_date = CURRENT_DATE');
-           console.log('[SCHEDULER] Ежедневный сброс выполнен успешно');
+         // Сброс лотереи   
+await client.query(`
+    UPDATE user_fortune 
+    SET free_spins_left = 3, 
+        purchased_today = 0, 
+        last_reset_date = CURRENT_DATE
+`);
+        console.log('[SCHEDULER] Ежедневный сброс выполнен успешно');
     } catch (err) {
         console.error('[SCHEDULER] Ошибка при ежедневном сбросе:', err);
     } finally {

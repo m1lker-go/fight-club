@@ -452,6 +452,12 @@ function showScreen(screen) {
                 content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
             }
             break;
+            case 'fortune': 
+    if (typeof renderFortune === 'function') renderFortune();
+    break;
+            case 'alchemy': 
+    if (typeof renderAlchemy === 'function') renderAlchemy();
+    break;
         default: renderMain();
     }
 

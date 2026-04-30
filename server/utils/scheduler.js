@@ -39,7 +39,6 @@ async function resetSeason() {
     try {
         await client.query('BEGIN');
 
-        // 1. Получаем всех пользователей с рейтингом > 0, сортируем по убыванию
         const users = await client.query(`
             SELECT id, username, rating
             FROM users
@@ -54,9 +53,8 @@ async function resetSeason() {
             let rewardDiamonds = 0;
             let placeText = '';
 
-            // Обработка одинаковых рейтингов (позиция не меняется, если рейтинг равен предыдущему)
             if (i > 0 && user.rating === users.rows[i-1].rating) {
-                // позиция остаётся прежней
+                // позиция не меняется
             } else {
                 position = i + 1;
             }
@@ -79,32 +77,26 @@ async function resetSeason() {
                 placeText = `${position}-е место`;
             }
 
-            // Начисляем награды сразу
-            if (rewardCoins > 0) {
-                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [rewardCoins, user.id]);
-            }
-            if (rewardDiamonds > 0) {
-                await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [rewardDiamonds, user.id]);
-            }
-
-            // Формируем текст письма (информационное, без кнопки "Забрать")
-            let rewardParts = [];
-            if (rewardCoins > 0) rewardParts.push(`${rewardCoins} монет`);
-            if (rewardDiamonds > 0) rewardParts.push(`${rewardDiamonds} алмазов`);
-            const rewardText = rewardParts.join(' и ');
+            // Формируем текст письма
+            let rewardTextParts = [];
+            if (rewardCoins > 0) rewardTextParts.push(`${rewardCoins} монет`);
+            if (rewardDiamonds > 0) rewardTextParts.push(`${rewardDiamonds} алмазов`);
+            const rewardText = rewardTextParts.join(' и ');
 
             const subject = `🏆 Награда за сезон!`;
             const body = `Поздравляю! Ты пережил этот сезон, сражаясь как тигр! Ты занял ${placeText} в рейтинге.\n\nВы получили: ${rewardText}.`;
 
-            // Вставляем сообщение без привязанной награды (is_claimed = true, чтобы не отображать кнопку)
+            // Вставляем одно сообщение с двумя наградами (если алмазов нет, то только монеты)
             await client.query(
-                `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
-                 VALUES ($1, 'Мастер кошачьих боёв', $2, $3, NULL, NULL, false, true)`,
-                [user.id, subject, body]
+                `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, reward_type2, reward_amount2, is_read, is_claimed)
+                 VALUES ($1, 'Мастер кошачьих боёв', $2, $3, $4, $5, $6, $7, false, false)`,
+                [user.id, subject, body,
+                 rewardCoins > 0 ? 'coins' : null, rewardCoins > 0 ? rewardCoins : null,
+                 rewardDiamonds > 0 ? 'diamonds' : null, rewardDiamonds > 0 ? rewardDiamonds : null]
             );
         }
 
-        // 2. Сброс рейтинга всех пользователей до 1000
+        // Сброс рейтинга
         await client.query('UPDATE users SET rating = 1000');
 
         await client.query('COMMIT');

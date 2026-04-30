@@ -666,7 +666,7 @@ function renderGemsShop(container) {
 // ==================== МАРКЕТ ====================
 
 async function renderMarket(target = null) {
-    const container = target || document.getElementById('tradeContent');
+    const container = target || document.getElementById('content');
     if (!container) return;
     container.innerHTML = `
         <div class="market-page">

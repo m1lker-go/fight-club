@@ -4066,8 +4066,8 @@ input:checked + .slider:before {
     margin-bottom: 8px;
 }
 .pack-image img {
-    width: 64px;
-    height: 64px;
+    width: 100px;
+    height: 100px;
     object-fit: contain;
 }
 

@@ -188,4 +188,29 @@ router.post('/buychest', async (req, res) => {
     }
 });
 
+// Покупка монет за алмазы
+router.post('/buy-coins', async (req, res) => {
+    const { tg_id, user_id, coins, price } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    if (!coins || !price) return res.status(400).json({ error: 'Missing coins or price' });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        if (user.diamonds < price) throw new Error('Not enough diamonds');
+
+        await client.query('UPDATE users SET diamonds = diamonds - $1, coins = coins + $2 WHERE id = $3', [price, coins, user.id]);
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Buy coins error:', e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

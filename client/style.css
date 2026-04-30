@@ -4061,6 +4061,16 @@ input:checked + .slider:before {
     margin-top: 16px;
 }
 
+.pack-image {
+    text-align: center;
+    margin-bottom: 8px;
+}
+.pack-image img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}
+
 
 /* ========== ФОРТУНА ========== */
 

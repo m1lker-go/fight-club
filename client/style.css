@@ -4093,22 +4093,25 @@ input:checked + .slider:before {
 }
 .fortune-wheel-area {
     text-align: center;
-    padding: 16px;
+    padding: 10px;
 }
 #wheelCanvas {
-    width: 280px;
-    height: 280px;
+    width: 400px;
+    height: 400px;
     margin: 0 auto;
     display: block;
+    max-width: 100%;
+    height: auto;
 }
 .fortune-stats {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
+    gap: 20px;
     background-color: #2a303c;
-    padding: 10px;
+    padding: 8px;
     font-size: 14px;
     color: #ddd;
-    margin: 0 10px 10px;
+    margin: 10px 10px 0 10px;
     border-radius: 14px;
 }
 .fortune-buy {
@@ -4118,13 +4121,33 @@ input:checked + .slider:before {
     border-radius: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
-.ticket-selector {
+.fortune-buy .buy-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #fff;
+}
+.buy-controls {
     display: flex;
     align-items: center;
-    gap: 8px;
-    justify-content: center;
+    gap: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.number-input {
+    width: 80px;
+    text-align: center;
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 14px;
+    color: white;
+    padding: 8px 0;
+    font-size: 14px;
+}
+.ticket-buttons-group {
+    display: flex;
+    gap: 6px;
 }
 .ticket-btn, .ticket-max-btn {
     background-color: #2f3542;
@@ -4134,31 +4157,28 @@ input:checked + .slider:before {
     color: #aaa;
     font-weight: bold;
     cursor: pointer;
+    transition: all 0.2s;
 }
-.ticket-max-btn {
-    padding: 6px 16px;
-}
-#ticketCount {
-    width: 60px;
-    text-align: center;
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 14px;
-    color: white;
-    padding: 6px 0;
+.ticket-btn:hover, .ticket-max-btn:hover {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
 }
 .fortune-buy-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
+    background-color: #00aaff;
+    border: none;
     border-radius: 14px;
-    padding: 10px 0;
-    color: #aaa;
+    padding: 6px 16px;
+    color: white;
     font-weight: bold;
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    gap: 6px;
+    transition: opacity 0.2s;
+}
+.fortune-buy-btn:hover {
+    opacity: 0.85;
 }
 .fortune-spin-btn {
     background-color: #2f3542;
@@ -4170,6 +4190,12 @@ input:checked + .slider:before {
     font-weight: bold;
     font-size: 16px;
     cursor: pointer;
+    transition: all 0.2s;
+}
+.fortune-spin-btn:hover:not(:disabled) {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
 }
 .fortune-spin-btn:disabled {
     opacity: 0.5;

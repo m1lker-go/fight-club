@@ -1169,7 +1169,7 @@ router.post('/messages/claim', async (req, res) => {
         const userId = userRes.rows[0].id;
 
         const msgRes = await client.query(
-            'SELECT reward_type, reward_amount, is_claimed FROM user_messages WHERE id = $1 AND user_id = $2',
+            'SELECT reward_type, reward_amount, reward_type2, reward_amount2, is_claimed FROM user_messages WHERE id = $1 AND user_id = $2',
             [message_id, userId]
         );
         if (msgRes.rows.length === 0) return res.status(404).json({ error: 'Message not found' });
@@ -1177,16 +1177,27 @@ router.post('/messages/claim', async (req, res) => {
         if (msg.is_claimed) return res.status(400).json({ error: 'Reward already claimed' });
 
         let rewardText = '';
-        if (msg.reward_type === 'coins') {
-            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_amount, userId]);
-            rewardText = `${msg.reward_amount} монет`;
-        } else if (msg.reward_type === 'diamonds') {
-            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_amount, userId]);
-            rewardText = `${msg.reward_amount} алмазов`;
-        } else if (msg.reward_type === 'exp') {
-            rewardText = `${msg.reward_amount} опыта`;
-        } else {
-            rewardText = `${msg.reward_amount} ${msg.reward_type}`;
+
+        // Начисляем первую награду
+        if (msg.reward_type && msg.reward_amount) {
+            if (msg.reward_type === 'coins') {
+                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_amount, userId]);
+                rewardText += `${msg.reward_amount} монет`;
+            } else if (msg.reward_type === 'diamonds') {
+                await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_amount, userId]);
+                rewardText += `${msg.reward_amount} алмазов`;
+            }
+        }
+
+        // Начисляем вторую награду (если есть)
+        if (msg.reward_type2 && msg.reward_amount2) {
+            if (msg.reward_type2 === 'coins') {
+                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_amount2, userId]);
+                rewardText += (rewardText ? ' и ' : '') + `${msg.reward_amount2} монет`;
+            } else if (msg.reward_type2 === 'diamonds') {
+                await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_amount2, userId]);
+                rewardText += (rewardText ? ' и ' : '') + `${msg.reward_amount2} алмазов`;
+            }
         }
 
         await client.query('UPDATE user_messages SET is_claimed = true WHERE id = $1', [message_id]);

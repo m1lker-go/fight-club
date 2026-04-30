@@ -1,25 +1,94 @@
-// client/js/fortune.js
-let fortuneData = null;
-let selectedTickets = 1;
-let isSpinning = false;
-let currentAngle = 0;
-let prizeResult = null;
-let animFrame = null;
-const SPIN_DURATION = 7000;
+function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
+    const sectorCount = sectors.length;
+    const angleStep = (Math.PI * 2) / sectorCount;
+    const colors = ['#2a303c', '#232833'];
+    for (let i = 0; i < sectorCount; i++) {
+        const start = i * angleStep + angleOffset;
+        const end = (i + 1) * angleStep + angleOffset;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, start, end);
+        ctx.fillStyle = colors[i % 2];
+        ctx.fill();
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-// Сектора: тип, название, количество, метка (буквенная), отображаемый текст
-const sectors = [
-    { type: 'legendary_chest', name: 'Легендарное снаряжение', amount: null, label: 'L', display: 'Снаряжение' },
-    { type: 'coins', name: '1000 монет', amount: 1000, label: 'M', display: '1000' },
-    { type: 'exp', name: '250 опыта', amount: 250, label: 'E', display: '250' },
-    { type: 'coal', name: '50 угля', amount: 50, label: 'C', display: '50' },
-    { type: 'exp', name: '50 опыта', amount: 50, label: 'E', display: '50' },
-    { type: 'coal', name: '10 угля', amount: 10, label: 'C', display: '10' },
-    { type: 'coins', name: '300 монет', amount: 300, label: 'M', display: '300' },
-    { type: 'exp', name: '20 опыта', amount: 20, label: 'coin_icon', display: '20' },  // специальный маркер
-    { type: 'coins', name: '100 монет', amount: 100, label: 'M', display: '100' },
-    { type: 'free_spin', name: 'Билет лотереи', amount: null, label: 'T', display: 'Билет' }
-];
+        const midAngle = start + angleStep / 2;
+        const textRadius = radius * 0.7;
+        const x = centerX + Math.cos(midAngle) * textRadius;
+        const y = centerY + Math.sin(midAngle) * textRadius;
+
+        // Определяем иконку и текст в зависимости от типа сектора
+        let iconChar = '';
+        let displayText = '';
+        let needFaFont = false;
+
+        if (sectors[i].label === 'coin_icon') {
+            // Сектор 20 опыта – используем звезду и слово "опыт"
+            iconChar = '\uf005';      // fa-star
+            displayText = 'опыт 20';
+            needFaFont = true;
+        } else {
+            switch (sectors[i].type) {
+                case 'legendary_chest':
+                    iconChar = '\uf553';  // fa-tshirt
+                    displayText = 'Снаряжение';
+                    needFaFont = true;
+                    break;
+                case 'free_spin':
+                    iconChar = '\uf3ff';  // fa-ticket-alt
+                    displayText = 'Билет';
+                    needFaFont = true;
+                    break;
+                case 'coins':
+                    iconChar = '\uf51e';  // fa-coins
+                    displayText = sectors[i].display;
+                    needFaFont = true;
+                    break;
+                case 'exp':
+                    iconChar = '\uf005';  // fa-star
+                    displayText = sectors[i].display;
+                    needFaFont = true;
+                    break;
+                case 'coal':
+                    iconChar = '\uf1b2';  // fa-cube
+                    displayText = sectors[i].display;
+                    needFaFont = true;
+                    break;
+                default:
+                    iconChar = sectors[i].label;
+                    displayText = sectors[i].display;
+                    needFaFont = false;
+            }
+        }
+
+        if (needFaFont) {
+            // Рисуем иконку FontAwesome
+            ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
+            ctx.fillStyle = '#ddd';
+            ctx.fillText(iconChar, x, y - 12);
+            // Рисуем текст обычным шрифтом
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ccc';
+            ctx.fillText(displayText, x, y + 12);
+        } else {
+            ctx.font = 'bold 18px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ddd';
+            ctx.fillText(iconChar, x, y - 8);
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ccc';
+            ctx.fillText(displayText, x, y + 12);
+        }
+
+        // Дополнительная подпись для легендарного сундука
+        if (sectors[i].type === 'legendary_chest' && sectors[i].label !== 'coin_icon') {
+            ctx.font = '10px "Segoe UI"';
+            ctx.fillStyle = '#aaa';
+            ctx.fillText('лег.', x, y + 26);
+        }
+    }
+}
 
 // Шансы (сумма 100)
 sectors[0].chance = 1;

@@ -70,7 +70,7 @@ function renderMain() {
                     <div class="btn-grid">
                         <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
                         <button class="main-icon-btn" data-screen="market"><i class="fas fa-exchange-alt"></i><span>Маркет</span></button>
-                        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-slot-machine"></i><span>Фортуна</span></button>
+                        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-dice"></i><span>Фортуна</span></button>
                         <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
                         <button class="main-icon-btn" data-screen="alchemy"><i class="fas fa-flask"></i><span>Алхимик</span></button>
                         <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
@@ -1422,7 +1422,7 @@ async function renderMessageDetail(messageId) {
 
 function renderFortune() {
     const content = document.getElementById('content');
-    content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-slot-machine" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Колесо Фортуны</h2><p style="color:#aaa;">Скоро появится! 🎡</p></div>`;
+    content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-dice" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Колесо Фортуны</h2><p style="color:#aaa;">Скоро появится! 🎡</p></div>`;
 }
 
 function renderAlchemy() {

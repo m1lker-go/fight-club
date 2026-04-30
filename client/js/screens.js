@@ -1043,6 +1043,32 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
     }
 }
 
+// ========== ФОРТУНА ==========
+
+function renderFortune() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div style="text-align:center; padding:20px;">
+            <i class="fas fa-slot-machine" style="font-size:48px; color:#00aaff;"></i>
+            <h2 style="color:white;">Колесо Фортуны</h2>
+            <p style="color:#aaa;">Скоро появится! 🎡</p>
+        </div>
+    `;
+}
+
+
+// ========== АЛХИМИЯ ==========
+function renderAlchemy() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <div style="text-align:center; padding:20px;">
+            <i class="fas fa-flask" style="font-size:48px; color:#00aaff;"></i>
+            <h2 style="color:white;">Алхимик</h2>
+            <p style="color:#aaa;">Превращаем ресурсы в ценности! 🧪</p>
+        </div>
+    `;
+}
+
 // ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ==========
 
 async function showItemDetailsModal(item) {
@@ -1974,6 +2000,7 @@ async function loadMessages() {
         return [];
     }
 }
+
 
 async function renderMessages() {
     const content = document.getElementById('content');

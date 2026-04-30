@@ -655,12 +655,61 @@ function renderCoinMint(container) {
 // Вкладка "Алмазная лавка"
 function renderGemsShop(container) {
     container.innerHTML = `
-        <div class="gems-items-list">
-            <div class="gems-item"><div class="gems-item-info"><span>⚔️ Легендарный меч</span><span class="gems-item-price">500 <i class="fas fa-gem"></i></span></div><button class="buy-gem-item" data-item-id="legendary_sword">Купить</button></div>
-            <div class="gems-item"><div class="gems-item-info"><span>🛡️ Щит дракона</span><span class="gems-item-price">300 <i class="fas fa-gem"></i></span></div><button class="buy-gem-item" data-item-id="dragon_shield">Купить</button></div>
-            <div class="shop-note">Больше предметов появится скоро!</div>
+        <div class="gems-shop">
+            <div class="section-title" style="margin: 10px 0 5px 0;">
+                <i class="fas fa-gem"></i> Алмазы
+            </div>
+            <div class="packs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 8px;">
+                <div class="pack-card" data-pack="20" data-price="149">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">20 алмазов</div>
+                    <div class="pack-price">149 ₽</div>
+                    <div class="first-bonus">+50% при первой покупке</div>
+                </div>
+                <div class="pack-card" data-pack="50" data-price="229">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">50 алмазов</div>
+                    <div class="pack-price">229 ₽</div>
+                    <div class="first-bonus">+50% при первой покупке</div>
+                </div>
+                <div class="pack-card" data-pack="100" data-price="399">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">100 алмазов</div>
+                    <div class="pack-price">399 ₽</div>
+                    <div class="first-bonus">+50% при первой покупке</div>
+                </div>
+                <div class="pack-card" data-pack="500" data-price="1199">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">500 алмазов</div>
+                    <div class="pack-price">1199 ₽</div>
+                    <div class="first-bonus">+50% при первой покупке</div>
+                </div>
+                <div class="pack-card" data-pack="2000" data-price="2999">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">2000 алмазов</div>
+                    <div class="pack-price">2999 ₽</div>
+                    <div class="first-bonus">+50% при первой покупке</div>
+                </div>
+                <div class="pack-card" data-pack="5000" data-price="4999">
+                    <div class="pack-icon"><i class="fas fa-gem"></i></div>
+                    <div class="pack-diamonds">5000 алмазов</div>
+                    <div class="pack-price">4999 ₽</div>
+                    <div class="first-bonus">+50% при первой покупке</div>
+                </div>
+            </div>
+            <div class="shop-note">
+                <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.
+            </div>
         </div>
     `;
+
+    container.querySelectorAll('.pack-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const diamonds = card.dataset.pack;
+            const price = card.dataset.price;
+            showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — скоро появится!`, 2000);
+        });
+    });
 }
 
 // ==================== МАРКЕТ ====================

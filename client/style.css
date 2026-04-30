@@ -4106,8 +4106,8 @@ input:checked + .slider:before {
     padding: 16px;
 }
 #wheelCanvas {
-    width: 320px;
-    height: 320px;
+    width: 340px;
+    height: 340px;
     margin: 0 auto;
     display: block;
 }
@@ -4149,14 +4149,25 @@ input:checked + .slider:before {
 .fortune-buy {
     background-color: #2a303c;
     margin: 0 10px 16px;
-    padding: 12px;
     border-radius: 14px;
+    overflow: hidden;
 }
-.buy-title {
+.buy-header {
+    background-color: #1a1f2b;
+    text-align: center;
+    padding: 10px 0;
     font-weight: bold;
-    margin-bottom: 10px;
     color: white;
-    font-size: 14px;
+    font-size: 16px;
+}
+.buy-content {
+    padding: 12px;
+}
+.buy-label {
+    font-size: 12px;
+    color: #ccc;
+    text-align: left;
+    margin-bottom: 8px;
 }
 .buy-controls {
     display: flex;
@@ -4212,13 +4223,15 @@ input:checked + .slider:before {
     background-color: #00aaff;
     border: none;
     border-radius: 14px;
-    padding: 8px 16px;
+    padding: 8px 20px;
+    min-width: 100px;
+    justify-content: center;
     color: white;
     font-weight: bold;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     transition: opacity 0.2s;
     white-space: nowrap;
 }

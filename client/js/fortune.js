@@ -42,32 +42,40 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.stroke();
 
         const midAngle = start + angleStep / 2;
-        const textRadius = radius * 0.7;
+        const textRadius = radius * 0.75; // ближе к краю, но не вплотную
         const x = centerX + Math.cos(midAngle) * textRadius;
         const y = centerY + Math.sin(midAngle) * textRadius;
 
-        if (sectors[i].isSpecial) {
-            // Сектор 20 опыта: звезда, слово "опыт", цифра 20
+        // Общие настройки текста
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        if (sectors[i].label === 'coin_icon') {
+            // Сектор 20 опыта (иконка звезды и слово "опыт")
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
             ctx.fillStyle = '#ffaa00';
             ctx.fillText(sectors[i].icon, x, y - 20);
             ctx.font = '12px "Segoe UI", sans-serif';
             ctx.fillStyle = '#ccc';
-            ctx.fillText('опыт', x, y - 2);
+            ctx.fillText('опыт', x, y);
             ctx.font = 'bold 16px "Segoe UI", sans-serif';
             ctx.fillStyle = 'white';
-            ctx.fillText(sectors[i].display, x, y + 16);
+            ctx.fillText(sectors[i].display, x, y + 20);
         } else {
-            // Обычный сектор
+            // Обычный сектор: иконка и текст
+            // Цвет иконки: для легендарного - жёлтый
+            let iconColor = (sectors[i].type === 'legendary_chest') ? '#f1c40f' : '#ddd';
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
-            ctx.fillStyle = '#ddd';
+            ctx.fillStyle = iconColor;
             ctx.fillText(sectors[i].icon, x, y - 12);
+            
             ctx.font = '12px "Segoe UI", sans-serif';
             ctx.fillStyle = '#ccc';
             let text = sectors[i].display;
             if (sectors[i].type === 'legendary_chest') text = 'Снаряжение';
             else if (sectors[i].type === 'free_spin') text = 'Билет';
             ctx.fillText(text, x, y + 12);
+            
             if (sectors[i].type === 'legendary_chest') {
                 ctx.font = '10px "Segoe UI"';
                 ctx.fillStyle = '#aaa';

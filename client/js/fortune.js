@@ -7,9 +7,9 @@ let prizeResult = null;
 let animFrame = null;
 const SPIN_DURATION = 7000;
 
-// Сектора: тип, название, количество (если есть), иконка FA, отображаемый текст
+// Сектора: тип, название, количество, иконка (класс FA), отображаемый текст
 const sectors = [
-    { type: 'legendary_chest', name: 'Легендарное', amount: null, icon: 'fa-tshirt', display: 'Снаряжение' },
+    { type: 'legendary_chest', name: 'Легендарное снаряжение', amount: null, icon: 'fa-tshirt', display: 'Снаряжение' },
     { type: 'coins', name: '1000 монет', amount: 1000, icon: 'fa-coins', display: '1000' },
     { type: 'exp', name: '250 опыта', amount: 250, icon: 'fa-star', display: '250' },
     { type: 'coal', name: '50 угля', amount: 50, icon: 'fa-cube', display: '50' },
@@ -18,20 +18,20 @@ const sectors = [
     { type: 'coins', name: '300 монет', amount: 300, icon: 'fa-coins', display: '300' },
     { type: 'exp', name: '20 опыта', amount: 20, icon: 'fa-star', display: '20' },
     { type: 'coins', name: '100 монет', amount: 100, icon: 'fa-coins', display: '100' },
-    { type: 'free_spin', name: 'Бесплатный билет', amount: null, icon: 'fa-ticket-alt', display: 'Билет' }
+    { type: 'free_spin', name: 'Билет лотереи', amount: null, icon: 'fa-ticket-alt', display: 'Билет' }
 ];
 
-// Шансы для каждого сектора (сумма 100)
+// Шансы (сумма 100)
 sectors[0].chance = 1;
-sectors[1].chance = 5;
-sectors[2].chance = 10;
-sectors[3].chance = 12;
-sectors[4].chance = 25;
-sectors[5].chance = 15;
-sectors[6].chance = 8;
-sectors[7].chance = 3;
-sectors[8].chance = 20;
-sectors[9].chance = 1;
+sectors[1].chance = 3;
+sectors[2].chance = 3;
+sectors[3].chance = 9;
+sectors[4].chance = 10;
+sectors[5].chance = 18;
+sectors[6].chance = 10;
+sectors[7].chance = 18;
+sectors[8].chance = 18;
+sectors[9].chance = 10;
 
 function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
@@ -53,39 +53,39 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Рисуем иконку и текст, повёрнутые наружу
+        // Поворачиваем всё так, чтобы текст и иконка были ориентированы наружу
         ctx.save();
         ctx.translate(centerX, centerY);
         const midAngle = start + angleStep / 2;
         ctx.rotate(midAngle);
-        const textRadius = radius * 0.65;
-        // Иконка FontAwesome (рисуем вручную, так как canvas не поддерживает шрифты FA, используем символы)
-        // Вместо реальных глифов используем текстовые символы из FontAwesome через обычный шрифт,
-        // но проще – использовать стандартные иконки из набора Unicode или просто текст.
-        // Поскольку FontAwesome – это шрифт, мы можем применить его в canvas, если установлен.
-        // Но для надёжности используем текстовые метки.
-        ctx.font = '24px "Font Awesome 6 Free", "Segoe UI", sans-serif';
+        const textRadius = radius * 0.7;
+        // Иконка (рисуем символ, соответствующий иконке FA)
+        ctx.font = '20px "Font Awesome 6 Free", "Segoe UI", sans-serif';
         ctx.fillStyle = '#ddd';
         let iconChar = '';
-        if (sectors[i].icon === 'fa-coins') iconChar = '💰';
-        else if (sectors[i].icon === 'fa-star') iconChar = '⭐';
-        else if (sectors[i].icon === 'fa-cube') iconChar = '🪨';
-        else if (sectors[i].icon === 'fa-tshirt') iconChar = '👕';
-        else if (sectors[i].icon === 'fa-ticket-alt') iconChar = '🎫';
-        ctx.fillText(iconChar, textRadius - 8, -10);
+        switch (sectors[i].icon) {
+            case 'fa-coins': iconChar = '💰'; break;
+            case 'fa-star': iconChar = '⭐'; break;
+            case 'fa-cube': iconChar = '🪨'; break;
+            case 'fa-tshirt': iconChar = '👕'; break;
+            case 'fa-ticket-alt': iconChar = '🎫'; break;
+            default: iconChar = '?';
+        }
+        ctx.fillText(iconChar, textRadius - 10, -12);
         // Текст (цифра или слово)
-        ctx.font = 'bold 14px "Segoe UI"';
+        ctx.font = 'bold 14px "Segoe UI", sans-serif';
         ctx.fillStyle = '#ccc';
         let displayText = sectors[i].display;
         if (sectors[i].type === 'legendary_chest') displayText = 'Снаряжение';
         else if (sectors[i].type === 'free_spin') displayText = 'Билет';
         else displayText = sectors[i].display;
-        ctx.fillText(displayText, textRadius - 20, 12);
-        // Дополнительная надпись для легендарного сундука
+        ctx.fillText(displayText, textRadius - 15, 12);
+
+        // Дополнительная подпись "Легендарное" для первого сектора
         if (sectors[i].type === 'legendary_chest') {
             ctx.font = '10px "Segoe UI"';
             ctx.fillStyle = '#aaa';
-            ctx.fillText('Легенд.', textRadius - 20, 28);
+            ctx.fillText('Легендарное', textRadius - 20, 28);
         }
         ctx.restore();
     }
@@ -100,7 +100,7 @@ function renderWheel(angleOffset) {
     const centerY = size/2;
     const radius = size/2 - 15;
     drawWheel(ctx, centerX, centerY, radius, angleOffset);
-    // Ярко-голубой указатель
+    // Указатель
     ctx.beginPath();
     ctx.moveTo(centerX - 12, 12);
     ctx.lineTo(centerX + 12, 12);
@@ -155,11 +155,11 @@ function updateFortuneUI() {
     if (spinBtn) spinBtn.disabled = (total === 0);
     const remainingDaily = 100 - (fortuneData.purchasedToday || 0);
     const maxBuy = Math.min(100, remainingDaily);
-    const ticketInput = document.getElementById('ticketCount');
-    if (ticketInput) {
-        let val = parseInt(ticketInput.value) || 1;
+    const input = document.getElementById('ticketCount');
+    if (input) {
+        let val = parseInt(input.value) || 1;
         val = Math.min(Math.max(val, 1), maxBuy);
-        if (val !== ticketInput.value) ticketInput.value = val;
+        if (val !== parseInt(input.value)) input.value = val;
         selectedTickets = val;
     }
     const buyBtn = document.getElementById('buyTicketsBtn');
@@ -288,13 +288,22 @@ function showFortuneRules() {
     modalTitle.innerText = 'Правила';
     modalBody.innerHTML = `
         <div style="padding: 10px;">
-            <p>🎫 Каждый день даётся <strong>3 бесплатных билета</strong>.</p>
-            <p>💰 Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).</p>
-            <p>🎡 Шансы выигрыша:</p>
+            <p><i class="fas fa-ticket-alt"></i> Каждый день даётся <strong>3 бесплатных билета</strong>.</p>
+            <p><i class="fas fa-gem"></i> Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).</p>
+            <p><i class="fas fa-chart-simple"></i> Шансы выигрыша:</p>
             <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
                 <thead><tr><th>Награда</th><th>Шанс</th></tr></thead>
                 <tbody>
-                    ${sectors.map(s => `<tr><td>${s.name}</td><td>${s.chance}%</td></tr>`).join('')}
+                    <tr><td><i class="fas fa-tshirt"></i> Легендарное снаряжение</td><td>1%</td></tr>
+                    <tr><td><i class="fas fa-ticket-alt"></i> Билет лотереи</td><td>10%</td></tr>
+                    <tr><td><i class="fas fa-coins"></i> 100 монет</td><td>18%</td></tr>
+                    <tr><td><i class="fas fa-coins"></i> 300 монет</td><td>10%</td></tr>
+                    <tr><td><i class="fas fa-coins"></i> 1000 монет</td><td>3%</td></tr>
+                    <tr><td><i class="fas fa-star"></i> 20 опыта</td><td>18%</td></tr>
+                    <tr><td><i class="fas fa-star"></i> 50 опыта</td><td>10%</td></tr>
+                    <tr><td><i class="fas fa-star"></i> 250 опыта</td><td>3%</td></tr>
+                    <tr><td><i class="fas fa-cube"></i> 10 угля</td><td>18%</td></tr>
+                    <tr><td><i class="fas fa-cube"></i> 50 угля</td><td>9%</td></tr>
                 </tbody>
             </table>
         </div>
@@ -319,17 +328,19 @@ function renderFortune() {
                 <canvas id="wheelCanvas" width="320" height="320"></canvas>
             </div>
             <div class="fortune-stats">
-                <span>🎟️ Билеты лотереи: <strong id="totalSpinsCount">0</strong></span>
+                <span><i class="fas fa-ticket-alt"></i> Билеты лотереи: <strong id="totalSpinsCount">0</strong></span>
             </div>
             <button id="spinBtn" class="fortune-spin-btn">Испытать удачу</button>
             <div class="fortune-buy">
                 <div class="buy-title">Покупка билетов</div>
                 <div class="buy-controls">
-                    <input type="number" id="ticketCount" value="1" min="1" max="100" class="number-input">
-                    <div class="ticket-buttons-group">
-                        <button id="ticketMinus" class="ticket-btn">-</button>
-                        <button id="ticketPlus" class="ticket-btn">+</button>
-                        <button id="ticketMax" class="ticket-max-btn">Max</button>
+                    <div class="input-group">
+                        <input type="number" id="ticketCount" value="1" min="1" max="100" class="number-input">
+                        <div class="ticket-buttons-group">
+                            <button id="ticketMinus" class="ticket-btn">-</button>
+                            <button id="ticketPlus" class="ticket-btn">+</button>
+                            <button id="ticketMax" class="ticket-max-btn">Max</button>
+                        </div>
                     </div>
                     <button id="buyTicketsBtn" class="fortune-buy-btn">10 <i class="fas fa-gem"></i></button>
                 </div>

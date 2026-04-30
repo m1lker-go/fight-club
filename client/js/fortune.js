@@ -7,7 +7,7 @@ let currentAngle = 0;
 let prizeResult = null;
 const SPIN_DURATION = 7000;
 
-// конфигурация секторов
+// конфигурация секторов (порядок важен для соответствия шансам)
 const sectors = [
     { name: 'Легенд. сундук', type: 'legendary_chest', amount: null, chance: 1, color: '#f1c40f', icon: '🎁' },
     { name: '1000 монет', type: 'coins', amount: 1000, chance: 5, color: '#ffaa00', icon: '💰' },
@@ -41,18 +41,17 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Текст и иконка
+        // Текст и иконка – поворачиваем так, чтобы они были направлены наружу
         ctx.save();
         ctx.translate(centerX, centerY);
-        ctx.rotate(start + angleStep / 2);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        const midAngle = start + angleStep / 2;
+        ctx.rotate(midAngle);
         const textRadius = radius * 0.7;
-        // Иконка
+        // Иконка (чуть выше)
+        ctx.font = '18px "Segoe UI"';
         ctx.fillStyle = '#ddd';
-        ctx.font = '16px "Segoe UI"';
-        ctx.fillText(sectors[i].icon, textRadius - 10, -8);
-        // Текст (цифра)
+        ctx.fillText(sectors[i].icon, textRadius - 8, -5);
+        // Текст (цифра или слово)
         let displayText = '';
         if (sectors[i].type === 'coins') displayText = `${sectors[i].amount}`;
         else if (sectors[i].type === 'exp') displayText = `${sectors[i].amount}`;
@@ -73,14 +72,14 @@ function renderWheel(angleOffset) {
     const size = canvas.width;
     const centerX = size/2;
     const centerY = size/2;
-    const radius = size/2 - 15;
+    const radius = size/2 - 20;
     drawWheel(ctx, centerX, centerY, radius, angleOffset);
-    // указатель (треугольник сверху)
+    // Ярко-голубой указатель сверху
     ctx.beginPath();
-    ctx.moveTo(centerX - 12, 12);
-    ctx.lineTo(centerX + 12, 12);
-    ctx.lineTo(centerX, 28);
-    ctx.fillStyle = '#aaa';
+    ctx.moveTo(centerX - 14, 14);
+    ctx.lineTo(centerX + 14, 14);
+    ctx.lineTo(centerX, 32);
+    ctx.fillStyle = '#00aaff';
     ctx.fill();
 }
 
@@ -137,11 +136,7 @@ function updateFortuneUI() {
         ticketInput.value = val;
         selectedTickets = val;
     }
-    const buyBtn = document.getElementById('buyTicketsBtn');
-    if (buyBtn) {
-        const totalDiamonds = selectedTickets * 10;
-        buyBtn.innerHTML = `<i class="fas fa-gem"></i> Купить ${selectedTickets} билет(ов) за ${totalDiamonds} алмазов`;
-    }
+    // Кнопка "10 алмазов" – меняем текст динамически? Нет, она всегда 10 за билет.
 }
 
 function changeTicketCount(delta) {
@@ -152,7 +147,6 @@ function changeTicketCount(delta) {
     if (newVal !== selectedTickets) {
         selectedTickets = newVal;
         document.getElementById('ticketCount').value = selectedTickets;
-        updateFortuneUI();
     }
 }
 
@@ -160,7 +154,6 @@ function setMaxTickets() {
     const remaining = 100 - (fortuneData?.purchasedToday || 0);
     selectedTickets = Math.min(100, remaining);
     document.getElementById('ticketCount').value = selectedTickets;
-    updateFortuneUI();
 }
 
 async function buyTickets() {
@@ -269,7 +262,7 @@ function showFortuneRules() {
             <p>💰 Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).</p>
             <p>🎡 Шансы выигрыша:</p>
             <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-                <tr><th>Награда</th><th>Шанс</th></tr>
+                <table><th>Награда</th><th>Шанс</th></tr>
                 ${sectors.map(s => `<tr><td>${s.icon} ${s.name}</td><td>${s.chance}%</td>`).join('')}
             </table>
         </div>
@@ -290,31 +283,31 @@ function renderFortune() {
                 <h2>Колесо Фортуны</h2>
                 <i class="fas fa-circle-question" id="fortuneHelpBtn"></i>
             </div>
-            <div class="fortune-wheel-area">
-                <canvas id="wheelCanvas" width="320" height="320"></canvas>
+            <div class="fortune-wheel-area" style="text-align: center; padding: 10px;">
+                <canvas id="wheelCanvas" width="400" height="400"></canvas>
             </div>
             <div class="fortune-stats" style="display: flex; justify-content: center; gap: 20px; background: #2a303c; padding: 8px; border-radius: 14px; margin: 10px;">
                 <div>🎟️ Билеты лотереи: <span id="totalSpinsCount">0</span></div>
             </div>
             <div class="fortune-buy" style="background: #2a303c; border-radius: 14px; padding: 12px; margin: 0 10px 10px;">
-                <div style="font-weight: bold; margin-bottom: 8px;">Купить билет лотереи 🎟️</div>
+                <div style="font-weight: bold; margin-bottom: 8px;">Количество</div>
                 <div style="display: flex; align-items: center; gap: 15px; justify-content: space-between;">
+                    <input type="number" id="ticketCount" value="1" min="1" max="100" style="width: 80px; text-align: center; background: #2f3542; border: 1px solid #aaa; border-radius: 14px; color: white; padding: 8px 0;">
                     <div style="display: flex; gap: 5px;">
-                        <div style="display: flex; flex-direction: column; gap: 0;">
-                            <button id="ticketPlus" class="ticket-btn" style="border-radius: 14px 14px 0 0; padding: 8px 12px;">+</button>
-                            <button id="ticketMinus" class="ticket-btn" style="border-radius: 0 0 14px 14px; padding: 8px 12px;">-</button>
-                        </div>
-                        <button id="ticketMax" class="ticket-max-btn" style="padding: 8px 16px;">MAX</button>
+                        <button id="ticketMinus" class="ticket-btn" style="padding: 8px 12px; border-radius: 14px;">-</button>
+                        <button id="ticketPlus" class="ticket-btn" style="padding: 8px 12px; border-radius: 14px;">+</button>
+                        <button id="ticketMax" class="ticket-max-btn" style="padding: 8px 16px;">Max</button>
                     </div>
-                    <input type="number" id="ticketCount" value="1" min="1" max="100" style="width: 70px; text-align: center; background: #2f3542; border: 1px solid #aaa; border-radius: 14px; color: white; padding: 8px 0;">
-                    <button id="buyTicketsBtn" class="fortune-buy-btn" style="padding: 8px 16px;">Купить</button>
+                    <button id="buyTicketsBtn" class="fortune-buy-btn" style="background-color: #00aaff; border: none; border-radius: 14px; padding: 8px 16px; color: white; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                        10 <i class="fas fa-gem"></i>
+                    </button>
                 </div>
             </div>
             <button id="spinBtn" class="fortune-spin-btn" style="margin: 0 10px 16px;">Испытать удачу</button>
         </div>
     `;
     const canvas = document.getElementById('wheelCanvas');
-    canvas.width = 320; canvas.height = 320;
+    canvas.width = 400; canvas.height = 400;
     renderWheel(0);
     loadFortuneStatus();
     document.getElementById('fortuneHelpBtn').addEventListener('click', showFortuneRules);
@@ -329,7 +322,7 @@ function renderFortune() {
         const maxBuy = Math.min(100, remaining);
         val = Math.min(Math.max(val || 1, 1), maxBuy);
         selectedTickets = val;
-        updateFortuneUI();
+        document.getElementById('ticketCount').value = selectedTickets;
     });
 }
 

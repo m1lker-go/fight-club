@@ -320,4 +320,58 @@ function generateBot(playerLevel, isCybercat = false, forcedClass = null, forced
     return generateNormalBot(playerLevel, forcedClass, forcedSubclass);
 }
 
-module.exports = { generateBot, generateMouseBoss };
+// Функция для генерации предмета по редкости (используется в адвенте)
+function generateItemByRarity(rarity, ownerClass = null) {
+    const classes = ['warrior', 'assassin', 'mage'];
+    const chosenClass = ownerClass || classes[Math.floor(Math.random() * classes.length)];
+    const types = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const namesArray = itemNames[chosenClass][type][rarity];
+    const name = namesArray[Math.floor(Math.random() * namesArray.length)];
+
+    const possibleStats = ['atk', 'def', 'hp', 'spd', 'crit', 'crit_dmg', 'agi', 'int', 'vamp', 'reflect'];
+    const stat1 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+    const stat2 = possibleStats[Math.floor(Math.random() * possibleStats.length)];
+
+    const item = {
+        name: name,
+        type: type,
+        rarity: rarity,
+        class_restriction: 'any',
+        owner_class: chosenClass,
+        atk_bonus: 0,
+        def_bonus: 0,
+        hp_bonus: 0,
+        spd_bonus: 0,
+        crit_bonus: 0,
+        crit_dmg_bonus: 0,
+        agi_bonus: 0,
+        int_bonus: 0,
+        vamp_bonus: 0,
+        reflect_bonus: 0
+    };
+
+    const bonus = fixedBonuses[rarity];
+
+    const addBonus = (stat) => {
+        switch (stat) {
+            case 'atk': item.atk_bonus += bonus.atk; break;
+            case 'def': item.def_bonus += bonus.def; break;
+            case 'hp': item.hp_bonus += bonus.hp; break;
+            case 'spd': item.spd_bonus += bonus.spd; break;
+            case 'crit': item.crit_bonus += bonus.crit; break;
+            case 'crit_dmg': item.crit_dmg_bonus += bonus.crit_dmg; break;
+            case 'agi': item.agi_bonus += bonus.agi; break;
+            case 'int': item.int_bonus += bonus.int; break;
+            case 'vamp': item.vamp_bonus += bonus.vamp; break;
+            case 'reflect': item.reflect_bonus += bonus.reflect; break;
+        }
+    };
+
+    addBonus(stat1);
+    addBonus(stat2);
+
+    return item;
+}
+
+module.exports = {generateBot,generateMouseBoss,generateItemByRarity};

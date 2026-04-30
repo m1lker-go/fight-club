@@ -535,7 +535,9 @@ function renderTrade() {
 }
 
 // Вкладка "Сундуки"
+
 async function renderChestsTab(container) {
+    if (!container) return;
     container.innerHTML = `
         <div class="chest-table">
             <div class="chest-row" data-chest="common">
@@ -566,7 +568,7 @@ async function renderChestsTab(container) {
         </div>
     `;
 
- async function updateCommonChestPrice() {
+    async function updateCommonChestPrice() {
         try {
             const res = await window.apiRequest('/player/freechest');
             const data = await res.json();
@@ -588,7 +590,9 @@ async function renderChestsTab(container) {
 
     updateCommonChestPrice();
 
-    for (const btn of container.querySelectorAll('.chest-buy-btn')) {
+    // Привязываем обработчики к кнопкам внутри container
+    const buyButtons = container.querySelectorAll('.chest-buy-btn');
+    for (const btn of buyButtons) {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const chest = btn.dataset.chest;
@@ -606,7 +610,7 @@ async function renderChestsTab(container) {
                 if (typeof refreshTasksData === 'function') await refreshTasksData();
                 if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
                 if (chest === 'common') updateCommonChestPrice();
-                // Обновляем задание "Счастливчик" (сервер уже делает это, но для надёжности оставим клиентский вызов)
+                // Обновляем задание "Счастливчик"
                 try {
                     await window.apiRequest('/tasks/daily/update/chest', {
                         method: 'POST',

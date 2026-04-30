@@ -42,46 +42,71 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.stroke();
 
         const midAngle = start + angleStep / 2;
-        const textRadius = radius * 0.75; // ближе к краю, но не вплотную
+        const textRadius = radius * 0.75;
         const x = centerX + Math.cos(midAngle) * textRadius;
         const y = centerY + Math.sin(midAngle) * textRadius;
 
-        // Общие настройки текста
+        ctx.save();
+        ctx.translate(x, y);
+        // Поворачиваем так, чтобы текст был направлен наружу (от центра)
+        let rot = midAngle + Math.PI / 2;
+        // Если угол смотрит вниз (текст был бы вверх ногами), переворачиваем
+        if (midAngle > Math.PI/2 && midAngle < 3*Math.PI/2) {
+            rot += Math.PI;
+        }
+        ctx.rotate(rot);
+
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        
-        if (sectors[i].label === 'coin_icon') {
-            // Сектор 20 опыта (иконка звезды и слово "опыт")
+
+        if (sectors[i].isSpecial) {
+            // Сектор 20 опыта: иконка звезды, слово "опыт", цифра 20
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
             ctx.fillStyle = '#ffaa00';
-            ctx.fillText(sectors[i].icon, x, y - 20);
+            ctx.fillText(sectors[i].icon, 0, -20);
             ctx.font = '12px "Segoe UI", sans-serif';
             ctx.fillStyle = '#ccc';
-            ctx.fillText('опыт', x, y);
+            ctx.fillText('опыт', 0, 0);
             ctx.font = 'bold 16px "Segoe UI", sans-serif';
             ctx.fillStyle = 'white';
-            ctx.fillText(sectors[i].display, x, y + 20);
+            ctx.fillText(sectors[i].display, 0, 20);
         } else {
-            // Обычный сектор: иконка и текст
-            // Цвет иконки: для легендарного - жёлтый
-            let iconColor = (sectors[i].type === 'legendary_chest') ? '#f1c40f' : '#ddd';
-            ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
-            ctx.fillStyle = iconColor;
-            ctx.fillText(sectors[i].icon, x, y - 12);
-            
-            ctx.font = '12px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#ccc';
-            let text = sectors[i].display;
-            if (sectors[i].type === 'legendary_chest') text = 'Снаряжение';
-            else if (sectors[i].type === 'free_spin') text = 'Билет';
-            ctx.fillText(text, x, y + 12);
-            
+            let iconChar = sectors[i].icon;
+            let displayText = '';
             if (sectors[i].type === 'legendary_chest') {
-                ctx.font = '10px "Segoe UI"';
-                ctx.fillStyle = '#aaa';
-                ctx.fillText('лег.', x, y + 26);
+                // Только иконка, текст не выводим
+                displayText = '';
+            } else if (sectors[i].type === 'free_spin') {
+                displayText = 'Билет';
+            } else {
+                displayText = sectors[i].display;
+            }
+
+            // Иконка
+            ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
+            if (sectors[i].type === 'legendary_chest') {
+                ctx.fillStyle = '#f1c40f';
+            } else {
+                ctx.fillStyle = '#ddd';
+            }
+            ctx.fillText(iconChar, 0, -12);
+            
+            // Текст (если есть)
+            if (displayText) {
+                ctx.font = '12px "Segoe UI", sans-serif';
+                ctx.fillStyle = '#ccc';
+                ctx.fillText(displayText, 0, 12);
+                if (sectors[i].type === 'legendary_chest') {
+                    ctx.font = '10px "Segoe UI"';
+                    ctx.fillStyle = '#aaa';
+                    ctx.fillText('лег.', 0, 26);
+                }
+            } else {
+                // Для легендарного сундука без текста, иконка смещается вниз
+                ctx.fillText(iconChar, 0, 0);
             }
         }
+        ctx.restore();
     }
 }
 

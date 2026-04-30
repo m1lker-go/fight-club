@@ -16,11 +16,7 @@ const sectors = [
     { type: 'exp', name: '50 опыта', amount: 50, label: 'E', display: '50' },
     { type: 'coal', name: '10 угля', amount: 10, label: 'C', display: '10' },
     { type: 'coins', name: '300 монет', amount: 300, label: 'M', display: '300' },
-    { type: 'exp', name: '20 опыта', amount: 20, label: 
-        '<div style="display: flex; flex-direction: column; align-items: center;">
-    <i class="fas fa-coins" style="color: #00aaff; font-size: 20px;"></i>
-    <span style="color: white; font-size: 12px;">монет</span>
-    <span style="color: white; font-size: 16px; font-weight: bold;">20</span></div>'' },
+    { type: 'exp', name: '20 опыта', amount: 20, label: 'coin_icon', display: '20' },  // специальный маркер
     { type: 'coins', name: '100 монет', amount: 100, label: 'M', display: '100' },
     { type: 'free_spin', name: 'Билет лотереи', amount: null, label: 'T', display: 'Билет' }
 ];
@@ -57,32 +53,46 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Рисуем метку (букву) и текст без вращения – горизонтально
         const midAngle = start + angleStep / 2;
         const textRadius = radius * 0.7;
         const x = centerX + Math.cos(midAngle) * textRadius;
         const y = centerY + Math.sin(midAngle) * textRadius;
-        
-        // Метка (буква)
-        ctx.font = 'bold 18px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#ddd';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(sectors[i].label, x, y - 8);
-        
-        // Текст (цифра или слово)
-        ctx.font = '12px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#ccc';
-        let displayText = sectors[i].display;
-        if (sectors[i].type === 'legendary_chest') displayText = 'L';
-        else if (sectors[i].type === 'free_spin') displayText = 'Билет';
-        ctx.fillText(displayText, x, y + 12);
 
-        // Дополнительная подпись для легендарного сундука
-        if (sectors[i].type === 'legendary_chest') {
-            ctx.font = '10px "Segoe UI"';
-            ctx.fillStyle = '#aaa';
-            ctx.fillText('лег.', x, y + 26);
+        // Для сектора "20 опыта" рисуем иконку монеты и три строки
+        if (sectors[i].type === 'exp' && sectors[i].amount === 20) {
+            ctx.font = '20px "Font Awesome 6 Free", "Segoe UI", sans-serif';
+            ctx.fillStyle = '#00aaff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('💰', x, y - 20);  // иконка монеты
+
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ccc';
+            ctx.fillText('монет', x, y - 2);
+
+            ctx.font = 'bold 16px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.fillText('20', x, y + 16);
+        } else {
+            // Обычная метка (буква)
+            ctx.font = 'bold 18px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ddd';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(sectors[i].label, x, y - 8);
+
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ccc';
+            let displayText = sectors[i].display;
+            if (sectors[i].type === 'legendary_chest') displayText = 'L';
+            else if (sectors[i].type === 'free_spin') displayText = 'Билет';
+            ctx.fillText(displayText, x, y + 12);
+
+            if (sectors[i].type === 'legendary_chest') {
+                ctx.font = '10px "Segoe UI"';
+                ctx.fillStyle = '#aaa';
+                ctx.fillText('лег.', x, y + 26);
+            }
         }
     }
 }
@@ -92,11 +102,10 @@ function renderWheel(angleOffset) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const size = canvas.width;
-    const centerX = size/2;
-    const centerY = size/2;
-    const radius = size/2 - 15;
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size / 2 - 15;
     drawWheel(ctx, centerX, centerY, radius, angleOffset);
-    // Указатель
     ctx.beginPath();
     ctx.moveTo(centerX - 12, 14);
     ctx.lineTo(centerX + 12, 14);
@@ -284,9 +293,9 @@ function showFortuneRules() {
     modalTitle.innerText = 'Правила';
     modalBody.innerHTML = `
         <div style="padding: 10px;">
-            <p>🎫 Каждый день даётся <strong>3 бесплатных билета</strong>.</p>
-            <p>💰 Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).</p>
-            <p>🎡 Шансы выигрыша:</p>
+            <p><i class="fas fa-ticket-alt"></i> Каждый день даётся <strong>3 бесплатных билета</strong>.</p>
+            <p><i class="fas fa-gem"></i> Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).</p>
+            <p><i class="fas fa-chart-simple"></i> Шансы выигрыша:</p>
             <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
                 <thead><tr><th>Награда</th><th>Шанс</th></tr></thead>
                 <tbody>
@@ -324,7 +333,7 @@ function renderFortune() {
                 <canvas id="wheelCanvas" width="340" height="340"></canvas>
             </div>
             <div class="fortune-stats">
-                <span>🎟️ Билеты лотереи: <strong id="totalSpinsCount">0</strong></span>
+                <span><i class="fas fa-ticket-alt"></i> Билеты лотереи: <strong id="totalSpinsCount">0</strong></span>
             </div>
             <button id="spinBtn" class="fortune-spin-btn">Испытать удачу</button>
             <div class="fortune-buy">

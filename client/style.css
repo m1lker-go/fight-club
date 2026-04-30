@@ -4060,3 +4060,118 @@ input:checked + .slider:before {
     padding: 8px;
     margin-top: 16px;
 }
+
+
+/* ========== ФОРТУНА ========== */
+
+
+/* ========== КОЛЕСО ФОРТУНЫ ========== */
+.fortune-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #232833;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.fortune-header {
+    background-color: #1a1f2b;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+}
+.fortune-header h2 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+}
+.fortune-header i {
+    color: #00aaff;
+    font-size: 24px;
+    cursor: pointer;
+}
+.fortune-wheel-area {
+    text-align: center;
+    padding: 16px;
+}
+#wheelCanvas {
+    width: 280px;
+    height: 280px;
+    margin: 0 auto;
+    display: block;
+}
+.fortune-stats {
+    display: flex;
+    justify-content: space-around;
+    background-color: #2a303c;
+    padding: 10px;
+    font-size: 14px;
+    color: #ddd;
+    margin: 0 10px 10px;
+    border-radius: 14px;
+}
+.fortune-buy {
+    background-color: #2a303c;
+    margin: 0 10px 10px;
+    padding: 12px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ticket-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+.ticket-btn, .ticket-max-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 14px;
+    padding: 6px 12px;
+    color: #aaa;
+    font-weight: bold;
+    cursor: pointer;
+}
+.ticket-max-btn {
+    padding: 6px 16px;
+}
+#ticketCount {
+    width: 60px;
+    text-align: center;
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 14px;
+    color: white;
+    padding: 6px 0;
+}
+.fortune-buy-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 14px;
+    padding: 10px 0;
+    color: #aaa;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.fortune-spin-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 14px;
+    padding: 12px 0;
+    margin: 0 10px 16px;
+    color: #aaa;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+}
+.fortune-spin-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

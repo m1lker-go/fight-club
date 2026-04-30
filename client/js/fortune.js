@@ -48,19 +48,13 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
 
         ctx.save();
         ctx.translate(x, y);
-        // Поворачиваем так, чтобы текст был направлен наружу (от центра)
-        let rot = midAngle + Math.PI / 2;
-        // Если угол смотрит вниз (текст был бы вверх ногами), переворачиваем
-        if (midAngle > Math.PI/2 && midAngle < 3*Math.PI/2) {
-            rot += Math.PI;
-        }
-        ctx.rotate(rot);
-
+        // Только один поворот – низ текста смотрит на центр
+        ctx.rotate(midAngle + Math.PI / 2);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
         if (sectors[i].isSpecial) {
-            // Сектор 20 опыта: иконка звезды, слово "опыт", цифра 20
+            // Сектор 20 опыта
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
             ctx.fillStyle = '#ffaa00';
             ctx.fillText(sectors[i].icon, 0, -20);
@@ -74,7 +68,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
             let iconChar = sectors[i].icon;
             let displayText = '';
             if (sectors[i].type === 'legendary_chest') {
-                // Только иконка, текст не выводим
                 displayText = '';
             } else if (sectors[i].type === 'free_spin') {
                 displayText = 'Билет';
@@ -82,7 +75,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
                 displayText = sectors[i].display;
             }
 
-            // Иконка
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
             if (sectors[i].type === 'legendary_chest') {
                 ctx.fillStyle = '#f1c40f';
@@ -91,19 +83,10 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
             }
             ctx.fillText(iconChar, 0, -12);
             
-            // Текст (если есть)
             if (displayText) {
                 ctx.font = '12px "Segoe UI", sans-serif';
                 ctx.fillStyle = '#ccc';
                 ctx.fillText(displayText, 0, 12);
-                if (sectors[i].type === 'legendary_chest') {
-                    ctx.font = '10px "Segoe UI"';
-                    ctx.fillStyle = '#aaa';
-                    ctx.fillText('лег.', 0, 26);
-                }
-            } else {
-                // Для легендарного сундука без текста, иконка смещается вниз
-                ctx.fillText(iconChar, 0, 0);
             }
         }
         ctx.restore();

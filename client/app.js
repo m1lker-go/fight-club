@@ -453,6 +453,7 @@ function showScreen(screen) {
             }
             break;
             case 'fortune': 
+            case 'market': renderMarket(); break;
     if (typeof renderFortune === 'function') renderFortune();
     break;
             case 'alchemy': 

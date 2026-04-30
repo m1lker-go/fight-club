@@ -412,51 +412,39 @@ function showScreen(screen) {
             .catch(e => console.warn('Не удалось обновить задание профиля:', e));
     }
 
-    switch (screen) {
-        case 'main': renderMain(); break;
-        case 'equip': renderEquip(); break;
-        case 'trade': renderTrade(); break;
-        case 'messages': renderMessages(); break;   
-        case 'forge':
-            if (typeof renderForge === 'function') {
-                renderForge();
-            } else {
-                renderForgeFallback();
-            }
-            break;case 'tasks': 
-    renderTasks();
-    if (typeof loadDailyTasks === 'function') {
-        loadDailyTasks();
-    }
-    break;
-        case 'rating': renderRating(); break;
-        case 'profile': renderProfile(); break;
-        case 'tower': 
-            if (typeof loadTowerStatus === 'function') {
-                loadTowerStatus();
-            } else {
-                const script = document.createElement('script');
-                script.src = 'js/tower.js?v=1';
-                script.onload = () => loadTowerStatus();
-                document.head.appendChild(script);
-            }
-            break;
-        case 'settings':
-            if (typeof renderSettings === 'function') {
-                renderSettings();
-            } else {
-                content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
-            }
-            break;
-            case 'fortune': 
-            case 'market': renderMarket(); break;
-    if (typeof renderFortune === 'function') renderFortune();
-    break;
-            case 'alchemy': 
-    if (typeof renderAlchemy === 'function') renderAlchemy();
-    break;
-        default: renderMain();
-    }
+switch (screen) {
+    case 'main': renderMain(); break;
+    case 'equip': renderEquip(); break;
+    case 'trade': renderTrade(); break;
+    case 'messages': renderMessages(); break;
+    case 'forge':
+        if (typeof renderForge === 'function') renderForge();
+        else renderForgeFallback();
+        break;
+    case 'tasks':
+        renderTasks();
+        if (typeof loadDailyTasks === 'function') loadDailyTasks();
+        break;
+    case 'rating': renderRating(); break;
+    case 'profile': renderProfile(); break;
+    case 'tower':
+        if (typeof loadTowerStatus === 'function') loadTowerStatus();
+        else {
+            const script = document.createElement('script');
+            script.src = 'js/tower.js?v=1';
+            script.onload = () => loadTowerStatus();
+            document.head.appendChild(script);
+        }
+        break;
+    case 'settings':
+        if (typeof renderSettings === 'function') renderSettings();
+        else content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
+        break;
+    case 'market': renderMarket(); break;
+    case 'fortune': renderFortune(); break;
+    case 'alchemy': renderAlchemy(); break;
+    default: renderMain();
+}
 
     if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
 }

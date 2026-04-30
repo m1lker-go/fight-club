@@ -4110,8 +4110,9 @@ input:checked + .slider:before {
     border-radius: 14px;
     text-align: center;
 }
-.fortune-stats span {
-    display: inline-block;
+.fortune-stats i {
+    color: #00aaff;
+    margin-right: 6px;
 }
 .fortune-spin-btn {
     background-color: #2f3542;
@@ -4150,32 +4151,47 @@ input:checked + .slider:before {
 .buy-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
     justify-content: space-between;
+    gap: 12px;
+}
+.input-group {
+    display: flex;
+    flex: 2;
 }
 .number-input {
     width: 70px;
     text-align: center;
     background-color: #2f3542;
     border: 1px solid #aaa;
-    border-radius: 14px;
+    border-radius: 14px 0 0 14px;
     color: white;
     padding: 8px 0;
     font-size: 14px;
+    border-right: none;
 }
 .ticket-buttons-group {
     display: flex;
-    gap: 6px;
 }
 .ticket-btn, .ticket-max-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
-    border-radius: 14px;
-    padding: 6px 12px;
     color: #aaa;
     font-weight: bold;
     cursor: pointer;
+    padding: 8px 12px;
+    font-size: 14px;
     transition: 0.2s;
+}
+.ticket-btn {
+    border-left: none;
+    border-right: none;
+}
+.ticket-max-btn {
+    border-left: none;
+    border-radius: 0 14px 14px 0;
+}
+.ticket-btn:first-of-type {
+    border-left: 1px solid #aaa;
 }
 .ticket-btn:hover, .ticket-max-btn:hover {
     background-color: #3a4050;

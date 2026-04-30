@@ -529,6 +529,8 @@ window.renderTasks = renderTasks;
 window.renderSkins = renderSkins;
 window.renderSkills = renderSkills;
 window.renderProfileBonuses = renderProfileBonuses;
+window.renderFortune = renderFortune;
+window.renderAlchemy = renderAlchemy;
 
 // Обработка внешней авторизации (возврат из OAuth-потоков Google, VK, Telegram)
 function handleExternalAuth() {
@@ -618,6 +620,7 @@ function handleExternalAuth() {
 }
 
 window.updateMessagesBadge = updateMessagesBadge;
+
 
 // Вызов обработки внешней авторизации перед запуском приложения
 handleExternalAuth();

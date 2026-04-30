@@ -1418,13 +1418,110 @@ async function renderMessageDetail(messageId) {
     }
 }
 
-// ==================== ФОРТУНА И АЛХИМИЯ (заглушки) ====================
+// ==================== ФОРТУНА ====================
 
 function renderFortune() {
     const content = document.getElementById('content');
-    content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-dice" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Колесо Фортуны</h2><p style="color:#aaa;">Скоро появится! 🎡</p></div>`;
+    content.innerHTML = `
+        <div style="text-align:center; padding:20px;">
+            <i class="fas fa-dice" style="font-size:48px; color:#00aaff;"></i>
+            <h2 style="color:white;">Колесо Фортуны</h2>
+            <p style="color:#aaa;">У вас <span id="freeSpinsCount">0</span> бесплатных билетов</p>
+            <button id="spinBtn" class="btn" style="background-color:#00aaff; margin:10px;">Крутить (бесплатно)</button>
+            <button id="buyTicketBtn" class="btn">Купить билет (10 алмазов)</button>
+            <div id="result" style="margin-top:20px; color:white;"></div>
+        </div>
+    `;
+    loadFortuneStatus();
+    document.getElementById('spinBtn').addEventListener('click', () => fortuneSpin());
+    document.getElementById('buyTicketBtn').addEventListener('click', () => buyFortuneTicket());
 }
 
+async function loadFortuneStatus() {
+    try {
+        const res = await window.apiRequest('/fortune/status');
+        const data = await res.json();
+        document.getElementById('freeSpinsCount').innerText = data.freeSpinsLeft;
+    } catch(e) { console.error(e); }
+}
+
+async function fortuneSpin() {
+    const res = await window.apiRequest('/fortune/spin', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) {
+        showToast(data.error, 1500);
+        return;
+    }
+    // Обновим счетчик билетов
+    await loadFortuneStatus();
+    // Показываем результат
+    const prize = data.prize;
+    let msg = `Вы выиграли: ${prize.name}`;
+    if (prize.type === 'coins') msg += ` (${prize.amount} монет)`;
+    else if (prize.type === 'exp') msg += ` (${prize.amount} опыта)`;
+    else if (prize.type === 'coal') msg += ` (${prize.amount} угля)`;
+    else if (prize.type === 'item') msg += ` (Легендарный сундук)`;
+    else if (prize.type === 'free_spin') msg += ` (+1 бесплатный билет)`;
+    showToast(msg, 2000);
+    // Если опыт – запросим класс
+    if (prize.type === 'exp') {
+        const chosenClass = await showClassChoiceModalForFortune(prize.amount);
+        if (chosenClass) {
+            await window.apiRequest('/fortune/claim-exp', {
+                method: 'POST',
+                body: JSON.stringify({ exp: prize.amount, class: chosenClass })
+            });
+            showToast(`Опыт добавлен классу ${getClassNameRu(chosenClass)}`, 1500);
+        }
+    } else if (prize.type === 'coal') {
+        await window.apiRequest('/fortune/claim-coal', { method: 'POST', body: JSON.stringify({ amount: prize.amount }) });
+    } else if (prize.type === 'item') {
+        await window.apiRequest('/fortune/claim-chest', { method: 'POST' });
+        showToast('Легендарный сундук добавлен в инвентарь', 1500);
+    }
+    await refreshData();
+}
+
+async function buyFortuneTicket() {
+    const res = await window.apiRequest('/fortune/buy-ticket', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+        showToast('Билет куплен!', 1500);
+        await loadFortuneStatus();
+        await refreshData();
+    } else {
+        showToast(data.error || 'Ошибка', 1500);
+    }
+}
+
+function showClassChoiceModalForFortune(expAmount) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('roleModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        modalTitle.innerText = 'Выберите класс';
+        modalBody.innerHTML = `
+            <p>Вы получили ${expAmount} опыта. Какому классу хотите его вручить?</p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button class="btn class-choice" data-class="warrior">Воин</button>
+                <button class="btn class-choice" data-class="assassin">Ассасин</button>
+                <button class="btn class-choice" data-class="mage">Маг</button>
+            </div>
+        `;
+        modal.style.display = 'flex';
+        const buttons = modalBody.querySelectorAll('.class-choice');
+        const handleClick = (e) => {
+            const chosenClass = e.target.dataset.class;
+            modal.style.display = 'none';
+            resolve(chosenClass);
+        };
+        buttons.forEach(btn => btn.addEventListener('click', handleClick));
+        const closeBtn = modal.querySelector('.close');
+        if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; resolve(null); };
+        window.onclick = (event) => { if (event.target === modal) { modal.style.display = 'none'; resolve(null); } };
+    });
+}
+// ==================== ЛХИМИЯ (заглушка) ====================
 function renderAlchemy() {
     const content = document.getElementById('content');
     content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-flask" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Алхимик</h2><p style="color:#aaa;">Превращаем ресурсы в ценности! 🧪</p></div>`;

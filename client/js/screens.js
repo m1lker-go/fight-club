@@ -71,12 +71,12 @@ function renderMain() {
                 <!-- Правая колонка (2×3) -->
                 <div class="main-buttons-col right">
                     <div class="btn-grid">
-                        <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
-                        <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
-                        <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
+                      <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
+        <button class="main-icon-btn" data-screen="market"><i class="fas fa-exchange-alt"></i><span>Маркет</span></button>
+        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-slot-machine"></i><span>Фортуна</span></button>
+        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
+        <button class="main-icon-btn" data-screen="alchemy"><i class="fas fa-flask"></i><span>Алхимик</span></button>
+        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
                     </div>
                 </div>
             </div>

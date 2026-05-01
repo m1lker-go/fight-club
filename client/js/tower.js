@@ -384,6 +384,16 @@ function showTowerResultScreen(battleData) {
     const passedFloor = floor;
     const expGain = battleData.expGain || 0;
 
+
+    // +++ ЗВУК ОКОНЧАНИЯ БОЯ В БАШНЕ +++
+    if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
+        if (victory) {
+            AudioManager.playSound('victory');
+        } else {
+            AudioManager.playSound('defeat');
+        }
+    }
+    
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
 
     const logArray = result.messages.map(m => {

@@ -50,13 +50,12 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
 
         ctx.save();
         ctx.translate(x, y);
-        // Только один поворот – низ текста смотрит на центр
         ctx.rotate(midAngle + Math.PI / 2);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
         if (sectors[i].isSpecial) {
-            // Сектор 20 опыта
+            // Сектор 20 опыта: иконка звезды, слово "опыт", цифра 20
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
             ctx.fillStyle = '#ffaa00';
             ctx.fillText(sectors[i].icon, 0, -20);
@@ -68,27 +67,51 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
             ctx.fillText(sectors[i].display, 0, 20);
         } else {
             let iconChar = sectors[i].icon;
-            let displayText = '';
+            let displayText = '';      // цифра или слово (например, "1000")
+            let labelText = '';        // пояснение (монет, опыт, уголь, сундук, билет)
+
             if (sectors[i].type === 'legendary_chest') {
                 displayText = '';
+                labelText = 'сундук';
             } else if (sectors[i].type === 'free_spin') {
-                displayText = 'Билет';
-            } else {
+                displayText = '';
+                labelText = 'билет';
+            } else if (sectors[i].type === 'coins') {
                 displayText = sectors[i].display;
+                labelText = 'монет';
+            } else if (sectors[i].type === 'exp') {
+                displayText = sectors[i].display;
+                labelText = 'опыт';
+            } else if (sectors[i].type === 'coal') {
+                displayText = sectors[i].display;
+                labelText = 'уголь';
             }
 
+            // Иконка
             ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
             if (sectors[i].type === 'legendary_chest') {
                 ctx.fillStyle = '#f1c40f';
             } else {
                 ctx.fillStyle = '#ddd';
             }
-            ctx.fillText(iconChar, 0, -12);
+            ctx.fillText(iconChar, 0, -20);
             
+            // Цифра (или слово "Билет" для free_spin)
             if (displayText) {
-                ctx.font = '12px "Segoe UI", sans-serif';
-                ctx.fillStyle = '#ccc';
-                ctx.fillText(displayText, 0, 12);
+                ctx.font = 'bold 14px "Segoe UI", sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.fillText(displayText, 0, 0);
+            } else if (labelText === 'билет') {
+                ctx.font = 'bold 14px "Segoe UI", sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.fillText('Билет', 0, 0);
+            }
+            
+            // Пояснение (монет, опыт, уголь, сундук, билет – но если уже есть "Билет", не дублируем)
+            if (labelText && !(labelText === 'билет' && !displayText)) {
+                ctx.font = '10px "Segoe UI", sans-serif';
+                ctx.fillStyle = '#aaa';
+                ctx.fillText(labelText, 0, 16);
             }
         }
         ctx.restore();

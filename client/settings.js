@@ -1,4 +1,4 @@
-// settings.js (исправленный)
+// settings.js (исправленный – с интеграцией AudioManager)
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -51,7 +51,6 @@ async function renderSettings() {
         const user = data.user;
         const connections = data.connections || [];
 
-        // Определяем, установлен ли пароль
         const hasPassword = !!user.password_hash;
 
         const content = document.getElementById('content');
@@ -102,7 +101,6 @@ async function renderSettings() {
                             <span>${user.email || '—'}</span>
                             <button class="link-btn" data-provider="email">${user.email ? 'Сменить' : 'Привязать'}</button>
                         </div>
-                        <!-- Смена пароля (только если пароль установлен) -->
                         ${hasPassword ? `
                         <div class="connection-row">
                             <span>Пароль</span>
@@ -117,19 +115,49 @@ async function renderSettings() {
             </div>
         `;
 
+        // ========== ИНТЕГРАЦИЯ С AudioManager ==========
         const musicToggle = document.getElementById('musicToggle');
-        if (musicToggle) {
-            musicToggle.addEventListener('change', async (e) => {
-                await updateSettings({ music_enabled: e.target.checked });
-            });
-        }
         const soundToggle = document.getElementById('soundToggle');
-        if (soundToggle) {
-            soundToggle.addEventListener('change', async (e) => {
-                await updateSettings({ sound_enabled: e.target.checked });
-            });
+
+        // Функция-обработчик для музыки
+        const handleMusicChange = async (e) => {
+            const enabled = e.target.checked;
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.enableMusic(enabled);
+            }
+            await updateSettings({ music_enabled: enabled });
+        };
+
+        // Функция-обработчик для звуков
+        const handleSoundChange = async (e) => {
+            const enabled = e.target.checked;
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.enableSfx(enabled);
+            }
+            await updateSettings({ sound_enabled: enabled });
+        };
+
+        if (musicToggle) {
+            // Устанавливаем состояние чекбокса из данных пользователя
+            musicToggle.checked = user.music_enabled !== undefined ? user.music_enabled : true;
+            // Удаляем старые обработчики, чтобы избежать дублирования
+            musicToggle.removeEventListener('change', handleMusicChange);
+            musicToggle.addEventListener('change', handleMusicChange);
         }
 
+        if (soundToggle) {
+            soundToggle.checked = user.sound_enabled !== undefined ? user.sound_enabled : true;
+            soundToggle.removeEventListener('change', handleSoundChange);
+            soundToggle.addEventListener('change', handleSoundChange);
+        }
+
+        // Принудительно синхронизируем AudioManager с настройками из БД
+        if (typeof AudioManager !== 'undefined') {
+            if (user.music_enabled !== undefined) AudioManager.enableMusic(user.music_enabled);
+            if (user.sound_enabled !== undefined) AudioManager.enableSfx(user.sound_enabled);
+        }
+
+        // ========== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ ==========
         const editusernameBtn = document.getElementById('editusernameBtn');
         if (editusernameBtn) {
             editusernameBtn.addEventListener('click', () => {
@@ -331,7 +359,7 @@ function linkTelegram() {
     window.telegramLinkingInProgress = true;
 
     const clientId = '8215458077';
-   const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/telegram/callback');
+    const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/telegram/callback');
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const stateObj = {
@@ -347,7 +375,6 @@ function linkTelegram() {
     const url = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20profile&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
     window.location.href = url;
 }
-
 
 function linkVK() {
     if (vkLinkingInProgress) {

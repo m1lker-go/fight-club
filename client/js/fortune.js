@@ -109,12 +109,12 @@ function drawCenter(ctx, centerX, centerY, radius) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (currentCountdown > 0) {
-        ctx.font = 'bold 28px "Segoe UI", sans-serif';
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
         ctx.fillStyle = '#00aaff';
         // Корректировка для идеального центрирования (опционально)
         ctx.fillText(currentCountdown.toString(), centerX, centerY);
     } else {
-        ctx.font = '36px "Font Awesome 6 Free", "FontAwesome", sans-serif';
+        ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
         ctx.fillStyle = '#ddd';
         ctx.fillText('\uf024', centerX, centerY);
     }

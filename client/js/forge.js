@@ -1,4 +1,4 @@
-// forge.js (финальная исправленная версия)
+// forge.js (финальная исправленная версия с звуками)
 
 let currentForgeTab = 'forge';
 
@@ -349,6 +349,10 @@ async function performCraft(itemIds, chosenClass) {
         });
         const data = await res.json();
         if (data.success) {
+            // +++ ЗВУК КОВКИ +++
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.playSound('forge');
+            }
             showChestResult(data.item);
             await refreshData();
             if (currentScreen === 'forge') {
@@ -382,7 +386,7 @@ async function performForgeAction() {
             return;
         }
         showClassChoiceForCraft(window.forgeItems);
-        actionBtn.disabled = false; // кнопка разблокируется после закрытия модалки, но лучше сразу
+        actionBtn.disabled = false;
     } else {
         if (!window.forgeItems || window.forgeItems.length === 0) {
             actionBtn.disabled = false;
@@ -397,6 +401,10 @@ async function performForgeAction() {
             });
             const data = await res.json();
             if (data.success) {
+                // +++ ЗВУК РАСПЛАВКИ +++
+                if (typeof AudioManager !== 'undefined') {
+                    AudioManager.playSound('forge');
+                }
                 showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
                 await refreshData();
                 if (currentScreen === 'forge') {

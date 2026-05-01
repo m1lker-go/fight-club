@@ -1,3 +1,4 @@
+```javascript
 // app.js – основная логика приложения
 
 let tg = null;
@@ -42,7 +43,6 @@ window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
 // ========== УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАПРОСОВ ==========
-// Автоматически добавляет user_id и tg_id в тело POST или в URL GET
 window.apiRequest = async function(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
     const method = options.method || 'GET';
@@ -91,13 +91,12 @@ window.apiRequest = async function(endpoint, options = {}) {
     }
 };
 
-// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ (с использованием apiRequest) ==========
+// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     for (let i = 0; i < retries; i++) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
-            // Используем apiRequest, если url относительный, иначе прямой fetch
             let response;
             if (url.startsWith(window.API_BASE) || url.startsWith('/')) {
                 response = await window.apiRequest(url, { ...options, signal: controller.signal });
@@ -115,7 +114,20 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
-// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM (ВНУТРИ WEBAPP) ==========
+// ========== ЗАГРУЗКА АУДИОМЕНЕДЖЕРА ==========
+function loadAudioManager() {
+    if (typeof AudioManager !== 'undefined') return;
+    const script = document.createElement('script');
+    script.src = '/js/audioManager.js';
+    script.onload = () => {
+        if (typeof AudioManager !== 'undefined') {
+            AudioManager.onScreenChange();
+        }
+    };
+    document.head.appendChild(script);
+}
+
+// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM ==========
 async function autoLoginTelegram() {
     if (!tg || !tg.initData) return false;
     console.log('Auto login via Telegram initData...');
@@ -157,7 +169,7 @@ async function autoLoginTelegram() {
     return false;
 }
 
-// Загрузка данных пользователя по токену (использует apiRequest)
+// Загрузка данных пользователя по токену
 async function loadUserDataByToken(token) {
     try {
         console.log('loadUserDataByToken: fetching profile...');
@@ -400,13 +412,18 @@ function showScreen(screen) {
     const content = document.getElementById('content');
     content.innerHTML = '';
 
+    // Уведомляем аудиоменеджер о смене экрана (для переключения музыки)
+    if (typeof AudioManager !== 'undefined' && AudioManager.onScreenChange) {
+        AudioManager.onScreenChange();
+    }
+
     // Автоматическое обновление задания "Посещение профиля"
     if (screen === 'profile' && userData && userData.id) {
         window.apiRequest('/tasks/daily/update/profile', { method: 'POST' })
             .then(res => res.json())
             .then(data => {
                 if (data.success && typeof refreshTasksData === 'function') {
-                    refreshTasksData(); // обновляем данные заданий и маячок
+                    refreshTasksData();
                 }
             })
             .catch(e => console.warn('Не удалось обновить задание профиля:', e));
@@ -508,8 +525,6 @@ function updateMessagesBadge() {
     }
 }
 
-
-// Функции, которые будут переопределены в screens.js, объявляем глобально
 window.renderMain = renderMain;
 window.renderEquip = renderEquip;
 window.renderTrade = renderTrade;
@@ -523,12 +538,10 @@ window.renderProfileBonuses = renderProfileBonuses;
 window.renderFortune = renderFortune;
 window.renderAlchemy = renderAlchemy;
 
-// Обработка внешней авторизации (возврат из OAuth-потоков Google, VK, Telegram)
 function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
 
-    // ---- Google OAuth (вход) ----
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -545,7 +558,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- Google OAuth (привязка) ----
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
         if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
@@ -553,7 +565,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- VK OAuth (вход) ----
     const vkAuth = urlParams.get('vk_auth');
     if (vkAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -570,7 +581,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- VK OAuth (привязка) ----
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
         if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
@@ -578,7 +588,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- Telegram OAuth (вход) ----
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -595,7 +604,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // ---- Telegram OAuth (привязка) ----
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
         if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
@@ -612,9 +620,11 @@ function handleExternalAuth() {
 
 window.updateMessagesBadge = updateMessagesBadge;
 
-
-// Вызов обработки внешней авторизации перед запуском приложения
 handleExternalAuth();
 
 // Запуск приложения
 checkAuth();
+
+// Загружаем аудиоменеджер после всех инициализаций
+loadAudioManager();
+```

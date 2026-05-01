@@ -288,9 +288,19 @@ async function fortuneSpin() {
     );
     if (sectorIndex === -1) sectorIndex = 0;
     const sectorAngle = (Math.PI * 2) / sectors.length;
-    let target = (Math.PI * 2) - (sectorIndex * sectorAngle + sectorAngle/2);
+    // Угол, на который нужно повернуть колесо, чтобы указатель смотрел на середину нужного сектора
+    let targetSectorAngle = (Math.PI * 2) - (sectorIndex * sectorAngle + sectorAngle/2);
+    // Нормализуем в диапазон [0, 2*PI)
+    targetSectorAngle = ((targetSectorAngle % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+    // Текущий угол колеса
+    let current = currentAngle % (Math.PI * 2);
+    // Вычисляем минимальный угол, на который нужно довернуть колесо, чтобы достичь targetSectorAngle
+    let delta = targetSectorAngle - current;
+    // Приводим delta к диапазону [-PI, PI], чтобы крутить в ближайшую сторону? Не нужно – мы хотим много оборотов.
+    // Добавляем несколько полных оборотов
     const fullRotations = 5 + Math.random() * 5;
-    target += fullRotations * Math.PI * 2;
+    let target = currentAngle + delta + fullRotations * Math.PI * 2;
+    // Анимируем до target
     animateWheel(target);
 }
 

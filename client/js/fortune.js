@@ -383,34 +383,46 @@ function showFortuneRules() {
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 1000 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 20 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                    </tr>
+                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 50 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 250 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
-                    </tr>
+                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 10 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 50 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
-                    </tr>
+                     </tr>
                 </tbody>
-            </table>
+             </table>
+             <button id="closeRulesBtn" style="width:100%; padding: 12px; border-radius: 8px; background: #2a303c; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px;">Назад</button>
         </div>
     `;
+    
+    // Скрываем крестик
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) closeBtn.style.display = 'none';
+    
     modal.style.display = 'flex';
-    // Обработка закрытия через крестик уже есть в глобальной логике модального окна
-    // (используется .close, который не трогаем)
+    
+    // Обработчик кнопки "Назад"
+    const backBtn = document.getElementById('closeRulesBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
 }
 
 function renderFortune() {

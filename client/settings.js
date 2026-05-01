@@ -1,4 +1,4 @@
-// settings.js (исправленный – с интеграцией AudioManager)
+// settings.js – с ползунками громкости для музыки и звуков
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -53,6 +53,14 @@ async function renderSettings() {
 
         const hasPassword = !!user.password_hash;
 
+        // Получаем текущие значения громкости из AudioManager (или дефолтные)
+        let musicVolumePercent = 60; // 60% по умолчанию
+        let sfxVolumePercent = 70;   // 70% по умолчанию
+        if (typeof AudioManager !== 'undefined') {
+            musicVolumePercent = Math.round(AudioManager.getMusicVolume() * 100);
+            sfxVolumePercent = Math.round(AudioManager.getSfxVolume() * 100);
+        }
+
         const content = document.getElementById('content');
         if (!content) return;
         content.innerHTML = `
@@ -66,18 +74,29 @@ async function renderSettings() {
                     <span class="username-value">${escapeHtml(user.username || user.username || 'Игрок')}</span>
                     <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
                 </div>
-                <div class="settings-row">
-                    <span>Музыка</span>
-                    <label class="switch">
-                        <input type="checkbox" id="musicToggle" ${user.music_enabled ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                    <span>Звуки</span>
-                    <label class="switch">
-                        <input type="checkbox" id="soundToggle" ${user.sound_enabled ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
+                
+                <!-- НАСТРОЙКИ ГРОМКОСТИ (ползунки) -->
+                <div class="settings-row volume-row">
+                    <div class="volume-label">Музыка</div>
+                    <div class="slider-container" id="musicSliderContainer">
+                        <div class="slider-track">
+                            <div class="slider-fill" id="musicFill" style="width: ${musicVolumePercent}%;"></div>
+                            <div class="slider-thumb" id="musicThumb" style="left: ${musicVolumePercent}%;"></div>
+                        </div>
+                        <div class="slider-percent" id="musicPercent">${musicVolumePercent}%</div>
+                    </div>
                 </div>
+                <div class="settings-row volume-row">
+                    <div class="volume-label">Звуки</div>
+                    <div class="slider-container" id="sfxSliderContainer">
+                        <div class="slider-track">
+                            <div class="slider-fill" id="sfxFill" style="width: ${sfxVolumePercent}%;"></div>
+                            <div class="slider-thumb" id="sfxThumb" style="left: ${sfxVolumePercent}%;"></div>
+                        </div>
+                        <div class="slider-percent" id="sfxPercent">${sfxVolumePercent}%</div>
+                    </div>
+                </div>
+
                 <div class="settings-section">
                     <h3>Привязанные аккаунты</h3>
                     <div class="connections-list">
@@ -115,47 +134,83 @@ async function renderSettings() {
             </div>
         `;
 
-        // ========== ИНТЕГРАЦИЯ С AudioManager ==========
-        const musicToggle = document.getElementById('musicToggle');
-        const soundToggle = document.getElementById('soundToggle');
+        // ========== ИНИЦИАЛИЗАЦИЯ ПОЛЗУНКОВ ==========
+        function setupSlider(containerId, fillId, thumbId, percentId, isMusic) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const track = container.querySelector('.slider-track');
+            const fill = document.getElementById(fillId);
+            const thumb = document.getElementById(thumbId);
+            const percentSpan = document.getElementById(percentId);
+            
+            let active = false;
 
-        // Функция-обработчик для музыки
-        const handleMusicChange = async (e) => {
-            const enabled = e.target.checked;
-            if (typeof AudioManager !== 'undefined') {
-                AudioManager.enableMusic(enabled);
+            function updateFromX(clientX) {
+                const rect = track.getBoundingClientRect();
+                let percent = (clientX - rect.left) / rect.width;
+                percent = Math.min(1, Math.max(0, percent));
+                // Округляем до шага 0.2 (20%)
+                const step = 0.2;
+                let stepped = Math.round(percent / step) * step;
+                stepped = Math.min(1, Math.max(0, stepped));
+                const percentValue = Math.round(stepped * 100);
+                
+                fill.style.width = percentValue + '%';
+                thumb.style.left = percentValue + '%';
+                percentSpan.innerText = percentValue + '%';
+                
+                if (isMusic) {
+                    if (typeof AudioManager !== 'undefined') {
+                        AudioManager.setMusicVolume(stepped);
+                        // Отправляем на сервер флаг включения (громкость > 0)
+                        updateSettings({ music_enabled: stepped > 0 });
+                    }
+                } else {
+                    if (typeof AudioManager !== 'undefined') {
+                        AudioManager.setSfxVolume(stepped);
+                        updateSettings({ sound_enabled: stepped > 0 });
+                    }
+                }
             }
-            await updateSettings({ music_enabled: enabled });
-        };
 
-        // Функция-обработчик для звуков
-        const handleSoundChange = async (e) => {
-            const enabled = e.target.checked;
-            if (typeof AudioManager !== 'undefined') {
-                AudioManager.enableSfx(enabled);
+            function onMouseMove(e) {
+                if (!active) return;
+                updateFromX(e.clientX);
             }
-            await updateSettings({ sound_enabled: enabled });
-        };
-
-        if (musicToggle) {
-            // Устанавливаем состояние чекбокса из данных пользователя
-            musicToggle.checked = user.music_enabled !== undefined ? user.music_enabled : true;
-            // Удаляем старые обработчики, чтобы избежать дублирования
-            musicToggle.removeEventListener('change', handleMusicChange);
-            musicToggle.addEventListener('change', handleMusicChange);
+            function onMouseUp() {
+                active = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            track.addEventListener('mousedown', (e) => {
+                active = true;
+                updateFromX(e.clientX);
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                e.preventDefault();
+            });
+            track.addEventListener('touchstart', (e) => {
+                active = true;
+                const touch = e.touches[0];
+                updateFromX(touch.clientX);
+                document.addEventListener('touchmove', onTouchMove);
+                document.addEventListener('touchend', onTouchEnd);
+                e.preventDefault();
+            });
+            function onTouchMove(e) {
+                if (!active) return;
+                const touch = e.touches[0];
+                updateFromX(touch.clientX);
+            }
+            function onTouchEnd() {
+                active = false;
+                document.removeEventListener('touchmove', onTouchMove);
+                document.removeEventListener('touchend', onTouchEnd);
+            }
         }
 
-        if (soundToggle) {
-            soundToggle.checked = user.sound_enabled !== undefined ? user.sound_enabled : true;
-            soundToggle.removeEventListener('change', handleSoundChange);
-            soundToggle.addEventListener('change', handleSoundChange);
-        }
-
-        // Принудительно синхронизируем AudioManager с настройками из БД
-        if (typeof AudioManager !== 'undefined') {
-            if (user.music_enabled !== undefined) AudioManager.enableMusic(user.music_enabled);
-            if (user.sound_enabled !== undefined) AudioManager.enableSfx(user.sound_enabled);
-        }
+        setupSlider('musicSliderContainer', 'musicFill', 'musicThumb', 'musicPercent', true);
+        setupSlider('sfxSliderContainer', 'sfxFill', 'sfxThumb', 'sfxPercent', false);
 
         // ========== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ ==========
         const editusernameBtn = document.getElementById('editusernameBtn');

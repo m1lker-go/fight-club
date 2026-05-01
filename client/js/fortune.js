@@ -31,12 +31,10 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     const sectorCount = sectors.length;
     const angleStep = (Math.PI * 2) / sectorCount;
     const colors = ['#2a303c', '#232833'];
-    // Сдвиг, чтобы середина первого сектора была на угле 0 (вверху)
+    // Сдвиг, чтобы середина первого сектора была на угле 0 (вершина)
     const startShift = -angleStep / 2;
-    for (let i = 0; i < sectorCount; i++) {
-        const start = i * angleStep + angleOffset + startShift;
-        const end = (i + 1) * angleStep + angleOffset + startShift;
 
+    // Вспомогательная функция для получения подписи
     function getLabelByType(type) {
         switch (type) {
             case 'coins': return 'Монеты';
@@ -50,9 +48,10 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
 
     for (let i = 0; i < sectorCount; i++) {
         const sector = sectors[i];
-        const start = i * angleStep + angleOffset;
-        const end = (i + 1) * angleStep + angleOffset;
+        const start = i * angleStep + angleOffset + startShift;
+        const end = (i + 1) * angleStep + angleOffset + startShift;
 
+        // Рисуем сектор
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, start, end);
@@ -62,6 +61,7 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
+        // Угол середины сектора (для текста)
         const midAngle = start + angleStep / 2;
         const textRadius = radius * 0.75;
         const x = centerX + Math.cos(midAngle) * textRadius;
@@ -73,25 +73,22 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
+        // Иконка
         ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
-        if (sector.type === 'legendary_chest') {
-            ctx.fillStyle = '#f1c40f';
-        } else {
-            ctx.fillStyle = '#ddd';
-        }
+        ctx.fillStyle = sector.type === 'legendary_chest' ? '#f1c40f' : '#ddd';
         ctx.fillText(sector.icon, 0, -20);
 
+        // Подпись типа
         ctx.font = '12px "Segoe UI", sans-serif';
         ctx.fillStyle = '#aaa';
-        const label = getLabelByType(sector.type);
-        ctx.fillText(label, 0, 0);
+        ctx.fillText(getLabelByType(sector.type), 0, 0);
 
+        // Цифра
         if (sector.type === 'coins' || sector.type === 'exp' || sector.type === 'coal') {
             ctx.font = 'bold 12px "Segoe UI", sans-serif';
             ctx.fillStyle = 'white';
             ctx.fillText(sector.display, 0, 18);
         }
-
         ctx.restore();
     }
 }

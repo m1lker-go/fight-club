@@ -86,13 +86,28 @@ const AudioManager = (function() {
 
     // Воспроизведение звукового эффекта
     function playSound(soundKey) {
-        if (!isSfxEnabled) return;
-        const url = sounds[soundKey];
-        if (!url) return;
-        const sfx = new Audio(url);
-        sfx.volume = 0.7;
-        sfx.play().catch(e => console.warn(`Sound ${soundKey} error:`, e));
+    console.log(`[AudioManager] playSound вызван с key="${soundKey}", isSfxEnabled=${isSfxEnabled}`);
+    if (!isSfxEnabled) {
+        console.log('[AudioManager] Звуки отключены, выход');
+        return;
     }
+    const url = sounds[soundKey];
+    if (!url) {
+        console.warn(`[AudioManager] Нет URL для ключа "${soundKey}"`);
+        return;
+    }
+    console.log(`[AudioManager] Загружаем ${url}`);
+    const sfx = new Audio(url);
+    sfx.volume = 0.7;
+    sfx.play().then(() => {
+        console.log(`[AudioManager] Звук "${soundKey}" успешно сыгран`);
+    }).catch(e => {
+        console.error(`[AudioManager] Ошибка воспроизведения "${soundKey}":`, e);
+        if (e.name === 'NotAllowedError') {
+            console.error('=> Браузер блокирует автовоспроизведение. Нужен жест пользователя.');
+        }
+    });
+}
 
     // Публичные методы
     function enableMusic(enabled) {

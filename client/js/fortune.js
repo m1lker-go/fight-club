@@ -9,6 +9,7 @@ let fortuneCountdownInterval = null;
 let currentCountdown = 0;
 const SPIN_DURATION = 7000;
 
+
 // Определяем сектора ГЛОБАЛЬНО
 const sectors = [
     { type: 'legendary_chest', name: 'Легендарное снаряжение', amount: null, display: 'Снаряжение', icon: '\uf553', chance: 1 },

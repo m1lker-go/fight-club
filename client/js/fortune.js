@@ -351,58 +351,57 @@ function showFortuneRules() {
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Правила';
     modalBody.innerHTML = `
-        <div style="padding: 10px;">
-            <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 20px;">
-                <div><i class="fas fa-ticket-alt" style="color: #00aaff;"></i> 3 бесплатных билета / день</div>
-                <div><i class="fas fa-gem" style="color: #e67e22;"></i> 10 алмазов за билет (макс. 100/день)</div>
+        <div style="padding: 5px 15px 15px 15px;">
+            <div style="margin-bottom: 20px; line-height: 1.5;">
+                <p><i class="fas fa-ticket-alt" style="color: #00aaff;"></i> Каждый день даётся <strong>3 бесплатных билета</strong>.</p>
+                <p><i class="fas fa-gem" style="color: #e67e22;"></i> Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).</p>
             </div>
-            <p style="text-align: center; margin-bottom: 15px;"><i class="fas fa-chart-simple"></i> Шансы выигрыша:</p>
-            <table style="width:100%; border-collapse: collapse; background: rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+            <table style="width:100%; border-collapse: collapse; background: rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                 <thead>
-                    <tr style="background: #1f2937; color: white;">
+                    <tr style="background: #1a1f2b; color: #ddd;">
                         <th style="padding: 12px 8px; text-align: left;">Награда</th>
-                        <th style="padding: 12px 8px; text-align: center; width: 80px;">Шанс</th>
-                    </tr>
+                        <th style="padding: 12px 8px; text-align: center; width: 70px;">Шанс</th>
+                     </tr>
                 </thead>
                 <tbody>
-                    <tr style="background: rgba(255,215,0,0.1);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-chess-queen" style="color: #f1c40f; width: 24px;"></i> Легендарное снаряжение</td>
+                    <tr style="background: rgba(255,255,255,0.03);">
+                        <td style="padding: 10px 8px;"><i class="fas fa-crown" style="color: #f1c40f; width: 28px;"></i> Легендарное снаряжение</td>
                         <td style="padding: 10px 8px; text-align: center;">1%</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px 8px;"><i class="fas fa-ticket-alt" style="color: #00aaff;"></i> Билет лотереи</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-ticket-alt" style="color: #ccc;"></i> Билет лотереи</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ffaa00;"></i> 100 монет</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 100 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ffaa00;"></i> 300 монет</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 300 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ffaa00;"></i> 1000 монет</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 1000 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #aaddff;"></i> 20 опыта</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 20 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #aaddff;"></i> 50 опыта</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 50 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #aaddff;"></i> 250 опыта</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 250 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-fire" style="color: #e67e22;"></i> 10 угля</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-fire" style="color: #ccc;"></i> 10 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px 8px;"><i class="fas fa-fire" style="color: #e67e22;"></i> 50 угля</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-fire" style="color: #ccc;"></i> 50 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
                     </tr>
                 </tbody>

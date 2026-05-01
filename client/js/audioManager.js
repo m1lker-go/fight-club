@@ -30,6 +30,8 @@ const AudioManager = (function() {
     let sfxVolume = 0.7;            // 0..1, начальное 70%
     let currentMode = 'menu';
     let menuTrackEndHandler = null;
+    let pendingResume = null;
+    let audioUnlocked = false;
 
     // Загрузка настроек из localStorage
 function loadSettings() {
@@ -111,6 +113,38 @@ function loadSettings() {
         const sfx = new Audio(url);
         sfx.volume = sfxVolume;
         sfx.play().catch(e => console.warn(`Sound ${soundKey} error:`, e));
+    }
+
+        // Функция для разблокировки звука по первому действию пользователя
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        
+        // 1. Создаём и сразу приостанавливаем "тихий" AudioContext
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        
+        if (audioCtx.state === 'suspended') {
+            if (pendingResume) return pendingResume;
+            pendingResume = audioCtx.resume().then(() => {
+                console.log('[AudioManager] AudioContext разблокирован');
+                audioUnlocked = true;
+                pendingResume = null;
+                
+                // 2. После разблокировки — запускаем текущую музыку.
+                if (document.querySelector('.battle-screen') === null) {
+                    startMenuMusic();
+                } else {
+                    startFightMusic();
+                }
+            }).catch(e => console.warn('AudioContext resume failed:', e));
+            return pendingResume;
+        } else {
+            audioUnlocked = true;
+            pendingResume = null;
+        }
     }
 
    // Установка громкости музыки (0..1)
@@ -203,6 +237,7 @@ function setMusicVolume(volume) {
         getMusicVolume,
         getSfxVolume,
         getMusicEnabled,
+        unlockAudio,
         getSfxEnabled
     };
 })();

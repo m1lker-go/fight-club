@@ -285,34 +285,36 @@ async function fortuneSpin() {
     prizeResult = data.prize;
     console.log('Приз от сервера:', prizeResult);
 
-    // Находим индекс сектора строго по типу и количеству
+    // Находим индекс сектора (0..9)
     let sectorIndex = sectors.findIndex(s => {
         if (s.type !== prizeResult.type) return false;
-        // Для легендарного снаряжения и билета amount не сравниваем
         if (prizeResult.type === 'legendary_chest' || prizeResult.type === 'free_spin') return true;
         return s.amount === prizeResult.amount;
     });
     if (sectorIndex === -1) {
-        console.warn('Сектор не найден, берём первый');
+        console.error('Сектор не найден!', prizeResult);
         sectorIndex = 0;
     }
-    console.log('Сектор, на который должно указать:', sectors[sectorIndex]);
+    console.log('Индекс сектора:', sectorIndex, sectors[sectorIndex]);
 
     const sectorCount = sectors.length;
-    const sectorAngle = (Math.PI * 2) / sectorCount;
-    // Средний угол выбранного сектора относительно нулевого поворота колеса
+    const sectorAngle = (Math.PI * 2) / sectorCount;      // 36° в радианах
+    // Середина выбранного сектора в системе координат колеса (без поворота)
     const midAngle = sectorIndex * sectorAngle + sectorAngle / 2;
-    // Указатель смотрит строго вниз (угол π/2). Нужно повернуть колесо так, чтобы середина сектора совпала с этим направлением:
-    // midAngle + targetAngleOffset ≡ π/2 (mod 2π) → targetAngleOffset = π/2 - midAngle
-    let targetOffset = Math.PI / 2 - midAngle;
-    targetOffset = ((targetOffset % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
 
-    const current = currentAngle % (Math.PI * 2);
+    // Указатель нарисован вверху: угол -π/2 (или 3π/2)
+    // Нужный поворот колеса: такой, чтобы midAngle + angleOffset ≡ -π/2 (mod 2π)
+    // => angleOffset = -π/2 - midAngle
+    let targetOffset = -Math.PI / 2 - midAngle;
+    targetOffset = ((targetOffset % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+
+    const current = currentAngle % (2 * Math.PI);
     let delta = targetOffset - current;
-    // Добавляем от 5 до 10 полных оборотов для эффекта прокрутки
+    // Добавляем 5-10 полных оборотов для красоты
     const fullRotations = 5 + Math.random() * 5;
-    const target = currentAngle + delta + fullRotations * Math.PI * 2;
+    const target = currentAngle + delta + fullRotations * (2 * Math.PI);
 
+    console.log(`Текущий угол: ${current}, целевой угол поворота: ${targetOffset}, дельта: ${delta}, конечный total: ${target}`);
     animateWheel(target);
 }
 

@@ -304,7 +304,22 @@ async function checkAdvent() {
         const res = await window.apiRequest(`/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
-            if (typeof showAdventCalendar === 'function') showAdventCalendar();
+            // Проверяем, загружена ли функция showAdventCalendar
+            if (typeof showAdventCalendar === 'function') {
+                showAdventCalendar();
+            } else {
+                // Если нет — динамически загружаем task-up.js
+                const script = document.createElement('script');
+                script.src = '/js/task-up.js';
+                script.onload = () => {
+                    if (typeof showAdventCalendar === 'function') {
+                        showAdventCalendar();
+                    } else {
+                        console.warn('showAdventCalendar still not defined after loading task-up.js');
+                    }
+                };
+                document.head.appendChild(script);
+            }
         }
     } catch (e) {
         console.error('Advent check error:', e);

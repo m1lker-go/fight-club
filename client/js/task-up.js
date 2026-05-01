@@ -1,4 +1,4 @@
-// task-up.js (исправленный) – с авто-исчезающими уведомлениями наград
+// task-up.js (исправленный) – с авто-исчезающими уведомлениями наград и звуком получения награды
 
 let countdownInterval = null;
 let lastTasksData = null;  // храним последние данные заданий
@@ -252,26 +252,26 @@ async function loadDailyTasks() {
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
-             if (rewardType === 'exp') {
-    claimDailyExp(taskId, rewardAmount);
-} else {
-    const res = await window.apiRequest('/tasks/daily/claim', {
-        method: 'POST',
-        body: JSON.stringify({ task_id: taskId })
-    });
-    const data = await res.json();
-    if (data.error) {
-        showToast(data.error, 1500);
-    } else {
-        // Звук получения награды
-        if (typeof AudioManager !== 'undefined') {
-            AudioManager.playSound('reward');
-        }
-        showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
-        loadDailyTasks();
-        refreshData();
-    }
-}
+                if (rewardType === 'exp') {
+                    claimDailyExp(taskId, rewardAmount);
+                } else {
+                    const res = await window.apiRequest('/tasks/daily/claim', {
+                        method: 'POST',
+                        body: JSON.stringify({ task_id: taskId })
+                    });
+                    const data = await res.json();
+                    if (data.error) {
+                       showToast(data.error, 1500);
+                    } else {
+                        // Звук получения награды
+                        if (typeof AudioManager !== 'undefined') {
+                            AudioManager.playSound('reward');
+                        }
+                        showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+                        loadDailyTasks();
+                        refreshData();
+                    }
+                }
             });
         });
 
@@ -464,6 +464,10 @@ function claimAdventDay(day, daysInMonth) {
             showToast(data.error, 1500);
             isClaiming = false;
         } else {
+            // Звук получения награды
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.playSound('reward');
+            }
             if (reward.type === 'coins') {
                 showRewardToast('+' + reward.amount + ' монет', 'fa-coins');
             } else if (reward.type === 'item' && data.item) {
@@ -524,6 +528,10 @@ function showClassChoiceModalForAdvent(expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
+                // Звук получения награды
+                if (typeof AudioManager !== 'undefined') {
+                    AudioManager.playSound('reward');
+                }
                 showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) {
@@ -574,6 +582,10 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
+                // Звук получения награды
+                if (typeof AudioManager !== 'undefined') {
+                    AudioManager.playSound('reward');
+                }
                 showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) {

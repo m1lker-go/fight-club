@@ -17,7 +17,9 @@ const AudioManager = (function() {
         dodge:    '/assets/music/voice/cat_dodge.mp3',
         magic:    '/assets/music/voice/cat_magic.mp3',
         defeat:   '/assets/music/voice/cat_finish.mp3',
-        victory:  '/assets/music/voice/cat_finish_win.mp3'
+        victory:  '/assets/music/voice/cat_finish_win.mp3',
+        reward:   '/assets/music/voice/voice_yes.mp3',  
+        forge:    '/assets/music/voice/voice_kuz.mp3'  
     };
 
     let currentMenuTrackIndex = 0;

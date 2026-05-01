@@ -178,6 +178,13 @@ function renderTower() {
 }
 
 async function startTowerBattle() {
+    // Включаем боевую музыку
+    if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
+        AudioManager.startFightMusic();
+    } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+        AudioManager.onScreenChange();
+    }
+
     if (towerStatus.attemptsLeft <= 0) {
         showToast('У вас не осталось билетов на сегодня', 1500);
         return;
@@ -336,6 +343,11 @@ async function showTowerBattleScreen(battleData) {
             BattleLog.setSpeed(newSpeed);
         });
     }
+
+    // Страховочный вызов боевой музыки
+    if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
+        AudioManager.startFightMusic();
+    }
 }
 
 async function handleTowerBattleEnd(battleData) {
@@ -472,7 +484,15 @@ function showTowerResultScreen(battleData) {
         }
     }
 
-    const backBtn = createButton('Назад', () => renderTower());
+const backBtn = createButton('Назад', () => {
+    // Возвращаем музыку меню
+    if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
+        AudioManager.startMenuMusic();
+    } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+        AudioManager.onScreenChange();
+    }
+    renderTower();
+});
 
     let tabLogBtn, tabStatsBtn;
 

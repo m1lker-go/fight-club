@@ -4301,6 +4301,39 @@ body {
         padding-bottom: 5px;
     }
 }
+
+/* Уменьшаем размер колеса при низкой высоте экрана */
+@media (max-height: 700px) {
+    #wheelCanvas {
+        max-height: 35vh;
+        width: auto;
+        height: auto;
+        max-width: min(340px, 90vw);
+    }
+    .fortune-wheel-area {
+        padding: 2px 5px;
+    }
+    .fortune-stats {
+        padding: 5px;
+        margin: 0 5px 3px;
+        font-size: 12px;
+    }
+    .fortune-spin-btn {
+        padding: 6px 0;
+        margin: 0 5px 6px;
+        font-size: 14px;
+    }
+    .fortune-buy {
+        margin: 0 5px 6px;
+    }
+    .buy-content {
+        padding: 6px;
+    }
+    .ticket-btn, .ticket-max-btn, .number-input {
+        padding: 4px 8px;
+    }
+}
+
 /* Остальные медиа-запросы (узкие экраны, бой, таблицы) – без изменений */
 @media (max-width: 380px) {
     .fortune-wheel-area { padding: 2px; }

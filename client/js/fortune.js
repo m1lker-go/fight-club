@@ -9,7 +9,6 @@ let fortuneCountdownInterval = null;
 let currentCountdown = 0;
 const SPIN_DURATION = 7000;
 
-
 // Определяем сектора ГЛОБАЛЬНО
 const sectors = [
     { type: 'legendary_chest', name: 'Легендарное снаряжение', amount: null, display: 'Снаряжение', icon: '\uf553', chance: 1 },
@@ -28,14 +27,14 @@ function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
 
+// Отрисовка колеса: середина первого сектора находится на угле -π/2 (наверху, где стрелка)
 function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     const sectorCount = sectors.length;
     const angleStep = (Math.PI * 2) / sectorCount;
     const colors = ['#2a303c', '#232833'];
-    // Сдвиг, чтобы середина первого сектора была на угле 0 (вершина)
-    const startShift = -angleStep / 2;
+    // Начинаем отрисовку так, чтобы середина первого сектора оказалась наверху (угол -π/2)
+    const startShift = -Math.PI / 2 - angleStep / 2;
 
-    // Вспомогательная функция для получения подписи
     function getLabelByType(type) {
         switch (type) {
             case 'coins': return 'Монеты';
@@ -52,7 +51,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         const start = i * angleStep + angleOffset + startShift;
         const end = (i + 1) * angleStep + angleOffset + startShift;
 
-        // Рисуем сектор
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, start, end);
@@ -62,7 +60,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Угол середины сектора (для текста)
         const midAngle = start + angleStep / 2;
         const textRadius = radius * 0.75;
         const x = centerX + Math.cos(midAngle) * textRadius;
@@ -74,17 +71,14 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Иконка
         ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
         ctx.fillStyle = sector.type === 'legendary_chest' ? '#f1c40f' : '#ddd';
         ctx.fillText(sector.icon, 0, -20);
 
-        // Подпись типа
         ctx.font = '12px "Segoe UI", sans-serif';
         ctx.fillStyle = '#aaa';
         ctx.fillText(getLabelByType(sector.type), 0, 0);
 
-        // Цифра
         if (sector.type === 'coins' || sector.type === 'exp' || sector.type === 'coal') {
             ctx.font = 'bold 12px "Segoe UI", sans-serif';
             ctx.fillStyle = 'white';
@@ -126,6 +120,7 @@ function renderWheel(angleOffset) {
     const radius = size / 2 - 15;
     drawWheel(ctx, centerX, centerY, radius, angleOffset);
     drawCenter(ctx, centerX, centerY, radius);
+    // Стрелка вверху (угол -π/2)
     ctx.beginPath();
     ctx.moveTo(centerX - 12, 14);
     ctx.lineTo(centerX + 12, 14);
@@ -166,7 +161,6 @@ function animateWheel(targetAngle) {
             fortuneCountdownInterval = null;
             currentCountdown = 0;
             renderWheel(currentAngle);
-            // Сохраняем итоговый угол в localStorage
             localStorage.setItem('fortuneCurrentAngle', currentAngle.toString());
             if (prizeResult) {
                 if (prizeResult.type === 'exp') {
@@ -289,19 +283,19 @@ async function fortuneSpin() {
     });
     if (sectorIndex === -1) sectorIndex = 0;
 
-    // Середина сектора при 0° вверху: угол = index * 36
-    const sectorMidDeg = sectorIndex * 36;
-    // Чтобы середина оказалась на 0°, колесо нужно повернуть на -sectorMidDeg
-    let targetDeg = -sectorMidDeg;
-    targetDeg = ((targetDeg % 360) + 360) % 360;  // нормализация 0..359
+    // Логика: середина сектора i находится на угле (i * 36)° относительно начального положения.
+    // Чтобы эта середина оказалась под стрелкой (наверху, угол -90°), нужно повернуть колесо на - (i * 36)°.
+    let targetDeg = -(sectorIndex * 36);
+    targetDeg = ((targetDeg % 360) + 360) % 360; // нормализация 0..359
 
     const currentDeg = (currentAngle * 180 / Math.PI) % 360;
     let deltaDeg = targetDeg - currentDeg;
-    const fullRotationsDeg = 3 * 360;             // 3 полных оборота
+    // Добавляем 3 полных оборота (1080°) для эффекта прокрутки
+    const fullRotationsDeg = 3 * 360;
     const totalDeltaDeg = deltaDeg + fullRotationsDeg;
     const targetRad = (currentAngle * 180 / Math.PI + totalDeltaDeg) * Math.PI / 180;
 
-    console.log(`Сектор ${sectorIndex}, цель ${targetDeg}°, текущий ${currentDeg}°, дельта ${deltaDeg}°, +3 оборота = ${totalDeltaDeg}°`);
+    console.log(`Сектор ${sectorIndex} (${sectors[sectorIndex].name}), целевой угол ${targetDeg}°, текущий ${currentDeg}°, дельта ${deltaDeg}°, +3 оборота = ${totalDeltaDeg}°`);
     animateWheel(targetRad);
 }
 
@@ -360,49 +354,49 @@ function showFortuneRules() {
                     <tr style="background: #1a1f2b; color: #ddd;">
                         <th style="padding: 12px 8px; text-align: left;">Награда</th>
                         <th style="padding: 12px 8px; text-align: center; width: 70px;">Шанс</th>
-                      </tr>
+                      </td>
                 </thead>
                 <tbody>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-tshirt" style="color: #f1c40f; width: 28px;"></i> Легендарное снаряжение</td>
                         <td style="padding: 10px 8px; text-align: center;">1%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-ticket-alt" style="color: #ccc;"></i> Билет лотереи</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
-                    </tr>
+                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 100 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 300 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
-                    </tr>
+                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 1000 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 20 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                    </tr>
+                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 50 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 250 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
-                    </tr>
+                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 10 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                    </tr>
+                     </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 50 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
-                    </tr>
+                     </tr>
                 </tbody>
             </table>
             <button id="closeRulesBtn" style="width:100%; padding: 12px; border-radius: 8px; background: #2a303c; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px;">Назад</button>
@@ -456,7 +450,7 @@ function renderFortune() {
     `;
     const canvas = document.getElementById('wheelCanvas');
     canvas.width = 340; canvas.height = 340;
-    // Восстанавливаем сохранённый угол, если есть
+    // Восстанавливаем сохранённый угол
     const savedAngle = localStorage.getItem('fortuneCurrentAngle');
     if (savedAngle !== null) {
         currentAngle = parseFloat(savedAngle);

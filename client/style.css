@@ -4240,40 +4240,42 @@ input:checked + .slider:before {
 }
 
 
-/* ========== АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ ========== */
-/* Общий контейнер приложения – запрещаем лишние прокрутки на уровне body, всё прокручивается внутри .content */
-body {
-    overflow: hidden;
+/* ========== АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (ИСПРАВЛЕННАЯ) ========== */
+html, body {
     margin: 0;
     padding: 0;
-}
-
-#app {
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
+    position: fixed; /* фиксируем, чтобы адресная строка не влияла */
+    width: 100%;
+}
+body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#app {
     display: flex;
     flex-direction: column;
+    height: 100%;
+    width: 100%;
+    position: relative;
 }
-
-/* Контентная область – именно она прокручивается, а шапка и меню всегда на месте */
 .content {
-    flex: 1;
+    flex: 1 1 auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 5px 10px !important;
     scrollbar-width: thin;
 }
-
-/* Нижнее меню всегда прижато к низу, не скрывается */
 .bottom-menu {
     flex-shrink: 0;
+    background-color: #232833;
+    z-index: 10;
 }
-
 /* Колесо фортуны – адаптивная ширина */
 .fortune-wheel-area {
     padding: 5px;
 }
-
 #wheelCanvas {
     width: 100%;
     max-width: 340px;
@@ -4281,145 +4283,62 @@ body {
     margin: 0 auto;
     display: block;
 }
-
-/* Для очень узких экранов (iPhone SE, старые Android) */
+/* Для современных браузеров с dynamic viewport */
+@supports (height: 100dvh) {
+    body {
+        height: 100dvh;
+    }
+    #app {
+        height: 100dvh;
+    }
+}
+/* Безопасная зона для iPhone X и выше */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .bottom-menu {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .content {
+        padding-bottom: 5px;
+    }
+}
+/* Остальные медиа-запросы (узкие экраны, бой, таблицы) – без изменений */
 @media (max-width: 380px) {
-    .fortune-wheel-area {
-        padding: 2px;
-    }
-    .fortune-stats {
-        margin: 0 5px 5px;
-        padding: 6px;
-    }
-    .fortune-spin-btn {
-        margin: 0 5px 8px;
-        width: calc(100% - 10px);
-        padding: 8px 0;
-        font-size: 14px;
-    }
-    .fortune-buy {
-        margin: 0 5px 8px;
-    }
-    .buy-controls {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    .fortune-buy-btn {
-        min-width: 80px;
-        padding: 8px 12px;
-    }
-    .number-input {
-        width: 60px;
-    }
-    .ticket-btn, .ticket-max-btn {
-        padding: 8px 8px;
-    }
-    /* Главный экран – кнопки меню */
-    .main-icon-btn i {
-        font-size: 18px;
-    }
-    .main-icon-btn span {
-        font-size: 9px;
-    }
-    .main-avatar-col {
-        flex: 0 0 100px;
-    }
-    .main-top-inner {
-        height: 160px;
-    }
+    .fortune-wheel-area { padding: 2px; }
+    .fortune-stats { margin: 0 5px 5px; padding: 6px; }
+    .fortune-spin-btn { margin: 0 5px 8px; width: calc(100% - 10px); padding: 8px 0; font-size: 14px; }
+    .fortune-buy { margin: 0 5px 8px; }
+    .buy-controls { flex-wrap: wrap; justify-content: center; }
+    .fortune-buy-btn { min-width: 80px; padding: 8px 12px; }
+    .number-input { width: 60px; }
+    .ticket-btn, .ticket-max-btn { padding: 8px 8px; }
+    .main-icon-btn i { font-size: 18px; }
+    .main-icon-btn span { font-size: 9px; }
+    .main-avatar-col { flex: 0 0 100px; }
+    .main-top-inner { height: 160px; }
 }
-
-/* Экран боя – адаптация */
 @media (max-width: 400px) {
-    .hero-card, .enemy-card {
-        flex: 0 0 80px;
-    }
-    .hero-card > div:first-child,
-    .enemy-card > div:first-child {
-        width: 80px !important;
-        height: 120px !important;
-    }
-    .hp-bar, .mana-bar {
-        width: 80px;
-    }
-    .battle-timer {
-        width: 36px;
-        height: 36px;
-        line-height: 36px;
-        font-size: 12px;
-    }
-    .speed-btn {
-        width: 36px;
-        height: 36px;
-    }
-    .debuff-slot {
-        width: 30px;
-        height: 28px;
-    }
-    .negative-icon, .positive-icon, .rage-icon {
-        width: 20px;
-        height: 20px;
-    }
-    .log-entry {
-        font-size: 10px;
-        padding: 6px 8px;
-    }
-}
-
-/* Адаптация таблиц характеристик и прочих элементов */
-@media (max-width: 400px) {
-    .stat-label {
-        font-size: 12px;
-        min-width: 80px;
-    }
-    .stat-value {
-        font-size: 10px;
-    }
-    .bonuses-table th, .bonuses-table td {
-        padding: 6px 4px;
-        font-size: 11px;
-    }
-    .skill-name {
-        font-size: 12px;
-    }
-    .skill-desc {
-        font-size: 10px;
-    }
-    .inventory-row {
-        padding: 3px 12px;
-    }
-    .inv-name {
-        font-size: 12px;
-    }
-    .inv-stats {
-        font-size: 9px;
-    }
-    .inv-action-btn {
-        width: 48px;
-        height: 48px;
-        font-size: 8px;
-    }
-    .market-item-name {
-        font-size: 12px;
-    }
-    .market-item-stats {
-        font-size: 9px;
-    }
-    .market-action-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 12px;
-    }
-    .packs-grid {
-        gap: 8px;
-    }
-    .pack-card {
-        padding: 8px 4px;
-    }
-    .pack-diamonds {
-        font-size: 12px;
-    }
-    .pack-price {
-        font-size: 10px;
-    }
+    .hero-card, .enemy-card { flex: 0 0 80px; }
+    .hero-card > div:first-child, .enemy-card > div:first-child { width: 80px !important; height: 120px !important; }
+    .hp-bar, .mana-bar { width: 80px; }
+    .battle-timer { width: 36px; height: 36px; line-height: 36px; font-size: 12px; }
+    .speed-btn { width: 36px; height: 36px; }
+    .debuff-slot { width: 30px; height: 28px; }
+    .negative-icon, .positive-icon, .rage-icon { width: 20px; height: 20px; }
+    .log-entry { font-size: 10px; padding: 6px 8px; }
+    .stat-label { font-size: 12px; min-width: 80px; }
+    .stat-value { font-size: 10px; }
+    .bonuses-table th, .bonuses-table td { padding: 6px 4px; font-size: 11px; }
+    .skill-name { font-size: 12px; }
+    .skill-desc { font-size: 10px; }
+    .inventory-row { padding: 3px 12px; }
+    .inv-name { font-size: 12px; }
+    .inv-stats { font-size: 9px; }
+    .inv-action-btn { width: 48px; height: 48px; font-size: 8px; }
+    .market-item-name { font-size: 12px; }
+    .market-item-stats { font-size: 9px; }
+    .market-action-btn { width: 32px; height: 32px; font-size: 12px; }
+    .packs-grid { gap: 8px; }
+    .pack-card { padding: 8px 4px; }
+    .pack-diamonds { font-size: 12px; }
+    .pack-price { font-size: 10px; }
 }

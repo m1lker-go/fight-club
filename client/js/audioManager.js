@@ -176,8 +176,19 @@ function setMusicVolume(volume) {
 
     // Инициализация
     function init() {
-        loadSettings();
+    loadSettings();
+    // Если музыка включена и громкость > 0 – запускаем музыку меню
+    if (isMusicEnabled && musicVolume > 0) {
+        // Небольшая задержка, чтобы DOM успел отрисовать главный экран
+        setTimeout(() => {
+            if (document.querySelector('.battle-screen') === null) {
+                startMenuMusic();
+            } else {
+                startFightMusic();
+            }
+        }, 100);
     }
+}
     init();
 
     return {

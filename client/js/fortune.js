@@ -31,9 +31,25 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     const sectorCount = sectors.length;
     const angleStep = (Math.PI * 2) / sectorCount;
     const colors = ['#2a303c', '#232833'];
+
+    // Вспомогательная функция для получения подписи по типу сектора
+    function getLabelByType(type) {
+        switch (type) {
+            case 'coins': return 'Монеты';
+            case 'exp': return 'Опыт';
+            case 'coal': return 'Уголь';
+            case 'legendary_chest': return 'Сундук';
+            case 'free_spin': return 'Билет';
+            default: return '';
+        }
+    }
+
     for (let i = 0; i < sectorCount; i++) {
+        const sector = sectors[i];
         const start = i * angleStep + angleOffset;
         const end = (i + 1) * angleStep + angleOffset;
+
+        // Рисуем сектор
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, start, end);
@@ -43,6 +59,7 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
+        // Подготовка к отрисовке текста
         const midAngle = start + angleStep / 2;
         const textRadius = radius * 0.75;
         const x = centerX + Math.cos(midAngle) * textRadius;
@@ -54,66 +71,28 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        if (sectors[i].isSpecial) {
-            // Сектор 20 опыта: иконка звезды, слово "опыт", цифра 20
-            ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
-            ctx.fillStyle = '#ffaa00';
-            ctx.fillText(sectors[i].icon, 0, -20);
-            ctx.font = '12px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#ccc';
-            ctx.fillText('опыт', 0, 0);
-            ctx.font = 'bold 16px "Segoe UI", sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.fillText(sectors[i].display, 0, 20);
+        // Иконка (20px, шрифт и цвет не меняем)
+        ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
+        if (sector.type === 'legendary_chest') {
+            ctx.fillStyle = '#f1c40f';
         } else {
-            let iconChar = sectors[i].icon;
-            let displayText = '';      // цифра или слово (например, "1000")
-            let labelText = '';        // пояснение (монет, опыт, уголь, сундук, билет)
-
-            if (sectors[i].type === 'legendary_chest') {
-                displayText = '';
-                labelText = 'сундук';
-            } else if (sectors[i].type === 'free_spin') {
-                displayText = '';
-                labelText = 'билет';
-            } else if (sectors[i].type === 'coins') {
-                displayText = sectors[i].display;
-                labelText = 'монет';
-            } else if (sectors[i].type === 'exp') {
-                displayText = sectors[i].display;
-                labelText = 'опыт';
-            } else if (sectors[i].type === 'coal') {
-                displayText = sectors[i].display;
-                labelText = 'уголь';
-            }
-
-            // Иконка
-            ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
-            if (sectors[i].type === 'legendary_chest') {
-                ctx.fillStyle = '#f1c40f';
-            } else {
-                ctx.fillStyle = '#ddd';
-            }
-            ctx.fillText(iconChar, 0, -20);
-            
-            // Цифра (или слово "Билет" для free_spin)
-            if (displayText) {
-                ctx.font = 'bold 14px "Segoe UI", sans-serif';
-                ctx.fillStyle = 'white';
-                ctx.fillText(displayText, 0, 0);
-            } else if (labelText === 'билет') {
-                ctx.font = 'bold 14px "Segoe UI", sans-serif';
-                ctx.fillStyle = 'white';
-                ctx.fillText('Билет', 0, 0);
-            }
-            
-            // Пояснение (монет, опыт, уголь, сундук, билет – но если уже есть "Билет", не дублируем)
-            if (labelText && !(labelText === 'билет' && !displayText)) {
-                ctx.font = '10px "Segoe UI", sans-serif';
-                ctx.fillStyle = '#aaa';
-                ctx.fillText(labelText, 0, 16);
-            }
+            ctx.fillStyle = '#ddd';
         }
+        ctx.fillText(sector.icon, 0, -20);
+
+        // Подпись типа (нежирный, 12px)
+        ctx.font = '12px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#aaa';
+        const label = getLabelByType(sector.type);
+        ctx.fillText(label, 0, 0);
+
+        // Цифры награды (жирный, 12px) – только для монет, опыта и угля
+        if (sector.type === 'coins' || sector.type === 'exp' || sector.type === 'coal') {
+            ctx.font = 'bold 12px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.fillText(sector.display, 0, 18);
+        }
+
         ctx.restore();
     }
 }

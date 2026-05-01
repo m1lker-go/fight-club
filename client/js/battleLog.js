@@ -302,27 +302,54 @@ const BattleLog = {
     console.log(`[BattleLog] Сообщение #${this.currentMsgIndex}: type="${type}", attacker="${attacker}", текст="${msgText.substring(0, 80)}"`);
     console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-    // ========== ЗВУКИ ==========
-    if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
-        // Атаки / криты / увороты / ульты игрока
-        if (attacker === 'player') {
-            if (type === 'crit' || (type === 'attack' && msgText.includes('Крит'))) {
-                AudioManager.playSound('crit');
-            } else if (type === 'attack') {
-                AudioManager.playSound('attack');
-            } else if (type === 'dodge') {
-                AudioManager.playSound('dodge');
-            } else if (type === 'damage_self') {
-                AudioManager.playSound('attack');
-            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                AudioManager.playSound('magic');
-            }
-        }
-        // Игрок получает урон (от врага)
-        if (attacker === 'enemy' && (type === 'attack' || type === 'crit' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) {
-            AudioManager.playSound('defend');
+ // ========== ЗВУКИ (с диагностикой) ==========
+if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
+    console.log('[BattleLog] AudioManager определён, пытаемся сыграть звук');
+
+    // --- Действия игрока ---
+    if (attacker === 'player') {
+        console.log('[BattleLog] Атакующий = player, type =', type);
+        if (type === 'crit' || (type === 'attack' && msgText.includes('Крит'))) {
+            console.log('[BattleLog] -> Играем crit');
+            AudioManager.playSound('crit');
+        } else if (type === 'attack') {
+            console.log('[BattleLog] -> Играем attack');
+            AudioManager.playSound('attack');
+        } else if (type === 'dodge') {
+            console.log('[BattleLog] -> Играем dodge');
+            AudioManager.playSound('dodge');
+        } else if (type === 'damage_self') {
+            console.log('[BattleLog] -> Играем attack (damage_self)');
+            AudioManager.playSound('attack');
+        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            console.log('[BattleLog] -> Играем magic');
+            AudioManager.playSound('magic');
+        } else {
+            console.log('[BattleLog] -> Нет подходящего звука для player с type =', type);
         }
     }
+    // --- Действия врага ---
+    else if (attacker === 'enemy') {
+        console.log('[BattleLog] Атакующий = enemy, type =', type);
+        if (type === 'attack' || type === 'crit') {
+            console.log('[BattleLog] -> Играем defend (удар врага)');
+            AudioManager.playSound('defend');
+        } else if (type === 'dodge') {
+            console.log('[BattleLog] -> Играем dodge (уворот врага)');
+            AudioManager.playSound('dodge');
+        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            console.log('[BattleLog] -> Играем magic (ульт врага)');
+            AudioManager.playSound('magic');
+        } else {
+            console.log('[BattleLog] -> Нет подходящего звука для enemy с type =', type);
+        }
+    }
+    else {
+        console.log('[BattleLog] Неизвестный attacker =', attacker);
+    }
+} else {
+    console.warn('[BattleLog] AudioManager не найден или нет playSound');
+}
 
     // Специальная обработка для берсерка (остаётся без изменений)
     const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||

@@ -278,34 +278,27 @@ async function fortuneSpin() {
         return;
     }
     prizeResult = data.prize;
-    console.log('Приз от сервера:', prizeResult);
-
-    // Приводим amount к числу (если сервер прислал строку)
-    if (prizeResult.amount !== undefined && prizeResult.amount !== null) {
-        prizeResult.amount = Number(prizeResult.amount);
-    }
 
     let sectorIndex = sectors.findIndex(s => {
         if (s.type !== prizeResult.type) return false;
         if (prizeResult.type === 'legendary_chest' || prizeResult.type === 'free_spin') return true;
         return s.amount === prizeResult.amount;
     });
-    if (sectorIndex === -1) {
-        console.error('Сектор не найден, берём первый', prizeResult);
-        sectorIndex = 0;
-    }
-    console.log('Индекс сектора:', sectorIndex, sectors[sectorIndex]);
+    if (sectorIndex === -1) sectorIndex = 0;
 
-    // Расчёт в градусах – наглядно и просто
-    const sectorMidDeg = sectorIndex * 36 + 18;          // середина сектора в градусах
-    const targetRotationDeg = (360 - sectorMidDeg) % 360; // какой угол поворота колеса нужен, чтобы середина оказалась на 0°
+    // Середина сектора при 0° вверху: угол = index * 36
+    const sectorMidDeg = sectorIndex * 36;
+    // Чтобы середина оказалась на 0°, колесо нужно повернуть на -sectorMidDeg
+    let targetDeg = -sectorMidDeg;
+    targetDeg = ((targetDeg % 360) + 360) % 360;  // нормализация 0..359
+
     const currentDeg = (currentAngle * 180 / Math.PI) % 360;
-    let deltaDeg = targetRotationDeg - currentDeg;
-    const fullRotationsDeg = 1080;                      // 3 полных оборота (3*360)
-    const targetDeg = (currentAngle * 180 / Math.PI) + deltaDeg + fullRotationsDeg;
-    const targetRad = targetDeg * Math.PI / 180;
+    let deltaDeg = targetDeg - currentDeg;
+    const fullRotationsDeg = 3 * 360;             // 3 полных оборота
+    const totalDeltaDeg = deltaDeg + fullRotationsDeg;
+    const targetRad = (currentAngle * 180 / Math.PI + totalDeltaDeg) * Math.PI / 180;
 
-    console.log(`Сектор ${sectorIndex}, середина ${sectorMidDeg}°, нужный поворот ${targetRotationDeg}°, текущий ${currentDeg}°, дельта ${deltaDeg}°, цель ${targetRad}`);
+    console.log(`Сектор ${sectorIndex}, цель ${targetDeg}°, текущий ${currentDeg}°, дельта ${deltaDeg}°, +3 оборота = ${totalDeltaDeg}°`);
     animateWheel(targetRad);
 }
 

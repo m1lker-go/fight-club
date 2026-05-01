@@ -365,7 +365,7 @@ function showFortuneRules() {
                 </thead>
                 <tbody>
                     <tr style="background: rgba(255,255,255,0.03);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-crown" style="color: #f1c40f; width: 28px;"></i> Легендарное снаряжение</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-tshirt" style="color: #f1c40f; width: 28px;"></i> Легендарное снаряжение</td>
                         <td style="padding: 10px 8px; text-align: center;">1%</td>
                     </tr>
                     <tr>
@@ -397,22 +397,20 @@ function showFortuneRules() {
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
                     </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
-                        <td style="padding: 10px 8px;"><i class="fas fa-fire" style="color: #ccc;"></i> 10 угля</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 10 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px 8px;"><i class="fas fa-fire" style="color: #ccc;"></i> 50 угля</td>
+                        <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 50 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <button class="btn" id="closeRulesBtn" style="margin-top: 20px; background: #2a303c; border: none;">Закрыть</button>
     `;
     modal.style.display = 'flex';
-    document.getElementById('closeRulesBtn').addEventListener('click', () => modal.style.display = 'none');
-    const closeX = modal.querySelector('.close');
-    if (closeX) closeX.onclick = () => modal.style.display = 'none';
+    // Обработка закрытия через крестик уже есть в глобальной логике модального окна
+    // (используется .close, который не трогаем)
 }
 
 function renderFortune() {

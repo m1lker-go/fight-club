@@ -163,8 +163,7 @@ function animateWheel(targetAngle) {
             renderWheel(currentAngle);
             localStorage.setItem('fortuneCurrentAngle', currentAngle.toString());
             if (prizeResult) {
-                if (prizeResult) {
-    if (prizeResult.type === 'exp') {
+               if (prizeResult.type === 'exp') {
         showClassChoiceModalForFortune(prizeResult.amount);
     } else {
         let msg = `Вы выиграли: ${prizeResult.name}`;
@@ -175,8 +174,8 @@ function animateWheel(targetAngle) {
     refreshData();
     prizeResult = null;
 }
-        }
-    }
+}
+}
     requestAnimationFrame(step);
 }
 

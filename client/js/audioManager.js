@@ -13,32 +13,41 @@ const AudioManager = (function() {
     const sounds = {
         attack:   '/assets/music/voice/cat_attack.mp3',
         crit:     '/assets/music/voice/cat_crit.mp3',
-        defend:   '/assets/music/voice/cat_def.mp3',     // когда бьют нас
+        defend:   '/assets/music/voice/cat_def.mp3',
         dodge:    '/assets/music/voice/cat_dodge.mp3',
-        magic:    '/assets/music/voice/cat_magic.mp3',   // ультимейт/магия
+        magic:    '/assets/music/voice/cat_magic.mp3',
         defeat:   '/assets/music/voice/cat_finish.mp3',
         victory:  '/assets/music/voice/cat_finish_win.mp3'
     };
 
     let currentMenuTrackIndex = 0;
-    let currentMusic = null;          // HTMLAudioElement
-    let isMusicEnabled = true;
-    let isSfxEnabled = true;
-    let currentMode = 'menu';         // 'menu' или 'fight'
+    let currentMusic = null;
+    let isMusicEnabled = true;      // включена ли музыка вообще
+    let isSfxEnabled = true;        // включены ли звуки вообще
+    let musicVolume = 0.6;          // 0..1, начальное 60%
+    let sfxVolume = 0.7;            // 0..1, начальное 70%
+    let currentMode = 'menu';
     let menuTrackEndHandler = null;
 
     // Загрузка настроек из localStorage
     function loadSettings() {
         const musicSetting = localStorage.getItem('musicEnabled');
-        const sfxSetting = localStorage.getItem('sfxEnabled');
         if (musicSetting !== null) isMusicEnabled = musicSetting === 'true';
+        const sfxSetting = localStorage.getItem('sfxEnabled');
         if (sfxSetting !== null) isSfxEnabled = sfxSetting === 'true';
+        
+        const musicVol = localStorage.getItem('musicVolume');
+        if (musicVol !== null) musicVolume = parseFloat(musicVol);
+        const sfxVol = localStorage.getItem('sfxVolume');
+        if (sfxVol !== null) sfxVolume = parseFloat(sfxVol);
     }
 
     // Сохранение настроек
     function saveSettings() {
         localStorage.setItem('musicEnabled', isMusicEnabled);
         localStorage.setItem('sfxEnabled', isSfxEnabled);
+        localStorage.setItem('musicVolume', musicVolume);
+        localStorage.setItem('sfxVolume', sfxVolume);
     }
 
     // Остановка текущей музыки
@@ -54,21 +63,20 @@ const AudioManager = (function() {
         }
     }
 
-    // Запуск музыки для меню (циклическое переключение треков)
+    // Запуск музыки для меню
     function startMenuMusic() {
         if (!isMusicEnabled) return;
         stopMusic();
         currentMode = 'menu';
         const track = menuTracks[currentMenuTrackIndex];
         currentMusic = new Audio(track);
-        currentMusic.loop = false; // будем переключать вручную по окончании
+        currentMusic.loop = false;
+        currentMusic.volume = musicVolume;
         menuTrackEndHandler = function() {
-            // переключаем на следующий трек по кругу
             currentMenuTrackIndex = (currentMenuTrackIndex + 1) % menuTracks.length;
-            startMenuMusic(); // рекурсивно запустим следующий
+            startMenuMusic();
         };
         currentMusic.addEventListener('ended', menuTrackEndHandler);
-        currentMusic.volume = 0.6; // можно вынести в настройки позже
         currentMusic.play().catch(e => console.warn('Music play error:', e));
     }
 
@@ -80,43 +88,42 @@ const AudioManager = (function() {
         currentMode = 'fight';
         currentMusic = new Audio(fightTrack);
         currentMusic.loop = true;
-        currentMusic.volume = 0.6;
+        currentMusic.volume = musicVolume;
         currentMusic.play().catch(e => console.warn('Fight music error:', e));
     }
 
     // Воспроизведение звукового эффекта
     function playSound(soundKey) {
-    console.log(`[AudioManager] playSound вызван с key="${soundKey}", isSfxEnabled=${isSfxEnabled}`);
-    if (!isSfxEnabled) {
-        console.log('[AudioManager] Звуки отключены, выход');
-        return;
+        if (!isSfxEnabled) return;
+        const url = sounds[soundKey];
+        if (!url) return;
+        const sfx = new Audio(url);
+        sfx.volume = sfxVolume;
+        sfx.play().catch(e => console.warn(`Sound ${soundKey} error:`, e));
     }
-    const url = sounds[soundKey];
-    if (!url) {
-        console.warn(`[AudioManager] Нет URL для ключа "${soundKey}"`);
-        return;
-    }
-    console.log(`[AudioManager] Загружаем ${url}`);
-    const sfx = new Audio(url);
-    sfx.volume = 0.7;
-    sfx.play().then(() => {
-        console.log(`[AudioManager] Звук "${soundKey}" успешно сыгран`);
-    }).catch(e => {
-        console.error(`[AudioManager] Ошибка воспроизведения "${soundKey}":`, e);
-        if (e.name === 'NotAllowedError') {
-            console.error('=> Браузер блокирует автовоспроизведение. Нужен жест пользователя.');
-        }
-    });
-}
 
-    // Публичные методы
+    // Установка громкости музыки (0..1)
+    function setMusicVolume(volume) {
+        musicVolume = Math.min(1, Math.max(0, volume));
+        if (currentMusic) {
+            currentMusic.volume = musicVolume;
+        }
+        saveSettings();
+    }
+
+    // Установка громкости звуков (0..1)
+    function setSfxVolume(volume) {
+        sfxVolume = Math.min(1, Math.max(0, volume));
+        saveSettings();
+    }
+
+    // Включение/выключение музыки
     function enableMusic(enabled) {
         isMusicEnabled = enabled;
         saveSettings();
         if (!enabled) {
             stopMusic();
         } else {
-            // если текущий экран не бой - запустить меню, иначе бой
             if (document.querySelector('.battle-screen') === null) {
                 startMenuMusic();
             } else {
@@ -125,12 +132,13 @@ const AudioManager = (function() {
         }
     }
 
+    // Включение/выключение звуков
     function enableSfx(enabled) {
         isSfxEnabled = enabled;
         saveSettings();
     }
 
-    // Проверка, находится ли сейчас бой (используется для переключения)
+    // Проверка экрана (для автоматического переключения)
     function onScreenChange() {
         const isBattle = document.querySelector('.battle-screen') !== null;
         if (isBattle) {
@@ -140,26 +148,32 @@ const AudioManager = (function() {
         }
     }
 
+    // Получение текущей громкости (для отображения в настройках)
+    function getMusicVolume() { return musicVolume; }
+    function getSfxVolume() { return sfxVolume; }
+    function getMusicEnabled() { return isMusicEnabled; }
+    function getSfxEnabled() { return isSfxEnabled; }
+
     // Инициализация
     function init() {
         loadSettings();
-        // Наблюдаем за появлением/исчезновением экрана боя (MutationObserver – опционально)
-        // Для простоты будем вызывать onScreenChange при каждом рендере экрана
-        // Внедрим хуки в функции showScreen и renderBattle
-        //window.audioManager = { onScreenChange, enableMusic, enableSfx, playSound };
     }
-
     init();
 
-   return {
-    enableMusic,
-    enableSfx,
-    playSound,
-    onScreenChange,
-    startFightMusic, 
-    startMenuMusic     
-};
+    return {
+        enableMusic,
+        enableSfx,
+        playSound,
+        onScreenChange,
+        startFightMusic,
+        startMenuMusic,
+        setMusicVolume,
+        setSfxVolume,
+        getMusicVolume,
+        getSfxVolume,
+        getMusicEnabled,
+        getSfxEnabled
+    };
 })();
 
-// Глобальный доступ
 window.AudioManager = AudioManager;

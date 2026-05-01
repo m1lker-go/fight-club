@@ -5,7 +5,7 @@ let isSpinning = false;
 let currentAngle = 0;
 let prizeResult = null;
 let animFrame = null;
-let fortuneCountdownInterval = null; // переименовано
+let fortuneCountdownInterval = null;
 let currentCountdown = 0;
 const SPIN_DURATION = 7000;
 
@@ -32,7 +32,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     const angleStep = (Math.PI * 2) / sectorCount;
     const colors = ['#2a303c', '#232833'];
 
-    // Вспомогательная функция для получения подписи по типу сектора
     function getLabelByType(type) {
         switch (type) {
             case 'coins': return 'Монеты';
@@ -49,7 +48,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         const start = i * angleStep + angleOffset;
         const end = (i + 1) * angleStep + angleOffset;
 
-        // Рисуем сектор
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.arc(centerX, centerY, radius, start, end);
@@ -59,7 +57,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Подготовка к отрисовке текста
         const midAngle = start + angleStep / 2;
         const textRadius = radius * 0.75;
         const x = centerX + Math.cos(midAngle) * textRadius;
@@ -71,7 +68,6 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Иконка (20px, шрифт и цвет не меняем)
         ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
         if (sector.type === 'legendary_chest') {
             ctx.fillStyle = '#f1c40f';
@@ -80,13 +76,11 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
         }
         ctx.fillText(sector.icon, 0, -20);
 
-        // Подпись типа (нежирный, 12px)
         ctx.font = '12px "Segoe UI", sans-serif';
         ctx.fillStyle = '#aaa';
         const label = getLabelByType(sector.type);
         ctx.fillText(label, 0, 0);
 
-        // Цифры награды (жирный, 12px) – только для монет, опыта и угля
         if (sector.type === 'coins' || sector.type === 'exp' || sector.type === 'coal') {
             ctx.font = 'bold 12px "Segoe UI", sans-serif';
             ctx.fillStyle = 'white';
@@ -111,7 +105,6 @@ function drawCenter(ctx, centerX, centerY, radius) {
     if (currentCountdown > 0) {
         ctx.font = 'bold 20px "Segoe UI", sans-serif';
         ctx.fillStyle = '#00aaff';
-        // Корректировка для идеального центрирования (опционально)
         ctx.fillText(currentCountdown.toString(), centerX, centerY);
     } else {
         ctx.font = '20px "Font Awesome 6 Free", "FontAwesome", sans-serif';
@@ -170,6 +163,8 @@ function animateWheel(targetAngle) {
             fortuneCountdownInterval = null;
             currentCountdown = 0;
             renderWheel(currentAngle);
+            // Сохраняем итоговый угол в localStorage
+            localStorage.setItem('fortuneCurrentAngle', currentAngle.toString());
             if (prizeResult) {
                 if (prizeResult.type === 'exp') {
                     showClassChoiceModalForFortune(prizeResult.amount);
@@ -285,7 +280,6 @@ async function fortuneSpin() {
     prizeResult = data.prize;
     console.log('Приз от сервера:', prizeResult);
 
-    // Поиск индекса сектора (0..9)
     let sectorIndex = sectors.findIndex(s => {
         if (s.type !== prizeResult.type) return false;
         if (prizeResult.type === 'legendary_chest' || prizeResult.type === 'free_spin') return true;
@@ -299,14 +293,15 @@ async function fortuneSpin() {
 
     const sectorCount = sectors.length;
     const sectorAngle = (Math.PI * 2) / sectorCount;
-    const midAngle = sectorIndex * sectorAngle + sectorAngle / 2;   // середина выигрышного сектора
-    // Указатель смотрит строго вверх (угол 3π/2). Вычисляем поворот колеса, чтобы середина сектора совпала с указателем.
-    let targetOffset = (3 * Math.PI / 2 - midAngle) % (Math.PI * 2);
+    const midAngle = sectorIndex * sectorAngle + sectorAngle / 2;
+
+    // Указатель вверху (угол -π/2). Поворот колеса, чтобы середина сектора оказалась под ним:
+    let targetOffset = (-Math.PI / 2 - midAngle) % (Math.PI * 2);
     if (targetOffset < 0) targetOffset += Math.PI * 2;
 
     const current = currentAngle % (Math.PI * 2);
     let delta = targetOffset - current;
-    const fullRotations = 5 + Math.random() * 5;   // от 5 до 10 лишних оборотов
+    const fullRotations = 5 + Math.random() * 5;
     const target = currentAngle + delta + fullRotations * Math.PI * 2;
 
     console.log(`currentAngle=${currentAngle}, targetOffset=${targetOffset}, delta=${delta}, target=${target}`);
@@ -368,7 +363,7 @@ function showFortuneRules() {
                     <tr style="background: #1a1f2b; color: #ddd;">
                         <th style="padding: 12px 8px; text-align: left;">Награда</th>
                         <th style="padding: 12px 8px; text-align: center; width: 70px;">Шанс</th>
-                     </tr>
+                      </tr>
                 </thead>
                 <tbody>
                     <tr style="background: rgba(255,255,255,0.03);">
@@ -390,40 +385,35 @@ function showFortuneRules() {
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-coins" style="color: #ccc;"></i> 1000 монет</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
-                     </tr>
+                    </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 20 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                     </tr>
+                    </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 50 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">10%</td>
-                     </tr>
+                    </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-star" style="color: #ccc;"></i> 250 опыта</td>
                         <td style="padding: 10px 8px; text-align: center;">3%</td>
-                     </tr>
+                    </tr>
                     <tr style="background: rgba(255,255,255,0.03);">
                         <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 10 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">18%</td>
-                     </tr>
+                    </tr>
                     <tr>
                         <td style="padding: 10px 8px;"><i class="fas fa-industry" style="color: #ccc;"></i> 50 угля</td>
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
-                     </tr>
+                    </tr>
                 </tbody>
-             </table>
-             <button id="closeRulesBtn" style="width:100%; padding: 12px; border-radius: 8px; background: #2a303c; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px;">Назад</button>
+            </table>
+            <button id="closeRulesBtn" style="width:100%; padding: 12px; border-radius: 8px; background: #2a303c; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px;">Назад</button>
         </div>
     `;
-    
-    // Скрываем крестик
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
-    
     modal.style.display = 'flex';
-    
-    // Обработчик кнопки "Назад"
     const backBtn = document.getElementById('closeRulesBtn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
@@ -469,7 +459,14 @@ function renderFortune() {
     `;
     const canvas = document.getElementById('wheelCanvas');
     canvas.width = 340; canvas.height = 340;
-    renderWheel(0);
+    // Восстанавливаем сохранённый угол, если есть
+    const savedAngle = localStorage.getItem('fortuneCurrentAngle');
+    if (savedAngle !== null) {
+        currentAngle = parseFloat(savedAngle);
+    } else {
+        currentAngle = 0;
+    }
+    renderWheel(currentAngle);
     loadFortuneStatus();
     document.getElementById('fortuneHelpBtn').addEventListener('click', showFortuneRules);
     document.getElementById('ticketMinus').addEventListener('click', () => changeTicketCount(-1));

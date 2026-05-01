@@ -601,3 +601,4 @@ function claimDailyExp(taskId, expAmount) {
 }
 
 window.renderTasks = renderTasks;
+window.showAdventCalendar = showAdventCalendar;

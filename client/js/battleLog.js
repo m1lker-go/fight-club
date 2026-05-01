@@ -297,7 +297,9 @@ const BattleLog = {
     const msgText = entry.text;
     const type = entry.type;
     const attacker = entry.attacker;
-
+       
+   // === ЛОГИРОВАНИЕ ===
+    console.log(`[BattleLog] Сообщение #${this.currentMsgIndex}: type="${type}", attacker="${attacker}", текст="${msgText.substring(0, 80)}"`);
     console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
     // ========== ЗВУКИ ==========

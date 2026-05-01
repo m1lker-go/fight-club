@@ -280,6 +280,11 @@ async function fortuneSpin() {
     prizeResult = data.prize;
     console.log('Приз от сервера:', prizeResult);
 
+    // Приводим amount к числу (если сервер прислал строку)
+    if (prizeResult.amount !== undefined && prizeResult.amount !== null) {
+        prizeResult.amount = Number(prizeResult.amount);
+    }
+
     let sectorIndex = sectors.findIndex(s => {
         if (s.type !== prizeResult.type) return false;
         if (prizeResult.type === 'legendary_chest' || prizeResult.type === 'free_spin') return true;
@@ -291,21 +296,17 @@ async function fortuneSpin() {
     }
     console.log('Индекс сектора:', sectorIndex, sectors[sectorIndex]);
 
-    const sectorCount = sectors.length;
-    const sectorAngle = (Math.PI * 2) / sectorCount;
-    const midAngle = sectorIndex * sectorAngle + sectorAngle / 2;
+    // Расчёт в градусах – наглядно и просто
+    const sectorMidDeg = sectorIndex * 36 + 18;          // середина сектора в градусах
+    const targetRotationDeg = (360 - sectorMidDeg) % 360; // какой угол поворота колеса нужен, чтобы середина оказалась на 0°
+    const currentDeg = (currentAngle * 180 / Math.PI) % 360;
+    let deltaDeg = targetRotationDeg - currentDeg;
+    const fullRotationsDeg = 1080;                      // 3 полных оборота (3*360)
+    const targetDeg = (currentAngle * 180 / Math.PI) + deltaDeg + fullRotationsDeg;
+    const targetRad = targetDeg * Math.PI / 180;
 
-    // Указатель вверху (угол -π/2). Поворот колеса, чтобы середина сектора оказалась под ним:
-    let targetOffset = (-Math.PI / 2 - midAngle) % (Math.PI * 2);
-    if (targetOffset < 0) targetOffset += Math.PI * 2;
-
-    const current = currentAngle % (Math.PI * 2);
-    let delta = targetOffset - current;
-    const fullRotations = 5 + Math.random() * 5;
-    const target = currentAngle + delta + fullRotations * Math.PI * 2;
-
-    console.log(`currentAngle=${currentAngle}, targetOffset=${targetOffset}, delta=${delta}, target=${target}`);
-    animateWheel(target);
+    console.log(`Сектор ${sectorIndex}, середина ${sectorMidDeg}°, нужный поворот ${targetRotationDeg}°, текущий ${currentDeg}°, дельта ${deltaDeg}°, цель ${targetRad}`);
+    animateWheel(targetRad);
 }
 
 function showClassChoiceModalForFortune(expAmount) {

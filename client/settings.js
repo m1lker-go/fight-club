@@ -1,4 +1,4 @@
-// settings.js – с ползунками громкости для музыки и звуков
+// settings.js – полная версия с новой вёрсткой настроек
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -53,9 +53,9 @@ async function renderSettings() {
 
         const hasPassword = !!user.password_hash;
 
-        // Получаем текущие значения громкости из AudioManager (или дефолтные)
-        let musicVolumePercent = 60; // 60% по умолчанию
-        let sfxVolumePercent = 70;   // 70% по умолчанию
+        // Текущая громкость из AudioManager
+        let musicVolumePercent = 60;
+        let sfxVolumePercent = 70;
         if (typeof AudioManager !== 'undefined') {
             musicVolumePercent = Math.round(AudioManager.getMusicVolume() * 100);
             sfxVolumePercent = Math.round(AudioManager.getSfxVolume() * 100);
@@ -65,18 +65,15 @@ async function renderSettings() {
         if (!content) return;
         content.innerHTML = `
             <div class="settings-container">
-                <div class="settings-header">
+                <!-- Строка профиля: аватар + имя + карандаш -->
+                <div class="settings-profile-row">
                     <img src="/assets/${user.avatar || 'cat_heroweb.png'}" class="settings-avatar">
                     <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}</span>
-                </div>
-                <div class="settings-row username-row">
-                    <span>Никнейм</span>
-                    <span class="username-value">${escapeHtml(user.username || user.username || 'Игрок')}</span>
                     <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
                 </div>
-                
-                <!-- НАСТРОЙКИ ГРОМКОСТИ (ползунки) -->
-                <div class="settings-row volume-row">
+
+                <!-- Музыка -->
+                <div class="settings-volume-row">
                     <div class="volume-label">Музыка</div>
                     <div class="slider-container" id="musicSliderContainer">
                         <div class="slider-track">
@@ -86,7 +83,9 @@ async function renderSettings() {
                         <div class="slider-percent" id="musicPercent">${musicVolumePercent}%</div>
                     </div>
                 </div>
-                <div class="settings-row volume-row">
+
+                <!-- Звуки -->
+                <div class="settings-volume-row">
                     <div class="volume-label">Звуки</div>
                     <div class="slider-container" id="sfxSliderContainer">
                         <div class="slider-track">
@@ -97,44 +96,46 @@ async function renderSettings() {
                     </div>
                 </div>
 
-                <div class="settings-section">
-                    <h3>Привязанные аккаунты</h3>
-                    <div class="connections-list">
-                        <div class="connection-row">
-                            <span>Telegram</span>
-                            <span>${user.tg_id ? 'Подключён' : '—'}</span>
-                            <button class="link-btn" data-provider="telegram">${user.tg_id ? 'Сменить' : 'Привязать'}</button>
-                        </div>
-                        <div class="connection-row">
-                            <span>Google</span>
-                            <span>${connections.find(c => c.provider === 'google')?.email || '—'}</span>
-                            <button class="link-btn" data-provider="google">${connections.find(c => c.provider === 'google') ? 'Сменить' : 'Привязать'}</button>
-                        </div>
-                        <div class="connection-row">
-                            <span>VK</span>
-                            <span>${connections.find(c => c.provider === 'vk')?.email || '—'}</span>
-                            <button class="link-btn" data-provider="vk">${connections.find(c => c.provider === 'vk') ? 'Сменить' : 'Привязать'}</button>
-                        </div>
-                        <div class="connection-row">
-                            <span>Email</span>
-                            <span>${user.email || '—'}</span>
-                            <button class="link-btn" data-provider="email">${user.email ? 'Сменить' : 'Привязать'}</button>
-                        </div>
-                        ${hasPassword ? `
-                        <div class="connection-row">
-                            <span>Пароль</span>
-                            <span>••••••</span>
-                            <button class="link-btn" data-action="change-password">Изменить</button>
-                        </div>` : ''}
+                <!-- Заголовок привязанных аккаунтов (тёмный, по центру) -->
+                <div class="settings-connected-header">ПРИВЯЗАННЫЕ АККАУНТЫ</div>
+
+                <!-- Список привязок -->
+                <div class="connections-list">
+                    <div class="connection-row">
+                        <span>Telegram</span>
+                        <span>${user.tg_id ? 'Подключён' : '—'}</span>
+                        <button class="link-btn" data-provider="telegram">${user.tg_id ? 'Сменить' : 'Привязать'}</button>
                     </div>
+                    <div class="connection-row">
+                        <span>Google</span>
+                        <span>${connections.find(c => c.provider === 'google')?.email || '—'}</span>
+                        <button class="link-btn" data-provider="google">${connections.find(c => c.provider === 'google') ? 'Сменить' : 'Привязать'}</button>
+                    </div>
+                    <div class="connection-row">
+                        <span>VK</span>
+                        <span>${connections.find(c => c.provider === 'vk')?.email || '—'}</span>
+                        <button class="link-btn" data-provider="vk">${connections.find(c => c.provider === 'vk') ? 'Сменить' : 'Привязать'}</button>
+                    </div>
+                    <div class="connection-row">
+                        <span>Email</span>
+                        <span>${user.email || '—'}</span>
+                        <button class="link-btn" data-provider="email">${user.email ? 'Сменить' : 'Привязать'}</button>
+                    </div>
+                    ${hasPassword ? `
+                    <div class="connection-row">
+                        <span>Пароль</span>
+                        <span>••••••</span>
+                        <button class="link-btn" data-action="change-password">Изменить</button>
+                    </div>` : ''}
                 </div>
+
                 <div class="settings-logout">
                     <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти из аккаунта</button>
                 </div>
             </div>
         `;
 
-        // ========== ИНИЦИАЛИЗАЦИЯ ПОЛЗУНКОВ ==========
+        // Инициализация ползунков
         function setupSlider(containerId, fillId, thumbId, percentId, isMusic) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -149,7 +150,6 @@ async function renderSettings() {
                 const rect = track.getBoundingClientRect();
                 let percent = (clientX - rect.left) / rect.width;
                 percent = Math.min(1, Math.max(0, percent));
-                // Округляем до шага 0.2 (20%)
                 const step = 0.2;
                 let stepped = Math.round(percent / step) * step;
                 stepped = Math.min(1, Math.max(0, stepped));
@@ -162,7 +162,6 @@ async function renderSettings() {
                 if (isMusic) {
                     if (typeof AudioManager !== 'undefined') {
                         AudioManager.setMusicVolume(stepped);
-                        // Отправляем на сервер флаг включения (громкость > 0)
                         updateSettings({ music_enabled: stepped > 0 });
                     }
                 } else {
@@ -212,7 +211,7 @@ async function renderSettings() {
         setupSlider('musicSliderContainer', 'musicFill', 'musicThumb', 'musicPercent', true);
         setupSlider('sfxSliderContainer', 'sfxFill', 'sfxThumb', 'sfxPercent', false);
 
-        // ========== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ ==========
+        // Обработчики
         const editusernameBtn = document.getElementById('editusernameBtn');
         if (editusernameBtn) {
             editusernameBtn.addEventListener('click', () => {

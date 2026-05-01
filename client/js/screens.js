@@ -111,7 +111,7 @@ function renderMain() {
     `;
 
     updateSubclasses(currentClass);
-    // Обработчики
+      // Обработчики
     const classSelector = document.querySelector('.class-selector');
     if (classSelector) {
         classSelector.addEventListener('click', async (e) => {
@@ -139,7 +139,17 @@ function renderMain() {
             }
         });
     }
-    document.getElementById('fightBtn')?.addEventListener('click', () => startBattle());
+    document.getElementById('fightBtn')?.addEventListener('click', () => {
+        // Включаем боевую музыку перед стартом боя
+        if (window.AudioManager) {
+            if (typeof AudioManager.startFightMusic === 'function') {
+                AudioManager.startFightMusic();
+            } else if (typeof AudioManager.onScreenChange === 'function') {
+                AudioManager.onScreenChange(); // fallback
+            }
+        }
+        startBattle();
+    });
     document.getElementById('roleInfoBtn')?.addEventListener('click', () => showRoleInfoModal(userData.current_class));
     document.getElementById('avatarClick')?.addEventListener('click', () => showScreen('profile'));
     document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
@@ -154,6 +164,11 @@ function renderMain() {
     updateProfileAvatarIcon();
     if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
     if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
+
+    // Синхронизация музыки при показе главного экрана (включаем музыку меню)
+    if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+        AudioManager.onScreenChange();
+    }
 }
 
 function updateMainScreen() {

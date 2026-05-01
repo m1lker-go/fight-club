@@ -1420,59 +1420,66 @@ async function renderMessageDetail(messageId) {
     }
     
     const classChoiceBtns = document.querySelectorAll('.class-choice-btn');
-    if (classChoiceBtns.length) {
-        classChoiceBtns.forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const chosenClass = btn.dataset.class;
-                try {
-                    const res = await window.apiRequest('/auth/claim-class-reward', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ message_id: messageId, chosen_class: chosenClass })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        const classNameRu = chosenClass === 'warrior' ? 'Воин' : (chosenClass === 'assassin' ? 'Ассасин' : 'Маг');
-                        showToast(`Вы выбрали класс ${classNameRu} и получили 5 очков навыков!`, 2000);
-                        msg.is_claimed = true;
-                        await refreshData();
-                        recalcUnprocessedCount();
-                        renderMessageDetail(messageId);
-                    } else {
-                        showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 1500);
+if (classChoiceBtns.length) {
+    classChoiceBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const chosenClass = btn.dataset.class;
+            try {
+                const res = await window.apiRequest('/auth/claim-class-reward', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ message_id: messageId, chosen_class: chosenClass })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // +++ Звук получения награды +++
+                    if (typeof AudioManager !== 'undefined') {
+                        AudioManager.playSound('reward');
                     }
-                } catch (err) {
-                    console.error(err);
-                    showToast('Ошибка соединения', 1500);
+                    const classNameRu = chosenClass === 'warrior' ? 'Воин' : (chosenClass === 'assassin' ? 'Ассасин' : 'Маг');
+                    showToast(`Вы выбрали класс ${classNameRu} и получили 5 очков навыков!`, 2000);
+                    msg.is_claimed = true;
+                    await refreshData();
+                    recalcUnprocessedCount();
+                    renderMessageDetail(messageId);
+                } else {
+                    showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 1500);
                 }
-            });
-        });
-    }
-    
-    const claimBtn = document.getElementById('claimRewardBtn');
-    if (claimBtn) {
-        claimBtn.addEventListener('click', async () => {
-            const res = await window.apiRequest('/auth/messages/claim', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ message_id: messageId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                let icon = '';
-                if (msg.reward_type === 'coins') icon = '<i class="fas fa-coins"></i> ';
-                else if (msg.reward_type === 'diamonds') icon = '<i class="fas fa-gem"></i> ';
-                else icon = '<i class="fas fa-gift"></i> ';
-                showToast(`${icon}Вы получили: ${data.reward_text}`, 2000);
-                msg.is_claimed = true;
-                await refreshData();
-                recalcUnprocessedCount();
-                renderMessageDetail(messageId);
-            } else {
-                showToast('Ошибка: ' + data.error, 1500);
+            } catch (err) {
+                console.error(err);
+                showToast('Ошибка соединения', 1500);
             }
         });
-    }
+    });
+}
+    
+   const claimBtn = document.getElementById('claimRewardBtn');
+if (claimBtn) {
+    claimBtn.addEventListener('click', async () => {
+        const res = await window.apiRequest('/auth/messages/claim', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ message_id: messageId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            // +++ Звук получения награды +++
+            if (typeof AudioManager !== 'undefined') {
+                AudioManager.playSound('reward');
+            }
+            let icon = '';
+            if (msg.reward_type === 'coins') icon = '<i class="fas fa-coins"></i> ';
+            else if (msg.reward_type === 'diamonds') icon = '<i class="fas fa-gem"></i> ';
+            else icon = '<i class="fas fa-gift"></i> ';
+            showToast(`${icon}Вы получили: ${data.reward_text}`, 2000);
+            msg.is_claimed = true;
+            await refreshData();
+            recalcUnprocessedCount();
+            renderMessageDetail(messageId);
+        } else {
+            showToast('Ошибка: ' + data.error, 1500);
+        }
+    });
 }
 
 

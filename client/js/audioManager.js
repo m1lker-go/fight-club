@@ -32,17 +32,26 @@ const AudioManager = (function() {
     let menuTrackEndHandler = null;
 
     // Загрузка настроек из localStorage
-    function loadSettings() {
-        const musicSetting = localStorage.getItem('musicEnabled');
-        if (musicSetting !== null) isMusicEnabled = musicSetting === 'true';
-        const sfxSetting = localStorage.getItem('sfxEnabled');
-        if (sfxSetting !== null) isSfxEnabled = sfxSetting === 'true';
-        
-        const musicVol = localStorage.getItem('musicVolume');
-        if (musicVol !== null) musicVolume = parseFloat(musicVol);
-        const sfxVol = localStorage.getItem('sfxVolume');
-        if (sfxVol !== null) sfxVolume = parseFloat(sfxVol);
+function loadSettings() {
+    const musicSetting = localStorage.getItem('musicEnabled');
+    const sfxSetting = localStorage.getItem('sfxEnabled');
+    if (musicSetting !== null) isMusicEnabled = musicSetting === 'true';
+    if (sfxSetting !== null) isSfxEnabled = sfxSetting === 'true';
+    
+    const musicVol = localStorage.getItem('musicVolume');
+    if (musicVol !== null) musicVolume = parseFloat(musicVol);
+    const sfxVol = localStorage.getItem('sfxVolume');
+    if (sfxVol !== null) sfxVolume = parseFloat(sfxVol);
+
+    // +++ Автоматически включаем музыку, если громкость > 0 +++
+    if (musicVolume > 0 && !isMusicEnabled) {
+        isMusicEnabled = true;
+        saveSettings(); // сохраняем исправленный флаг
+    } else if (musicVolume === 0 && isMusicEnabled) {
+        isMusicEnabled = false;
+        saveSettings();
     }
+}
 
     // Сохранение настроек
     function saveSettings() {
@@ -104,14 +113,23 @@ const AudioManager = (function() {
         sfx.play().catch(e => console.warn(`Sound ${soundKey} error:`, e));
     }
 
-    // Установка громкости музыки (0..1)
-    function setMusicVolume(volume) {
-        musicVolume = Math.min(1, Math.max(0, volume));
-        if (currentMusic) {
-            currentMusic.volume = musicVolume;
-        }
-        saveSettings();
+   // Установка громкости музыки (0..1)
+function setMusicVolume(volume) {
+    musicVolume = Math.min(1, Math.max(0, volume));
+    // Если громкость стала > 0 и музыка была выключена – включаем
+    if (musicVolume > 0 && !isMusicEnabled) {
+        enableMusic(true);
     }
+    // Если громкость стала 0 и музыка была включена – выключаем
+    else if (musicVolume === 0 && isMusicEnabled) {
+        enableMusic(false);
+    }
+    // Иначе просто меняем громкость текущего трека
+    else if (currentMusic) {
+        currentMusic.volume = musicVolume;
+    }
+    saveSettings();
+}
 
     // Установка громкости звуков (0..1)
     function setSfxVolume(volume) {

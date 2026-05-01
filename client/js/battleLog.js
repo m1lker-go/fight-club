@@ -282,127 +282,144 @@ const BattleLog = {
         text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
         return text;
     },
-    playNext() {
-        if (this.stopped) {
-            console.log('[BattleLog] stopped, ignoring');
-            return;
-        }
-        if (this.currentMsgIndex >= this.messages.length) {
-            console.log('[BattleLog] All messages shown, finishing');
-            this.finish();
-            return;
-        }
+   playNext() {
+    if (this.stopped) {
+        console.log('[BattleLog] stopped, ignoring');
+        return;
+    }
+    if (this.currentMsgIndex >= this.messages.length) {
+        console.log('[BattleLog] All messages shown, finishing');
+        this.finish();
+        return;
+    }
 
-        const entry = this.messages[this.currentMsgIndex];
-        const msgText = entry.text;
-        const type = entry.type;
-        const attacker = entry.attacker;
+    const entry = this.messages[this.currentMsgIndex];
+    const msgText = entry.text;
+    const type = entry.type;
+    const attacker = entry.attacker;
 
-        console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
+    console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        // Специальная обработка для берсерка
-        const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
-                            (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
-
-        if (isBerserker && type === 'damage_self') {
-            // Этап 1: урон по себе
-            const selfMatch = msgText.match(/Урон -(\d+)/);
-            if (selfMatch) {
-                const selfDamage = parseInt(selfMatch[1]);
-                const currentState = this.states[this.currentStateIndex - 1] || this.states[0];
-                const currentHp = attacker === 'player' ? currentState.playerHp : currentState.enemyHp;
-                const maxHp = attacker === 'player' ? this.battleData.result.playerMaxHp : this.battleData.result.enemyMaxHp;
-                const targetBar = attacker === 'player' ? document.getElementById('heroHp') : document.getElementById('enemyHp');
-                const targetText = attacker === 'player' ? document.getElementById('heroHpText') : document.getElementById('enemyHpText');
-                const afterSelf = Math.max(0, currentHp - selfDamage);
-                targetBar.style.width = (afterSelf / maxHp) * 100 + '%';
-                targetText.innerText = `${afterSelf}/${maxHp}`;
-            }
-
-            // После этого сообщения идёт следующее – атака. Запланируем её обработку через 1.5 секунды
-            setTimeout(() => {
-                this.processBerserkerAttack(attacker);
-            }, 1500 / this.speed);
-        }
-
-        // Обычная обработка для всех сообщений (лог, анимации, числа)
-        const logEntry = document.createElement('div');
-        let entryClass = 'log-entry';
-        if (type === 'dodge') {
-            entryClass += ' dodge-message';
-        } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            entryClass += ' ult-message';
-        } else if (type === 'poison_stack' || type === 'poison_dot') {
-            entryClass += ' poison-message';
-        } else if (type === 'burn_stack' || type === 'burn_dot') {
-            entryClass += ' fire-message';
-        } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
-            entryClass += ' ice-message';
-        }
-
-        // Добавляем класс атакующего для цветового разделения
+    // ========== ЗВУКИ ==========
+    if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
+        // Звуки, когда игрок атакует или использует способность
         if (attacker === 'player') {
-            entryClass += ' attacker-player';
-        } else if (attacker === 'enemy') {
-            entryClass += ' attacker-enemy';
-        }
-
-        logEntry.className = entryClass;
-        logEntry.innerHTML = this.formatLogText(msgText);
-        this.logContainer.appendChild(logEntry);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
-
-        // Анимации
-        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
-        if (!isStackMessage) {
-            let animTarget = null;
-            let animFile = null;
-            if (type === 'attack' || type === 'crit' || type === 'damage') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'shot.gif';
+            if (type === 'crit' || (type === 'attack' && msgText.includes('Крит'))) {
+                AudioManager.playSound('crit');
+            } else if (type === 'attack') {
+                AudioManager.playSound('attack');
             } else if (type === 'dodge') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'missx.gif';
+                AudioManager.playSound('dodge');
+            } else if (type === 'damage_self') {
+                AudioManager.playSound('attack');
             } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                if (type === 'fire_ult') animFile = 'fire.gif';
-                else if (type === 'ice_ult') animFile = 'ice.gif';
-                else if (type === 'poison_ult') animFile = 'poison.gif';
-                else animFile = 'ultimate.gif';
-            } else if (type === 'heal' || type === 'buff') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-            } else if (type === 'frozen_enter' || type === 'frozen_end') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animFile = 'frozenx.gif';
-            }
-            if (animTarget && animFile) {
-                this.showAnimation(animTarget, animFile);
+                AudioManager.playSound('magic');
             }
         }
+        // Звук, когда игрок получает урон (от врага)
+        if (attacker === 'enemy' && (type === 'attack' || type === 'crit' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) {
+            AudioManager.playSound('defend');
+        }
+    }
 
-        this.parseAndShowFloatingNumber(entry);
-        this.currentMsgIndex++;
+    // Специальная обработка для берсерка
+    const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
+                        (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
 
-        // Для берсерка пропускаем обычное применение состояния, так как мы обрабатываем всё вручную
-        if (!(isBerserker && type === 'damage_self')) {
-            if (this.currentStateIndex < this.states.length) {
-                this.applyState(this.states[this.currentStateIndex]);
-                this.currentStateIndex++;
-            }
-        } else {
-            // Для сообщения damage_self мы не применяем состояние, но нужно продвинуть индекс состояния
-            if (this.currentStateIndex < this.states.length) {
-                this.currentStateIndex++;
-            }
+    if (isBerserker && type === 'damage_self') {
+        // Этап 1: урон по себе
+        const selfMatch = msgText.match(/Урон -(\d+)/);
+        if (selfMatch) {
+            const selfDamage = parseInt(selfMatch[1]);
+            const currentState = this.states[this.currentStateIndex - 1] || this.states[0];
+            const currentHp = attacker === 'player' ? currentState.playerHp : currentState.enemyHp;
+            const maxHp = attacker === 'player' ? this.battleData.result.playerMaxHp : this.battleData.result.enemyMaxHp;
+            const targetBar = attacker === 'player' ? document.getElementById('heroHp') : document.getElementById('enemyHp');
+            const targetText = attacker === 'player' ? document.getElementById('heroHpText') : document.getElementById('enemyHpText');
+            const afterSelf = Math.max(0, currentHp - selfDamage);
+            targetBar.style.width = (afterSelf / maxHp) * 100 + '%';
+            targetText.innerText = `${afterSelf}/${maxHp}`;
         }
 
-        if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
-            console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
-        }
+        setTimeout(() => {
+            this.processBerserkerAttack(attacker);
+        }, 1500 / this.speed);
+    }
 
-        this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
-    },
+    // Обычная обработка для всех сообщений (лог, анимации, числа)
+    const logEntry = document.createElement('div');
+    let entryClass = 'log-entry';
+    if (type === 'dodge') {
+        entryClass += ' dodge-message';
+    } else if (type.includes('ult') || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+        entryClass += ' ult-message';
+    } else if (type === 'poison_stack' || type === 'poison_dot') {
+        entryClass += ' poison-message';
+    } else if (type === 'burn_stack' || type === 'burn_dot') {
+        entryClass += ' fire-message';
+    } else if (type === 'freeze_stack' || type === 'frozen_enter' || type === 'frozen_end' || type === 'frozen_continue' || type === 'frozen_already') {
+        entryClass += ' ice-message';
+    }
+
+    if (attacker === 'player') {
+        entryClass += ' attacker-player';
+    } else if (attacker === 'enemy') {
+        entryClass += ' attacker-enemy';
+    }
+
+    logEntry.className = entryClass;
+    logEntry.innerHTML = this.formatLogText(msgText);
+    this.logContainer.appendChild(logEntry);
+    this.logContainer.scrollTop = this.logContainer.scrollHeight;
+
+    const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+    if (!isStackMessage) {
+        let animTarget = null;
+        let animFile = null;
+        if (type === 'attack' || type === 'crit' || type === 'damage') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'shot.gif';
+        } else if (type === 'dodge') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'missx.gif';
+        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            if (type === 'fire_ult') animFile = 'fire.gif';
+            else if (type === 'ice_ult') animFile = 'ice.gif';
+            else if (type === 'poison_ult') animFile = 'poison.gif';
+            else animFile = 'ultimate.gif';
+        } else if (type === 'heal' || type === 'buff') {
+            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+        } else if (type === 'frozen_enter' || type === 'frozen_end') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'frozenx.gif';
+        }
+        if (animTarget && animFile) {
+            this.showAnimation(animTarget, animFile);
+        }
+    }
+
+    this.parseAndShowFloatingNumber(entry);
+    this.currentMsgIndex++;
+
+    if (!(isBerserker && type === 'damage_self')) {
+        if (this.currentStateIndex < this.states.length) {
+            this.applyState(this.states[this.currentStateIndex]);
+            this.currentStateIndex++;
+        }
+    } else {
+        if (this.currentStateIndex < this.states.length) {
+            this.currentStateIndex++;
+        }
+    }
+
+    if (entry.type === 'ult' || entry.type === 'ice_ult' || entry.type === 'fire_ult' || entry.type === 'poison_ult') {
+        console.log(`[ULT] type=${entry.type}, text="${entry.text}"`);
+    }
+
+    this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
+},
 
     // Новый метод для обработки атаки берсерка (этапы 2 и 3)
     processBerserkerAttack(attacker) {

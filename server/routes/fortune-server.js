@@ -5,16 +5,16 @@ const { generateItemByRarity } = require('../utils/botGenerator');
 
 // Шансы выигрыша (сумма 100)
 const prizes = [
-    { type: 'legendary_chest', chance: 1, name: 'Легендарный сундук' },
-    { type: 'coins', amount: 1000, chance: 5, name: '1000 монет' },
-    { type: 'exp', amount: 250, chance: 10, name: '250 опыта' },
-    { type: 'coal', amount: 50, chance: 12, name: '50 угля' },
-    { type: 'exp', amount: 50, chance: 25, name: '50 опыта' },
-    { type: 'coal', amount: 10, chance: 15, name: '10 угля' },
-    { type: 'coins', amount: 300, chance: 8, name: '300 монет' },
-    { type: 'exp', amount: 20, chance: 3, name: '20 опыта' },
-    { type: 'coins', amount: 100, chance: 20, name: '100 монет' },
-    { type: 'free_spin', chance: 1, name: 'Бесплатный билет' }
+    { type: 'legendary_chest', chance: 1, name: 'Легендарное снаряжение' },
+    { type: 'free_spin', chance: 10, name: 'Билет лотереи' },
+    { type: 'coal', amount: 10, chance: 18, name: '10 угля' },
+    { type: 'coins', amount: 100, chance: 18, name: '100 монет' },
+    { type: 'exp', amount: 20, chance: 18, name: '20 опыта' },
+    { type: 'coins', amount: 300, chance: 10, name: '300 монет' },
+    { type: 'exp', amount: 50, chance: 10, name: '50 опыта' },
+    { type: 'coal', amount: 50, chance: 9, name: '50 угля' },
+    { type: 'coins', amount: 1000, chance: 3, name: '1000 монет' },
+    { type: 'exp', amount: 250, chance: 3, name: '250 опыта' }
 ];
 
 function getRandomPrize() {

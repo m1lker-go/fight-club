@@ -163,17 +163,18 @@ function animateWheel(targetAngle) {
             renderWheel(currentAngle);
             localStorage.setItem('fortuneCurrentAngle', currentAngle.toString());
             if (prizeResult) {
-                if (prizeResult.type === 'exp') {
-                    showClassChoiceModalForFortune(prizeResult.amount);
-                } else {
-                    let msg = `Вы выиграли: ${prizeResult.name}`;
-                    if (prizeResult.amount) msg += ` (${prizeResult.amount})`;
-                    showToast(msg, 2000);
-                }
-                loadFortuneStatus();
-                refreshData();
-                prizeResult = null;
-            }
+                if (prizeResult) {
+    if (prizeResult.type === 'exp') {
+        showClassChoiceModalForFortune(prizeResult.amount);
+    } else {
+        let msg = `Вы выиграли: ${prizeResult.name}`;
+        // больше не добавляем amount в скобках
+        showToast(msg, 2000);
+    }
+    loadFortuneStatus();
+    refreshData();
+    prizeResult = null;
+}
         }
     }
     requestAnimationFrame(step);

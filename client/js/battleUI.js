@@ -184,9 +184,9 @@ function showBattleScreen(battleData) {
 
 async function showBattleResult(battleData, timeOut = false) {
     console.log('=== showBattleResult START ===');
-console.log('battleData:', battleData);
-console.log('userData:', userData);
-console.log('typeof refreshTasksData:', typeof refreshTasksData);
+    console.log('battleData:', battleData);
+    console.log('userData:', userData);
+    console.log('typeof refreshTasksData:', typeof refreshTasksData);
     if (window.battleTimer) {
         clearInterval(window.battleTimer);
         window.battleTimer = null;
@@ -202,13 +202,24 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
     const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
     const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
+    // +++ ЗВУК ОКОНЧАНИЯ БОЯ +++
+    if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
+        if (isVictory) {
+            AudioManager.playSound('victory');
+        } else if (winner === 'draw') {
+            // можно ничего или нейтральный звук (по желанию)
+        } else {
+            AudioManager.playSound('defeat');
+        }
+    }
+
     const expGain = battleData.reward?.exp || 0;
     const coinGain = battleData.reward?.coins || 0;
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
 
-     // 1. Сначала обновляем задания, чтобы не зависеть от refreshData
-      console.log('battleUI: отправляю update/battle...');
+    // 1. Сначала обновляем задания, чтобы не зависеть от refreshData
+    console.log('battleUI: отправляю update/battle...');
     try {
         await window.apiRequest('/tasks/daily/update/battle', {
             method: 'POST',
@@ -222,7 +233,7 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
         console.log('battleUI: update/battle успех');
     } catch (err) { console.error('update/battle ошибка:', err); }
 
-      console.log('battleUI: отправляю update/exp...');
+    console.log('battleUI: отправляю update/exp...');
     try {
         await window.apiRequest('/tasks/daily/update/exp', {
             method: 'POST',
@@ -235,16 +246,15 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
         console.log('battleUI: update/exp успех');
     } catch (err) { console.error('update/exp ошибка:', err); }
      
-      if (typeof refreshTasksData === 'function') {
+    if (typeof refreshTasksData === 'function') {
         await refreshTasksData();
-        // Принудительно обновляем список заданий, даже если мы не на экране "tasks"
         if (typeof loadDailyTasks === 'function') {
             loadDailyTasks();
         }
         console.log('battleUI: refreshTasksData выполнен');
     }
 
-    // 2. Теперь можно проверить повышение уровня (это не помешает обновлению заданий)
+    // 2. Проверка повышения уровня
     if (battleData.reward?.leveledUp) {
         try {
             await refreshData();
@@ -323,30 +333,25 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
     const container = document.createElement('div');
     container.className = 'battle-result';
 
-    // Заголовок
     const header = document.createElement('div');
     header.className = 'battle-result-header';
     header.style.color = resultColor;
     header.innerText = resultText;
     container.appendChild(header);
 
-    // Блок наград (2 колонки, 2 строки)
+    // Блок наград (2 колонки)
     const rewardsGrid = document.createElement('div');
     rewardsGrid.className = 'battle-result-stats-grid';
 
     const addRewardItem = (label, value, iconClass) => {
         const item = document.createElement('div');
         item.className = 'reward-item';
-        
         const icon = document.createElement('i');
         icon.className = iconClass;
-        
         const textSpan = document.createElement('span');
         textSpan.innerHTML = `${label}: ${value}`;
-        
         item.appendChild(icon);
         item.appendChild(textSpan);
-        
         return item;
     };
 
@@ -356,7 +361,6 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
         addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
         addRewardItem('Серия', `${newStreak}`, 'fas fa-shield-alt')
     ];
-
     items.forEach(item => rewardsGrid.appendChild(item));
     container.appendChild(rewardsGrid);
 
@@ -453,7 +457,6 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
     buttonsGrid.appendChild(tabStatsBtn);
     container.appendChild(buttonsGrid);
 
-    // Контейнер для контента (лог/статистика)
     const resultContent = document.createElement('div');
     resultContent.id = 'resultContent';
     resultContent.className = 'battle-result-content';
@@ -462,19 +465,17 @@ console.log('typeof refreshTasksData:', typeof refreshTasksData);
 
     content.appendChild(container);
 
-    // ✅ ПОКАЗЫВАЕМ "Проиграл" ТОЛЬКО ЗДЕСЬ, СИНХРОННО С РЕЗУЛЬТАТОМ
+    // Показываем "Проиграл" синхронно с результатом
     setTimeout(() => {
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
         
-        // Игрок проиграл
         if (winner === 'enemy' || battleData.result.playerHpRemain <= 0) {
             heroCard?.classList.add('defeated');
         } else {
             heroCard?.classList.remove('defeated');
         }
         
-        // Враг проиграл
         if (winner === 'player' || battleData.result.enemyHpRemain <= 0) {
             enemyCard?.classList.add('defeated');
         } else {

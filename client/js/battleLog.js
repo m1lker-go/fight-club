@@ -302,7 +302,7 @@ const BattleLog = {
 
     // ========== ЗВУКИ ==========
     if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
-        // Звуки, когда игрок атакует или использует способность
+        // Атаки / криты / увороты / ульты игрока
         if (attacker === 'player') {
             if (type === 'crit' || (type === 'attack' && msgText.includes('Крит'))) {
                 AudioManager.playSound('crit');
@@ -316,18 +316,17 @@ const BattleLog = {
                 AudioManager.playSound('magic');
             }
         }
-        // Звук, когда игрок получает урон (от врага)
+        // Игрок получает урон (от врага)
         if (attacker === 'enemy' && (type === 'attack' || type === 'crit' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult')) {
             AudioManager.playSound('defend');
         }
     }
 
-    // Специальная обработка для берсерка
+    // Специальная обработка для берсерка (остаётся без изменений)
     const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
                         (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
 
     if (isBerserker && type === 'damage_self') {
-        // Этап 1: урон по себе
         const selfMatch = msgText.match(/Урон -(\d+)/);
         if (selfMatch) {
             const selfDamage = parseInt(selfMatch[1]);
@@ -340,7 +339,6 @@ const BattleLog = {
             targetBar.style.width = (afterSelf / maxHp) * 100 + '%';
             targetText.innerText = `${afterSelf}/${maxHp}`;
         }
-
         setTimeout(() => {
             this.processBerserkerAttack(attacker);
         }, 1500 / this.speed);
@@ -372,6 +370,7 @@ const BattleLog = {
     this.logContainer.appendChild(logEntry);
     this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
+    // Анимации (без изменений)
     const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
     if (!isStackMessage) {
         let animTarget = null;

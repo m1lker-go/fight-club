@@ -151,12 +151,14 @@ const AudioManager = (function() {
 
     init();
 
-    return {
-        enableMusic,
-        enableSfx,
-        playSound,
-        onScreenChange
-    };
+   return {
+    enableMusic,
+    enableSfx,
+    playSound,
+    onScreenChange,
+    startFightMusic, 
+    startMenuMusic     
+};
 })();
 
 // Глобальный доступ

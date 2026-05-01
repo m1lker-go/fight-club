@@ -33,7 +33,9 @@ jobs:
 
             git pull origin main
             npm install
-            pm2 restart fight-api
+            # Перезапускаем правильный процесс (cat-fight-server), если его нет – запускаем
+            pm2 restart cat-fight-server || pm2 start server/index.js --name cat-fight-server
+            pm2 save
             rsync -a --delete /var/www/fight-club/client/ /var/www/html/
 
             EXPECTED="${{ steps.expected_commit.outputs.commit }}"

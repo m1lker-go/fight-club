@@ -146,7 +146,7 @@ const AudioManager = (function() {
         // Наблюдаем за появлением/исчезновением экрана боя (MutationObserver – опционально)
         // Для простоты будем вызывать onScreenChange при каждом рендере экрана
         // Внедрим хуки в функции showScreen и renderBattle
-        window.audioManager = { onScreenChange, enableMusic, enableSfx, playSound };
+        //window.audioManager = { onScreenChange, enableMusic, enableSfx, playSound };
     }
 
     init();

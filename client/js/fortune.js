@@ -31,6 +31,11 @@ function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     const sectorCount = sectors.length;
     const angleStep = (Math.PI * 2) / sectorCount;
     const colors = ['#2a303c', '#232833'];
+    // Сдвиг, чтобы середина первого сектора была на угле 0 (вверху)
+    const startShift = -angleStep / 2;
+    for (let i = 0; i < sectorCount; i++) {
+        const start = i * angleStep + angleOffset + startShift;
+        const end = (i + 1) * angleStep + angleOffset + startShift;
 
     function getLabelByType(type) {
         switch (type) {

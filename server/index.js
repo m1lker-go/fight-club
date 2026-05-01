@@ -28,6 +28,7 @@ app.use(cors({
 }));
 app.options('*', cors()); 
 app.use(express.json());
+app.use(express.static('client'));
 
 // API routes
 app.use('/auth', require('./routes/auth-ext'));

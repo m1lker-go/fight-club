@@ -252,22 +252,26 @@ async function loadDailyTasks() {
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
-                if (rewardType === 'exp') {
-                    claimDailyExp(taskId, rewardAmount);
-                } else {
-                    const res = await window.apiRequest('/tasks/daily/claim', {
-                        method: 'POST',
-                        body: JSON.stringify({ task_id: taskId })
-                    });
-                    const data = await res.json();
-                    if (data.error) {
-                       showToast(data.error, 1500);
-                    } else {
-                        showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
-                        loadDailyTasks();
-                        refreshData();
-                    }
-                }
+             if (rewardType === 'exp') {
+    claimDailyExp(taskId, rewardAmount);
+} else {
+    const res = await window.apiRequest('/tasks/daily/claim', {
+        method: 'POST',
+        body: JSON.stringify({ task_id: taskId })
+    });
+    const data = await res.json();
+    if (data.error) {
+        showToast(data.error, 1500);
+    } else {
+        // Звук получения награды
+        if (typeof AudioManager !== 'undefined') {
+            AudioManager.playSound('reward');
+        }
+        showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+        loadDailyTasks();
+        refreshData();
+    }
+}
             });
         });
 

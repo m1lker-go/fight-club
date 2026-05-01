@@ -1,6 +1,12 @@
 // battleUI.js
 
 async function startBattle() {
+      // Включаем боевую музыку
+    if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
+        AudioManager.startFightMusic();
+    } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+        AudioManager.onScreenChange(); // fallback
+    }
     if (!userData || !userData.id) {
         console.error('user_id не определён!');
         showToast('Ошибка: не удалось идентифицировать пользователя', 2000);
@@ -180,6 +186,11 @@ function showBattleScreen(battleData) {
             showBattleResult({ ...battleData, result: { ...battleData.result, winner } }, true);
         }
     }, 1000);
+
+    // Страховочный вызов боевой музыки (гарантия включения)
+    if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
+        AudioManager.startFightMusic();
+    }
 }
 
 async function showBattleResult(battleData, timeOut = false) {
@@ -383,16 +394,22 @@ async function showBattleResult(battleData, timeOut = false) {
         startBattle();
     });
 
-    const backBtn = createButton('Назад', async () => {
-        if (window.battleTimer) clearInterval(window.battleTimer);
-        BattleLog.stop();
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.style.pointerEvents = 'auto';
-            item.style.opacity = '1';
-        });
-        await refreshData();
-        showScreen('main');
+  const backBtn = createButton('Назад', async () => {
+    if (window.battleTimer) clearInterval(window.battleTimer);
+    BattleLog.stop();
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.pointerEvents = 'auto';
+        item.style.opacity = '1';
     });
+    await refreshData();
+    // Возвращаем музыку меню
+    if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
+        AudioManager.startMenuMusic();
+    } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+        AudioManager.onScreenChange();
+    }
+    showScreen('main');
+});
 
     let tabLogBtn, tabStatsBtn;
 

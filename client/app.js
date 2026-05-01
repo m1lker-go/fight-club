@@ -626,3 +626,14 @@ checkAuth();
 
 // Загружаем аудиоменеджер после всех инициализаций
 loadAudioManager();
+
+// Разблокировка аудио по первому действию пользователя
+const unlockHandler = () => {
+    if (window.AudioManager && typeof AudioManager.unlockAudio === 'function') {
+        window.AudioManager.unlockAudio();
+    }
+    document.removeEventListener('click', unlockHandler);
+    document.removeEventListener('touchstart', unlockHandler);
+};
+document.addEventListener('click', unlockHandler);
+document.addEventListener('touchstart', unlockHandler);

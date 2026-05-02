@@ -531,9 +531,9 @@ function renderTrade() {
     if (!content) return;
     content.innerHTML = `
         <div class="trade-tabs-container">
-            <button class="trade-tab ${tradeSubtab === 'chests' ? 'active' : ''}" data-subtab="chests">🎁 Сундуки</button>
-            <button class="trade-tab ${tradeSubtab === 'coins' ? 'active' : ''}" data-subtab="coins">💰 Монетный двор</button>
-            <button class="trade-tab ${tradeSubtab === 'gems' ? 'active' : ''}" data-subtab="gems">💎 Алмазная лавка</button>
+            <button class="trade-tab ${tradeSubtab === 'chests' ? 'active' : ''}" data-subtab="chests">Сундуки</button>
+            <button class="trade-tab ${tradeSubtab === 'coins' ? 'active' : ''}" data-subtab="coins">Монетный двор</button>
+            <button class="trade-tab ${tradeSubtab === 'gems' ? 'active' : ''}" data-subtab="gems">Алмазная лавка</button>
         </div>
         <div id="tradeSubContent" class="trade-content"></div>
     `;

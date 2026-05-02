@@ -4534,7 +4534,7 @@ body {
     transition: none !important;
 }
 
-/* ========== АЛМАЗНАЯ ЛАВКА – НОВЫЙ ДИЗАЙН ========== */
+/* ========== АЛМАЗНАЯ ЛАВКА – ИСПРАВЛЕННЫЙ ДИЗАЙН ========== */
 .gems-page {
     background-color: #2a303c;
     border-radius: 0 0 12px 12px;
@@ -4542,7 +4542,7 @@ body {
     overflow-y: auto;
 }
 
-/* Карточка подписки – уменьшенный значок, широкий текст */
+/* Карточка подписки (две строки) */
 .subscription-card-new {
     display: flex;
     align-items: center;
@@ -4557,9 +4557,17 @@ body {
 .subscription-left-new {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
-.subscription-title-new {
+.subscription-text {
+    display: flex;
+    flex-direction: column;
+}
+.subscription-label {
+    font-size: 12px;
+    color: #aaa;
+}
+.subscription-name {
     font-size: 16px;
     font-weight: bold;
     color: white;
@@ -4583,7 +4591,7 @@ body {
     color: #aaa;
 }
 
-/* Сетка пакетов алмазов (3 колонки) */
+/* Сетка пакетов */
 .packs-grid-new {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4591,28 +4599,30 @@ body {
     margin-bottom: 16px;
 }
 
-/* Карточка пакета с кнопкой внизу */
+/* Карточка пакета */
 .pack-card-new {
     background-color: #232833;
     border-radius: 16px;
     border: 1px solid #7f8c8d;
-    padding: 12px 8px 0 8px;
     text-align: center;
     position: relative;
     transition: none;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 .pack-card-new:nth-child(even) {
     background-color: #2a303c;
 }
 .pack-image-new {
-    padding: 8px 0 0 0;
+    padding: 12px 12px 0 12px;
 }
 .pack-image-new img {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
+    width: 100%;
+    max-width: 80px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
 }
 .pack-diamonds-new {
     font-size: 16px;
@@ -4640,17 +4650,18 @@ body {
 }
 .bonus-badge-new {
     position: absolute;
-    top: 8px;
+    top: 0;
     left: 0;
     right: 0;
-    background-color: #1a1f2b;
+    background-color: rgba(26, 31, 43, 0.9);
     color: #f1c40f;
     font-size: 10px;
-    padding: 4px 6px;
+    padding: 6px 0;
     text-align: center;
     border-bottom: 1px solid #f1c40f;
-    width: 100%;
+    border-radius: 16px 16px 0 0;
     z-index: 2;
+    backdrop-filter: blur(2px);
 }
 .shop-note-new {
     font-size: 11px;
@@ -4662,24 +4673,34 @@ body {
     margin-top: 8px;
 }
 
-/* Модальное окно подписки – новый стиль */
+/* Модальное окно подписки – две колонки */
 .subscription-modal-new {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
-.feature-item {
-    font-size: 13px;
-    color: #ddd;
+.sub-feature-row {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
+    gap: 12px;
+}
+.sub-icon {
+    width: 32px;
+    text-align: center;
+}
+.sub-icon i {
+    font-size: 20px;
+    color: #00aaff !important;
+}
+.sub-desc {
+    flex: 1;
+    font-size: 13px;
+    color: #ddd;
     line-height: 1.4;
 }
-.feature-item i {
-    width: 24px;
-    color: #00aaff;
-    margin-top: 2px;
+.sub-desc i {
+    color: #aaa !important;
+    margin: 0 2px;
 }
 .subscription-buttons-new {
     display: flex;

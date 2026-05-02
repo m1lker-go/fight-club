@@ -1,6 +1,6 @@
 const { pool } = require('../db');
 
-// Ежедневный сброс (задания, билеты башни, лотерея)
+// Ежедневный сброс (задания, билеты башни, лотерея, бесплатный уголь)
 async function resetDailyTasks() {
     console.log('[SCHEDULER] Ежедневный сброс запущен');
     const client = await pool.connect();
@@ -23,6 +23,11 @@ async function resetDailyTasks() {
             SET free_spins_left = 3, 
                 purchased_today = 0, 
                 last_reset_date = CURRENT_DATE
+        `);
+        // Сброс бесплатного угля (разрешаем получить ещё раз в новый день)
+        await client.query(`
+            UPDATE users 
+            SET last_free_coal_date = NULL
         `);
         console.log('[SCHEDULER] Ежедневный сброс выполнен успешно');
     } catch (err) {

@@ -4422,3 +4422,86 @@ body {
 .logout-btn:hover {
     background-color: #c0392b;
 }
+
+
+/* ========== МОНЕТНЫЙ ДВОР (МИНТ) ========== */
+.mint-page {
+    background-color: #2a303c;
+    border-radius: 0 0 12px 12px;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    padding: 12px;
+}
+.mint-section {
+    margin-bottom: 20px;
+}
+.mint-section-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 12px;
+    padding-left: 4px;
+}
+.mint-grid {
+    display: grid;
+    gap: 12px;
+}
+.coal-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+.gold-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+.mint-card {
+    background-color: #1a1f2b;
+    border-radius: 16px;
+    padding: 12px 8px;
+    text-align: center;
+    transition: transform 0.2s;
+    border: 1px solid #3a4050;
+}
+.mint-card:hover {
+    transform: translateY(-2px);
+    border-color: #00aaff;
+}
+.mint-card-image img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+.mint-card-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 6px;
+}
+.mint-card-price {
+    font-size: 14px;
+    color: #00aaff;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.mint-buy-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 30px;
+    padding: 8px 0;
+    width: 100%;
+    color: #aaa;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mint-buy-btn:hover:not(:disabled) {
+    background-color: #3a4050;
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.mint-buy-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

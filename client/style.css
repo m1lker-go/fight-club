@@ -4533,3 +4533,166 @@ body {
 .mint-card * {
     transition: none !important;
 }
+
+/* ========== АЛМАЗНАЯ ЛАВКА ========== */
+.gems-page {
+    background-color: #2a303c;
+    border-radius: 0 0 12px 12px;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+/* Карточка подписки – широкая, как 3 ячейки */
+.subscription-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a1f2b;
+    border: 1px solid #7f8c8d;
+    border-radius: 16px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    transition: none;
+}
+.subscription-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.subscription-left i {
+    font-size: 32px;
+    color: #c0c0c0;
+}
+.subscription-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+.subscription-view-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 30px;
+    padding: 8px 16px;
+    color: #aaa;
+    cursor: pointer;
+    transition: none;
+}
+.subscription-view-btn i {
+    margin-right: 0;
+}
+.subscription-view-btn:hover {
+    background-color: #2f3542;
+    border-color: #aaa;
+    color: #aaa;
+}
+
+/* Сетка пакетов алмазов (3 колонки, как в монетном дворе) */
+.packs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.pack-card {
+    background-color: #232833;
+    border-radius: 16px;
+    border: 1px solid #7f8c8d;
+    padding: 12px 8px;
+    text-align: center;
+    position: relative;
+    transition: none;
+}
+.pack-card:nth-child(even) {
+    background-color: #2a303c;
+}
+.pack-image img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+.pack-diamonds {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    margin: 8px 0 4px;
+}
+.pack-price {
+    font-size: 14px;
+    color: #aaa;
+}
+.bonus-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: #1a1f2b;
+    color: #f1c40f;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    border: 1px solid #f1c40f;
+}
+.shop-note {
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    background-color: #1a1f2b;
+    border-radius: 12px;
+    padding: 8px;
+    margin-top: 8px;
+}
+
+/* Модальное окно подписки */
+.subscription-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.subscription-features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.feature-item {
+    font-size: 14px;
+    color: #ddd;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.feature-item i {
+    width: 24px;
+    color: #00aaff;
+}
+.subscription-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+.subscription-free-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 30px;
+    padding: 10px 16px;
+    color: #aaa;
+    cursor: pointer;
+    transition: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.subscription-free-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.subscription-buy-btn {
+    flex: 1;
+    background-color: #00aaff;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 16px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: none;
+}

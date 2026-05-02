@@ -213,4 +213,95 @@ router.post('/buy-coins', async (req, res) => {
     }
 });
 
+// ========== МОНЕТНЫЙ ДВОР (уголь, золото) ==========
+
+// Проверка бесплатного угля
+router.get('/freecoal', async (req, res) => {
+    const { tg_id, user_id } = req.query;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    
+    const client = await pool.connect();
+    try {
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        
+        const today = new Date().toISOString().slice(0, 10);
+        const lastFree = user.last_free_coal_date ? user.last_free_coal_date.toISOString().slice(0, 10) : null;
+        const freeAvailable = !lastFree || lastFree !== today;
+        
+        res.json({ freeAvailable });
+    } catch (e) {
+        console.error('Error checking free coal:', e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// Покупка угля (алмазы или бесплатно)
+router.post('/buy-coal', async (req, res) => {
+    const { tg_id, user_id, amount, price, free } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    if (!amount || (!free && !price)) return res.status(400).json({ error: 'Missing amount or price' });
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        
+        const today = new Date().toISOString().slice(0, 10);
+        
+        if (free) {
+            // Бесплатный уголь – можно взять только раз в день
+            const lastFree = user.last_free_coal_date ? user.last_free_coal_date.toISOString().slice(0, 10) : null;
+            if (lastFree === today) throw new Error('Бесплатный уголь уже получен сегодня');
+            await client.query(
+                'UPDATE users SET coal = coal + $1, last_free_coal_date = $2 WHERE id = $3',
+                [amount, today, user.id]
+            );
+        } else {
+            // Платная покупка угля
+            if (user.diamonds < price) throw new Error('Not enough diamonds');
+            await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
+        }
+        
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Buy coal error:', e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// Покупка монет (золота) – используем существующий buy-coins или добавим новый с таким же функционалом
+// Примечание: маршрут /buy-coins уже реализован выше. Его достаточно.
+// Если хотите, можно добавить синоним /buy-gold для удобства:
+router.post('/buy-gold', async (req, res) => {
+    const { tg_id, user_id, amount, price } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    if (!amount || !price) return res.status(400).json({ error: 'Missing amount or price' });
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        if (user.diamonds < price) throw new Error('Not enough diamonds');
+        
+        await client.query('UPDATE users SET diamonds = diamonds - $1, coins = coins + $2 WHERE id = $3', [price, amount, user.id]);
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Buy gold error:', e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

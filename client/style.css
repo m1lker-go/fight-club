@@ -4423,15 +4423,15 @@ body {
     background-color: #c0392b;
 }
 
-
-/* ========== МОНЕТНЫЙ ДВОР (НОВЫЙ ДИЗАЙН) ========== */
+/* ========== МОНЕТНЫЙ ДВОР ========== */
 .mint-page {
-    background-color: transparent;
+    background-color: #2a303c;
+    border-radius: 0 0 12px 12px;
     padding: 12px;
     overflow-y: auto;
+    margin: 0;
 }
 
-/* Сетка: 3 колонки для угля и золота */
 .mint-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4439,29 +4439,30 @@ body {
     margin-bottom: 20px;
 }
 
-/* Карточка товара – без фона, без анимации */
+/* Карточка товара – нет анимации, единое скругление */
 .mint-card {
-    background-color: #2a303c;  /* чётный фон таблицы */
-    border-radius: 16px 16px 0 0;  /* скруглены только верхние углы */
-    border: 1px solid #7f8c8d;     /* светло-серая обводка */
+    background-color: #2a303c;
+    border-radius: 16px;
+    border: 1px solid #7f8c8d;
     overflow: hidden;
-    transition: none;  /* никакой анимации */
+    transition: none;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
-/* Ячейки с чётным/нечётным фоном */
+/* Чётные/нечётные строки таблицы */
 .mint-card:nth-child(odd) {
-    background-color: #232833;  /* нечётный фон таблицы */
+    background-color: #232833;
 }
 .mint-card:nth-child(even) {
-    background-color: #2a303c;  /* чётный фон таблицы */
+    background-color: #2a303c;
 }
 
-/* Картинка – квадратная, отступы 10px */
+/* Контейнер картинки – отступы: сверху 10px, бока 10px, снизу 0 */
 .mint-card-image {
-    padding: 10px;
-    background-color: inherit;  /* наследует фон карточки */
+    padding: 10px 10px 0 10px;
+    background-color: inherit;
 }
 .mint-card-image img {
     width: 100%;
@@ -4469,47 +4470,67 @@ body {
     display: block;
 }
 
-/* Надпись (количество) */
+/* Надпись – поверх картинки, по центру, с полупрозрачным фоном */
 .mint-card-title {
+    position: relative;
     text-align: center;
     font-size: 14px;
     font-weight: bold;
     color: white;
-    margin: 5px 0 0 0;
-    padding: 0 10px;
-    background-color: inherit;
+    background-color: rgba(0, 0, 0, 0.65);
+    padding: 4px 12px;
+    border-radius: 24px;
+    display: inline-block;
+    margin: 0 auto 12px auto;
+    transform: translateY(-24px);
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 85%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: none;
 }
 
-/* Кнопка – на всю ширину, скруглены только нижние углы */
+/* Кнопка – без разделителя, отступ от картинки 10px */
 .mint-buy-btn {
     width: 100%;
     border: none;
-    border-top: 1px solid #7f8c8d;   /* светло-серая линия заменяет обводку между ячейкой и кнопкой */
-    background-color: #1a1f2b;       /* тёмный фон, как заголовок */
+    background-color: #1a1f2b;
     color: #ccc;
     font-weight: bold;
     padding: 12px 0;
     font-size: 14px;
     cursor: pointer;
     transition: none;
-    border-radius: 0 0 16px 16px;    /* скругление только снизу */
+    border-radius: 0;
     text-align: center;
+    margin-top: 10px;
 }
-
 .mint-buy-btn i {
     color: #ccc;
     margin-left: 5px;
 }
-
 .mint-buy-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-/* Убираем лишние отступы и эффекты при наведении */
+/* Уничтожаем все hover-эффекты */
 .mint-card:hover,
+.mint-card:hover .mint-card-image,
+.mint-card:hover .mint-card-title,
+.mint-card:hover .mint-buy-btn,
 .mint-buy-btn:hover {
-    transform: none;
-    background-color: inherit;
-    border-color: #7f8c8d;
+    transform: none !important;
+    background-color: inherit !important;
+    border-color: #7f8c8d !important;
+    color: #ccc !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+/* Абсолютно всё в карточке не должно анимироваться */
+.mint-card * {
+    transition: none !important;
 }

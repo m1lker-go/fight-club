@@ -644,31 +644,26 @@ async function renderChestsTab(container) {
 
 // Вкладка "Монетный двор"
 function renderCoinMint(container) {
-    container.innerHTML = `
-        <div class="mint-list">
-            <div class="mint-item"><div class="mint-info">1000 монет</div><div class="mint-price">10 <i class="fas fa-gem"></i></div><button class="buy-mint-btn" data-coins="1000" data-price="10">Купить</button></div>
-            <div class="mint-item"><div class="mint-info">5000 монет</div><div class="mint-price">45 <i class="fas fa-gem"></i></div><button class="buy-mint-btn" data-coins="5000" data-price="45">Купить</button></div>
-            <div class="mint-item"><div class="mint-info">10000 монет</div><div class="mint-price">80 <i class="fas fa-gem"></i></div><button class="buy-mint-btn" data-coins="10000" data-price="80">Купить</button></div>
-        </div>
-    `;
-    container.querySelectorAll('.buy-mint-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const coins = parseInt(btn.dataset.coins);
-            const price = parseInt(btn.dataset.price);
-            if (userData.diamonds < price) { showToast('Недостаточно алмазов!', 1500); return; }
-            const res = await window.apiRequest('/shop/buy-coins', { method: 'POST', body: JSON.stringify({ coins, price }) });
-            const data = await res.json();
-            if (data.success) {
-                userData.diamonds -= price;
-                userData.coins += coins;
-                updateTopBar();
-                showToast(`+${coins} монет!`, 1500);
-                renderCoinMint(container);
+    // Динамически загружаем mint.js, если ещё не загружен
+    if (typeof renderMint === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/js/mint.js';
+        script.onload = () => {
+            if (typeof renderMint === 'function') {
+                renderMint(container);
             } else {
-                showToast(data.error || 'Ошибка', 1500);
+                console.error('renderMint not found after loading mint.js');
+                container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Монетного двора</p>';
             }
-        });
-    });
+        };
+        script.onerror = () => {
+            console.error('Failed to load mint.js');
+            container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Монетного двора</p>';
+        };
+        document.head.appendChild(script);
+    } else {
+        renderMint(container);
+    }
 }
 
 // Вкладка "Алмазная лавка"
@@ -1812,3 +1807,52 @@ function showToast(message, duration = 1500) {
 
 // ==================== ЭКСПОРТ ГЛОБАЛЬНЫХ ФУНКЦИЙ ====================
 window.loadMessagesSilent = loadMessagesSilent;
+
+
+// ==================== ОБНОВЛЕНИЕ БЕЙДЖА ДЛЯ ТОРГОВЛИ (СУНДУК + УГОЛЬ) ====================
+// Сохраняем старую функцию, если она существует
+const originalUpdateTradeButtonIcon = window.updateTradeButtonIcon;
+
+window.updateTradeButtonIcon = async function() {
+    // Вызываем старую функцию (для бесплатного сундука)
+    if (typeof originalUpdateTradeButtonIcon === 'function') {
+        try {
+            await originalUpdateTradeButtonIcon();
+        } catch (e) {
+            console.error('Error in original updateTradeButtonIcon:', e);
+        }
+    }
+
+    // Логика для бесплатного угля
+    try {
+        const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
+        const data = await res.json();
+        const freeCoalAvailable = data.freeAvailable;
+
+        const tradeBtn = document.querySelector('.main-icon-btn[data-screen="trade"]');
+        if (tradeBtn) {
+            let freeIcon = tradeBtn.querySelector('.free-coal-icon');
+            if (freeCoalAvailable && !freeIcon) {
+                const icon = document.createElement('img');
+                icon.src = '/assets/icons/icon-new.png';
+                icon.className = 'free-coal-icon';
+                icon.style.position = 'absolute';
+                icon.style.top = '3px';
+                icon.style.left = '3px'; // левый верхний угол (иконка сундука справа)
+                icon.style.width = '16px';
+                icon.style.height = '16px';
+                tradeBtn.style.position = 'relative';
+                tradeBtn.appendChild(icon);
+            } else if (!freeCoalAvailable && freeIcon) {
+                freeIcon.remove();
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch free coal status for badge', e);
+    }
+};
+
+// Принудительно обновляем бейдж при загрузке (на случай, если renderMain уже вызвана)
+if (typeof window.updateTradeButtonIcon === 'function') {
+    setTimeout(() => window.updateTradeButtonIcon(), 500);
+}

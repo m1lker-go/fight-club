@@ -160,7 +160,7 @@ function renderMain() {
     });
     const mailBtn = document.getElementById('mailBtn');
     if (mailBtn) mailBtn.addEventListener('click', () => showScreen('messages'));
-    updateTradeButtonIcon();
+    updateTradeBadges();
     updateProfileAvatarIcon();
     if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
     if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
@@ -602,7 +602,7 @@ async function renderChestsTab(container) {
                 coinIcon.style.display = 'inline-block';
             }
             if (window.updateShopTabIcon) window.updateShopTabIcon();
-            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+            if (window.updateTradeButtonIcon) window.updateTradeBadges();
             if (window.updateTradeBadges) window.updateTradeBadges();
         } catch (e) {
             console.error('Failed to fetch free chest status', e);
@@ -629,7 +629,7 @@ async function renderChestsTab(container) {
                 showChestResult(data.item);
                 await refreshData();
                 if (typeof refreshTasksData === 'function') await refreshTasksData();
-                if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+                if (window.updateTradeButtonIcon) window.updateTradeBadges();
                 if (chest === 'common') updateCommonChestPrice();
                 // Обновляем задание "Счастливчик"
                 try {

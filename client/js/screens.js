@@ -1787,55 +1787,6 @@ function showToast(message, duration = 1500) {
 window.loadMessagesSilent = loadMessagesSilent;
 
 
-// ==================== ОБНОВЛЕНИЕ БЕЙДЖА ДЛЯ ТОРГОВЛИ (СУНДУК + УГОЛЬ) ====================
-// Сохраняем старую функцию, если она существует
-const originalUpdateTradeButtonIcon = window.updateTradeButtonIcon;
-
-window.updateTradeButtonIcon = async function() {
-    // Вызываем старую функцию (для бесплатного сундука)
-    if (typeof originalUpdateTradeButtonIcon === 'function') {
-        try {
-            await originalUpdateTradeButtonIcon();
-        } catch (e) {
-            console.error('Error in original updateTradeButtonIcon:', e);
-        }
-    }
-
-    // Логика для бесплатного угля
-    try {
-        const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
-        const data = await res.json();
-        const freeCoalAvailable = data.freeAvailable;
-
-        const tradeBtn = document.querySelector('.main-icon-btn[data-screen="trade"]');
-        if (tradeBtn) {
-            let freeIcon = tradeBtn.querySelector('.free-coal-icon');
-            if (freeCoalAvailable && !freeIcon) {
-                const icon = document.createElement('img');
-                icon.src = '/assets/icons/icon-new.png';
-                icon.className = 'free-coal-icon';
-                icon.style.position = 'absolute';
-                icon.style.top = '3px';
-                icon.style.left = '3px'; // левый верхний угол (иконка сундука справа)
-                icon.style.width = '16px';
-                icon.style.height = '16px';
-                tradeBtn.style.position = 'relative';
-                tradeBtn.appendChild(icon);
-            } else if (!freeCoalAvailable && freeIcon) {
-                freeIcon.remove();
-            }
-        }
-    } catch (e) {
-        console.error('Failed to fetch free coal status for badge', e);
-    }
-};
-
-// Принудительно обновляем бейдж при загрузке (на случай, если renderMain уже вызвана)
-if (typeof window.updateTradeButtonIcon === 'function') {
-    setTimeout(() => window.updateTradeButtonIcon(), 500);
-}
-
-
 // ==================== УНИВЕРСАЛЬНОЕ ОБНОВЛЕНИЕ БЕЙДЖЕЙ ТОРГОВЛИ ====================
 async function updateTradeBadges() {
     try {

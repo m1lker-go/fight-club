@@ -601,10 +601,9 @@ async function renderChestsTab(container) {
                 priceSpan.innerText = '100';
                 coinIcon.style.display = 'inline-block';
             }
-            if (window.updateShopTabIcon) window.updateShopTabIcon();
-            if (window.updateTradeButtonIcon) window.updateTradeBadges();
-            if (window.updateTradeBadges) window.updateTradeBadges();
-        } catch (e) {
+           if (window.updateShopTabIcon) window.updateShopTabIcon();
+           if (window.updateTradeBadges) window.updateTradeBadges();
+                   } catch (e) {
             console.error('Failed to fetch free chest status', e);
         }
     }
@@ -629,7 +628,7 @@ async function renderChestsTab(container) {
                 showChestResult(data.item);
                 await refreshData();
                 if (typeof refreshTasksData === 'function') await refreshTasksData();
-                if (window.updateTradeButtonIcon) window.updateTradeBadges();
+               if (window.updateTradeBadges) window.updateTradeBadges();
                 if (chest === 'common') updateCommonChestPrice();
                 // Обновляем задание "Счастливчик"
                 try {

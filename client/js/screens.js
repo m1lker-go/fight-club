@@ -1828,3 +1828,74 @@ window.updateTradeButtonIcon = async function() {
 if (typeof window.updateTradeButtonIcon === 'function') {
     setTimeout(() => window.updateTradeButtonIcon(), 500);
 }
+
+
+// ==================== УНИВЕРСАЛЬНОЕ ОБНОВЛЕНИЕ БЕЙДЖЕЙ ТОРГОВЛИ ====================
+async function updateTradeBadges() {
+    try {
+        // Запрашиваем все статусы параллельно
+        const [freeChestRes, freeCoalRes, freeCoinRes] = await Promise.all([
+            window.apiRequest('/player/freechest', { method: 'GET' }),
+            window.apiRequest('/player/freecoal', { method: 'GET' }),
+            window.apiRequest('/subscription/free-coin-status', { method: 'GET' }).catch(() => ({ ok: false }))
+        ]);
+        
+        const freeChest = freeChestRes.ok ? (await freeChestRes.json()).freeAvailable : false;
+        const freeCoal = freeCoalRes.ok ? (await freeCoalRes.json()).freeAvailable : false;
+        const freeCoin20 = freeCoinRes.ok ? (await freeCoinRes.json()).available : false;
+        
+        const hasAnyFree = freeChest || freeCoal || freeCoin20;
+        
+        // 1. Обновляем бейдж на главной кнопке "Торговля"
+        const tradeBtn = document.querySelector('.main-icon-btn[data-screen="trade"]');
+        if (tradeBtn) {
+            let badge = tradeBtn.querySelector('.trade-badge');
+            if (hasAnyFree && !badge) {
+                badge = document.createElement('img');
+                badge.src = '/assets/icons/icon-new.png';
+                badge.className = 'trade-badge';
+                badge.style.cssText = 'position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; pointer-events: none;';
+                tradeBtn.style.position = 'relative';
+                tradeBtn.appendChild(badge);
+            } else if (!hasAnyFree && badge) {
+                badge.remove();
+            }
+        }
+        
+        // 2. Обновляем бейджи на табах внутри Торговли (если страница открыта)
+        const chestsTab = document.querySelector('.trade-tab[data-subtab="chests"]');
+        const coinsTab = document.querySelector('.trade-tab[data-subtab="coins"]');
+        const gemsTab = document.querySelector('.trade-tab[data-subtab="gems"]');
+        
+        updateTabBadge(chestsTab, freeChest);
+        updateTabBadge(coinsTab, freeCoal);
+        updateTabBadge(gemsTab, freeCoin20);
+        
+        // Сохраняем статусы в глобальные переменные для использования во вкладках
+        window.freeChestAvailable = freeChest;
+        window.freeCoalAvailable = freeCoal;
+        window.freeCoin20Available = freeCoin20;
+        
+    } catch (e) {
+        console.error('Error updating trade badges:', e);
+    }
+}
+
+function updateTabBadge(tab, hasFree) {
+    if (!tab) return;
+    let badge = tab.querySelector('.tab-badge');
+    if (hasFree && !badge) {
+        badge = document.createElement('img');
+        badge.src = '/assets/icons/icon-new.png';
+        badge.className = 'tab-badge';
+        badge.style.cssText = 'position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; pointer-events: none;';
+        tab.style.position = 'relative';
+        tab.appendChild(badge);
+    } else if (!hasFree && badge) {
+        badge.remove();
+    }
+}
+
+// Вызываем обновление при загрузке страницы и после любых действий, меняющих статусы
+setTimeout(() => updateTradeBadges(), 1000);
+window.updateTradeBadges = updateTradeBadges;

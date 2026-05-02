@@ -24,9 +24,12 @@ app.use(cors({
         }
         return callback(null, true);
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.options('*', cors()); 
+// Обрабатываем preflight (OPTIONS) для всех маршрутов
+app.options('*', cors());
 app.use(express.json());
 app.use(express.static('client'));
 

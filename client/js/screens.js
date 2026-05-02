@@ -547,6 +547,11 @@ function renderTrade() {
     if (tradeSubtab === 'chests') renderChestsTab(subContent);
     else if (tradeSubtab === 'coins') renderCoinMint(subContent);
     else if (tradeSubtab === 'gems') renderGemsShop(subContent);
+
+    // Обновляем бейджи на табах (после отрисовки)
+    if (typeof updateTradeBadges === 'function') {
+        updateTradeBadges();
+    }
 }
 
 // Вкладка "Сундуки"
@@ -598,6 +603,7 @@ async function renderChestsTab(container) {
             }
             if (window.updateShopTabIcon) window.updateShopTabIcon();
             if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+            if (window.updateTradeBadges) window.updateTradeBadges();
         } catch (e) {
             console.error('Failed to fetch free chest status', e);
         }

@@ -2,13 +2,16 @@
 
 let freeCoalAvailable = false;
 
-// Обновление бейджа на кнопке "Торговля"
+// Обновление бейджа (используем центральную функцию updateTradeBadges)
 async function updateMintBadge() {
     try {
         const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
         const data = await res.json();
         freeCoalAvailable = data.freeAvailable;
-        if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+        // Вызываем центральное обновление бейджей (обновит главную кнопку и табы)
+        if (typeof window.updateTradeBadges === 'function') {
+            window.updateTradeBadges();
+        }
         // Если мы на странице монетного двора – перерисовываем
         if (window.currentScreen === 'trade' && window.tradeSubtab === 'coins') {
             const subContent = document.getElementById('tradeSubContent');

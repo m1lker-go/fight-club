@@ -668,51 +668,23 @@ function renderCoinMint(container) {
 
 // Вкладка "Алмазная лавка"
 function renderGemsShop(container) {
-    // Соответствие картинок пакетам (порядок как в массиве)
-    const packs = [
-        { diamonds: 20, price: 149, image: 'buy_diamond_1.png' },
-        { diamonds: 50, price: 229, image: 'buy_diamond_2.png' },
-        { diamonds: 100, price: 399, image: 'buy_diamond_3.png' },
-        { diamonds: 500, price: 1199, image: 'buy_diamond_4.png' },
-        { diamonds: 2000, price: 2999, image: 'buy_diamond_5.png' },
-        { diamonds: 5000, price: 4999, image: 'buy_diamond_6.png' }
-    ];
-
-    let html = `
-        <div class="gems-shop">
-            <div class="section-title">
-                <i class="fas fa-gem"></i> Алмазы
-            </div>
-            <div class="packs-grid">
-    `;
-    packs.forEach(pack => {
-        html += `
-            <div class="pack-card" data-pack="${pack.diamonds}" data-price="${pack.price}">
-                <div class="pack-image">
-                    <img src="/assets/diamond/${pack.image}" alt="${pack.diamonds} алмазов">
-                </div>
-                <div class="pack-diamonds">${pack.diamonds} алмазов</div>
-                <div class="pack-price">${pack.price} ₽</div>
-                <div class="first-bonus">+50% при первой покупке</div>
-            </div>
-        `;
-    });
-    html += `
-            </div>
-            <div class="shop-note">
-                <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.
-            </div>
-        </div>
-    `;
-    container.innerHTML = html;
-
-    container.querySelectorAll('.pack-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const diamonds = card.dataset.pack;
-            const price = card.dataset.price;
-            showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — скоро появится!`, 2000);
-        });
-    });
+    if (typeof renderGems === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/js/gems.js';
+        script.onload = () => {
+            if (typeof renderGems === 'function') {
+                renderGems(container);
+            } else {
+                container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Алмазной лавки</p>';
+            }
+        };
+        script.onerror = () => {
+            container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Алмазной лавки</p>';
+        };
+        document.head.appendChild(script);
+    } else {
+        renderGems(container);
+    }
 }
 
 // ==================== МАРКЕТ ====================

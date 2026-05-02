@@ -1,9 +1,8 @@
-// gems.js – Алмазная лавка (подписка + пакеты алмазов) – НОВЫЙ ДИЗАЙН
+// gems.js – Алмазная лавка (подписка + пакеты алмазов)
 
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
 
-// Функция получения статуса подписки и бонусов
 async function loadSubscriptionStatus() {
     try {
         const res = await window.apiRequest('/subscription/status', { method: 'GET' });
@@ -16,7 +15,6 @@ async function loadSubscriptionStatus() {
     }
 }
 
-// Рендер алмазной лавки
 async function renderGems(container) {
     if (!container) return;
 
@@ -34,14 +32,16 @@ async function renderGems(container) {
         { id: 6, diamonds: 5000, price: 4999, image: 'buy_diamond_6.png', bonus: true }
     ];
 
-    // Формируем HTML с новым дизайном
     let html = `
         <div class="gems-page">
-            <!-- Карточка подписки VIP Silver (уменьшенный шрифт, значок, широкая кнопка) -->
+            <!-- Карточка подписки VIP Silver (две строки) -->
             <div class="subscription-card-new">
                 <div class="subscription-left-new">
                     <i class="fas fa-crown" style="color: #c0c0c0; font-size: 24px;"></i>
-                    <span class="subscription-title-new">Подписка "VIP Silver"</span>
+                    <div class="subscription-text">
+                        <div class="subscription-label">Подписка</div>
+                        <div class="subscription-name">VIP Silver</div>
+                    </div>
                 </div>
                 <button class="subscription-view-btn-new" id="viewSubscriptionBtn">
                     <i class="fas fa-eye"></i> Подробнее
@@ -72,34 +72,28 @@ async function renderGems(container) {
     `;
     container.innerHTML = html;
 
-    // Обработчик кнопки подписки
     document.getElementById('viewSubscriptionBtn')?.addEventListener('click', () => {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
-    // Обработчики пакетов алмазов (клик по карточке или по кнопке)
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
-        if (buyBtn) {
-            buyBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const packId = card.dataset.packId;
-                const diamonds = parseInt(card.dataset.diamonds);
-                const price = parseInt(card.dataset.price);
-                // Покупка алмазов – заглушка (позже интеграция с платёжной системой)
-                showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — разработка оплаты`, 2000);
-                // После успешной покупки: refreshData, обновить статус бонуса, перерисовать
-            });
-        }
+        buyBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const packId = card.dataset.packId;
+            const diamonds = parseInt(card.dataset.diamonds);
+            const price = parseInt(card.dataset.price);
+            // Заглушка оплаты
+            showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — разработка оплаты`, 2000);
+        });
     });
 
-    // Если есть бесплатная монета – обнови бейджи через центральную функцию
     if (freeCoinAvailable && typeof window.updateTradeBadges === 'function') {
         window.updateTradeBadges();
     }
 }
 
-// Новое модальное окно подписки VIP Silver
+// Модальное окно подписки – две колонки
 function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -108,11 +102,26 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
     modalBody.innerHTML = `
         <div class="subscription-modal-new">
-            <div class="feature-item"><i class="fas fa-ban"></i> Пропуск рекламы</div>
-            <div class="feature-item"><i class="fas fa-chart-line"></i> Дополнительные награды в бою:<br> +10% опыта <i class="fas fa-star"></i>, +10% монет <i class="fas fa-coins"></i></div>
-            <div class="feature-item"><i class="fas fa-shield-alt"></i> Награда в случае поражения:<br> +5 опыта <i class="fas fa-star"></i>, +5 монет <i class="fas fa-coins"></i></div>
-            <div class="feature-item"><i class="fas fa-gift"></i> Ежедневная награда:<br> 250 монет <i class="fas fa-coins"></i>, 10 угля <i class="fas fa-cube"></i></div>
-            <div class="feature-item"><i class="fas fa-gem"></i> Награда при оформлении:<br> 1500 монет <i class="fas fa-coins"></i>, 50 угля <i class="fas fa-cube"></i>, 100 алмазов <i class="fas fa-gem"></i></div>
+            <div class="sub-feature-row">
+                <div class="sub-icon"><i class="fas fa-ban" style="color: #00aaff;"></i></div>
+                <div class="sub-desc">Пропуск рекламы</div>
+            </div>
+            <div class="sub-feature-row">
+                <div class="sub-icon"><i class="fas fa-chart-line" style="color: #00aaff;"></i></div>
+                <div class="sub-desc">Дополнительные награды в бою:<br> +10% опыта <i class="fas fa-star" style="color: #aaa;"></i>, +10% монет <i class="fas fa-coins" style="color: #aaa;"></i></div>
+            </div>
+            <div class="sub-feature-row">
+                <div class="sub-icon"><i class="fas fa-shield-alt" style="color: #00aaff;"></i></div>
+                <div class="sub-desc">Награда в случае поражения:<br> +5 опыта <i class="fas fa-star" style="color: #aaa;"></i>, +5 монет <i class="fas fa-coins" style="color: #aaa;"></i></div>
+            </div>
+            <div class="sub-feature-row">
+                <div class="sub-icon"><i class="fas fa-gift" style="color: #00aaff;"></i></div>
+                <div class="sub-desc">Ежедневная награда:<br> 250 монет <i class="fas fa-coins" style="color: #aaa;"></i>, 10 угля <i class="fas fa-cube" style="color: #aaa;"></i></div>
+            </div>
+            <div class="sub-feature-row">
+                <div class="sub-icon"><i class="fas fa-gem" style="color: #00aaff;"></i></div>
+                <div class="sub-desc">Награда при оформлении:<br> 1500 монет <i class="fas fa-coins" style="color: #aaa;"></i>, 50 угля <i class="fas fa-cube" style="color: #aaa;"></i>, 100 алмазов <i class="fas fa-gem" style="color: #aaa;"></i></div>
+            </div>
             <div class="subscription-buttons-new">
                 <button class="subscription-free-btn-new" id="freeCoinBtnNew" ${!freeCoinAvailable ? 'disabled' : ''}>
                     20 <i class="fas fa-coins"></i>
@@ -126,7 +135,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-    // Бесплатные 20 монет
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -142,7 +150,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             if (data.success) {
                 showToast('+20 монет!', 1500);
                 await refreshData();
-                // Обновляем бейджи
                 if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                 modal.style.display = 'none';
                 const subContent = document.getElementById('tradeSubContent');
@@ -154,7 +161,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Покупка подписки
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
@@ -178,5 +184,4 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
 
-// Глобальный экспорт
 window.renderGems = renderGems;

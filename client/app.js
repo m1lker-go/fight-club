@@ -378,7 +378,7 @@ async function refreshData() {
             }
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
             if (window.refreshTasksData) window.refreshTasksData();
-            if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+            if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
         }
     } catch (e) {
         console.error('Refresh error:', e);
@@ -418,6 +418,7 @@ function updateTopBar() {
 
 function showScreen(screen) {
     currentScreen = screen;
+    window.currentScreen = screen;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.screen === screen) item.classList.add('active');
@@ -633,7 +634,6 @@ function handleExternalAuth() {
 }
 
 window.updateMessagesBadge = updateMessagesBadge;
-window.currentScreen = currentScreen;
 
 handleExternalAuth();
 

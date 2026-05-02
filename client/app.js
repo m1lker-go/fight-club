@@ -633,6 +633,7 @@ function handleExternalAuth() {
 }
 
 window.updateMessagesBadge = updateMessagesBadge;
+window.currentScreen = currentScreen;
 
 handleExternalAuth();
 

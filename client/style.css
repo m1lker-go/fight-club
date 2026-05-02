@@ -4424,12 +4424,12 @@ body {
 }
 
 /* ========== МОНЕТНЫЙ ДВОР ========== */
+
 .mint-page {
     background-color: #2a303c;
     border-radius: 0 0 12px 12px;
     padding: 12px;
     overflow-y: auto;
-    margin: 0;
 }
 
 .mint-grid {
@@ -4439,19 +4439,18 @@ body {
     margin-bottom: 20px;
 }
 
-/* Карточка товара – нет анимации, единое скругление */
+/* Карточка товара – без анимации, без hover-эффектов */
 .mint-card {
     background-color: #2a303c;
     border-radius: 16px;
     border: 1px solid #7f8c8d;
     overflow: hidden;
-    transition: none;
+    transition: none;          /* никаких анимаций */
     display: flex;
     flex-direction: column;
-    position: relative;
 }
 
-/* Чётные/нечётные строки таблицы */
+/* Чётные/нечётные строки */
 .mint-card:nth-child(odd) {
     background-color: #232833;
 }
@@ -4459,40 +4458,38 @@ body {
     background-color: #2a303c;
 }
 
-/* Контейнер картинки – отступы: сверху 10px, бока 10px, снизу 0 */
+/* Блок картинки – отступы сверху 8px, бока 8px, снизу 4px */
 .mint-card-image {
-    padding: 10px 10px 0 10px;
+    padding: 8px 8px 4px 8px;
     background-color: inherit;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .mint-card-image img {
     width: 100%;
     height: auto;
+    max-height: 110px;         /* больше картинка, обрезка по высоте */
+    object-fit: contain;
     display: block;
 }
 
-/* Надпись – поверх картинки, по центру, с полупрозрачным фоном */
+/* Надпись (количество) – под картинкой, отдельно */
 .mint-card-title {
-    position: relative;
     text-align: center;
     font-size: 14px;
     font-weight: bold;
     color: white;
-    background-color: rgba(0, 0, 0, 0.65);
-    padding: 4px 12px;
-    border-radius: 24px;
-    display: inline-block;
-    margin: 0 auto 12px auto;
-    transform: translateY(-24px);
-    z-index: 2;
-    pointer-events: none;
+    background-color: transparent;
+    padding: 0 8px;
+    margin: 8px 0 0 0;
     white-space: nowrap;
-    max-width: 85%;
     overflow: hidden;
     text-overflow: ellipsis;
-    box-shadow: none;
+    pointer-events: none;
 }
 
-/* Кнопка – без разделителя, отступ от картинки 10px */
+/* Кнопка – отступ от текста 12px */
 .mint-buy-btn {
     width: 100%;
     border: none;
@@ -4502,15 +4499,17 @@ body {
     padding: 12px 0;
     font-size: 14px;
     cursor: pointer;
-    transition: none;
-    border-radius: 0;
+    transition: none;          /* без анимации */
     text-align: center;
-    margin-top: 10px;
+    margin-top: 12px;          /* отступ от надписи */
+    border-radius: 0 0 16px 16px;  /* только нижние углы скруглены */
 }
+
 .mint-buy-btn i {
     color: #ccc;
     margin-left: 5px;
 }
+
 .mint-buy-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -4530,7 +4529,7 @@ body {
     opacity: 1 !important;
 }
 
-/* Абсолютно всё в карточке не должно анимироваться */
+/* Запрещаем любые переходы внутри карточки */
 .mint-card * {
     transition: none !important;
 }

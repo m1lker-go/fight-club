@@ -1,17 +1,15 @@
-// mint.js – страница монетного двора (уголь и золото)
+// mint.js – Монетный двор (уголь и золото)
 
 let freeCoalAvailable = false;
 
-// Функция обновления бейджа на кнопке Торговля (аналогично сундуку)
+// Обновление бейджа на кнопке "Торговля"
 async function updateMintBadge() {
     try {
         const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
         const data = await res.json();
         freeCoalAvailable = data.freeAvailable;
-        if (window.updateTradeButtonIcon) {
-            window.updateTradeButtonIcon(); // предполагается, что она обновляет иконку бесплатного сундука и угля
-        }
-        // Если мы на странице монетного двора, перерисуем её
+        if (window.updateTradeButtonIcon) window.updateTradeButtonIcon();
+        // Если мы на странице монетного двора – перерисовываем
         if (window.currentScreen === 'trade' && window.tradeSubtab === 'coins') {
             const subContent = document.getElementById('tradeSubContent');
             if (subContent) renderMint(subContent);
@@ -30,11 +28,10 @@ async function renderMint(container) {
         const data = await res.json();
         freeCoalAvailable = data.freeAvailable;
     } catch (e) {
-        console.error(e);
         freeCoalAvailable = false;
     }
 
-    // Данные для товаров
+    // Товары: уголь (3 шт) + золото (6 шт)
     const coalItems = [
         { amount: 10, price: 1, currency: 'diamonds', free: freeCoalAvailable, image: '/assets/gold/buy_coal_1.png' },
         { amount: 50, price: 5, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_2.png' },
@@ -52,57 +49,45 @@ async function renderMint(container) {
 
     let html = `
         <div class="mint-page">
-            <div class="mint-section">
-                <div class="mint-section-title">Уголь</div>
-                <div class="mint-grid coal-grid">
+            <div class="mint-grid coal-grid">
     `;
 
+    // Уголь
     coalItems.forEach(item => {
-        const priceHtml = item.free ? 'FREE' : `${item.price} <i class="fas fa-gem"></i>`;
-        const btnDisabled = item.free ? false : (userData.diamonds < item.price);
+        const btnDisabled = (!item.free && userData.diamonds < item.price);
+        const btnText = item.free ? 'FREE' : `${item.price} <i class="fas fa-gem"></i>`;
         html += `
             <div class="mint-card">
                 <div class="mint-card-image">
                     <img src="${item.image}" alt="уголь ${item.amount}">
                 </div>
                 <div class="mint-card-title">${item.amount} угля</div>
-                <div class="mint-card-price">${priceHtml}</div>
                 <button class="mint-buy-btn" data-type="coal" data-amount="${item.amount}" data-price="${item.price}" data-currency="${item.currency}" data-free="${item.free}" ${btnDisabled ? 'disabled' : ''}>
-                    ${item.free ? 'ЗАБРАТЬ' : 'КУПИТЬ'}
+                    ${btnText}
                 </button>
             </div>
         `;
     });
 
-    html += `
-                </div>
-            </div>
-            <div class="mint-section">
-                <div class="mint-section-title">Золото</div>
-                <div class="mint-grid gold-grid">
-    `;
+    html += `</div><div class="mint-grid gold-grid">`;
 
+    // Золото
     goldItems.forEach(item => {
-        const btnDisabled = userData.diamonds < item.price;
+        const btnDisabled = (userData.diamonds < item.price);
         html += `
             <div class="mint-card">
                 <div class="mint-card-image">
                     <img src="${item.image}" alt="золото ${item.amount}">
                 </div>
                 <div class="mint-card-title">${item.amount} монет</div>
-                <div class="mint-card-price">${item.price} <i class="fas fa-gem"></i></div>
                 <button class="mint-buy-btn" data-type="gold" data-amount="${item.amount}" data-price="${item.price}" data-currency="${item.currency}" ${btnDisabled ? 'disabled' : ''}>
-                    КУПИТЬ
+                    ${item.price} <i class="fas fa-gem"></i>
                 </button>
             </div>
         `;
     });
 
-    html += `
-                </div>
-            </div>
-        </div>
-    `;
+    html += `</div></div>`;
     container.innerHTML = html;
 
     // Обработчики кнопок
@@ -152,5 +137,6 @@ async function renderMint(container) {
     });
 }
 
-// Экспорт функции обновления бейджа для использования в торговле
+// Глобальный экспорт
+window.renderMint = renderMint;
 window.updateMintBadge = updateMintBadge;

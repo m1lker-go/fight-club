@@ -1,4 +1,4 @@
-// task-up.js (исправленный) – с авто-исчезающими уведомлениями наград и звуком получения награды
+// task-up.js (исправленный) – поддержка угля, рекламы, фортуны
 
 let countdownInterval = null;
 let lastTasksData = null;  // храним последние данные заданий
@@ -89,6 +89,15 @@ function showRewardToast(title, iconClass, subtitle) {
     });
 }
 
+// Переводы для новых заданий
+if (typeof dailyTaskTranslations === 'undefined') window.dailyTaskTranslations = {};
+Object.assign(dailyTaskTranslations, {
+    fortune_spin: { name: 'Покрутить рулетку', description: 'Сыграйте в Фортуну 1 раз' },
+    watch_ads_coins: { name: 'Просмотр рекламы', description: 'Посмотрите 5 рекламных роликов' },
+    watch_ads_coal: { name: 'Просмотр рекламы', description: 'Посмотрите 5 рекламных роликов' },
+    gain_coal: { name: 'Сборщик угля', description: 'Получите 15 угля за день' }
+});
+
 function renderTasks() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -136,7 +145,6 @@ async function loadDailyTasks() {
     if (!tasksList) return;
 
     try {
-        // Используем apiRequest, user_id добавится автоматически
         const res = await window.apiRequest(`/tasks/daily/list?_t=${Date.now()}`, { method: 'GET' });
         if (!res.ok) throw new Error('HTTP error! status: ' + res.status);
         const data = await res.json();
@@ -164,9 +172,16 @@ async function loadDailyTasks() {
         activeTasks.forEach((task, index) => {
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
-            const rewardText = task.reward_type === 'coins' 
-                ? task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>' 
-                : task.reward_amount + ' EXP';
+            
+            // Отображение награды в зависимости от типа
+            let rewardHtml = '';
+            if (task.reward_type === 'coins') {
+                rewardHtml = task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>';
+            } else if (task.reward_type === 'coal') {
+                rewardHtml = task.reward_amount + ' <i class="fas fa-cube" style="color:white;"></i>';
+            } else {
+                rewardHtml = task.reward_amount + ' EXP';
+            }
 
             const translated = dailyTaskTranslations[task.name] || {};
             const displayName = translated.name || task.name;
@@ -230,7 +245,7 @@ async function loadDailyTasks() {
                     altProgressHtml +
                 '</div>' +
                 '<div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">' +
-                    '<span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">' + rewardText + '</span>' +
+                    '<span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">' + rewardHtml + '</span>' +
                 '</div>' +
                 '<div style="flex: 0 0 50px; text-align: right;">' +
                     '<button class="claim-task-btn ' + (isReadyToClaim ? 'active' : '') + '" ' +
@@ -267,7 +282,11 @@ async function loadDailyTasks() {
                         if (typeof AudioManager !== 'undefined') {
                             AudioManager.playSound('reward');
                         }
-                        showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+                        if (rewardType === 'coal') {
+                            showRewardToast('+' + rewardAmount + ' угля', 'fa-cube');
+                        } else {
+                            showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+                        }
                         loadDailyTasks();
                         refreshData();
                     }
@@ -286,7 +305,6 @@ async function loadDailyTasks() {
             }
         }
 
-        // Сохраняем данные заданий для проверки наличия неполученных наград
         lastTasksData = tasksData;
         if (window.updateMainMenuNewIcons) {
             window.updateMainMenuNewIcons();
@@ -297,7 +315,6 @@ async function loadDailyTasks() {
     }
 }
 
-// Функция для фоновой загрузки данных заданий без рендера
 async function refreshTasksData() {
     if (!userData || !userData.id) return;
     try {
@@ -306,7 +323,6 @@ async function refreshTasksData() {
         if (data.tasks) {
             lastTasksData = data.tasks;
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
-            // Принудительно перерисовываем задания, если мы на странице задач
             if (typeof loadDailyTasks === 'function') {
                 loadDailyTasks();
             }
@@ -327,7 +343,7 @@ function getRemainingTime() {
     const diffMs = nextDay - moscowTime;
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    return { hours: hours, minutes: minutes };
+    return { hours, minutes };
 }
 
 function updateCountdownDisplay() {
@@ -359,9 +375,7 @@ function updateCountdownDisplay() {
 function startCountdownTimer() {
     if (countdownInterval) clearInterval(countdownInterval);
     updateCountdownDisplay();
-    countdownInterval = setInterval(() => {
-        updateCountdownDisplay();
-    }, 60000);
+    countdownInterval = setInterval(updateCountdownDisplay, 60000);
 }
 
 function stopCountdownTimer() {
@@ -464,7 +478,6 @@ function claimAdventDay(day, daysInMonth) {
             showToast(data.error, 1500);
             isClaiming = false;
         } else {
-            // Звук получения награды
             if (typeof AudioManager !== 'undefined') {
                 AudioManager.playSound('reward');
             }
@@ -475,7 +488,6 @@ function claimAdventDay(day, daysInMonth) {
             } else {
                 showToast('Вы получили: ' + data.reward, 2000);
             }
-            // Запрашиваем актуальный статус календаря с сервера
             window.apiRequest('/tasks/advent', { method: 'GET' })
                 .then(res => res.json())
                 .then(updatedData => {
@@ -528,7 +540,6 @@ function showClassChoiceModalForAdvent(expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                // Звук получения награды
                 if (typeof AudioManager !== 'undefined') {
                     AudioManager.playSound('reward');
                 }
@@ -537,7 +548,6 @@ function showClassChoiceModalForAdvent(expAmount) {
                 if (data.leveledUp) {
                     showLevelUpModal(classChoice);
                 }
-                // Обновляем календарь
                 window.apiRequest('/tasks/advent', { method: 'GET' })
                     .then(res => res.json())
                     .then(updatedData => renderAdventCalendar(updatedData));
@@ -582,7 +592,6 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                // Звук получения награды
                 if (typeof AudioManager !== 'undefined') {
                     AudioManager.playSound('reward');
                 }

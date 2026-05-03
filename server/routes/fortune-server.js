@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { generateItemByRarity } = require('../utils/botGenerator');
+const dailyTasks = require('../utils/dailyTasks'); // добавлено
 
 // Шансы выигрыша (сумма 100)
 const prizes = [
@@ -129,9 +130,10 @@ router.post('/spin', async (req, res) => {
         }
         const prize = getRandomPrize();
         let responsePrize = { type: prize.type, amount: prize.amount, name: prize.name };
-        // начисляем награды (кроме опыта и предметов – они требуют дополнительных действий)
+        // начисляем награды
         if (prize.type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [prize.amount, userId]);
+            // задание на получение монет? нет отдельного задания
         } else if (prize.type === 'free_spin') {
             await client.query('UPDATE user_fortune SET free_spins_left = free_spins_left + 1 WHERE user_id = $1', [userId]);
         } else if (prize.type === 'legendary_chest') {
@@ -153,7 +155,19 @@ router.post('/spin', async (req, res) => {
                  item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
                  item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
             );
+        } else if (prize.type === 'coal') {
+            await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [prize.amount, userId]);
+            // обновляем задание на получение угля (id 13)
+            await dailyTasks.updateCoalGainProgress(userId, prize.amount);
+        } else if (prize.type === 'exp') {
+            // опыт обрабатывается отдельным эндпоинтом /claim-exp, здесь ничего не делаем, только сохраняем prize
+            // Фактически опыт не начисляется сразу, а отправляется клиенту, чтобы он выбрал класс
+            responsePrize.expAmount = prize.amount;
         }
+
+        // Обновляем задание "Покрутить рулетку" (id 10)
+        await dailyTasks.updateFortuneSpinProgress(userId);
+
         await client.query('COMMIT');
         res.json({ success: true, prize: responsePrize });
     } catch (e) {

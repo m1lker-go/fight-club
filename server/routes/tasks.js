@@ -349,4 +349,23 @@ router.post('/daily/update/profile', async (req, res) => {
     }
 });
 
+// Обновление прогресса заданий на просмотр рекламы (id 11 – монеты, id 12 – уголь)
+router.post('/daily/update/ads', async (req, res) => {
+    const { tg_id, user_id } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const client = await pool.connect();
+    try {
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+        // Обновляем оба рекламных задания одновременно (каждое на +1)
+        await dailyTasks.updateWatchAdsProgress(user.id);
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

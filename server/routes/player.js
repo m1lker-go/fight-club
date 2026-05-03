@@ -83,6 +83,39 @@ router.get('/freechest', async (req, res) => {
     }
 });
 
+// ========== БЕСПЛАТНЫЙ УГОЛЬ ==========
+router.get('/freecoal', async (req, res) => {
+    const { tg_id, user_id } = req.query;
+    
+    console.log('=== FREE COAL CHECK ===');
+    console.log('tg_id:', tg_id, 'user_id:', user_id);
+    
+    if (!tg_id && !user_id) {
+        return res.status(400).json({ error: 'tg_id or user_id required' });
+    }
+    
+    const client = await pool.connect();
+    try {
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        const lastFree = user.last_free_coal_date;
+        const now = new Date();
+        const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+        const today = moscowNow.toISOString().split('T')[0];
+        
+        const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
+        
+        console.log('freeAvailable:', freeAvailable);
+        res.json({ freeAvailable });
+    } catch (e) {
+        console.error('Database error:', e);
+        res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
+    }
+});
+
 router.get('/:tg_id', async (req, res) => {
     const { tg_id } = req.params;
     

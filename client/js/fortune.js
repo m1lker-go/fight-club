@@ -9,7 +9,7 @@ let fortuneCountdownInterval = null;
 let currentCountdown = 0;
 const SPIN_DURATION = 7000;
 
-// Определяем сектора ГЛОБАЛЬНО
+// Определяем сектора
 const sectors = [
     { type: 'legendary_chest', name: 'Легендарное снаряжение', amount: null, display: 'Снаряжение', icon: '\uf553', chance: 1 },
     { type: 'coins', name: '1000 монет', amount: 1000, display: '1000', icon: '\uf51e', chance: 3 },
@@ -27,12 +27,10 @@ function easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3);
 }
 
-// Отрисовка колеса: середина первого сектора находится на угле -π/2 (наверху, где стрелка)
 function drawWheel(ctx, centerX, centerY, radius, angleOffset = 0) {
     const sectorCount = sectors.length;
     const angleStep = (Math.PI * 2) / sectorCount;
     const colors = ['#2a303c', '#232833'];
-    // Начинаем отрисовку так, чтобы середина первого сектора оказалась наверху (угол -π/2)
     const startShift = -Math.PI / 2 - angleStep / 2;
 
     function getLabelByType(type) {
@@ -120,7 +118,6 @@ function renderWheel(angleOffset) {
     const radius = size / 2 - 15;
     drawWheel(ctx, centerX, centerY, radius, angleOffset);
     drawCenter(ctx, centerX, centerY, radius);
-    // Стрелка вверху (угол -π/2)
     ctx.beginPath();
     ctx.moveTo(centerX - 12, 14);
     ctx.lineTo(centerX + 12, 14);
@@ -163,19 +160,23 @@ function animateWheel(targetAngle) {
             renderWheel(currentAngle);
             localStorage.setItem('fortuneCurrentAngle', currentAngle.toString());
             if (prizeResult) {
-               if (prizeResult.type === 'exp') {
-        showClassChoiceModalForFortune(prizeResult.amount);
-    } else {
-        let msg = `Вы выиграли: ${prizeResult.name}`;
-        // больше не добавляем amount в скобках
-        showToast(msg, 2000);
+                // Обработка выигрыша
+                if (prizeResult.type === 'exp') {
+                    showClassChoiceModalForFortune(prizeResult.amount);
+                } else {
+                    let msg = `Вы выиграли: ${prizeResult.name}`;
+                    showToast(msg, 2000);
+                    // Обновляем бейджи, если награда влияет на бесплатные бонусы
+                    if (typeof window.updateTradeBadges === 'function') {
+                        window.updateTradeBadges();
+                    }
+                }
+                loadFortuneStatus();
+                refreshData();
+                prizeResult = null;
+            }
+        }
     }
-    loadFortuneStatus();
-    refreshData();
-    prizeResult = null;
-}
-}
-}
     requestAnimationFrame(step);
 }
 
@@ -283,14 +284,11 @@ async function fortuneSpin() {
     });
     if (sectorIndex === -1) sectorIndex = 0;
 
-    // Логика: середина сектора i находится на угле (i * 36)° относительно начального положения.
-    // Чтобы эта середина оказалась под стрелкой (наверху, угол -90°), нужно повернуть колесо на - (i * 36)°.
     let targetDeg = -(sectorIndex * 36);
-    targetDeg = ((targetDeg % 360) + 360) % 360; // нормализация 0..359
+    targetDeg = ((targetDeg % 360) + 360) % 360;
 
     const currentDeg = (currentAngle * 180 / Math.PI) % 360;
     let deltaDeg = targetDeg - currentDeg;
-    // Добавляем 3 полных оборота (1080°) для эффекта прокрутки
     const fullRotationsDeg = 3 * 360;
     const totalDeltaDeg = deltaDeg + fullRotationsDeg;
     const targetRad = (currentAngle * 180 / Math.PI + totalDeltaDeg) * Math.PI / 180;
@@ -326,6 +324,10 @@ function showClassChoiceModalForFortune(expAmount) {
             if (data.success) {
                 showToast(`Опыт добавлен классу ${getClassNameRu(chosenClass)}`, 1500);
                 if (data.leveledUp) showLevelUpModal(chosenClass);
+                // Обновляем бейджи (если нужно)
+                if (typeof window.updateTradeBadges === 'function') {
+                    window.updateTradeBadges();
+                }
             } else {
                 showToast('Ошибка начисления опыта', 1500);
             }
@@ -354,7 +356,7 @@ function showFortuneRules() {
                     <tr style="background: #1a1f2b; color: #ddd;">
                         <th style="padding: 12px 8px; text-align: left;">Награда</th>
                         <th style="padding: 12px 8px; text-align: center; width: 70px;">Шанс</th>
-                      </td>
+                      </tr>
                 </thead>
                 <tbody>
                     <tr style="background: rgba(255,255,255,0.03);">
@@ -398,7 +400,7 @@ function showFortuneRules() {
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
                      </tr>
                 </tbody>
-            </table>
+            </td>
             <button id="closeRulesBtn" style="width:100%; padding: 12px; border-radius: 8px; background: #2a303c; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px;">Назад</button>
         </div>
     `;
@@ -450,7 +452,6 @@ function renderFortune() {
     `;
     const canvas = document.getElementById('wheelCanvas');
     canvas.width = 340; canvas.height = 340;
-    // Восстанавливаем сохранённый угол
     const savedAngle = localStorage.getItem('fortuneCurrentAngle');
     if (savedAngle !== null) {
         currentAngle = parseFloat(savedAngle);

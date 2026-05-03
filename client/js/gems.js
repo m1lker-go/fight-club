@@ -24,17 +24,16 @@ async function renderGems(container) {
     const bonusBought = status?.bonusPacks || {};
 
     const packs = [
-    { id: 1, diamonds: 50, price: 149, image: 'buy_diamond_1.png', bonus: true },
-    { id: 2, diamonds: 200, price: 399, image: 'buy_diamond_2.png', bonus: true },
-    { id: 3, diamonds: 500, price: 899, image: 'buy_diamond_3.png', bonus: true },
-    { id: 4, diamonds: 1000, price: 1599, image: 'buy_diamond_4.png', bonus: true },
-    { id: 5, diamonds: 1600, price: 2499, image: 'buy_diamond_5.png', bonus: true },
-    { id: 6, diamonds: 2500, price: 3999, image: 'buy_diamond_6.png', bonus: true }
-];
+        { id: 1, diamonds: 50, price: 149, image: 'buy_diamond_1.png', bonus: true },
+        { id: 2, diamonds: 200, price: 399, image: 'buy_diamond_2.png', bonus: true },
+        { id: 3, diamonds: 500, price: 899, image: 'buy_diamond_3.png', bonus: true },
+        { id: 4, diamonds: 1000, price: 1599, image: 'buy_diamond_4.png', bonus: true },
+        { id: 5, diamonds: 1600, price: 2499, image: 'buy_diamond_5.png', bonus: true },
+        { id: 6, diamonds: 2500, price: 3999, image: 'buy_diamond_6.png', bonus: true }
+    ];
 
     let html = `
         <div class="gems-page">
-            <!-- Карточка подписки VIP Silver (две строки) -->
             <div class="subscription-card-new">
                 <div class="subscription-left-new">
                     <i class="fas fa-crown" style="color: #c0c0c0; font-size: 24px;"></i>
@@ -85,10 +84,12 @@ async function renderGems(container) {
             const price = parseInt(card.dataset.price);
             // Заглушка оплаты
             showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — разработка оплаты`, 2000);
+            // После успешной оплаты нужно обновить бейджи, но пока нет
         });
     });
 
-    if (freeCoinAvailable && typeof window.updateTradeBadges === 'function') {
+    // Всегда обновляем бейджи после рендера (чтобы бейджи на табах были актуальны)
+    if (typeof window.updateTradeBadges === 'function') {
         window.updateTradeBadges();
     }
 }

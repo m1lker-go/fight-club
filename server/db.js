@@ -107,14 +107,39 @@ const initDB = async () => {
       log TEXT,
       created_at TIMESTAMP DEFAULT NOW()
     );
+    
+    -- Таблица для рекламы
+    CREATE TABLE IF NOT EXISTS user_ads (
+      user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      ads_watched_today INT DEFAULT 0,
+      last_ad_date DATE,
+      rewarded_today INT DEFAULT 0
+    );
   `);
   
-  // Добавляем колонку telegram_chat_id, если её нет (миграция для существующих таблиц)
-  try {
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT`);
-    console.log('✅ Колонка telegram_chat_id добавлена или уже существует');
-  } catch (err) {
-    console.warn('⚠️ Не удалось добавить telegram_chat_id (возможно, уже есть):', err.message);
+  // ===== ДОБАВЛЕНИЕ НОВЫХ КОЛОНОК В ТАБЛИЦУ users (миграции) =====
+  const alterQueries = [
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS coal INT DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_free_coal_date DATE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_free_common_chest DATE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_free_sub_coin DATE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_win_streak INT DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_streak_date DATE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS coal_purchased_today INT DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS reward_100_streak BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS reward_500_streak BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS advent_last_claimed_day INT DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS advent_last_claim_date DATE`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS advent_month INT`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS advent_year INT`
+  ];
+  
+  for (const q of alterQueries) {
+    try {
+      await pool.query(q);
+    } catch (err) {
+      console.warn(`⚠️ Не удалось выполнить ${q.substring(0, 60)}...:`, err.message);
+    }
   }
   
   // Добавляем начальные предметы, если таблица пуста

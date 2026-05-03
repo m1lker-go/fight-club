@@ -36,12 +36,10 @@ let lastBattleLog = null;
 let messagesList = [];
 let unreadMessagesCount = 0;
 
-// Глобальный базовый URL для API
 window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
-// ========== УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ДЛЯ ЗАПРОСОВ ==========
 window.apiRequest = async function(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
     const method = options.method || 'GET';
@@ -90,7 +88,6 @@ window.apiRequest = async function(endpoint, options = {}) {
     }
 };
 
-// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОВТОРНЫХ ЗАПРОСОВ ==========
 async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -113,7 +110,6 @@ async function fetchWithRetry(url, options, retries = 3, timeout = 40000) {
     }
 }
 
-// ========== ЗАГРУЗКА АУДИОМЕНЕДЖЕРА ==========
 function loadAudioManager() {
     if (typeof AudioManager !== 'undefined') return;
     const script = document.createElement('script');
@@ -126,7 +122,6 @@ function loadAudioManager() {
     document.head.appendChild(script);
 }
 
-// ========== АВТОМАТИЧЕСКИЙ ВХОД ЧЕРЕЗ TELEGRAM ==========
 async function autoLoginTelegram() {
     if (!tg || !tg.initData) return false;
     console.log('Auto login via Telegram initData...');
@@ -168,7 +163,6 @@ async function autoLoginTelegram() {
     return false;
 }
 
-// Загрузка данных пользователя по токену
 async function loadUserDataByToken(token) {
     try {
         console.log('loadUserDataByToken: fetching profile...');
@@ -191,6 +185,10 @@ async function loadUserDataByToken(token) {
             updateMainMenuNewIcons();
             checkAdvent();
             hideSplashScreen();
+            // Обновляем бейджи после загрузки
+            if (typeof window.updateTradeBadges === 'function') {
+                window.updateTradeBadges();
+            }
             console.log('loadUserDataByToken: success');
             return true;
         } else {
@@ -202,7 +200,6 @@ async function loadUserDataByToken(token) {
     return false;
 }
 
-// ========== УПРАВЛЕНИЕ СЕССИЕЙ И АВТОРИЗАЦИЕЙ ==========
 let sessionToken = localStorage.getItem('sessionToken');
 
 async function checkAuth() {
@@ -232,6 +229,9 @@ async function checkAuth() {
                 updateMainMenuNewIcons();
                 checkAdvent();
                 hideSplashScreen();
+                if (typeof window.updateTradeBadges === 'function') {
+                    window.updateTradeBadges();
+                }
                 console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {
@@ -304,11 +304,9 @@ async function checkAdvent() {
         const res = await window.apiRequest(`/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
         const data = await res.json();
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
-            // Проверяем, загружена ли функция showAdventCalendar
             if (typeof showAdventCalendar === 'function') {
                 showAdventCalendar();
             } else {
-                // Если нет — динамически загружаем task-up.js
                 const script = document.createElement('script');
                 script.src = '/js/task-up.js';
                 script.onload = () => {
@@ -427,12 +425,10 @@ function showScreen(screen) {
     const content = document.getElementById('content');
     content.innerHTML = '';
 
-    // Уведомляем аудиоменеджер о смене экрана (для переключения музыки)
     if (typeof AudioManager !== 'undefined' && AudioManager.onScreenChange) {
         AudioManager.onScreenChange();
     }
 
-    // Автоматическое обновление задания "Посещение профиля"
     if (screen === 'profile' && userData && userData.id) {
         window.apiRequest('/tasks/daily/update/profile', { method: 'POST' })
             .then(res => res.json())
@@ -444,39 +440,39 @@ function showScreen(screen) {
             .catch(e => console.warn('Не удалось обновить задание профиля:', e));
     }
 
-switch (screen) {
-    case 'main': renderMain(); break;
-    case 'equip': renderEquip(); break;
-    case 'trade': renderTrade(); break;
-    case 'messages': renderMessages(); break;
-    case 'forge':
-        if (typeof renderForge === 'function') renderForge();
-        else renderForgeFallback();
-        break;
-    case 'tasks':
-        renderTasks();
-        if (typeof loadDailyTasks === 'function') loadDailyTasks();
-        break;
-    case 'rating': renderRating(); break;
-    case 'profile': renderProfile(); break;
-    case 'tower':
-        if (typeof loadTowerStatus === 'function') loadTowerStatus();
-        else {
-            const script = document.createElement('script');
-            script.src = 'js/tower.js?v=1';
-            script.onload = () => loadTowerStatus();
-            document.head.appendChild(script);
-        }
-        break;
-    case 'settings':
-        if (typeof renderSettings === 'function') renderSettings();
-        else content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
-        break;
-    case 'market': renderMarket(); break;
-    case 'fortune': renderFortune(); break;
-    case 'alchemy': renderAlchemy(); break;
-    default: renderMain();
-}
+    switch (screen) {
+        case 'main': renderMain(); break;
+        case 'equip': renderEquip(); break;
+        case 'trade': renderTrade(); break;
+        case 'messages': renderMessages(); break;
+        case 'forge':
+            if (typeof renderForge === 'function') renderForge();
+            else renderForgeFallback();
+            break;
+        case 'tasks':
+            renderTasks();
+            if (typeof loadDailyTasks === 'function') loadDailyTasks();
+            break;
+        case 'rating': renderRating(); break;
+        case 'profile': renderProfile(); break;
+        case 'tower':
+            if (typeof loadTowerStatus === 'function') loadTowerStatus();
+            else {
+                const script = document.createElement('script');
+                script.src = 'js/tower.js?v=1';
+                script.onload = () => loadTowerStatus();
+                document.head.appendChild(script);
+            }
+            break;
+        case 'settings':
+            if (typeof renderSettings === 'function') renderSettings();
+            else content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
+            break;
+        case 'market': renderMarket(); break;
+        case 'fortune': renderFortune(); break;
+        case 'alchemy': renderAlchemy(); break;
+        default: renderMain();
+    }
 
     if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
 }
@@ -489,7 +485,7 @@ function renderForgeFallback() {
 async function loadAvatars() {
     if (avatarsList) return avatarsList;
     try {
-       const res = await window.apiRequest('/avatars');
+        const res = await window.apiRequest('/avatars');
         if (!res.ok) throw new Error('Failed to fetch avatars');
         avatarsList = await res.json();
         return avatarsList;
@@ -505,7 +501,6 @@ function getAvatarFilenameById(id) {
     return avatar ? avatar.filename : 'cat_heroweb.png';
 }
 
-// Инициализация меню и запуск
 document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         showScreen(item.dataset.screen);
@@ -637,13 +632,9 @@ window.updateMessagesBadge = updateMessagesBadge;
 
 handleExternalAuth();
 
-// Запуск приложения
 checkAuth();
-
-// Загружаем аудиоменеджер после всех инициализаций
 loadAudioManager();
 
-// Разблокировка аудио по первому действию пользователя
 const unlockHandler = () => {
     if (window.AudioManager && typeof AudioManager.unlockAudio === 'function') {
         window.AudioManager.unlockAudio();

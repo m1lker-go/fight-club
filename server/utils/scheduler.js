@@ -1,10 +1,12 @@
 const { pool } = require('../db');
 
-// Ежедневный сброс (задания, билеты башни, лотерея, бесплатный уголь)
+// Ежедневный сброс (задания, башня, лотерея, уголь, сундук, подписка, серия побед, лимиты, реклама)
 async function resetDailyTasks() {
     console.log('[SCHEDULER] Ежедневный сброс запущен');
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+
         // Сброс ежедневных заданий
         await client.query(`
             UPDATE users 
@@ -12,11 +14,13 @@ async function resetDailyTasks() {
                 daily_tasks_progress = '{}',
                 last_daily_reset = CURRENT_DATE
         `);
-        // Сброс попыток башни (last_attempt_date больше не используется, удаляем)
+
+        // Сброс попыток башни
         await client.query(`
             UPDATE tower_progress 
             SET attempts_today = 0
         `);
+
         // Сброс лотереи (бесплатные билеты и счётчик покупок)
         await client.query(`
             UPDATE user_fortune 
@@ -24,13 +28,50 @@ async function resetDailyTasks() {
                 purchased_today = 0, 
                 last_reset_date = CURRENT_DATE
         `);
-        // Сброс бесплатного угля (разрешаем получить ещё раз в новый день)
+
+        // Сброс бесплатного угля
         await client.query(`
             UPDATE users 
             SET last_free_coal_date = NULL
         `);
+
+        // Сброс бесплатного сундука
+        await client.query(`
+            UPDATE users 
+            SET last_free_common_chest = NULL
+        `);
+
+        // Сброс бесплатной монеты подписки (20 монет)
+        await client.query(`
+            UPDATE users 
+            SET last_free_sub_coin = NULL
+        `);
+
+        // Сброс ежедневной серии побед и даты
+        await client.query(`
+            UPDATE users 
+            SET daily_win_streak = 0,
+                last_streak_date = CURRENT_DATE - 1
+        `);
+
+        // Сброс лимита покупки угля за монеты
+        await client.query(`
+            UPDATE users 
+            SET coal_purchased_today = 0
+        `);
+
+        // Сброс таблицы просмотров рекламы
+        await client.query(`
+            UPDATE user_ads 
+            SET ads_watched_today = 0,
+                rewarded_today = 0,
+                last_ad_date = NULL
+        `);
+
+        await client.query('COMMIT');
         console.log('[SCHEDULER] Ежедневный сброс выполнен успешно');
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('[SCHEDULER] Ошибка при ежедневном сбросе:', err);
     } finally {
         client.release();
@@ -82,7 +123,6 @@ async function resetSeason() {
                 placeText = `${position}-е место`;
             }
 
-            // Формируем текст письма
             let rewardTextParts = [];
             if (rewardCoins > 0) rewardTextParts.push(`${rewardCoins} монет`);
             if (rewardDiamonds > 0) rewardTextParts.push(`${rewardDiamonds} алмазов`);
@@ -91,7 +131,6 @@ async function resetSeason() {
             const subject = `🏆 Награда за сезон!`;
             const body = `Поздравляю! Ты пережил этот сезон, сражаясь как тигр! Ты занял ${placeText} в рейтинге.\n\nВы получили: ${rewardText}.`;
 
-            // Вставляем одно сообщение с двумя наградами (если алмазов нет, то только монеты)
             await client.query(
                 `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, reward_type2, reward_amount2, is_read, is_claimed)
                  VALUES ($1, 'Мастер кошачьих боёв', $2, $3, $4, $5, $6, $7, false, false)`,

@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
+const dailyTasks = require('../utils/dailyTasks');
 const {
     attackPhrases,
     dodgePhrases,
@@ -40,7 +41,6 @@ const baseStats = {
     mage: { hp: 20, atk: 3, def: 1, agi: 3, int: 6, spd: 14, crit: 3, critDmg: 1.5, vamp: 0, reflect: 0 }
 };
 
-// === БАЛАНСНЫЕ ПРАВКИ: страж (блок 10%, +5 защиты), убийца (+50% крит урона) ===
 const rolePassives = {
     guardian: { defenseBonus: 5, blockChance: 10 },
     berserker: { rage: true },
@@ -72,7 +72,6 @@ function applyIntBonus(damage, int) {
     return Math.floor(damage * (1 + int / 100));
 }
 
-// === УСИЛЕННАЯ ЯРОСТЬ (бонус урона и крита) ===
 function getBerserkerRage(hpPercent) {
     if (hpPercent < 20) return { level: 5, bonus: 150, critBonus: 20 };
     if (hpPercent < 35) return { level: 4, bonus: 80, critBonus: 15 };
@@ -124,7 +123,6 @@ function calculateStats(classData, inventory, subclass) {
         stats.reflect += item.reflect_bonus || 0;
     });
 
-    // === ОСОБЕННОСТИ КЛАССОВ ===
     if (classData.class === 'warrior') stats.hp += Math.floor(stats.def / 5) * 5;
     if (classData.class === 'assassin') stats.spd += Math.floor(stats.agi / 5);
     if (classData.class === 'mage') {
@@ -132,35 +130,27 @@ function calculateStats(classData, inventory, subclass) {
         stats.manaRegen += Math.floor(stats.int / 5) * 2;
     }
 
-    // Пассивные бонусы подклассов
     const roleBonus = rolePassives[subclass] || {};
     if (roleBonus.vamp) stats.vamp += roleBonus.vamp;
     if (roleBonus.reflect) stats.reflect += roleBonus.reflect;
-    
-    // Страж: +5 к защите (макс 75)
     if (classData.class === 'warrior' && subclass === 'guardian') {
         stats.def = Math.min(75, stats.def + 5);
     }
-
-    // Воин: +10% HP
     if (classData.class === 'warrior') {
         stats.hp = Math.floor(stats.hp * 1.1);
     }
 
-    // Капы характеристик
     stats.def = Math.min(75, stats.def);
     stats.crit = Math.min(100, stats.crit);
     stats.agi = Math.min(70, stats.agi);
     stats.critDmg = Math.min(stats.critDmg, 4.5);
-    stats.manaRegen = Math.min(40, stats.manaRegen);   // реген маны не более 40
-    
+    stats.manaRegen = Math.min(40, stats.manaRegen);
     return stats;
 }
 
 function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
     let extraLogs = [];
 
-    // Illusionist mirage
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist && rolePassives.illusionist.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
         if (defenderState.mirageCounter >= 4) {
@@ -172,7 +162,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Shadow dodge (90%)
     if (defenderSubclass === 'mouse_shadow') {
         const dodgeChance = rolePassives.mouse_shadow.dodgeChance;
         if (Math.random() * 100 < dodgeChance) {
@@ -183,7 +172,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Standard dodge based on agility
     const hitChance = Math.min(100, Math.max(5, 100 - defenderStats.agi));
     const isDodge = Math.random() * 100 > hitChance;
     if (isDodge) {
@@ -193,7 +181,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         return { hit: false, damage: 0, isCrit: false, log: phrase, reflectDamage: 0, vampHeal: 0, stateChanges: {}, extraLogs };
     }
 
-    // Блок Стража (только от физических атак)
     if (defenderSubclass === 'guardian') {
         const blockChance = rolePassives.guardian.blockChance;
         if (Math.random() * 100 < blockChance) {
@@ -216,7 +203,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let selfDamage = 0;
     let berserkerCritBonus = 0;
 
-    // Berserker self damage (10% от наносимого урона, не менее 1)
     if (attackerSubclass === 'berserker' && rolePassives.berserker && rolePassives.berserker.rage) {
         const hpPercent = (attackerState.hp / attackerStats.hp) * 100;
         const rage = getBerserkerRage(hpPercent);
@@ -262,12 +248,10 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         damage *= effectiveCritDmg;
     }
 
-    // Paladin damage reduction (50%)
     if (defenderSubclass === 'mouse_paladin') {
         damage = Math.floor(damage * (1 - rolePassives.mouse_paladin.damageReduction / 100));
     }
 
-    // Apply defense reduction
     damage = damage * (1 - defenderStats.def / 100);
     damage = Math.max(1, Math.floor(damage));
 
@@ -277,7 +261,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     let reflectDamage = 0;
     if (defenderReflect > 0) reflectDamage = Math.floor(damage * defenderReflect / 100);
 
-    // Mana steal for Antimag
     if (attackerSubclass === 'mouse_antimag') {
         const steal = rolePassives.mouse_antimag.manaSteal;
         const currentMana = defenderState.mana || 0;
@@ -290,7 +273,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         });
     }
 
-    // Poison for Alchemist (passive)
     if (attackerSubclass === 'mouse_alchemist') {
         if (!defenderState.alchemistPoison) defenderState.alchemistPoison = 0;
         defenderState.alchemistPoison = Math.floor(damage * 0.5);
@@ -302,14 +284,12 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         });
     }
 
-    // Double attack for Blade
     let doubleAttack = false;
     if (attackerSubclass === 'mouse_blade') {
         doubleAttack = true;
         damage *= 2;
     }
 
-    // Venom blade poison (урон стака зависит от ловкости)
     if (attackerSubclass === 'venom_blade' && rolePassives.venom_blade && rolePassives.venom_blade.poison) {
         if (!defenderState.poisonStacks) defenderState.poisonStacks = 0;
         const oldStacks = defenderState.poisonStacks;
@@ -324,7 +304,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Pyromancer burn (урон стака зависит от ловкости)
     if (attackerSubclass === 'pyromancer' && rolePassives.pyromancer && rolePassives.pyromancer.burn) {
         if (!defenderState.burnStacks) defenderState.burnStacks = 0;
         const oldStacks = defenderState.burnStacks;
@@ -339,7 +318,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         }
     }
 
-    // Cryomancer freeze (заморозка на 1 ход)
     if (attackerSubclass === 'cryomancer') {
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
@@ -385,7 +363,6 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         attackPhrase += ' (двойной удар)';
     }
 
-    // Mana logic on dodge
     if (isDodge) {
         attackerState.mana = Math.max(0, (attackerState.mana || 0) - 10);
         defenderState.mana = Math.min(100, (defenderState.mana || 0) + 5);
@@ -464,32 +441,23 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
             
        case 'venom_blade':
-    // Базовая атака (без учёта защиты, без крита)
     let baseDamage = attackerStats.atk;
-    
-    // Урон от всех накопленных стаков яда
     const stacks = defenderState.poisonStacks || 0;
     const poisonPerStack = 2 + Math.floor(attackerStats.agi / 5);
     const poisonDamage = stacks * poisonPerStack;
-    
-    // Бонус за сжигание стаков
     let bonusDamage = 0;
     if (stacks === 1) bonusDamage = 5;
     else if (stacks === 2) bonusDamage = 10;
     else if (stacks === 3) bonusDamage = 15;
     else if (stacks === 4) bonusDamage = 20;
     else if (stacks >= 5) bonusDamage = 30;
-    
-    // Итоговый чистый урон
     const totalDamage = baseDamage + poisonDamage + bonusDamage;
     damage = totalDamage;
-    
     log = ultPhrases.venom_blade
         .replace('%s', '<strong>' + attackerName + '</strong>')
         .replace('%d', damage)
         + ` (яд: ${poisonDamage}, бонус: ${bonusDamage})`;
-    
-    defenderState.poisonStacks = 0;   // сжигаем все стаки
+    defenderState.poisonStacks = 0;
     type = 'poison_ult';
     break;
             
@@ -535,7 +503,6 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             type = 'damage';
             break;
             
-        // Mouse bosses
         case 'mouse_blade':
             damage = attackerStats.atk * 2;
             log = `<strong>${attackerName}</strong> использует Уязвимость и наносит ${damage} урона, игнорируя защиту!`;
@@ -715,7 +682,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 playerState.mana = playerMana;
                 if (skill.stateChanges) Object.assign(enemyState, skill.stateChanges);
                 
-                // Мгновенный выход при смерти
                 if (enemyHp <= 0 || playerHp <= 0) break;
             } else {
                 const attackResult = performAttack(
@@ -776,7 +742,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                         messages.push({ text: `${enemyName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'player' });
                     }
 
-                    // Мгновенный выход при смерти
                     if (enemyHp <= 0 || playerHp <= 0) break;
                 } else {
                     actionLog = { text: attackResult.log, type: 'dodge', attacker: 'player' };
@@ -786,13 +751,11 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (attackResult.stateChanges) Object.assign(enemyState, attackResult.stateChanges);
             }
 
-            // Проверка после хода (если не вышли ранее)
             if (playerHp <= 0 || enemyHp <= 0) break;
 
             turn = 'enemy';
             playerActedThisRound = true;
         } else {
-            // Ход врага (аналогично добавлены break)
             if (enemyState.frozen > 0) {
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
@@ -914,7 +877,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = true;
         }
 
-        // Обновление длительности баффов
         if (playerState.critDmgBuffDuration > 0) {
             playerState.critDmgBuffDuration--;
             if (playerState.critDmgBuffDuration === 0) playerState.critDmgBuff = 0;
@@ -927,7 +889,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (playerState.invincible > 0) playerState.invincible--;
         if (enemyState.invincible > 0) enemyState.invincible--;
 
-        // DOT и скрытые атаки только если оба живы
         if (playerHp > 0 && enemyHp > 0 && playerActedThisRound && enemyActedThisRound) {
             const playerDot = applyDotDamage(playerState, playerName, enemyStats.agi);
             const enemyDot = applyDotDamage(enemyState, enemyName, playerStats.agi);
@@ -985,7 +946,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyActedThisRound = false;
         }
 
-        // Воскрешение некроманта
         if (enemyHp <= 0 && !enemyState.revived && enemySubclass === 'mouse_necromancer') {
             enemyHp = Math.floor(enemyStats.hp * 0.1);
             enemyState.revived = true;
@@ -1019,7 +979,6 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             pushState();
         }
 
-        // Окончательная проверка
         if (playerHp <= 0 || enemyHp <= 0) break;
     }
 
@@ -1188,6 +1147,14 @@ router.post('/start', async (req, res) => {
         const energyResult = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
         if (energyResult.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
+        // Сброс daily_win_streak, если день сменился
+        const today = new Date().toISOString().slice(0, 10);
+        let lastStreakDate = userData.last_streak_date ? userData.last_streak_date.toISOString().slice(0, 10) : null;
+        let dailyStreak = userData.daily_win_streak || 0;
+        if (lastStreakDate !== today) {
+            dailyStreak = 0;
+        }
+
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userData.id, userData.current_class]);
         if (classData.rows.length === 0) throw new Error('Class data not found');
 
@@ -1220,21 +1187,29 @@ router.post('/start', async (req, res) => {
         let newStreak = userData.win_streak || 0;
         let ratingChange = -15;
 
-        // ─────────────────────────────────────────────
-        // 1. Ежедневная серия побед (daily_win_streak)
-        // ─────────────────────────────────────────────
-        let dailyStreakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userData.id]);
-        let dailyStreak = dailyStreakRes.rows[0].daily_win_streak || 0;
+        // --- Обработка daily_win_streak (серия побед в текущем дне) ---
         if (isVictory) {
             dailyStreak++;
         } else {
             dailyStreak = 0;
         }
-        await client.query('UPDATE users SET daily_win_streak = $1 WHERE id = $2', [dailyStreak, userData.id]);
+        await client.query(
+            'UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3',
+            [dailyStreak, today, userData.id]
+        );
 
-        // ─────────────────────────────────────────────
-        // 2. Обработка победы / поражения
-        // ─────────────────────────────────────────────
+        // --- Обработка задания на победы для конкретного класса (id 1,2,3) ---
+        if (isVictory) {
+            let taskId = null;
+            if (userData.current_class === 'warrior') taskId = 1;
+            else if (userData.current_class === 'assassin') taskId = 2;
+            else if (userData.current_class === 'mage') taskId = 3;
+            if (taskId) {
+                await dailyTasks.updateTaskProgress(userData.id, taskId, 1);
+            }
+        }
+
+        // --- Основные награды и обновление рейтинга ---
         if (isVictory) {
             newStreak++;
             const coinReward = getCoinReward(newStreak);
@@ -1242,7 +1217,6 @@ router.post('/start', async (req, res) => {
             ratingChange = ratingGain;
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
 
-            // Единоразовые награды за 100 / 500 побед
             let bonusCoins = 0;
             if (newStreak === 100 && !userData.reward_100_streak) {
                 bonusCoins = 1500;
@@ -1262,10 +1236,10 @@ router.post('/start', async (req, res) => {
         }
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
 
-        // ─────────────────────────────────────────────
-        // 3. Автоматическое выполнение заданий при 10 победах подряд
-        // ─────────────────────────────────────────────
+        // --- Автоматическое выполнение заданий при 10 победах подряд (уже выполнено через dailyStreak, но нужно также отметить задания) ---
         if (dailyStreak >= 10) {
+            // Если серия достигла 10, то задания на победы становятся выполненными (независимо от класса?)
+            // По старой логике это приводило к заполнению прогресса у всех трёх классов. Оставим как есть:
             const userTasks = await client.query(
                 'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1',
                 [userData.id]
@@ -1278,7 +1252,7 @@ router.post('/start', async (req, res) => {
             for (let taskId of [1, 2, 3]) {
                 const bit = 1 << (taskId - 1);
                 if (!(mask & bit)) {
-                    progress[taskId] = 5;
+                    progress[taskId] = Math.min(progress[taskId] || 0, 5);
                 }
             }
             await client.query(
@@ -1287,12 +1261,22 @@ router.post('/start', async (req, res) => {
             );
         }
 
-        // ─────────────────────────────────────────────
-        // 4. Начисление опыта
-        // ─────────────────────────────────────────────
+        // --- Начисление опыта ---
         const expGain = isVictory ? getExpReward(newStreak) : 3;
         const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
         if (leveledUp) await updatePlayerPower(client, userData.id, userData.current_class);
+
+        // --- Выпадение угля после боя ---
+        const r = Math.random();
+        let coalGain = 0;
+        if (r >= 0.7 && r < 0.9) coalGain = 1;
+        else if (r >= 0.9) coalGain = 2;
+        if (coalGain > 0) {
+            await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, userData.id]);
+            // Обновляем задание на получение угля (id 13)
+            await dailyTasks.updateCoalGainProgress(userData.id, coalGain);
+        }
+
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
         await client.query('COMMIT');
 
@@ -1323,7 +1307,8 @@ router.post('/start', async (req, res) => {
                 newStreak
             },
             ratingChange,
-            newEnergy: energyQuery.rows[0].energy
+            newEnergy: energyQuery.rows[0].energy,
+            coalGain
         });
     } catch (e) {
         await client.query('ROLLBACK');

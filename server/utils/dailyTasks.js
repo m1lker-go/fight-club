@@ -83,6 +83,24 @@ async function updateTowerTask(userId) {
     await updateTaskProgress(userId, 8, 1);
 }
 
+// ========== НОВЫЕ ЗАДАНИЯ ==========
+
+// Задание 10: покрутить рулетку в фортуне
+async function updateFortuneSpinProgress(userId) {
+    await updateTaskProgress(userId, 10, 1);
+}
+
+// Задания 11 и 12: просмотр рекламы (оба увеличиваются одновременно)
+async function updateWatchAdsProgress(userId) {
+    await updateTaskProgress(userId, 11, 1);
+    await updateTaskProgress(userId, 12, 1);
+}
+
+// Задание 13: получить 15 угля за день (суммарно)
+async function updateCoalGainProgress(userId, amount) {
+    await updateTaskProgress(userId, 13, amount);
+}
+
 module.exports = {
     getMoscowDate,
     parseProgress,
@@ -92,5 +110,8 @@ module.exports = {
     updateExpProgress,
     updateChestProgress,
     updateProfileProgress,
-    updateTowerTask
+    updateTowerTask,
+    updateFortuneSpinProgress,
+    updateWatchAdsProgress,
+    updateCoalGainProgress
 };

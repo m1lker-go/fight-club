@@ -45,6 +45,7 @@ app.use('/avatars', require('./routes/avatars'));
 app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
+app.use('/subscription', require('./routes/subscription'));
 app.use('/fortune', require('./routes/fortune-server'));
 
 app.post('/auth/vk/callback', (req, res) => {

@@ -4,7 +4,6 @@ const { pool, getUserByIdentifier } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 const dailyTasks = require('../utils/dailyTasks');
 
-// Генерация предмета из сундука (без изменений)
 function generateItemFromChest(chestType) {
     const classes = ['warrior', 'assassin', 'mage'];
     const className = classes[Math.floor(Math.random() * classes.length)];
@@ -84,7 +83,6 @@ function generateItemFromChest(chestType) {
     return item;
 }
 
-// ========== ПОКУПКА СУНДУКОВ (с новыми ценами) ==========
 router.post('/buychest', async (req, res) => {
     const { tg_id, user_id, chestType } = req.body;
     const client = await pool.connect();
@@ -175,7 +173,6 @@ router.post('/buychest', async (req, res) => {
     }
 });
 
-// Покупка монет за алмазы (без изменений)
 router.post('/buy-coins', async (req, res) => {
     const { tg_id, user_id, coins, price } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -201,7 +198,6 @@ router.post('/buy-coins', async (req, res) => {
 
 // ========== МОНЕТНЫЙ ДВОР ==========
 
-// Проверка бесплатного угля
 router.get('/freecoal', async (req, res) => {
     const { tg_id, user_id } = req.query;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -221,7 +217,6 @@ router.get('/freecoal', async (req, res) => {
     }
 });
 
-// Покупка угля за алмазы или бесплатно
 router.post('/buy-coal', async (req, res) => {
     const { tg_id, user_id, amount, price, free } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -251,26 +246,21 @@ router.post('/buy-coal', async (req, res) => {
     }
 });
 
-// Покупка угля за монеты (с дневным лимитом 1000 угля)
 router.post('/buy-coal-coins', async (req, res) => {
-    const { user_id, amount } = req.body; // amount кратно 10 (10, 50, 250)
+    const { user_id, amount } = req.body;
     if (!user_id || !amount) return res.status(400).json({ error: 'Missing user_id or amount' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
-        const priceCoins = (amount / 10) * 100; // 10 угля = 100 монет
+        const priceCoins = (amount / 10) * 100;
         const maxDaily = 1000;
         const purchasedToday = user.coal_purchased_today || 0;
         if (purchasedToday + amount > maxDaily) throw new Error(`Daily limit exceeded (max ${maxDaily} coal)`);
         if (user.coins < priceCoins) throw new Error('Not enough coins');
         await client.query(
-            `UPDATE users 
-             SET coins = coins - $1, 
-                 coal = coal + $2, 
-                 coal_purchased_today = coal_purchased_today + $2 
-             WHERE id = $3`,
+            `UPDATE users SET coins = coins - $1, coal = coal + $2, coal_purchased_today = coal_purchased_today + $2 WHERE id = $3`,
             [priceCoins, amount, user.id]
         );
         await client.query('COMMIT');
@@ -284,7 +274,6 @@ router.post('/buy-coal-coins', async (req, res) => {
     }
 });
 
-// Получение лимита покупки угля за монеты
 router.get('/coal-limit', async (req, res) => {
     const { user_id } = req.query;
     if (!user_id) return res.status(400).json({ error: 'user_id required' });
@@ -302,7 +291,6 @@ router.get('/coal-limit', async (req, res) => {
     }
 });
 
-// Покупка золота за алмазы (синоним /buy-coins)
 router.post('/buy-gold', async (req, res) => {
     const { tg_id, user_id, amount, price } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -355,10 +343,7 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
         const today = new Date().toISOString().slice(0, 10);
         const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         if (last === today) throw new Error('Already claimed today');
-        await client.query(
-            'UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2',
-            [today, user.id]
-        );
+        await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {

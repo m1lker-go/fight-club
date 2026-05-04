@@ -500,3 +500,5 @@ async function showBattleResult(battleData, timeOut = false) {
         }
     }, 100);
 }
+
+window.startBattle = startBattle;

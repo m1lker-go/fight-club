@@ -24,7 +24,7 @@ async function updateMintBadge() {
 // Получение лимита покупки угля за монеты
 async function loadCoalLimit() {
     try {
-        const res = await window.apiRequest('/coal-limit', { method: 'GET' });
+        const res = await window.apiRequest('/player/coal-limit', { method: 'GET' });
         const data = await res.json();
         coalLimit = { purchasedToday: data.purchasedToday || 0, maxDaily: data.maxDaily || 1000 };
     } catch (e) {

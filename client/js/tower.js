@@ -844,3 +844,5 @@ async function confirmSelection() {
         showToast('Ошибка соединения', 2000);
     }
 }
+
+window.loadTowerStatus = loadTowerStatus;

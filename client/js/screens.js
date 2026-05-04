@@ -1788,6 +1788,11 @@ window.loadMessagesSilent = loadMessagesSilent;
 
 // ==================== УНИВЕРСАЛЬНОЕ ОБНОВЛЕНИЕ БЕЙДЖЕЙ ТОРГОВЛИ ====================
 async function updateTradeBadges() {
+    // Проверяем, что userData загружен и содержит id
+    if (!userData || !userData.id) {
+        console.log('updateTradeBadges: userData not ready, skipping');
+        return;
+    }
     try {
         // Запрашиваем все статусы параллельно
         const [freeChestRes, freeCoalRes, freeCoinRes] = await Promise.all([

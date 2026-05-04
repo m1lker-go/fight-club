@@ -846,3 +846,4 @@ async function confirmSelection() {
 }
 
 window.loadTowerStatus = loadTowerStatus;
+window.startTowerBattle = startTowerBattle;

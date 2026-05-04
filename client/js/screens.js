@@ -568,23 +568,23 @@ async function renderChestsTab(container) {
             <div class="chest-row" data-chest="uncommon">
                 <div class="chest-icon-col"><img src="/assets/uncommon-chess.png" alt="Необычный сундук"></div>
                 <div class="chest-info-col"><div class="chest-name">Необычный сундук</div><div class="chest-desc">Обычное 25%<br>Необычное 65%<br>Редкое 10%</div></div>
-                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="uncommon"><span class="chest-price">250</span><i class="fas fa-coins"></i></button></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="uncommon"><span class="chest-price">500</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="rare">
                 <div class="chest-icon-col"><img src="/assets/rare-chess.png" alt="Редкий сундук"></div>
                 <div class="chest-info-col"><div class="chest-name">Редкий сундук</div><div class="chest-desc">Редкое 65%<br>Необычное 25%<br>Эпическое 10%</div></div>
-                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="rare"><span class="chest-price">800</span><i class="fas fa-coins"></i></button></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="rare"><span class="chest-price">1500</span><i class="fas fa-coins"></i></button></div>
             </div>
-            <div class="chest-row" data-chest="epic">
-                <div class="chest-icon-col"><img src="/assets/epic-chess.png" alt="Эпический сундук"></div>
-                <div class="chest-info-col"><div class="chest-name">Эпический сундук</div><div class="chest-desc">Эпическое 65%<br>Редкое 25%<br>Легендарное 10%</div></div>
-                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="epic"><span class="chest-price">1800</span><i class="fas fa-coins"></i></button></div>
-            </div>
-            <div class="chest-row" data-chest="legendary">
-                <div class="chest-icon-col"><img src="/assets/leg-chess.png" alt="Легендарный сундук"></div>
-                <div class="chest-info-col"><div class="chest-name">Легендарный сундук</div><div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div></div>
-                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="legendary"><span class="chest-price">3500</span><i class="fas fa-coins"></i></button></div>
-            </div>
+         <div class="chest-row" data-chest="epic">
+    <div class="chest-icon-col"><img src="/assets/epic-chess.png" alt="Эпический сундук"></div>
+    <div class="chest-info-col"><div class="chest-name">Эпический сундук</div><div class="chest-desc">Эпическое 65%<br>Редкое 25%<br>Легендарное 10%</div></div>
+    <div class="chest-price-col"><button class="chest-buy-btn" data-chest="epic"><span class="chest-price">300</span><i class="fas fa-gem"></i></button></div>
+</div>
+<div class="chest-row" data-chest="legendary">
+    <div class="chest-icon-col"><img src="/assets/leg-chess.png" alt="Легендарный сундук"></div>
+    <div class="chest-info-col"><div class="chest-name">Легендарный сундук</div><div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div></div>
+    <div class="chest-price-col"><button class="chest-buy-btn" data-chest="legendary"><span class="chest-price">1000</span><i class="fas fa-gem"></i></button></div>
+</div>
         </div>
     `;
 

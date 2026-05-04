@@ -43,6 +43,7 @@ async function renderGems(container) {
                     </div>
                 </div>
                 <button class="subscription-view-btn-new" id="viewSubscriptionBtn">
+                    ${freeCoinAvailable ? '<img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">' : ''}
                     <i class="fas fa-eye"></i> Подробнее
                 </button>
             </div>
@@ -125,6 +126,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             </div>
             <div class="subscription-buttons-new">
                 <button class="subscription-free-btn-new" id="freeCoinBtnNew" ${!freeCoinAvailable ? 'disabled' : ''}>
+                    ${freeCoinAvailable ? '<img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">' : ''}
                     20 <i class="fas fa-coins"></i>
                 </button>
                 <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">

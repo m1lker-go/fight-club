@@ -235,6 +235,10 @@ router.post('/buy-coal', async (req, res) => {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
             await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
         }
+        // Обновляем задание на получение угля (id 13)
+        if (typeof dailyTasks.updateCoalGainProgress === 'function') {
+            await dailyTasks.updateCoalGainProgress(user.id, amount);
+        }
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -263,6 +267,10 @@ router.post('/buy-coal-coins', async (req, res) => {
             `UPDATE users SET coins = coins - $1, coal = coal + $2, coal_purchased_today = coal_purchased_today + $2 WHERE id = $3`,
             [priceCoins, amount, user.id]
         );
+        // Обновляем задание на получение угля
+        if (typeof dailyTasks.updateCoalGainProgress === 'function') {
+            await dailyTasks.updateCoalGainProgress(user.id, amount);
+        }
         await client.query('COMMIT');
         res.json({ success: true, newCoal: user.coal + amount });
     } catch (e) {

@@ -1858,5 +1858,4 @@ function updateTabBadge(tab, hasFree) {
 }
 
 // Вызываем обновление при загрузке страницы и после любых действий, меняющих статусы
-setTimeout(() => updateTradeBadges(), 1000);
 window.updateTradeBadges = updateTradeBadges;

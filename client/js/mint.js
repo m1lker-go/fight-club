@@ -111,7 +111,7 @@ async function renderMint(container) {
                     <img src="${item.image}" alt="уголь ${item.amount}">
                 </div>
                 <div class="mint-card-title">${item.amount} угля</div>
-                <button class="mint-buy-btn-coins" data-type="coal_coins" data-amount="${item.amount}" data-price="${item.price}" data-currency="coins" ${btnDisabled ? 'disabled' : ''}>
+                <button class="mint-buy-btn" data-type="coal_coins" data-amount="${item.amount}" data-price="${item.price}" data-currency="coins" ${btnDisabled ? 'disabled' : ''}>
                     ${priceLabel}
                 </button>
             </div>
@@ -142,7 +142,7 @@ async function renderMint(container) {
     html += `</div></div>`;
     container.innerHTML = html;
 
-    // Обработчики кнопок (алмазы / бесплатный уголь)
+    // Обработчики кнопок (все кнопки теперь имеют класс mint-buy-btn)
     container.querySelectorAll('.mint-buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const type = btn.dataset.type;
@@ -165,7 +165,33 @@ async function renderMint(container) {
                 } else {
                     showToast('Ошибка: ' + data.error, 1500);
                 }
+            } else if (type === 'coal_coins') {
+                // Покупка угля за монеты
+                if (currency === 'coins' && userData.coins < price) {
+                    showToast('Недостаточно монет!', 1500);
+                    return;
+                }
+                const remaining = coalLimit.maxDaily - coalLimit.purchasedToday;
+                if (remaining < amount) {
+                    showToast(`Дневной лимит покупки угля исчерпан (осталось ${remaining} угля)`, 1500);
+                    return;
+                }
+                const res = await window.apiRequest('/shop/buy-coal-coins', {
+                    method: 'POST',
+                    body: JSON.stringify({ amount })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`+${amount} угля!`, 1500);
+                    await refreshData();
+                    await loadCoalLimit();
+                    renderMint(container);
+                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                } else {
+                    showToast('Ошибка: ' + data.error, 1500);
+                }
             } else {
+                // Покупка угля за алмазы или золота за алмазы
                 if (currency === 'diamonds' && userData.diamonds < price) {
                     showToast('Недостаточно алмазов!', 1500);
                     return;
@@ -184,42 +210,6 @@ async function renderMint(container) {
                 } else {
                     showToast('Ошибка: ' + data.error, 1500);
                 }
-            }
-        });
-    });
-
-    // Обработчики кнопок для угля за монеты
-    container.querySelectorAll('.mint-buy-btn-coins').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const amount = parseInt(btn.dataset.amount);
-            const price = parseInt(btn.dataset.price);
-            const currency = btn.dataset.currency;
-
-            if (currency === 'coins' && userData.coins < price) {
-                showToast('Недостаточно монет!', 1500);
-                return;
-            }
-
-            // Проверка лимита на клиенте (сервер тоже проверит)
-            const remaining = coalLimit.maxDaily - coalLimit.purchasedToday;
-            if (remaining < amount) {
-                showToast(`Дневной лимит покупки угля исчерпан (осталось ${remaining} угля)`, 1500);
-                return;
-            }
-
-            const res = await window.apiRequest('/shop/buy-coal-coins', {
-                method: 'POST',
-                body: JSON.stringify({ amount })
-            });
-            const data = await res.json();
-            if (data.success) {
-                showToast(`+${amount} угля!`, 1500);
-                await refreshData();
-                await loadCoalLimit(); // обновляем лимит
-                renderMint(container); // перерисовываем для обновления состояния
-                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-            } else {
-                showToast('Ошибка: ' + data.error, 1500);
             }
         });
     });

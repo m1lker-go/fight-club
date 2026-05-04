@@ -331,4 +331,22 @@ router.post('/avatar', async (req, res) => {
     }
 });
 
+router.get('/coal-limit', async (req, res) => {
+    const { user_id } = req.query;
+    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    const client = await pool.connect();
+    try {
+        const user = await getUserByIdentifier(client, null, user_id);
+        if (!user) throw new Error('User not found');
+        const purchasedToday = user.coal_purchased_today || 0;
+        const maxDaily = 1000;
+        res.json({ purchasedToday, maxDaily });
+    } catch (e) {
+        console.error('Error in /coal-limit:', e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

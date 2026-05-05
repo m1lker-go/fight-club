@@ -218,15 +218,14 @@ router.get('/freecoal', async (req, res) => {
 });
 
 router.post('/buy-coal', async (req, res) => {
-    console.log('[buy-coal] ====== REQUEST RECEIVED ======');
-    console.log('[buy-coal] headers:', req.headers);
-    console.log('[buy-coal] body:', req.body);
-    const { tg_id, user_id, amount, price, free } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
-    if (!amount || (!free && !price)) return res.status(400).json({ error: 'Missing amount or price' });
+    console.log('[buy-coal] START', req.body);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        const { tg_id, user_id, amount, price, free } = req.body;
+        if (!tg_id && !user_id) {
+            throw new Error('tg_id or user_id required');
+        }
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
         const today = new Date().toISOString().slice(0, 10);
@@ -238,15 +237,13 @@ router.post('/buy-coal', async (req, res) => {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
             await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
         }
-        // Обновляем задание на получение угля (id 13)
-        if (typeof dailyTasks.updateCoalGainProgress === 'function') {
-            await dailyTasks.updateCoalGainProgress(user.id, amount);
-        }
+        await dailyTasks.updateCoalGainProgress(user.id, amount);
         await client.query('COMMIT');
+        console.log('[buy-coal] SUCCESS');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Buy coal error:', e);
+        console.error('[buy-coal] ERROR:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

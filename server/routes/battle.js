@@ -1135,7 +1135,7 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 5d: addExp + updatePower <<<');
+    console.log('>>> BATTLE STEP 5e: with dailyTasks.updateTaskProgress <<<');
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -1183,7 +1183,17 @@ router.post('/start', async (req, res) => {
         else dailyStreak = 0;
         await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
 
-        // Награды и рейтинг (пока без заданий)
+        // Задания на победы (только updateTaskProgress, без автозавершения)
+        if (isVictory) {
+            let taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
+            if (taskId) {
+                console.log('>>> Calling dailyTasks.updateTaskProgress for user', user.id, 'taskId', taskId);
+                await dailyTasks.updateTaskProgress(user.id, taskId, 1);
+                console.log('>>> dailyTasks.updateTaskProgress completed');
+            }
+        }
+
+        // Награды и рейтинг
         if (isVictory) {
             newStreak++;
             const coinReward = getCoinReward(newStreak);

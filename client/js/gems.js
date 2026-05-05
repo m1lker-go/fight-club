@@ -113,6 +113,14 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const modalBody = document.getElementById('modalBody');
 
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
+
+    // Кнопка 20 монет показывается только если доступна, иначе скрыта совсем
+    const freeCoinButton = freeCoinAvailable ? `
+        <button class="subscription-free-btn-new" id="freeCoinBtnNew">
+            <img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">
+            20 <i class="fas fa-coins"></i>
+        </button>` : '';
+
     modalBody.innerHTML = `
         <div class="subscription-modal-new">
             <div class="sub-feature-row">
@@ -136,10 +144,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 <div class="sub-desc">Награда при оформлении:<br> 1500 монет <i class="fas fa-coins" style="color: #aaa;"></i>, 50 угля <i class="fas fa-cube" style="color: #aaa;"></i>, 100 алмазов <i class="fas fa-gem" style="color: #aaa;"></i></div>
             </div>
             <div class="subscription-buttons-new">
-                <button class="subscription-free-btn-new" id="freeCoinBtnNew" ${!freeCoinAvailable ? 'disabled' : ''}>
-                    ${freeCoinAvailable ? '<img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">' : ''}
-                    20 <i class="fas fa-coins"></i>
-                </button>
+                ${freeCoinButton}
                 <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
                     Оформить подписку
                 </button>
@@ -155,7 +160,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             console.log('[gems] free coin button clicked');
             if (pendingFreeCoin) return;
             pendingFreeCoin = true;
-            console.log('[gems] FREE COIN: начало обработки');
             if (!freeCoinAvailable) {
                 showToast('Бесплатная монета уже получена сегодня', 1500);
                 pendingFreeCoin = false;
@@ -166,9 +170,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                     method: 'POST',
                     body: JSON.stringify({ user_id: userData.id })
                 });
-                console.log('[gems] FREE COIN: статус', res.status);
                 const data = await res.json();
-                console.log('[gems] FREE COIN: данные', data);
                 if (data.success) {
                     showToast('+20 монет!', 1500);
                     await refreshData();

@@ -1135,34 +1135,38 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 4: simulateBattle <<<');
+    console.log('>>> BATTLE FINAL STEP (without coal task) <<<');
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
         if (!user) throw new Error('User not found');
+
+        // Энергия
         await rechargeEnergy(client, user.id);
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
+        // Сброс daily_win_streak при смене дня
+        const today = new Date().toISOString().slice(0, 10);
+        let dailyStreak = user.daily_win_streak || 0;
+        if (user.last_streak_date?.toISOString().slice(0, 10) !== today) dailyStreak = 0;
+
+        // Данные игрока
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [user.id, user.current_class]);
-        if (classData.rows.length === 0) throw new Error('Class data not found');
+        if (!classData.rows.length) throw new Error('Class not found');
         const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
 
+        // Противник
         const rand = Math.random();
-        let opponentData = null;
-        if (rand < 0.3) {
-            opponentData = await selectPvPOpponent(client, user.id, classData.rows[0].level);
-        } else if (rand < 0.8) {
-            opponentData = generateBot(classData.rows[0].level, false);
-        } else {
-            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
-        }
-        if (!opponentData || !opponentData.stats) {
-            opponentData = generateBot(classData.rows[0].level, false);
-        }
+        let opponentData;
+        if (rand < 0.3) opponentData = await selectPvPOpponent(client, user.id, classData.rows[0].level);
+        else if (rand < 0.8) opponentData = generateBot(classData.rows[0].level, false);
+        else opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
+        if (!opponentData?.stats) opponentData = generateBot(classData.rows[0].level, false);
 
-        // +++ СИМУЛЯЦИЯ БОЯ +++
+        // Симуляция боя
         const battleResult = simulateBattle(
             playerStats, opponentData.stats,
             user.current_class, opponentData.class,
@@ -1170,10 +1174,106 @@ router.post('/start', async (req, res) => {
             user.subclass, opponentData.subclass
         );
 
-        res.json({ success: true, message: 'Step 4 passed', battleResult });
+        const isVictory = battleResult.winner === 'player';
+        let newStreak = user.win_streak || 0;
+        let ratingChange = -15;
+
+        // Обновляем daily_win_streak
+        if (isVictory) dailyStreak++;
+        else dailyStreak = 0;
+        await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
+
+        // Задания на победы
+        if (isVictory) {
+            let taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
+            if (taskId) await dailyTasks.updateTaskProgress(user.id, taskId, 1);
+        }
+
+        // Награды и рейтинг
+        if (isVictory) {
+            newStreak++;
+            const coinReward = getCoinReward(newStreak);
+            const ratingGain = getRatingChange(newStreak);
+            ratingChange = ratingGain;
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
+
+            // Бонусы за 100/500 побед
+            if (newStreak === 100 && !user.reward_100_streak) {
+                await client.query('UPDATE users SET coins = coins + 1500, reward_100_streak = TRUE WHERE id = $1', [user.id]);
+            } else if (newStreak === 500 && !user.reward_500_streak) {
+                await client.query('UPDATE users SET coins = coins + 5000, reward_500_streak = TRUE WHERE id = $1', [user.id]);
+            }
+
+            await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, user.id]);
+        } else {
+            newStreak = 0;
+            await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);
+        }
+        await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
+
+        // Автозавершение заданий на победы при 10 побед подряд
+        if (dailyStreak >= 10) {
+            const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
+            let progress = userTasks.rows[0].daily_tasks_progress ? JSON.parse(userTasks.rows[0].daily_tasks_progress) : {};
+            for (let taskId of [1,2,3]) {
+                const bit = 1 << (taskId-1);
+                if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
+                    progress[taskId] = Math.min(progress[taskId] || 0, 5);
+                }
+            }
+            await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
+        }
+
+        // Опыт
+        const expGain = isVictory ? getExpReward(newStreak) : 3;
+        const leveledUp = await addExp(client, user.id, user.current_class, expGain);
+        if (leveledUp) await updatePlayerPower(client, user.id, user.current_class);
+
+        // Уголь (без задания)
+        const r = Math.random();
+        let coalGain = (r >= 0.7 && r < 0.9) ? 1 : (r >= 0.9) ? 2 : 0;
+        if (coalGain > 0) {
+            await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, user.id]);
+            // !!! updateCoalGainProgress временно отключён !!!
+        }
+
+        // Списываем энергию
+        await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
+        await client.query('COMMIT');
+
+        const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
+
+        res.json({
+            opponent: {
+                username: opponentData.username,
+                avatar_id: opponentData.avatar_id || 1,
+                class: opponentData.class,
+                subclass: opponentData.subclass,
+                level: opponentData.level,
+                is_cybercat: opponentData.is_cybercat || false
+            },
+            result: {
+                winner: battleResult.winner,
+                playerHpRemain: battleResult.playerHpRemain,
+                enemyHpRemain: battleResult.enemyHpRemain,
+                playerMaxHp: battleResult.playerMaxHp,
+                enemyMaxHp: battleResult.enemyMaxHp,
+                messages: battleResult.messages,
+                states: battleResult.states
+            },
+            reward: {
+                exp: expGain,
+                coins: isVictory ? getCoinReward(newStreak) : 0,
+                leveledUp,
+                newStreak
+            },
+            ratingChange,
+            newEnergy,
+            coalGain
+        });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error(e);
+        console.error('Battle error:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

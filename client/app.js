@@ -41,6 +41,7 @@ window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
 window.apiRequest = async function(endpoint, options = {}) {
+    console.log('[apiRequest]', endpoint, options);
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
     const method = options.method || 'GET';
     

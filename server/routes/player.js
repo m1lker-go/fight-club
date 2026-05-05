@@ -74,9 +74,9 @@ router.get('/freechest', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         const lastFree = user.last_free_common_chest;
-        const today = getMoscowDate(); // московская дата
-        
-        const freeAvailable = !lastFree || new Date(lastFree).toISOString().slice(0, 10) !== today;
+       const today = getMoscowDate();
+const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
+const freeAvailable = lastFreeMsk !== today;
         
         console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });
@@ -106,8 +106,8 @@ router.get('/freecoal', async (req, res) => {
         
         const lastFree = user.last_free_coal_date;
         const today = getMoscowDate(); // московская дата
-        
-        const freeAvailable = !lastFree || new Date(lastFree).toISOString().slice(0, 10) !== today;
+       const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
+const freeAvailable = lastFreeMsk !== today;
         
         console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });
@@ -351,5 +351,13 @@ router.get('/coal-limit', async (req, res) => {
         client.release();
     }
 });
+
+// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
+function toMoscowDateString(dbDate) {
+    if (!dbDate) return null;
+    const d = new Date(dbDate);
+    // en-CA даёт формат YYYY-MM-DD, timeZone гарантирует московское смещение
+    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+}
 
 module.exports = router;

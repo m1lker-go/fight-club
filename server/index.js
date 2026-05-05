@@ -22,12 +22,13 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Разрешаем запросы без origin (например, curl, server-to-server)
+        // Разрешаем запросы без origin (серверные, curl и т.д.)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(null, false);   // ← без Error!
+            // Важно: никакого new Error, просто false
+            callback(null, false);
         }
     },
     credentials: true,
@@ -35,7 +36,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Этот вызов можно оставить, но после исправления он уже не критичен
+// Дополнительно – гарантированно обрабатываем preflight
 app.options('*', cors());
 app.use(express.json());
 app.use(express.static('client'));

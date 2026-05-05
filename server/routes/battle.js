@@ -1135,6 +1135,8 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
+    console.log('===== BATTLE START CALLED =====');
+console.log('req.body:', req.body);
     const { tg_id, user_id } = req.body;
     const client = await pool.connect();
     try {

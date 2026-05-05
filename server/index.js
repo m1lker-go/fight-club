@@ -55,6 +55,7 @@ app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
 app.use('/subscription', require('./routes/subscription'));
 app.use('/fortune', require('./routes/fortune-server'));
+app.use('/payment', require('./routes/payment'));
 
 app.post('/auth/vk/callback', (req, res) => {
     console.log('Received VK callback (unexpected, low-code uses callback mode)');

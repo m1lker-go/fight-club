@@ -237,8 +237,9 @@ router.post('/buy-coal', async (req, res) => {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
             await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
         }
-       console.log('[buy-coal] updateCoalGainProgress skipped for debugging');
-// await dailyTasks.updateCoalGainProgress(user.id, amount);
+        // Закомментировали проблемный вызов
+        // console.log('[buy-coal] updateCoalGainProgress skipped for debugging');
+        // await dailyTasks.updateCoalGainProgress(user.id, amount);
         await client.query('COMMIT');
         console.log('[buy-coal] SUCCESS');
         res.json({ success: true });
@@ -268,10 +269,10 @@ router.post('/buy-coal-coins', async (req, res) => {
             `UPDATE users SET coins = coins - $1, coal = coal + $2, coal_purchased_today = coal_purchased_today + $2 WHERE id = $3`,
             [priceCoins, amount, user.id]
         );
-        // Обновляем задание на получение угля
-        if (typeof dailyTasks.updateCoalGainProgress === 'function') {
-            await dailyTasks.updateCoalGainProgress(user.id, amount);
-        }
+        // Временно закомментировано для отладки
+        // if (typeof dailyTasks.updateCoalGainProgress === 'function') {
+        //     await dailyTasks.updateCoalGainProgress(user.id, amount);
+        // }
         await client.query('COMMIT');
         res.json({ success: true, newCoal: user.coal + amount });
     } catch (e) {
@@ -342,11 +343,12 @@ router.get('/subscription/free-coin-status', async (req, res) => {
 });
 
 router.post('/subscription/claim-free-coin', async (req, res) => {
-    const { user_id } = req.body;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    console.log('[claim-free-coin] START', req.body);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        const { user_id } = req.body;
+        if (!user_id) throw new Error('user_id required');
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
         const today = new Date().toISOString().slice(0, 10);
@@ -354,9 +356,11 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
         if (last === today) throw new Error('Already claimed today');
         await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);
         await client.query('COMMIT');
+        console.log('[claim-free-coin] SUCCESS');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
+        console.error('[claim-free-coin] ERROR:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

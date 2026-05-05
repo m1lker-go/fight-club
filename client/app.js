@@ -73,6 +73,7 @@ window.apiRequest = async function(endpoint, options = {}) {
         }
     };
     
+    let finalUrl;
     if (method === 'GET') {
         const params = new URLSearchParams();
         for (const [key, value] of Object.entries(bodyObj)) {
@@ -81,11 +82,36 @@ window.apiRequest = async function(endpoint, options = {}) {
             }
         }
         const separator = url.includes('?') ? '&' : '?';
-        const finalUrl = url + separator + params.toString();
-        return fetch(finalUrl, fetchOptions);
+        finalUrl = url + separator + params.toString();
     } else {
         fetchOptions.body = JSON.stringify(bodyObj);
-        return fetch(url, fetchOptions);
+        finalUrl = url;
+    }
+    
+    console.log('[apiRequest] finalUrl:', finalUrl);
+    console.log('[apiRequest] fetchOptions:', fetchOptions);
+    
+    try {
+        const response = await fetch(finalUrl, fetchOptions);
+        console.log('[apiRequest] response status:', response.status);
+        const responseText = await response.text();
+        console.log('[apiRequest] response body:', responseText);
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            data = { error: 'Invalid JSON response', raw: responseText };
+        }
+        // Возвращаем объект, совместимый с ожиданиями (с json() методом)
+        return {
+            ok: response.ok,
+            status: response.status,
+            json: async () => data,
+            text: async () => responseText
+        };
+    } catch (err) {
+        console.error('[apiRequest] fetch error:', err);
+        throw err;
     }
 };
 

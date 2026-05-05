@@ -51,6 +51,8 @@ router.get('/free-coin-status', async (req, res) => {
 
 // Получение бесплатной монеты
 router.post('/claim-free-coin', async (req, res) => {
+    console.log('[claim-free-coin] ====== REQUEST RECEIVED ======');
+    console.log('[claim-free-coin] body:', req.body);
     const { user_id } = req.body;
     if (!user_id) return res.status(400).json({ error: 'user_id required' });
     const client = await pool.connect();

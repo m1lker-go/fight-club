@@ -147,7 +147,6 @@ async function renderMint(container) {
     html += `</div></div>`;
     container.innerHTML = html;
 
-    // Обработчики кнопок (все кнопки с классом mint-buy-btn)
     container.querySelectorAll('.mint-buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const type = btn.dataset.type;
@@ -168,24 +167,31 @@ async function renderMint(container) {
                     const data = await res.json();
                     console.log('[mint] FREE COAL: данные ответа', data);
                     if (data.success) {
-                        showToast(`+${amount} угля!`, 1500);
+                        alert(`Успешно! +${amount} угля`); // временный alert
+                        if (typeof showToast === 'function') {
+                            showToast(`+${amount} угля!`, 1500);
+                        } else {
+                            console.warn('[mint] showToast is not defined');
+                        }
                         await refreshData();
                         updateMintBadge();
                     } else {
-                        showToast('Ошибка: ' + data.error, 1500);
+                        alert('Ошибка: ' + data.error);
+                        if (typeof showToast === 'function') showToast('Ошибка: ' + data.error, 1500);
                     }
                 } catch (err) {
                     console.error('[mint] FREE COAL: ошибка запроса', err);
-                    showToast('Ошибка соединения', 1500);
+                    alert('Ошибка соединения');
+                    if (typeof showToast === 'function') showToast('Ошибка соединения', 1500);
                 }
             } else if (type === 'coal_coins') {
                 if (currency === 'coins' && userData.coins < price) {
-                    showToast('Недостаточно монет!', 1500);
+                    if (typeof showToast === 'function') showToast('Недостаточно монет!', 1500);
                     return;
                 }
                 const remaining = coalLimit.maxDaily - coalLimit.purchasedToday;
                 if (remaining < amount) {
-                    showToast(`Дневной лимит покупки угля исчерпан (осталось ${remaining} угля)`, 1500);
+                    if (typeof showToast === 'function') showToast(`Дневной лимит покупки угля исчерпан (осталось ${remaining} угля)`, 1500);
                     return;
                 }
                 try {
@@ -195,22 +201,21 @@ async function renderMint(container) {
                     });
                     const data = await res.json();
                     if (data.success) {
-                        showToast(`+${amount} угля!`, 1500);
+                        if (typeof showToast === 'function') showToast(`+${amount} угля!`, 1500);
                         await refreshData();
                         await loadCoalLimit();
                         renderMint(container);
                         if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                     } else {
-                        showToast('Ошибка: ' + data.error, 1500);
+                        if (typeof showToast === 'function') showToast('Ошибка: ' + data.error, 1500);
                     }
                 } catch (err) {
                     console.error('[mint] COAL COINS: ошибка', err);
-                    showToast('Ошибка соединения', 1500);
+                    if (typeof showToast === 'function') showToast('Ошибка соединения', 1500);
                 }
             } else {
-                // Покупка угля за алмазы или золота за алмазы
                 if (currency === 'diamonds' && userData.diamonds < price) {
-                    showToast('Недостаточно алмазов!', 1500);
+                    if (typeof showToast === 'function') showToast('Недостаточно алмазов!', 1500);
                     return;
                 }
                 const endpoint = type === 'coal' ? '/shop/buy-coal' : '/shop/buy-gold';
@@ -221,16 +226,16 @@ async function renderMint(container) {
                     });
                     const data = await res.json();
                     if (data.success) {
-                        showToast(`+${amount} ${type === 'coal' ? 'угля' : 'монет'}!`, 1500);
+                        if (typeof showToast === 'function') showToast(`+${amount} ${type === 'coal' ? 'угля' : 'монет'}!`, 1500);
                         await refreshData();
                         if (type === 'coal') updateMintBadge();
                         renderMint(container);
                     } else {
-                        showToast('Ошибка: ' + data.error, 1500);
+                        if (typeof showToast === 'function') showToast('Ошибка: ' + data.error, 1500);
                     }
                 } catch (err) {
                     console.error('[mint] PURCHASE error', err);
-                    showToast('Ошибка соединения', 1500);
+                    if (typeof showToast === 'function') showToast('Ошибка соединения', 1500);
                 }
             }
         });

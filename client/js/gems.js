@@ -3,11 +3,15 @@
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
 
+console.log('[gems.js] loaded');
+
 async function loadSubscriptionStatus() {
+    console.log('[loadSubscriptionStatus] start');
     try {
         const res = await window.apiRequest('/subscription/status', { method: 'GET' });
         const data = await res.json();
         subscriptionStatus = data;
+        console.log('[loadSubscriptionStatus] status:', data);
         return data;
     } catch (e) {
         console.error('Error loading subscription status', e);
@@ -16,7 +20,15 @@ async function loadSubscriptionStatus() {
 }
 
 async function renderGems(container) {
-    if (!container) return;
+    console.log('[renderGems] called, container:', container);
+    if (!container) {
+        console.error('[renderGems] container is null');
+        return;
+    }
+    if (!userData || !userData.id) {
+        console.warn('[renderGems] userData not ready, skipping render');
+        return;
+    }
 
     const status = await loadSubscriptionStatus();
     const hasSubscription = status?.hasSubscription || false;
@@ -73,6 +85,7 @@ async function renderGems(container) {
     container.innerHTML = html;
 
     document.getElementById('viewSubscriptionBtn')?.addEventListener('click', () => {
+        console.log('[gems] viewSubscriptionBtn clicked');
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
@@ -83,20 +96,18 @@ async function renderGems(container) {
             const packId = card.dataset.packId;
             const diamonds = parseInt(card.dataset.diamonds);
             const price = parseInt(card.dataset.price);
-            // Заглушка оплаты
+            console.log('[gems] pack buy clicked', { packId, diamonds, price });
             showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — разработка оплаты`, 2000);
-            // После успешной оплаты нужно обновить бейджи, но пока нет
         });
     });
 
-    // Всегда обновляем бейджи после рендера (чтобы бейджи на табах были актуальны)
     if (typeof window.updateTradeBadges === 'function') {
         window.updateTradeBadges();
     }
 }
 
-// Модальное окно подписки – две колонки
 function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
+    console.log('[showSubscriptionModalNew] called', { hasSubscription, freeCoinAvailable });
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -141,6 +152,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
+            console.log('[gems] free coin button clicked');
             if (pendingFreeCoin) return;
             pendingFreeCoin = true;
             if (!freeCoinAvailable) {
@@ -167,6 +179,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
+            console.log('[gems] buy subscription button clicked');
             const res = await window.apiRequest('/subscription/buy', { method: 'POST' });
             const data = await res.json();
             if (data.success) {

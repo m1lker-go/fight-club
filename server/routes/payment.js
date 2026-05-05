@@ -2,12 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { YooCheckout } = require('yookassa');
 const { pool, getUserByIdentifier } = require('../db');
-require('dotenv').config();
+const crypto = require('crypto');
 
 const checkout = new YooCheckout({
     shopId: process.env.YOOKASSA_SHOP_ID,
     secretKey: process.env.YOOKASSA_SECRET_KEY
 });
+
+// Функция генерации уникального ключа идемпотентности (совместима с Node 14+)
+function generateIdempotenceKey() {
+    return crypto.randomUUID();
+}
 
 router.post('/create', async (req, res) => {
     try {
@@ -16,7 +21,7 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ error: 'Missing fields' });
         }
 
-        const idempotenceKey = require('crypto').randomUUID();
+        const idempotenceKey = generateIdempotenceKey();
         const paymentData = {
             amount: {
                 value: amount.toFixed(2),
@@ -66,7 +71,7 @@ router.post('/confirm', async (req, res) => {
 
         console.log(`Платёж ${payment.id} на ${payment.amount.value} RUB от user ${userId}`);
 
-        // Здесь позже добавим начисление подписки/алмазов.
+        // Здесь позже добавим начисление подписки/алмазов
 
         res.status(200).json({ result: 'ok' });
     } catch (e) {

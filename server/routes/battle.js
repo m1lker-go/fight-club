@@ -1135,7 +1135,7 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 5e: with dailyTasks.updateTaskProgress <<<');
+    console.log('>>> BATTLE STEP 5e: updateTaskProgress after COMMIT <<<');
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -1183,16 +1183,6 @@ router.post('/start', async (req, res) => {
         else dailyStreak = 0;
         await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
 
-        // Задания на победы (только updateTaskProgress, без автозавершения)
-        if (isVictory) {
-            let taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
-            if (taskId) {
-                console.log('>>> Calling dailyTasks.updateTaskProgress for user', user.id, 'taskId', taskId);
-                await dailyTasks.updateTaskProgress(user.id, taskId, 1);
-                console.log('>>> dailyTasks.updateTaskProgress completed');
-            }
-        }
-
         // Награды и рейтинг
         if (isVictory) {
             newStreak++;
@@ -1201,7 +1191,6 @@ router.post('/start', async (req, res) => {
             ratingChange = ratingGain;
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
 
-            // Бонусы за 100/500 побед
             if (newStreak === 100 && !user.reward_100_streak) {
                 await client.query('UPDATE users SET coins = coins + 1500, reward_100_streak = TRUE WHERE id = $1', [user.id]);
             } else if (newStreak === 500 && !user.reward_500_streak) {
@@ -1224,8 +1213,25 @@ router.post('/start', async (req, res) => {
 
         // Списываем энергию
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
+
+        // Завершаем транзакцию ПЕРЕД вызовом заданий
         await client.query('COMMIT');
 
+        // Теперь безопасно вызываем обновление задания (отдельный коннект)
+        if (isVictory) {
+            const taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
+            if (taskId) {
+                try {
+                    console.log('>>> Calling dailyTasks.updateTaskProgress after COMMIT');
+                    await dailyTasks.updateTaskProgress(user.id, taskId, 1);
+                    console.log('>>> dailyTasks.updateTaskProgress completed');
+                } catch (e) {
+                    console.error('updateTaskProgress error:', e);
+                }
+            }
+        }
+
+        // Получаем актуальную энергию (после COMMIT)
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
 
         res.json({
@@ -1264,7 +1270,6 @@ router.post('/start', async (req, res) => {
         client.release();
     }
 });
-
 module.exports = router;
 module.exports.simulateBattle = simulateBattle;
 module.exports.calculateStats = calculateStats;

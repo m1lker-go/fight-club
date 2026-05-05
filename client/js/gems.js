@@ -145,9 +145,9 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             </div>
             <div class="subscription-buttons-new">
                 ${freeCoinButton}
-                <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
-                    Оформить подписку
-                </button>
+               <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
+               Оформить за 599 ₽/мес
+               </button>
             </div>
         </div>
     `;

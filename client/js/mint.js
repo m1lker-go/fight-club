@@ -162,19 +162,25 @@ async function renderMint(container) {
             const isFree = btn.dataset.free === 'true';
             console.log('[mint] button clicked', { type, amount, price, currency, isFree });
 
-            if (isFree) {
-                const res = await window.apiRequest('/shop/buy-coal', {
-                    method: 'POST',
-                    body: JSON.stringify({ amount, free: true })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast(`+${amount} угля!`, 1500);
-                    await refreshData();
-                    updateMintBadge();
-                } else {
-                    showToast('Ошибка: ' + data.error, 1500);
-                }
+         if (isFree) {
+    console.log('[mint] Отправка запроса на бесплатный уголь', { amount });
+    const res = await window.apiRequest('/shop/buy-coal', {
+        method: 'POST',
+        body: JSON.stringify({ amount, free: true })
+    });
+    console.log('[mint] Ответ от сервера:', res.status, res.statusText);
+    const data = await res.json();
+    console.log('[mint] Данные ответа:', data);
+    if (data.success) {
+        console.log('[mint] Успех, показываем тост');
+        showToast(`+${amount} угля!`, 1500);
+        await refreshData();
+        updateMintBadge();
+    } else {
+        console.log('[mint] Ошибка от сервера:', data.error);
+        showToast('Ошибка: ' + data.error, 1500);
+    }
+}
             } else if (type === 'coal_coins') {
                 if (currency === 'coins' && userData.coins < price) {
                     showToast('Недостаточно монет!', 1500);

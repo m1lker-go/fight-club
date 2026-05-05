@@ -31,7 +31,6 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// Обрабатываем preflight (OPTIONS) для всех маршрутов
 app.options('*', cors());
 app.use(express.json());
 app.use(express.static('client'));

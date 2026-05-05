@@ -1,19 +1,39 @@
 const express = require('express');
 const router = express.Router();
-const { YooCheckout } = require('yookassa');
 const { pool, getUserByIdentifier } = require('../db');
 const crypto = require('crypto');
 
-const checkout = new YooCheckout({
-    shopId: process.env.YOOKASSA_SHOP_ID,
-    secretKey: process.env.YOOKASSA_SECRET_KEY
-});
+// ID вашего магазина и секретный ключ из .env
+const shopId = process.env.YOOKASSA_SHOP_ID;
+const secretKey = process.env.YOOKASSA_SECRET_KEY;
 
-// Функция генерации уникального ключа идемпотентности (совместима с Node 14+)
-function generateIdempotenceKey() {
-    return crypto.randomUUID();
+// Базовый URL API ЮKassa
+const API_BASE = 'https://api.yookassa.ru/v3';
+
+// Функция для выполнения запросов к API с авторизацией
+async function yookassaRequest(endpoint, method, body) {
+    const url = `${API_BASE}${endpoint}`;
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+    const options = {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${auth}`,
+            'Idempotence-Key': crypto.randomUUID(),
+        },
+    };
+    if (body) {
+        options.body = JSON.stringify(body);
+    }
+    const response = await fetch(url, options);
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.description || data.error || 'YooKassa API error');
+    }
+    return data;
 }
 
+// ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
 router.post('/create', async (req, res) => {
     try {
         const { userId, amount, description, returnUrl, metadata } = req.body;
@@ -21,7 +41,6 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ error: 'Missing fields' });
         }
 
-        const idempotenceKey = generateIdempotenceKey();
         const paymentData = {
             amount: {
                 value: amount.toFixed(2),
@@ -39,7 +58,7 @@ router.post('/create', async (req, res) => {
             capture: true
         };
 
-        const payment = await checkout.createPayment(paymentData, idempotenceKey);
+        const payment = await yookassaRequest('/payments', 'POST', paymentData);
 
         res.json({
             confirmationUrl: payment.confirmation.confirmation_url,
@@ -51,6 +70,7 @@ router.post('/create', async (req, res) => {
     }
 });
 
+// ---------- WEBHOOK ОТ ЮKASSA ----------
 router.post('/confirm', async (req, res) => {
     console.log('=== ЮKASSA WEBHOOK ===');
     console.log('Body:', JSON.stringify(req.body));

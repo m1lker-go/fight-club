@@ -1135,9 +1135,10 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 5a: minimal DB update <<<');
+    console.log('>>> BATTLE STEP 5b: with transaction <<<');
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
         if (!user) throw new Error('User not found');
 
@@ -1178,27 +1179,26 @@ router.post('/start', async (req, res) => {
         const isVictory = battleResult.winner === 'player';
         let newStreak = user.win_streak || 0;
 
-        // Обновление daily_win_streak
         if (isVictory) dailyStreak++;
         else dailyStreak = 0;
 
-        // Обновление win_streak
         if (isVictory) newStreak++;
         else newStreak = 0;
 
-        // Опыт
         const expGain = isVictory ? getExpReward(newStreak) : 3;
 
-        // --- МИНИМАЛЬНЫЕ ЗАПРОСЫ К БД (без транзакции) ---
+        // Обновления внутри транзакции
         await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
-        // Начисление опыта без проверки левелапа (только добавим exp к классу)
         await client.query(
             'UPDATE user_classes SET exp = exp + $1 WHERE user_id = $2 AND class = $3',
             [expGain, user.id, user.current_class]
         );
 
+        await client.query('COMMIT');
+
+        // После коммита получаем актуальную энергию
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
 
         res.json({
@@ -1230,6 +1230,7 @@ router.post('/start', async (req, res) => {
             coalGain: 0
         });
     } catch (e) {
+        await client.query('ROLLBACK');
         console.error('Battle error:', e);
         res.status(400).json({ error: e.message });
     } finally {

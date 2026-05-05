@@ -237,7 +237,8 @@ router.post('/buy-coal', async (req, res) => {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
             await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
         }
-        await dailyTasks.updateCoalGainProgress(user.id, amount);
+       console.log('[buy-coal] updateCoalGainProgress skipped for debugging');
+// await dailyTasks.updateCoalGainProgress(user.id, amount);
         await client.query('COMMIT');
         console.log('[buy-coal] SUCCESS');
         res.json({ success: true });

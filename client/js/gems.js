@@ -155,32 +155,38 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             console.log('[gems] free coin button clicked');
             if (pendingFreeCoin) return;
             pendingFreeCoin = true;
-           console.log('[gems] FREE COIN: начало обработки');
-if (!freeCoinAvailable) {
-    showToast('Бесплатная монета уже получена сегодня', 1500);
-    return;
-}
-try {
-    const res = await window.apiRequest('/subscription/claim-free-coin', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userData.id })
-    });
-    console.log('[gems] FREE COIN: статус', res.status);
-    const data = await res.json();
-    console.log('[gems] FREE COIN: данные', data);
-    if (data.success) {
-        showToast('+20 монет!', 1500);
-        await refreshData();
-        window.updateTradeBadges();
-        modal.style.display = 'none';
-        renderGems(document.getElementById('tradeSubContent'));
-    } else {
-        showToast(data.error || 'Ошибка', 1500);
+            console.log('[gems] FREE COIN: начало обработки');
+            if (!freeCoinAvailable) {
+                showToast('Бесплатная монета уже получена сегодня', 1500);
+                pendingFreeCoin = false;
+                return;
+            }
+            try {
+                const res = await window.apiRequest('/subscription/claim-free-coin', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_id: userData.id })
+                });
+                console.log('[gems] FREE COIN: статус', res.status);
+                const data = await res.json();
+                console.log('[gems] FREE COIN: данные', data);
+                if (data.success) {
+                    showToast('+20 монет!', 1500);
+                    await refreshData();
+                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                    modal.style.display = 'none';
+                    const subContent = document.getElementById('tradeSubContent');
+                    if (subContent) renderGems(subContent);
+                } else {
+                    showToast(data.error || 'Ошибка', 1500);
+                }
+            } catch (err) {
+                console.error('[gems] FREE COIN: ошибка', err);
+                showToast('Ошибка соединения', 1500);
+            } finally {
+                pendingFreeCoin = false;
+            }
+        });
     }
-} catch (err) {
-    console.error('[gems] FREE COIN: ошибка', err);
-    showToast('Ошибка соединения', 1500);
-}
 
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {

@@ -505,3 +505,5 @@ async function showBattleResult(battleData, timeOut = false) {
 }
 
 window.startBattle = startBattle;
+window.showBattleScreen = showBattleScreen;
+window.showBattleResult = showBattleResult;

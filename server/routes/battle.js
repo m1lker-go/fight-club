@@ -1135,7 +1135,7 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 5e: updateTaskProgress after COMMIT <<<');
+    console.log('>>> BATTLE FINAL (all rewards, tasks after COMMIT) <<<');
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -1191,6 +1191,7 @@ router.post('/start', async (req, res) => {
             ratingChange = ratingGain;
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
 
+            // Бонусы за 100/500 побед
             if (newStreak === 100 && !user.reward_100_streak) {
                 await client.query('UPDATE users SET coins = coins + 1500, reward_100_streak = TRUE WHERE id = $1', [user.id]);
             } else if (newStreak === 500 && !user.reward_500_streak) {
@@ -1211,27 +1212,60 @@ router.post('/start', async (req, res) => {
             await updatePlayerPower(client, user.id, user.current_class);
         }
 
+        // Уголь (начисление внутри транзакции)
+        const r = Math.random();
+        let coalGain = (r >= 0.7 && r < 0.9) ? 1 : (r >= 0.9) ? 2 : 0;
+        if (coalGain > 0) {
+            await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, user.id]);
+        }
+
         // Списываем энергию
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
 
-        // Завершаем транзакцию ПЕРЕД вызовом заданий
+        // Завершаем транзакцию
         await client.query('COMMIT');
 
-        // Теперь безопасно вызываем обновление задания (отдельный коннект)
+        // === Всё, что после COMMIT ===
+
+        // Задания на победы (классовое)
         if (isVictory) {
             const taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
             if (taskId) {
                 try {
-                    console.log('>>> Calling dailyTasks.updateTaskProgress after COMMIT');
                     await dailyTasks.updateTaskProgress(user.id, taskId, 1);
-                    console.log('>>> dailyTasks.updateTaskProgress completed');
                 } catch (e) {
                     console.error('updateTaskProgress error:', e);
                 }
             }
         }
 
-        // Получаем актуальную энергию (после COMMIT)
+        // Автозавершение заданий при 10 победах подряд
+        if (dailyStreak >= 10) {
+            try {
+                const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
+                let progress = userTasks.rows[0].daily_tasks_progress ? JSON.parse(userTasks.rows[0].daily_tasks_progress) : {};
+                for (let taskId of [1,2,3]) {
+                    const bit = 1 << (taskId-1);
+                    if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
+                        progress[taskId] = Math.min(progress[taskId] || 0, 5);
+                    }
+                }
+                await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
+            } catch (e) {
+                console.error('Auto-complete tasks error:', e);
+            }
+        }
+
+        // Обновление прогресса угольного задания
+        if (coalGain > 0) {
+            try {
+                await dailyTasks.updateCoalGainProgress(user.id, coalGain);
+            } catch (e) {
+                console.error('updateCoalGainProgress error:', e);
+            }
+        }
+
+        // Получаем актуальную энергию
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
 
         res.json({
@@ -1260,7 +1294,7 @@ router.post('/start', async (req, res) => {
             },
             ratingChange,
             newEnergy,
-            coalGain: 0
+            coalGain
         });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -1270,6 +1304,7 @@ router.post('/start', async (req, res) => {
         client.release();
     }
 });
+
 module.exports = router;
 module.exports.simulateBattle = simulateBattle;
 module.exports.calculateStats = calculateStats;

@@ -1135,7 +1135,7 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 2: getClassAndInventory <<<');
+    console.log('>>> BATTLE STEP 3: generateOpponent <<<');
     const client = await pool.connect();
     try {
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
@@ -1149,7 +1149,20 @@ router.post('/start', async (req, res) => {
         const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
 
-        res.json({ success: true, message: 'Step 2 passed', playerStats });
+        const rand = Math.random();
+        let opponentData = null;
+        if (rand < 0.3) {
+            opponentData = await selectPvPOpponent(client, user.id, classData.rows[0].level);
+        } else if (rand < 0.8) {
+            opponentData = generateBot(classData.rows[0].level, false);
+        } else {
+            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
+        }
+        if (!opponentData || !opponentData.stats) {
+            opponentData = generateBot(classData.rows[0].level, false);
+        }
+
+        res.json({ success: true, message: 'Step 3 passed', opponent: opponentData });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
+const dailyTasks = require('../utils/dailyTasks');
+
+// Единая функция получения московской даты (синхронизирована со сбросом в scheduler.js)
+const getMoscowDate = () => dailyTasks.getMoscowDate();
 
 // Вспомогательная функция для ежедневной награды подписки (если подписка активна)
 // Пока реализована заглушка – без реальной подписки
@@ -15,8 +19,8 @@ router.get('/status', async (req, res) => {
         if (!user) throw new Error('User not found');
         // Пока подписка не реализована – всегда false
         const hasSubscription = false;
-        // Проверяем, доступна ли бесплатная монета сегодня
-        const today = new Date().toISOString().slice(0, 10);
+        // Проверяем, доступна ли бесплатная монета сегодня (по Москве)
+        const today = getMoscowDate();
         const lastFree = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         const freeCoinAvailable = lastFree !== today;
         // Бонусы за покупку пакетов – заглушка
@@ -38,7 +42,7 @@ router.get('/free-coin-status', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getMoscowDate();
         const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         const available = last !== today;
         res.json({ available });
@@ -59,7 +63,7 @@ router.post('/claim-free-coin', async (req, res) => {
         if (!user_id) throw new Error('user_id required');
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getMoscowDate();
         const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         if (last === today) throw new Error('Already claimed today');
         await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);

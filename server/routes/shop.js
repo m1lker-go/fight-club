@@ -218,6 +218,9 @@ router.get('/freecoal', async (req, res) => {
 });
 
 router.post('/buy-coal', async (req, res) => {
+    console.log('[buy-coal] ====== REQUEST RECEIVED ======');
+    console.log('[buy-coal] headers:', req.headers);
+    console.log('[buy-coal] body:', req.body);
     const { tg_id, user_id, amount, price, free } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     if (!amount || (!free && !price)) return res.status(400).json({ error: 'Missing amount or price' });

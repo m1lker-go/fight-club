@@ -14,13 +14,16 @@ console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 
-const allowedOrigins = ['https://cat-fight.ru', 'https://www.cat-fight.ru'];
+const allowedOrigins = [
+    'https://cat-fight.ru',
+    'https://www.cat-fight.ru',
+    'https://api.cat-fight.ru'
+];
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+            return callback(new Error('CORS not allowed'), false);
         }
         return callback(null, true);
     },
@@ -226,7 +229,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5001;
 
 let currentListener = null;
 let reconnectTimeout = null;

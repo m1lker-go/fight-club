@@ -1,6 +1,3 @@
-//player.js
-
-
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
@@ -9,6 +6,13 @@ const dailyTasks = require('../utils/dailyTasks');
 
 // Единая функция получения московской даты (синхронизирована со сбросом в scheduler.js)
 const getMoscowDate = () => dailyTasks.getMoscowDate();
+
+// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
+function toMoscowDateString(dbDate) {
+    if (!dbDate) return null;
+    const d = new Date(dbDate);
+    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+}
 
 // ========== ТЕСТОВЫЙ МАРШРУТ ==========
 router.get('/test', async (req, res) => {
@@ -73,10 +77,9 @@ router.get('/freechest', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        const lastFree = user.last_free_common_chest;
-       const today = getMoscowDate();
-const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
-const freeAvailable = lastFreeMsk !== today;
+        const today = getMoscowDate();
+        const lastFreeMsk = toMoscowDateString(user.last_free_common_chest);
+        const freeAvailable = lastFreeMsk !== today;
         
         console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });
@@ -104,10 +107,9 @@ router.get('/freecoal', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        const lastFree = user.last_free_coal_date;
-        const today = getMoscowDate(); // московская дата
-       const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
-const freeAvailable = lastFreeMsk !== today;
+        const today = getMoscowDate();
+        const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
+        const freeAvailable = lastFreeMsk !== today;
         
         console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });
@@ -351,13 +353,5 @@ router.get('/coal-limit', async (req, res) => {
         client.release();
     }
 });
-
-// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
-function toMoscowDateString(dbDate) {
-    if (!dbDate) return null;
-    const d = new Date(dbDate);
-    // en-CA даёт формат YYYY-MM-DD, timeZone гарантирует московское смещение
-    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
-}
 
 module.exports = router;

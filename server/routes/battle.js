@@ -1135,41 +1135,22 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STUB CALLED <<<');
-    console.log('Request body:', req.body);
+    console.log('>>> BATTLE STEP 1: getUser <<<');
+    const client = await pool.connect();
     try {
-        // Минимальный ответ, чтобы клиент не упал
-        res.json({
-            opponent: {
-                username: 'Тестовый враг',
-                avatar_id: 1,
-                class: 'warrior',
-                subclass: 'guardian',
-                level: 1,
-                is_cybercat: false
-            },
-            result: {
-                winner: 'player',
-                playerHpRemain: 100,
-                enemyHpRemain: 0,
-                playerMaxHp: 100,
-                enemyMaxHp: 100,
-                messages: [{ text: 'Тестовый бой (заглушка)', type: 'final', attacker: 'none' }],
-                states: []
-            },
-            reward: {
-                exp: 10,
-                coins: 50,
-                leveledUp: false,
-                newStreak: 1
-            },
-            ratingChange: 10,
-            newEnergy: 19,
-            coalGain: 0
-        });
-    } catch (err) {
-        console.error('Stub error:', err);
-        res.status(500).json({ error: err.message });
+        const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
+        if (!user) throw new Error('User not found');
+        await rechargeEnergy(client, user.id);
+        const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
+        if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Step 1 passed' });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
     }
 });
 

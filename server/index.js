@@ -19,18 +19,23 @@ const allowedOrigins = [
     'https://www.cat-fight.ru',
     'https://api.cat-fight.ru'
 ];
+
 app.use(cors({
     origin: function (origin, callback) {
+        // Разрешаем запросы без origin (например, curl, server-to-server)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(new Error('CORS not allowed'), false);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(null, false);   // ← без Error!
         }
-        return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Этот вызов можно оставить, но после исправления он уже не критичен
 app.options('*', cors());
 app.use(express.json());
 app.use(express.static('client'));

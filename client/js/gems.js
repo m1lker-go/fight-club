@@ -35,13 +35,14 @@ async function renderGems(container) {
     const freeCoinAvailable = status?.freeCoinAvailable || false;
     const bonusBought = status?.bonusPacks || {};
 
+    // Пакеты алмазов (показываем тестовую цену 1 ₽)
     const packs = [
-        { id: 1, diamonds: 50, price: 149, image: 'buy_diamond_1.png', bonus: true },
-        { id: 2, diamonds: 200, price: 399, image: 'buy_diamond_2.png', bonus: true },
-        { id: 3, diamonds: 500, price: 899, image: 'buy_diamond_3.png', bonus: true },
-        { id: 4, diamonds: 1000, price: 1599, image: 'buy_diamond_4.png', bonus: true },
-        { id: 5, diamonds: 1600, price: 2499, image: 'buy_diamond_5.png', bonus: true },
-        { id: 6, diamonds: 2500, price: 3999, image: 'buy_diamond_6.png', bonus: true }
+        { id: 1, diamonds: 50, price: 1, image: 'buy_diamond_1.png', bonus: true },
+        { id: 2, diamonds: 200, price: 1, image: 'buy_diamond_2.png', bonus: true },
+        { id: 3, diamonds: 500, price: 1, image: 'buy_diamond_3.png', bonus: true },
+        { id: 4, diamonds: 1000, price: 1, image: 'buy_diamond_4.png', bonus: true },
+        { id: 5, diamonds: 1600, price: 1, image: 'buy_diamond_5.png', bonus: true },
+        { id: 6, diamonds: 2500, price: 1, image: 'buy_diamond_6.png', bonus: true }
     ];
 
     let html = `
@@ -89,15 +90,45 @@ async function renderGems(container) {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
+    // --- Обработчики покупки алмазов ---
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
-        buyBtn?.addEventListener('click', (e) => {
+        buyBtn?.addEventListener('click', async (e) => {
             e.stopPropagation();
-            const packId = card.dataset.packId;
             const diamonds = parseInt(card.dataset.diamonds);
-            const price = parseInt(card.dataset.price);
-            console.log('[gems] pack buy clicked', { packId, diamonds, price });
-            showToast(`Покупка ${diamonds} алмазов за ${price} ₽ — разработка оплаты`, 2000);
+            const price = parseInt(card.dataset.price);   // сейчас 1 рубль
+            const packId = card.dataset.packId;
+
+            console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
+
+            try {
+                const res = await window.apiRequest('/payment/create', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        userId: userData.id,
+                        amount: price,
+                        description: `Пакет ${diamonds} алмазов`,
+                        returnUrl: 'https://cat-fight.ru/success',   // страница после оплаты
+                        metadata: {
+                            type: 'diamonds_pack',
+                            packId: packId,
+                            diamonds: diamonds,
+                            bonus: card.querySelector('.bonus-badge-new') ? true : false  // первая покупка?
+                        }
+                    })
+                });
+
+                const data = await res.json();
+                if (data.confirmationUrl) {
+                    // Редирект на оплату
+                    window.location.href = data.confirmationUrl;
+                } else {
+                    showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
+                }
+            } catch (err) {
+                console.error('[gems] Ошибка запроса к /payment/create:', err);
+                showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+            }
         });
     });
 
@@ -114,7 +145,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
 
-    // Кнопка 20 монет показывается только если доступна, иначе скрыта совсем
     const freeCoinButton = freeCoinAvailable ? `
         <button class="subscription-free-btn-new" id="freeCoinBtnNew">
             <img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">

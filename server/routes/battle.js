@@ -1135,19 +1135,17 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 5b: with transaction <<<');
+    console.log('>>> BATTLE STEP 5c: coins + rating + streak bonuses <<<');
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
         if (!user) throw new Error('User not found');
 
-        // Энергия
         await rechargeEnergy(client, user.id);
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
-        // Сброс daily_win_streak при смене дня
         const today = new Date().toISOString().slice(0, 10);
         let dailyStreak = user.daily_win_streak || 0;
         if (user.last_streak_date?.toISOString().slice(0, 10) !== today) dailyStreak = 0;
@@ -1178,27 +1176,46 @@ router.post('/start', async (req, res) => {
 
         const isVictory = battleResult.winner === 'player';
         let newStreak = user.win_streak || 0;
+        let ratingChange = -15;
 
+        // daily_win_streak
         if (isVictory) dailyStreak++;
         else dailyStreak = 0;
-
-        if (isVictory) newStreak++;
-        else newStreak = 0;
-
-        const expGain = isVictory ? getExpReward(newStreak) : 3;
-
-        // Обновления внутри транзакции
         await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
+
+        // Монеты и рейтинг
+        if (isVictory) {
+            newStreak++;
+            const coinReward = getCoinReward(newStreak);
+            const ratingGain = getRatingChange(newStreak);
+            ratingChange = ratingGain;
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
+
+            // Бонусы за 100/500 побед
+            if (newStreak === 100 && !user.reward_100_streak) {
+                await client.query('UPDATE users SET coins = coins + 1500, reward_100_streak = TRUE WHERE id = $1', [user.id]);
+            } else if (newStreak === 500 && !user.reward_500_streak) {
+                await client.query('UPDATE users SET coins = coins + 5000, reward_500_streak = TRUE WHERE id = $1', [user.id]);
+            }
+
+            await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, user.id]);
+        } else {
+            newStreak = 0;
+            await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);
+        }
+
+        // win_streak
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
+
+        // Опыт пока без addExp (просто добавляем exp)
+        const expGain = isVictory ? getExpReward(newStreak) : 3;
+        await client.query('UPDATE user_classes SET exp = exp + $1 WHERE user_id = $2 AND class = $3', [expGain, user.id, user.current_class]);
+
+        // Списываем энергию
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
-        await client.query(
-            'UPDATE user_classes SET exp = exp + $1 WHERE user_id = $2 AND class = $3',
-            [expGain, user.id, user.current_class]
-        );
 
         await client.query('COMMIT');
 
-        // После коммита получаем актуальную энергию
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
 
         res.json({
@@ -1221,11 +1238,11 @@ router.post('/start', async (req, res) => {
             },
             reward: {
                 exp: expGain,
-                coins: 0,
+                coins: isVictory ? getCoinReward(newStreak) : 0,
                 leveledUp: false,
                 newStreak
             },
-            ratingChange: 0,
+            ratingChange,
             newEnergy,
             coalGain: 0
         });

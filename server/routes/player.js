@@ -1,7 +1,14 @@
+//player.js
+
+
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
+const dailyTasks = require('../utils/dailyTasks');
+
+// Единая функция получения московской даты (синхронизирована со сбросом в scheduler.js)
+const getMoscowDate = () => dailyTasks.getMoscowDate();
 
 // ========== ТЕСТОВЫЙ МАРШРУТ ==========
 router.get('/test', async (req, res) => {
@@ -67,11 +74,9 @@ router.get('/freechest', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         const lastFree = user.last_free_common_chest;
-        const now = new Date();
-        const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const today = moscowNow.toISOString().split('T')[0];
+        const today = getMoscowDate(); // московская дата
         
-        const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
+        const freeAvailable = !lastFree || new Date(lastFree).toISOString().slice(0, 10) !== today;
         
         console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });
@@ -100,11 +105,9 @@ router.get('/freecoal', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         const lastFree = user.last_free_coal_date;
-        const now = new Date();
-        const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const today = moscowNow.toISOString().split('T')[0];
+        const today = getMoscowDate(); // московская дата
         
-        const freeAvailable = !lastFree || new Date(lastFree).toISOString().split('T')[0] !== today;
+        const freeAvailable = !lastFree || new Date(lastFree).toISOString().slice(0, 10) !== today;
         
         console.log('freeAvailable:', freeAvailable);
         res.json({ freeAvailable });

@@ -1,7 +1,7 @@
 // battleUI.js
 
 async function startBattle() {
-      // Включаем боевую музыку
+    // Включаем боевую музыку
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
     } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
@@ -20,24 +20,22 @@ async function startBattle() {
     }
 
     try {
-       const response = await window.apiRequest('/battle/start', {
-    method: 'POST',
-    body: JSON.stringify({ 
-        playerName: window.playerName || userData.username || 'Player'
-    })
-});
-console.log('[startBattle] response status:', response.status);
-const data = await response.json();
-console.log('[startBattle] response data:', data);
-
+        const response = await window.apiRequest('/battle/start', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                playerName: window.playerName || userData.username || 'Player'
+            })
+        });
+        console.log('[startBattle] response status:', response.status);
         const data = await response.json();
+        console.log('[startBattle] response data:', data);
 
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
             if (data.error === 'Недостаточно энергии') {
                 showToast('Недостаточно энергии!', 1500);
             } else {
-               showToast('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'), 2000);
+                showToast('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'), 2000);
             }
             unlockMenu();
             return;
@@ -397,22 +395,22 @@ async function showBattleResult(battleData, timeOut = false) {
         startBattle();
     });
 
-  const backBtn = createButton('Назад', async () => {
-    if (window.battleTimer) clearInterval(window.battleTimer);
-    BattleLog.stop();
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.style.pointerEvents = 'auto';
-        item.style.opacity = '1';
+    const backBtn = createButton('Назад', async () => {
+        if (window.battleTimer) clearInterval(window.battleTimer);
+        BattleLog.stop();
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.style.pointerEvents = 'auto';
+            item.style.opacity = '1';
+        });
+        await refreshData();
+        // Возвращаем музыку меню
+        if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
+            AudioManager.startMenuMusic();
+        } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+            AudioManager.onScreenChange();
+        }
+        showScreen('main');
     });
-    await refreshData();
-    // Возвращаем музыку меню
-    if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
-        AudioManager.startMenuMusic();
-    } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
-        AudioManager.onScreenChange();
-    }
-    showScreen('main');
-});
 
     let tabLogBtn, tabStatsBtn;
 
@@ -428,43 +426,15 @@ async function showBattleResult(battleData, timeOut = false) {
         const statsHtml = `
             <table class="stats-battle">
                 <thead>
-                    <tr>
-                        <th>Игрок</th>
-                        <th>Параметр</th>
-                        <th>Соперник</th>
-                    </tr>
+                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="player-col">${playerStats.hits}</td>
-                        <td>Ударов</td>
-                        <td class="enemy-col">${enemyStats.hits}</td>
-                    </tr>
-                    <tr>
-                        <td class="player-col">${playerStats.crits}</td>
-                        <td>Критов</td>
-                        <td class="enemy-col">${enemyStats.crits}</td>
-                    </tr>
-                    <tr>
-                        <td class="player-col">${playerStats.dodges}</td>
-                        <td>Уклонений</td>
-                        <td class="enemy-col">${enemyStats.dodges}</td>
-                    </tr>
-                    <tr>
-                        <td class="player-col">${playerStats.totalDamage}</td>
-                        <td>Урона</td>
-                        <td class="enemy-col">${enemyStats.totalDamage}</td>
-                    </tr>
-                    <tr>
-                        <td class="player-col">${playerStats.heal}</td>
-                        <td>Исцелено</td>
-                        <td class="enemy-col">${enemyStats.heal}</td>
-                    </tr>
-                    <tr>
-                        <td class="player-col">${playerStats.reflect}</td>
-                        <td>Отражено</td>
-                        <td class="enemy-col">${enemyStats.reflect}</td>
-                    </tr>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
                 </tbody>
             </table>
         `;

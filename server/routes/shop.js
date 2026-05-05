@@ -378,4 +378,12 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
     }
 });
 
+// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
+function toMoscowDateString(dbDate) {
+    if (!dbDate) return null;
+    const d = new Date(dbDate);
+    // en-CA даёт формат YYYY-MM-DD, timeZone гарантирует московское смещение
+    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+}
+
 module.exports = router;

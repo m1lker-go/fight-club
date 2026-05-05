@@ -1135,7 +1135,7 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 3: generateOpponent <<<');
+    console.log('>>> BATTLE STEP 4: simulateBattle <<<');
     const client = await pool.connect();
     try {
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
@@ -1162,7 +1162,15 @@ router.post('/start', async (req, res) => {
             opponentData = generateBot(classData.rows[0].level, false);
         }
 
-        res.json({ success: true, message: 'Step 3 passed', opponent: opponentData });
+        // +++ СИМУЛЯЦИЯ БОЯ +++
+        const battleResult = simulateBattle(
+            playerStats, opponentData.stats,
+            user.current_class, opponentData.class,
+            user.username, opponentData.username,
+            user.subclass, opponentData.subclass
+        );
+
+        res.json({ success: true, message: 'Step 4 passed', battleResult });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

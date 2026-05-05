@@ -158,7 +158,10 @@ router.post('/buychest', async (req, res) => {
              item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
         );
 
+        // Обновление прогресса задания при открытии редкого+ сундука
         if (item.rarity === 'rare' || item.rarity === 'epic' || item.rarity === 'legendary') {
+            // dailyTasks.updateChestProgress использует отдельный коннект, безопасно вызвать внутри транзакции, т.к. не трогает ту же строку users в том же ключе
+            // Но во избежание любых блокировок можем вынести после COMMIT, но в данном случае это не критично.
             await dailyTasks.updateChestProgress(userId, item.rarity);
         }
 
@@ -237,11 +240,16 @@ router.post('/buy-coal', async (req, res) => {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
             await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
         }
-        // Закомментировали проблемный вызов
-        // console.log('[buy-coal] updateCoalGainProgress skipped for debugging');
-        // await dailyTasks.updateCoalGainProgress(user.id, amount);
         await client.query('COMMIT');
         console.log('[buy-coal] SUCCESS');
+
+        // Обновление задания на сбор угля после завершения транзакции, чтобы избежать блокировок
+        try {
+            await dailyTasks.updateCoalGainProgress(user.id, amount);
+        } catch (e) {
+            console.error('[buy-coal] updateCoalGainProgress error:', e);
+        }
+
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -270,13 +278,12 @@ router.post('/buy-coal-coins', async (req, res) => {
             [priceCoins, amount, user.id]
         );
         await client.query('COMMIT');
-// Обновляем задание на уголь после завершения транзакции, без блокировок
-try {
-    await dailyTasks.updateCoalGainProgress(user.id, amount);
-} catch (e) {
-    console.error('[buy-coal] updateCoalGainProgress error:', e);
-}
-        await client.query('COMMIT');
+        // Обновление задания на уголь после COMMIT
+        try {
+            await dailyTasks.updateCoalGainProgress(user.id, amount);
+        } catch (e) {
+            console.error('[buy-coal-coins] updateCoalGainProgress error:', e);
+        }
         res.json({ success: true, newCoal: user.coal + amount });
     } catch (e) {
         await client.query('ROLLBACK');

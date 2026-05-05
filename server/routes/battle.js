@@ -1135,10 +1135,9 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE FINAL STEP (without coal task) <<<');
+    console.log('>>> BATTLE STEP 5a: minimal DB update <<<');
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
         if (!user) throw new Error('User not found');
 
@@ -1152,8 +1151,10 @@ router.post('/start', async (req, res) => {
         let dailyStreak = user.daily_win_streak || 0;
         if (user.last_streak_date?.toISOString().slice(0, 10) !== today) dailyStreak = 0;
 
-        // Данные игрока
-        const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [user.id, user.current_class]);
+        const classData = await client.query(
+            'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
+            [user.id, user.current_class]
+        );
         if (!classData.rows.length) throw new Error('Class not found');
         const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
@@ -1176,70 +1177,27 @@ router.post('/start', async (req, res) => {
 
         const isVictory = battleResult.winner === 'player';
         let newStreak = user.win_streak || 0;
-        let ratingChange = -15;
 
-        // Обновляем daily_win_streak
+        // Обновление daily_win_streak
         if (isVictory) dailyStreak++;
         else dailyStreak = 0;
-        await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
 
-        // Задания на победы
-        if (isVictory) {
-            let taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
-            if (taskId) await dailyTasks.updateTaskProgress(user.id, taskId, 1);
-        }
-
-        // Награды и рейтинг
-        if (isVictory) {
-            newStreak++;
-            const coinReward = getCoinReward(newStreak);
-            const ratingGain = getRatingChange(newStreak);
-            ratingChange = ratingGain;
-            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
-
-            // Бонусы за 100/500 побед
-            if (newStreak === 100 && !user.reward_100_streak) {
-                await client.query('UPDATE users SET coins = coins + 1500, reward_100_streak = TRUE WHERE id = $1', [user.id]);
-            } else if (newStreak === 500 && !user.reward_500_streak) {
-                await client.query('UPDATE users SET coins = coins + 5000, reward_500_streak = TRUE WHERE id = $1', [user.id]);
-            }
-
-            await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, user.id]);
-        } else {
-            newStreak = 0;
-            await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);
-        }
-        await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
-
-        // Автозавершение заданий на победы при 10 побед подряд
-        if (dailyStreak >= 10) {
-            const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
-            let progress = userTasks.rows[0].daily_tasks_progress ? JSON.parse(userTasks.rows[0].daily_tasks_progress) : {};
-            for (let taskId of [1,2,3]) {
-                const bit = 1 << (taskId-1);
-                if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
-                    progress[taskId] = Math.min(progress[taskId] || 0, 5);
-                }
-            }
-            await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
-        }
+        // Обновление win_streak
+        if (isVictory) newStreak++;
+        else newStreak = 0;
 
         // Опыт
         const expGain = isVictory ? getExpReward(newStreak) : 3;
-        const leveledUp = await addExp(client, user.id, user.current_class, expGain);
-        if (leveledUp) await updatePlayerPower(client, user.id, user.current_class);
 
-        // Уголь (без задания)
-        const r = Math.random();
-        let coalGain = (r >= 0.7 && r < 0.9) ? 1 : (r >= 0.9) ? 2 : 0;
-        if (coalGain > 0) {
-            await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, user.id]);
-            // !!! updateCoalGainProgress временно отключён !!!
-        }
-
-        // Списываем энергию
+        // --- МИНИМАЛЬНЫЕ ЗАПРОСЫ К БД (без транзакции) ---
+        await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
+        await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
-        await client.query('COMMIT');
+        // Начисление опыта без проверки левелапа (только добавим exp к классу)
+        await client.query(
+            'UPDATE user_classes SET exp = exp + $1 WHERE user_id = $2 AND class = $3',
+            [expGain, user.id, user.current_class]
+        );
 
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
 
@@ -1263,16 +1221,15 @@ router.post('/start', async (req, res) => {
             },
             reward: {
                 exp: expGain,
-                coins: isVictory ? getCoinReward(newStreak) : 0,
-                leveledUp,
+                coins: 0,
+                leveledUp: false,
                 newStreak
             },
-            ratingChange,
+            ratingChange: 0,
             newEnergy,
-            coalGain
+            coalGain: 0
         });
     } catch (e) {
-        await client.query('ROLLBACK');
         console.error('Battle error:', e);
         res.status(400).json({ error: e.message });
     } finally {

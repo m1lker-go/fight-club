@@ -3,8 +3,11 @@
 let freeCoalAvailable = false;
 let coalLimit = { purchasedToday: 0, maxDaily: 1000 };
 
-// Обновление бейджа (используем центральную функцию updateTradeBadges)
+console.log('[mint.js] loaded');
+
+// Обновление бейджа
 async function updateMintBadge() {
+    console.log('[updateMintBadge] start');
     try {
         const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
         const data = await res.json();
@@ -23,24 +26,36 @@ async function updateMintBadge() {
 
 // Получение лимита покупки угля за монеты
 async function loadCoalLimit() {
+    console.log('[loadCoalLimit] start');
     try {
         const res = await window.apiRequest('/player/coal-limit', { method: 'GET' });
         const data = await res.json();
         coalLimit = { purchasedToday: data.purchasedToday || 0, maxDaily: data.maxDaily || 1000 };
+        console.log('[loadCoalLimit] loaded', coalLimit);
     } catch (e) {
         console.error('Failed to load coal limit', e);
     }
 }
 
 async function renderMint(container) {
-    if (!container) return;
+    console.log('[renderMint] called, container:', container);
+    if (!container) {
+        console.error('[renderMint] container is null');
+        return;
+    }
+    if (!userData || !userData.id) {
+        console.warn('[renderMint] userData not ready, skipping render');
+        return;
+    }
 
     // Проверяем доступность бесплатного угля
     try {
         const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
         const data = await res.json();
         freeCoalAvailable = data.freeAvailable;
+        console.log('[renderMint] freeCoalAvailable =', freeCoalAvailable);
     } catch (e) {
+        console.error('[renderMint] error fetching freecoal', e);
         freeCoalAvailable = false;
     }
 
@@ -54,14 +69,12 @@ async function renderMint(container) {
         { amount: 250, price: 20, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_3.png' }
     ];
 
-    // Уголь за монеты (с лимитом)
     const coalCoinItems = [
         { amount: 10, price: 100, currency: 'coins', image: '/assets/gold/buy_coal_1.png' },
         { amount: 50, price: 400, currency: 'coins', image: '/assets/gold/buy_coal_2.png' },
         { amount: 250, price: 1500, currency: 'coins', image: '/assets/gold/buy_coal_3.png' }
     ];
 
-    // Золото (монеты за алмазы)
     const goldItems = [
         { amount: 50, price: 1, currency: 'diamonds', image: '/assets/gold/buy_gold_1.png' },
         { amount: 250, price: 3, currency: 'diamonds', image: '/assets/gold/buy_gold_2.png' },
@@ -73,7 +86,6 @@ async function renderMint(container) {
 
     let html = `
         <div class="mint-page">
-            <!-- Уголь за алмазы / бесплатно -->
             <div class="mint-section-title">Уголь за алмазы</div>
             <div class="mint-grid coal-grid">
     `;
@@ -96,7 +108,6 @@ async function renderMint(container) {
 
     html += `</div>`;
 
-    // Уголь за монеты (с лимитом)
     html += `<div class="mint-section-title">Уголь за монеты (лимит ${coalLimit.purchasedToday}/${coalLimit.maxDaily})</div>`;
     html += `<div class="mint-grid coal-grid">`;
 
@@ -120,7 +131,6 @@ async function renderMint(container) {
 
     html += `</div>`;
 
-    // Золото (монеты за алмазы)
     html += `<div class="mint-section-title">Золото за алмазы</div>`;
     html += `<div class="mint-grid gold-grid">`;
 
@@ -142,7 +152,7 @@ async function renderMint(container) {
     html += `</div></div>`;
     container.innerHTML = html;
 
-    // Обработчики кнопок (все кнопки теперь имеют класс mint-buy-btn)
+    // Обработчики кнопок
     container.querySelectorAll('.mint-buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const type = btn.dataset.type;
@@ -150,9 +160,9 @@ async function renderMint(container) {
             const price = parseInt(btn.dataset.price);
             const currency = btn.dataset.currency;
             const isFree = btn.dataset.free === 'true';
+            console.log('[mint] button clicked', { type, amount, price, currency, isFree });
 
             if (isFree) {
-                // Бесплатная выдача угля
                 const res = await window.apiRequest('/shop/buy-coal', {
                     method: 'POST',
                     body: JSON.stringify({ amount, free: true })
@@ -166,7 +176,6 @@ async function renderMint(container) {
                     showToast('Ошибка: ' + data.error, 1500);
                 }
             } else if (type === 'coal_coins') {
-                // Покупка угля за монеты
                 if (currency === 'coins' && userData.coins < price) {
                     showToast('Недостаточно монет!', 1500);
                     return;
@@ -191,7 +200,6 @@ async function renderMint(container) {
                     showToast('Ошибка: ' + data.error, 1500);
                 }
             } else {
-                // Покупка угля за алмазы или золота за алмазы
                 if (currency === 'diamonds' && userData.diamonds < price) {
                     showToast('Недостаточно алмазов!', 1500);
                     return;
@@ -215,6 +223,5 @@ async function renderMint(container) {
     });
 }
 
-// Глобальный экспорт
 window.renderMint = renderMint;
 window.updateMintBadge = updateMintBadge;

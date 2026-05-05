@@ -51,26 +51,24 @@ router.get('/free-coin-status', async (req, res) => {
 
 // Получение бесплатной монеты
 router.post('/claim-free-coin', async (req, res) => {
-    console.log('[claim-free-coin] ====== REQUEST RECEIVED ======');
-    console.log('[claim-free-coin] body:', req.body);
-    const { user_id } = req.body;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    console.log('[claim-free-coin] START', req.body);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        const { user_id } = req.body;
+        if (!user_id) throw new Error('user_id required');
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
         const today = new Date().toISOString().slice(0, 10);
         const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         if (last === today) throw new Error('Already claimed today');
-        await client.query(
-            'UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2',
-            [today, user.id]
-        );
+        await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);
         await client.query('COMMIT');
+        console.log('[claim-free-coin] SUCCESS');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
+        console.error('[claim-free-coin] ERROR:', e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

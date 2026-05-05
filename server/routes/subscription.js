@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
@@ -96,4 +95,3 @@ router.post('/buy', async (req, res) => {
 });
 
 module.exports = router;
-```

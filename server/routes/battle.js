@@ -1135,7 +1135,7 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 1: getUser <<<');
+    console.log('>>> BATTLE STEP 2: getClassAndInventory <<<');
     const client = await pool.connect();
     try {
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
@@ -1143,8 +1143,13 @@ router.post('/start', async (req, res) => {
         await rechargeEnergy(client, user.id);
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
-        await client.query('COMMIT');
-        res.json({ success: true, message: 'Step 1 passed' });
+
+        const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [user.id, user.current_class]);
+        if (classData.rows.length === 0) throw new Error('Class data not found');
+        const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
+        const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
+
+        res.json({ success: true, message: 'Step 2 passed', playerStats });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

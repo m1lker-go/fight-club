@@ -7,6 +7,14 @@ const dailyTasks = require('../utils/dailyTasks');
 // Единая функция получения московской даты (синхронизирована со сбросом заданий)
 const getMoscowDate = () => dailyTasks.getMoscowDate();
 
+// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
+// Важно: должна быть объявлена до использования в маршрутах
+function toMoscowDateString(dbDate) {
+    if (!dbDate) return null;
+    const d = new Date(dbDate);
+    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+}
+
 function generateItemFromChest(chestType) {
     const classes = ['warrior', 'assassin', 'mage'];
     const className = classes[Math.floor(Math.random() * classes.length)];
@@ -98,7 +106,7 @@ router.post('/buychest', async (req, res) => {
         let diamonds = user.diamonds;
         let lastFree = user.last_free_common_chest;
 
-        const today = getMoscowDate(); // московская дата
+        const today = getMoscowDate();
 
         let priceCoins = 0;
         let priceDiamonds = 0;
@@ -106,8 +114,8 @@ router.post('/buychest', async (req, res) => {
 
         switch (chestType) {
             case 'common':
-                // проверка по московской дате
-                if (!lastFree || new Date(lastFree).toISOString().slice(0, 10) !== today) {
+                // используем toMoscowDateString для корректного сравнения
+                if (toMoscowDateString(lastFree) !== today) {
                     isFree = true;
                 } else {
                     priceCoins = 100;
@@ -135,7 +143,6 @@ router.post('/buychest', async (req, res) => {
             if (priceCoins > 0) await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [priceCoins, userId]);
             if (priceDiamonds > 0) await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [priceDiamonds, userId]);
         } else {
-            // сохраняем московскую дату как строку (поле DATE)
             await client.query('UPDATE users SET last_free_common_chest = $1 WHERE id = $2', [today, userId]);
         }
 
@@ -161,7 +168,6 @@ router.post('/buychest', async (req, res) => {
              item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
         );
 
-        // Обновление прогресса задания при открытии редкого+ сундука
         if (item.rarity === 'rare' || item.rarity === 'epic' || item.rarity === 'legendary') {
             await dailyTasks.updateChestProgress(userId, item.rarity);
         }
@@ -210,8 +216,8 @@ router.get('/freecoal', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
         const today = getMoscowDate();
-        const lastFree = user.last_free_coal_date ? user.last_free_coal_date.toISOString().slice(0, 10) : null;
-        const freeAvailable = !lastFree || lastFree !== today;
+        const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
+        const freeAvailable = lastFreeMsk !== today;
         res.json({ freeAvailable });
     } catch (e) {
         console.error('Error checking free coal:', e);
@@ -234,8 +240,8 @@ router.post('/buy-coal', async (req, res) => {
         if (!user) throw new Error('User not found');
         const today = getMoscowDate();
         if (free) {
-            const lastFree = user.last_free_coal_date ? user.last_free_coal_date.toISOString().slice(0, 10) : null;
-            if (lastFree === today) throw new Error('Бесплатный уголь уже получен сегодня');
+            const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
+            if (lastFreeMsk === today) throw new Error('Бесплатный уголь уже получен сегодня');
             await client.query('UPDATE users SET coal = coal + $1, last_free_coal_date = $2 WHERE id = $3', [amount, today, user.id]);
         } else {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
@@ -244,7 +250,6 @@ router.post('/buy-coal', async (req, res) => {
         await client.query('COMMIT');
         console.log('[buy-coal] SUCCESS');
 
-        // Обновление задания на сбор угля после завершения транзакции, чтобы избежать блокировок
         try {
             await dailyTasks.updateCoalGainProgress(user.id, amount);
         } catch (e) {
@@ -279,7 +284,6 @@ router.post('/buy-coal-coins', async (req, res) => {
             [priceCoins, amount, user.id]
         );
         await client.query('COMMIT');
-        // Обновление задания на уголь после COMMIT
         try {
             await dailyTasks.updateCoalGainProgress(user.id, amount);
         } catch (e) {
@@ -343,8 +347,8 @@ router.get('/subscription/free-coin-status', async (req, res) => {
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
         const today = getMoscowDate();
-        const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
-        const available = last !== today;
+        const lastMsk = toMoscowDateString(user.last_free_sub_coin);
+        const available = lastMsk !== today;
         res.json({ available });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -363,8 +367,8 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
         const today = getMoscowDate();
-        const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
-        if (last === today) throw new Error('Already claimed today');
+        const lastMsk = toMoscowDateString(user.last_free_sub_coin);
+        if (lastMsk === today) throw new Error('Already claimed today');
         await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);
         await client.query('COMMIT');
         console.log('[claim-free-coin] SUCCESS');
@@ -377,13 +381,5 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
         client.release();
     }
 });
-
-// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
-function toMoscowDateString(dbDate) {
-    if (!dbDate) return null;
-    const d = new Date(dbDate);
-    // en-CA даёт формат YYYY-MM-DD, timeZone гарантирует московское смещение
-    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
-}
 
 module.exports = router;

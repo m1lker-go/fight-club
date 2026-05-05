@@ -1135,25 +1135,25 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('>>> BATTLE STEP 5c: coins + rating + streak bonuses <<<');
+    console.log('>>> BATTLE STEP 5d: addExp + updatePower <<<');
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
         if (!user) throw new Error('User not found');
 
+        // Энергия
         await rechargeEnergy(client, user.id);
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
+        // Сброс daily_win_streak при смене дня
         const today = new Date().toISOString().slice(0, 10);
         let dailyStreak = user.daily_win_streak || 0;
         if (user.last_streak_date?.toISOString().slice(0, 10) !== today) dailyStreak = 0;
 
-        const classData = await client.query(
-            'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
-            [user.id, user.current_class]
-        );
+        // Данные игрока
+        const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [user.id, user.current_class]);
         if (!classData.rows.length) throw new Error('Class not found');
         const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
@@ -1178,12 +1178,12 @@ router.post('/start', async (req, res) => {
         let newStreak = user.win_streak || 0;
         let ratingChange = -15;
 
-        // daily_win_streak
+        // Обновляем daily_win_streak
         if (isVictory) dailyStreak++;
         else dailyStreak = 0;
         await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
 
-        // Монеты и рейтинг
+        // Награды и рейтинг (пока без заданий)
         if (isVictory) {
             newStreak++;
             const coinReward = getCoinReward(newStreak);
@@ -1203,17 +1203,17 @@ router.post('/start', async (req, res) => {
             newStreak = 0;
             await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);
         }
-
-        // win_streak
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
 
-        // Опыт пока без addExp (просто добавляем exp)
+        // Опыт с левелапом и пересчётом силы
         const expGain = isVictory ? getExpReward(newStreak) : 3;
-        await client.query('UPDATE user_classes SET exp = exp + $1 WHERE user_id = $2 AND class = $3', [expGain, user.id, user.current_class]);
+        const leveledUp = await addExp(client, user.id, user.current_class, expGain);
+        if (leveledUp) {
+            await updatePlayerPower(client, user.id, user.current_class);
+        }
 
         // Списываем энергию
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
-
         await client.query('COMMIT');
 
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
@@ -1239,7 +1239,7 @@ router.post('/start', async (req, res) => {
             reward: {
                 exp: expGain,
                 coins: isVictory ? getCoinReward(newStreak) : 0,
-                leveledUp: false,
+                leveledUp,
                 newStreak
             },
             ratingChange,

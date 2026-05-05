@@ -4,6 +4,9 @@ const { pool, getUserByIdentifier } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 const dailyTasks = require('../utils/dailyTasks');
 
+// Единая функция получения московской даты (синхронизирована со сбросом заданий)
+const getMoscowDate = () => dailyTasks.getMoscowDate();
+
 function generateItemFromChest(chestType) {
     const classes = ['warrior', 'assassin', 'mage'];
     const className = classes[Math.floor(Math.random() * classes.length)];
@@ -95,9 +98,7 @@ router.post('/buychest', async (req, res) => {
         let diamonds = user.diamonds;
         let lastFree = user.last_free_common_chest;
 
-        const now = new Date();
-        const moscowTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const today = moscowTime.toISOString().split('T')[0];
+        const today = getMoscowDate(); // московская дата
 
         let priceCoins = 0;
         let priceDiamonds = 0;
@@ -105,7 +106,8 @@ router.post('/buychest', async (req, res) => {
 
         switch (chestType) {
             case 'common':
-                if (!lastFree || new Date(lastFree).toISOString().split('T')[0] !== today) {
+                // проверка по московской дате
+                if (!lastFree || new Date(lastFree).toISOString().slice(0, 10) !== today) {
                     isFree = true;
                 } else {
                     priceCoins = 100;
@@ -133,7 +135,8 @@ router.post('/buychest', async (req, res) => {
             if (priceCoins > 0) await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [priceCoins, userId]);
             if (priceDiamonds > 0) await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [priceDiamonds, userId]);
         } else {
-            await client.query('UPDATE users SET last_free_common_chest = $1 WHERE id = $2', [moscowTime, userId]);
+            // сохраняем московскую дату как строку (поле DATE)
+            await client.query('UPDATE users SET last_free_common_chest = $1 WHERE id = $2', [today, userId]);
         }
 
         const item = generateItemFromChest(chestType);
@@ -160,8 +163,6 @@ router.post('/buychest', async (req, res) => {
 
         // Обновление прогресса задания при открытии редкого+ сундука
         if (item.rarity === 'rare' || item.rarity === 'epic' || item.rarity === 'legendary') {
-            // dailyTasks.updateChestProgress использует отдельный коннект, безопасно вызвать внутри транзакции, т.к. не трогает ту же строку users в том же ключе
-            // Но во избежание любых блокировок можем вынести после COMMIT, но в данном случае это не критично.
             await dailyTasks.updateChestProgress(userId, item.rarity);
         }
 
@@ -208,7 +209,7 @@ router.get('/freecoal', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getMoscowDate();
         const lastFree = user.last_free_coal_date ? user.last_free_coal_date.toISOString().slice(0, 10) : null;
         const freeAvailable = !lastFree || lastFree !== today;
         res.json({ freeAvailable });
@@ -231,7 +232,7 @@ router.post('/buy-coal', async (req, res) => {
         }
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getMoscowDate();
         if (free) {
             const lastFree = user.last_free_coal_date ? user.last_free_coal_date.toISOString().slice(0, 10) : null;
             if (lastFree === today) throw new Error('Бесплатный уголь уже получен сегодня');
@@ -341,7 +342,7 @@ router.get('/subscription/free-coin-status', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getMoscowDate();
         const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         const available = last !== today;
         res.json({ available });
@@ -361,7 +362,7 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
         if (!user_id) throw new Error('user_id required');
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getMoscowDate();
         const last = user.last_free_sub_coin ? user.last_free_sub_coin.toISOString().slice(0, 10) : null;
         if (last === today) throw new Error('Already claimed today');
         await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);

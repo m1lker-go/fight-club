@@ -1135,189 +1135,41 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
 }
 
 router.post('/start', async (req, res) => {
-    console.log('===== BATTLE START CALLED =====');
-console.log('req.body:', req.body);
-    const { tg_id, user_id } = req.body;
-    const client = await pool.connect();
+    console.log('>>> BATTLE STUB CALLED <<<');
+    console.log('Request body:', req.body);
     try {
-        await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userData = user;
-
-        await rechargeEnergy(client, userData.id);
-        const energyResult = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
-        if (energyResult.rows[0].energy < 1) throw new Error('Недостаточно энергии');
-
-        // Сброс daily_win_streak, если день сменился
-        const today = new Date().toISOString().slice(0, 10);
-        let lastStreakDate = userData.last_streak_date ? userData.last_streak_date.toISOString().slice(0, 10) : null;
-        let dailyStreak = userData.daily_win_streak || 0;
-        if (lastStreakDate !== today) {
-            dailyStreak = 0;
-        }
-
-        const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [userData.id, userData.current_class]);
-        if (classData.rows.length === 0) throw new Error('Class data not found');
-
-        const inv = await client.query(`SELECT id, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, agi_bonus, int_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, vamp_bonus, reflect_bonus FROM inventory WHERE user_id = $1 AND equipped = true`, [userData.id]);
-        const playerStats = calculateStats(classData.rows[0], inv.rows, userData.subclass);
-
-        const rand = Math.random();
-        let opponentData = null;
-
-        if (rand < 0.3) {
-            opponentData = await selectPvPOpponent(client, userData.id, classData.rows[0].level);
-        } else if (rand < 0.8) {
-            opponentData = generateBot(classData.rows[0].level, false);
-        } else {
-            opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
-        }
-
-        if (!opponentData || !opponentData.stats) {
-            opponentData = generateBot(classData.rows[0].level, false);
-        }
-
-        const battleResult = simulateBattle(
-            playerStats, opponentData.stats,
-            userData.current_class, opponentData.class,
-            userData.username, opponentData.username,
-            userData.subclass, opponentData.subclass
-        );
-
-        let isVictory = battleResult.winner === 'player';
-        let newStreak = userData.win_streak || 0;
-        let ratingChange = -15;
-
-        // --- Обработка daily_win_streak (серия побед в текущем дне) ---
-        if (isVictory) {
-            dailyStreak++;
-        } else {
-            dailyStreak = 0;
-        }
-        await client.query(
-            'UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3',
-            [dailyStreak, today, userData.id]
-        );
-
-        // --- Обработка задания на победы для конкретного класса (id 1,2,3) ---
-        if (isVictory) {
-            let taskId = null;
-            if (userData.current_class === 'warrior') taskId = 1;
-            else if (userData.current_class === 'assassin') taskId = 2;
-            else if (userData.current_class === 'mage') taskId = 3;
-            if (taskId) {
-                await dailyTasks.updateTaskProgress(userData.id, taskId, 1);
-            }
-        }
-
-        // --- Основные награды и обновление рейтинга ---
-        if (isVictory) {
-            newStreak++;
-            const coinReward = getCoinReward(newStreak);
-            const ratingGain = getRatingChange(newStreak);
-            ratingChange = ratingGain;
-            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, userData.id]);
-
-            let bonusCoins = 0;
-            if (newStreak === 100 && !userData.reward_100_streak) {
-                bonusCoins = 1500;
-                await client.query('UPDATE users SET reward_100_streak = TRUE WHERE id = $1', [userData.id]);
-            } else if (newStreak === 500 && !userData.reward_500_streak) {
-                bonusCoins = 5000;
-                await client.query('UPDATE users SET reward_500_streak = TRUE WHERE id = $1', [userData.id]);
-            }
-            if (bonusCoins > 0) {
-                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [bonusCoins, userData.id]);
-            }
-
-            await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, userData.id]);
-        } else {
-            newStreak = 0;
-            await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [userData.id]);
-        }
-        await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, userData.id]);
-
-        // --- Автоматическое выполнение заданий при 10 победах подряд (уже выполнено через dailyStreak, но нужно также отметить задания) ---
-        if (dailyStreak >= 10) {
-            // Если серия достигла 10, то задания на победы становятся выполненными (независимо от класса?)
-            // По старой логике это приводило к заполнению прогресса у всех трёх классов. Оставим как есть:
-            const userTasks = await client.query(
-                'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1',
-                [userData.id]
-            );
-            let mask = userTasks.rows[0].daily_tasks_mask;
-            let progress = userTasks.rows[0].daily_tasks_progress;
-            if (!progress) progress = {};
-            else if (typeof progress === 'string') progress = JSON.parse(progress);
-
-            for (let taskId of [1, 2, 3]) {
-                const bit = 1 << (taskId - 1);
-                if (!(mask & bit)) {
-                    progress[taskId] = Math.min(progress[taskId] || 0, 5);
-                }
-            }
-            await client.query(
-                'UPDATE users SET daily_tasks_progress = $1 WHERE id = $2',
-                [JSON.stringify(progress), userData.id]
-            );
-        }
-
-        // --- Начисление опыта ---
-        const expGain = isVictory ? getExpReward(newStreak) : 3;
-        const leveledUp = await addExp(client, userData.id, userData.current_class, expGain);
-        if (leveledUp) await updatePlayerPower(client, userData.id, userData.current_class);
-
-        // --- Выпадение угля после боя ---
-        const r = Math.random();
-        let coalGain = 0;
-        if (r >= 0.7 && r < 0.9) coalGain = 1;
-        else if (r >= 0.9) coalGain = 2;
-        if (coalGain > 0) {
-            await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, userData.id]);
-            // Обновляем задание на получение угля (id 13)
-            await dailyTasks.updateCoalGainProgress(userData.id, coalGain);
-        }
-
-        await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [userData.id]);
-        await client.query('COMMIT');
-
-        const energyQuery = await client.query('SELECT energy FROM users WHERE id = $1', [userData.id]);
-
+        // Минимальный ответ, чтобы клиент не упал
         res.json({
             opponent: {
-                username: opponentData.username,
-                avatar_id: opponentData.avatar_id,
-                class: opponentData.class,
-                subclass: opponentData.subclass,
-                level: opponentData.level,
-                is_cybercat: opponentData.is_cybercat || false
+                username: 'Тестовый враг',
+                avatar_id: 1,
+                class: 'warrior',
+                subclass: 'guardian',
+                level: 1,
+                is_cybercat: false
             },
             result: {
-                winner: battleResult.winner,
-                playerHpRemain: battleResult.playerHpRemain,
-                enemyHpRemain: battleResult.enemyHpRemain,
-                playerMaxHp: battleResult.playerMaxHp,
-                enemyMaxHp: battleResult.enemyMaxHp,
-                messages: battleResult.messages,
-                states: battleResult.states
+                winner: 'player',
+                playerHpRemain: 100,
+                enemyHpRemain: 0,
+                playerMaxHp: 100,
+                enemyMaxHp: 100,
+                messages: [{ text: 'Тестовый бой (заглушка)', type: 'final', attacker: 'none' }],
+                states: []
             },
             reward: {
-                exp: expGain,
-                coins: isVictory ? getCoinReward(newStreak) : 0,
-                leveledUp,
-                newStreak
+                exp: 10,
+                coins: 50,
+                leveledUp: false,
+                newStreak: 1
             },
-            ratingChange,
-            newEnergy: energyQuery.rows[0].energy,
-            coalGain
+            ratingChange: 10,
+            newEnergy: 19,
+            coalGain: 0
         });
-    } catch (e) {
-        await client.query('ROLLBACK');
-        console.error(e);
-        res.status(400).json({ error: e.message });
-    } finally { 
-        client.release(); 
+    } catch (err) {
+        console.error('Stub error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 

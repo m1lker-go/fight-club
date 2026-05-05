@@ -269,10 +269,13 @@ router.post('/buy-coal-coins', async (req, res) => {
             `UPDATE users SET coins = coins - $1, coal = coal + $2, coal_purchased_today = coal_purchased_today + $2 WHERE id = $3`,
             [priceCoins, amount, user.id]
         );
-        // Временно закомментировано для отладки
-        // if (typeof dailyTasks.updateCoalGainProgress === 'function') {
-        //     await dailyTasks.updateCoalGainProgress(user.id, amount);
-        // }
+        await client.query('COMMIT');
+// Обновляем задание на уголь после завершения транзакции, без блокировок
+try {
+    await dailyTasks.updateCoalGainProgress(user.id, amount);
+} catch (e) {
+    console.error('[buy-coal] updateCoalGainProgress error:', e);
+}
         await client.query('COMMIT');
         res.json({ success: true, newCoal: user.coal + amount });
     } catch (e) {

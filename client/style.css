@@ -4782,3 +4782,49 @@ body {
     background-color: #00aaff !important;
     color: white !important;
 }
+/* Ресурсная панель в кузнице */
+.forge-resources {
+    background: #1a1f2b;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.resource-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #aaa;
+}
+.resource-row i {
+    width: 20px;
+    text-align: center;
+}
+.resource-label {
+    flex: 1;
+}
+.resource-value {
+    font-weight: bold;
+    color: white;
+}
+
+/* Модальное окно свитков: сетка 3 в ряд */
+.scroll-packs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.scroll-packs .mint-card {
+    background: #232833;
+    border: 1px solid #7f8c8d;
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

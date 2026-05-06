@@ -222,28 +222,32 @@ function openScrollModal() {
     modalTitle.innerText = 'Выберите свиток';
     let html = `<div class="packs-grid-new scroll-packs">`;
 
-    const scrollDefs = [
-        { item_id: 1037, rarity: 'rare', name: 'Редкий свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
-        { item_id: 1038, rarity: 'epic', name: 'Эпический свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
-        { item_id: 1039, rarity: 'legendary', name: 'Легендарный свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
-    ];
+   const scrollDefs = [
+    { item_id: 1037, rarity: 'rare', name: 'Редкий<br>свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
+    { item_id: 1038, rarity: 'epic', name: 'Эпический<br>свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
+    { item_id: 1039, rarity: 'legendary', name: 'Легендарный<br>свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
+];
 
-    scrollDefs.forEach(def => {
-        const owned = scrollsInventory.filter(s => s.item_id === def.item_id);
-        const count = owned.length;
-        const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
+ scrollDefs.forEach(def => {
+    const owned = scrollsInventory.filter(s => s.item_id === def.item_id);
+    const count = owned.length;
+    const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
 
-        html += `
-            <div class="mint-card" style="display: flex; flex-direction: column; align-items: center; padding: 12px; background: #232833; border-radius: 12px; border: 1px solid #7f8c8d; text-align: center;">
-                <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; white-space: nowrap;">${def.name}</div>
+    html += `
+        <div style="display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #7f8c8d; background: #232833;">
+            <div class="scroll-card-body" style="padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center;">
+                <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; line-height: 1.3;">${def.name}</div>
                 <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
                 <i class="fas fa-scroll" style="font-size: 32px; color: ${def.rarity === 'rare' ? '#2e86de' : def.rarity === 'epic' ? '#9b59b6' : '#f1c40f'}; margin-bottom: 8px;"></i>
                 <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>
-                <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}" style="width:100%; margin-bottom: 4px;">Купить</button>
-                <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}" style="width:100%;">${isActive ? 'АКТИВНО' : 'Добавить'}</button>
             </div>
-        `;
-    });
+            <div class="scroll-card-buttons" style="display: flex; flex-direction: column; width: 100%;">
+                <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}">Купить</button>
+                <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}">${isActive ? 'АКТИВНО' : 'Добавить'}</button>
+            </div>
+        </div>
+    `;
+});
 
     html += `</div>
         <button id="scrollModalOkBtn" class="btn" style="width: 100%; margin-top: 12px;">ОКЕЙ</button>

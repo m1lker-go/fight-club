@@ -4787,20 +4787,40 @@ body {
 }
 
 /* Кнопки в карточке свитка: на всю ширину, без зазора, серая обводка */
-.scroll-packs .mint-buy-btn {
-    border: 1px solid #7f8c8d !important;
-    margin: 0 !important;
-    width: 100% !important;
+
+/* Контейнер кнопок внизу карточки свитка */
+.scroll-card-buttons {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid #7f8c8d;   /* отделяем кнопки от тела карточки */
+}
+
+/* Кнопки в этом контейнере */
+.scroll-card-buttons .mint-buy-btn {
+    border: none;
+    border-bottom: 1px solid #7f8c8d;
+    margin: 0;
+    width: 100%;
+    padding: 10px 0;
     font-size: 12px;
-    box-sizing: border-box;
+    background: #1a1f2b;
+    color: #ccc;
+    cursor: pointer;
     border-radius: 0 !important;
+    transition: none;
 }
-.scroll-packs .buy-scroll-btn {
-    border-radius: 0 !important;      /* кнопка «Купить» — без скруглений */
+.scroll-card-buttons .mint-buy-btn:last-child {
+    border-bottom: none;
+    border-radius: 0 0 12px 12px !important; /* скругления только у нижней кнопки */
 }
-.scroll-packs .add-scroll-btn {
-    border-radius: 0 0 12px 12px !important; /* «Добавить» — скругления только снизу */
+.scroll-card-buttons .mint-buy-btn.active {
+    background-color: #00aaff !important;
+    color: white !important;
 }
+
 
 /* Активная кнопка «Добавить» */
 .add-scroll-btn.active {

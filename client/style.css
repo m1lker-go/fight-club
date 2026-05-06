@@ -4457,7 +4457,7 @@ body {
     text-align: center;
 }
 
-/* ========== КУЗНИЦА (все стили объединены) ========== */
+/* ========== КУЗНИЦА (финальный объединённый блок) ========== */
 
 /* ---------- Контейнер всей страницы кузницы ---------- */
 .forge-container {
@@ -4488,13 +4488,13 @@ body {
     position: absolute;
     top: 5px;
     left: 5px;
-    bottom: 5px;                     /* растянута на всю высоту баннера */
+    bottom: 5px;
     background: rgba(26, 31, 43, 0.85);
     border-radius: 8px;
     padding: 5px 8px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;   /* равномерно распределяет 4 строки */
+    justify-content: space-between;
     gap: 0;
     z-index: 2;
 }
@@ -4739,7 +4739,7 @@ body {
     color: #00aaff;
 }
 
-/* ---------- Модальное окно свитков (сетка 3 в ряд, без анимаций) ---------- */
+/* ---------- Модальное окно свитков (сетка 3 в ряд) ---------- */
 .scroll-packs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4747,58 +4747,17 @@ body {
     margin-bottom: 12px;
 }
 
-/* Карточка свитка в модальном окне */
-.scroll-packs .mint-card {
-    background: #232833;
-    border: 1px solid #7f8c8d;
-    border-radius: 12px;
-    padding: 12px 0 0 0;             /* боковые отступы убраны, чтобы кнопки прилипали */
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: none !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-.scroll-packs .mint-card:hover {
-    background-color: #232833 !important;
-    border-color: #7f8c8d !important;
-    transform: none !important;
-}
-
-/* Контент карточки, кроме кнопок */
-.scroll-packs .mint-card > *:not(.mint-buy-btn) {
-    padding-left: 8px;
-    padding-right: 8px;
-    box-sizing: border-box;
-}
-
-/* Название свитка – без переносов, обрезается многоточием */
-.scroll-packs .mint-card > div:first-child {
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    word-break: normal;
-    line-height: 1.2;
-    margin-bottom: 4px;
-}
-
-/* Кнопки в карточке свитка: на всю ширину, без зазора, серая обводка */
-
-/* Контейнер кнопок внизу карточки свитка */
+/* ---------- Контейнер кнопок внизу карточки свитка ---------- */
 .scroll-card-buttons {
     display: flex;
     flex-direction: column;
     width: 100%;
     margin: 0;
     padding: 0;
-    border-top: 1px solid #7f8c8d;   /* отделяем кнопки от тела карточки */
+    border-top: 1px solid #7f8c8d;
 }
 
-/* Кнопки в этом контейнере */
+/* Кнопки внутри этого контейнера */
 .scroll-card-buttons .mint-buy-btn {
     border: none;
     border-bottom: 1px solid #7f8c8d;
@@ -4817,13 +4776,6 @@ body {
     border-radius: 0 0 12px 12px !important; /* скругления только у нижней кнопки */
 }
 .scroll-card-buttons .mint-buy-btn.active {
-    background-color: #00aaff !important;
-    color: white !important;
-}
-
-
-/* Активная кнопка «Добавить» */
-.add-scroll-btn.active {
     background-color: #00aaff !important;
     color: white !important;
 }

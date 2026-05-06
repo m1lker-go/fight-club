@@ -4587,8 +4587,8 @@ body {
 
 /* Специальный слот для свитка */
 .scroll-slot {
-    background: #2f3542;
-    border: 2px solid #aaa;
+    background: #1a1f2b !important;      /* тёмный фон */
+    border: 2px solid #00aaff !important; /* голубая обводка */
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -4599,6 +4599,11 @@ body {
     line-height: 1.2;
     color: #aaa;
     text-align: center;
+}
+.scroll-slot img {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 2px;
 }
 .scroll-slot span {
     display: block;

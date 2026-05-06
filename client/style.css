@@ -4673,7 +4673,7 @@ body {
     text-align: center;
 }
 
-/* ========== КУЗНИЦА (обновлённые стили) ========== */
+/* ========== КУЗНИЦА (финальные стили) ========== */
 
 /* Обёртка баннера с наложением ресурсов */
 .forge-banner-wrapper {
@@ -4690,6 +4690,7 @@ body {
     position: absolute;
     top: 5px;
     left: 5px;
+    bottom: 5px;                     /* растягиваем на всю высоту баннера */
     background: rgba(26, 31, 43, 0.85);
     border-radius: 8px;
     padding: 5px 8px;
@@ -4763,20 +4764,24 @@ body {
     transform: none !important;
 }
 
-/* Названия свитков — уменьшенный шрифт */
-.scroll-packs .mint-card .item-name,
+/* Названия свитков — уменьшенный шрифт, без переноса */
 .scroll-packs .mint-card > div:first-child {
-    font-size: 12px !important;
-    word-break: break-word;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    word-break: normal;
     line-height: 1.2;
 }
 
-/* Кнопки в карточке свитка: без зазора, серая обводка, скругления только у нижней */
+/* Кнопки в карточке свитка: на всю ширину, без зазора, серая обводка, скругления только у нижней */
 .scroll-packs .mint-buy-btn {
     border: 1px solid #7f8c8d !important;
     margin: 0 !important;
     width: 100% !important;
     font-size: 12px;
+    box-sizing: border-box;
 }
 .scroll-packs .buy-scroll-btn {
     border-radius: 0 !important;

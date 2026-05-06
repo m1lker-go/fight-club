@@ -351,7 +351,7 @@ async function showBattleResult(battleData, timeOut = false) {
     header.innerText = resultText;
     container.appendChild(header);
 
-    // Блок наград (2 колонки)
+   // Блок наград (2 колонки)
     const rewardsGrid = document.createElement('div');
     rewardsGrid.className = 'battle-result-stats-grid';
 
@@ -367,13 +367,27 @@ async function showBattleResult(battleData, timeOut = false) {
         return item;
     };
 
-    const items = [
+    // Базовые награды
+    const baseItems = [
         addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'),
         addRewardItem('Монеты', `+${coinGain}`, 'fas fa-coins'),
         addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
         addRewardItem('Серия', `${newStreak}`, 'fas fa-shield-alt')
     ];
-    items.forEach(item => rewardsGrid.appendChild(item));
+    baseItems.forEach(item => rewardsGrid.appendChild(item));
+
+    // Дополнительные награды (уголь, свиток)
+    if (battleData.coalGain && battleData.coalGain > 0) {
+        const coalItem = addRewardItem('Уголь', `+${battleData.coalGain}`, 'fas fa-cube');
+        coalItem.querySelector('i').style.color = '#00aaff';
+        rewardsGrid.appendChild(coalItem);
+    }
+    if (battleData.scrollGain) {
+        const scrollItem = addRewardItem('Свиток', 'Редкий', 'fas fa-scroll');
+        scrollItem.querySelector('i').style.color = '#00aaff';
+        rewardsGrid.appendChild(scrollItem);
+    }
+
     container.appendChild(rewardsGrid);
 
     // Кнопки (сетка 2×2)

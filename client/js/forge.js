@@ -200,9 +200,9 @@ function openScrollModal() {
     let html = `<div class="scroll-modal-grid" style="display: flex; flex-direction: column; gap: 12px;">`;
 
     const scrollDefs = [
-        { item_id: 50, rarity: 'rare', name: 'Редкий свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
-        { item_id: 51, rarity: 'epic', name: 'Эпический свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
-        { item_id: 52, rarity: 'legendary', name: 'Легендарный свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
+        { item_id: 1037, rarity: 'rare', name: 'Редкий свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
+        { item_id: 1038, rarity: 'epic', name: 'Эпический свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
+        { item_id: 1039, rarity: 'legendary', name: 'Легендарный свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
     ];
 
     scrollDefs.forEach(def => {

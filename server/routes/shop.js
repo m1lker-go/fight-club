@@ -382,4 +382,54 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
     }
 });
 
+// Покупка свитков
+router.post('/buy-scroll', async (req, res) => {
+    const { tg_id, user_id, scroll_id } = req.body;
+    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    if (![1037, 1038, 1039].includes(scroll_id)) return res.status(400).json({ error: 'Invalid scroll' });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const user = await getUserByIdentifier(client, tg_id, user_id);
+        if (!user) throw new Error('User not found');
+
+        let price, currency;
+        if (scroll_id === 1037) { price = 500; currency = 'coins'; }
+        else if (scroll_id === 1038) { price = 50; currency = 'diamonds'; }
+        else if (scroll_id === 1039) { price = 150; currency = 'diamonds'; }
+
+        if (currency === 'coins' && user.coins < price) throw new Error('Not enough coins');
+        if (currency === 'diamonds' && user.diamonds < price) throw new Error('Not enough diamonds');
+
+        // Получаем шаблон свитка из items
+        const itemRes = await client.query('SELECT * FROM items WHERE id = $1', [scroll_id]);
+        if (itemRes.rows.length === 0) throw new Error('Scroll item not found');
+        const scroll = itemRes.rows[0];
+
+        // Списываем валюту
+        if (currency === 'coins') {
+            await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, user.id]);
+        } else {
+            await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [price, user.id]);
+        }
+
+        // Добавляем в инвентарь
+        await client.query(
+            `INSERT INTO inventory (user_id, item_id, equipped, in_forge, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
+             VALUES ($1, $2, false, false, $3, $4, $5, 'any', $6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)`,
+            [user.id, scroll_id, scroll.name, scroll.type, scroll.rarity, scroll.owner_class]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: `${scroll.name} куплен` });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Buy scroll error:', e);
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

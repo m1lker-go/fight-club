@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
-const { generateItemByRarity } = require('../utils/botGenerator'); // импорт из единого источника
+const { generateItemByRarity } = require('../utils/botGenerator');
 const dailyTasks = require('../utils/dailyTasks');
 
 // Добавить предмет в кузницу
@@ -143,7 +143,6 @@ router.post('/craft', async (req, res) => {
 
         await client.query('DELETE FROM inventory WHERE id = ANY($1::int[])', [item_ids]);
 
-        // Используем импортированную функцию из botGenerator
         const newItem = generateItemByRarity(newRarity, chosen_class || null);
         const itemRes = await client.query(
             `INSERT INTO items (name, type, rarity, class_restriction, owner_class,
@@ -169,12 +168,18 @@ router.post('/craft', async (req, res) => {
              newItem.crit_bonus, newItem.crit_dmg_bonus, newItem.agi_bonus, newItem.int_bonus, newItem.vamp_bonus, newItem.reflect_bonus]
         );
 
-        // Обновляем задание "Счастливчик", если получен предмет редкий или выше
+        // Завершаем транзакцию до вызова dailyTasks
+        await client.query('COMMIT');
+
+        // Теперь безопасно обновляем задание "Счастливчик"
         if (['rare', 'epic', 'legendary'].includes(newRarity)) {
-            await dailyTasks.updateChestProgress(userId, newRarity);
+            try {
+                await dailyTasks.updateChestProgress(userId, newRarity);
+            } catch (e) {
+                console.error('[forge/craft] updateChestProgress error:', e);
+            }
         }
 
-        await client.query('COMMIT');
         res.json({ success: true, item: { ...newItem, id: newItemId } });
     } catch (e) {
         await client.query('ROLLBACK');

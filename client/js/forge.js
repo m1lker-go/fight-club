@@ -1,10 +1,21 @@
-// forge.js (финальная исправленная версия с звуками)
+// forge.js (полная версия: свитки, уголь, ресурсная панель, модальное окно)
 
 let currentForgeTab = 'forge';
+let selectedScrollId = null;          // id записи в inventory
+let selectedScrollBonus = 0;
+let scrollsInventory = [];           // список свитков игрока
 
-// Глобальное хранилище ID предметов в текущей вкладке кузницы
 window.forgeItems = [];
 
+// Базовые шансы ковки
+const BASE_CRAFT_CHANCES = {
+    uncommon: 0.95,
+    rare: 0.85,
+    epic: 0.75,
+    legendary: 0.65
+};
+
+// ========== ОСНОВНОЙ РЕНДЕР ==========
 async function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `
@@ -12,6 +23,18 @@ async function renderForge() {
             <div class="forge-banner">
                 <img src="/assets/banner_forge.png" alt="Кузница">
             </div>
+            <!-- РЕСУРСНАЯ ПАНЕЛЬ -->
+            <div id="forgeResources" class="forge-resources">
+                <div id="coalDisplay" style="display: flex; align-items: center; gap: 6px; color: #aaa; font-size: 14px;">
+                    <i class="fas fa-cube" style="color: #888;"></i>
+                    <span id="coalAmount">0</span>
+                </div>
+                <div id="scrollDisplay" style="display: flex; align-items: center; gap: 6px; color: #aaa; font-size: 14px;">
+                    <i class="fas fa-scroll" style="color: #888;"></i>
+                    <span id="scrollAmount">0</span>
+                </div>
+            </div>
+
             <div class="forge-tabs">
                 <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">Ковать</button>
                 <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt">Расплавить</button>
@@ -31,12 +54,13 @@ async function renderForge() {
             const newTab = e.target.dataset.forgeTab;
             if (newTab === currentForgeTab) return;
             currentForgeTab = newTab;
+            selectedScrollId = null;
+            selectedScrollBonus = 0;
             await refreshForgeUI();
             document.querySelectorAll('.forge-tab').forEach(b => {
                 b.classList.toggle('active', b.dataset.forgeTab === currentForgeTab);
             });
-            const actionBtn = document.getElementById('forgeActionBtn');
-            actionBtn.innerText = currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить';
+            document.getElementById('forgeActionBtn').innerText = currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить';
         });
     });
 
@@ -45,10 +69,225 @@ async function renderForge() {
 
 async function refreshForgeUI() {
     await loadCurrentForgeItems();
+    await loadScrolls();
+    updateResourceDisplay();
     renderForgeSlots();
     loadForgeInventory();
     updateForgeActionButton();
 }
+
+// ========== РЕСУРСЫ ==========
+function updateResourceDisplay() {
+    document.getElementById('coalAmount').textContent = userData?.coal || 0;
+    const scrollCount = scrollsInventory.length;
+    document.getElementById('scrollAmount').textContent = scrollCount;
+}
+
+async function loadScrolls() {
+    if (!userData || !userData.id) {
+        scrollsInventory = [];
+        return;
+    }
+    try {
+        const res = await window.apiRequest('/forge/scrolls', { method: 'GET' });
+        if (res.ok) {
+            scrollsInventory = await res.json();
+        } else {
+            scrollsInventory = [];
+        }
+    } catch (e) {
+        console.error('[loadScrolls] error:', e);
+        scrollsInventory = [];
+    }
+}
+
+// ========== СЛОТЫ ==========
+async function renderForgeSlots() {
+    const slotsContainer = document.getElementById('forgeSlots');
+    if (!slotsContainer) return;
+
+    if (currentForgeTab === 'forge') {
+        slotsContainer.innerHTML = '';
+        slotsContainer.style.display = 'flex';
+        slotsContainer.style.alignItems = 'center';
+        slotsContainer.style.gap = '8px';
+
+        // Слот свитка
+        const scrollSlot = document.createElement('div');
+        scrollSlot.className = 'forge-slot scroll-slot';
+        scrollSlot.style.width = '60px';
+        scrollSlot.style.height = '60px';
+        scrollSlot.style.border = '2px solid #aaa';
+        scrollSlot.style.borderRadius = '8px';
+        scrollSlot.style.display = 'flex';
+        scrollSlot.style.flexDirection = 'column';
+        scrollSlot.style.alignItems = 'center';
+        scrollSlot.style.justifyContent = 'center';
+        scrollSlot.style.cursor = 'pointer';
+        scrollSlot.style.background = '#2f3542';
+        scrollSlot.style.color = '#aaa';
+        scrollSlot.style.fontSize = '11px';
+        scrollSlot.style.lineHeight = '1.2';
+
+        const resultRarity = getResultRarity();
+        const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
+        const totalChance = Math.min(1, baseChance + selectedScrollBonus);
+        scrollSlot.innerHTML = selectedScrollId
+            ? `<i class="fas fa-scroll" style="font-size: 20px;"></i><span style="font-size:9px;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>`
+            : `<i class="fas fa-scroll" style="font-size: 20px;"></i><span style="font-size:9px;">ШАНС:<br>${Math.round(baseChance * 100)}%</span>`;
+
+        scrollSlot.addEventListener('click', openScrollModal);
+        slotsContainer.appendChild(scrollSlot);
+
+        // Три слота предметов
+        for (let i = 0; i < 3; i++) {
+            const itemId = window.forgeItems[i];
+            const item = inventory.find(it => it.id === itemId);
+            const slotDiv = document.createElement('div');
+            slotDiv.className = 'forge-slot';
+            slotDiv.dataset.slotIndex = i;
+            slotDiv.dataset.rarity = item ? item.rarity : '';
+            slotDiv.style.width = '60px';
+            slotDiv.style.height = '60px';
+            slotDiv.innerHTML = item
+                ? `<img src="${getItemIconPath(item)}" title="${item.name}" style="max-width:100%;max-height:100%;">`
+                : '<span>Пусто</span>';
+            slotDiv.addEventListener('click', () => {
+                const index = parseInt(slotDiv.dataset.slotIndex);
+                const id = window.forgeItems[index];
+                if (id) {
+                    const it = inventory.find(i => i.id === id);
+                    if (it) showForgeItemDetails(it, 'slot', index);
+                }
+            });
+            slotsContainer.appendChild(slotDiv);
+        }
+    } else {
+        // smelt: 5 слотов
+        let html = '';
+        for (let i = 0; i < 5; i++) {
+            const itemId = window.forgeItems[i];
+            const item = inventory.find(it => it.id === itemId);
+            html += `
+                <div class="forge-slot" data-slot-index="${i}" data-rarity="${item ? item.rarity : ''}">
+                    ${item ? `<img src="${getItemIconPath(item)}" title="${item.name}">` : '<span>Пусто</span>'}
+                </div>`;
+        }
+        slotsContainer.innerHTML = html;
+    }
+}
+
+function getResultRarity() {
+    if (window.forgeItems.length < 3) return null;
+    const items = window.forgeItems.map(id => inventory.find(it => it.id === id));
+    const rarities = items.map(i => i?.rarity).filter(Boolean);
+    if (rarities.length !== 3) return null;
+    const first = rarities[0];
+    if (!rarities.every(r => r === first)) return null;
+    const order = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+    const idx = order.indexOf(first);
+    if (idx === -1 || idx === 4) return null;
+    return order[idx + 1];
+}
+
+// ========== МОДАЛЬНОЕ ОКНО СВИТКОВ ==========
+function openScrollModal() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = 'Выберите свиток';
+    let html = `<div class="scroll-modal-grid" style="display: flex; flex-direction: column; gap: 12px;">`;
+
+    const scrollDefs = [
+        { item_id: 50, rarity: 'rare', name: 'Редкий свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
+        { item_id: 51, rarity: 'epic', name: 'Эпический свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
+        { item_id: 52, rarity: 'legendary', name: 'Легендарный свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
+    ];
+
+    scrollDefs.forEach(def => {
+        const owned = scrollsInventory.filter(s => s.item_id === def.item_id);
+        const count = owned.length;
+        const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
+
+        html += `
+            <div class="mint-card" style="display: flex; flex-direction: column; align-items: center; padding: 12px; background: #232833; border-radius: 12px; border: 1px solid #7f8c8d;">
+                <div style="font-weight: bold; color: white; margin-bottom: 4px;">${def.name}</div>
+                <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
+                <i class="fas fa-scroll" style="font-size: 32px; color: ${def.rarity === 'rare' ? '#2e86de' : def.rarity === 'epic' ? '#9b59b6' : '#f1c40f'}; margin-bottom: 8px;"></i>
+                <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>
+                <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}" style="width:100%; margin-bottom: 4px;">Купить</button>
+                <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}" style="width:100%;">${isActive ? 'АКТИВНО' : 'Добавить'}</button>
+            </div>
+        `;
+    });
+
+    html += `</div>
+        <button id="scrollModalOkBtn" class="btn" style="width: 100%; margin-top: 12px;">ОКЕЙ</button>
+    `;
+    modalBody.innerHTML = html;
+    modal.style.display = 'flex';
+
+    // Обработчики
+    modalBody.querySelectorAll('.add-scroll-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const itemId = parseInt(btn.dataset.itemId);
+            const count = parseInt(btn.dataset.count);
+            if (count <= 0) return;
+
+            const ownedList = scrollsInventory.filter(s => s.item_id === itemId);
+            if (ownedList.length === 0) return;
+
+            const currentInvId = ownedList[0].inv_id;
+
+            if (selectedScrollId === currentInvId) {
+                selectedScrollId = null;
+                selectedScrollBonus = 0;
+            } else {
+                selectedScrollId = currentInvId;
+                const scroll = scrollsInventory.find(s => s.inv_id === currentInvId);
+                selectedScrollBonus = scroll ? scroll.bonus : 0;
+            }
+            // обновить кнопки
+            modalBody.querySelectorAll('.add-scroll-btn').forEach(b => {
+                const bid = parseInt(b.dataset.itemId);
+                const bcount = parseInt(b.dataset.count);
+                const ownList = scrollsInventory.filter(s => s.item_id === bid);
+                if (ownList.length > 0 && selectedScrollId === ownList[0].inv_id) {
+                    b.classList.add('active');
+                    b.textContent = 'АКТИВНО';
+                } else {
+                    b.classList.remove('active');
+                    b.textContent = 'Добавить';
+                }
+            });
+        });
+    });
+
+    modalBody.querySelectorAll('.buy-scroll-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            if (typeof showScreen === 'function') {
+                showScreen('trade');
+                setTimeout(() => {
+                    const coinTab = document.querySelector('.trade-tab[data-tab="coins"]');
+                    if (coinTab) coinTab.click();
+                }, 100);
+            }
+        });
+    });
+
+    document.getElementById('scrollModalOkBtn').addEventListener('click', () => {
+        modal.style.display = 'none';
+        renderForgeSlots();
+        updateForgeActionButton();
+    });
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+}
+
+// ========== ОСТАЛЬНЫЕ ФУНКЦИИ (с оригинала) ==========
 
 async function loadCurrentForgeItems() {
     if (!userData || !userData.id) {
@@ -80,48 +319,7 @@ async function loadCurrentForgeItems() {
     }
 }
 
-function renderForgeSlots() {
-    const slotsContainer = document.getElementById('forgeSlots');
-    if (!slotsContainer) return;
-    const slotCount = currentForgeTab === 'forge' ? 3 : 5;
-    slotsContainer.style.gridTemplateColumns = `repeat(${slotCount}, 70px)`;
-
-    let html = '';
-    for (let i = 0; i < slotCount; i++) {
-        const itemId = window.forgeItems[i];
-        const item = inventory.find(it => it.id === itemId);
-        html += `
-            <div class="forge-slot" data-slot-index="${i}" data-rarity="${item ? item.rarity : ''}">
-                ${item ? `<img src="${getItemIconPath(item)}" title="${item.name}">` : '<span>Пусто</span>'}
-            </div>
-        `;
-    }
-    slotsContainer.innerHTML = html;
-
-    document.querySelectorAll('.forge-slot').forEach(slot => {
-        slot.addEventListener('click', () => {
-            const index = parseInt(slot.dataset.slotIndex);
-            const itemId = window.forgeItems[index];
-            if (itemId) {
-                const item = inventory.find(it => it.id === itemId);
-                if (item) showForgeItemDetails(item, 'slot', index);
-            }
-        });
-    });
-}
-
-function updateForgeActionButton() {
-    const actionBtn = document.getElementById('forgeActionBtn');
-    if (!actionBtn) return;
-    if (currentForgeTab === 'forge') {
-        actionBtn.disabled = !window.forgeItems || window.forgeItems.length !== 3;
-    } else {
-        actionBtn.disabled = !window.forgeItems || window.forgeItems.length === 0;
-    }
-    actionBtn.onclick = performForgeAction;
-}
-
-async function loadForgeInventory() {
+function loadForgeInventory() {
     const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
     renderForgeInventory(availableItems);
 }
@@ -177,6 +375,21 @@ function getRarityColor(rarity) {
     return colors[rarity] || '#aaa';
 }
 
+function buildStatsArray(item) {
+    const stats = [];
+    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+    return stats;
+}
+
 async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
     if (window.forgeItems.length >= slotCount) {
@@ -197,7 +410,6 @@ async function addToForge(item) {
         });
         const data = await res.json();
         if (res.ok) {
-            // Обновляем данные пользователя и перерисовываем кузницу
             await refreshData();
             if (currentScreen === 'forge') {
                 await refreshForgeUI();
@@ -209,21 +421,6 @@ async function addToForge(item) {
         console.error('[addToForge] error:', err);
         showToast('Ошибка соединения', 1500);
     }
-}
-
-function buildStatsArray(item) {
-    const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
-    return stats;
 }
 
 function showForgeItemDetails(item, source, slotIndex = null) {
@@ -278,36 +475,18 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-function showForgeHelp() {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    modalTitle.innerHTML = `<i class="fas fa-hammer"></i> Кузница`;
-    modalBody.innerHTML = `
-        <div style="text-align: left;">
-            <div class="role-card">
-                <h3><i class="fas fa-anvil"></i> Ковка</h3>
-                <div class="skill-desc">Поместите <strong>три предмета одинаковой редкости</strong> в слоты и нажмите «Ковать». Вы получите один предмет следующей редкости (например, три обычных → один необычный).</div>
-                <div class="skill-desc" style="margin-top: 5px;">После нажатия появится окно выбора класса для нового предмета. Характеристики и тип предмета определяются случайно.</div>
-            </div>
-            <div class="role-card">
-                <h3><i class="fas fa-fire"></i> Расплавка</h3>
-                <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Предметы исчезнут, а вы получите монеты и, возможно, алмазы в зависимости от редкости.</div>
-            </div>
-            <div class="role-card">
-                <h3><i class="fas fa-boxes"></i> Инвентарь кузницы</h3>
-                <div class="skill-desc">Внизу отображаются все доступные предметы, которые можно добавить в слоты. Предметы, уже находящиеся в кузнице, здесь не показываются.</div>
-                <div class="skill-desc" style="margin-top: 5px;">Чтобы вернуть предмет из слота обратно в инвентарь, кликните на слот и нажмите «Убрать из слота».</div>
-            </div>
-        </div>
-    `;
-    modal.style.display = 'block';
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target === modal) modal.style.display = 'none';
-    };
+function updateForgeActionButton() {
+    const actionBtn = document.getElementById('forgeActionBtn');
+    if (!actionBtn) return;
+    if (currentForgeTab === 'forge') {
+        actionBtn.disabled = !window.forgeItems || window.forgeItems.length !== 3;
+    } else {
+        actionBtn.disabled = !window.forgeItems || window.forgeItems.length === 0;
+    }
+    actionBtn.onclick = performForgeAction;
 }
+
+// ========== ДЕЙСТВИЯ КОВКИ / ПЛАВКИ ==========
 
 function showClassChoiceForCraft(itemIds) {
     const modal = document.getElementById('roleModal');
@@ -340,26 +519,35 @@ async function performCraft(itemIds, chosenClass) {
     const actionBtn = document.getElementById('forgeActionBtn');
     actionBtn.disabled = true;
     try {
+        const body = {
+            item_ids: itemIds,
+            chosen_class: chosenClass
+        };
+        if (selectedScrollId) body.scroll_id = selectedScrollId;
+
         const res = await window.apiRequest('/forge/craft', {
             method: 'POST',
-            body: JSON.stringify({
-                item_ids: itemIds,
-                chosen_class: chosenClass
-            })
+            body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.success) {
-            // +++ ЗВУК КОВКИ +++
-            if (typeof AudioManager !== 'undefined') {
-                AudioManager.playSound('forge');
-            }
-            showChestResult(data.item);
+            if (typeof AudioManager !== 'undefined') AudioManager.playSound('forge');
+            showToast(data.message || 'Предмет создан!', 2000);
+            selectedScrollId = null;
+            selectedScrollBonus = 0;
             await refreshData();
             if (currentScreen === 'forge') {
                 await refreshForgeUI();
             }
+            if (data.item) showChestResult(data.item);
         } else {
-            showToast('Ошибка: ' + data.error, 1500);
+            showToast(data.message || 'Неудача', 2000);
+            selectedScrollId = null;
+            selectedScrollBonus = 0;
+            await refreshData();
+            if (currentScreen === 'forge') {
+                await refreshForgeUI();
+            }
         }
     } catch (err) {
         console.error('[performCraft] error:', err);
@@ -401,11 +589,11 @@ async function performForgeAction() {
             });
             const data = await res.json();
             if (data.success) {
-                // +++ ЗВУК РАСПЛАВКИ +++
-                if (typeof AudioManager !== 'undefined') {
-                    AudioManager.playSound('forge');
-                }
-                showToast(`Вы получили ${data.coins} монет и ${data.diamonds} алмазов!`, 2000);
+                if (typeof AudioManager !== 'undefined') AudioManager.playSound('forge');
+                let msg = `Вы получили ${data.coins} монет`;
+                if (data.diamonds > 0) msg += `, ${data.diamonds} алмазов`;
+                if (data.coal > 0) msg += ` и ${data.coal} угля`;
+                showToast(msg, 2000);
                 await refreshData();
                 if (currentScreen === 'forge') {
                     await refreshForgeUI();
@@ -420,6 +608,40 @@ async function performForgeAction() {
             actionBtn.disabled = false;
         }
     }
+}
+
+// ========== СПРАВКА ==========
+function showForgeHelp() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerHTML = `<i class="fas fa-hammer"></i> Кузница`;
+    modalBody.innerHTML = `
+        <div style="text-align: left;">
+            <div class="role-card">
+                <h3><i class="fas fa-anvil"></i> Ковка</h3>
+                <div class="skill-desc">Поместите <strong>три предмета одинаковой редкости</strong> в слоты и нажмите «Ковать». Вы получите один предмет следующей редкости (например, три обычных → один необычный).</div>
+                <div class="skill-desc" style="margin-top: 5px;">Стоимость ковки зависит от редкости результата и списывается монетами и углём.</div>
+                <div class="skill-desc" style="margin-top: 5px;">Вы можете добавить свиток, чтобы увеличить шанс успеха (редкий +10%, эпический +20%, легендарный +30%). Шанс успеха без свитка: необычный 95%, редкий 85%, эпический 75%, легендарный 65%.</div>
+                <div class="skill-desc" style="margin-top: 5px;">При неудаче все предметы и свиток теряются.</div>
+            </div>
+            <div class="role-card">
+                <h3><i class="fas fa-fire"></i> Плавка</h3>
+                <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Вы получите монеты, возможно алмазы, а также уголь в зависимости от редкости.</div>
+                <div class="skill-desc" style="margin-top: 5px;">Диапазоны угля: Обычное 1-5, Необычное 10-15, Редкое 25-45, Эпическое 75-150, Легендарное 350-550.</div>
+            </div>
+            <div class="role-card">
+                <h3><i class="fas fa-boxes"></i> Инвентарь</h3>
+                <div class="skill-desc">Внизу отображаются доступные предметы. Нажмите «Добавить», чтобы поместить их в слоты.</div>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'block';
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
 }
 
 window.renderForge = renderForge;

@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { generateItemByRarity } = require('../utils/botGenerator');
-const dailyTasks = require('../utils/dailyTasks'); // добавлено
+const dailyTasks = require('../utils/dailyTasks');
+
+// Единая функция получения московской даты (синхронизирована со сбросом)
+const getMoscowDate = () => dailyTasks.getMoscowDate();
 
 // Шансы выигрыша (сумма 100)
 const prizes = [
@@ -38,7 +41,7 @@ router.get('/status', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         const userId = user.id;
-        const today = new Date().toISOString().split('T')[0];
+        const today = getMoscowDate();   // <-- используем московскую дату
         await client.query(`
             INSERT INTO user_fortune (user_id, free_spins_left, purchased_today, last_reset_date)
             VALUES ($1, 3, 0, $2)
@@ -76,7 +79,7 @@ router.post('/buy-tickets', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
         const userId = user.id;
-        const today = new Date().toISOString().split('T')[0];
+        const today = getMoscowDate();
         // проверяем лимит покупок за день
         const fortuneRes = await client.query(
             'SELECT purchased_today FROM user_fortune WHERE user_id = $1',
@@ -133,7 +136,6 @@ router.post('/spin', async (req, res) => {
         // начисляем награды
         if (prize.type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [prize.amount, userId]);
-            // задание на получение монет? нет отдельного задания
         } else if (prize.type === 'free_spin') {
             await client.query('UPDATE user_fortune SET free_spins_left = free_spins_left + 1 WHERE user_id = $1', [userId]);
         } else if (prize.type === 'legendary_chest') {
@@ -157,18 +159,26 @@ router.post('/spin', async (req, res) => {
             );
         } else if (prize.type === 'coal') {
             await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [prize.amount, userId]);
-            // обновляем задание на получение угля (id 13)
-            await dailyTasks.updateCoalGainProgress(userId, prize.amount);
+            // обновляем задание на получение угля (id 13) – вынесем после COMMIT
         } else if (prize.type === 'exp') {
             // опыт обрабатывается отдельным эндпоинтом /claim-exp, здесь ничего не делаем, только сохраняем prize
-            // Фактически опыт не начисляется сразу, а отправляется клиенту, чтобы он выбрал класс
             responsePrize.expAmount = prize.amount;
         }
 
-        // Обновляем задание "Покрутить рулетку" (id 10)
-        await dailyTasks.updateFortuneSpinProgress(userId);
-
+        // Всё, что связано с обновлением dailyTasks, должно быть после COMMIT !!!
+        // Закрываем транзакцию
         await client.query('COMMIT');
+
+        // Теперь безопасно вызываем обновление заданий
+        try {
+            if (prize.type === 'coal') {
+                await dailyTasks.updateCoalGainProgress(userId, prize.amount);
+            }
+            await dailyTasks.updateFortuneSpinProgress(userId);
+        } catch (e) {
+            console.error('Fortune daily task update error:', e);
+        }
+
         res.json({ success: true, prize: responsePrize });
     } catch (e) {
         await client.query('ROLLBACK');

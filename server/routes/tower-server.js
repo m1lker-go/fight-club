@@ -65,7 +65,6 @@ router.get('/status', async (req, res) => {
         const userId = user.id;
 
         let progress = await getOrCreateProgress(client, userId);
-        // Сброс больше не выполняется – только чтение
         console.log('[STATUS] user ' + userId + ': attempts_today=' + progress.attempts_today + ', attemptsLeft=' + (10 - progress.attempts_today));
 
         res.json({
@@ -129,7 +128,6 @@ router.post('/battle', async (req, res) => {
         const username = user.username || 'Player';
 
         let progress = await getOrCreateProgress(client, userId);
-        // Сброс не выполняется – только проверка лимита
         if (!progress.chosen_class || !progress.chosen_subclass) {
             throw new Error('Class not selected for tower. Please select a class first.');
         }
@@ -146,15 +144,6 @@ router.post('/battle', async (req, res) => {
         const newAttemptsToday = updateRes.rows[0].attempts_today;
         progress.attempts_today = newAttemptsToday;
         console.log('[BATTLE UPDATE] user ' + userId + ': newAttemptsToday=' + newAttemptsToday);
-
-        let towerTaskCompleted = false;
-        if (newAttemptsToday === 3) {
-            await dailyTasks.updateTowerTask(userId);
-            towerTaskCompleted = true;
-            console.log('[BATTLE] Tower task completed after 3 tickets for user ' + userId);
-        } else {
-            await dailyTasks.updateTowerTask(userId);
-        }
 
         const botLevel = getBotLevel(progress.current_floor);
         const enemyType = getFloorEnemyType(progress.current_floor);
@@ -321,8 +310,16 @@ router.post('/battle', async (req, res) => {
             );
         }
 
+        // ===== ВАЖНО: завершаем транзакцию перед вызовом dailyTasks =====
         await client.query('COMMIT');
-        console.log('[BATTLE COMMIT] user ' + userId + ' success, attemptsLeft in response: ' + (10 - newAttemptsToday));
+
+        // Теперь безопасно вызываем обновление задания башни (отдельный коннект)
+        try {
+            await dailyTasks.updateTowerTask(userId);
+            console.log('[BATTLE] Tower task updated for user ' + userId);
+        } catch (e) {
+            console.error('[BATTLE] dailyTasks.updateTowerTask error:', e);
+        }
 
         let responseReward = null;
         if (isVictory) {
@@ -351,7 +348,7 @@ router.post('/battle', async (req, res) => {
             expGain: isVictory ? expGain : 0,
             leveledUp: leveledUp,
             newLevel: newLevel,
-            towerTaskCompleted: towerTaskCompleted
+            towerTaskCompleted: newAttemptsToday === 3   // опционально: задание считается выполненным при 3 попытках
         });
 
     } catch (e) {

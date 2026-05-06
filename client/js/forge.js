@@ -239,7 +239,7 @@ function openScrollModal() {
     { item_id: 1039, rarity: 'legendary', name: 'Легендарный<br>свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
 ];
 
- scrollDefs.forEach(def => {
+scrollDefs.forEach(def => {
     const owned = scrollsInventory.filter(s => s.item_id === def.item_id);
     const count = owned.length;
     const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
@@ -249,7 +249,7 @@ function openScrollModal() {
             <div class="scroll-card-body" style="padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center;">
                 <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; line-height: 1.3;">${def.name}</div>
                 <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
-                <i class="fas fa-scroll" style="font-size: 32px; color: ${def.rarity === 'rare' ? '#2e86de' : def.rarity === 'epic' ? '#9b59b6' : '#f1c40f'}; margin-bottom: 8px;"></i>
+                <img src="/assets/equip/scrolls/scroll_${def.rarity}.png" style="width: 48px; height: 48px; margin-bottom: 8px; object-fit: contain;">
                 <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>
             </div>
             <div class="scroll-card-buttons" style="display: flex; flex-direction: column; width: 100%;">

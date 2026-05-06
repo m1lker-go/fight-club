@@ -4809,3 +4809,35 @@ body {
     background-color: #00aaff !important;
     color: white !important;
 }
+
+/* Модальное окно свитков: убираем анимации, уменьшаем шрифт */
+.scroll-packs .mint-card {
+    transition: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+.scroll-packs .mint-card:hover {
+    background-color: #232833 !important;  /* без изменений */
+    border-color: #7f8c8d !important;
+    transform: none !important;
+}
+.scroll-packs .mint-card .item-name,
+.scroll-packs .mint-card > div:first-child {
+    font-size: 12px !important;   /* уменьшили название */
+    word-break: break-word;
+    line-height: 1.2;
+}
+
+/* Кнопки в карточке свитка: без зазора, серая обводка, скругления только у нижней */
+.scroll-packs .mint-buy-btn {
+    border: 1px solid #7f8c8d !important;   /* светло-серая обводка */
+    margin: 0 !important;
+    width: 100% !important;
+    font-size: 12px;
+}
+.scroll-packs .buy-scroll-btn {
+    border-radius: 0 !important;          /* убираем скругления у "Купить" */
+}
+.scroll-packs .add-scroll-btn {
+    border-radius: 0 0 12px 12px !important; /* скругления только снизу */
+}

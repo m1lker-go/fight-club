@@ -576,73 +576,7 @@ body {
     line-height: 1.4;
 }
 
-/* ========== КУЗНИЦА ========== */
-.smelt-table tr {
-    background-color: #2a303c;
-}
-.smelt-table tr:nth-child(even) {
-    background-color: #232833;
-}
-.smelt-table td, .smelt-table th {
-    border-bottom: 1px solid #1a1f2b;
-}
-.smelt-table .rarity-common td:first-child { color: #aaa; }
-.smelt-table .rarity-uncommon td:first-child { color: #2ecc71; }
-.smelt-table .rarity-rare td:first-child { color: #2e86de; }
-.smelt-table .rarity-epic td:first-child { color: #9b59b6; }
-.smelt-table .rarity-legendary td:first-child { color: #f1c40f; }
 
-.rarity-block {
-    margin-bottom: 8px;
-    padding: 4px 0;
-}
-.rarity-name {
-    font-weight: bold;
-    font-size: 0.9rem;
-    display: inline-block;
-    width: 90px;
-}
-.rarity-block .reward-desc {
-    font-size: 0.8rem;
-    color: #ddd;
-    margin-left: 95px;
-}
-.rarity-common .rarity-name { color: #aaa; }
-.rarity-uncommon .rarity-name { color: #2ecc71; }
-.rarity-rare .rarity-name { color: #2e86de; }
-.rarity-epic .rarity-name { color: #9b59b6; }
-.rarity-legendary .rarity-name { color: #f1c40f; }
-
-.rewards-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.reward-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 0.8rem;
-    padding: 4px 0;
-    border-bottom: 1px solid #3a4050;
-}
-.reward-row span:first-child {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-.reward-value {
-    color: #ddd;
-    text-align: right;
-    font-size: 0.8rem;
-}
-.modal-content {
-    max-height: 85vh;
-    overflow-y: auto;
-}
-.rewards-list .reward-row,
-.rewards-list .reward-value {
-    font-size: 0.8rem !important;
-}
 
 /* ========== ЭКРАН БОЯ ========== */
 .battle-screen {
@@ -4741,30 +4675,42 @@ body {
 
 /* ========== КУЗНИЦА (обновлённые стили) ========== */
 
-/* Ресурсная панель (4 строки) */
-.forge-resources {
-    background: #1a1f2b;
-    border-radius: 12px;
-    padding: 8px 12px;
+/* Обёртка баннера с наложением ресурсов */
+.forge-banner-wrapper {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
     margin-bottom: 8px;
+}
+.forge-banner-wrapper img {
+    width: 100%;
+    display: block;
+}
+.forge-resources-overlay {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: rgba(26, 31, 43, 0.85);
+    border-radius: 8px;
+    padding: 5px 8px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    font-size: 14px;
-    color: #aaa;
+    gap: 4px;
+    z-index: 2;
 }
+
+/* Строки ресурсов на баннере (только иконка и число) */
 .resource-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-size: 13px;
+    color: #aaa;
 }
 .resource-row i {
-    width: 20px;
+    width: 18px;
     text-align: center;
-    margin-right: 0;          /* убираем отступ, заданный общим правилом */
-}
-.resource-label {
-    flex: 1;
+    margin-right: 0;
 }
 .resource-value {
     font-weight: bold;
@@ -4784,9 +4730,14 @@ body {
     font-size: 11px;
     line-height: 1.2;
     color: #aaa;
+    text-align: center;
+}
+.scroll-slot span {
+    display: block;
+    width: 100%;
 }
 
-/* Модальное окно свитков: сетка 3 в ряд */
+/* Модальное окно свитков: сетка 3 в ряд, без анимаций */
 .scroll-packs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4802,42 +4753,40 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-/* Кнопка добавления свитка – активное состояние */
-.add-scroll-btn.active {
-    background-color: #00aaff !important;
-    color: white !important;
-}
-
-/* Модальное окно свитков: убираем анимации, уменьшаем шрифт */
-.scroll-packs .mint-card {
     transition: none !important;
     box-shadow: none !important;
     transform: none !important;
 }
 .scroll-packs .mint-card:hover {
-    background-color: #232833 !important;  /* без изменений */
+    background-color: #232833 !important;
     border-color: #7f8c8d !important;
     transform: none !important;
 }
+
+/* Названия свитков — уменьшенный шрифт */
 .scroll-packs .mint-card .item-name,
 .scroll-packs .mint-card > div:first-child {
-    font-size: 12px !important;   /* уменьшили название */
+    font-size: 12px !important;
     word-break: break-word;
     line-height: 1.2;
 }
 
 /* Кнопки в карточке свитка: без зазора, серая обводка, скругления только у нижней */
 .scroll-packs .mint-buy-btn {
-    border: 1px solid #7f8c8d !important;   /* светло-серая обводка */
+    border: 1px solid #7f8c8d !important;
     margin: 0 !important;
     width: 100% !important;
     font-size: 12px;
 }
 .scroll-packs .buy-scroll-btn {
-    border-radius: 0 !important;          /* убираем скругления у "Купить" */
+    border-radius: 0 !important;
 }
 .scroll-packs .add-scroll-btn {
-    border-radius: 0 0 12px 12px !important; /* скругления только снизу */
+    border-radius: 0 0 12px 12px !important;
+}
+
+/* Активная кнопка "Добавить" */
+.add-scroll-btn.active {
+    background-color: #00aaff !important;
+    color: white !important;
 }

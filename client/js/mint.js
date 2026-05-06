@@ -1,4 +1,4 @@
-// mint.js – Монетный двор (уголь и золото)
+// mint.js – Монетный двор (обновлённый: без заголовков, с свитками)
 
 let freeCoalAvailable = false;
 let coalLimit = { purchasedToday: 0, maxDaily: 1000 };
@@ -79,12 +79,17 @@ async function renderMint(container) {
         { amount: 5000, price: 500, currency: 'diamonds', image: '/assets/gold/buy_gold_6.png' }
     ];
 
-    let html = `
-        <div class="mint-page">
-            <div class="mint-section-title">Уголь за алмазы</div>
-            <div class="mint-grid coal-grid">
-    `;
+    // Свитки (элементы для покупки)
+    const scrollItems = [
+        { id: 1037, name: 'Редкий свиток', rarity: 'rare', price: 500, currency: 'coins', image: '/assets/gold/scroll_rare.png' },
+        { id: 1038, name: 'Эпический свиток', rarity: 'epic', price: 50, currency: 'diamonds', image: '/assets/gold/scroll_epic.png' },
+        { id: 1039, name: 'Легендарный свиток', rarity: 'legendary', price: 150, currency: 'diamonds', image: '/assets/gold/scroll_legendary.png' }
+    ];
 
+    let html = `<div class="mint-page">`;
+
+    // Уголь за алмазы (без заголовка)
+    html += `<div class="mint-grid coal-grid">`;
     coalDiamondItems.forEach(item => {
         const btnDisabled = (!item.free && userData.diamonds < item.price);
         const btnText = item.free ? 'FREE' : `${item.price} <i class="fas fa-gem"></i>`;
@@ -94,18 +99,15 @@ async function renderMint(container) {
                     <img src="${item.image}" alt="уголь ${item.amount}">
                 </div>
                 <div class="mint-card-title">${item.amount} угля</div>
-                <button class="mint-buy-btn" data-type="coal" data-amount="${item.amount}" data-price="${item.price}" data-currency="${item.currency}" data-free="${item.free}" ${btnDisabled ? 'disabled' : ''}>
+                <button class="mint-buy-btn" data-type="coal_diamond" data-amount="${item.amount}" data-price="${item.price}" data-currency="diamonds" data-free="${item.free}" ${btnDisabled ? 'disabled' : ''}>
                     ${btnText}
                 </button>
-            </div>
-        `;
+            </div>`;
     });
-
     html += `</div>`;
 
-    html += `<div class="mint-section-title">Уголь за монеты (лимит ${coalLimit.purchasedToday}/${coalLimit.maxDaily})</div>`;
+    // Уголь за монеты (без заголовка)
     html += `<div class="mint-grid coal-grid">`;
-
     coalCoinItems.forEach(item => {
         const remaining = coalLimit.maxDaily - coalLimit.purchasedToday;
         const canBuy = remaining >= item.amount;
@@ -120,15 +122,12 @@ async function renderMint(container) {
                 <button class="mint-buy-btn" data-type="coal_coins" data-amount="${item.amount}" data-price="${item.price}" data-currency="coins" ${btnDisabled ? 'disabled' : ''}>
                     ${priceLabel}
                 </button>
-            </div>
-        `;
+            </div>`;
     });
-
     html += `</div>`;
 
-    html += `<div class="mint-section-title">Золото за алмазы</div>`;
+    // Золото за алмазы (без заголовка)
     html += `<div class="mint-grid gold-grid">`;
-
     goldItems.forEach(item => {
         const btnDisabled = (userData.diamonds < item.price);
         html += `
@@ -137,16 +136,34 @@ async function renderMint(container) {
                     <img src="${item.image}" alt="золото ${item.amount}">
                 </div>
                 <div class="mint-card-title">${item.amount} монет</div>
-                <button class="mint-buy-btn" data-type="gold" data-amount="${item.amount}" data-price="${item.price}" data-currency="${item.currency}" ${btnDisabled ? 'disabled' : ''}>
+                <button class="mint-buy-btn" data-type="gold" data-amount="${item.amount}" data-price="${item.price}" data-currency="diamonds" ${btnDisabled ? 'disabled' : ''}>
                     ${item.price} <i class="fas fa-gem"></i>
                 </button>
-            </div>
-        `;
+            </div>`;
     });
+    html += `</div>`;
 
-    html += `</div></div>`;
+    // Свитки (новый блок)
+    html += `<div class="mint-grid coal-grid">`;  // используем ту же сетку 3 в ряд
+    scrollItems.forEach(scroll => {
+        const currencySymbol = scroll.currency === 'coins' ? `<i class="fas fa-coins"></i>` : `<i class="fas fa-gem"></i>`;
+        html += `
+            <div class="mint-card">
+                <div class="mint-card-image">
+                    <img src="${scroll.image}" alt="${scroll.name}" style="width:100%; height:auto;">
+                </div>
+                <div class="mint-card-title">${scroll.name}</div>
+                <button class="mint-buy-btn" data-type="scroll" data-scroll-id="${scroll.id}" data-price="${scroll.price}" data-currency="${scroll.currency}" ${(scroll.currency === 'coins' ? userData.coins < scroll.price : userData.diamonds < scroll.price) ? 'disabled' : ''}>
+                    ${scroll.price} ${currencySymbol}
+                </button>
+            </div>`;
+    });
+    html += `</div>`;
+
+    html += `</div>`;
     container.innerHTML = html;
 
+    // Обработчики кнопок
     container.querySelectorAll('.mint-buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const type = btn.dataset.type;
@@ -156,13 +173,10 @@ async function renderMint(container) {
             const isFree = btn.dataset.free === 'true';
             console.log('[mint] button clicked', { type, amount, price, currency, isFree });
 
-            if (isFree) {
-                console.log('[mint] FREE COAL: отправка запроса', { amount });
+            if (type === 'coal_diamond' && isFree) {
+                // Бесплатный уголь
                 try {
-                    const res = await window.apiRequest('/shop/buy-coal', {
-                        method: 'POST',
-                        body: JSON.stringify({ amount, free: true })
-                    });
+                    const res = await window.apiRequest('/shop/buy-coal', { method: 'POST', body: JSON.stringify({ amount, free: true }) });
                     const data = await res.json();
                     if (data.success) {
                         showToast(`+${amount} угля!`, 1500);
@@ -172,27 +186,39 @@ async function renderMint(container) {
                         showToast('Ошибка: ' + data.error, 1500);
                     }
                 } catch (err) {
-                    console.error('[mint] FREE COAL: ошибка запроса', err);
+                    showToast('Ошибка соединения', 1500);
+                }
+            } else if (type === 'coal_diamond') {
+                // Уголь за алмазы
+                if (userData.diamonds < price) { showToast('Недостаточно алмазов!', 1500); return; }
+                try {
+                    const res = await window.apiRequest('/shop/buy-coal', { method: 'POST', body: JSON.stringify({ amount, price, currency }) });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`+${amount} угля!`, 1500);
+                        await refreshData();
+                        updateMintBadge();
+                        renderMint(container);
+                    } else {
+                        showToast('Ошибка: ' + data.error, 1500);
+                    }
+                } catch (err) {
                     showToast('Ошибка соединения', 1500);
                 }
             } else if (type === 'coal_coins') {
-                if (currency === 'coins' && userData.coins < price) {
-                    showToast('Недостаточно монет!', 1500);
-                    return;
-                }
+                if (userData.coins < price) { showToast('Недостаточно монет!', 1500); return; }
                 const remaining = coalLimit.maxDaily - coalLimit.purchasedToday;
                 if (remaining < amount) {
                     showToast(`Дневной лимит покупки угля исчерпан (осталось ${remaining} угля)`, 1500);
                     return;
                 }
                 try {
-                    const res = await window.apiRequest('/shop/buy-coal-coins', {
-                        method: 'POST',
-                        body: JSON.stringify({ amount })
-                    });
+                    const res = await window.apiRequest('/shop/buy-coal-coins', { method: 'POST', body: JSON.stringify({ amount }) });
                     const data = await res.json();
                     if (data.success) {
-                        showToast(`+${amount} угля!`, 1500);
+                        // Показываем модальное окно с лимитом вместо обычного тоста
+                        const newLimit = coalLimit.purchasedToday + amount;
+                        showToast(`<div style="text-align:center;">Вы купили: ${amount} угля<br>Дневной лимит: ${newLimit}/${coalLimit.maxDaily}</div>`, 2000);
                         await refreshData();
                         await loadCoalLimit();
                         renderMint(container);
@@ -201,36 +227,63 @@ async function renderMint(container) {
                         showToast('Ошибка: ' + data.error, 1500);
                     }
                 } catch (err) {
-                    console.error('[mint] COAL COINS: ошибка', err);
                     showToast('Ошибка соединения', 1500);
                 }
-            } else {
-                if (currency === 'diamonds' && userData.diamonds < price) {
-                    showToast('Недостаточно алмазов!', 1500);
-                    return;
-                }
-                const endpoint = type === 'coal' ? '/shop/buy-coal' : '/shop/buy-gold';
+            } else if (type === 'gold') {
+                if (userData.diamonds < price) { showToast('Недостаточно алмазов!', 1500); return; }
                 try {
-                    const res = await window.apiRequest(endpoint, {
-                        method: 'POST',
-                        body: JSON.stringify({ amount, price, currency })
-                    });
+                    const res = await window.apiRequest('/shop/buy-gold', { method: 'POST', body: JSON.stringify({ amount, price, currency }) });
                     const data = await res.json();
                     if (data.success) {
-                        showToast(`+${amount} ${type === 'coal' ? 'угля' : 'монет'}!`, 1500);
+                        showToast(`+${amount} монет!`, 1500);
                         await refreshData();
-                        if (type === 'coal') updateMintBadge();
                         renderMint(container);
                     } else {
                         showToast('Ошибка: ' + data.error, 1500);
                     }
                 } catch (err) {
-                    console.error('[mint] PURCHASE error', err);
                     showToast('Ошибка соединения', 1500);
                 }
+            } else if (type === 'scroll') {
+                // Покупка свитка (пока заглушка – позже добавим серверный эндпоинт)
+                const scrollId = btn.dataset.scrollId;
+                const scrollName = scrollItems.find(s => s.id == scrollId)?.name || 'свиток';
+              showConfirmModal(`Купить "${scrollName}" за ${price} ${currency === 'coins' ? 'монет' : 'алмазов'}?`, async () => {
+                    try {
+                        const res = await window.apiRequest('/shop/buy-scroll', {
+                            method: 'POST',
+                            body: JSON.stringify({ scroll_id: scrollId })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            showToast(`+1 ${scrollName}`, 1500);
+                            await refreshData();
+                            renderMint(container);
+                            if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                        } else {
+                            showToast('Ошибка: ' + data.error, 1500);
+                        }
+                    } catch (err) {
+                        showToast('Ошибка соединения', 1500);
+                    }
+                });
             }
         });
     });
+}
+
+// Функция подтверждения (уже должна быть в проекте, если нет – определим)
+if (typeof showConfirmModal !== 'function') {
+    window.showConfirmModal = function(message, onConfirm) {
+        const modal = document.getElementById('roleModal');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+        title.innerText = 'Подтверждение';
+        body.innerHTML = `<div style="text-align:center;"><p>${message}</p><button class="btn" id="confirmYes">Да</button> <button class="btn" id="confirmNo">Нет</button></div>`;
+        modal.style.display = 'flex';
+        document.getElementById('confirmYes').onclick = () => { modal.style.display = 'none'; onConfirm(); };
+        document.getElementById('confirmNo').onclick = () => { modal.style.display = 'none'; };
+    };
 }
 
 window.renderMint = renderMint;

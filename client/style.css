@@ -4738,3 +4738,47 @@ body {
     transition: none;
     text-align: center;
 }
+
+/* Ресурсная панель кузницы */
+.forge-resources {
+    background: #1a1f2b;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #aaa;
+}
+.forge-resources i {
+    margin-right: 4px;
+}
+
+/* Слот свитка */
+.scroll-slot {
+    background: #2f3542;
+    border: 2px solid #aaa;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.2;
+    color: #aaa;
+}
+
+/* Карточка свитка в модальном окне */
+.scroll-modal-grid .mint-card {
+    background: #232833;
+    border: 1px solid #7f8c8d;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+.add-scroll-btn.active {
+    background-color: #00aaff !important;
+    color: white !important;
+}

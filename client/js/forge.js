@@ -1,9 +1,9 @@
-// forge.js (полная версия: свитки, уголь, ресурсная панель, модальное окно)
+// forge.js (полная обновлённая версия: ресурсная панель, свитки 3 в ряд, кнопка с ценой)
 
 let currentForgeTab = 'forge';
-let selectedScrollId = null;          // id записи в inventory
+let selectedScrollId = null;
 let selectedScrollBonus = 0;
-let scrollsInventory = [];           // список свитков игрока
+let scrollsInventory = [];
 
 window.forgeItems = [];
 
@@ -15,6 +15,14 @@ const BASE_CRAFT_CHANCES = {
     legendary: 0.65
 };
 
+// Стоимость ковки для отображения на кнопке (дублирует серверную CRAFT_COST)
+const CRAFT_COST_CLIENT = {
+    uncommon: { coins: 50, coal: 20 },
+    rare: { coins: 350, coal: 50 },
+    epic: { coins: 1000, coal: 200 },
+    legendary: { coins: 2500, coal: 500 }
+};
+
 // ========== ОСНОВНОЙ РЕНДЕР ==========
 async function renderForge() {
     const content = document.getElementById('content');
@@ -23,17 +31,8 @@ async function renderForge() {
             <div class="forge-banner">
                 <img src="/assets/banner_forge.png" alt="Кузница">
             </div>
-            <!-- РЕСУРСНАЯ ПАНЕЛЬ -->
-            <div id="forgeResources" class="forge-resources">
-                <div id="coalDisplay" style="display: flex; align-items: center; gap: 6px; color: #aaa; font-size: 14px;">
-                    <i class="fas fa-cube" style="color: #888;"></i>
-                    <span id="coalAmount">0</span>
-                </div>
-                <div id="scrollDisplay" style="display: flex; align-items: center; gap: 6px; color: #aaa; font-size: 14px;">
-                    <i class="fas fa-scroll" style="color: #888;"></i>
-                    <span id="scrollAmount">0</span>
-                </div>
-            </div>
+            <!-- РЕСУРСНАЯ ПАНЕЛЬ (4 строки) -->
+            <div id="forgeResources" class="forge-resources"></div>
 
             <div class="forge-tabs">
                 <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">Ковать</button>
@@ -70,19 +69,46 @@ async function renderForge() {
 async function refreshForgeUI() {
     await loadCurrentForgeItems();
     await loadScrolls();
-    updateResourceDisplay();
+    renderResourcePanel();            // <-- обновлённая ресурсная панель
     renderForgeSlots();
     loadForgeInventory();
     updateForgeActionButton();
 }
 
-// ========== РЕСУРСЫ ==========
-function updateResourceDisplay() {
-    document.getElementById('coalAmount').textContent = userData?.coal || 0;
-    const scrollCount = scrollsInventory.length;
-    document.getElementById('scrollAmount').textContent = scrollCount;
+// ========== РЕСУРСНАЯ ПАНЕЛЬ (4 строки) ==========
+function renderResourcePanel() {
+    const panel = document.getElementById('forgeResources');
+    if (!panel) return;
+    const coal = userData?.coal || 0;
+    const rareScrolls = scrollsInventory.filter(s => s.rarity === 'rare').length;
+    const epicScrolls = scrollsInventory.filter(s => s.rarity === 'epic').length;
+    const legendScrolls = scrollsInventory.filter(s => s.rarity === 'legendary').length;
+
+    panel.innerHTML = `
+        <div class="resource-row">
+            <i class="fas fa-cube" style="color: #888;"></i>
+            <span class="resource-label">Уголь</span>
+            <span class="resource-value">${coal}</span>
+        </div>
+        <div class="resource-row">
+            <i class="fas fa-scroll" style="color: #2e86de;"></i>
+            <span class="resource-label">Редкий свиток</span>
+            <span class="resource-value">${rareScrolls}</span>
+        </div>
+        <div class="resource-row">
+            <i class="fas fa-scroll" style="color: #9b59b6;"></i>
+            <span class="resource-label">Эпический свиток</span>
+            <span class="resource-value">${epicScrolls}</span>
+        </div>
+        <div class="resource-row">
+            <i class="fas fa-scroll" style="color: #f1c40f;"></i>
+            <span class="resource-label">Легендарный свиток</span>
+            <span class="resource-value">${legendScrolls}</span>
+        </div>
+    `;
 }
 
+// Загрузка свитков с сервера
 async function loadScrolls() {
     if (!userData || !userData.id) {
         scrollsInventory = [];
@@ -190,14 +216,14 @@ function getResultRarity() {
     return order[idx + 1];
 }
 
-// ========== МОДАЛЬНОЕ ОКНО СВИТКОВ ==========
+// ========== МОДАЛЬНОЕ ОКНО СВИТКОВ (3 в ряд) ==========
 function openScrollModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
     modalTitle.innerText = 'Выберите свиток';
-    let html = `<div class="scroll-modal-grid" style="display: flex; flex-direction: column; gap: 12px;">`;
+    let html = `<div class="packs-grid-new scroll-packs">`;
 
     const scrollDefs = [
         { item_id: 1037, rarity: 'rare', name: 'Редкий свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
@@ -211,7 +237,7 @@ function openScrollModal() {
         const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
 
         html += `
-            <div class="mint-card" style="display: flex; flex-direction: column; align-items: center; padding: 12px; background: #232833; border-radius: 12px; border: 1px solid #7f8c8d;">
+            <div class="mint-card" style="display: flex; flex-direction: column; align-items: center; padding: 12px; background: #232833; border-radius: 12px; border: 1px solid #7f8c8d; text-align: center;">
                 <div style="font-weight: bold; color: white; margin-bottom: 4px;">${def.name}</div>
                 <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
                 <i class="fas fa-scroll" style="font-size: 32px; color: ${def.rarity === 'rare' ? '#2e86de' : def.rarity === 'epic' ? '#9b59b6' : '#f1c40f'}; margin-bottom: 8px;"></i>
@@ -228,7 +254,7 @@ function openScrollModal() {
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Обработчики
+    // Обработчики кнопок
     modalBody.querySelectorAll('.add-scroll-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const itemId = parseInt(btn.dataset.itemId);
@@ -287,8 +313,33 @@ function openScrollModal() {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-// ========== ОСТАЛЬНЫЕ ФУНКЦИИ (с оригинала) ==========
+// ========== КНОПКА КОВКИ С ЦЕНОЙ ==========
+function getCraftCost() {
+    const rarity = getResultRarity();
+    if (!rarity) return null;
+    return CRAFT_COST_CLIENT[rarity] || null;
+}
 
+function updateForgeActionButton() {
+    const actionBtn = document.getElementById('forgeActionBtn');
+    if (!actionBtn) return;
+    if (currentForgeTab === 'forge') {
+        if (window.forgeItems && window.forgeItems.length === 3 && getResultRarity()) {
+            const cost = getCraftCost();
+            actionBtn.innerHTML = `Ковать ${cost.coins} <i class="fas fa-coins"></i> ${cost.coal} <i class="fas fa-cube"></i>`;
+            actionBtn.disabled = false;
+        } else {
+            actionBtn.innerText = 'Ковать';
+            actionBtn.disabled = true;
+        }
+    } else {
+        actionBtn.disabled = !window.forgeItems || window.forgeItems.length === 0;
+        actionBtn.innerText = 'Расплавить';
+    }
+    actionBtn.onclick = performForgeAction;
+}
+
+// ========== ЗАГРУЗКА ИНВЕНТАРЯ ==========
 async function loadCurrentForgeItems() {
     if (!userData || !userData.id) {
         window.forgeItems = [];
@@ -364,6 +415,7 @@ function renderForgeInventory(items) {
     }
 }
 
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 function getRarityColor(rarity) {
     const colors = {
         common: '#aaa',
@@ -390,6 +442,7 @@ function buildStatsArray(item) {
     return stats;
 }
 
+// ========== ДОБАВЛЕНИЕ / УДАЛЕНИЕ ИЗ СЛОТОВ ==========
 async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
     if (window.forgeItems.length >= slotCount) {
@@ -475,18 +528,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     closeBtn.onclick = () => modal.style.display = 'none';
 }
 
-function updateForgeActionButton() {
-    const actionBtn = document.getElementById('forgeActionBtn');
-    if (!actionBtn) return;
-    if (currentForgeTab === 'forge') {
-        actionBtn.disabled = !window.forgeItems || window.forgeItems.length !== 3;
-    } else {
-        actionBtn.disabled = !window.forgeItems || window.forgeItems.length === 0;
-    }
-    actionBtn.onclick = performForgeAction;
-}
-
-// ========== ДЕЙСТВИЯ КОВКИ / ПЛАВКИ ==========
+// ========== ДЕЙСТВИЯ КОВКИ И ПЛАВКИ ==========
 
 function showClassChoiceForCraft(itemIds) {
     const modal = document.getElementById('roleModal');

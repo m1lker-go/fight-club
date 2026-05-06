@@ -133,34 +133,45 @@ async function renderForgeSlots() {
         slotsContainer.style.alignItems = 'center';
         slotsContainer.style.gap = '8px';
 
-        // Слот свитка
-        const scrollSlot = document.createElement('div');
-        scrollSlot.className = 'forge-slot scroll-slot';
-        scrollSlot.style.width = '60px';
-        scrollSlot.style.height = '60px';
-        scrollSlot.style.border = '2px solid #aaa';
-        scrollSlot.style.borderRadius = '8px';
-        scrollSlot.style.display = 'flex';
-        scrollSlot.style.flexDirection = 'column';
-        scrollSlot.style.alignItems = 'center';
-        scrollSlot.style.justifyContent = 'center';
-        scrollSlot.style.cursor = 'pointer';
-        scrollSlot.style.background = '#2f3542';
-        scrollSlot.style.color = '#aaa';
-        scrollSlot.style.fontSize = '11px';
-        scrollSlot.style.lineHeight = '1.2';
+       // Слот свитка
+const scrollSlot = document.createElement('div');
+scrollSlot.className = 'forge-slot scroll-slot';
+scrollSlot.style.width = '60px';
+scrollSlot.style.height = '60px';
+scrollSlot.style.border = '2px solid #aaa';
+scrollSlot.style.borderRadius = '8px';
+scrollSlot.style.display = 'flex';
+scrollSlot.style.flexDirection = 'column';
+scrollSlot.style.alignItems = 'center';
+scrollSlot.style.justifyContent = 'center';
+scrollSlot.style.cursor = 'pointer';
+scrollSlot.style.background = '#2f3542';
+scrollSlot.style.color = '#aaa';
+scrollSlot.style.fontSize = '11px';
+scrollSlot.style.lineHeight = '1.2';
 
-        const resultRarity = getResultRarity();
-        const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
-        const totalChance = Math.min(1, baseChance + selectedScrollBonus);
-       scrollSlot.innerHTML = selectedScrollId
-    ? `<i class="fas fa-scroll" style="font-size: 20px; margin-bottom: 2px;"></i>
-       <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>`
-    : `<i class="fas fa-scroll" style="font-size: 20px; margin-bottom: 2px;"></i>
-       <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(baseChance * 100)}%</span>`;
+// Определяем, какую картинку показывать
+let scrollImg = '/assets/equip/scrolls/scroll_empty.png';
+if (selectedScrollId) {
+    const selectedScroll = scrollsInventory.find(s => s.inv_id === selectedScrollId);
+    if (selectedScroll) {
+        if (selectedScroll.rarity === 'rare') scrollImg = '/assets/equip/scrolls/scroll_rare.png';
+        else if (selectedScroll.rarity === 'epic') scrollImg = '/assets/equip/scrolls/scroll_epic.png';
+        else if (selectedScroll.rarity === 'legendary') scrollImg = '/assets/equip/scrolls/scroll_legendary.png';
+    }
+}
 
-        scrollSlot.addEventListener('click', openScrollModal);
-        slotsContainer.appendChild(scrollSlot);
+const resultRarity = getResultRarity();
+const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
+const totalChance = Math.min(1, baseChance + selectedScrollBonus);
+
+scrollSlot.innerHTML = `
+    <img src="${scrollImg}" style="width: 28px; height: 28px; margin-bottom: 2px;">
+    <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>
+`;
+
+scrollSlot.addEventListener('click', openScrollModal);
+slotsContainer.appendChild(scrollSlot);
 
         // Три слота предметов
         for (let i = 0; i < 3; i++) {
@@ -372,7 +383,7 @@ async function loadCurrentForgeItems() {
 }
 
 function loadForgeInventory() {
-   const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge && item.type !== 'scroll');
+    const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge && item.type !== 'scroll');
     renderForgeInventory(availableItems);
 }
 

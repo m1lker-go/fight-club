@@ -79,11 +79,11 @@ async function renderMint(container) {
         { amount: 5000, price: 500, currency: 'diamonds', image: '/assets/gold/buy_gold_6.png' }
     ];
 
-    // Свитки (элементы для покупки)
+    // Свитки – пути исправлены на /assets/equip/scrolls/, названия в 2 строки
     const scrollItems = [
-        { id: 1037, name: 'Редкий свиток', rarity: 'rare', price: 500, currency: 'coins', image: '/assets/gold/scroll_rare.png' },
-        { id: 1038, name: 'Эпический свиток', rarity: 'epic', price: 50, currency: 'diamonds', image: '/assets/gold/scroll_epic.png' },
-        { id: 1039, name: 'Легендарный свиток', rarity: 'legendary', price: 150, currency: 'diamonds', image: '/assets/gold/scroll_legendary.png' }
+        { id: 1037, name: 'Редкий<br>Свиток', rarity: 'rare', price: 500, currency: 'coins', image: '/assets/equip/scrolls/scroll_rare.png' },
+        { id: 1038, name: 'Эпический<br>Свиток', rarity: 'epic', price: 50, currency: 'diamonds', image: '/assets/equip/scrolls/scroll_epic.png' },
+        { id: 1039, name: 'Легендарный<br>Свиток', rarity: 'legendary', price: 150, currency: 'diamonds', image: '/assets/equip/scrolls/scroll_legendary.png' }
     ];
 
     let html = `<div class="mint-page">`;
@@ -143,8 +143,8 @@ async function renderMint(container) {
     });
     html += `</div>`;
 
-    // Свитки (новый блок)
-    html += `<div class="mint-grid coal-grid">`;  // используем ту же сетку 3 в ряд
+    // Свитки (используем ту же сетку)
+    html += `<div class="mint-grid coal-grid">`;
     scrollItems.forEach(scroll => {
         const currencySymbol = scroll.currency === 'coins' ? `<i class="fas fa-coins"></i>` : `<i class="fas fa-gem"></i>`;
         html += `
@@ -152,7 +152,7 @@ async function renderMint(container) {
                 <div class="mint-card-image">
                     <img src="${scroll.image}" alt="${scroll.name}" style="width:100%; height:auto;">
                 </div>
-                <div class="mint-card-title">${scroll.name}</div>
+                <div class="mint-card-title" style="text-align: center; line-height: 1.3;">${scroll.name}</div>
                 <button class="mint-buy-btn" data-type="scroll" data-scroll-id="${scroll.id}" data-price="${scroll.price}" data-currency="${scroll.currency}" ${(scroll.currency === 'coins' ? userData.coins < scroll.price : userData.diamonds < scroll.price) ? 'disabled' : ''}>
                     ${scroll.price} ${currencySymbol}
                 </button>
@@ -174,7 +174,6 @@ async function renderMint(container) {
             console.log('[mint] button clicked', { type, amount, price, currency, isFree });
 
             if (type === 'coal_diamond' && isFree) {
-                // Бесплатный уголь
                 try {
                     const res = await window.apiRequest('/shop/buy-coal', { method: 'POST', body: JSON.stringify({ amount, free: true }) });
                     const data = await res.json();
@@ -189,7 +188,6 @@ async function renderMint(container) {
                     showToast('Ошибка соединения', 1500);
                 }
             } else if (type === 'coal_diamond') {
-                // Уголь за алмазы
                 if (userData.diamonds < price) { showToast('Недостаточно алмазов!', 1500); return; }
                 try {
                     const res = await window.apiRequest('/shop/buy-coal', { method: 'POST', body: JSON.stringify({ amount, price, currency }) });
@@ -216,7 +214,6 @@ async function renderMint(container) {
                     const res = await window.apiRequest('/shop/buy-coal-coins', { method: 'POST', body: JSON.stringify({ amount }) });
                     const data = await res.json();
                     if (data.success) {
-                        // Показываем модальное окно с лимитом вместо обычного тоста
                         const newLimit = coalLimit.purchasedToday + amount;
                         showToast(`<div style="text-align:center;">Вы купили: ${amount} угля<br>Дневной лимит: ${newLimit}/${coalLimit.maxDaily}</div>`, 2000);
                         await refreshData();
@@ -245,10 +242,9 @@ async function renderMint(container) {
                     showToast('Ошибка соединения', 1500);
                 }
             } else if (type === 'scroll') {
-                // Покупка свитка (пока заглушка – позже добавим серверный эндпоинт)
                 const scrollId = btn.dataset.scrollId;
-                const scrollName = scrollItems.find(s => s.id == scrollId)?.name || 'свиток';
-              showConfirmModal(`Купить "${scrollName}" за ${price} ${currency === 'coins' ? 'монет' : 'алмазов'}?`, async () => {
+                const scrollName = scrollItems.find(s => s.id == scrollId)?.name.replace('<br>', ' ') || 'свиток';
+                showConfirmModal(`Купить "${scrollName}" за ${price} ${currency === 'coins' ? 'монет' : 'алмазов'}?`, async () => {
                     try {
                         const res = await window.apiRequest('/shop/buy-scroll', {
                             method: 'POST',

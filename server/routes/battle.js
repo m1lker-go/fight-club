@@ -1256,7 +1256,7 @@ router.post('/start', async (req, res) => {
             }
         }
 
-        // Обновление прогресса угольного задания
+              // Обновление прогресса угольного задания
         if (coalGain > 0) {
             try {
                 await dailyTasks.updateCoalGainProgress(user.id, coalGain);
@@ -1264,6 +1264,23 @@ router.post('/start', async (req, res) => {
                 console.error('updateCoalGainProgress error:', e);
             }
         }
+
+        // ===== ДОБАВЛЕНО: Шанс выпадения редкого свитка 5% при победе =====
+        let scrollGain = false;
+        if (isVictory && Math.random() < 0.05) {
+            try {
+                await client.query(
+                    `INSERT INTO inventory (user_id, item_id, equipped, in_forge, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
+                     VALUES ($1, $2, false, false, $3, $4, $5, 'any', $6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)`,
+                    [user.id, 1037, 'Редкий свиток', 'scroll', 'rare', 'warrior']
+                );
+                scrollGain = true;
+                console.log(`[BATTLE] User ${user.id} получил редкий свиток`);
+            } catch (e) {
+                console.error('Ошибка выдачи свитка:', e);
+            }
+        }
+        // ================================================================
 
         // Получаем актуальную энергию
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
@@ -1294,7 +1311,8 @@ router.post('/start', async (req, res) => {
             },
             ratingChange,
             newEnergy,
-            coalGain
+            coalGain,
+            scrollGain   // <-- новое поле
         });
     } catch (e) {
         await client.query('ROLLBACK');

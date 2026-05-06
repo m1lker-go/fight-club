@@ -28,11 +28,10 @@ async function renderForge() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="forge-container">
-            <div class="forge-banner">
+            <div class="forge-banner-wrapper">
                 <img src="/assets/banner_forge.png" alt="Кузница">
+                <div id="forgeResources" class="forge-resources-overlay"></div>
             </div>
-            <!-- РЕСУРСНАЯ ПАНЕЛЬ (4 строки) -->
-            <div id="forgeResources" class="forge-resources"></div>
 
             <div class="forge-tabs">
                 <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">Ковать</button>
@@ -80,30 +79,26 @@ function renderResourcePanel() {
     const panel = document.getElementById('forgeResources');
     if (!panel) return;
     const coal = userData?.coal || 0;
-    const rareScrolls = scrollsInventory.filter(s => s.rarity === 'rare').length;
-    const epicScrolls = scrollsInventory.filter(s => s.rarity === 'epic').length;
-    const legendScrolls = scrollsInventory.filter(s => s.rarity === 'legendary').length;
+    const rare = scrollsInventory.filter(s => s.rarity === 'rare').length;
+    const epic = scrollsInventory.filter(s => s.rarity === 'epic').length;
+    const legend = scrollsInventory.filter(s => s.rarity === 'legendary').length;
 
     panel.innerHTML = `
         <div class="resource-row">
             <i class="fas fa-cube" style="color: #888;"></i>
-            <span class="resource-label">Уголь</span>
             <span class="resource-value">${coal}</span>
         </div>
         <div class="resource-row">
             <i class="fas fa-scroll" style="color: #2e86de;"></i>
-            <span class="resource-label">Редкий свиток</span>
-            <span class="resource-value">${rareScrolls}</span>
+            <span class="resource-value">${rare}</span>
         </div>
         <div class="resource-row">
             <i class="fas fa-scroll" style="color: #9b59b6;"></i>
-            <span class="resource-label">Эпический свиток</span>
-            <span class="resource-value">${epicScrolls}</span>
+            <span class="resource-value">${epic}</span>
         </div>
         <div class="resource-row">
             <i class="fas fa-scroll" style="color: #f1c40f;"></i>
-            <span class="resource-label">Легендарный свиток</span>
-            <span class="resource-value">${legendScrolls}</span>
+            <span class="resource-value">${legend}</span>
         </div>
     `;
 }
@@ -158,9 +153,11 @@ async function renderForgeSlots() {
         const resultRarity = getResultRarity();
         const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
         const totalChance = Math.min(1, baseChance + selectedScrollBonus);
-        scrollSlot.innerHTML = selectedScrollId
-            ? `<i class="fas fa-scroll" style="font-size: 20px;"></i><span style="font-size:9px;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>`
-            : `<i class="fas fa-scroll" style="font-size: 20px;"></i><span style="font-size:9px;">ШАНС:<br>${Math.round(baseChance * 100)}%</span>`;
+       scrollSlot.innerHTML = selectedScrollId
+    ? `<i class="fas fa-scroll" style="font-size: 20px; margin-bottom: 2px;"></i>
+       <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>`
+    : `<i class="fas fa-scroll" style="font-size: 20px; margin-bottom: 2px;"></i>
+       <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(baseChance * 100)}%</span>`;
 
         scrollSlot.addEventListener('click', openScrollModal);
         slotsContainer.appendChild(scrollSlot);

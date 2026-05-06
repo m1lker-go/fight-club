@@ -4848,3 +4848,8 @@ body {
 .rewards-list .reward-value {
     font-size: 0.8rem !important;
 }
+
+.scroll-card-body img {
+    display: block;
+    max-width: 100%;
+}

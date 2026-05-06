@@ -372,7 +372,7 @@ async function loadCurrentForgeItems() {
 }
 
 function loadForgeInventory() {
-    const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge);
+   const availableItems = inventory.filter(item => !item.equipped && !item.for_sale && !item.in_forge && item.type !== 'scroll');
     renderForgeInventory(availableItems);
 }
 

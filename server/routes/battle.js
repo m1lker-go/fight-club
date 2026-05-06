@@ -1212,9 +1212,12 @@ router.post('/start', async (req, res) => {
             await updatePlayerPower(client, user.id, user.current_class);
         }
 
-        // Уголь (начисление внутри транзакции)
+                // Уголь (начисление внутри транзакции) – новые шансы
         const r = Math.random();
-        let coalGain = (r >= 0.7 && r < 0.9) ? 1 : (r >= 0.9) ? 2 : 0;
+        let coalGain = 0;
+        if (r >= 0.5 && r < 0.85) coalGain = 1;      // 35%
+        else if (r >= 0.85) coalGain = 2;              // 15%
+        // иначе 0 (50%)
         if (coalGain > 0) {
             await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, user.id]);
         }

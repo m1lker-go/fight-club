@@ -235,7 +235,7 @@ function openScrollModal() {
 
         html += `
             <div class="mint-card" style="display: flex; flex-direction: column; align-items: center; padding: 12px; background: #232833; border-radius: 12px; border: 1px solid #7f8c8d; text-align: center;">
-                <div style="font-weight: bold; color: white; margin-bottom: 4px;">${def.name}</div>
+                <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; white-space: nowrap;">${def.name}</div>
                 <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
                 <i class="fas fa-scroll" style="font-size: 32px; color: ${def.rarity === 'rare' ? '#2e86de' : def.rarity === 'epic' ? '#9b59b6' : '#f1c40f'}; margin-bottom: 8px;"></i>
                 <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>

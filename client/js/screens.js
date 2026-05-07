@@ -297,8 +297,7 @@ function renderEquip() {
             item.owner_class === className && 
             (!item.class_restriction || item.class_restriction === 'any' || item.class_restriction === className)
         );
-        const unequipped = classItems.filter(item => !item.equipped && !item.in_forge);
-
+        const unequipped = classItems.filter(item => !item.equipped && !item.in_forge && item.type !== 'scroll');
         let itemsHtml = '';
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;

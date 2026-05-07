@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const cron = require('node-cron');           // добавлено
+const cron = require('node-cron');
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
 const { sendTelegramNotification } = require('./utils/telegram');
-const { resetDailyTasks, resetSeason } = require('./utils/scheduler'); // добавлено
+const { resetDailyTasks, resetSeason } = require('./utils/scheduler');
 require('dotenv').config();
 
 console.log('Starting server...');
@@ -22,12 +22,10 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Разрешаем запросы без origin (серверные, curl и т.д.)
         if (!origin) return callback(null, true);
         if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            // Важно: никакого new Error, просто false
             callback(null, false);
         }
     },
@@ -36,7 +34,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Дополнительно – гарантированно обрабатываем preflight
 app.options('*', cors());
 app.use(express.json());
 app.use(express.static('client'));
@@ -330,7 +327,42 @@ async function startServer() {
         // ========== ПЛАНИРОВЩИК CRON ==========
         cron.schedule('0 0 * * *', resetDailyTasks, { timezone: 'Europe/Moscow' });
         cron.schedule('0 0 1 * *', resetSeason, { timezone: 'Europe/Moscow' });
-        console.log('✅ Планировщик cron запущен (ежедневный сброс в 00:00, ежемесячный 1-го числа)');
+
+        // Новая задача: каждый день в 10:00 проверяем истекшие подписки и отправляем уведомления
+        cron.schedule('0 10 * * *', async () => {
+            console.log('[CRON] Checking expired subscriptions...');
+            const client = await pool.connect();
+            try {
+                const expiredUsers = await client.query(`
+                    SELECT id FROM users
+                    WHERE subscription_expiry < CURRENT_DATE
+                      AND subscription_expiry IS NOT NULL
+                      AND subscription_expiry_notified = FALSE
+                `);
+                for (const user of expiredUsers.rows) {
+                    await client.query(
+                        `INSERT INTO user_messages (user_id, subject, body)
+                         VALUES ($1, $2, $3)`,
+                        [
+                            user.id,
+                            '⏰ VIP Silver подписка завершена',
+                            'К сожалению, Ваша ежемесячная подписка "VIP-SILVER" закончилась.\nАктивируйте подписку вновь в Алмазной лавке.'
+                        ]
+                    );
+                    await client.query(
+                        `UPDATE users SET subscription_expiry_notified = TRUE WHERE id = $1`,
+                        [user.id]
+                    );
+                    console.log(`Expiration notification sent to user ${user.id}`);
+                }
+            } catch (err) {
+                console.error('Error in subscription expiry cron:', err);
+            } finally {
+                client.release();
+            }
+        }, { timezone: 'Europe/Moscow' });
+
+        console.log('✅ Планировщик cron запущен (ежедневный сброс в 00:00, ежемесячный 1-го числа, проверка подписок в 10:00)');
     } catch (err) {
         console.error('❌ Ошибка при запуске сервера:', err);
         process.exit(1);

@@ -61,7 +61,8 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
         let availableDay = null;
-        if (nextDay <= currentDay && (!lastClaimDate || lastClaimDate !== todayStr)) {
+        const lastMsk = lastClaimDate ? dailyTasks.getMoscowDate(lastClaimDate) : null;
+if (nextDay <= currentDay && (!lastMsk || lastMsk !== todayStr)) {
             availableDay = nextDay;
         }
         res.json({ currentDay, daysInMonth, nextAvailable: availableDay, lastClaimed, lastClaimDate });

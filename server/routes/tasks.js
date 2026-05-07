@@ -216,16 +216,17 @@ router.post('/daily/claim', async (req, res) => {
         const task = taskRes.rows[0];
         let progressObj = dailyTasks.parseProgress(user.daily_tasks_progress);
         let isCompleted = false;
-        if (task_id == 9) {
-            const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
-            let allCompleted = true;
-            for (let other of otherTasks.rows) {
-                if (!(user.daily_tasks_mask & (1 << (other.id - 1)))) {
-                    allCompleted = false;
-                    break;
-                }
-            }
-            isCompleted = allCompleted;
+     if (task_id == 9) {
+    // Проверяем, что выполнено не менее 10 заданий (кроме самого 9-го)
+    const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
+    let countCompleted = 0;
+    for (let other of otherTasks.rows) {
+        if (user.daily_tasks_mask & (1 << (other.id - 1))) {
+            countCompleted++;
+        }
+    }
+    isCompleted = countCompleted >= 10;
+}
         } else if ([1,2,3].includes(task.id)) {
             const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
             const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;

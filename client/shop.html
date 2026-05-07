@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Дополнительные стили, специфичные для магазина */
         .shop-page {
             background-color: #1a1f2b;
             min-height: 100vh;
@@ -120,14 +119,6 @@
             transform: translateY(-3px);
             box-shadow: 0 6px 12px rgba(0,170,255,0.2);
         }
-        /* Цветные рамки для разных пакетов (опционально) */
-        .pack-card[data-pack="20"] { border-top: 3px solid #aaa; }
-        .pack-card[data-pack="50"] { border-top: 3px solid #2ecc71; }
-        .pack-card[data-pack="100"] { border-top: 3px solid #2e86de; }
-        .pack-card[data-pack="500"] { border-top: 3px solid #9b59b6; }
-        .pack-card[data-pack="2000"] { border-top: 3px solid #f1c40f; }
-        .pack-card[data-pack="5000"] { border-top: 3px solid #e67e22; }
-
         .pack-icon {
             font-size: 42px;
             margin-bottom: 8px;
@@ -166,12 +157,10 @@
 </head>
 <body style="background-color: #1a1f2b; margin:0; padding:0;">
 <div class="shop-page">
-    <!-- Кнопка назад -->
     <div class="back-btn" onclick="history.back()">
         <i class="fas fa-arrow-left"></i> <span>Назад</span>
     </div>
 
-    <!-- Подписка -->
     <div class="subscription-card">
         <div class="subscription-title">VIP-Silver</div>
         <div class="subscription-price">599 ₽ <small>/ 30 дней</small></div>
@@ -185,45 +174,50 @@
         <button class="shop-btn" id="subscribeBtn">Оформить подписку</button>
     </div>
 
-    <!-- Алмазы -->
     <div class="section-title">
         <i class="fas fa-gem"></i> Алмазы
     </div>
     <div class="packs-grid">
-        <div class="pack-card" data-pack="20" data-price="149">
-            <div class="pack-icon"><i class="fas fa-gem"></i></div>
-            <div class="pack-diamonds">20 алмазов</div>
-            <div class="pack-price">149 ₽</div>
-            <div class="first-bonus">+50% при первой покупке</div>
-        </div>
-        <div class="pack-card" data-pack="50" data-price="229">
+        <!-- Пакет 50 алмазов (тестовая цена 1 ₽) -->
+        <div class="pack-card" data-pack="50" data-price="1">
             <div class="pack-icon"><i class="fas fa-gem"></i></div>
             <div class="pack-diamonds">50 алмазов</div>
-            <div class="pack-price">229 ₽</div>
+            <div class="pack-price">1 ₽</div>
             <div class="first-bonus">+50% при первой покупке</div>
         </div>
-        <div class="pack-card" data-pack="100" data-price="399">
+        <!-- Пакет 200 алмазов -->
+        <div class="pack-card" data-pack="200" data-price="399">
             <div class="pack-icon"><i class="fas fa-gem"></i></div>
-            <div class="pack-diamonds">100 алмазов</div>
+            <div class="pack-diamonds">200 алмазов</div>
             <div class="pack-price">399 ₽</div>
             <div class="first-bonus">+50% при первой покупке</div>
         </div>
-        <div class="pack-card" data-pack="500" data-price="1199">
+        <!-- Пакет 500 алмазов -->
+        <div class="pack-card" data-pack="500" data-price="899">
             <div class="pack-icon"><i class="fas fa-gem"></i></div>
             <div class="pack-diamonds">500 алмазов</div>
-            <div class="pack-price">1199 ₽</div>
+            <div class="pack-price">899 ₽</div>
             <div class="first-bonus">+50% при первой покупке</div>
         </div>
-        <div class="pack-card" data-pack="2000" data-price="2999">
+        <!-- Пакет 1000 алмазов -->
+        <div class="pack-card" data-pack="1000" data-price="1599">
             <div class="pack-icon"><i class="fas fa-gem"></i></div>
-            <div class="pack-diamonds">2000 алмазов</div>
-            <div class="pack-price">2999 ₽</div>
+            <div class="pack-diamonds">1000 алмазов</div>
+            <div class="pack-price">1599 ₽</div>
             <div class="first-bonus">+50% при первой покупке</div>
         </div>
-        <div class="pack-card" data-pack="5000" data-price="4999">
+        <!-- Пакет 1600 алмазов -->
+        <div class="pack-card" data-pack="1600" data-price="2499">
             <div class="pack-icon"><i class="fas fa-gem"></i></div>
-            <div class="pack-diamonds">5000 алмазов</div>
-            <div class="pack-price">4999 ₽</div>
+            <div class="pack-diamonds">1600 алмазов</div>
+            <div class="pack-price">2499 ₽</div>
+            <div class="first-bonus">+50% при первой покупке</div>
+        </div>
+        <!-- Пакет 2500 алмазов -->
+        <div class="pack-card" data-pack="2500" data-price="3999">
+            <div class="pack-icon"><i class="fas fa-gem"></i></div>
+            <div class="pack-diamonds">2500 алмазов</div>
+            <div class="pack-price">3999 ₽</div>
             <div class="first-bonus">+50% при первой покупке</div>
         </div>
     </div>
@@ -234,7 +228,6 @@
 </div>
 
 <script>
-    // Заглушки для будущей интеграции с ЮKassa
     document.getElementById('subscribeBtn').addEventListener('click', () => {
         alert('Оформление подписки (в разработке). Скоро здесь появится оплата через ЮKassa.');
     });

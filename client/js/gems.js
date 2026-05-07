@@ -97,41 +97,43 @@ async function renderGems(container) {
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const diamonds = parseInt(card.dataset.diamonds);
-            const price = parseInt(card.dataset.price);
-            const packId = card.dataset.packId;
+    e.stopPropagation();
+    const diamonds = parseInt(card.dataset.diamonds);
+    const price = parseInt(card.dataset.price);
+    const packId = card.dataset.packId;
+    const isBonus = !!card.querySelector('.bonus-badge-new');
 
-            console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
+    console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
 
-            try {
-                const res = await window.apiRequest('/payment/create', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        userId: userData.id,
-                        amount: price,
-                        description: `Пакет ${diamonds} алмазов`,
-                        returnUrl: 'https://cat-fight.ru/success',
-                        metadata: {
-                            type: 'diamonds_pack',
-                            packId: packId,
-                            diamonds: diamonds,
-                            bonus: card.querySelector('.bonus-badge-new') ? true : false
-                        }
-                    })
-                });
-
-                const data = await res.json();
-                if (data.confirmationUrl) {
-                    window.location.href = data.confirmationUrl;
-                } else {
-                    showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
+    try {
+        const res = await window.apiRequest('/payment/create-robokassa', {
+            method: 'POST',
+            body: JSON.stringify({
+                userId: userData.id,
+                amount: price,
+                description: `Пакет ${diamonds} алмазов`,
+                returnUrl: 'https://cat-fight.ru/shop?payment=success',
+                metadata: {
+                    type: 'diamonds_pack',
+                    packId: packId,
+                    diamonds: diamonds,
+                    bonus: isBonus
                 }
-            } catch (err) {
-                console.error('[gems] Ошибка запроса к /payment/create:', err);
-                showToast('Сетевая ошибка. Попробуйте позже.', 2000);
-            }
+            })
         });
+
+        const data = await res.json();
+        if (data.paymentUrl) {
+            // Перенаправляем игрока на страницу оплаты Robokassa
+            window.location.href = data.paymentUrl;
+        } else {
+            showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
+        }
+    } catch (err) {
+        console.error('[gems] Ошибка запроса к /payment/create-robokassa:', err);
+        showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+    }
+});
     });
 
     if (typeof window.updateTradeBadges === 'function') {

@@ -35,15 +35,16 @@ async function renderGems(container) {
     const freeCoinAvailable = status?.freeCoinAvailable || false;
     const bonusBought = status?.bonusPacks || {};
 
-    // Пакеты алмазов (показываем тестовую цену 1 ₽)
+    // Пакеты алмазов (50 алмазов – тестовая цена 1 ₽, остальные – обычные)
     const packs = [
-        { id: 1, diamonds: 50, price: 1, image: 'buy_diamond_1.png', bonus: true },       // тестовая цена
+        { id: 1, diamonds: 50, price: 1, image: 'buy_diamond_1.png', bonus: true },
         { id: 2, diamonds: 200, price: 399, image: 'buy_diamond_2.png', bonus: true },
         { id: 3, diamonds: 500, price: 899, image: 'buy_diamond_3.png', bonus: true },
         { id: 4, diamonds: 1000, price: 1599, image: 'buy_diamond_4.png', bonus: true },
         { id: 5, diamonds: 1600, price: 2499, image: 'buy_diamond_5.png', bonus: true },
         { id: 6, diamonds: 2500, price: 3999, image: 'buy_diamond_6.png', bonus: true }
     ];
+
     let html = `
         <div class="gems-page">
             <div class="subscription-card-new">
@@ -80,6 +81,9 @@ async function renderGems(container) {
             <div class="shop-note-new">
                 <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.
             </div>
+            <div class="shop-note-new">
+                <i class="fas fa-file-contract"></i> <a href="https://cat-fight.ru/legal.html" target="_blank" style="color: #aaa; text-decoration: underline;">Реквизиты и оферта</a>
+            </div>
         </div>
     `;
     container.innerHTML = html;
@@ -95,7 +99,7 @@ async function renderGems(container) {
         buyBtn?.addEventListener('click', async (e) => {
             e.stopPropagation();
             const diamonds = parseInt(card.dataset.diamonds);
-            const price = parseInt(card.dataset.price);   // сейчас 1 рубль
+            const price = parseInt(card.dataset.price);
             const packId = card.dataset.packId;
 
             console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
@@ -107,19 +111,18 @@ async function renderGems(container) {
                         userId: userData.id,
                         amount: price,
                         description: `Пакет ${diamonds} алмазов`,
-                        returnUrl: 'https://cat-fight.ru/success',   // страница после оплаты
+                        returnUrl: 'https://cat-fight.ru/success',
                         metadata: {
                             type: 'diamonds_pack',
                             packId: packId,
                             diamonds: diamonds,
-                            bonus: card.querySelector('.bonus-badge-new') ? true : false  // первая покупка?
+                            bonus: card.querySelector('.bonus-badge-new') ? true : false
                         }
                     })
                 });
 
                 const data = await res.json();
                 if (data.confirmationUrl) {
-                    // Редирект на оплату
                     window.location.href = data.confirmationUrl;
                 } else {
                     showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);

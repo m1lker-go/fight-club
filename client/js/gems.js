@@ -1,4 +1,4 @@
-// gems.js – Алмазная лавка (подписка + пакеты алмазов)
+// gems.js – Алмазная лавка (подписка + пакеты алмазов, везде POST-форма)
 
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
@@ -17,6 +17,25 @@ async function loadSubscriptionStatus() {
         console.error('Error loading subscription status', e);
         return null;
     }
+}
+
+// Вспомогательная функция: создаёт форму и отправляет её на Robokassa
+function submitRobokassaForm(paramsUrl) {
+    const urlParams = new URLSearchParams(paramsUrl.split('?')[1]);
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://auth.robokassa.ru/Merchant/Index.aspx';
+    form.style.display = 'none';
+
+    for (const [key, value] of urlParams.entries()) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
 }
 
 async function renderGems(container) {
@@ -93,7 +112,7 @@ async function renderGems(container) {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
-    // --- Обработчики покупки алмазов ---
+    // --- Обработчики покупки алмазов (теперь через POST-форму) ---
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
@@ -123,7 +142,8 @@ async function renderGems(container) {
 
                 const data = await res.json();
                 if (data.confirmationUrl) {
-                    window.location.href = data.confirmationUrl;
+                    // Отправляем POST-форму вместо простого редиректа
+                    submitRobokassaForm(data.confirmationUrl);
                 } else {
                     showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
                 }
@@ -147,6 +167,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
 
+    // Кнопка 20 монет – показывается всегда, если награда доступна
     const freeCoinButton = freeCoinAvailable ? `
         <button class="subscription-free-btn-new" id="freeCoinBtnNew">
             <img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">
@@ -186,6 +207,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
+    // Обработчик бесплатной монеты
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -222,6 +244,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
+    // Обработчик покупки подписки (POST-форма)
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
@@ -234,14 +257,12 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                         amount: 599,
                         description: 'VIP Silver подписка на 30 дней',
                         returnUrl: 'https://cat-fight.ru/success',
-                        metadata: {
-                            type: 'subscription'
-                        }
+                        metadata: { type: 'subscription' }
                     })
                 });
                 const data = await res.json();
                 if (data.confirmationUrl) {
-                    window.location.href = data.confirmationUrl;
+                    submitRobokassaForm(data.confirmationUrl);
                 } else {
                     showToast('Ошибка создания подписки: ' + (data.error || 'неизвестная ошибка'), 2000);
                 }

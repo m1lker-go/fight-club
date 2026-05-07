@@ -7,9 +7,9 @@ const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
 // ---------- КОНФИГУРАЦИЯ ИЗ .env ----------
-const MERCHANT_LOGIN = process.env.ROBOKASSA_MERCHANT_LOGIN; // catfight
-const PASSWORD1      = process.env.ROBOKASSA_PASSWORD1;       // тестовый пароль #1
-const PASSWORD2      = process.env.ROBOKASSA_PASSWORD2;       // тестовый пароль #2
+const MERCHANT_LOGIN = process.env.ROBOKASSA_MERCHANT_LOGIN;
+const PASSWORD1      = process.env.ROBOKASSA_PASSWORD1;
+const PASSWORD2      = process.env.ROBOKASSA_PASSWORD2;
 const IS_TEST        = process.env.ROBOKASSA_TEST_MODE === 'true';
 
 if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
@@ -25,7 +25,7 @@ function generateSignature(invId, outSum, password) {
     return crypto.createHash('sha256').update(str).digest('hex');
 }
 
-// ---------- СОЗДАНИЕ ПЛАТЕЖА (клиенты шлют POST /payment/create) ----------
+// ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
 router.post('/create', async (req, res) => {
     try {
         const { userId, amount, description, returnUrl, metadata } = req.body;
@@ -33,7 +33,15 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ error: 'Missing fields' });
         }
 
-        const invId = `${userId}_${Date.now()}`;
+        let invId;
+        const type = metadata?.type;
+        if (type === 'subscription') {
+            invId = `sub_${userId}_${Date.now()}`;
+        } else {
+            invId = `diamonds_${userId}_${Date.now()}`;
+            if (metadata?.packId) invId += `_${metadata.packId}`;
+        }
+
         const outSum = Number(amount).toFixed(2);
         const signature = generateSignature(invId, outSum, PASSWORD1);
 
@@ -44,57 +52,30 @@ router.post('/create', async (req, res) => {
             Description: description,
             SignatureValue: signature,
             IsTest: IS_TEST ? '1' : '0',
-            ...(returnUrl && { SuccessURL: returnUrl }),
-            // Передаём дополнительные параметры, если есть metadata
-            ...(metadata?.packId && { Shp_packId: metadata.packId.toString() }),
-            ...(metadata?.diamonds && { Shp_diamonds: metadata.diamonds.toString() }),
-            ...(metadata?.bonus && { Shp_bonus: metadata.bonus.toString() }),
-            ...(metadata?.type === 'subscription' && { Shp_subscription: '1' }),
-            Shp_userId: userId.toString()
+            Culture: 'ru',
+            Encoding: 'utf-8'
         });
+
+        if (returnUrl) {
+            params.append('SuccessURL', returnUrl);
+        }
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
 
-        // Здесь можно сохранить заказ в БД как pending
-
-        res.json({
-            confirmationUrl,
-            paymentId: invId
-        });
+        res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
         res.status(500).json({ error: e.message });
     }
 });
 
-// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ (внутренняя функция) ----------
-async function handleDiamondsPayment(userId, outSum, invId, shpParams) {
+// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
+async function handleDiamondsPayment(userId, outSum, invId) {
     console.log(`[Robokassa] handleDiamondsPayment: userId=${userId}, sum=${outSum}, inv=${invId}`);
-    let diamondsToAdd = parseInt(shpParams.Shp_diamonds) || 0;
-    const packId = shpParams.Shp_packId;
-    const isBonus = shpParams.Shp_bonus === 'true';
 
-    if (isBonus && diamondsToAdd > 0) {
-        const client = await pool.connect();
-        try {
-            const checkRes = await client.query(
-                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2',
-                [userId, packId]
-            );
-            if (checkRes.rowCount === 0) {
-                diamondsToAdd = Math.floor(diamondsToAdd * 1.5);
-                await client.query(
-                    'INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)',
-                    [userId, packId]
-                );
-                console.log(`[Robokassa] Бонус +50% применён: user ${userId}, pack ${packId}, итого ${diamondsToAdd}`);
-            }
-        } catch (err) {
-            console.error('[Robokassa] Ошибка проверки бонуса:', err);
-        } finally {
-            client.release();
-        }
-    }
+    const parts = invId.split('_');
+    const packId = parts[3]; // diamonds_userId_timestamp_packId
+    const diamondsToAdd = parseInt(packId) || 0; // временная логика, позже можно привязать к packId
 
     if (diamondsToAdd === 0) {
         console.warn(`[Robokassa] Нет алмазов для начисления userId=${userId}`);
@@ -119,14 +100,13 @@ async function handleDiamondsPayment(userId, outSum, invId, shpParams) {
     }
 }
 
-// ---------- АКТИВАЦИЯ ПОДПИСКИ (внутренняя функция) ----------
-async function handleSubscriptionPayment(userId, outSum, invId, shpParams) {
+// ---------- АКТИВАЦИЯ ПОДПИСКИ ----------
+async function handleSubscriptionPayment(userId, outSum, invId) {
     console.log(`[Robokassa] handleSubscriptionPayment: userId=${userId}, sum=${outSum}, inv=${invId}`);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        // Защита от дублей
         const existing = await client.query(
             'SELECT 1 FROM subscription_activations WHERE inv_id = $1',
             [invId]
@@ -149,7 +129,6 @@ async function handleSubscriptionPayment(userId, outSum, invId, shpParams) {
             [expiryDateStr, user.id]
         );
 
-        // Таблица активаций (если ещё не создана)
         await client.query(`
             CREATE TABLE IF NOT EXISTS subscription_activations (
                 inv_id VARCHAR(50) PRIMARY KEY,
@@ -162,7 +141,6 @@ async function handleSubscriptionPayment(userId, outSum, invId, shpParams) {
             [invId, user.id]
         );
 
-        // Внутриигровое сообщение
         await client.query(
             'INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
             [
@@ -191,14 +169,9 @@ router.post('/result', async (req, res) => {
     console.log('Query:', req.query);
 
     try {
-        // Параметры могут прийти и в теле, и в query
         const OutSum = req.body.OutSum || req.query.OutSum;
         const InvId = req.body.InvId || req.query.InvId;
         const SignatureValue = req.body.SignatureValue || req.query.SignatureValue;
-        const shpParams = { ...req.query, ...req.body };
-        delete shpParams.OutSum;
-        delete shpParams.InvId;
-        delete shpParams.SignatureValue;
 
         if (!OutSum || !InvId || !SignatureValue) {
             console.error('Missing parameters');
@@ -211,19 +184,22 @@ router.post('/result', async (req, res) => {
             return res.status(400).send('ERROR');
         }
 
-        const userId = parseInt(InvId.split('_')[0]);
+        const parts = InvId.split('_');
+        const type = parts[0];
+        const userId = parseInt(parts[1]);
         if (isNaN(userId)) {
             console.error('Bad InvId');
             return res.status(400).send('ERROR');
         }
 
-        // Определяем тип платежа
-        const isSubscription = shpParams.Shp_subscription === '1' || InvId.startsWith('sub_');
         let success = false;
-        if (isSubscription) {
-            success = await handleSubscriptionPayment(userId, OutSum, InvId, shpParams);
+        if (type === 'sub') {
+            success = await handleSubscriptionPayment(userId, OutSum, InvId);
+        } else if (type === 'diamonds') {
+            success = await handleDiamondsPayment(userId, OutSum, InvId);
         } else {
-            success = await handleDiamondsPayment(userId, OutSum, InvId, shpParams);
+            console.error('Unknown payment type');
+            return res.status(400).send('ERROR');
         }
 
         if (success) {

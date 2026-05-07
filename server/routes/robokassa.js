@@ -1,4 +1,4 @@
-// routes/robokassa.js – версия с правильной подписью (SHA256, нижний регистр)
+// routes/robokassa.js – версия с MD5 (для магазинов, где в настройках выбран MD5)
 
 require('dotenv').config();
 const express = require('express');
@@ -19,16 +19,16 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись для создания платежа (только основные поля) ----------
+// ---------- Подпись MD5 (для платежа) ----------
 function generateSignature(outSum, invId, password) {
     const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    return crypto.createHash('sha256').update(str).digest('hex'); // нижний регистр!
+    return crypto.createHash('md5').update(str).digest('hex').toUpperCase(); // верхний регистр для MD5
 }
 
-// ---------- Подпись для проверки уведомления ----------
+// ---------- Подпись MD5 (для проверки уведомления) ----------
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
-    return crypto.createHash('sha256').update(str).digest('hex'); // нижний регистр
+    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
 // ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
@@ -57,7 +57,6 @@ router.post('/create', async (req, res) => {
 
         const signature = generateSignature(outSum, invId, PASSWORD1);
 
-        // Параметры URL (без Shp)
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -205,9 +204,8 @@ router.post('/result', async (req, res) => {
             return res.status(400).send('ERROR');
         }
 
-        // Проверка подписи (только OutSum, InvId, пароль)
         const expectedSignature = verifyResultSignature(OutSum, InvId, PASSWORD2);
-        if (SignatureValue.toLowerCase() !== expectedSignature) {
+        if (SignatureValue.toUpperCase() !== expectedSignature) {
             console.error('Invalid signature');
             return res.status(400).send('ERROR');
         }

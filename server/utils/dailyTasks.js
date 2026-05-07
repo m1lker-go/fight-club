@@ -22,18 +22,32 @@ async function getTasksList(user) {
         const tasks = (await client.query('SELECT * FROM daily_tasks ORDER BY id')).rows;
         const progress = parseProgress(user.daily_tasks_progress);
         const mask = user.daily_tasks_mask;
-        return tasks.map(t => ({
-            id: t.id,
-            name: t.name,
-            description: t.description,
-            reward_type: t.reward_type,
-            reward_amount: t.reward_amount,
-            target_type: t.target_type,
-            target_value: t.target_value,
-            progress: (mask & (1 << (t.id-1))) ? t.target_value : (progress[t.id] || 0),
-            completed: !!(mask & (1 << (t.id-1)))
-        }));
-    } finally { client.release(); }
+        const dailyWinStreak = user.daily_win_streak || 0;
+
+        return tasks.map(t => {
+            const alreadyCompleted = !!(mask & (1 << (t.id - 1)));
+            let prog = alreadyCompleted ? t.target_value : (progress[t.id] || 0);
+
+            // Задания 1, 2, 3: если серия >= 10, задание считается готовым
+            if ([1, 2, 3].includes(t.id) && !alreadyCompleted && dailyWinStreak >= 10) {
+                prog = t.target_value;
+            }
+
+            return {
+                id: t.id,
+                name: t.name,
+                description: t.description,
+                reward_type: t.reward_type,
+                reward_amount: t.reward_amount,
+                target_type: t.target_type,
+                target_value: t.target_value,
+                progress: prog,
+                completed: alreadyCompleted
+            };
+        });
+    } finally {
+        client.release();
+    }
 }
 
 async function updateTaskProgress(userId, taskId, inc) {

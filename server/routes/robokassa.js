@@ -1,4 +1,4 @@
-// routes/robokassa.js — исправленная версия (подпись по всем параметрам, без Shp)
+// routes/robokassa.js – версия с правильной подписью (SHA256, нижний регистр)
 
 require('dotenv').config();
 const express = require('express');
@@ -19,20 +19,16 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись SHA256 по ВСЕМ параметрам (алфавитный порядок) ----------
-function generateRobokassaSignature(params, password) {
-    const sortedKeys = Object.keys(params).sort();
-    let str = '';
-    for (const key of sortedKeys) {
-        if (key === 'SignatureValue') continue; // саму подпись не включаем
-        const value = params[key];
-        if (value !== undefined && value !== null && value !== '') {
-            str += `${key}=${value}:`;
-        }
-    }
-    // Убираем последнее двоеточие, добавляем пароль
-    str = str.slice(0, -1) + `:${password}`;
-    return crypto.createHash('sha256').update(str).digest('hex').toUpperCase(); // Robokassa требует верхний регистр
+// ---------- Подпись для создания платежа (только основные поля) ----------
+function generateSignature(outSum, invId, password) {
+    const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
+    return crypto.createHash('sha256').update(str).digest('hex'); // нижний регистр!
+}
+
+// ---------- Подпись для проверки уведомления ----------
+function verifyResultSignature(outSum, invId, password) {
+    const str = `${outSum}:${invId}:${password}`;
+    return crypto.createHash('sha256').update(str).digest('hex'); // нижний регистр
 }
 
 // ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
@@ -46,12 +42,12 @@ router.post('/create', async (req, res) => {
         const outSum = Number(amount).toFixed(2);
         const invId = `${metadata?.type === 'subscription' ? 'sub' : 'diamonds'}_${userId}_${Date.now()}`;
 
-        // Сохраняем детали покупки в БД для вебхука
+        // Сохраняем детали для вебхука
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
                 await client.query(
-                    `INSERT INTO pending_robokassa_payments (inv_id, user_id, diamonds, bonus, pack_id) 
+                    `INSERT INTO pending_robokassa_payments (inv_id, user_id, diamonds, bonus, pack_id)
                      VALUES ($1, $2, $3, $4, $5)
                      ON CONFLICT (inv_id) DO NOTHING`,
                     [invId, userId, metadata.diamonds, metadata.bonus || false, metadata.packId]
@@ -59,23 +55,22 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        // Параметры без Shp
-        const params = {
+        const signature = generateSignature(outSum, invId, PASSWORD1);
+
+        // Параметры URL (без Shp)
+        const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
             InvId: invId,
             Description: description,
+            SignatureValue: signature,
             IsTest: IS_TEST ? '1' : '0',
             Culture: 'ru',
             Encoding: 'utf-8',
-        };
-        if (returnUrl) params.SuccessURL = returnUrl;
+        });
+        if (returnUrl) params.append('SuccessURL', returnUrl);
 
-        // Подпись со всеми параметрами
-        const signature = generateRobokassaSignature(params, PASSWORD1);
-        params.SignatureValue = signature;
-
-        const confirmationUrl = `${ROBOKASSA_URL}?${new URLSearchParams(params).toString()}`;
+        const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
 
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
@@ -84,12 +79,11 @@ router.post('/create', async (req, res) => {
     }
 });
 
-// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ (из БД) ----------
+// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
 async function handleDiamondsPayment(userId, outSum, invId) {
     console.log(`[Robokassa] handleDiamondsPayment: userId=${userId}, sum=${outSum}, inv=${invId}`);
     const client = await pool.connect();
     try {
-        // Получаем сохранённые данные
         const pending = await client.query(
             'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1',
             [invId]
@@ -206,21 +200,20 @@ router.post('/result', async (req, res) => {
     console.log('Body:', req.body);
 
     try {
-        const params = req.body;
-        const { OutSum, InvId, SignatureValue } = params;
+        const { OutSum, InvId, SignatureValue } = req.body;
         if (!OutSum || !InvId || !SignatureValue) {
             return res.status(400).send('ERROR');
         }
 
-        // Проверяем подпись с Паролем №2
-        const expectedSignature = generateRobokassaSignature(params, PASSWORD2);
-        if (SignatureValue !== expectedSignature) {
+        // Проверка подписи (только OutSum, InvId, пароль)
+        const expectedSignature = verifyResultSignature(OutSum, InvId, PASSWORD2);
+        if (SignatureValue.toLowerCase() !== expectedSignature) {
             console.error('Invalid signature');
             return res.status(400).send('ERROR');
         }
 
         const parts = InvId.split('_');
-        const type = parts[0];   // 'sub' или 'diamonds'
+        const type = parts[0];
         const userId = parseInt(parts[1]);
         if (isNaN(userId)) {
             return res.status(400).send('ERROR');

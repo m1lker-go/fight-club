@@ -106,7 +106,7 @@ async function renderGems(container) {
             console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
 
             try {
-                const res = await window.apiRequest('/payment/create-robokassa', {
+                const res = await window.apiRequest('/payment/create', {
                     method: 'POST',
                     body: JSON.stringify({
                         userId: userData.id,
@@ -122,13 +122,13 @@ async function renderGems(container) {
                 });
 
                 const data = await res.json();
-                if (data.paymentUrl) {
-                    window.location.href = data.paymentUrl;
+                if (data.confirmationUrl) {
+                    window.location.href = data.confirmationUrl;
                 } else {
                     showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
                 }
             } catch (err) {
-                console.error('[gems] Ошибка запроса к /payment/create-robokassa:', err);
+                console.error('[gems] Ошибка запроса к /payment/create:', err);
                 showToast('Сетевая ошибка. Попробуйте позже.', 2000);
             }
         });
@@ -225,15 +225,23 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
-            console.log('[gems] buy subscription button clicked (Robokassa)');
+            console.log('[gems] buy subscription button clicked');
             try {
-                const res = await window.apiRequest('/subscription/create-subscription', {
+                const res = await window.apiRequest('/payment/create', {
                     method: 'POST',
-                    body: JSON.stringify({ userId: userData.id })
+                    body: JSON.stringify({
+                        userId: userData.id,
+                        amount: 599,
+                        description: 'VIP Silver подписка на 30 дней',
+                        returnUrl: 'https://cat-fight.ru/success',
+                        metadata: {
+                            type: 'subscription'
+                        }
+                    })
                 });
                 const data = await res.json();
-                if (data.paymentUrl) {
-                    window.location.href = data.paymentUrl;
+                if (data.confirmationUrl) {
+                    window.location.href = data.confirmationUrl;
                 } else {
                     showToast('Ошибка создания подписки: ' + (data.error || 'неизвестная ошибка'), 2000);
                 }

@@ -37,14 +37,13 @@ async function renderGems(container) {
 
     // Пакеты алмазов (показываем тестовую цену 1 ₽)
     const packs = [
-        { id: 1, diamonds: 50, price: 1, image: 'buy_diamond_1.png', bonus: true },
-        { id: 2, diamonds: 200, price: 1, image: 'buy_diamond_2.png', bonus: true },
-        { id: 3, diamonds: 500, price: 1, image: 'buy_diamond_3.png', bonus: true },
-        { id: 4, diamonds: 1000, price: 1, image: 'buy_diamond_4.png', bonus: true },
-        { id: 5, diamonds: 1600, price: 1, image: 'buy_diamond_5.png', bonus: true },
-        { id: 6, diamonds: 2500, price: 1, image: 'buy_diamond_6.png', bonus: true }
+        { id: 1, diamonds: 50, price: 1, image: 'buy_diamond_1.png', bonus: true },       // тестовая цена
+        { id: 2, diamonds: 200, price: 399, image: 'buy_diamond_2.png', bonus: true },
+        { id: 3, diamonds: 500, price: 899, image: 'buy_diamond_3.png', bonus: true },
+        { id: 4, diamonds: 1000, price: 1599, image: 'buy_diamond_4.png', bonus: true },
+        { id: 5, diamonds: 1600, price: 2499, image: 'buy_diamond_5.png', bonus: true },
+        { id: 6, diamonds: 2500, price: 3999, image: 'buy_diamond_6.png', bonus: true }
     ];
-
     let html = `
         <div class="gems-page">
             <div class="subscription-card-new">

@@ -22,7 +22,10 @@ const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 // ---------- Подпись MD5 (как в документации) ----------
 function generateSignature(outSum, invId, password) {
     const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
+    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
+    console.log(`[SIGN DEBUG] String: ${str}`);
+    console.log(`[SIGN DEBUG] Result: ${sig}`);
+    return sig;
 }
 
 // ---------- Проверка уведомления (OutSum:InvId:Password2) ----------

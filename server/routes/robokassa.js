@@ -1,4 +1,4 @@
-// routes/robokassa.js – ФИНАЛЬНАЯ РАБОЧАЯ ВЕРСИЯ (переменные без префикса, MD5)
+// routes/robokassa.js – ОТЛАДОЧНАЯ ВЕРСИЯ (MD5, переменные без префикса)
 
 require('dotenv').config();
 const express = require('express');
@@ -6,32 +6,34 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
-// ---------- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ (как ожидает Robokassa) ----------
 const MERCHANT_LOGIN = process.env.MERCHANT_LOGIN;
 const PASSWORD1      = process.env.PASSWORD1;
 const PASSWORD2      = process.env.PASSWORD2;
 const IS_TEST        = process.env.IS_TEST === 'true';
 
+console.log('[Robokassa] MERCHANT_LOGIN:', MERCHANT_LOGIN);
+console.log('[Robokassa] IS_TEST:', IS_TEST);
+
 if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
-    console.error('[Robokassa] Не заданы MERCHANT_LOGIN, PASSWORD1 или PASSWORD2 в .env');
+    console.error('[Robokassa] Не заданы переменные окружения');
     process.exit(1);
 }
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись MD5 (MerchantLogin:OutSum:InvId:Password1) ----------
 function generateSignature(outSum, invId, password) {
     const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
+    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
+    console.log(`[SIGN DEBUG] String: ${str}`);
+    console.log(`[SIGN DEBUG] Result: ${sig}`);
+    return sig;
 }
 
-// ---------- Проверка подписи для вебхука (OutSum:InvId:Password2) ----------
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
 router.post('/create', async (req, res) => {
     try {
         const { userId, amount, description, returnUrl, metadata } = req.body;
@@ -42,7 +44,6 @@ router.post('/create', async (req, res) => {
         const outSum = Number(amount).toFixed(2);
         const invId = `${metadata?.type === 'subscription' ? 'sub' : 'diamonds'}_${userId}_${Date.now()}`;
 
-        // Сохраняем детали для вебхука
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -70,6 +71,7 @@ router.post('/create', async (req, res) => {
         if (returnUrl) params.append('SuccessURL', returnUrl);
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
+        console.log('[Robokassa] Confirmation URL:', confirmationUrl);
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);

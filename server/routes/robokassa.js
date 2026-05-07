@@ -1,4 +1,4 @@
-// routes/robokassa.js – версия с MD5 (для магазинов, где в настройках выбран MD5)
+// routes/robokassa.js – финальная версия с Shp-параметрами, MD5
 
 require('dotenv').config();
 const express = require('express');
@@ -6,7 +6,6 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
-// ---------- КОНФИГУРАЦИЯ ----------
 const MERCHANT_LOGIN = process.env.ROBOKASSA_MERCHANT_LOGIN;
 const PASSWORD1      = process.env.ROBOKASSA_PASSWORD1;
 const PASSWORD2      = process.env.ROBOKASSA_PASSWORD2;
@@ -19,13 +18,17 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись MD5 (для платежа) ----------
-function generateSignature(outSum, invId, password) {
-    const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    return crypto.createHash('md5').update(str).digest('hex').toUpperCase(); // верхний регистр для MD5
+// Подпись MD5 с Shp-параметрами (для создания платежа)
+function generateSignature(outSum, invId, password, shpParams = {}) {
+    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
+    const sortedKeys = Object.keys(shpParams).sort();
+    for (const key of sortedKeys) {
+        str += `:${key}=${shpParams[key]}`;
+    }
+    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ---------- Подпись MD5 (для проверки уведомления) ----------
+// Подпись для проверки уведомления (OutSum:InvId:Password2)
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
@@ -55,7 +58,15 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        const signature = generateSignature(outSum, invId, PASSWORD1);
+        // Shp-параметры
+        const shpParams = {
+            Shp_userId: userId.toString(),
+        };
+        if (metadata?.packId) {
+            shpParams.Shp_packId = metadata.packId.toString();
+        }
+
+        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
 
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
@@ -68,6 +79,11 @@ router.post('/create', async (req, res) => {
             Encoding: 'utf-8',
         });
         if (returnUrl) params.append('SuccessURL', returnUrl);
+
+        // Добавляем Shp-параметры в URL
+        for (const [key, value] of Object.entries(shpParams)) {
+            params.append(key, value);
+        }
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
 

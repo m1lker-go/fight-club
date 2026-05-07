@@ -3,12 +3,12 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
+require('dotenv').config(); // добавляем для надёжности
+
 const merchantLogin = process.env.MERCHANT_LOGIN;
 const password1 = process.env.PASSWORD_1;
-const password2 = process.env.PASSWORD_2;
 const testPassword1 = process.env.TEST_PASSWORD_1;
-const testPassword2 = process.env.TEST_PASSWORD_2;
-const isTestMode = process.env.IS_TEST_MODE === 'true';   // ✅ исправлено
+const isTestMode = process.env.IS_TEST_MODE === 'true';
 
 function buildSignature(outSum, invId, password, shpParams = {}) {
     let signatureString = `${outSum}:${invId}:${password}`;
@@ -53,89 +53,6 @@ router.post('/create-robokassa', async (req, res) => {
     } catch (e) {
         console.error('Robokassa create payment error:', e);
         res.status(500).json({ error: e.message });
-    }
-});
-
-router.post('/callback', async (req, res) => {
-    console.log('=== ROBOKASSA CALLBACK (diamonds) ===');
-    try {
-        const { OutSum, InvId, SignatureValue, ...shpParams } = req.body;
-        if (!OutSum || !InvId || !SignatureValue) {
-            console.error('Missing required fields');
-            return res.status(400).send('ERROR');
-        }
-
-        const userId = shpParams.Shp_userId;
-        if (!userId) {
-            console.error('No Shp_userId in callback');
-            return res.status(400).send('ERROR');
-        }
-
-        const currentPassword2 = isTestMode ? testPassword2 : password2;
-        if (!currentPassword2) {
-            console.error('Password #2 not configured for current mode');
-            return res.status(500).send('ERROR');
-        }
-
-        const expectedSignature = buildSignature(OutSum, InvId, currentPassword2, shpParams);
-        if (SignatureValue !== expectedSignature) {
-            console.error(`Invalid signature. Expected ${expectedSignature}, got ${SignatureValue}`);
-            return res.status(400).send('ERROR');
-        }
-
-        console.log(`Payment confirmed: InvId=${InvId}, OutSum=${OutSum}, userId=${userId}`);
-
-        let diamondsToAdd = parseInt(shpParams.Shp_diamonds) || 0;
-        const packId = shpParams.Shp_packId;
-        const isBonus = shpParams.Shp_bonus === 'true';
-
-        if (isBonus && diamondsToAdd > 0) {
-            const client = await pool.connect();
-            try {
-                const checkRes = await client.query(
-                    'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2',
-                    [userId, packId]
-                );
-                if (checkRes.rowCount === 0) {
-                    diamondsToAdd = Math.floor(diamondsToAdd * 1.5);
-                    await client.query(
-                        'INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)',
-                        [userId, packId]
-                    );
-                    console.log(`Bonus applied: user ${userId}, pack ${packId}, total diamonds ${diamondsToAdd}`);
-                }
-            } catch (dbErr) {
-                console.error('DB error while checking bonus:', dbErr);
-            } finally {
-                client.release();
-            }
-        }
-
-        if (diamondsToAdd === 0) {
-            console.warn(`No diamonds to add for userId ${userId}`);
-            return res.send(`OK${InvId}`);
-        }
-
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            const user = await getUserByIdentifier(client, null, userId);
-            if (!user) throw new Error('User not found');
-            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamondsToAdd, user.id]);
-            await client.query('COMMIT');
-            console.log(`Added ${diamondsToAdd} diamonds to user ${userId}`);
-        } catch (dbErr) {
-            await client.query('ROLLBACK');
-            console.error('Failed to add diamonds:', dbErr);
-            return res.status(500).send('ERROR');
-        } finally {
-            client.release();
-        }
-
-        res.send(`OK${InvId}`);
-    } catch (e) {
-        console.error('Callback processing error:', e);
-        res.status(500).send('ERROR');
     }
 });
 

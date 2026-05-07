@@ -1,4 +1,4 @@
-// routes/robokassa.js – ФИНАЛЬНАЯ ВЕРСИЯ (MD5, без Shp, согласно настройкам магазина)
+// routes/robokassa.js – ФИНАЛЬНАЯ РАБОЧАЯ ВЕРСИЯ (переменные без префикса, MD5)
 
 require('dotenv').config();
 const express = require('express');
@@ -6,29 +6,26 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
-// ---------- КОНФИГУРАЦИЯ ----------
-const MERCHANT_LOGIN = process.env.ROBOKASSA_MERCHANT_LOGIN;
-const PASSWORD1      = process.env.ROBOKASSA_PASSWORD1;
-const PASSWORD2      = process.env.ROBOKASSA_PASSWORD2;
-const IS_TEST        = process.env.ROBOKASSA_TEST_MODE === 'true';
+// ---------- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ (как ожидает Robokassa) ----------
+const MERCHANT_LOGIN = process.env.MERCHANT_LOGIN;
+const PASSWORD1      = process.env.PASSWORD1;
+const PASSWORD2      = process.env.PASSWORD2;
+const IS_TEST        = process.env.IS_TEST === 'true';
 
 if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
-    console.error('[Robokassa] Не заданы переменные окружения');
+    console.error('[Robokassa] Не заданы MERCHANT_LOGIN, PASSWORD1 или PASSWORD2 в .env');
     process.exit(1);
 }
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись MD5 (как в документации) ----------
+// ---------- Подпись MD5 (MerchantLogin:OutSum:InvId:Password1) ----------
 function generateSignature(outSum, invId, password) {
     const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
-    console.log(`[SIGN DEBUG] String: ${str}`);
-    console.log(`[SIGN DEBUG] Result: ${sig}`);
-    return sig;
+    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ---------- Проверка уведомления (OutSum:InvId:Password2) ----------
+// ---------- Проверка подписи для вебхука (OutSum:InvId:Password2) ----------
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
@@ -60,7 +57,6 @@ router.post('/create', async (req, res) => {
 
         const signature = generateSignature(outSum, invId, PASSWORD1);
 
-        // Параметры (БЕЗ Shp)
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -74,7 +70,6 @@ router.post('/create', async (req, res) => {
         if (returnUrl) params.append('SuccessURL', returnUrl);
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
-
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
@@ -84,39 +79,27 @@ router.post('/create', async (req, res) => {
 
 // ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
 async function handleDiamondsPayment(userId, outSum, invId) {
-    console.log(`[Robokassa] handleDiamondsPayment: userId=${userId}, sum=${outSum}, inv=${invId}`);
     const client = await pool.connect();
     try {
         const pending = await client.query(
-            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1',
-            [invId]
+            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1', [invId]
         );
-        if (pending.rows.length === 0) {
-            console.warn(`[Robokassa] Нет данных для invId ${invId}`);
-            return true;
-        }
+        if (pending.rows.length === 0) return true;
+
         const { diamonds, bonus, pack_id } = pending.rows[0];
         let diamondsToAdd = parseInt(diamonds) || 0;
 
         if (bonus && diamondsToAdd > 0) {
-            const checkRes = await client.query(
-                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2',
-                [userId, pack_id]
+            const check = await client.query(
+                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, pack_id]
             );
-            if (checkRes.rowCount === 0) {
+            if (check.rowCount === 0) {
                 diamondsToAdd = Math.floor(diamondsToAdd * 1.5);
-                await client.query(
-                    'INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)',
-                    [userId, pack_id]
-                );
-                console.log(`[Robokassa] Бонус +50% применён: user ${userId}, pack ${pack_id}, итого ${diamondsToAdd}`);
+                await client.query('INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)', [userId, pack_id]);
             }
         }
 
-        if (diamondsToAdd === 0) {
-            console.warn(`[Robokassa] Нет алмазов для начисления userId=${userId}`);
-            return true;
-        }
+        if (diamondsToAdd === 0) return true;
 
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, null, userId);
@@ -124,33 +107,21 @@ async function handleDiamondsPayment(userId, outSum, invId) {
         await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamondsToAdd, user.id]);
         await client.query('DELETE FROM pending_robokassa_payments WHERE inv_id = $1', [invId]);
         await client.query('COMMIT');
-        console.log(`[Robokassa] Начислено ${diamondsToAdd} алмазов пользователю ${userId}`);
         return true;
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('[Robokassa] Ошибка начисления алмазов:', err);
         return false;
-    } finally {
-        client.release();
-    }
+    } finally { client.release(); }
 }
 
 // ---------- АКТИВАЦИЯ ПОДПИСКИ ----------
 async function handleSubscriptionPayment(userId, outSum, invId) {
-    console.log(`[Robokassa] handleSubscriptionPayment: userId=${userId}, sum=${outSum}, inv=${invId}`);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        const existing = await client.query(
-            'SELECT 1 FROM subscription_activations WHERE inv_id = $1',
-            [invId]
-        );
-        if (existing.rowCount > 0) {
-            console.log(`[Robokassa] Подписка уже активирована для InvId ${invId}`);
-            await client.query('COMMIT');
-            return true;
-        }
+        const existing = await client.query('SELECT 1 FROM subscription_activations WHERE inv_id = $1', [invId]);
+        if (existing.rowCount > 0) { await client.query('COMMIT'); return true; }
 
         const user = await getUserByIdentifier(client, null, userId);
         if (!user) throw new Error('Пользователь не найден');
@@ -159,77 +130,37 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
         expiryDate.setDate(expiryDate.getDate() + 30);
         const expiryDateStr = expiryDate.toISOString().split('T')[0];
 
-        await client.query(
-            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
-            [expiryDateStr, user.id]
-        );
-
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS subscription_activations (
-                inv_id VARCHAR(50) PRIMARY KEY,
-                user_id INTEGER,
-                activated_at TIMESTAMP DEFAULT NOW()
-            )
-        `);
-        await client.query(
-            'INSERT INTO subscription_activations (inv_id, user_id) VALUES ($1, $2)',
-            [invId, user.id]
-        );
-
-        await client.query(
-            'INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
-            [
-                user.id,
-                '🎉 Подписка VIP Silver активирована!',
-                'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
-            ]
-        );
-
+        await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiryDateStr, user.id]);
+        await client.query('CREATE TABLE IF NOT EXISTS subscription_activations (inv_id VARCHAR(50) PRIMARY KEY, user_id INTEGER, activated_at TIMESTAMP DEFAULT NOW())');
+        await client.query('INSERT INTO subscription_activations (inv_id, user_id) VALUES ($1, $2)', [invId, user.id]);
+        await client.query('INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
+            [user.id, '🎉 Подписка VIP Silver активирована!', 'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.']);
         await client.query('COMMIT');
-        console.log(`[Robokassa] Подписка активирована для user ${user.id} до ${expiryDateStr}`);
         return true;
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('[Robokassa] Ошибка активации подписки:', err);
         return false;
-    } finally {
-        client.release();
-    }
+    } finally { client.release(); }
 }
 
-// ---------- CALLBACK от Robokassa ----------
+// ---------- ВЕБХУК ----------
 router.post('/result', async (req, res) => {
-    console.log('=== ROBOKASSA RESULT ===');
-    console.log('Body:', req.body);
-
+    console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
         const { OutSum, InvId, SignatureValue } = req.body;
-        if (!OutSum || !InvId || !SignatureValue) {
-            return res.status(400).send('ERROR');
-        }
+        if (!OutSum || !InvId || !SignatureValue) return res.status(400).send('ERROR');
 
-        const expectedSignature = verifyResultSignature(OutSum, InvId, PASSWORD2);
-        if (SignatureValue.toUpperCase() !== expectedSignature) {
-            console.error('Invalid signature');
-            return res.status(400).send('ERROR');
-        }
+        const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
+        if (SignatureValue.toUpperCase() !== expected) return res.status(400).send('ERROR');
 
         const parts = InvId.split('_');
         const type = parts[0];
         const userId = parseInt(parts[1]);
-        if (isNaN(userId)) {
-            return res.status(400).send('ERROR');
-        }
+        if (isNaN(userId)) return res.status(400).send('ERROR');
 
-        let success = false;
-        if (type === 'sub') {
-            success = await handleSubscriptionPayment(userId, OutSum, InvId);
-        } else if (type === 'diamonds') {
-            success = await handleDiamondsPayment(userId, OutSum, InvId);
-        } else {
-            return res.status(400).send('ERROR');
-        }
-
+        let success = (type === 'sub') ? await handleSubscriptionPayment(userId, OutSum, InvId)
+                                      : await handleDiamondsPayment(userId, OutSum, InvId);
         res.send(success ? `OK${InvId}` : 'ERROR');
     } catch (e) {
         console.error('Result error:', e);

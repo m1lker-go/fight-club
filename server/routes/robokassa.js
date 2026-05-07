@@ -1,4 +1,4 @@
-// routes/robokassa.js – версия с поддержкой Shp-параметров и логированием подписи
+// routes/robokassa.js – ФИНАЛЬНАЯ ВЕРСИЯ (MD5, без Shp, согласно настройкам магазина)
 
 require('dotenv').config();
 const express = require('express');
@@ -19,20 +19,13 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись MD5 с Shp-параметрами (для платежа) ----------
-function generateSignature(outSum, invId, password, shpParams = {}) {
-    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    const sortedKeys = Object.keys(shpParams).sort();
-    for (const key of sortedKeys) {
-        str += `:${key}=${shpParams[key]}`;
-    }
-    console.log(`[DEBUG] Signature string: ${str}`);
-    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
-    console.log(`[DEBUG] Signature result: ${sig}`);
-    return sig;
+// ---------- Подпись MD5 (как в документации) ----------
+function generateSignature(outSum, invId, password) {
+    const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
+    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ---------- Подпись MD5 для проверки уведомления ----------
+// ---------- Проверка уведомления (OutSum:InvId:Password2) ----------
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
@@ -62,15 +55,9 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        // Shp-параметры
-        const shpParams = {
-            Shp_userId: userId.toString(),
-        };
+        const signature = generateSignature(outSum, invId, PASSWORD1);
 
-        // Считаем подпись с Shp-параметрами
-        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
-
-        // Собираем GET-параметры
+        // Параметры (БЕЗ Shp)
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -82,11 +69,6 @@ router.post('/create', async (req, res) => {
             Encoding: 'utf-8',
         });
         if (returnUrl) params.append('SuccessURL', returnUrl);
-
-        // Добавляем Shp-параметры в URL
-        for (const [key, value] of Object.entries(shpParams)) {
-            params.append(key, value);
-        }
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
 

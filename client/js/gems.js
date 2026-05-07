@@ -97,43 +97,41 @@ async function renderGems(container) {
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const diamonds = parseInt(card.dataset.diamonds);
-    const price = parseInt(card.dataset.price);
-    const packId = card.dataset.packId;
-    const isBonus = !!card.querySelector('.bonus-badge-new');
+            e.stopPropagation();
+            const diamonds = parseInt(card.dataset.diamonds);
+            const price = parseInt(card.dataset.price);
+            const packId = card.dataset.packId;
+            const isBonus = !!card.querySelector('.bonus-badge-new');
 
-    console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
+            console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
 
-    try {
-        const res = await window.apiRequest('/payment/create-robokassa', {
-            method: 'POST',
-            body: JSON.stringify({
-                userId: userData.id,
-                amount: price,
-                description: `Пакет ${diamonds} алмазов`,
-                returnUrl: 'https://cat-fight.ru/shop?payment=success',
-                metadata: {
-                    type: 'diamonds_pack',
-                    packId: packId,
-                    diamonds: diamonds,
-                    bonus: isBonus
+            try {
+                const res = await window.apiRequest('/payment/create-robokassa', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        userId: userData.id,
+                        amount: price,
+                        description: `Пакет ${diamonds} алмазов`,
+                        metadata: {
+                            type: 'diamonds_pack',
+                            packId: packId,
+                            diamonds: diamonds,
+                            bonus: isBonus
+                        }
+                    })
+                });
+
+                const data = await res.json();
+                if (data.paymentUrl) {
+                    window.location.href = data.paymentUrl;
+                } else {
+                    showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
                 }
-            })
+            } catch (err) {
+                console.error('[gems] Ошибка запроса к /payment/create-robokassa:', err);
+                showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+            }
         });
-
-        const data = await res.json();
-        if (data.paymentUrl) {
-            // Перенаправляем игрока на страницу оплаты Robokassa
-            window.location.href = data.paymentUrl;
-        } else {
-            showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
-        }
-    } catch (err) {
-        console.error('[gems] Ошибка запроса к /payment/create-robokassa:', err);
-        showToast('Сетевая ошибка. Попробуйте позже.', 2000);
-    }
-});
     });
 
     if (typeof window.updateTradeBadges === 'function') {
@@ -227,24 +225,27 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
-            console.log('[gems] buy subscription button clicked');
-            const res = await window.apiRequest('/subscription/buy', { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                showToast('Подписка оформлена!', 2000);
-                await refreshData();
-                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-                modal.style.display = 'none';
-                const subContent = document.getElementById('tradeSubContent');
-                if (subContent) renderGems(subContent);
-            } else {
-                showToast(data.error || 'Ошибка оформления', 1500);
+            console.log('[gems] buy subscription button clicked (Robokassa)');
+            try {
+                const res = await window.apiRequest('/subscription/create-subscription', {
+                    method: 'POST',
+                    body: JSON.stringify({ userId: userData.id })
+                });
+                const data = await res.json();
+                if (data.paymentUrl) {
+                    window.location.href = data.paymentUrl;
+                } else {
+                    showToast('Ошибка создания подписки: ' + (data.error || 'неизвестная ошибка'), 2000);
+                }
+            } catch (err) {
+                console.error('[gems] Subscription error:', err);
+                showToast('Сетевая ошибка. Попробуйте позже.', 2000);
             }
         });
     }
 
     const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => modal.style.display = 'none';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
 

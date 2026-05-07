@@ -7,6 +7,13 @@ const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ АДВЕНТА ========================
 
+// Преобразует дату из БД в московскую строку (для сравнения)
+const toMoscowDateString = (dbDate) => {
+    if (!dbDate) return null;
+    const d = new Date(dbDate);
+    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+};
+
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
     if (day === 7) return { type: 'item', rarity: 'common' };

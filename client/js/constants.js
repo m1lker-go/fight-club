@@ -202,7 +202,7 @@ const dailyTaskTranslations = {
     },
     'Champion': {
     name: 'Чемпион', 
-    description: 'Выполнить все ежедневные задания'
+    description: 'Выполнить 10 любых ежедневные задания'
     }
 };
 

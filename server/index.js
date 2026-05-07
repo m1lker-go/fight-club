@@ -51,9 +51,8 @@ app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
 app.use('/fortune', require('./routes/fortune-server'));
-app.use('/payment', require('./routes/payment'));
-app.use('/subscription', require('./routes/subscription'));
 app.use('/robokassa', require('./routes/robokassa'));
+app.use('/subscription', require('./routes/subscription'));
 
 
 app.post('/auth/vk/callback', (req, res) => {

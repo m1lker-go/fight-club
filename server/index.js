@@ -51,7 +51,7 @@ app.use('/forge', require('./routes/forge-server'));
 app.use('/tower', require('./routes/tower-server'));
 app.use('/rank', require('./routes/rank'));
 app.use('/fortune', require('./routes/fortune-server'));
-app.use('/robokassa', require('./routes/robokassa'));
+app.use('/payment', require('./routes/robokassa'));
 app.use('/subscription', require('./routes/subscription'));
 
 

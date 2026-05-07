@@ -207,27 +207,28 @@ router.post('/daily/claim', async (req, res) => {
         await client.query('BEGIN');
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        // Убрали resetIfNeeded
+
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {
             throw new Error('Task already claimed');
         }
+
         const taskRes = await client.query('SELECT * FROM daily_tasks WHERE id = $1', [task_id]);
         if (taskRes.rows.length === 0) throw new Error('Task not found');
         const task = taskRes.rows[0];
         let progressObj = dailyTasks.parseProgress(user.daily_tasks_progress);
         let isCompleted = false;
-     if (task_id == 9) {
-    // Проверяем, что выполнено не менее 10 заданий (кроме самого 9-го)
-    const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
-    let countCompleted = 0;
-    for (let other of otherTasks.rows) {
-        if (user.daily_tasks_mask & (1 << (other.id - 1))) {
-            countCompleted++;
-        }
-    }
-    isCompleted = countCompleted >= 10;
-}
-        } else if ([1,2,3].includes(task.id)) {
+
+        if (task_id == 9) {
+            // Проверяем, что выполнено не менее 10 заданий (кроме самого 9-го)
+            const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
+            let countCompleted = 0;
+            for (let other of otherTasks.rows) {
+                if (user.daily_tasks_mask & (1 << (other.id - 1))) {
+                    countCompleted++;
+                }
+            }
+            isCompleted = countCompleted >= 10;
+        } else if ([1, 2, 3].includes(task.id)) {
             const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
             const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
             if (dailyWinStreak >= 10) {
@@ -240,7 +241,9 @@ router.post('/daily/claim', async (req, res) => {
                 isCompleted = true;
             }
         }
+
         if (!isCompleted) throw new Error('Task not completed');
+
         let leveledUp = false;
         if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, user.id]);

@@ -211,18 +211,18 @@ async function loadDailyTasks() {
                 '</div>';
 
             let isReadyToClaim = false;
-            if (task.id === 9) {
-                const championPercent = totalTasksCount > 0 ? (completedTasksCount / totalTasksCount) * 100 : 0;
+                       if (task.id === 9) {
+                const championTarget = 10;
+                const championProgress = completedTasksCount;
+                const championPercent = Math.min(100, (championProgress / championTarget) * 100);
                 progressHtml = 
                     '<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">' +
                         '<div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">' +
                             '<div style="background-color: #00aaff; width: ' + championPercent + '%; height: 100%; border-radius: 3px;"></div>' +
                         '</div>' +
-                        '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + completedTasksCount + '/' + totalTasksCount + '</div>' +
+                        '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + championProgress + '/' + championTarget + '</div>' +
                     '</div>';
-                isReadyToClaim = completedTasksCount >= totalTasksCount;
-            } else {
-                isReadyToClaim = task.progress >= task.target_value;
+                isReadyToClaim = championProgress >= championTarget;
             }
 
             const taskCard = document.createElement('div');

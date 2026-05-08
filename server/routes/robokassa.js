@@ -29,7 +29,6 @@ const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 function generateSignature(outSum, invId, password, shpParams = {}, receiptObj = null) {
     let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
     if (receiptObj) {
-        // Для подписи обязательно URL‑кодируем JSON чека
         const receiptEncoded = encodeURIComponent(JSON.stringify(receiptObj));
         str += `:${receiptEncoded}`;
     }
@@ -78,32 +77,31 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        // ---- ФОРМИРУЕМ Receipt (чек для ФНС) ----
-        let receiptObj = null;
-        if (metadata?.type === 'diamonds_pack') {
-            receiptObj = {
-                items: [{
-                    name: description,
-                    quantity: 1,
-                    sum: outSum,
-                    payment_method: "full_payment",
-                    payment_object: "commodity",
-                    tax: "none"
-                }]
-            };
-        } else if (metadata?.type === 'subscription') {
-            receiptObj = {
-                items: [{
-                    name: "VIP Silver подписка на 30 дней",
-                    quantity: 1,
-                    sum: outSum,
-                    payment_method: "full_payment",
-                    payment_object: "service",
-                    tax: "none"
-                }]
-            };
-        }
-
+       // ---- ФОРМИРУЕМ Receipt (чек для ФНС) ----
+let receiptObj = null;
+if (metadata?.type === 'diamonds_pack') {
+    receiptObj = {
+        items: [{
+            name: description,
+            quantity: 1,
+            sum: parseFloat(outSum),          // <- число, а не строка
+            payment_method: "full_payment",
+            payment_object: "commodity",
+            tax: "none"
+        }]
+    };
+} else if (metadata?.type === 'subscription') {
+    receiptObj = {
+        items: [{
+            name: "VIP Silver подписка на 30 дней",
+            quantity: 1,
+            sum: parseFloat(outSum),          // <- число
+            payment_method: "full_payment",
+            payment_object: "service",
+            tax: "none"
+        }]
+    };
+}
         // Кодированная версия для URL
         const receiptEncoded = receiptObj ? encodeURIComponent(JSON.stringify(receiptObj)) : null;
 

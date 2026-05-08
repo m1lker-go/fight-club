@@ -468,9 +468,10 @@ function showScreen(screen) {
     }
 
     switch (screen) {
-        case 'main':
+    case 'main':
     renderMain();
     checkAdvent();
+    updateTradeBadges(); 
     break;
         case 'equip': renderEquip(); break;
         case 'trade': renderTrade(); break;

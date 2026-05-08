@@ -1,4 +1,4 @@
-// routes/robokassa.js – добавлены бонусы при оформлении подписки
+// routes/robokassa.js – финальная рабочая версия (MD5, числовой InvId, Shp_type)
 
 require('dotenv').config();
 const express = require('express');
@@ -6,6 +6,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
+// ---------- КОНФИГУРАЦИЯ ----------
 const MERCHANT_LOGIN = process.env.MERCHANT_LOGIN;
 const PASSWORD1      = process.env.PASSWORD1;
 const PASSWORD2      = process.env.PASSWORD2;
@@ -18,42 +19,35 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись MD5 с Receipt и Shp ----------
-function buildSignatureString(outSum, invId, password, options = {}) {
-    const { receipt = null, shpParams = {} } = options;
-    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
-    if (receipt) str += `:${receipt}`;
-    str += `:${password}`;
-    const sortedShp = Object.keys(shpParams).sort();
-    for (const key of sortedShp) {
+// ---------- Подпись MD5 ----------
+function generateSignature(outSum, invId, password, shpParams = {}) {
+    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
+    const sortedKeys = Object.keys(shpParams).sort();
+    for (const key of sortedKeys) {
         str += `:${key}=${shpParams[key]}`;
     }
-    return str;
+    return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-function generateSignature(outSum, invId, password, options = {}) {
-    const str = buildSignatureString(outSum, invId, password, options);
-    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
-    console.log(`[SIGN DEBUG] String: ${str}`);
-    console.log(`[SIGN DEBUG] Result: ${sig}`);
-    return sig;
-}
-
+// Проверка подписи вебхука (OutSum:InvId:Пароль#2)
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ---------- СОЗДАНИЕ ПЛАТЕЖА (без изменений) ----------
+// ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
 router.post('/create', async (req, res) => {
     try {
-        const { userId, amount, description, returnUrl, metadata, receipt } = req.body;
+        const { userId, amount, description, returnUrl, metadata } = req.body;
         if (!userId || !amount || !description) {
             return res.status(400).json({ error: 'Missing fields' });
         }
-        const outSum = Number(amount).toFixed(2);
-        const invId = `${metadata?.type === 'subscription' ? 'sub' : 'diamonds'}_${userId}_${Date.now()}`;
 
+        const outSum = Number(amount).toFixed(2);
+        // Генерируем ЧИСЛОВОЙ уникальный InvId
+        const invId = Date.now() * 10000 + userId;
+
+        // Сохраняем детали покупки для вебхука
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -61,19 +55,23 @@ router.post('/create', async (req, res) => {
                     `INSERT INTO pending_robokassa_payments (inv_id, user_id, diamonds, bonus, pack_id)
                      VALUES ($1, $2, $3, $4, $5)
                      ON CONFLICT (inv_id) DO NOTHING`,
-                    [invId, userId, metadata.diamonds, metadata.bonus || false, metadata.packId]
+                    [String(invId), userId, metadata.diamonds, metadata.bonus || false, metadata.packId]
                 );
             } finally { client.release(); }
         }
 
-        const shpParams = { Shp_userId: userId.toString() };
-        if (metadata?.packId) shpParams.Shp_packId = metadata.packId.toString();
+        // Shp-параметры: передаём userId и тип платежа
+        const shpParams = {
+            Shp_userId: userId.toString(),
+            Shp_type: metadata?.type || 'unknown'
+        };
+        if (metadata?.packId) {
+            shpParams.Shp_packId = metadata.packId.toString();
+        }
 
-        const signature = generateSignature(outSum, invId, PASSWORD1, {
-            receipt: receipt || null,
-            shpParams: shpParams
-        });
+        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
 
+        // Собираем URL
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -85,12 +83,14 @@ router.post('/create', async (req, res) => {
             Encoding: 'utf-8',
         });
         if (returnUrl) params.append('SuccessURL', returnUrl);
-        if (receipt) params.append('Receipt', receipt);
+
+        // Добавляем Shp-параметры
         for (const [key, value] of Object.entries(shpParams)) {
             params.append(key, value);
         }
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
+        console.log(`[Robokassa] Создан платёж InvId=${invId}, userId=${userId}, type=${shpParams.Shp_type}`);
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
@@ -98,12 +98,12 @@ router.post('/create', async (req, res) => {
     }
 });
 
-// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ (без изменений) ----------
+// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
 async function handleDiamondsPayment(userId, outSum, invId) {
     const client = await pool.connect();
     try {
         const pending = await client.query(
-            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1', [invId]
+            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1', [String(invId)]
         );
         if (pending.rows.length === 0) return true;
         const { diamonds, bonus, pack_id } = pending.rows[0];
@@ -122,7 +122,7 @@ async function handleDiamondsPayment(userId, outSum, invId) {
         const user = await getUserByIdentifier(client, null, userId);
         if (!user) throw new Error('Пользователь не найден');
         await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamondsToAdd, user.id]);
-        await client.query('DELETE FROM pending_robokassa_payments WHERE inv_id = $1', [invId]);
+        await client.query('DELETE FROM pending_robokassa_payments WHERE inv_id = $1', [String(invId)]);
         await client.query('COMMIT');
         return true;
     } catch (err) {
@@ -132,65 +132,30 @@ async function handleDiamondsPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ---------- АКТИВАЦИЯ ПОДПИСКИ С БОНУСАМИ ----------
+// ---------- АКТИВАЦИЯ ПОДПИСКИ ----------
 async function handleSubscriptionPayment(userId, outSum, invId) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        // Защита от дублей
-        const existing = await client.query(
-            'SELECT 1 FROM subscription_activations WHERE inv_id = $1', [invId]
-        );
-        if (existing.rowCount > 0) {
-            await client.query('COMMIT');
-            return true;
-        }
+        const existing = await client.query('SELECT 1 FROM subscription_activations WHERE inv_id = $1', [String(invId)]);
+        if (existing.rowCount > 0) { await client.query('COMMIT'); return true; }
 
         const user = await getUserByIdentifier(client, null, userId);
         if (!user) throw new Error('Пользователь не найден');
 
-        // 1. Активация подписки (30 дней)
         const expiryDate = new Date();
         expiryDate.setDate(expiryDate.getDate() + 30);
         const expiryDateStr = expiryDate.toISOString().split('T')[0];
-        await client.query(
-            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
-            [expiryDateStr, user.id]
-        );
 
-        // 2. Запись об активации
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS subscription_activations (
-                inv_id VARCHAR(50) PRIMARY KEY,
-                user_id INTEGER,
-                activated_at TIMESTAMP DEFAULT NOW()
-            )
-        `);
-        await client.query(
-            'INSERT INTO subscription_activations (inv_id, user_id) VALUES ($1, $2)',
-            [invId, user.id]
-        );
+        await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiryDateStr, user.id]);
+        await client.query('CREATE TABLE IF NOT EXISTS subscription_activations (inv_id VARCHAR(50) PRIMARY KEY, user_id INTEGER, activated_at TIMESTAMP DEFAULT NOW())');
+        await client.query('INSERT INTO subscription_activations (inv_id, user_id) VALUES ($1, $2)', [String(invId), user.id]);
+        await client.query('INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
+            [user.id, '🎉 Подписка VIP Silver активирована!', 'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.']);
 
-        // 3. Приветственное сообщение
-        await client.query(
-            'INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
-            [
-                user.id,
-                '🎉 Подписка VIP Silver активирована!',
-                'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
-            ]
-        );
-
-        // 4. ЕДИНОРАЗОВЫЕ БОНУСЫ (только при первой активации)
-        await client.query(
-            'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
-            [user.id]
-        );
-        console.log(`[Robokassa] Начислены бонусы: 1500 монет, 50 угля, 100 алмазов пользователю ${user.id}`);
-
+        // Единоразовые бонусы
+        await client.query('UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1', [user.id]);
         await client.query('COMMIT');
-        console.log(`[Robokassa] Подписка активирована для user ${user.id} до ${expiryDateStr}`);
         return true;
     } catch (err) {
         await client.query('ROLLBACK');
@@ -199,23 +164,29 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ---------- ВЕБХУК (без изменений) ----------
+// ---------- ВЕБХУК ----------
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
-        const { OutSum, InvId, SignatureValue } = req.body;
-        if (!OutSum || !InvId || !SignatureValue) return res.status(400).send('ERROR');
+        const { OutSum, InvId, SignatureValue, Shp_userId, Shp_type } = req.body;
+        const userId = parseInt(Shp_userId);
+        if (!OutSum || !InvId || !SignatureValue || isNaN(userId)) {
+            return res.status(400).send('ERROR');
+        }
 
         const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
         if (SignatureValue.toUpperCase() !== expected) return res.status(400).send('ERROR');
 
-        const parts = InvId.split('_');
-        const type = parts[0];
-        const userId = parseInt(parts[1]);
-        if (isNaN(userId)) return res.status(400).send('ERROR');
+        let success = false;
+        if (Shp_type === 'subscription') {
+            success = await handleSubscriptionPayment(userId, OutSum, InvId);
+        } else if (Shp_type === 'diamonds_pack') {
+            success = await handleDiamondsPayment(userId, OutSum, InvId);
+        } else {
+            console.error('Unknown Shp_type:', Shp_type);
+            return res.status(400).send('ERROR');
+        }
 
-        let success = (type === 'sub') ? await handleSubscriptionPayment(userId, OutSum, InvId)
-                                      : await handleDiamondsPayment(userId, OutSum, InvId);
         res.send(success ? `OK${InvId}` : 'ERROR');
     } catch (e) {
         console.error('Result error:', e);

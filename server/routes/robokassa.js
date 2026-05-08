@@ -1,4 +1,4 @@
-// routes/robokassa.js – финальная версия с письмами-наградами
+// routes/robokassa.js – финальная версия с письмами-наградами и отладкой подписи вебхука
 
 require('dotenv').config();
 const express = require('express');
@@ -18,7 +18,7 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// Подпись MD5
+// Подпись MD5 для инициализации платежа
 function generateSignature(outSum, invId, password, shpParams = {}) {
     let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
     const sortedKeys = Object.keys(shpParams).sort();
@@ -28,6 +28,7 @@ function generateSignature(outSum, invId, password, shpParams = {}) {
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
+// Проверка подписи вебхука (OutSum:InvId:Пароль#2)
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
@@ -222,16 +223,23 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ========== ВЕБХУК ==========
+// ========== ВЕБХУК С ОТЛАДКОЙ ==========
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
-        // Robokassa может передавать поля в разных регистрах или под разными именами
         const OutSum = req.body.OutSum || req.body.out_summ;
         const InvId = req.body.InvId || req.body.inv_id;
-        const SignatureValue = req.body.SignatureValue || req.body.crc;   // <-- поддержка crc
+        const SignatureValue = req.body.SignatureValue || req.body.crc;
         const Shp_userId = req.body.Shp_userId;
         const Shp_type = req.body.Shp_type;
+
+        // ---------- ОТЛАДОЧНЫЙ ВЫВОД ----------
+        const testStr = `${OutSum}:${InvId}:${PASSWORD2}`;
+        const testHash = crypto.createHash('md5').update(testStr).digest('hex').toUpperCase();
+        console.log(`[DEBUG RESULT] Input string: ${testStr}`);
+        console.log(`[DEBUG RESULT] Expected hash: ${testHash}`);
+        console.log(`[DEBUG RESULT] Received hash: ${SignatureValue}`);
+        // ------------------------------------
 
         const userId = parseInt(Shp_userId);
         if (!OutSum || !InvId || !SignatureValue || isNaN(userId)) {

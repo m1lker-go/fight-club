@@ -1,4 +1,4 @@
-// routes/robokassa.js – с Receipt, правильной подписью инициализации и вебхука
+// routes/robokassa.js – надёжная версия БЕЗ Receipt и с работающей проверкой вебхука
 
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 const express = require('express');
@@ -19,20 +19,10 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
 /**
- * Генерация подписи для инициализации платежа (с Receipt).
- * @param {string} outSum
- * @param {number|string} invId
- * @param {string} password – Пароль#1
- * @param {Object} shpParams – { Shp_userId, Shp_type, ... }
- * @param {Object|null} receiptObj – сырой объект Receipt
+ * Генерация подписи для инициализации платежа (без Receipt).
  */
-function generateSignature(outSum, invId, password, shpParams = {}, receiptObj = null) {
-    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
-    if (receiptObj) {
-        const receiptEncoded = encodeURIComponent(JSON.stringify(receiptObj));
-        str += `:${receiptEncoded}`;
-    }
-    str += `:${password}`;
+function generateSignature(outSum, invId, password, shpParams = {}) {
+    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
     const sortedKeys = Object.keys(shpParams).sort();
     for (const key of sortedKeys) {
         str += `:${key}=${shpParams[key]}`;
@@ -41,12 +31,10 @@ function generateSignature(outSum, invId, password, shpParams = {}, receiptObj =
 }
 
 /**
- * Проверка подписи вебхука Robokassa (Result URL).
- * Строка для подписи: OutSum:InvId:Password2 + дополнительные Shp-параметры в алфавитном порядке.
+ * Проверка подписи вебхука (Result URL) с поддержкой Shp-параметров.
  */
 function verifyResultSignature(outSum, invId, password, shpParams = {}) {
     let str = `${outSum}:${invId}:${password}`;
-    // Добавляем Shp-параметры, исключая служебные (Shp_userId, Shp_type и т.п.)
     const shpKeys = Object.keys(shpParams).filter(k => k.startsWith('Shp_')).sort();
     for (const key of shpKeys) {
         str += `:${key}=${shpParams[key]}`;
@@ -64,7 +52,6 @@ router.post('/create', async (req, res) => {
         const outSum = Number(amount).toFixed(2);
         const invId = Date.now() * 10000 + userId;
 
-        // Сохраняем данные о пакете алмазов при необходимости
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -77,35 +64,6 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-       // ---- ФОРМИРУЕМ Receipt (чек для ФНС) ----
-let receiptObj = null;
-if (metadata?.type === 'diamonds_pack') {
-    receiptObj = {
-        items: [{
-            name: description,
-            quantity: 1,
-            sum: parseFloat(outSum),          // <- число, а не строка
-            payment_method: "full_payment",
-            payment_object: "commodity",
-            tax: "none"
-        }]
-    };
-} else if (metadata?.type === 'subscription') {
-    receiptObj = {
-        items: [{
-            name: "VIP Silver подписка на 30 дней",
-            quantity: 1,
-            sum: parseFloat(outSum),          // <- число
-            payment_method: "full_payment",
-            payment_object: "service",
-            tax: "none"
-        }]
-    };
-}
-        // Кодированная версия для URL
-        const receiptEncoded = receiptObj ? encodeURIComponent(JSON.stringify(receiptObj)) : null;
-
-        // Shp-параметры
         const shpParams = {
             Shp_userId: userId.toString(),
             Shp_type: metadata?.type || 'unknown'
@@ -114,8 +72,7 @@ if (metadata?.type === 'diamonds_pack') {
             shpParams.Shp_packId = metadata.packId.toString();
         }
 
-        // Подпись с сырым объектом receiptObj
-        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams, receiptObj);
+        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
 
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
@@ -132,12 +89,7 @@ if (metadata?.type === 'diamonds_pack') {
             params.append(key, value);
         }
 
-        // Собираем финальный URL
-        let confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
-        if (receiptEncoded) {
-            confirmationUrl += `&Receipt=${receiptEncoded}`;
-        }
-
+        const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
@@ -258,7 +210,7 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ========== ВЕБХУК (исправленная проверка подписи) ==========
+// ========== ВЕБХУК (с правильной подписью) ==========
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
@@ -266,7 +218,6 @@ router.post('/result', async (req, res) => {
         const InvId = req.body.InvId || req.body.inv_id;
         const SignatureValue = req.body.SignatureValue || req.body.crc;
 
-        // Собираем все Shp_* параметры из тела запроса
         const shpParams = {};
         for (const [key, value] of Object.entries(req.body)) {
             if (key.startsWith('Shp_')) {
@@ -277,7 +228,6 @@ router.post('/result', async (req, res) => {
         const userId = parseInt(req.body.Shp_userId);
         const Shp_type = req.body.Shp_type;
 
-        // Отладочный вывод
         console.log('[DEBUG RESULT] Shp params:', shpParams);
         const expected = verifyResultSignature(OutSum, InvId, PASSWORD2, shpParams);
         console.log(`[DEBUG RESULT] Expected signature: ${expected}`);
@@ -288,7 +238,6 @@ router.post('/result', async (req, res) => {
             return res.status(400).send('ERROR');
         }
 
-        // Проверка подписи (теперь с Shp-параметрами)
         if (SignatureValue.toUpperCase() !== expected) {
             console.error('Invalid signature');
             return res.status(400).send('ERROR');

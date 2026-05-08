@@ -5,7 +5,7 @@ const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
 const { sendTelegramNotification } = require('./utils/telegram');
 const { resetDailyTasks, resetSeason } = require('./utils/scheduler');
-require('dotenv').config();
+require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 
 console.log('Starting server...');
 console.log('Environment:', process.env.NODE_ENV);

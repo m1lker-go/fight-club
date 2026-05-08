@@ -21,24 +21,17 @@ const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 /**
  * Формирует строку подписи согласно документации:
  * MerchantLogin:OutSum:[InvId или пусто]:[Receipt]:[StepByStep:...]:Пароль#1[:Shp_key=value...]
- * @param {string} outSum - сумма
- * @param {string} invId - номер счёта
- * @param {string} password - Пароль#1
- * @param {object} options - { receipt, shpParams } 
  */
 function buildSignatureString(outSum, invId, password, options = {}) {
     const { receipt = null, shpParams = {} } = options;
     let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
 
-    // Фискальные данные (Receipt) добавляются сразу после InvId
     if (receipt) {
         str += `:${receipt}`;
     }
 
-    // Пароль#1
     str += `:${password}`;
 
-    // Shp-параметры строго по алфавиту
     const sortedShp = Object.keys(shpParams).sort();
     for (const key of sortedShp) {
         str += `:${key}=${shpParams[key]}`;
@@ -124,6 +117,44 @@ router.post('/create', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
+async function handleDiamondsPayment(userId, outSum, invId) {
+    const client = await pool.connect();
+    try {
+        const pending = await client.query(
+            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1', [invId]
+        );
+        if (pending.rows.length === 0) return true;
+
+        const { diamonds, bonus, pack_id } = pending.rows[0];
+        let diamondsToAdd = parseInt(diamonds) || 0;
+
+        if (bonus && diamondsToAdd > 0) {
+            const check = await client.query(
+                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, pack_id]
+            );
+            if (check.rowCount === 0) {
+                diamondsToAdd = Math.floor(diamondsToAdd * 1.5);
+                await client.query('INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)', [userId, pack_id]);
+            }
+        }
+
+        if (diamondsToAdd === 0) return true;
+
+        await client.query('BEGIN');
+        const user = await getUserByIdentifier(client, null, userId);
+        if (!user) throw new Error('Пользователь не найден');
+        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamondsToAdd, user.id]);
+        await client.query('DELETE FROM pending_robokassa_payments WHERE inv_id = $1', [invId]);
+        await client.query('COMMIT');
+        return true;
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[Robokassa] Ошибка начисления алмазов:', err);
+        return false;
+    } finally { client.release(); }
+}
 
 // ---------- АКТИВАЦИЯ ПОДПИСКИ ----------
 async function handleSubscriptionPayment(userId, outSum, invId) {

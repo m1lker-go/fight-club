@@ -1,4 +1,4 @@
-// routes/robokassa.js – полная версия с Receipt, корректной подписью и вебхуком
+// routes/robokassa.js – надёжная версия БЕЗ Receipt и с работающей проверкой вебхука
 
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 const express = require('express');
@@ -19,19 +19,10 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
 /**
- * Генерация подписи для инициализации платежа.
- * @param {string} outSum
- * @param {number|string} invId
- * @param {string} password – Пароль#1
- * @param {Object} shpParams
- * @param {string|null} receiptEncoded – уже URL-кодированный JSON чека
+ * Генерация подписи для инициализации платежа (без Receipt).
  */
-function generateSignature(outSum, invId, password, shpParams = {}, receiptEncoded = null) {
-    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
-    if (receiptEncoded) {
-        str += `:${receiptEncoded}`;
-    }
-    str += `:${password}`;
+function generateSignature(outSum, invId, password, shpParams = {}) {
+    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
     const sortedKeys = Object.keys(shpParams).sort();
     for (const key of sortedKeys) {
         str += `:${key}=${shpParams[key]}`;
@@ -40,7 +31,7 @@ function generateSignature(outSum, invId, password, shpParams = {}, receiptEncod
 }
 
 /**
- * Проверка подписи вебхука (Result URL) с Shp-параметрами.
+ * Проверка подписи вебхука (Result URL) с поддержкой Shp-параметров.
  */
 function verifyResultSignature(outSum, invId, password, shpParams = {}) {
     let str = `${outSum}:${invId}:${password}`;
@@ -61,7 +52,6 @@ router.post('/create', async (req, res) => {
         const outSum = Number(amount).toFixed(2);
         const invId = Date.now() * 10000 + userId;
 
-        // Сохраняем данные о пакете алмазов при необходимости
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -74,35 +64,6 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        // ---- ФОРМИРУЕМ Receipt (чек для ФНС) ----
-        let receiptObj = null;
-        if (metadata?.type === 'diamonds_pack') {
-            receiptObj = {
-                items: [{
-                    name: description,
-                    quantity: 1,
-                    sum: parseFloat(outSum),          // число, обязательно
-                    payment_method: "full_payment",
-                    payment_object: "commodity",
-                    tax: "none"
-                }]
-            };
-        } else if (metadata?.type === 'subscription') {
-            receiptObj = {
-                items: [{
-                    name: "VIP Silver подписка на 30 дней",
-                    quantity: 1,
-                    sum: parseFloat(outSum),          // число
-                    payment_method: "full_payment",
-                    payment_object: "service",
-                    tax: "none"
-                }]
-            };
-        }
-
-        // Единая закодированная строка для подписи и URL
-        const receiptEncoded = receiptObj ? encodeURIComponent(JSON.stringify(receiptObj)) : null;
-
         const shpParams = {
             Shp_userId: userId.toString(),
             Shp_type: metadata?.type || 'unknown'
@@ -111,8 +72,7 @@ router.post('/create', async (req, res) => {
             shpParams.Shp_packId = metadata.packId.toString();
         }
 
-        // Подпись: передаём уже закодированную строку, как требует Robokassa
-        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams, receiptEncoded);
+        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
 
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
@@ -129,12 +89,7 @@ router.post('/create', async (req, res) => {
             params.append(key, value);
         }
 
-        // Финальный URL с Receipt
-        let confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
-        if (receiptEncoded) {
-            confirmationUrl += `&Receipt=${receiptEncoded}`;
-        }
-
+        const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
@@ -142,7 +97,7 @@ router.post('/create', async (req, res) => {
     }
 });
 
-// ========== ОБРАБОТКА НАГРАД (без изменений) ==========
+// ========== ОБРАБОТКА НАГРАД ==========
 async function createRewardMessage(client, userId, subject, body, rewardType, rewardAmount) {
     await client.query(
         `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)

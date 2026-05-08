@@ -68,8 +68,8 @@ router.get('/advent', async (req, res) => {
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const nextDay = lastClaimed + 1;
         let availableDay = null;
-       const lastMsk = lastClaimDate ? toMoscowDateString(lastClaimDate) : null;
-if (nextDay <= currentDay && (!lastMsk || lastMsk !== todayStr)) {
+        const lastMsk = lastClaimDate ? toMoscowDateString(lastClaimDate) : null;
+        if (nextDay <= currentDay && (!lastMsk || lastMsk !== todayStr)) {
             availableDay = nextDay;
         }
         res.json({ currentDay, daysInMonth, nextAvailable: availableDay, lastClaimed, lastClaimDate });
@@ -369,10 +369,64 @@ router.post('/daily/update/ads', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        // Обновляем оба рекламных задания одновременно (каждое на +1)
-        await dailyTasks.updateWatchAdsProgress(user.id);
-        res.json({ success: true });
+
+        // Проверяем, активна ли подписка VIP Silver
+        const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
+
+        if (subscriptionActive) {
+            // Подписка активна – реклама не показывается, задания выполняются автоматически
+            await client.query('BEGIN');
+
+            let progress = dailyTasks.parseProgress(user.daily_tasks_progress);
+            let mask = user.daily_tasks_mask;
+
+            const adTaskIds = [11, 12];
+
+            for (const taskId of adTaskIds) {
+                // Если задание уже выполнено, пропускаем
+                if (mask & (1 << (taskId - 1))) continue;
+
+                // Увеличиваем прогресс на 1
+                progress[taskId] = (progress[taskId] || 0) + 1;
+
+                const taskRes = await client.query(
+                    'SELECT target_value, reward_type, reward_amount FROM daily_tasks WHERE id = $1',
+                    [taskId]
+                );
+                if (taskRes.rows.length === 0) continue;
+
+                const target = taskRes.rows[0].target_value;
+
+                // Если прогресс достиг целевого значения, выполняем задание
+                if (progress[taskId] >= target) {
+                    // Помечаем как завершённое
+                    mask |= (1 << (taskId - 1));
+                    // Начисляем награду
+                    const { reward_type, reward_amount } = taskRes.rows[0];
+                    if (reward_type === 'coins') {
+                        await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, user.id]);
+                    } else if (reward_type === 'coal') {
+                        await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, user.id]);
+                    }
+                    // Фиксируем прогресс
+                    progress[taskId] = target;
+                }
+            }
+
+            await client.query(
+                'UPDATE users SET daily_tasks_progress = $1, daily_tasks_mask = $2 WHERE id = $3',
+                [JSON.stringify(progress), mask, user.id]
+            );
+
+            await client.query('COMMIT');
+            res.json({ success: true, autoCompleted: true });
+        } else {
+            // Без подписки – обычное обновление прогресса
+            await dailyTasks.updateWatchAdsProgress(user.id);
+            res.json({ success: true });
+        }
     } catch (e) {
+        await client.query('ROLLBACK');
         console.error(e);
         res.status(500).json({ error: e.message });
     } finally {

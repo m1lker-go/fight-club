@@ -1356,7 +1356,7 @@ async function renderMessageDetail(messageId) {
                 <div class="message-date">${new Date(msg.created_at).toLocaleString()}</div>
             </div>
             <div class="message-detail-subject">${escapeHtml(msg.subject)}</div>
-            <div class="message-detail-body">${escapeHtml(msg.body)}</div>
+            <div class="message-detail-body">${escapeHtml(msg.body).replace(/\n/g, '<br>')}</div>
             ${rewardDisplay}
             <div class="message-detail-actions">
                 <button class="reply-btn" id="replyBtn">Ответить</button>

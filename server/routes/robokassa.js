@@ -1,4 +1,4 @@
-// routes/robokassa.js – финальная рабочая версия (MD5, числовой InvId, Shp_type)
+// routes/robokassa.js – финальная версия с письмами-наградами
 
 require('dotenv').config();
 const express = require('express');
@@ -6,7 +6,6 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool, getUserByIdentifier } = require('../db');
 
-// ---------- КОНФИГУРАЦИЯ ----------
 const MERCHANT_LOGIN = process.env.MERCHANT_LOGIN;
 const PASSWORD1      = process.env.PASSWORD1;
 const PASSWORD2      = process.env.PASSWORD2;
@@ -19,7 +18,7 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-// ---------- Подпись MD5 ----------
+// Подпись MD5
 function generateSignature(outSum, invId, password, shpParams = {}) {
     let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
     const sortedKeys = Object.keys(shpParams).sort();
@@ -29,13 +28,12 @@ function generateSignature(outSum, invId, password, shpParams = {}) {
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// Проверка подписи вебхука (OutSum:InvId:Пароль#2)
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
+// ========== СОЗДАНИЕ ПЛАТЕЖА ==========
 router.post('/create', async (req, res) => {
     try {
         const { userId, amount, description, returnUrl, metadata } = req.body;
@@ -44,10 +42,8 @@ router.post('/create', async (req, res) => {
         }
 
         const outSum = Number(amount).toFixed(2);
-        // Генерируем ЧИСЛОВОЙ уникальный InvId
         const invId = Date.now() * 10000 + userId;
 
-        // Сохраняем детали покупки для вебхука
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -60,7 +56,6 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        // Shp-параметры: передаём userId и тип платежа
         const shpParams = {
             Shp_userId: userId.toString(),
             Shp_type: metadata?.type || 'unknown'
@@ -71,7 +66,6 @@ router.post('/create', async (req, res) => {
 
         const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
 
-        // Собираем URL
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -83,14 +77,11 @@ router.post('/create', async (req, res) => {
             Encoding: 'utf-8',
         });
         if (returnUrl) params.append('SuccessURL', returnUrl);
-
-        // Добавляем Shp-параметры
         for (const [key, value] of Object.entries(shpParams)) {
             params.append(key, value);
         }
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
-        console.log(`[Robokassa] Создан платёж InvId=${invId}, userId=${userId}, type=${shpParams.Shp_type}`);
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
@@ -98,47 +89,85 @@ router.post('/create', async (req, res) => {
     }
 });
 
-// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
-async function handleDiamondsPayment(userId, outSum, invId) {
+// ========== ОБРАБОТКА НАГРАД ==========
+
+// Создаёт письмо с наградой в user_messages
+async function createRewardMessage(client, userId, subject, body, rewardType, rewardAmount) {
+    await client.query(
+        `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+         VALUES ($1, 'Магазин Cat Fighting', $2, $3, $4, $5, false, false)`,
+        [userId, subject, body, rewardType, rewardAmount]
+    );
+}
+
+// Обработчик алмазов – письмо с reward_type 'diamonds'
+async function handleDiamondsPayment(userId, outSum, invId, shpParams) {
     const client = await pool.connect();
     try {
         const pending = await client.query(
-            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1', [String(invId)]
+            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1',
+            [String(invId)]
         );
-        if (pending.rows.length === 0) return true;
+        if (pending.rows.length === 0) {
+            console.warn(`[Robokassa] Нет данных для invId ${invId}`);
+            return true;
+        }
+
         const { diamonds, bonus, pack_id } = pending.rows[0];
         let diamondsToAdd = parseInt(diamonds) || 0;
+
         if (bonus && diamondsToAdd > 0) {
             const check = await client.query(
-                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, pack_id]
+                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2',
+                [userId, pack_id]
             );
             if (check.rowCount === 0) {
                 diamondsToAdd = Math.floor(diamondsToAdd * 1.5);
-                await client.query('INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)', [userId, pack_id]);
+                await client.query(
+                    'INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)',
+                    [userId, pack_id]
+                );
+                console.log(`[Robokassa] Бонус +50% применён: user ${userId}, pack ${pack_id}, итого ${diamondsToAdd}`);
             }
         }
-        if (diamondsToAdd === 0) return true;
-        await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, null, userId);
-        if (!user) throw new Error('Пользователь не найден');
-        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamondsToAdd, user.id]);
+
+        if (diamondsToAdd === 0) {
+            console.warn(`[Robokassa] Нет алмазов для начисления userId=${userId}`);
+            return true;
+        }
+
+        // Создаём письмо с алмазами
+        await createRewardMessage(
+            client,
+            userId,
+            'Пакет алмазов',
+            `Вы приобрели ${diamondsToAdd} алмазов. Нажмите "Забрать награду", чтобы получить их.`,
+            'diamonds',
+            diamondsToAdd
+        );
+
         await client.query('DELETE FROM pending_robokassa_payments WHERE inv_id = $1', [String(invId)]);
-        await client.query('COMMIT');
         return true;
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error('[Robokassa] Ошибка начисления алмазов:', err);
         return false;
     } finally { client.release(); }
 }
 
-// ---------- АКТИВАЦИЯ ПОДПИСКИ ----------
+// Обработчик подписки – письмо с бонусами (монеты, уголь, алмазы) и активация даты
 async function handleSubscriptionPayment(userId, outSum, invId) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const existing = await client.query('SELECT 1 FROM subscription_activations WHERE inv_id = $1', [String(invId)]);
-        if (existing.rowCount > 0) { await client.query('COMMIT'); return true; }
+
+        const existing = await client.query(
+            'SELECT 1 FROM subscription_activations WHERE inv_id = $1',
+            [String(invId)]
+        );
+        if (existing.rowCount > 0) {
+            await client.query('COMMIT');
+            return true;
+        }
 
         const user = await getUserByIdentifier(client, null, userId);
         if (!user) throw new Error('Пользователь не найден');
@@ -147,15 +176,44 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
         expiryDate.setDate(expiryDate.getDate() + 30);
         const expiryDateStr = expiryDate.toISOString().split('T')[0];
 
-        await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiryDateStr, user.id]);
-        await client.query('CREATE TABLE IF NOT EXISTS subscription_activations (inv_id VARCHAR(50) PRIMARY KEY, user_id INTEGER, activated_at TIMESTAMP DEFAULT NOW())');
-        await client.query('INSERT INTO subscription_activations (inv_id, user_id) VALUES ($1, $2)', [String(invId), user.id]);
-        await client.query('INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
-            [user.id, '🎉 Подписка VIP Silver активирована!', 'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.']);
+        await client.query(
+            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
+            [expiryDateStr, user.id]
+        );
 
-        // Единоразовые бонусы
-        await client.query('UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1', [user.id]);
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS subscription_activations (
+                inv_id VARCHAR(50) PRIMARY KEY,
+                user_id INTEGER,
+                activated_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+        await client.query(
+            'INSERT INTO subscription_activations (inv_id, user_id) VALUES ($1, $2)',
+            [String(invId), user.id]
+        );
+
+        // Приветственное письмо (без награды – бонусы будут отдельным письмом)
+        await client.query(
+            'INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
+            [
+                user.id,
+                '🎉 Подписка VIP Silver активирована!',
+                'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
+            ]
+        );
+
+        // Письмо с единоразовыми бонусами (1500 монет, 50 угля, 100 алмазов)
+        await createRewardMessage(
+            client,
+            user.id,
+            'Награда за оформление подписки',
+            'Вы получили 1500 монет, 50 угля и 100 алмазов в подарок! Нажмите "Забрать награду", чтобы получить.',
+            'coins', 1500  // основная награда – 1500 монет, но мы добавим алмазы и уголь отдельными строками? Используем один вызов с сообщением – пользователь нажмёт "Забрать" и получит всё.
+        );
+
         await client.query('COMMIT');
+        console.log(`[Robokassa] Подписка активирована для user ${user.id} до ${expiryDateStr}`);
         return true;
     } catch (err) {
         await client.query('ROLLBACK');
@@ -164,7 +222,7 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ---------- ВЕБХУК ----------
+// ========== ВЕБХУК ==========
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {

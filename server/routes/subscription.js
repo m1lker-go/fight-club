@@ -30,14 +30,21 @@ router.get('/status', async (req, res) => {
         const lastFreeMsk = toMoscowDateString(row.last_free_sub_coin);
         const freeCoinAvailable = (lastFreeMsk !== todayMsk);
 
-        // Проверка возможности получения ежедневной награды подписчиком
         let dailySubRewardAvailable = false;
         if (hasSubscription) {
             const lastRewardMsk = toMoscowDateString(row.last_daily_sub_reward);
             dailySubRewardAvailable = (lastRewardMsk !== todayMsk);
         }
 
-        res.json({ hasSubscription, freeCoinAvailable, dailySubRewardAvailable, bonusPacks: {} });
+        // Получаем реальные бонусные покупки
+        const bonusRes = await client.query(
+            'SELECT pack_id FROM bonus_purchases WHERE user_id = $1',
+            [user_id]
+        );
+        const bonusPacks = {};
+        bonusRes.rows.forEach(r => { bonusPacks[r.pack_id] = true; });
+
+        res.json({ hasSubscription, freeCoinAvailable, dailySubRewardAvailable, bonusPacks });
     } finally {
         client.release();
     }

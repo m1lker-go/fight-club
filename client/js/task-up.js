@@ -210,8 +210,14 @@ async function loadDailyTasks() {
                     '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + clampedProgress + '/' + task.target_value + '</div>' +
                 '</div>';
 
-            let isReadyToClaim = false;
-                       if (task.id === 9) {
+             let isReadyToClaim = false;
+
+            // Обычные задания: проверяем достижение цели
+            if (task.id !== 9) {
+                isReadyToClaim = (task.progress >= task.target_value);
+            }
+
+            if (task.id === 9) {
                 const championTarget = 10;
                 const championProgress = completedTasksCount;
                 const championPercent = Math.min(100, (championProgress / championTarget) * 100);

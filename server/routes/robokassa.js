@@ -226,14 +226,24 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
-        const { OutSum, InvId, SignatureValue, Shp_userId, Shp_type } = req.body;
+        // Robokassa может передавать поля в разных регистрах или под разными именами
+        const OutSum = req.body.OutSum || req.body.out_summ;
+        const InvId = req.body.InvId || req.body.inv_id;
+        const SignatureValue = req.body.SignatureValue || req.body.crc;   // <-- поддержка crc
+        const Shp_userId = req.body.Shp_userId;
+        const Shp_type = req.body.Shp_type;
+
         const userId = parseInt(Shp_userId);
         if (!OutSum || !InvId || !SignatureValue || isNaN(userId)) {
+            console.error('Missing parameters');
             return res.status(400).send('ERROR');
         }
 
         const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
-        if (SignatureValue.toUpperCase() !== expected) return res.status(400).send('ERROR');
+        if (SignatureValue.toUpperCase() !== expected) {
+            console.error('Invalid signature');
+            return res.status(400).send('ERROR');
+        }
 
         let success = false;
         if (Shp_type === 'subscription') {

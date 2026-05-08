@@ -174,6 +174,31 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             20 <i class="fas fa-coins"></i>
         </button>` : '';
 
+    // Определяем, что показать в качестве основной кнопки (подписка / ежедневная награда)
+    let mainButtonHtml = '';
+    if (hasSubscription) {
+        // Подписка активна – показываем кнопку ежедневной награды, если она доступна
+        const dailyAvailable = subscriptionStatus?.dailySubRewardAvailable;
+        if (dailyAvailable) {
+            mainButtonHtml = `
+                <button class="subscription-buy-btn-new" id="dailyRewardBtn" style="position: relative;">
+                    <img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">
+                    Забрать ежедневную награду
+                </button>`;
+        } else {
+            mainButtonHtml = `
+                <button class="subscription-buy-btn-new" id="dailyRewardBtn" disabled style="opacity: 0.6; cursor: not-allowed;">
+                    Награда уже получена
+                </button>`;
+        }
+    } else {
+        // Подписки нет – стандартная кнопка оформления
+        mainButtonHtml = `
+            <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
+                Оформить за 599 ₽/мес
+            </button>`;
+    }
+
     modalBody.innerHTML = `
         <div class="subscription-modal-new">
             <div class="sub-feature-row">
@@ -198,16 +223,14 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             </div>
             <div class="subscription-buttons-new">
                 ${freeCoinButton}
-               <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
-               Оформить за 599 ₽/мес
-               </button>
+                ${mainButtonHtml}
             </div>
         </div>
     `;
 
     modal.style.display = 'flex';
 
-    // Обработчик бесплатной монеты
+    // Обработчик бесплатной монеты (20 coins)
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -244,7 +267,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Обработчик покупки подписки (POST-форма)
+    // Обработчик покупки подписки (POST-форма) – показывается только если подписки нет
     const buyBtn = document.getElementById('buySubscriptionBtnNew');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
@@ -269,6 +292,40 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             } catch (err) {
                 console.error('[gems] Subscription error:', err);
                 showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+            }
+        });
+    }
+
+    // Обработчик ежедневной награды для подписчиков
+    const dailyBtn = document.getElementById('dailyRewardBtn');
+    if (dailyBtn && !dailyBtn.disabled) {
+        dailyBtn.addEventListener('click', async () => {
+            console.log('[gems] daily reward button clicked');
+            dailyBtn.disabled = true;
+            try {
+                const res = await window.apiRequest('/subscription/claim-daily-reward', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_id: userData.id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`+${data.coins} монет, +${data.coal} угля!`, 2000);
+                    // Обновляем статус, чтобы кнопка стала неактивной
+                    subscriptionStatus.dailySubRewardAvailable = false;
+                    // Перерисовываем модальное окно
+                    await refreshData();
+                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                    modal.style.display = 'none';
+                    const subContent = document.getElementById('tradeSubContent');
+                    if (subContent) renderGems(subContent);
+                } else {
+                    showToast(data.error || 'Ошибка', 1500);
+                    dailyBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error('[gems] daily reward error:', err);
+                showToast('Ошибка соединения', 1500);
+                dailyBtn.disabled = false;
             }
         });
     }

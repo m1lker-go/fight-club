@@ -1797,12 +1797,12 @@ async function updateTradeBadges() {
         const [freeChestRes, freeCoalRes, freeCoinRes] = await Promise.all([
             window.apiRequest('/player/freechest', { method: 'GET' }),
             window.apiRequest('/player/freecoal', { method: 'GET' }),
-            window.apiRequest('/subscription/free-coin-status', { method: 'GET' }).catch(() => ({ ok: false }))
+            window.apiRequest('/subscription/status', { method: 'GET' }).catch(() => ({ ok: false }))
         ]);
         
         const freeChest = freeChestRes.ok ? (await freeChestRes.json()).freeAvailable : false;
         const freeCoal = freeCoalRes.ok ? (await freeCoalRes.json()).freeAvailable : false;
-        const freeCoin20 = freeCoinRes.ok ? (await freeCoinRes.json()).available : false;
+        const freeCoin20 = freeCoinRes.ok ? (await freeCoinRes.json()).freeCoinAvailable : false;
         
         const hasAnyFree = freeChest || freeCoal || freeCoin20;
         

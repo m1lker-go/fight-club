@@ -167,12 +167,12 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
         }
         const user = await getUserByIdentifier(client, null, userId);
         if (!user) throw new Error('Пользователь не найден');
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 30);
-        const expiryDateStr = expiryDate.toISOString().split('T')[0];
+       const daysToAdd = 30; // можно оставить 30 дней, как и было
+const expiryDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
+const expiryISO = expiryDate.toISOString();   // полный UTC timestamp
         await client.query(
-            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
-            [expiryDateStr, user.id]
+           'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
+[expiryISO, user.id]
         );
         await client.query(`
             CREATE TABLE IF NOT EXISTS subscription_activations (

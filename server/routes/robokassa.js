@@ -1,4 +1,4 @@
-// routes/robokassa.js – ОТЛАДОЧНАЯ ВЕРСИЯ (MD5, переменные без префикса)
+// routes/robokassa.js — финальная версия (MD5, Receipt, Shp, POST-форма)
 
 require('dotenv').config();
 const express = require('express');
@@ -11,32 +11,60 @@ const PASSWORD1      = process.env.PASSWORD1;
 const PASSWORD2      = process.env.PASSWORD2;
 const IS_TEST        = process.env.IS_TEST === 'true';
 
-console.log('[Robokassa] MERCHANT_LOGIN:', MERCHANT_LOGIN);
-console.log('[Robokassa] IS_TEST:', IS_TEST);
-
 if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
-    console.error('[Robokassa] Не заданы переменные окружения');
+    console.error('[Robokassa] Не заданы переменные MERCHANT_LOGIN, PASSWORD1, PASSWORD2');
     process.exit(1);
 }
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-function generateSignature(outSum, invId, password) {
-    const str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
-    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
+/**
+ * Формирует строку подписи согласно документации:
+ * MerchantLogin:OutSum:[InvId или пусто]:[Receipt]:[StepByStep:...]:Пароль#1[:Shp_key=value...]
+ * @param {string} outSum - сумма
+ * @param {string} invId - номер счёта
+ * @param {string} password - Пароль#1
+ * @param {object} options - { receipt, shpParams } 
+ */
+function buildSignatureString(outSum, invId, password, options = {}) {
+    const { receipt = null, shpParams = {} } = options;
+    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
+
+    // Фискальные данные (Receipt) добавляются сразу после InvId
+    if (receipt) {
+        str += `:${receipt}`;
+    }
+
+    // Пароль#1
+    str += `:${password}`;
+
+    // Shp-параметры строго по алфавиту
+    const sortedShp = Object.keys(shpParams).sort();
+    for (const key of sortedShp) {
+        str += `:${key}=${shpParams[key]}`;
+    }
+
+    return str;
+}
+
+function generateSignature(outSum, invId, password, options = {}) {
+    const str = buildSignatureString(outSum, invId, password, options);
     console.log(`[SIGN DEBUG] String: ${str}`);
+    const sig = crypto.createHash('md5').update(str).digest('hex').toUpperCase();
     console.log(`[SIGN DEBUG] Result: ${sig}`);
     return sig;
 }
 
+// для вебхука (OutSum:InvId:Пароль#2)
 function verifyResultSignature(outSum, invId, password) {
     const str = `${outSum}:${invId}:${password}`;
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
+// ---------- СОЗДАНИЕ ПЛАТЕЖА ----------
 router.post('/create', async (req, res) => {
     try {
-        const { userId, amount, description, returnUrl, metadata } = req.body;
+        const { userId, amount, description, returnUrl, metadata, receipt } = req.body;
         if (!userId || !amount || !description) {
             return res.status(400).json({ error: 'Missing fields' });
         }
@@ -44,6 +72,7 @@ router.post('/create', async (req, res) => {
         const outSum = Number(amount).toFixed(2);
         const invId = `${metadata?.type === 'subscription' ? 'sub' : 'diamonds'}_${userId}_${Date.now()}`;
 
+        // Сохраняем детали покупки для вебхука
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -56,8 +85,20 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        const signature = generateSignature(outSum, invId, PASSWORD1);
+        // Shp-параметры (например, Shp_userId)
+        const shpParams = {
+            Shp_userId: userId.toString(),
+        };
+        if (metadata?.packId) {
+            shpParams.Shp_packId = metadata.packId.toString();
+        }
 
+        const signature = generateSignature(outSum, invId, PASSWORD1, {
+            receipt: receipt || null,
+            shpParams: shpParams
+        });
+
+        // Собираем GET/POST параметры
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -69,53 +110,20 @@ router.post('/create', async (req, res) => {
             Encoding: 'utf-8',
         });
         if (returnUrl) params.append('SuccessURL', returnUrl);
+        if (receipt) params.append('Receipt', receipt);
+
+        // Добавляем Shp-параметры
+        for (const [key, value] of Object.entries(shpParams)) {
+            params.append(key, value);
+        }
 
         const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
-        console.log('[Robokassa] Confirmation URL:', confirmationUrl);
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
         res.status(500).json({ error: e.message });
     }
 });
-
-// ---------- НАЧИСЛЕНИЕ АЛМАЗОВ ----------
-async function handleDiamondsPayment(userId, outSum, invId) {
-    const client = await pool.connect();
-    try {
-        const pending = await client.query(
-            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1', [invId]
-        );
-        if (pending.rows.length === 0) return true;
-
-        const { diamonds, bonus, pack_id } = pending.rows[0];
-        let diamondsToAdd = parseInt(diamonds) || 0;
-
-        if (bonus && diamondsToAdd > 0) {
-            const check = await client.query(
-                'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, pack_id]
-            );
-            if (check.rowCount === 0) {
-                diamondsToAdd = Math.floor(diamondsToAdd * 1.5);
-                await client.query('INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)', [userId, pack_id]);
-            }
-        }
-
-        if (diamondsToAdd === 0) return true;
-
-        await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, null, userId);
-        if (!user) throw new Error('Пользователь не найден');
-        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamondsToAdd, user.id]);
-        await client.query('DELETE FROM pending_robokassa_payments WHERE inv_id = $1', [invId]);
-        await client.query('COMMIT');
-        return true;
-    } catch (err) {
-        await client.query('ROLLBACK');
-        console.error('[Robokassa] Ошибка начисления алмазов:', err);
-        return false;
-    } finally { client.release(); }
-}
 
 // ---------- АКТИВАЦИЯ ПОДПИСКИ ----------
 async function handleSubscriptionPayment(userId, outSum, invId) {

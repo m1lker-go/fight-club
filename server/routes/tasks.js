@@ -299,8 +299,23 @@ router.post('/daily/update/battle', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
-        // Убрали resetIfNeeded
+
+        // Обновляем прогресс ежедневных заданий (5 и классовое)
         await dailyTasks.updateBattleProgress(user.id, class_played, is_victory);
+
+        // Обновляем серию побед подряд
+        if (is_victory) {
+            await client.query(
+                'UPDATE users SET daily_win_streak = daily_win_streak + 1, last_streak_date = CURRENT_DATE WHERE id = $1',
+                [user.id]
+            );
+        } else {
+            await client.query(
+                'UPDATE users SET daily_win_streak = 0 WHERE id = $1',
+                [user.id]
+            );
+        }
+
         res.json({ success: true });
     } catch (e) {
         console.error(e);

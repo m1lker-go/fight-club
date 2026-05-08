@@ -68,7 +68,7 @@ async function renderSettings() {
                 <!-- Строка профиля: аватар + имя + карандаш -->
                 <div class="settings-profile-row">
                     <img src="/assets/${user.avatar || 'cat_heroweb.png'}" class="settings-avatar">
-                    <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}</span>
+                    <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
                     <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
                 </div>
 

@@ -215,7 +215,7 @@ async function renderMint(container) {
                     const data = await res.json();
                     if (data.success) {
                         const newLimit = coalLimit.purchasedToday + amount;
-                        showToast(`<div style="text-align:center;">Вы купили: ${amount} угля<br>Дневной лимит: ${newLimit}/${coalLimit.maxDaily}</div>`, 2000);
+                        showToast(`Вы купили: ${amount} угля. Дневной лимит: ${newLimit}/${coalLimit.maxDaily}`, 2000);
                         await refreshData();
                         await loadCoalLimit();
                         renderMint(container);

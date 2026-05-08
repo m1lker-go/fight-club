@@ -1142,6 +1142,9 @@ router.post('/start', async (req, res) => {
         const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
         if (!user) throw new Error('User not found');
 
+        // Проверка активности подписки VIP Silver
+        const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
+
         // Энергия
         await rechargeEnergy(client, user.id);
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
@@ -1186,9 +1189,15 @@ router.post('/start', async (req, res) => {
         // Награды и рейтинг
         if (isVictory) {
             newStreak++;
-            const coinReward = getCoinReward(newStreak);
-            const ratingGain = getRatingChange(newStreak);
+            let coinReward = getCoinReward(newStreak);
+            let ratingGain = getRatingChange(newStreak);
             ratingChange = ratingGain;
+
+            // Бонус подписки: +10% к монетам
+            if (subscriptionActive) {
+                coinReward = Math.floor(coinReward * 1.1);
+            }
+
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
 
             // Бонусы за 100/500 побед
@@ -1202,17 +1211,32 @@ router.post('/start', async (req, res) => {
         } else {
             newStreak = 0;
             await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);
+
+            // Бонус подписки при поражении: +5 монет и +5 опыта
+            if (subscriptionActive) {
+                await client.query('UPDATE users SET coins = coins + 5 WHERE id = $1', [user.id]);
+            }
         }
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
 
         // Опыт с левелапом и пересчётом силы
-        const expGain = isVictory ? getExpReward(newStreak) : 3;
+        let expGain = isVictory ? getExpReward(newStreak) : 3;
+
+        // Бонус подписки: +10% к опыту при победе, +5 опыта при поражении
+        if (subscriptionActive) {
+            if (isVictory) {
+                expGain = Math.floor(expGain * 1.1);
+            } else {
+                expGain += 5;   // награда за поражение уже учтена в монетах, опыт добавляем здесь
+            }
+        }
+
         const leveledUp = await addExp(client, user.id, user.current_class, expGain);
         if (leveledUp) {
             await updatePlayerPower(client, user.id, user.current_class);
         }
 
-                // Уголь (начисление внутри транзакции) – новые шансы
+        // Уголь (начисление внутри транзакции) – новые шансы
         const r = Math.random();
         let coalGain = 0;
         if (r >= 0.5 && r < 0.85) coalGain = 1;      // 35%

@@ -1,4 +1,4 @@
-// routes/robokassa.js – с Receipt и правильной подписью
+// routes/robokassa.js – с Receipt, правильной подписью инициализации и вебхука
 
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 const express = require('express');
@@ -19,17 +19,16 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
 /**
- * Генерация подписи для инициализации платежа.
- * @param {string} outSum - сумма
- * @param {number|string} invId - номер счёта
- * @param {string} password - Пароль#1
- * @param {Object} shpParams - Shp-параметры
- * @param {Object|null} receiptObj - объект Receipt (сырой, без URL-кодирования)
+ * Генерация подписи для инициализации платежа (с Receipt).
+ * @param {string} outSum
+ * @param {number|string} invId
+ * @param {string} password – Пароль#1
+ * @param {Object} shpParams – { Shp_userId, Shp_type, ... }
+ * @param {Object|null} receiptObj – сырой объект Receipt
  */
 function generateSignature(outSum, invId, password, shpParams = {}, receiptObj = null) {
     let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
     if (receiptObj) {
-        // В подпись включается обычный JSON (не URL-кодированный)
         str += `:${JSON.stringify(receiptObj)}`;
     }
     str += `:${password}`;
@@ -40,8 +39,17 @@ function generateSignature(outSum, invId, password, shpParams = {}, receiptObj =
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-function verifyResultSignature(outSum, invId, password) {
-    const str = `${outSum}:${invId}:${password}`;
+/**
+ * Проверка подписи вебхука Robokassa (Result URL).
+ * Строка для подписи: OutSum:InvId:Password2 + дополнительные Shp-параметры в алфавитном порядке.
+ */
+function verifyResultSignature(outSum, invId, password, shpParams = {}) {
+    let str = `${outSum}:${invId}:${password}`;
+    // Добавляем Shp-параметры, исключая служебные (Shp_userId, Shp_type и т.п.)
+    const shpKeys = Object.keys(shpParams).filter(k => k.startsWith('Shp_')).sort();
+    for (const key of shpKeys) {
+        str += `:${key}=${shpParams[key]}`;
+    }
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
@@ -55,6 +63,7 @@ router.post('/create', async (req, res) => {
         const outSum = Number(amount).toFixed(2);
         const invId = Date.now() * 10000 + userId;
 
+        // Сохраняем данные о пакете алмазов при необходимости
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -67,7 +76,7 @@ router.post('/create', async (req, res) => {
             } finally { client.release(); }
         }
 
-        // ---- ФОРМИРУЕМ Receipt ----
+        // ---- ФОРМИРУЕМ Receipt (чек для ФНС) ----
         let receiptObj = null;
         if (metadata?.type === 'diamonds_pack') {
             receiptObj = {
@@ -93,9 +102,10 @@ router.post('/create', async (req, res) => {
             };
         }
 
-        // Кодированная версия исключительно для URL
+        // Кодированная версия для URL
         const receiptEncoded = receiptObj ? encodeURIComponent(JSON.stringify(receiptObj)) : null;
 
+        // Shp-параметры
         const shpParams = {
             Shp_userId: userId.toString(),
             Shp_type: metadata?.type || 'unknown'
@@ -104,7 +114,7 @@ router.post('/create', async (req, res) => {
             shpParams.Shp_packId = metadata.packId.toString();
         }
 
-        // Подпись: передаём сырой объект, функция добавит JSON.stringify
+        // Подпись с сырым объектом receiptObj
         const signature = generateSignature(outSum, invId, PASSWORD1, shpParams, receiptObj);
 
         const params = new URLSearchParams({
@@ -122,6 +132,7 @@ router.post('/create', async (req, res) => {
             params.append(key, value);
         }
 
+        // Собираем финальный URL
         let confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
         if (receiptEncoded) {
             confirmationUrl += `&Receipt=${receiptEncoded}`;
@@ -134,7 +145,7 @@ router.post('/create', async (req, res) => {
     }
 });
 
-// ========== ОБРАБОТКА НАГРАД (без изменений) ==========
+// ========== ОБРАБОТКА НАГРАД ==========
 async function createRewardMessage(client, userId, subject, body, rewardType, rewardAmount) {
     await client.query(
         `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
@@ -247,29 +258,37 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ========== ВЕБХУК ==========
+// ========== ВЕБХУК (исправленная проверка подписи) ==========
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
         const OutSum = req.body.OutSum || req.body.out_summ;
         const InvId = req.body.InvId || req.body.inv_id;
         const SignatureValue = req.body.SignatureValue || req.body.crc;
-        const Shp_userId = req.body.Shp_userId;
+
+        // Собираем все Shp_* параметры из тела запроса
+        const shpParams = {};
+        for (const [key, value] of Object.entries(req.body)) {
+            if (key.startsWith('Shp_')) {
+                shpParams[key] = value;
+            }
+        }
+
+        const userId = parseInt(req.body.Shp_userId);
         const Shp_type = req.body.Shp_type;
 
-        const testStr = `${OutSum}:${InvId}:${PASSWORD2}`;
-        const testHash = crypto.createHash('md5').update(testStr).digest('hex').toUpperCase();
-        console.log(`[DEBUG RESULT] Input string: ${testStr}`);
-        console.log(`[DEBUG RESULT] Expected hash: ${testHash}`);
-        console.log(`[DEBUG RESULT] Received hash: ${SignatureValue}`);
+        // Отладочный вывод
+        console.log('[DEBUG RESULT] Shp params:', shpParams);
+        const expected = verifyResultSignature(OutSum, InvId, PASSWORD2, shpParams);
+        console.log(`[DEBUG RESULT] Expected signature: ${expected}`);
+        console.log(`[DEBUG RESULT] Received signature: ${SignatureValue}`);
 
-        const userId = parseInt(Shp_userId);
         if (!OutSum || !InvId || !SignatureValue || isNaN(userId)) {
             console.error('Missing parameters');
             return res.status(400).send('ERROR');
         }
 
-        const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
+        // Проверка подписи (теперь с Shp-параметрами)
         if (SignatureValue.toUpperCase() !== expected) {
             console.error('Invalid signature');
             return res.status(400).send('ERROR');
@@ -279,7 +298,7 @@ router.post('/result', async (req, res) => {
         if (Shp_type === 'subscription') {
             success = await handleSubscriptionPayment(userId, OutSum, InvId);
         } else if (Shp_type === 'diamonds_pack') {
-            success = await handleDiamondsPayment(userId, OutSum, InvId);
+            success = await handleDiamondsPayment(userId, OutSum, InvId, shpParams);
         } else {
             console.error('Unknown Shp_type:', Shp_type);
             return res.status(400).send('ERROR');

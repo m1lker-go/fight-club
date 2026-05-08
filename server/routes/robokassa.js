@@ -29,7 +29,9 @@ const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 function generateSignature(outSum, invId, password, shpParams = {}, receiptObj = null) {
     let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
     if (receiptObj) {
-        str += `:${JSON.stringify(receiptObj)}`;
+        // Для подписи обязательно URL‑кодируем JSON чека
+        const receiptEncoded = encodeURIComponent(JSON.stringify(receiptObj));
+        str += `:${receiptEncoded}`;
     }
     str += `:${password}`;
     const sortedKeys = Object.keys(shpParams).sort();

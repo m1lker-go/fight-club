@@ -220,12 +220,12 @@ router.post('/result', async (req, res) => {
             return res.status(400).send('ERROR');
         }
 
-        // ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ТЕСТА НАГРАДЫ
-        // const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
-        // if (SignatureValue.toUpperCase() !== expected) {
-        //     console.error('Invalid signature');
-        //     return res.status(400).send('ERROR');
-        // }
+        
+        const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
+        if (SignatureValue.toUpperCase() !== expected) {
+            console.error('Invalid signature');
+             return res.status(400).send('ERROR');
+        }
 
         let success = false;
         if (Shp_type === 'subscription') {

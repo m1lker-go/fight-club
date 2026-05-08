@@ -1,5 +1,4 @@
-// routes/robokassa.js – финальная версия с письмами-наградами и отладкой подписи вебхука
-
+// routes/robokassa.js – с фискальным чеком (Receipt) и проверкой подписи вебхука
 
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 const express = require('express');
@@ -19,8 +18,20 @@ if (!MERCHANT_LOGIN || !PASSWORD1 || !PASSWORD2) {
 
 const ROBOKASSA_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
-function generateSignature(outSum, invId, password, shpParams = {}) {
-    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}:${password}`;
+/**
+ * Генерация подписи для инициализации платежа.
+ * @param {string} outSum - сумма
+ * @param {number|string} invId - номер счёта
+ * @param {string} password - Пароль#1
+ * @param {Object} shpParams - Shp-параметры {Shp_userId, Shp_type, ...}
+ * @param {string|null} receiptEncoded - URL-кодированный JSON Receipt (если есть)
+ */
+function generateSignature(outSum, invId, password, shpParams = {}, receiptEncoded = null) {
+    let str = `${MERCHANT_LOGIN}:${outSum}:${invId}`;
+    if (receiptEncoded) {
+        str += `:${receiptEncoded}`;
+    }
+    str += `:${password}`;
     const sortedKeys = Object.keys(shpParams).sort();
     for (const key of sortedKeys) {
         str += `:${key}=${shpParams[key]}`;
@@ -33,7 +44,7 @@ function verifyResultSignature(outSum, invId, password) {
     return crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 }
 
-// ========== СОЗДАНИЕ ПЛАТЕЖА ==========
+// ========== СОЗДАНИЕ ПЛАТЕЖА (с Receipt) ==========
 router.post('/create', async (req, res) => {
     try {
         const { userId, amount, description, returnUrl, metadata } = req.body;
@@ -42,6 +53,8 @@ router.post('/create', async (req, res) => {
         }
         const outSum = Number(amount).toFixed(2);
         const invId = Date.now() * 10000 + userId;
+
+        // Сохраняем данные о пакете алмазов при необходимости
         if (metadata?.type === 'diamonds_pack') {
             const client = await pool.connect();
             try {
@@ -53,6 +66,36 @@ router.post('/create', async (req, res) => {
                 );
             } finally { client.release(); }
         }
+
+        // ---- ФОРМИРУЕМ Receipt (чека для ФНС) ----
+        let receiptObj = null;
+        if (metadata?.type === 'diamonds_pack') {
+            receiptObj = {
+                items: [{
+                    name: description,                    // "Пакет 200 алмазов"
+                    quantity: 1,
+                    sum: outSum,                          // строка "399.00"
+                    payment_method: "full_payment",
+                    payment_object: "commodity",
+                    tax: "none"
+                }]
+            };
+        } else if (metadata?.type === 'subscription') {
+            receiptObj = {
+                items: [{
+                    name: "VIP Silver подписка на 30 дней",
+                    quantity: 1,
+                    sum: outSum,
+                    payment_method: "full_payment",
+                    payment_object: "service",
+                    tax: "none"
+                }]
+            };
+        }
+
+        const receiptEncoded = receiptObj ? encodeURIComponent(JSON.stringify(receiptObj)) : null;
+        // ----------------------------------------
+
         const shpParams = {
             Shp_userId: userId.toString(),
             Shp_type: metadata?.type || 'unknown'
@@ -60,7 +103,10 @@ router.post('/create', async (req, res) => {
         if (metadata?.packId) {
             shpParams.Shp_packId = metadata.packId.toString();
         }
-        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams);
+
+        // Подпись теперь включает Receipt (если есть)
+        const signature = generateSignature(outSum, invId, PASSWORD1, shpParams, receiptEncoded);
+
         const params = new URLSearchParams({
             MerchantLogin: MERCHANT_LOGIN,
             OutSum: outSum,
@@ -75,7 +121,13 @@ router.post('/create', async (req, res) => {
         for (const [key, value] of Object.entries(shpParams)) {
             params.append(key, value);
         }
-        const confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
+
+        // Собираем URL вручную, чтобы добавить Receipt без двойного кодирования
+        let confirmationUrl = `${ROBOKASSA_URL}?${params.toString()}`;
+        if (receiptEncoded) {
+            confirmationUrl += `&Receipt=${receiptEncoded}`;
+        }
+
         res.json({ confirmationUrl, paymentId: invId });
     } catch (e) {
         console.error('[Robokassa] create error:', e);
@@ -196,7 +248,7 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ========== ВЕБХУК (проверка подписи временно отключена) ==========
+// ========== ВЕБХУК (проверка подписи активна) ==========
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {
@@ -206,13 +258,12 @@ router.post('/result', async (req, res) => {
         const Shp_userId = req.body.Shp_userId;
         const Shp_type = req.body.Shp_type;
 
-        // ---------- ОТЛАДОЧНЫЙ ВЫВОД ----------
+        // Отладочный вывод (можно оставить или удалить)
         const testStr = `${OutSum}:${InvId}:${PASSWORD2}`;
         const testHash = crypto.createHash('md5').update(testStr).digest('hex').toUpperCase();
         console.log(`[DEBUG RESULT] Input string: ${testStr}`);
         console.log(`[DEBUG RESULT] Expected hash: ${testHash}`);
         console.log(`[DEBUG RESULT] Received hash: ${SignatureValue}`);
-        // ------------------------------------
 
         const userId = parseInt(Shp_userId);
         if (!OutSum || !InvId || !SignatureValue || isNaN(userId)) {
@@ -220,11 +271,11 @@ router.post('/result', async (req, res) => {
             return res.status(400).send('ERROR');
         }
 
-        
+        // Проверка подписи (активна)
         const expected = verifyResultSignature(OutSum, InvId, PASSWORD2);
         if (SignatureValue.toUpperCase() !== expected) {
             console.error('Invalid signature');
-             return res.status(400).send('ERROR');
+            return res.status(400).send('ERROR');
         }
 
         let success = false;

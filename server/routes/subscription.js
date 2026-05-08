@@ -131,9 +131,9 @@ router.post('/admin/activate', async (req, res) => {
         return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + (days || 30));
-    const expiryDateStr = expiryDate.toISOString().split('T')[0];
+    const daysToAdd = days || 30;
+    const expiryDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
+    const expiryISO = expiryDate.toISOString();   // UTC с миллисекундами
 
     const client = await pool.connect();
     try {
@@ -144,26 +144,27 @@ router.post('/admin/activate', async (req, res) => {
 
         await client.query(
             'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
-            [expiryDateStr, user.id]
+            [expiryISO, user.id]
         );
 
-        // Единоразовые бонусы (как в handleSubscriptionPayment)
+        // Единоразовые бонусы
         await client.query(
             'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
             [user.id]
         );
 
-       await client.query(
-    'INSERT INTO user_messages (user_id, from_text, subject, body) VALUES ($1, $2, $3, $4)',
-    [
-        user.id,
-        'Магазин Cat Fighting',
-        '🎉 Подписка VIP Silver активирована!',
-        'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
-    ]
-);
+        await client.query(
+            'INSERT INTO user_messages (user_id, from_text, subject, body) VALUES ($1, $2, $3, $4)',
+            [
+                user.id,
+                'Магазин Cat Fighting',
+                '🎉 Подписка VIP Silver активирована!',
+                `Поздравляю! Ваша подписка "VIP-SILVER" активирована на ${daysToAdd} дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.`
+            ]
+        );
+
         await client.query('COMMIT');
-        res.json({ success: true, expiry: expiryDateStr });
+        res.json({ success: true, expiry: expiryISO });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error(e);

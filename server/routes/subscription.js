@@ -153,15 +153,15 @@ router.post('/admin/activate', async (req, res) => {
             [user.id]
         );
 
-        await client.query(
-            'INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
-            [
-                user.id,
-                '🎉 Подписка VIP Silver активирована!',
-                'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
-            ]
-        );
-
+       await client.query(
+    'INSERT INTO user_messages (user_id, from_text, subject, body) VALUES ($1, $2, $3, $4)',
+    [
+        user.id,
+        'Магазин Cat Fighting',
+        '🎉 Подписка VIP Silver активирована!',
+        'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
+    ]
+);
         await client.query('COMMIT');
         res.json({ success: true, expiry: expiryDateStr });
     } catch (e) {

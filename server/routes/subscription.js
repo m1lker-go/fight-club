@@ -117,4 +117,53 @@ router.post('/claim-daily-reward', async (req, res) => {
     }
 });
 
+// Административная выдача подписки (требует секретный ключ)
+router.post('/admin/activate', async (req, res) => {
+    const { secret, user_id, days } = req.body;
+    if (secret !== process.env.ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + (days || 30));
+    const expiryDateStr = expiryDate.toISOString().split('T')[0];
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const user = await getUserByIdentifier(client, null, user_id);
+        if (!user) throw new Error('User not found');
+
+        await client.query(
+            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
+            [expiryDateStr, user.id]
+        );
+
+        // Единоразовые бонусы (как в handleSubscriptionPayment)
+        await client.query(
+            'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
+            [user.id]
+        );
+
+        await client.query(
+            'INSERT INTO user_messages (user_id, subject, body) VALUES ($1, $2, $3)',
+            [
+                user.id,
+                '🎉 Подписка VIP Silver активирована!',
+                'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
+            ]
+        );
+
+        await client.query('COMMIT');
+        res.json({ success: true, expiry: expiryDateStr });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

@@ -64,6 +64,77 @@ function renderReferral() {
     return referralDiv;
 }
 
+function showAdventModal(data) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerHTML = '🎄 Адвент-календарь';
+    modalBody.innerHTML = ''; // очищаем
+
+    // Вставляем календарь, используя уже готовую логику renderAdventCalendar, но в модалку
+    const tempContainer = document.createElement('div');
+    renderAdventCalendarInContainer(data, tempContainer); // нужна функция рендеринга календаря в контейнер
+    modalBody.appendChild(tempContainer);
+
+    modal.style.display = 'flex';
+
+    // Обработчик закрытия (крестик)
+    const closeBtn = modal.querySelector('.close');
+    const closeModal = () => { modal.style.display = 'none'; };
+    if (closeBtn) closeBtn.onclick = closeModal;
+    window.onclick = (event) => { if (event.target === modal) closeModal(); };
+}
+
+function renderAdventCalendarInContainer(data, container) {
+    const currentDay = data.currentDay;
+    const daysInMonth = data.daysInMonth;
+    const nextAvailable = data.nextAvailable;
+    const lastClaimed = data.lastClaimed;
+
+    let html = '<div class="advent-grid">';
+    for (let day = 1; day <= daysInMonth; day++) {
+        let className = 'advent-day';
+        if (day <= lastClaimed) {
+            className += ' claimed';
+        } else if (day === nextAvailable && nextAvailable !== null) {
+            className += ' available';
+        } else {
+            className += ' locked';
+        }
+
+        const reward = getAdventReward(day, daysInMonth);
+        let iconHtml = '';
+        if (reward.type === 'coins') {
+            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
+        } else if (reward.type === 'exp') {
+            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
+        } else if (reward.type === 'item') {
+            let color = '#aaa';
+            if (reward.rarity === 'uncommon') color = '#2ecc71';
+            else if (reward.rarity === 'rare') color = '#2e86de';
+            else if (reward.rarity === 'epic') color = '#9b59b6';
+            else if (reward.rarity === 'legendary') color = '#f1c40f';
+            iconHtml = '<i class="fas fa-tshirt" style="color: ' + color + ';"></i>';
+        }
+
+        html += `<div class="${className}" data-day="${day}"><div class="advent-icon">${iconHtml}</div><div class="advent-day-number">${day}</div></div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Вешаем обработчики на доступные дни
+    container.querySelectorAll('.advent-day.available').forEach(div => {
+        div.addEventListener('click', () => {
+            const day = parseInt(div.dataset.day);
+            claimAdventDay(day, daysInMonth);
+        });
+    });
+}
+
+window.showAdventModal = showAdventModal;
+
 // Всплывающее уведомление о награде (без затемнения, без крестика)
 function showRewardToast(title, iconClass, subtitle) {
     iconClass = iconClass || 'fa-coins';

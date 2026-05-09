@@ -323,29 +323,55 @@ function showErrorSplash() {
     }
 }
 
+let adventCheckLock = false; // блокировка повторного входа
+
 async function checkAdvent() {
-    if (!userData || !userData.tg_id) return;
+    if (adventCheckLock) return; // уже выполняется
+    if (!userData || !userData.id) {
+        console.log('[checkAdvent] userData ещё нет, пропускаем');
+        return;
+    }
+    adventCheckLock = true;
     try {
-        const res = await window.apiRequest(`/tasks/advent?tg_id=${userData.tg_id}&_=${Date.now()}`);
+        console.log('[checkAdvent] запрос к /tasks/advent...');
+        const res = await window.apiRequest(`/tasks/advent?tg_id=${userData.tg_id || ''}&user_id=${userData.id}&_=${Date.now()}`);
+        if (!res.ok) {
+            console.warn('[checkAdvent] ошибка ответа:', res.status);
+            return;
+        }
         const data = await res.json();
+        console.log('[checkAdvent] ответ:', data);
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
+            // Ждём, пока showAdventCalendar станет доступна (на случай, если скрипт ещё загружается)
+            if (typeof showAdventCalendar !== 'function') {
+                console.warn('[checkAdvent] showAdventCalendar ещё не определена, подождём...');
+                await new Promise((resolve, reject) => {
+                    const maxWait = 5000; // макс 5 секунд
+                    const start = Date.now();
+                    const id = setInterval(() => {
+                        if (typeof showAdventCalendar === 'function') {
+                            clearInterval(id);
+                            resolve();
+                        } else if (Date.now() - start > maxWait) {
+                            clearInterval(id);
+                            reject(new Error('showAdventCalendar не загрузилась'));
+                        }
+                    }, 100);
+                });
+            }
             if (typeof showAdventCalendar === 'function') {
+                console.log('[checkAdvent] показываем календарь');
                 showAdventCalendar();
             } else {
-                const script = document.createElement('script');
-                script.src = '/js/task-up.js';
-                script.onload = () => {
-                    if (typeof showAdventCalendar === 'function') {
-                        showAdventCalendar();
-                    } else {
-                        console.warn('showAdventCalendar still not defined after loading task-up.js');
-                    }
-                };
-                document.head.appendChild(script);
+                console.error('[checkAdvent] showAdventCalendar так и не появилась');
             }
+        } else {
+            console.log('[checkAdvent] сегодня уже забрали, календарь не нужен');
         }
     } catch (e) {
-        console.error('Advent check error:', e);
+        console.error('[checkAdvent] ошибка:', e);
+    } finally {
+        adventCheckLock = false;
     }
 }
 

@@ -33,8 +33,6 @@ let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
 let lastBattleLog = null;
-let messagesList = [];
-let unreadMessagesCount = 0;
 
 window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';

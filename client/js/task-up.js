@@ -10,10 +10,6 @@ function hasUnclaimedTasks() {
 }
 window.hasUnclaimedTasks = hasUnclaimedTasks;
 
-function renderAdventCalendarInContainer(data, container) {
-    // Не используется
-}
-
 function renderReferral() {
     const referralDiv = document.createElement('div');
     referralDiv.className = 'task-card referral-card';

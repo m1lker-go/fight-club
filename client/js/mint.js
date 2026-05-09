@@ -59,25 +59,25 @@ async function renderMint(container) {
     await loadCoalLimit();
 
     const coalDiamondItems = [
-        { amount: 10, price: 1, currency: 'diamonds', free: freeCoalAvailable, image: '/assets/gold/buy_coal_1.png' },
-        { amount: 50, price: 5, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_2.png' },
-        { amount: 250, price: 20, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_3.png' }
-    ];
+    { amount: 10, price: 2, currency: 'diamonds', free: freeCoalAvailable, image: '/assets/gold/buy_coal_1.png' },
+    { amount: 50, price: 8, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_2.png' },
+    { amount: 250, price: 35, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_3.png' }
+];
 
     const coalCoinItems = [
-        { amount: 10, price: 100, currency: 'coins', image: '/assets/gold/buy_coal_1.png' },
-        { amount: 50, price: 400, currency: 'coins', image: '/assets/gold/buy_coal_2.png' },
-        { amount: 250, price: 1500, currency: 'coins', image: '/assets/gold/buy_coal_3.png' }
-    ];
+    { amount: 10, price: 25, currency: 'coins', image: '/assets/gold/buy_coal_1.png' },
+    { amount: 50, price: 100, currency: 'coins', image: '/assets/gold/buy_coal_2.png' },
+    { amount: 250, price: 450, currency: 'coins', image: '/assets/gold/buy_coal_3.png' }
+];
 
     const goldItems = [
-        { amount: 50, price: 1, currency: 'diamonds', image: '/assets/gold/buy_gold_1.png' },
-        { amount: 250, price: 3, currency: 'diamonds', image: '/assets/gold/buy_gold_2.png' },
-        { amount: 500, price: 5, currency: 'diamonds', image: '/assets/gold/buy_gold_3.png' },
-        { amount: 1000, price: 20, currency: 'diamonds', image: '/assets/gold/buy_gold_4.png' },
-        { amount: 3000, price: 50, currency: 'diamonds', image: '/assets/gold/buy_gold_5.png' },
-        { amount: 5000, price: 500, currency: 'diamonds', image: '/assets/gold/buy_gold_6.png' }
-    ];
+    { amount: 100, price: 11, currency: 'diamonds', image: '/assets/gold/buy_gold_1.png' },
+    { amount: 250, price: 28, currency: 'diamonds', image: '/assets/gold/buy_gold_2.png' },
+    { amount: 500, price: 55, currency: 'diamonds', image: '/assets/gold/buy_gold_3.png' },
+    { amount: 1000, price: 110, currency: 'diamonds', image: '/assets/gold/buy_gold_4.png' },
+    { amount: 2000, price: 210, currency: 'diamonds', image: '/assets/gold/buy_gold_5.png' },
+    { amount: 5000, price: 500, currency: 'diamonds', image: '/assets/gold/buy_gold_6.png' }
+];
 
     // Свитки – пути исправлены на /assets/equip/scrolls/, названия в 2 строки
     const scrollItems = [

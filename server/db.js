@@ -162,6 +162,12 @@ const initDB = async () => {
 
 // Универсальная функция поиска пользователя по tg_id или user_id
 async function getUserByIdentifier(client, tg_id, user_id) {
+    // Защита от массивов и приведение к целому числу
+    if (Array.isArray(tg_id)) tg_id = parseInt(tg_id[0], 10);
+    if (Array.isArray(user_id)) user_id = parseInt(user_id[0], 10);
+    if (tg_id) tg_id = parseInt(tg_id, 10);
+    if (user_id) user_id = parseInt(user_id, 10);
+
     if (user_id) {
         const res = await client.query('SELECT * FROM users WHERE id = $1', [user_id]);
         if (res.rows.length) return res.rows[0];

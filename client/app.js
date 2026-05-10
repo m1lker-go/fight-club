@@ -56,12 +56,12 @@ window.apiRequest = async function(endpoint, options = {}) {
         }
     }
     
-    if (userData && userData.id) {
-        bodyObj.user_id = userData.id;
-    }
-    if (userData && userData.tg_id) {
-        bodyObj.tg_id = userData.tg_id;
-    }
+  if (userData && userData.id) {
+    bodyObj.user_id = Array.isArray(userData.id) ? Number(userData.id[0]) : Number(userData.id);
+}
+if (userData && userData.tg_id) {
+    bodyObj.tg_id = Array.isArray(userData.tg_id) ? Number(userData.tg_id[0]) : Number(userData.tg_id);
+}
     
     const fetchOptions = {
         method: method,

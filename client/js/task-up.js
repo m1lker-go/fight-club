@@ -356,7 +356,14 @@ async function loadDailyTasks() {
                         showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
                         return;
                     }
-                    const watched = await showRewardedAd();
+                    // Сначала пробуем ironSource, затем VK
+let watched = false;
+if (typeof showIronSourceRewardedAd === 'function') {
+    watched = await showIronSourceRewardedAd();
+}
+if (!watched && typeof showRewardedAd === 'function') {
+    watched = await showRewardedAd();
+}
                     if (watched) {
                         try {
                             const updRes = await window.apiRequest('/tasks/daily/update/ads', {

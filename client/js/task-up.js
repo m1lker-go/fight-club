@@ -243,12 +243,14 @@ async function loadDailyTasks() {
             // Отображение награды в зависимости от типа
             let rewardHtml = '';
             if (task.reward_type === 'coins') {
-                rewardHtml = task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>';
-            } else if (task.reward_type === 'coal') {
-                rewardHtml = task.reward_amount + ' <i class="fas fa-cube" style="color:white;"></i>';
-            } else {
-                rewardHtml = task.reward_amount + ' EXP';
-            }
+    rewardHtml = task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>';
+} else if (task.reward_type === 'coal') {
+    rewardHtml = task.reward_amount + ' <i class="fas fa-cube" style="color:white;"></i>';
+} else if (task.reward_type === 'diamonds') {
+    rewardHtml = task.reward_amount + ' <i class="fas fa-gem" style="color:white;"></i>';
+} else {
+    rewardHtml = task.reward_amount + ' EXP';
+}
 
             const translated = dailyTaskTranslations[task.name] || {};
             const displayName = translated.name || task.name;

@@ -4,19 +4,17 @@ const IRONSOURCE_APP_KEY = '26516de4d';
 const IRONSOURCE_PLACEMENT = '8xy6xsn6cgz8yqbf';
 
 let ironRV = null;
-let sdkLoaded = false;
 
-// Список возможных CDN (актуальный поставьте первым)
+// Проверенные URL (порядок приоритетный)
 const SDK_URLS = [
-    'https://c.ironsrc.com/rv/rv-min.js',
-    'https://static.ultra-rv.com/rv-min.js'  // запасной
+    'https://c.ironsrc.com/rv/rv.js',
+    'https://static.ironsrc.com/rv/rv-min.js',
+    'https://cdn.ironsrc.com/rv/rv-min.js',
+    'https://static.ultra-rv.com/rv-min.js'   // запасной
 ];
 
 async function loadIronSourceSDK() {
-    if (window.IronRV) {
-        sdkLoaded = true;
-        return;
-    }
+    if (window.IronRV) return;
 
     for (const url of SDK_URLS) {
         try {
@@ -25,17 +23,15 @@ async function loadIronSourceSDK() {
                 script.src = url;
                 script.onload = () => {
                     console.log('[IronSource] SDK loaded from', url);
-                    sdkLoaded = true;
                     resolve();
                 };
                 script.onerror = () => reject(new Error('Failed to load ' + url));
                 document.head.appendChild(script);
             });
-            // Если дошли сюда, значит загрузились
-            return;
+            return;   // успех
         } catch (e) {
             console.warn('[IronSource]', e.message);
-            // Продолжаем со следующей ссылкой
+            // пробуем следующий URL
         }
     }
 
@@ -49,12 +45,11 @@ async function initIronSourceAds(userId) {
             applicationKey: IRONSOURCE_APP_KEY,
             applicationUserId: String(userId)
         });
-        // Попытка сохранить userId для последующей проверки в консоли
-        try { localStorage.setItem('ironsource_user_id', String(userId)); } catch(e){}
         console.log('[IronSource] initialized, userId:', userId);
+        try { localStorage.setItem('ironsource_user_id', String(userId)); } catch(e) {}
     } catch (e) {
-        console.error('[IronSource] init error:', e);
-        // Не блокируем игру – просто SDK недоступен
+        console.error('[IronSource] init error:', e.message);
+        // игра не ломается – SDK недоступен
     }
 }
 
@@ -88,7 +83,6 @@ function showIronSourceRewardedAd() {
     });
 }
 
-// Экспорт
 window.initIronSourceAds = initIronSourceAds;
 window.checkIronSourceAdsReady = checkIronSourceAdsReady;
 window.showIronSourceRewardedAd = showIronSourceRewardedAd;

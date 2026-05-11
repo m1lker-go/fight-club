@@ -253,8 +253,10 @@ router.post('/daily/claim', async (req, res) => {
         if (!isCompleted) throw new Error('Task not completed');
 
         let leveledUp = false;
-        if (task.reward_type === 'coins') {
+               if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, user.id]);
+        } else if (task.reward_type === 'diamonds') {
+            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [task.reward_amount, user.id]);
         } else if (task.reward_type === 'exp') {
             if (!class_choice) throw new Error('class_choice required for exp reward');
             const classRes = await client.query(
@@ -422,13 +424,16 @@ router.post('/daily/update/ads', async (req, res) => {
                 if (progress[taskId] >= target) {
                     // Помечаем как завершённое
                     mask |= (1 << (taskId - 1));
-                    // Начисляем награду
+                                        // Начисляем награду
                     const { reward_type, reward_amount } = taskRes.rows[0];
                     if (reward_type === 'coins') {
                         await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, user.id]);
+                    } else if (reward_type === 'diamonds') {
+                        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [reward_amount, user.id]);
                     } else if (reward_type === 'coal') {
                         await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, user.id]);
                     }
+                    
                     // Фиксируем прогресс
                     progress[taskId] = target;
                 }

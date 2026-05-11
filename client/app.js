@@ -170,11 +170,15 @@ async function autoLoginTelegram() {
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 sessionToken = data.sessionToken;
-                if (data.need && typeof showusernameModal === 'function') {
+                    if (data.need && typeof showusernameModal === 'function') {
                     showusernameModal(data.userId);
                     return true;
                 } else {
                     await loadUserDataByToken(data.sessionToken);
+                    // Инициализация ironSource после загрузки профиля через Telegram
+                    if (typeof initIronSourceAds === 'function' && userData && userData.id) {
+                        initIronSourceAds(userData.id);
+                    }
                 }
                 return true;
             }
@@ -261,6 +265,11 @@ async function checkAuth() {
                 if (typeof window.updateTradeBadges === 'function') {
                     window.updateTradeBadges();
                 }
+                            // === Инициализация ironSource ===
+            if (typeof initIronSourceAds === 'function' && userData && userData.id) {
+                initIronSourceAds(userData.id);
+            }
+            // ================================
                 console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {

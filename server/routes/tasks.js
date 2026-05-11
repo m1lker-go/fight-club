@@ -377,6 +377,7 @@ router.post('/daily/update/profile', async (req, res) => {
 });
 
 // Обновление прогресса заданий на просмотр рекламы (id 11 – монеты, id 12 – уголь)
+// Обновление прогресса заданий на просмотр рекламы (id 11 – монеты, id 12 – уголь)
 router.post('/daily/update/ads', async (req, res) => {
     const { tg_id, user_id } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -392,8 +393,13 @@ router.post('/daily/update/ads', async (req, res) => {
             // Подписка активна – реклама не показывается, задания выполняются автоматически
             await client.query('BEGIN');
 
-            let progress = dailyTasks.parseProgress(user.daily_tasks_progress);
-            let mask = user.daily_tasks_mask;
+            // Перечитываем актуальные данные с блокировкой, чтобы избежать гонки
+            const userRow = await client.query(
+                'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
+                [user.id]
+            );
+            let progress = dailyTasks.parseProgress(userRow.rows[0].daily_tasks_progress);
+            let mask = userRow.rows[0].daily_tasks_mask;
 
             const adTaskIds = [11, 12];
 

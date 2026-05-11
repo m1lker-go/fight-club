@@ -13,7 +13,11 @@ function loadIronSourceSDK() {
             return;
         }
         const script = document.createElement('script');
-        script.src = 'https://static.ultra-rv.com/rv-min.js';
+        // Основной (рекомендованный) URL для Mobile Web SDK:
+script.src = 'https://static.ironsrc.com/rv-min.js';
+
+// Запасной, если основной тоже не отвечает:
+// script.src = 'https://c.ironsrc.com/rv/rv-min.js';
         script.onload = () => {
             console.log('[IronSource] SDK loaded');
             resolve();

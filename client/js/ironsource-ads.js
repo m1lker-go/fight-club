@@ -1,50 +1,63 @@
 // ironsource-ads.js – rewarded video через ironSource (Mobile Web)
 
-const IRONSOURCE_APP_KEY = '26516de4d';          // Application Key
-const IRONSOURCE_PLACEMENT = '8xy6xsn6cgz8yqbf'; // Placement ID
+const IRONSOURCE_APP_KEY = '26516de4d';
+const IRONSOURCE_PLACEMENT = '8xy6xsn6cgz8yqbf';
 
 let ironRV = null;
+let sdkLoaded = false;
 
-// Подключаем скрипт ironSource, если ещё не загружен
-function loadIronSourceSDK() {
-    return new Promise((resolve, reject) => {
-        if (window.IronRV) {
-            resolve();
+// Список возможных CDN (актуальный поставьте первым)
+const SDK_URLS = [
+    'https://c.ironsrc.com/rv/rv-min.js',
+    'https://static.ultra-rv.com/rv-min.js'  // запасной
+];
+
+async function loadIronSourceSDK() {
+    if (window.IronRV) {
+        sdkLoaded = true;
+        return;
+    }
+
+    for (const url of SDK_URLS) {
+        try {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = () => {
+                    console.log('[IronSource] SDK loaded from', url);
+                    sdkLoaded = true;
+                    resolve();
+                };
+                script.onerror = () => reject(new Error('Failed to load ' + url));
+                document.head.appendChild(script);
+            });
+            // Если дошли сюда, значит загрузились
             return;
+        } catch (e) {
+            console.warn('[IronSource]', e.message);
+            // Продолжаем со следующей ссылкой
         }
-        const script = document.createElement('script');
-        // Основной (рекомендованный) URL для Mobile Web SDK:
-script.src = 'https://static.ironsrc.com/rv-min.js';
+    }
 
-// Запасной, если основной тоже не отвечает:
-// script.src = 'https://c.ironsrc.com/rv/rv-min.js';
-        script.onload = () => {
-            console.log('[IronSource] SDK loaded');
-            resolve();
-        };
-        script.onerror = () => {
-            console.error('[IronSource] SDK load failed');
-            reject(new Error('ironSource SDK не загружен'));
-        };
-        document.head.appendChild(script);
-    });
+    throw new Error('Ни один URL SDK не сработал');
 }
 
-// Инициализация ironSource (вызывается при старте игры)
 async function initIronSourceAds(userId) {
     try {
         await loadIronSourceSDK();
         ironRV = IronRV.getInstance({
             applicationKey: IRONSOURCE_APP_KEY,
-            applicationUserId: String(userId)   // важно передать строку
+            applicationUserId: String(userId)
         });
+        // Попытка сохранить userId для последующей проверки в консоли
+        try { localStorage.setItem('ironsource_user_id', String(userId)); } catch(e){}
         console.log('[IronSource] initialized, userId:', userId);
     } catch (e) {
         console.error('[IronSource] init error:', e);
+        // Не блокируем игру – просто SDK недоступен
     }
 }
 
-// Проверка готовности рекламы (можно не вызывать, show() сам проверит)
 async function checkIronSourceAdsReady() {
     if (!ironRV) return false;
     try {
@@ -55,31 +68,27 @@ async function checkIronSourceAdsReady() {
     }
 }
 
-// Показ rewarded video
 function showIronSourceRewardedAd() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (!ironRV) {
-            console.warn('[IronSource] not initialized');
+            console.warn('[IronSource] SDK не инициализирован');
             resolve(false);
             return;
         }
-        const options = {
-            placement: IRONSOURCE_PLACEMENT
-        };
+        const options = { placement: IRONSOURCE_PLACEMENT };
         ironRV.show(options, (response) => {
             if (response.error) {
                 console.error('[IronSource] show error:', response.error);
                 resolve(false);
             } else {
                 console.log('[IronSource] show response:', response);
-                // response.watched === true означает, что награда честно заслужена
                 resolve(response.watched === true);
             }
         });
     });
 }
 
-// Экспорт функций в глобальную область
+// Экспорт
 window.initIronSourceAds = initIronSourceAds;
 window.checkIronSourceAdsReady = checkIronSourceAdsReady;
 window.showIronSourceRewardedAd = showIronSourceRewardedAd;

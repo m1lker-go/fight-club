@@ -326,12 +326,15 @@ async function loadDailyTasks() {
                             'data-reward-type="' + task.reward_type + '" ' +
                             'data-reward-amount="' + task.reward_amount + '" ' +
                             'style="padding: 8px; width: 100%; font-size: 14px;">' +
-                        '<i class="fas ' + (isReadyToClaim ? 'fa-check' : 'fa-times') + '"></i>' +
+                            '<i class="fas ' + (isReadyToClaim ? 'fa-check' : (task.id === 11 || task.id === 12 ? 'fa-play' : 'fa-times')) + '"></i>' +
                     '</button>' +
                 '</div>';
             tasksList.appendChild(taskCard);
         });
 
+
+
+        
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             if (!btn.dataset.taskId) return;
 
@@ -340,6 +343,47 @@ async function loadDailyTasks() {
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
+                // Находим текущее задание в данных для проверки готовности
+                const currentTask = activeTasks.find(t => t.id === taskId);
+                const isReady = currentTask ? currentTask.progress >= currentTask.target_value : false;
+
+                // Задания на просмотр рекламы: если ещё не готово – показываем rewarded video
+                if ((taskId === 11 || taskId === 12) && !isReady) {
+                    const ready = await checkAdsReady();
+                    if (!ready) {
+                        showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
+                        return;
+                    }
+                    const watched = await showRewardedAd();
+                    if (watched) {
+                        try {
+                            const updRes = await window.apiRequest('/tasks/daily/update/ads', {
+                                method: 'POST',
+                                body: JSON.stringify({})
+                            });
+                            const updData = await updRes.json();
+                            if (updData.success) {
+                                if (updData.autoCompleted) {
+                                    showToast('Награда за рекламу получена!', 1500);
+                                } else {
+                                    showToast('Прогресс рекламы обновлён!', 1500);
+                                }
+                                loadDailyTasks();
+                                refreshData();
+                            } else {
+                                showToast('Ошибка обновления прогресса', 1500);
+                            }
+                        } catch (err) {
+                            console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
+                            showToast('Ошибка соединения', 1500);
+                        }
+                    } else {
+                        showToast('Вы не досмотрели рекламу до конца.', 2000);
+                    }
+                    return;
+                }
+
+                // Обычная логика получения награды (для всех заданий, включая готовые рекламные)
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {
@@ -366,6 +410,7 @@ async function loadDailyTasks() {
                 }
             });
         });
+        
 
         const allCompleted = completedTasksCount >= totalTasksCount;
         if (countdownContainer) {

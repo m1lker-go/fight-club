@@ -214,6 +214,10 @@ async function loadUserDataByToken(token) {
             if (typeof window.updateTradeBadges === 'function') {
                 window.updateTradeBadges();
             }
+             // === Инициализация ironSource ===
+            if (typeof initIronSourceAds === 'function' && userData && userData.id) {
+            initIronSourceAds(userData.id);
+            }
             console.log('loadUserDataByToken: success');
             return true;
         } else {

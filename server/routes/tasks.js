@@ -295,18 +295,22 @@ router.post('/daily/claim', async (req, res) => {
 });
 
 router.post('/daily/update/battle', async (req, res) => {
-    const { tg_id, user_id, class_played, is_victory } = req.body;
+    let { tg_id, user_id, class_played, is_victory } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+
+    // Явно преобразуем is_victory в булево (защита от строк "true"/"false")
+    const victory = is_victory === true || is_victory === 'true';
+
     const client = await pool.connect();
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
 
         // Обновляем прогресс ежедневных заданий (5 и классовое)
-        await dailyTasks.updateBattleProgress(user.id, class_played, is_victory);
+        await dailyTasks.updateBattleProgress(user.id, class_played, victory);
 
         // Обновляем серию побед подряд
-        if (is_victory) {
+        if (victory) {
             await client.query(
                 'UPDATE users SET daily_win_streak = daily_win_streak + 1, last_streak_date = CURRENT_DATE WHERE id = $1',
                 [user.id]

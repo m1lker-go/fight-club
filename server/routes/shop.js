@@ -8,7 +8,6 @@ const dailyTasks = require('../utils/dailyTasks');
 const getMoscowDate = () => dailyTasks.getMoscowDate();
 
 // Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
-// Важно: должна быть объявлена до использования в маршрутах
 function toMoscowDateString(dbDate) {
     if (!dbDate) return null;
     const d = new Date(dbDate);
@@ -95,7 +94,11 @@ function generateItemFromChest(chestType) {
 }
 
 router.post('/buychest', async (req, res) => {
-    const { tg_id, user_id, chestType } = req.body;
+    let { tg_id, user_id, chestType } = req.body;
+    // Гарантируем, что идентификаторы – целые числа
+    if (tg_id) tg_id = parseInt(tg_id, 10);
+    if (user_id) user_id = parseInt(user_id, 10);
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -114,7 +117,6 @@ router.post('/buychest', async (req, res) => {
 
         switch (chestType) {
             case 'common':
-                // используем toMoscowDateString для корректного сравнения
                 if (toMoscowDateString(lastFree) !== today) {
                     isFree = true;
                 } else {
@@ -184,7 +186,10 @@ router.post('/buychest', async (req, res) => {
 });
 
 router.post('/buy-coins', async (req, res) => {
-    const { tg_id, user_id, coins, price } = req.body;
+    let { tg_id, user_id, coins, price } = req.body;
+    if (tg_id) tg_id = parseInt(tg_id, 10);
+    if (user_id) user_id = parseInt(user_id, 10);
+
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     if (!coins || !price) return res.status(400).json({ error: 'Missing coins or price' });
 
@@ -229,10 +234,13 @@ router.get('/freecoal', async (req, res) => {
 
 router.post('/buy-coal', async (req, res) => {
     console.log('[buy-coal] START', req.body);
+    let { tg_id, user_id, amount, price, free } = req.body;
+    if (tg_id) tg_id = parseInt(tg_id, 10);
+    if (user_id) user_id = parseInt(user_id, 10);
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const { tg_id, user_id, amount, price, free } = req.body;
         if (!tg_id && !user_id) {
             throw new Error('tg_id or user_id required');
         }
@@ -267,8 +275,10 @@ router.post('/buy-coal', async (req, res) => {
 });
 
 router.post('/buy-coal-coins', async (req, res) => {
-    const { user_id, amount } = req.body;
+    let { user_id, amount } = req.body;
+    if (user_id) user_id = parseInt(user_id, 10);
     if (!user_id || !amount) return res.status(400).json({ error: 'Missing user_id or amount' });
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -317,9 +327,12 @@ router.get('/coal-limit', async (req, res) => {
 });
 
 router.post('/buy-gold', async (req, res) => {
-    const { tg_id, user_id, amount, price } = req.body;
+    let { tg_id, user_id, amount, price } = req.body;
+    if (tg_id) tg_id = parseInt(tg_id, 10);
+    if (user_id) user_id = parseInt(user_id, 10);
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     if (!amount || !price) return res.status(400).json({ error: 'Missing amount or price' });
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -359,10 +372,12 @@ router.get('/subscription/free-coin-status', async (req, res) => {
 
 router.post('/subscription/claim-free-coin', async (req, res) => {
     console.log('[claim-free-coin] START', req.body);
+    let { user_id } = req.body;
+    if (user_id) user_id = parseInt(user_id, 10);
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const { user_id } = req.body;
         if (!user_id) throw new Error('user_id required');
         const user = await getUserByIdentifier(client, null, user_id);
         if (!user) throw new Error('User not found');
@@ -384,7 +399,9 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
 
 // Покупка свитков
 router.post('/buy-scroll', async (req, res) => {
-    const { tg_id, user_id, scroll_id } = req.body;
+    let { tg_id, user_id, scroll_id } = req.body;
+    if (tg_id) tg_id = parseInt(tg_id, 10);
+    if (user_id) user_id = parseInt(user_id, 10);
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
     if (![1037, 1038, 1039].includes(scroll_id)) return res.status(400).json({ error: 'Invalid scroll' });
 

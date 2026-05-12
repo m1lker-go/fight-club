@@ -2633,12 +2633,15 @@ body {
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
-    font-size: 20px;   /* было 28px */
+    font-size: 20px;
     font-weight: bold;
     white-space: nowrap;
     text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
     opacity: 1;
     animation: floatFade 2s ease-out forwards;
+    display: flex;          /* чтобы иконка стояла рядом с текстом */
+    align-items: center;
+    gap: 3px;               /* отступ между цифрой и иконкой */
 }
 .floating-number.red {
     color: #ff4444 !important;
@@ -2649,6 +2652,8 @@ body {
 .floating-number .floating-icon {
     width: 0.2em;        /* было 1em, стало в 2 раза меньше */
     height: 0.2em;
+    font-size: 10px;        /* уменьшаем иконку в 2 раза */
+    line-height: 1;
     vertical-align: middle;
     margin-left: -5px;    /* отступ 3px от цифры */
 }

@@ -66,7 +66,7 @@ function showAdventModal(data) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerHTML = '🎄 Адвент-календарь';
+    modalTitle.innerHTML = 'Адвент-календарь';
     modalBody.innerHTML = ''; // очищаем
 
     // Вставляем календарь, используя уже готовую логику renderAdventCalendar, но в модалку

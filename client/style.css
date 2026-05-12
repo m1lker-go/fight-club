@@ -2647,18 +2647,18 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    width: 0.8em;      /* было 1em */
-    height: 0.8em;
+    width: 0.5em;        /* было 1em, стало в 2 раза меньше */
+    height: 0.5em;
     vertical-align: middle;
-    margin-left: 2px;
+    margin-left: 3px;    /* отступ 3px от цифры */
 }
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */
 .hero-card .floating-number {
-    left: 60%;
+    left: 55%;
 }
 .enemy-card .floating-number {
-    left: 40%;
+    left: 40%;   /* у врага остаётся без изменений */
 }
 
 /* Анимация всплытия */

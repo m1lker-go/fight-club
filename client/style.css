@@ -622,7 +622,7 @@ body {
 }
 .hero-card,
 .enemy-card {
-    flex: 0 0 110px;               /* ← можно изменить на 120px или 140px по вкусу */
+    flex: 0 0 100px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -632,8 +632,8 @@ body {
 .hero-card > div:first-child,
 .enemy-card > div:first-child {
     width: 100% !important;
-    height: 0 !important;
-    padding-top: 150% !important;  /* 150% от ширины → высота = ширина × 1.5 */
+    height: auto !important;
+    padding-top: 0 !important;
     position: relative !important;
     margin: 0 auto !important;
     overflow: hidden !important;
@@ -642,12 +642,10 @@ body {
 }
 .hero-card > div:first-child img,
 .enemy-card > div:first-child img {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: static;
     width: 100%;
-    height: 100%;
-    object-fit: cover !important;
+    height: auto;
+    object-fit: contain;   /* чтобы не обрезалось */
     border-radius: 0 !important;
     border: none !important;
 }
@@ -680,19 +678,21 @@ body {
 /* Колонки со статусами тоже растягиваются */
 .player-debuffs,
 .enemy-debuffs {
-    flex: 0 0 45px;
-    align-self: stretch;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
+    align-items: center;
     background-color: transparent;
+    gap: 2px;
 }
 .debuff-slot {
     position: relative;
     width: 40px;
-    flex: 0 0 auto;
-    margin: 0 auto;
+    height: 40px; 
+    margin: 0;
 }
+/* Иконки статусов */
 .negative-icon,
 .positive-icon,
 .rage-icon {
@@ -714,7 +714,7 @@ body {
 /* Центральная колонка растягивается по высоте строки */
 .battle-center {
     flex: 0 0 auto;
-    align-self: stretch;
+    align-self: center;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -723,6 +723,7 @@ body {
     margin: 5px 0;
     border-radius: 12px;
     padding: 12px 0;
+    min-height: 100px;
 }
 .battle-timer {
     width: 44px;
@@ -864,12 +865,10 @@ body {
     z-index: 15;
     pointer-events: none;
 }
-
 .hero-card.frozen .frozen-overlay,
 .enemy-card.frozen .frozen-overlay {
     display: block;
 }
-
 .frozen-overlay img {
     width: 100%;
     height: 100%;
@@ -2631,7 +2630,6 @@ body {
     font-family: 'Titillium Web', sans-serif;
     position: absolute;
     top: 50%;
-    left: 50%;
     transform: translate(-50%, -50%);
     font-size: 28px;
     font-weight: bold;
@@ -2655,12 +2653,13 @@ body {
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */
 .hero-card .floating-number {
-    left: 55%;
+    left: 60%;
 }
 .enemy-card .floating-number {
-    left: 45%;
+    left: 40%;
 }
 
+/* Анимация всплытия */
 @keyframes floatFade {
     0% {
         opacity: 1;
@@ -2675,7 +2674,6 @@ body {
         transform: translate(-50%, -100%) scale(1);
     }
 }
-
 /* ========== РЕЗУЛЬТАТ БОЯ ========== */
 .battle-result {
     display: flex;

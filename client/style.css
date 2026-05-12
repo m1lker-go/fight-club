@@ -2652,7 +2652,7 @@ body {
 .floating-number .floating-icon {
     width: 0.2em;        /* было 1em, стало в 2 раза меньше */
     height: 0.2em;
-    font-size: 10px;        /* уменьшаем иконку в 2 раза */
+    font-size: 8px;        /* уменьшаем иконку в 2 раза */
     line-height: 1;
     vertical-align: middle;
     margin-left: -5px;    /* отступ 3px от цифры */

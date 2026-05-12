@@ -3979,10 +3979,10 @@ body {
     .hero-card, .enemy-card { flex: 0 0 90px; }
     /* Бары оставляем 100px, они центрируются */
     .hero-card .stat-bar,
-    .enemy-card .stat-bar { width: 100px; }
+    .enemy-card .stat-bar { width: 90px; }
+   .debuff-slot { width: 30px; height: 22px; }
     .battle-timer { width: 36px; height: 36px; line-height: 36px; font-size: 12px; }
     .speed-btn { width: 36px; height: 36px; }
-    .debuff-slot { width: 30px; }  /* без фиксированной высоты, теперь слоты растягиваются */
     .negative-icon, .positive-icon, .rage-icon { width: 20px; height: 20px; }
     .log-entry { font-size: 10px; padding: 6px 8px; }
     .stat-label { font-size: 12px; min-width: 80px; }

@@ -622,7 +622,7 @@ body {
 }
 .hero-card,
 .enemy-card {
-    flex: 0 0 130px;               /* ← можно изменить на 120px или 140px по вкусу */
+    flex: 0 0 110px;               /* ← можно изменить на 120px или 140px по вкусу */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -2652,6 +2652,15 @@ body {
     vertical-align: middle;
     margin-left: 2px;
 }
+
+/* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */
+.hero-card .floating-number {
+    left: 55%;
+}
+.enemy-card .floating-number {
+    left: 45%;
+}
+
 @keyframes floatFade {
     0% {
         opacity: 1;

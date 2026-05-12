@@ -93,7 +93,7 @@ function showBattleScreen(battleData) {
 
             <div class="battle-arena">
                 <div class="hero-card">
-                   <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
+                   <div style="position: relative; margin: 0 auto;">
     <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
   ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 5;"></i>' : ''}
     <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
@@ -136,7 +136,7 @@ function showBattleScreen(battleData) {
                 </div>
 
                 <div class="enemy-card">
-                    <div style="position: relative; width: 110px; height: 165px; margin: 0 auto;">
+                    <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">Проиграл</div>

@@ -3086,12 +3086,6 @@ body {
     transform: scale(1);
 }
 
-.hero-card > div:first-child,
-.enemy-card > div:first-child {
-    position: relative !important;
-    overflow: hidden !important;
-    border-radius: 8px;
-}
 
 /* Отражение аватара игрока (смотрит на врага) */
 .hero-card > div:first-child img {
@@ -3974,14 +3968,14 @@ body {
     .main-top-inner { height: 160px; }
 }
 @media (max-width: 400px) {
-    /* Карточки – немного уменьшаем ширину на самых узких экранах */
+    /* Карточки – ширина как на больших экранах (можно уменьшить до 110px при желании) */
     .hero-card, .enemy-card { flex: 0 0 120px; }
-    /* Бары оставляем 100px (как на большом экране), они будут центрированы */
+    /* Бары оставляем 100px, они центрируются */
     .hero-card .stat-bar,
     .enemy-card .stat-bar { width: 100px; }
     .battle-timer { width: 36px; height: 36px; line-height: 36px; font-size: 12px; }
     .speed-btn { width: 36px; height: 36px; }
-    .debuff-slot { width: 30px; }  /* убрали фиксированную высоту, теперь она гибкая */
+    .debuff-slot { width: 30px; }  /* без фиксированной высоты, теперь слоты растягиваются */
     .negative-icon, .positive-icon, .rage-icon { width: 20px; height: 20px; }
     .log-entry { font-size: 10px; padding: 6px 8px; }
     .stat-label { font-size: 12px; min-width: 80px; }

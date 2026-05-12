@@ -3976,7 +3976,7 @@ body {
 }
 @media (max-width: 400px) {
     /* Карточки – ширина как на больших экранах (можно уменьшить до 110px при желании) */
-    .hero-card, .enemy-card { flex: 0 0 120px; }
+    .hero-card, .enemy-card { flex: 0 0 90px; }
     /* Бары оставляем 100px, они центрируются */
     .hero-card .stat-bar,
     .enemy-card .stat-bar { width: 100px; }

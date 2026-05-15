@@ -692,7 +692,6 @@ body {
     border-radius: 12px;
     padding: 10px 0;                /* ← отступы сверху и снизу */
 }
-
 /* Иконки статусов – распределены от верха до низа */
 .player-debuffs,
 .enemy-debuffs {

@@ -612,14 +612,16 @@ body {
 .battle-arena {
     display: flex;
     align-items: stretch;
-    justify-content: center;
+    justify-content: space-between; /* <-- карточки прижаты к краям */
     gap: 0;
-    padding: 0;
+    padding: 0 5px;                 /* <-- отступ 5px слева и справа */
     background-color: #232833;
     margin: 0;
     border: none;
     width: 100%;
 }
+
+/* Карточки героев – ширина 100px (можно поменять) */
 .hero-card,
 .enemy-card {
     flex: 0 0 100px;
@@ -629,72 +631,78 @@ body {
     text-align: center;
     background-color: transparent;
 }
+
+/* Контейнер аватара – адаптивный, сохраняет пропорции 2:3 */
 .hero-card > div:first-child,
 .enemy-card > div:first-child {
     width: 100% !important;
-    height: auto !important;
-    padding-top: 0 !important;
+    height: 0 !important;
+    padding-top: 150% !important;  /* 150% от ширины → высота = ширина × 1.5 */
     position: relative !important;
     margin: 0 auto !important;
     overflow: hidden !important;
     background: none !important;
     box-shadow: none !important;
-    border-radius: 14px;   /* ← добавить */
+    border-radius: 14px;           /* скругление аватара */
 }
 
+/* Изображение внутри адаптивного контейнера */
 .hero-card > div:first-child img,
 .enemy-card > div:first-child img {
-    position: static;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto;
-    object-fit: contain;   /* чтобы не обрезалось */
+    height: 100%;
+    object-fit: cover !important;
     border-radius: 0 !important;
     border: none !important;
 }
 
-/* HP и мана‑бары оставляем как есть (ширина 100px, центрируются) */
+/* HP и мана‑бары – ширина 100px, центрированы */
 .hero-card .stat-bar,
 .enemy-card .stat-bar {
     width: 100px;
     margin: 3px auto;
 }
 
-.hp-bar,
-.mana-bar {
-    width: 100px;
-    margin: 3px auto;
-    background-color: transparent !important;
-    border: none !important;
-}
-.hp-bar .stat-fill {
-    background-color: #e74c3c;
-}
-.mana-bar .stat-fill {
-    background-color: #00aaff;
-}
-.stat-text {
-    font-size: 11px;
-    font-weight: bold;
-    text-shadow: 0 0 2px black;
-}
-/* Колонки со статусами тоже растягиваются */
+/* Три центральные колонки – равная ширина */
 .player-debuffs,
-.enemy-debuffs {
-    flex: 0 0 auto;
+.enemy-debuffs,
+.battle-center {
+    flex: 1 1 0px;
+    min-width: 0;
+    align-self: stretch;
     display: flex;
     flex-direction: column;
+    background-color: transparent;
+}
+
+/* Центральная колонка: таймер и скорость */
+.battle-center {
     justify-content: center;
     align-items: center;
-    background-color: transparent;
-    gap: 2px;
+    background-color: #2a303c;
+    margin: 5px 0;
+    border-radius: 12px;
+    padding: 12px 0;
 }
+
+/* Иконки статусов – распределены от верха до низа */
+.player-debuffs,
+.enemy-debuffs {
+    justify-content: space-between;
+    align-items: center;
+}
+
 .debuff-slot {
     position: relative;
     width: 40px;
-    height: 40px; 
-    margin: 0;
+    height: 40px;
+    margin: 0 auto;
 }
-/* Иконки статусов */
+
+/* Иконки статусов – стандартные размеры */
 .negative-icon,
 .positive-icon,
 .rage-icon {
@@ -713,20 +721,7 @@ body {
 .debuff-slot[data-side="enemy"] .positive-icon,
 .debuff-slot[data-side="enemy"] .rage-icon { left: 0; }
 
-/* Центральная колонка растягивается по высоте строки */
-.battle-center {
-    flex: 0 0 auto;
-    align-self: stretch;          /* растягиваем на высоту ряда */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;      /* содержимое по вертикальному центру */
-    align-items: center;
-    background-color: #2a303c;
-    margin: 5px 0;
-    border-radius: 12px;
-    padding: 12px 0;
-    gap: 8px;                     /* небольшой отступ между таймером и скоростью */
-}
+/* Таймер и скорость – стили без изменений */
 .battle-timer {
     width: 44px;
     height: 44px;
@@ -3982,12 +3977,12 @@ body {
     .main-top-inner { height: 160px; }
 }
 @media (max-width: 400px) {
-    /* Карточки – ширина как на больших экранах (можно уменьшить до 110px при желании) */
+    /* Карточки – немного уменьшаем на самых узких экранах */
     .hero-card, .enemy-card { flex: 0 0 90px; }
-    /* Бары оставляем 100px, они центрируются */
+    /* Бары оставляем 90px, центрируются */
     .hero-card .stat-bar,
     .enemy-card .stat-bar { width: 90px; }
-   .debuff-slot { width: 30px; height: 22px; }
+    .debuff-slot { width: 30px; height: 22px; }
     .battle-timer { width: 36px; height: 36px; line-height: 36px; font-size: 12px; }
     .speed-btn { width: 36px; height: 36px; }
     .negative-icon, .positive-icon, .rage-icon { width: 20px; height: 20px; }

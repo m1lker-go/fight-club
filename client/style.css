@@ -680,12 +680,17 @@ body {
 
 /* Центральная колонка: таймер и скорость */
 .battle-center {
-    justify-content: center;
+    flex: 1 1 0px;
+    min-width: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;  /* ← раздвигает таймер и скорость */
     align-items: center;
     background-color: #2a303c;
     margin: 5px 0;
     border-radius: 12px;
-    padding: 12px 0;
+    padding: 10px 0;                /* ← отступы сверху и снизу */
 }
 
 /* Иконки статусов – распределены от верха до низа */
@@ -709,8 +714,8 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 25px;
-    height: 25px;
+    width: 30px;   /* было 25px */
+    height: 30px;
     object-fit: contain;
     z-index: 5;
 }
@@ -2645,12 +2650,11 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    width: 0.2em;        /* было 1em, стало в 2 раза меньше */
-    height: 0.2em;
-    font-size: 8px;        /* уменьшаем иконку в 2 раза */
+    font-size: 12px;        /* нормальный размер иконки */
     line-height: 1;
-    vertical-align: middle;
-    margin-left: -5px;    /* отступ 3px от цифры */
+    width: auto;
+    height: auto;
+    margin-left: 0;
 }
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */

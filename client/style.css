@@ -713,8 +713,8 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 60px;   /* было 25px */
-    height: 60px;
+    width: 40px;   /* было 25px */
+    height: 40px;
     object-fit: contain;
     z-index: 5;
 }

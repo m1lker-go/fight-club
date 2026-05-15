@@ -2640,7 +2640,7 @@ body {
     animation: floatFade 2s ease-out forwards;
     display: flex;
     align-items: center;
-    gap: 6px;               /* увеличенный отступ между цифрой и значком */
+    gap: 25px;               /* увеличенный отступ между цифрой и значком */
 }
 .floating-number.red {
     color: #ff4444 !important;

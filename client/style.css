@@ -2640,7 +2640,10 @@ body {
     animation: floatFade 2s ease-out forwards;
     display: flex;
     align-items: center;
-    gap: 25px;               /* увеличенный отступ между цифрой и значком */
+    gap: 8px;                       /* расстояние между цифрой и значком */
+    width: max-content;            /* контейнер растягивается по содержимому */
+    min-width: 60px;               /* минимальная ширина, чтобы точно хватило места */
+    justify-content: flex-start;   /* элементы идут слева направо */
 }
 .floating-number.red {
     color: #ff4444 !important;
@@ -2649,8 +2652,9 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    font-size: 12px;
+    font-size: 14px;               /* размер иконки */
     line-height: 1;
+    flex-shrink: 0;                /* иконка не сжимается */
 }
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */

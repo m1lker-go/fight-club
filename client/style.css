@@ -2638,13 +2638,14 @@ body {
     text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
     opacity: 1;
     animation: floatFade 2s ease-out forwards;
-
-    /* гарантируем строку: цифра → значок */
-    display: flex;
-    flex-direction: row;        /* ← явно задаём строку */
-    flex-wrap: nowrap;          /* ← запрещаем перенос */
-    align-items: center;
-    gap: 8px;                   /* отступ между цифрой и значком */
+    
+    /* Жёстко задаём строку */
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px;
     width: max-content;
 }
 
@@ -2655,11 +2656,12 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    width: 16px !important;
-    height: 16px !important;
-    object-fit: contain;
-    flex-shrink: 0;
-    display: inline-block;      /* на всякий случай, чтобы не блочился */
+    width: 20px !important;
+    height: 20px !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    margin: 0 !important;
 }
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */
@@ -2667,7 +2669,7 @@ body {
     left: 58%;
 }
 .enemy-card .floating-number {
-    left: 42%;   /* у врага остаётся без изменений */
+    left: 42%;
 }
 
 /* Анимация всплытия */

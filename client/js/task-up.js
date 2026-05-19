@@ -350,47 +350,48 @@ async function loadDailyTasks() {
                 const isReady = currentTask ? currentTask.progress >= currentTask.target_value : false;
 
                 // Задания на просмотр рекламы: если ещё не готово – показываем rewarded video
-                if ((taskId === 11 || taskId === 12) && !isReady) {
-                    const ready = await checkAdsReady();
-                    if (!ready) {
-                        showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
-                        return;
-                    }
-                    // Сначала пробуем ironSource, затем VK
-let watched = false;
-if (typeof showIronSourceRewardedAd === 'function') {
-    watched = await showIronSourceRewardedAd();
-}
-if (!watched && typeof showRewardedAd === 'function') {
-    watched = await showRewardedAd();
-}
-                    if (watched) {
-                        try {
-                            const updRes = await window.apiRequest('/tasks/daily/update/ads', {
-                                method: 'POST',
-                                body: JSON.stringify({})
-                            });
-                            const updData = await updRes.json();
-                            if (updData.success) {
-                                if (updData.autoCompleted) {
-                                    showToast('Награда за рекламу получена!', 1500);
-                                } else {
-                                    showToast('Прогресс рекламы обновлён!', 1500);
-                                }
-                                loadDailyTasks();
-                                refreshData();
-                            } else {
-                                showToast('Ошибка обновления прогресса', 1500);
-                            }
-                        } catch (err) {
-                            console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
-                            showToast('Ошибка соединения', 1500);
-                        }
-                    } else {
-                        showToast('Вы не досмотрели рекламу до конца.', 2000);
-                    }
-                    return;
+               // Внутри обработчика клика на кнопку задания
+
+if ((taskId === 11 || taskId === 12) && !isReady) {
+    const ready = await checkAdsReady();
+    if (!ready) {
+        showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
+        return;
+    }
+
+    const watched = await showRewardedAd();
+    if (watched) {
+        try {
+            const updRes = await window.apiRequest('/tasks/daily/update/ads', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            const updData = await updRes.json();
+            if (updData.success) {
+                if (updData.autoCompleted) {
+                    showToast('Награда за рекламу получена!', 1500);
+                } else {
+                    showToast('Прогресс рекламы обновлён!', 1500);
                 }
+                // Обновляем список заданий и данные пользователя
+                if (typeof loadDailyTasks === 'function') {
+                    loadDailyTasks();
+                }
+                if (typeof refreshData === 'function') {
+                    refreshData();
+                }
+            } else {
+                showToast('Ошибка обновления прогресса', 1500);
+            }
+        } catch (err) {
+            console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
+            showToast('Ошибка соединения', 1500);
+        }
+    } else {
+        showToast('Вы не досмотрели рекламу до конца.', 2000);
+    }
+    return; // прерываем стандартную обработку – задание обработано
+}
 
                 // Обычная логика получения награды (для всех заданий, включая готовые рекламные)
                 if (rewardType === 'exp') {

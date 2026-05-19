@@ -2655,7 +2655,7 @@ body {
     height: 16px !important;
     object-fit: contain !important;
     vertical-align: middle !important;
-    margin: 0 0 0 6px !important;   /* твой отступ 20px */
+    margin: 0 0 0 3px !important;
     padding: 0 !important;
     border: none !important;
     display: inline-block !important;

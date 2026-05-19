@@ -2652,9 +2652,12 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    font-size: 14px;               /* размер иконки */
-    line-height: 1;
-    flex-shrink: 0;                /* иконка не сжимается */
+    width: 20px;                 /* фиксированная ширина для img */
+    height: 20px;                /* фиксированная высота для img */
+    object-fit: contain;         /* чтобы не искажалась */
+    flex-shrink: 0;              /* не даём иконке сжиматься */
+    display: block;              /* убираем лишние отступы */
+    margin: 0;
 }
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */

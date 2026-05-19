@@ -1,7 +1,6 @@
-// vk-ads.js – Безопасная обертка для показа rewarded video через VK Bridge
+// client/js/vk-ads.js
 
 const VK_ADS_AVAILABLE = typeof vkBridge !== 'undefined';
-
 console.log('[VK-Ads] VK Bridge доступен:', VK_ADS_AVAILABLE);
 
 /**
@@ -33,6 +32,7 @@ async function showRewardedAd() {
     }
     try {
         const data = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
+        // data.result === true – видео было показано полностью, награда честно заработана
         return !!data.result;
     } catch (error) {
         console.error('[VK-Ads] Ошибка при показе рекламы:', error);

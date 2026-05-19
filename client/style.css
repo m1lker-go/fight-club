@@ -2653,11 +2653,11 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     object-fit: contain;
     vertical-align: middle;       /* выравниваем иконку по середине текста */
-    margin: 0 0 0 15px;            /* отступ слева от цифры */
+    margin: 0 0 0 20px;            /* отступ слева от цифры */
     padding: 0;
     border: none;
     display: inline-block;
@@ -2666,10 +2666,10 @@ body {
 
 /* Смещаем цифры: игрока – чуть вправо, врага – чуть влево */
 .hero-card .floating-number {
-    left: 58%;
+    left: 50%;
 }
 .enemy-card .floating-number {
-    left: 42%;
+    left: 50%;
 }
 
 /* Анимация всплытия */

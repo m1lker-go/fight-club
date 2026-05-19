@@ -2652,8 +2652,8 @@ body {
     color: #44ff44 !important;
 }
 .floating-number .floating-icon {
-    width: 20px;                 /* фиксированная ширина для img */
-    height: 20px;                /* фиксированная высота для img */
+    width: 14px !important;
+    height: 14px !important;
     object-fit: contain;         /* чтобы не искажалась */
     flex-shrink: 0;              /* не даём иконке сжиматься */
     display: block;              /* убираем лишние отступы */

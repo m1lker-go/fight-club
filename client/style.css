@@ -2645,7 +2645,7 @@ body {
     flex-wrap: nowrap !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 8px;
+    gap: -15px;
     width: max-content;
 }
 

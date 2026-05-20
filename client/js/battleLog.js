@@ -401,32 +401,44 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
 
     // Анимации (без изменений)
     const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
-    if (!isStackMessage) {
-        let animTarget = null;
-        let animFile = null;
-        if (type === 'attack' || type === 'crit' || type === 'damage') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+   if (!isStackMessage) {
+    let animTarget = null;
+    let animFile = null;
+    if (type === 'attack' || type === 'crit' || type === 'damage') {
+        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        const isPlayerAttacker = (attacker === 'player');
+        let attackerSkinId = null;
+        if (isPlayerAttacker && typeof userData !== 'undefined' && userData && userData.avatar_id) {
+            attackerSkinId = userData.avatar_id;
+        } else if (!isPlayerAttacker && this.battleData && this.battleData.opponent && this.battleData.opponent.avatar_id) {
+            attackerSkinId = this.battleData.opponent.avatar_id;
+        }
+        if (attackerSkinId === 12) {
+            this.showAnimation(animTarget, 'shot.gif', true, 12);
+            animFile = null; // общий вызов не сработает
+        } else {
             animFile = 'shot.gif';
-        } else if (type === 'dodge') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'missx.gif';
-        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            if (type === 'fire_ult') animFile = 'fire.gif';
-            else if (type === 'ice_ult') animFile = 'ice.gif';
-            else if (type === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        } else if (type === 'heal' || type === 'buff') {
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-        } else if (type === 'frozen_enter' || type === 'frozen_end') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'frozenx.gif';
         }
-        if (animTarget && animFile) {
-            this.showAnimation(animTarget, animFile);
-        }
+    } else if (type === 'dodge') {
+        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        animFile = 'missx.gif';
+    } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        if (type === 'fire_ult') animFile = 'fire.gif';
+        else if (type === 'ice_ult') animFile = 'ice.gif';
+        else if (type === 'poison_ult') animFile = 'poison.gif';
+        else animFile = 'ultimate.gif';
+    } else if (type === 'heal' || type === 'buff') {
+        animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+        animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+    } else if (type === 'frozen_enter' || type === 'frozen_end') {
+        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        animFile = 'frozenx.gif';
     }
+    if (animTarget && animFile) {
+        this.showAnimation(animTarget, animFile);
+    }
+}
 
     this.parseAndShowFloatingNumber(entry);
     this.currentMsgIndex++;
@@ -641,23 +653,44 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         }, 2000);
     },
 
-    showAnimation(target, animationFile) {
-        this.hideAnimations();
-        const container = document.getElementById(target + '-animation');
-        if (!container) {
-            console.error(`[BattleLog] Container ${target}-animation not found`);
-            return;
+   showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
+    this.hideAnimations();
+    const container = document.getElementById(target + '-animation');
+    if (!container) {
+        console.error(`[BattleLog] Container ${target}-animation not found`);
+        return;
+    }
+    const img = document.createElement('img');
+    
+    if (isSkinAttack && skinId === 12) {
+        img.src = '/assets/skins/animations/attack_skin12.gif';
+        img.className = 'skin-animation';
+        
+        if (target === 'hero') {
+            // Анимация атакующего игрока: прижимаем к правому краю (к центру экрана) и зеркалим
+            img.style.right = '0';
+            img.style.left = 'auto';
+            img.style.transform = 'scaleX(-1)';
+        } else {
+            // Анимация атакующего врага: прижимаем к левому краю (к центру экрана)
+            img.style.left = '0';
+            img.style.right = 'auto';
         }
-        const img = document.createElement('img');
+    } else {
         img.src = `/assets/fight/${animationFile}`;
+    }
+
+    container.innerHTML = '';
+    container.appendChild(img);
+    container.style.display = 'flex';
+
+    // Длительность: для скина 2 секунды, для остальных — 1 секунда
+    const duration = (isSkinAttack && skinId === 12) ? 2000 : 1000;
+    setTimeout(() => {
+        container.style.display = 'none';
         container.innerHTML = '';
-        container.appendChild(img);
-        container.style.display = 'flex';
-        setTimeout(() => {
-            container.style.display = 'none';
-            container.innerHTML = '';
-        }, 1000);
-    },
+    }, duration);
+},
 
     setSpeed(newSpeed) {
         this.speed = newSpeed;

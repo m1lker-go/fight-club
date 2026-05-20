@@ -187,7 +187,6 @@ router.get('/daily/list', async (req, res) => {
     try {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) return res.status(404).json({ error: 'User not found' });
-        // Убрали resetIfNeeded – сброс теперь в cron
         const tasks = await dailyTasks.getTasksList(user);
         const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
         const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
@@ -227,7 +226,6 @@ router.post('/daily/claim', async (req, res) => {
         let isCompleted = false;
 
         if (task_id == 9) {
-            // Проверяем, что выполнено не менее 10 заданий (кроме самого 9-го)
             const otherTasks = await client.query('SELECT id FROM daily_tasks WHERE id != 9');
             let countCompleted = 0;
             for (let other of otherTasks.rows) {
@@ -253,7 +251,7 @@ router.post('/daily/claim', async (req, res) => {
         if (!isCompleted) throw new Error('Task not completed');
 
         let leveledUp = false;
-               if (task.reward_type === 'coins') {
+        if (task.reward_type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, user.id]);
         } else if (task.reward_type === 'diamonds') {
             await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [task.reward_amount, user.id]);
@@ -298,7 +296,6 @@ router.post('/daily/update/battle', async (req, res) => {
     let { tg_id, user_id, class_played, is_victory } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
 
-    // Явно преобразуем is_victory в булево (защита от строк "true"/"false")
     const victory = is_victory === true || is_victory === 'true';
 
     const client = await pool.connect();
@@ -306,10 +303,8 @@ router.post('/daily/update/battle', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
 
-        // Обновляем прогресс ежедневных заданий (5 и классовое)
         await dailyTasks.updateBattleProgress(user.id, class_played, victory);
 
-        // Обновляем серию побед подряд
         if (victory) {
             await client.query(
                 'UPDATE users SET daily_win_streak = COALESCE(daily_win_streak, 0) + 1, last_streak_date = CURRENT_DATE WHERE id = $1',
@@ -382,8 +377,6 @@ router.post('/daily/update/profile', async (req, res) => {
     }
 });
 
-// Обновление прогресса заданий на просмотр рекламы (id 11 – монеты, id 12 – уголь)
-// Обновление прогресса заданий на просмотр рекламы (id 11 – монеты, id 12 – уголь)
 router.post('/daily/update/ads', async (req, res) => {
     const { tg_id, user_id } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
@@ -392,14 +385,11 @@ router.post('/daily/update/ads', async (req, res) => {
         const user = await getUserByIdentifier(client, tg_id, user_id);
         if (!user) throw new Error('User not found');
 
-        // Проверяем, активна ли подписка VIP Silver
         const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
 
         if (subscriptionActive) {
-            // Подписка активна – реклама не показывается, задания выполняются автоматически
             await client.query('BEGIN');
 
-            // Перечитываем актуальные данные с блокировкой, чтобы избежать гонки
             const userRow = await client.query(
                 'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
                 [user.id]
@@ -410,10 +400,8 @@ router.post('/daily/update/ads', async (req, res) => {
             const adTaskIds = [11, 12];
 
             for (const taskId of adTaskIds) {
-                // Если задание уже выполнено, пропускаем
                 if (mask & (1 << (taskId - 1))) continue;
 
-                // Увеличиваем прогресс на 1
                 progress[taskId] = (progress[taskId] || 0) + 1;
 
                 const taskRes = await client.query(
@@ -424,11 +412,8 @@ router.post('/daily/update/ads', async (req, res) => {
 
                 const target = taskRes.rows[0].target_value;
 
-                // Если прогресс достиг целевого значения, выполняем задание
                 if (progress[taskId] >= target) {
-                    // Помечаем как завершённое
                     mask |= (1 << (taskId - 1));
-                                        // Начисляем награду
                     const { reward_type, reward_amount } = taskRes.rows[0];
                     if (reward_type === 'coins') {
                         await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, user.id]);
@@ -437,8 +422,6 @@ router.post('/daily/update/ads', async (req, res) => {
                     } else if (reward_type === 'coal') {
                         await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, user.id]);
                     }
-                    
-                    // Фиксируем прогресс
                     progress[taskId] = target;
                 }
             }
@@ -451,7 +434,6 @@ router.post('/daily/update/ads', async (req, res) => {
             await client.query('COMMIT');
             res.json({ success: true, autoCompleted: true });
         } else {
-            // Без подписки – обычное обновление прогресса
             await dailyTasks.updateWatchAdsProgress(user.id);
             res.json({ success: true });
         }

@@ -295,7 +295,6 @@ router.post('/daily/claim', async (req, res) => {
 });
 
 router.post('/daily/update/battle', async (req, res) => {
-router.post('/daily/update/battle', async (req, res) => {
     let { tg_id, user_id, class_played, is_victory } = req.body;
     if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
 

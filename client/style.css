@@ -2618,6 +2618,17 @@ body {
     height: 100%;
     object-fit: cover;
 }
+.skin-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    display: none;
+}
+
 .floating-numbers-container {
     position: absolute;
     top: 0;

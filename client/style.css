@@ -2631,6 +2631,13 @@ body {
     object-fit: contain !important;
     pointer-events: none;
     z-index: 15;
+    /* Центрируем по горизонтали, если ширина больше контейнера */
+    left: 50% !important;
+    transform: translateX(-50%);
+}
+/* Для зеркалирования на герое */
+.hero-card .skin-animation {
+    transform: translateX(-50%) scaleX(-1) !important;
 }
 
 .floating-numbers-container {

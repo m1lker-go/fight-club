@@ -816,20 +816,21 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     if (this.onFinish) this.onFinish(this.battleData);
 },
 
-    stop() {
-        if (this.interval) {
-            clearTimeout(this.interval);
-            this.interval = null;
-        }
-        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        this.hideAnimations();
-        this.stopped = true;
-        this.messages = [];
-        this.states = [];
-        this.currentMsgIndex = 0;
-        this.currentStateIndex = 0;
-        this.battleData = null;
-        this.onFinish = null;
+   stop() {
+    this.isSkinAnimating = false;   // ← добавить эту строку
+    if (this.interval) {
+        clearTimeout(this.interval);
+        this.interval = null;
     }
+    if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+    if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+    this.hideAnimations();
+    this.stopped = true;
+    this.messages = [];
+    this.states = [];
+    this.currentMsgIndex = 0;
+    this.currentStateIndex = 0;
+    this.battleData = null;
+    this.onFinish = null;
+}
 };

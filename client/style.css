@@ -2612,6 +2612,7 @@ body {
     pointer-events: none;
     display: none;
     z-index: 10;
+    overflow: visible;
 }
 .animation-container img {
     width: 100%;

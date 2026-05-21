@@ -415,9 +415,7 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
             if (isPlayerAttacker) {
                 attackerSkinName = (typeof userData !== 'undefined' && userData) ? userData.avatar : null;
             } else {
-                attackerSkinName = (this.battleData.opponent && this.battleData.opponent.avatar) 
-                                || (this.battleData.opponent && this.battleData.opponent.avatar_filename) 
-                                || null;
+               attackerSkinName = (this.battleData.opponent && this.battleData.opponent.avatar) || null;
             }
 
             console.log(`[SKIN DEBUG] attacker=${attacker}, skinName=${attackerSkinName}`);

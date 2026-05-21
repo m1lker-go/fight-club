@@ -668,111 +668,111 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
     this.hideAnimations();
-    
-    // Находим родительскую карточку (hero-card или enemy-card)
-    const parentCard = document.querySelector(`.${target}-card`);
-    if (!parentCard) {
-        console.error(`Родительская карточка .${target}-card не найдена`);
-        console.groupEnd();
-        return;
-    }
-    
-    // Получаем реальные размеры карточки в пикселях
-    const cardRect = parentCard.getBoundingClientRect();
-    const cardWidth = cardRect.width;
-    const cardHeight = cardRect.height;
-    console.log(`Размеры карточки: ${cardWidth} x ${cardHeight}`);
-    
-    // Ищем или создаём контейнер анимации
-    let container = document.getElementById(target + '-animation');
-    if (!container) {
-        console.warn(`Контейнер #${target}-animation не найден, создаём...`);
-        container = document.createElement('div');
-        container.id = target + '-animation';
-        container.className = 'animation-container';
-        parentCard.appendChild(container);
-        console.log(`Контейнер создан и вставлен в карточку`);
-    }
-    
-    // Явно задаём контейнеру размеры и позиционирование (инлайн-стили имеют высший приоритет)
-    container.style.cssText = `
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: ${cardWidth}px !important;
-        height: ${cardHeight}px !important;
-        pointer-events: none !important;
-        display: block !important;
-        z-index: 15 !important;
-        overflow: visible !important;
-        background: transparent !important;
-    `;
-    
-    const img = document.createElement('img');
-    
-    if (isSkinAttack && skinId === 13) {
-        const skinPath = '/assets/skins/animations/attack_skin12.gif';
-        img.src = skinPath;
-        img.className = 'skin-animation';
-        // Задаём изображению высоту карточки, ширину пропорционально
-        img.style.cssText = `
-            position: absolute !important;
-            top: 0 !important;
-            height: ${cardHeight}px !important;
-            width: auto !important;
-            object-fit: contain !important;
-            pointer-events: none !important;
-        `;
-        if (target === 'hero') {
-            img.style.left = '0 !important';
-            img.style.right = 'auto !important';
-            img.style.transform = 'scaleX(-1) !important';
-            img.style.transformOrigin = 'left center !important';
-            console.log(`Герой: высота=${cardHeight}px, зеркало, левый край`);
-        } else {
-            img.style.left = 'auto !important';
-            img.style.right = '0 !important';
-            img.style.transform = 'none !important';
-            console.log(`Враг: высота=${cardHeight}px, правый край`);
-        }
-        console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
-    } else {
-        // Обычная анимация – растягивается на весь контейнер
-        img.src = `/assets/fight/${animationFile}`;
-        img.style.cssText = `
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-            pointer-events: none !important;
-        `;
-        console.log(`Обычная анимация: ${animationFile}`);
-    }
-    
-    // Вставляем изображение в контейнер и показываем
-    container.innerHTML = '';
-    container.appendChild(img);
-    
-    // Проверяем размеры через 50 мс
+
+    // Небольшая задержка, чтобы браузер успел отрисовать карточку
     setTimeout(() => {
-        const imgRect = img.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-        console.log(`Размеры: контейнер = ${containerRect.width} x ${containerRect.height}, img = ${imgRect.width} x ${imgRect.height}`);
-        if (imgRect.width === 0 || imgRect.height === 0) {
-            console.error('❌ РАЗМЕРЫ img НУЛЕВЫЕ! Возможно, карточка ещё не отрисована.');
+        const parentCard = document.querySelector(`.${target}-card`);
+        if (!parentCard) {
+            console.error(`Родительская карточка .${target}-card не найдена`);
+            console.groupEnd();
+            return;
+        }
+
+        const cardRect = parentCard.getBoundingClientRect();
+        const cardWidth = cardRect.width;
+        const cardHeight = cardRect.height;
+        console.log(`Размеры карточки: ${cardWidth} x ${cardHeight}`);
+
+        if (cardWidth === 0 || cardHeight === 0) {
+            console.error('❌ Карточка имеет нулевые размеры – анимация невозможна');
+            console.groupEnd();
+            return;
+        }
+
+        let container = document.getElementById(target + '-animation');
+        if (!container) {
+            console.warn(`Контейнер #${target}-animation не найден, создаём...`);
+            container = document.createElement('div');
+            container.id = target + '-animation';
+            container.className = 'animation-container';
+            parentCard.appendChild(container);
+            console.log(`Контейнер создан и вставлен в карточку`);
+        }
+
+        // Задаём контейнеру реальные размеры и позиционирование
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = cardWidth + 'px';
+        container.style.height = cardHeight + 'px';
+        container.style.pointerEvents = 'none';
+        container.style.display = 'block';
+        container.style.zIndex = '15';
+        container.style.overflow = 'visible';
+        container.style.background = 'transparent';
+
+        const img = document.createElement('img');
+
+        if (isSkinAttack && skinId === 13) {
+            const skinPath = '/assets/skins/animations/attack_skin12.gif';
+            img.src = skinPath;
+            img.className = 'skin-animation';
+            // Пропорциональная ширина: 600 / 480 = 1.25
+            const proportionalWidth = (600 / 480) * cardHeight;
+            img.style.position = 'absolute';
+            img.style.top = '0';
+            img.style.height = cardHeight + 'px';
+            img.style.width = proportionalWidth + 'px';
+            img.style.objectFit = 'contain';
+            img.style.pointerEvents = 'none';
+
+            if (target === 'hero') {
+                img.style.left = '0';
+                img.style.right = 'auto';
+                img.style.transform = 'scaleX(-1)';
+                img.style.transformOrigin = 'left center';
+                console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, зеркало, левый край`);
+            } else {
+                img.style.left = 'auto';
+                img.style.right = '0';
+                img.style.transform = 'none';
+                console.log(`Враг: высота=${cardHeight}px, ширина=${proportionalWidth}px, правый край`);
+            }
+            console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
-            console.log('✅ Анимация должна быть видна!');
+            img.src = `/assets/fight/${animationFile}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.pointerEvents = 'none';
+            console.log(`Обычная анимация: ${animationFile}`);
         }
-    }, 50);
-    
-    const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
-    setTimeout(() => {
-        if (container) {
-            container.style.display = 'none';
-            container.innerHTML = '';
-        }
-        console.log('Анимация скрыта');
-        console.groupEnd();
-    }, duration);
+
+        container.innerHTML = '';
+        container.appendChild(img);
+
+        // Проверка через 50 мс, что изображение реально отобразилось
+        setTimeout(() => {
+            const imgRect = img.getBoundingClientRect();
+            console.log(`Итоговые размеры img: ${imgRect.width} x ${imgRect.height}`);
+            if (imgRect.width === 0 || imgRect.height === 0) {
+                console.error('❌ РАЗМЕРЫ img НУЛЕВЫЕ! Проверьте CSS родителя.');
+            } else {
+                console.log('✅ Анимация должна быть видна!');
+            }
+        }, 50);
+
+        const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
+        setTimeout(() => {
+            if (container) {
+                container.style.display = 'none';
+                container.innerHTML = '';
+            }
+            console.log('Анимация скрыта');
+            console.groupEnd();
+        }, duration);
+
+    }, 0); // задержка 0 – ждём отрисовки
 },
 
     setSpeed(newSpeed) {

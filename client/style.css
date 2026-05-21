@@ -2635,6 +2635,10 @@ body {
     pointer-events: none;
     z-index: 15;
 }
+.skin-animation {
+    outline: 4px solid lime !important;
+    background: rgba(0,255,0,0.5) !important;
+}
 
 /* Для карточки игрока (герой) – привязка к левому верхнему углу + зеркало */
 .hero-card .skin-animation.hero-skin {

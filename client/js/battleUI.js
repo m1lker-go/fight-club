@@ -162,6 +162,7 @@ function showBattleScreen(battleData) {
     `;
 
     // ✅ Инициализация лога боя
+    battleData.playerAvatarId = userData.avatar_id;
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
     // Обработчик скорости

@@ -645,7 +645,6 @@ body {
     overflow: hidden !important;
     background: none !important;
     box-shadow: none !important;
-    border-radius: 14px;           /* скругление аватара */
 }
 
 /* Изображение внутри адаптивного контейнера */
@@ -2633,7 +2632,6 @@ body {
     width: auto;
     object-fit: contain;
     pointer-events: none;
-    border-radius: 14px;
 }
 
 

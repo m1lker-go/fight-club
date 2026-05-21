@@ -2613,8 +2613,8 @@ body {
     height: 100%;
     pointer-events: none;
     display: none;
-    z-index: 15;
-    overflow: visible; /* обязательно, чтобы анимация могла выходить за пределы */
+    z-index: 15;           /* Выше аватара, но под плавающими числами (z-index 20) */
+    overflow: visible;
 }
 .animation-container img {
     width: 100%;
@@ -2626,9 +2626,9 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: auto !important;          /* не растягиваться */
-    height: 100% !important;        /* на всю высоту контейнера */
-    object-fit: contain !important; /* сохранять пропорции, не обрезая */
+    width: auto !important;
+    height: 100% !important;
+    object-fit: contain !important;
     pointer-events: none;
     z-index: 15;
 }

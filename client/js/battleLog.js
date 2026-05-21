@@ -410,19 +410,18 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
             animTarget = (attacker === 'player') ? 'enemy' : 'hero';
             const isPlayerAttacker = (attacker === 'player');
 
-            // Проверяем ИМЯ скина, а не ID
-            let attackerSkinName = null;
+            // Проверяем ID скина (в базе данных у "Топора ярости" id = 13)
+            let attackerSkinId = null;
             if (isPlayerAttacker) {
-                attackerSkinName = (typeof userData !== 'undefined' && userData) ? userData.avatar : null;
+                attackerSkinId = (typeof userData !== 'undefined' && userData) ? userData.avatar_id : null;
             } else {
-               attackerSkinName = (this.battleData.opponent && this.battleData.opponent.avatar) || null;
+                attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
             }
 
-            console.log(`[SKIN DEBUG] attacker=${attacker}, skinName=${attackerSkinName}`);
-
-            if (attackerSkinName === 'skin12') {
-                this.showAnimation(animTarget, null, true, 12);
-                animFile = null;
+            // Анимация только для скина с ID=13 (Топор ярости)
+            if (attackerSkinId === 13) {
+                this.showAnimation(animTarget, null, true, 13);
+                animFile = null;           // обычную анимацию не показываем
             } else {
                 animFile = 'shot.gif';
             }

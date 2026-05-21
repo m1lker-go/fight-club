@@ -760,15 +760,15 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             }
             console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
-            // Обычные анимации – по центру аватара
+            // Обычные анимации – ширина как у аватара, высота пропорционально, по центру
             img.src = `/assets/fight/${animationFile}`;
             img.style.position = 'absolute';
             img.style.top = avatarTopOffset + 'px';
             img.style.left = '50%';
             img.style.transform = 'translateX(-50%)';
-            img.style.height = avatarHeight + 'px';
-            img.style.width = 'auto';
-            img.style.maxWidth = '100%';
+            img.style.width = cardWidth + 'px';
+            img.style.height = 'auto';
+            img.style.maxHeight = avatarHeight + 'px';
             img.style.objectFit = 'contain';
             img.style.pointerEvents = 'none';
             console.log(`Обычная анимация: ${animationFile}`);

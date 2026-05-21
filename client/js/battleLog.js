@@ -667,7 +667,6 @@ if (isPlayerAttacker && attackerSkinId === 13) {
     },
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
-    // Блокировка повторного запуска скиновой анимации
     if (isSkinAttack && skinId === 13) {
         if (this.isSkinAnimating) {
             console.log('[ANIM] Скиновая анимация уже проигрывается, пропускаем');
@@ -761,11 +760,15 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             }
             console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
+            // Обычные анимации – по центру аватара
             img.src = `/assets/fight/${animationFile}`;
             img.style.position = 'absolute';
             img.style.top = avatarTopOffset + 'px';
+            img.style.left = '50%';
+            img.style.transform = 'translateX(-50%)';
             img.style.height = avatarHeight + 'px';
-            img.style.width = '100%';
+            img.style.width = 'auto';
+            img.style.maxWidth = '100%';
             img.style.objectFit = 'contain';
             img.style.pointerEvents = 'none';
             console.log(`Обычная анимация: ${animationFile}`);

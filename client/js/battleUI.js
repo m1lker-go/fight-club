@@ -92,15 +92,17 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-arena">
+                <!-- === HERO CARD (исправлено: анимация снаружи от обрезающего блока) === -->
                 <div class="hero-card">
-                   <div style="position: relative; margin: 0 auto;">
-    <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
-  ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 5;"></i>' : ''}
-    <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-    <div class="defeat-overlay">Проиграл</div>
-    <div id="hero-animation" class="animation-container"></div>
-    <div class="floating-numbers-container" id="hero-floating"></div>
-</div>
+                    <div style="position: relative; margin: 0 auto;">
+                        <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
+                        ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 5;"></i>' : ''}
+                        <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
+                        <div class="defeat-overlay">Проиграл</div>
+                        <div class="floating-numbers-container" id="hero-floating"></div>
+                    </div>
+                    <!-- АНИМАЦИЯ ВНЕ БЛОКА С overflow: hidden -->
+                    <div id="hero-animation" class="animation-container"></div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                         <div class="stat-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
@@ -135,14 +137,15 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
+                <!-- === ENEMY CARD (аналогично) === -->
                 <div class="enemy-card">
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">Проиграл</div>
-                        <div id="enemy-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
+                    <div id="enemy-animation" class="animation-container"></div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                         <div class="stat-text" id="enemyHpText">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
@@ -161,7 +164,7 @@ function showBattleScreen(battleData) {
         </div>
     `;
 
-    // ✅ Инициализация лога боя
+    // Инициализация лога боя
     battleData.playerAvatarId = userData.avatar_id;
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
@@ -190,11 +193,12 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 
-    // Страховочный вызов боевой музыки (гарантия включения)
+    // Музыка
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
     }
 }
+
 
 async function showBattleResult(battleData, timeOut = false) {
     console.log('=== showBattleResult START ===');

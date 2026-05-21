@@ -816,7 +816,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     if (this.onFinish) this.onFinish(this.battleData);
 },
 
-   stop() {
+  stop() {
     this.isSkinAnimating = false;   // ← добавить эту строку
     if (this.interval) {
         clearTimeout(this.interval);

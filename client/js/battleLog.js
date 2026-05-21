@@ -415,16 +415,20 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
             // ID скина атакующего
             let attackerSkinId = null;
             if (isPlayerAttacker) {
-                attackerSkinId = (typeof userData !== 'undefined' && userData) ? userData.avatar_id : null;
+                attackerSkinId = this.battleData.playerAvatarId || null;
             } else {
                 attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
             }
 
+            console.log('[SKIN DEBUG] attackerSkinId =', attackerSkinId);
+
             // Если надет скин "Топор ярости" (ID=13) – добавляем анимацию на атакующем
             if (attackerSkinId === 13) {
+                console.log('[SKIN DEBUG] Triggering skin animation for ID 13');
                 const skinAnimTarget = isPlayerAttacker ? 'hero' : 'enemy';
                 this.showAnimation(skinAnimTarget, null, true, 13);
             }
+            
         } else if (type === 'dodge') {
             animTarget = (attacker === 'player') ? 'enemy' : 'hero';
             animFile = 'missx.gif';
@@ -664,13 +668,14 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
    showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     this.hideAnimations();
     const container = document.getElementById(target + '-animation');
+    console.log('[ANIM] target=' + target + ', isSkinAttack=' + isSkinAttack + ', skinId=' + skinId);
     if (!container) {
         console.error(`[BattleLog] Container ${target}-animation not found`);
         return;
     }
     const img = document.createElement('img');
     
-    if (isSkinAttack && skinId === 13) {   // <-- было 12, стало 13
+    if (isSkinAttack && skinId === 13) {   
         img.src = '/assets/skins/animations/attack_skin12.gif';
         img.className = 'skin-animation';
         

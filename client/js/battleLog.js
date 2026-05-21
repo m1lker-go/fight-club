@@ -681,6 +681,19 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         const cardHeight = cardRect.height;
         console.log(`Размеры карточки: ${cardWidth} x ${cardHeight}`);
 
+        // Находим контейнер аватара (первый дочерний div карточки)
+        const avatarContainer = parentCard.querySelector('div:first-child');
+        let avatarHeight = cardHeight; // fallback
+        let avatarTopOffset = 0;
+        if (avatarContainer) {
+            const avatarRect = avatarContainer.getBoundingClientRect();
+            avatarHeight = avatarRect.height;
+            avatarTopOffset = avatarRect.top - cardRect.top;
+            console.log(`Аватар: высота=${avatarHeight}, отступ сверху=${avatarTopOffset}`);
+        } else {
+            console.warn('Контейнер аватара не найден, используем всю карточку');
+        }
+
         if (cardWidth === 0 || cardHeight === 0) {
             console.error('❌ Карточка имеет нулевые размеры – анимация невозможна');
             console.groupEnd();
@@ -697,6 +710,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             console.log(`Контейнер создан и вставлен в карточку`);
         }
 
+        // Контейнер занимает всю карточку
         container.style.position = 'absolute';
         container.style.top = '0';
         container.style.left = '0';
@@ -714,10 +728,11 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             const skinPath = '/assets/skins/animations/attack_skin12.gif';
             img.src = skinPath;
             img.className = 'skin-animation';
-            const proportionalWidth = (600 / 480) * cardHeight;
+            // Высота анимации = высоте аватара, ширина пропорциональна
+            const proportionalWidth = (600 / 480) * avatarHeight;
             img.style.position = 'absolute';
-            img.style.top = '0';
-            img.style.height = cardHeight + 'px';
+            img.style.top = avatarTopOffset + 'px';   // позиционируем относительно верха аватара
+            img.style.height = avatarHeight + 'px';
             img.style.width = proportionalWidth + 'px';
             img.style.objectFit = 'contain';
             img.style.pointerEvents = 'none';
@@ -727,15 +742,16 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
                 img.style.right = 'auto';
                 img.style.transform = 'scaleX(-1)';
                 // transform-origin по умолчанию center – блок не смещается
-                console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, левый край + зеркало`);
+                console.log(`Герой: высота аватара=${avatarHeight}px, ширина=${proportionalWidth}px, левый край + зеркало`);
             } else {
                 img.style.left = 'auto';
                 img.style.right = '0';
                 img.style.transform = 'none';
-                console.log(`Враг: высота=${cardHeight}px, ширина=${proportionalWidth}px, правый край`);
+                console.log(`Враг: высота аватара=${avatarHeight}px, ширина=${proportionalWidth}px, правый край`);
             }
             console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
+            // Обычные анимации остаются без изменений (на всю карточку)
             img.src = `/assets/fight/${animationFile}`;
             img.style.width = '100%';
             img.style.height = '100%';

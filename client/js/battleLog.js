@@ -722,20 +722,20 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             img.style.objectFit = 'contain';
             img.style.pointerEvents = 'none';
 
-            if (target === 'hero') {
-                // Игрок: левый край, зеркало относительно левого края
-                img.style.left = '0';
-                img.style.right = 'auto';
-                img.style.transform = 'scaleX(-1)';
-                img.style.transformOrigin = 'left center';
-                console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, зеркало, левый край`);
-            } else {
-                // Враг: правый край, без зеркала
-                img.style.left = 'auto';
-                img.style.right = '0';
-                img.style.transform = 'none';
-                console.log(`Враг: высота=${cardHeight}px, ширина=${proportionalWidth}px, правый край`);
-            }
+           if (target === 'hero') {
+    // Для игрока: привязка к левому краю, без зеркалирования
+    img.style.left = '0';
+    img.style.right = 'auto';
+    img.style.transform = 'none';               // убираем зеркало
+    // transform-origin не нужен
+    console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, левый край, без зеркала`);
+} else {
+    // Для врага: привязка к правому краю, без зеркала (как было)
+    img.style.left = 'auto';
+    img.style.right = '0';
+    img.style.transform = 'none';
+    console.log(`Враг: высота=${cardHeight}px, ширина=${proportionalWidth}px, правый край`);
+}
             console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
             img.src = `/assets/fight/${animationFile}`;

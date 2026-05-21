@@ -2620,11 +2620,12 @@ body {
     object-fit: cover;
 }
 .skin-animation {
+    width: auto !important;
+    height: 100% !important;
+    object-fit: contain !important;
     position: absolute;
     top: 0;
     left: 0;
-    width: auto;
-    height: 100%;
     pointer-events: none;
     z-index: 10;
 }

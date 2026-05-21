@@ -2633,13 +2633,10 @@ body {
     width: auto;
     object-fit: contain;
     pointer-events: none;
+    border-radius: 14px;
 }
 
-/* ВРЕМЕННАЯ РАМКА для отладки (потом удалить) */
-.skin-animation {
-    outline: 4px solid lime;
-    background: rgba(0,255,0,0.3);
-}
+
 
 
 .floating-numbers-container {

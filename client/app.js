@@ -210,6 +210,10 @@ async function loadUserDataByToken(token) {
             recalculatePower();
             updateTopBar();
             showScreen('main');
+            // Предзагрузка всех анимаций боя
+if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
+    AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
+}
             if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
             updateMainMenuNewIcons();
             checkAdvent();
@@ -259,6 +263,10 @@ async function checkAuth() {
                 recalculatePower();
                 updateTopBar();
                 showScreen('main');
+                // Предзагрузка всех анимаций боя
+if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
+    AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
+}
                 updateMainMenuNewIcons();
                 checkAdvent();
                 hideSplashScreen();

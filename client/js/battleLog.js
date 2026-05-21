@@ -408,11 +408,14 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         animTarget = (attacker === 'player') ? 'enemy' : 'hero';
         const isPlayerAttacker = (attacker === 'player');
         let attackerSkinId = null;
-        if (isPlayerAttacker && typeof userData !== 'undefined' && userData && userData.avatar_id) {
-            attackerSkinId = userData.avatar_id;
-        } else if (!isPlayerAttacker && this.battleData && this.battleData.opponent && this.battleData.opponent.avatar_id) {
-            attackerSkinId = this.battleData.opponent.avatar_id;
-        }
+     if (isPlayerAttacker) {
+    attackerSkinId = this.battleData.playerAvatarId || null;
+} else {
+    attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
+}
+        
+         console.log(`[SKIN DEBUG] attacker=${attacker}, avatar_id=${attackerSkinId}`);
+        
         if (attackerSkinId === 12) {
             this.showAnimation(animTarget, 'shot.gif', true, 12);
             animFile = null; // общий вызов не сработает

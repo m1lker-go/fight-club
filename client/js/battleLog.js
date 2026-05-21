@@ -807,13 +807,14 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         this.playNext();
     },
 
-    finish() {
-        clearTimeout(this.interval);
-        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        this.hideAnimations();
-        if (this.onFinish) this.onFinish(this.battleData);
-    },
+   finish() {
+    this.isSkinAnimating = false;   // ← добавить эту строку
+    clearTimeout(this.interval);
+    if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+    if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+    this.hideAnimations();
+    if (this.onFinish) this.onFinish(this.battleData);
+},
 
     stop() {
         if (this.interval) {

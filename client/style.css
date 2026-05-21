@@ -2612,7 +2612,6 @@ body {
     width: 100% !important;
     height: 100% !important;
     pointer-events: none !important;
-    display: none !important;
     z-index: 15 !important;
     overflow: visible !important;
     background: transparent !important;
@@ -2636,6 +2635,13 @@ body {
     pointer-events: none !important;
 }
 
+/* ВРЕМЕННАЯ РАМКА анимации */
+.skin-animation {
+    outline: 4px solid lime !important;
+    background: rgba(0,255,0,0.3) !important;
+}
+
+
 /* Для карточки игрока (герой) – привязка к левому верхнему углу + зеркало */
 .hero-card .skin-animation {
     left: 0 !important;
@@ -2650,6 +2656,7 @@ body {
     right: 0 !important;
     transform: none !important;
 }
+
 
 .floating-numbers-container {
     position: absolute;

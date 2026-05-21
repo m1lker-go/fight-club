@@ -1,4 +1,4 @@
-// settings.js – полная версия с новой вёрсткой настроек
+// settings.js – исправлено: аватар всегда соответствует текущему скину
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -53,6 +53,9 @@ async function renderSettings() {
 
         const hasPassword = !!user.password_hash;
 
+        // ✅ Вычисляем имя файла аватара по avatar_id (гарантирует актуальность)
+        const avatarFilename = getAvatarFilenameById(user.avatar_id || 1);
+
         // Текущая громкость из AudioManager
         let musicVolumePercent = 60;
         let sfxVolumePercent = 70;
@@ -67,7 +70,7 @@ async function renderSettings() {
             <div class="settings-container">
                 <!-- Строка профиля: аватар + имя + карандаш -->
                 <div class="settings-profile-row">
-                    <img src="/assets/${user.avatar || 'cat_heroweb.png'}" class="settings-avatar">
+                    <img src="/assets/${avatarFilename}" class="settings-avatar">
                     <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
                     <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
                 </div>
@@ -96,7 +99,7 @@ async function renderSettings() {
                     </div>
                 </div>
 
-                <!-- Заголовок привязанных аккаунтов (тёмный, по центру) -->
+                <!-- Заголовок привязанных аккаунтов -->
                 <div class="settings-connected-header">ПРИВЯЗАННЫЕ АККАУНТЫ</div>
 
                 <!-- Список привязок -->

@@ -423,7 +423,7 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
             console.log('[SKIN DEBUG] attackerSkinId =', attackerSkinId);
 
             // Если надет скин "Топор ярости" (ID=13) – добавляем анимацию на атакующем
-            if (attackerSkinId === 13) {
+            if (true) {
                 console.log('[SKIN DEBUG] Triggering skin animation for ID 13');
                 const skinAnimTarget = isPlayerAttacker ? 'hero' : 'enemy';
                 this.showAnimation(skinAnimTarget, null, true, 13);

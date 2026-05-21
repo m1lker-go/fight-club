@@ -2642,21 +2642,6 @@ body {
 }
 
 
-/* Для карточки игрока (герой) – привязка к левому верхнему углу + зеркало */
-.hero-card .skin-animation {
-    left: 0 !important;
-    right: auto !important;
-    transform: scaleX(-1) !important;
-    transform-origin: left center !important;
-}
-
-/* Для карточки врага – привязка к правому верхнему углу */
-.enemy-card .skin-animation {
-    left: auto !important;
-    right: 0 !important;
-    transform: none !important;
-}
-
 
 .floating-numbers-container {
     position: absolute;

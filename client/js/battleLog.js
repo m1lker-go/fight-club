@@ -833,3 +833,4 @@ stop() {
     this.battleData = null;
     this.onFinish = null;
 }
+};

@@ -667,14 +667,38 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
+    
+    // Если предыдущая анимация не была скрыта – скрываем
     this.hideAnimations();
-    const container = document.getElementById(target + '-animation');
+    
+    // Пытаемся получить контейнер
+    let container = document.getElementById(target + '-animation');
+    
+    // Если контейнер не существует – создаём его на месте
     if (!container) {
-        console.error('Контейнер не найден');
-        console.groupEnd();
-        return;
+        console.warn(`Контейнер #${target}-animation не найден, создаём заново...`);
+        const parentCard = document.querySelector(`.${target}-card`);
+        if (parentCard) {
+            // Создаём контейнер и вставляем его после блока аватара (или в конец карточки)
+            container = document.createElement('div');
+            container.id = target + '-animation';
+            container.className = 'animation-container';
+            // Вставляем перед stat-bar или в конец карточки
+            const statBar = parentCard.querySelector('.hp-bar');
+            if (statBar) {
+                parentCard.insertBefore(container, statBar);
+            } else {
+                parentCard.appendChild(container);
+            }
+            console.log(`✅ Контейнер создан и вставлен в ${target}-card`);
+        } else {
+            console.error(`Не найдена карточка .${target}-card, анимация невозможна`);
+            console.groupEnd();
+            return;
+        }
     }
 
+    // Теперь контейнер точно существует
     // Сбрасываем предыдущие инлайн-стили контейнера
     container.style.position = '';
     container.style.width = '';
@@ -719,8 +743,10 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
 
     const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
     setTimeout(() => {
-        container.style.display = 'none';
-        container.innerHTML = '';
+        if (container) {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }
         console.log('Анимация скрыта');
         console.groupEnd();
     }, duration);

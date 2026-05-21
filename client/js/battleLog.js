@@ -667,67 +667,6 @@ if (isPlayerAttacker && attackerSkinId === 13) {
     },
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
-    // Если это скиновая анимация и она уже запущена – выходим
-    if (isSkinAttack && skinId === 13) {
-        if (this.isSkinAnimating) {
-            console.log('[ANIM] Скиновая анимация уже проигрывается, пропускаем');
-            return;
-        }
-        this.isSkinAnimating = true;   // устанавливаем ДО основного кода
-        console.log('[ANIM] Скиновая анимация запущена, флаг=true');
-    }
-
-    console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
-    this.hideAnimations();
-
-    setTimeout(() => {
-        const parentCard = document.querySelector(`.${target}-card`);
-        if (!parentCard) {
-            console.error(`Родительская карточка .${target}-card не найдена`);
-            if (isSkinAttack && skinId === 13) this.isSkinAnimating = false;
-            console.groupEnd();
-            return;
-        }
-
-        const cardRect = parentCard.getBoundingClientRect();
-        const cardWidth = cardRect.width;
-        const cardHeight = cardRect.height;
-        console.log(`Размеры карточки: ${cardWidth} x ${cardHeight}`);
-
-        // Находим контейнер аватара (первый дочерний div карточки)
-        const avatarContainer = parentCard.querySelector('div:first-child');
-        let avatarHeight = cardHeight;
-        let avatarTopOffset = 0;
-        if (avatarContainer) {
-            const avatarRect = avatarContainer.getBoundingClientRect();
-            avatarHeight = avatarRect.height;
-            avatarTopOffset = avatarRect.top - cardRect.top;
-            console.log(`Аватар: высота=${avatarHeight}, отступ сверху=${avatarTopOffset}`);
-        } else {
-            console.warn('Контейнер аватара не найден, используем всю карточку');
-        }
-
-        if (cardWidth === 0 || cardHeight === 0) {
-            console.error('❌ Карточка имеет нулевые размеры – анимация невозможна');
-            if (isSkinAttack && skinId === 13) this.isSkinAnimating = false;
-            console.groupEnd();
-            return;
-position = 'absolute';
-        container.style.top = '0';
-        container.style.left = '0';
-        container.style.width = cardWidth + 'px';
-        container.style.height = cardHeight + 'px';
-        container.style.pointerEvents = 'none';
-        container.style.display = 'block';
-        container.style.zIndex = '15';
-        container.style.> {
-            const imgRect = img.getBoundingClientRect();
-            console.log(`Итоговые размеры img: ${imgRect.width} x ${imgRect.height}`);
-showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
-    // Блокировка повторного запуска скиновой анимации
-
-
-    showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     // Блокировка повторного запуска скиновой анимации
     if (isSkinAttack && skinId === 13) {
         if (this.isSkinAnimating) {
@@ -860,19 +799,16 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         }, duration);
 
     }, 0);
-}
+},
 
-    
-,
+setSpeed(newSpeed) {
+    this.speed = newSpeed;
+    clearTimeout(this.interval);
+    this.playNext();
+},
 
-    setSpeed(newSpeed) {
-        this.speed = newSpeed;
-        clearTimeout(this.interval);
-        this.playNext();
-    },
-
-   finish() {
-    this.isSkinAnimating = false;   // ← добавить эту строку
+finish() {
+    this.isSkinAnimating = false;
     clearTimeout(this.interval);
     if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
     if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
@@ -880,8 +816,8 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     if (this.onFinish) this.onFinish(this.battleData);
 },
 
-  stop() {
-    this.isSkinAnimating = false;   // ← добавить эту строку
+stop() {
+    this.isSkinAnimating = false;
     if (this.interval) {
         clearTimeout(this.interval);
         this.interval = null;
@@ -897,4 +833,3 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     this.battleData = null;
     this.onFinish = null;
 }
-};

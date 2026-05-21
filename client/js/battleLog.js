@@ -668,18 +668,17 @@ if (isPlayerAttacker && attackerSkinId === 13) {
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     // Если это скиновая анимация и она уже запущена – выходим
-    if (isSkinAttack && skinId === 13 && this.isSkinAnimating) {
-        console.log('[ANIM] Скиновая анимация уже проигрывается, пропускаем');
-        return;
+    if (isSkinAttack && skinId === 13) {
+        if (this.isSkinAnimating) {
+            console.log('[ANIM] Скиновая анимация уже проигрывается, пропускаем');
+            return;
+        }
+        this.isSkinAnimating = true;   // устанавливаем ДО основного кода
+        console.log('[ANIM] Скиновая анимация запущена, флаг=true');
     }
 
     console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
     this.hideAnimations();
-
-    // Если скиновая – устанавливаем флаг
-    if (isSkinAttack && skinId === 13) {
-        this.isSkinAnimating = true;
-    }
 
     setTimeout(() => {
         const parentCard = document.querySelector(`.${target}-card`);

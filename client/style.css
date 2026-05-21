@@ -2612,20 +2612,21 @@ body {
     pointer-events: none;
     display: none;
     z-index: 10;
-    overflow: visible;
+    overflow: visible; /* обязательно, чтобы анимация могла выходить за пределы */
 }
 .animation-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
+
 .skin-animation {
-    width: auto !important;
-    height: 100% !important;
-    object-fit: contain !important;
     position: absolute;
     top: 0;
     left: 0;
+    width: auto !important;          /* не растягиваться */
+    height: 100% !important;        /* на всю высоту контейнера */
+    object-fit: contain !important; /* сохранять пропорции, не обрезая */
     pointer-events: none;
     z-index: 10;
 }

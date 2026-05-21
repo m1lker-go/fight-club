@@ -675,7 +675,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         return;
     }
 
-    // Принудительно задаём размеры контейнера от родительской карточки
+    // Принудительно задаём контейнеру размеры от родительской карточки
     const parentCard = container.closest('.hero-card, .enemy-card');
     let cardWidth = 0, cardHeight = 0;
     if (parentCard) {
@@ -684,6 +684,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         cardHeight = rect.height;
         container.style.width = cardWidth + 'px';
         container.style.height = cardHeight + 'px';
+        container.style.position = 'absolute'; // убеждаемся, что позиционирование абсолютное
         console.log(`Размеры карточки: ${cardWidth}x${cardHeight}`);
     } else {
         console.warn('Родительская карточка не найдена');
@@ -696,42 +697,46 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         img.src = skinPath;
         img.className = 'skin-animation';
         
-        // ПРИНУДИТЕЛЬНЫЕ СТИЛИ ДЛЯ СКИНОВОЙ АНИМАЦИИ (через инлайн, но только для этой анимации)
+        // === ЯВНЫЕ РАЗМЕРЫ В ПИКСЕЛЯХ ===
+        const gifWidth = 600;   // исходная ширина GIF
+        const gifHeight = 480;  // исходная высота GIF
+        const targetHeight = cardHeight;     // высота карточки (например, 200px)
+        const targetWidth = (gifWidth / gifHeight) * targetHeight; // пропорциональная ширина
+        
         img.style.position = 'absolute';
         img.style.top = '0';
-        img.style.height = '100%';
-        img.style.width = 'auto';
+        img.style.width = targetWidth + 'px';
+        img.style.height = targetHeight + 'px';
         img.style.objectFit = 'contain';
         img.style.pointerEvents = 'none';
         img.style.zIndex = '15';
         
         if (target === 'hero') {
-            // Герой: левый верхний угол + зеркало
             img.style.left = '0';
             img.style.right = 'auto';
             img.style.transform = 'scaleX(-1)';
             img.style.transformOrigin = 'left center';
-            console.log('Применены стили для героя: левый край, зеркало');
+            console.log(`Герой: ширина=${targetWidth}px, высота=${targetHeight}px, зеркало`);
         } else {
-            // Враг: правый верхний угол, без зеркала
             img.style.left = 'auto';
             img.style.right = '0';
             img.style.transform = 'none';
-            console.log('Применены стили для врага: правый край');
+            console.log(`Враг: ширина=${targetWidth}px, высота=${targetHeight}px`);
         }
-        
-        // Логируем стили
-        console.log('Итоговые инлайн-стили img:', img.style.cssText);
         
         img.onload = () => {
             console.log(`Изображение загружено: ${img.naturalWidth}x${img.naturalHeight}`);
-            // Дополнительно выводим положение на экране
             const rect = img.getBoundingClientRect();
-            console.log(`Позиция img на экране: left=${rect.left}, top=${rect.top}, width=${rect.width}, height=${rect.height}`);
+            console.log(`Позиция img: left=${rect.left}, top=${rect.top}, width=${rect.width}, height=${rect.height}`);
+            if (rect.width === 0 || rect.height === 0) {
+                console.error('❌ Размеры img всё ещё нулевые! Проверьте CSS родителя.');
+            } else {
+                console.log('✅ Анимация должна быть видна!');
+            }
         };
-        img.onerror = () => console.error(`ОШИБКА: не загрузилось ${skinPath}`);
+        img.onerror = () => console.error(`❌ ОШИБКА: не загрузилось ${skinPath}`);
     } else {
-        // Обычная анимация – без изменений
+        // Обычная анимация без изменений
         img.src = `/assets/fight/${animationFile}`;
         img.style.width = '100%';
         img.style.height = '100%';
@@ -742,7 +747,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     container.innerHTML = '';
     container.appendChild(img);
     container.style.display = 'flex';
-    console.log(`Контейнеру задан display: flex, дочерних элементов: ${container.children.length}`);
+    console.log(`Контейнер: display=${container.style.display}, размеры ${container.style.width}x${container.style.height}`);
 
     const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
     setTimeout(() => {
@@ -750,7 +755,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         container.innerHTML = '';
         container.style.width = '';
         container.style.height = '';
-        console.log('Анимация скрыта, размеры контейнера сброшены');
+        console.log('Анимация скрыта');
         console.groupEnd();
     }, duration);
 },

@@ -665,7 +665,7 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         }, 2000);
     },
 
-   showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
+showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     this.hideAnimations();
     const container = document.getElementById(target + '-animation');
     console.log('[ANIM] target=' + target + ', isSkinAttack=' + isSkinAttack + ', skinId=' + skinId);
@@ -679,13 +679,19 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         img.src = '/assets/skins/animations/attack_skin12.gif';
         img.className = 'skin-animation';
         
+        // Убираем прижатие к краям и зеркалирование - даём CSS управлять позицией
+        // Просто центрируем по левому краю, но не сдвигаем за пределы
+        img.style.left = '0';
+        img.style.right = 'auto';
+        img.style.transform = 'none'; // убираем зеркалирование, если не нужно
+        // Если нужно зеркалирование, можно оставить, но тогда картинка сместится
+        // Лучше отразить через CSS: transform: scaleX(-1) с правильным origin
         if (target === 'hero') {
-            img.style.right = '0';
-            img.style.left = 'auto';
+            // Для героя (левая сторона) зеркалим, но не меняем left/right
             img.style.transform = 'scaleX(-1)';
+            img.style.transformOrigin = 'left center'; // чтобы не уезжала влево
         } else {
-            img.style.left = '0';
-            img.style.right = 'auto';
+            img.style.transform = 'none';
         }
     } else {
         img.src = `/assets/fight/${animationFile}`;

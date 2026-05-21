@@ -2606,16 +2606,16 @@ body {
 
 /* ========== АНИМАЦИИ БОЯ ========== */
 .animation-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+    position: static !important;   /* отключаем абсолютное позиционирование */
     display: none;
-    z-index: 10;
+    width: auto !important;
+    height: auto !important;
+    margin: 0;
+    padding: 0;
+    z-index: 15;
     overflow: visible;
 }
+
 
 /* Обычные анимации (не скиновые) растягиваются на весь контейнер */
 .animation-container img:not(.skin-animation) {
@@ -2626,31 +2626,24 @@ body {
 
 /* Базовые стили для скиновой анимации */
 .skin-animation {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: auto !important;
-    height: 100% !important;
-    object-fit: contain !important;
+    display: block;
+    width: auto;
+    height: 200px;          /* фиксированная высота, подгоните под свой дизайн */
+    object-fit: contain;
     pointer-events: none;
-    z-index: 15;
-}
-.skin-animation {
-    outline: 4px solid lime !important;
-    background: rgba(0,255,0,0.5) !important;
 }
 
 /* Для карточки игрока (герой) – привязка к левому верхнему углу + зеркало */
-.hero-card .skin-animation.hero-skin {
-    left: 0;
+.hero-card .skin-animation {
+    margin-left: 0;
     transform: scaleX(-1);
-    transform-origin: left center;  /* Зеркалирование относительно левого края */
+    transform-origin: left center;
 }
 
 /* Для карточки врага – привязка к правому верхнему углу */
-.enemy-card .skin-animation.enemy-skin {
-    left: auto;
-    right: 0;
+.enemy-card .skin-animation {
+    margin-left: auto;
+    margin-right: 0;
     transform: none;
 }
 

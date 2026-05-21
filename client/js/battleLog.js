@@ -406,26 +406,27 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         let animFile = null;
 
         // Определяем цель и файл анимации
-        if (type === 'attack' || type === 'crit' || type === 'damage') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            const isPlayerAttacker = (attacker === 'player');
+if (type === 'attack' || type === 'crit' || type === 'damage') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    const isPlayerAttacker = (attacker === 'player');
 
-            // Проверяем ID скина (в базе данных у "Топора ярости" id = 13)
-            let attackerSkinId = null;
-            if (isPlayerAttacker) {
-                attackerSkinId = (typeof userData !== 'undefined' && userData) ? userData.avatar_id : null;
-            } else {
-                attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
-            }
+    // Получаем ID скина атакующего
+    let attackerSkinId = null;
+    if (isPlayerAttacker) {
+        attackerSkinId = (typeof userData !== 'undefined' && userData) ? userData.avatar_id : null;
+    } else {
+        attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
+    }
 
-            // Анимация только для скина с ID=13 (Топор ярости)
-            if (attackerSkinId === 13) {
-                this.showAnimation(animTarget, null, true, 13);
-                animFile = null;           // обычную анимацию не показываем
-            } else {
-                animFile = 'shot.gif';
-            }
-        } else if (type === 'dodge') {
+    // Обычная анимация удара всегда на цели (противнике)
+    animFile = 'shot.gif';
+
+    // Если надет скин "Топор ярости" (ID=13) – добавляем анимацию на атакующем
+    if (attackerSkinId === 13) {
+        const skinAnimTarget = isPlayerAttacker ? 'hero' : 'enemy';
+        this.showAnimation(skinAnimTarget, null, true, 13);
+    }
+} else if (type === 'dodge') {
             animTarget = (attacker === 'player') ? 'enemy' : 'hero';
             animFile = 'missx.gif';
         } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {

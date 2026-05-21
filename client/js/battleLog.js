@@ -678,23 +678,16 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     if (isSkinAttack && skinId === 13) {   
         img.src = '/assets/skins/animations/attack_skin12.gif';
         img.className = 'skin-animation';
-        
-        // Убираем прижатие к краям и зеркалирование - даём CSS управлять позицией
-        // Просто центрируем по левому краю, но не сдвигаем за пределы
-        img.style.left = '0';
-        img.style.right = 'auto';
-        img.style.transform = 'none'; // убираем зеркалирование, если не нужно
-        // Если нужно зеркалирование, можно оставить, но тогда картинка сместится
-        // Лучше отразить через CSS: transform: scaleX(-1) с правильным origin
-        if (target === 'hero') {
-            // Для героя (левая сторона) зеркалим, но не меняем left/right
-            img.style.transform = 'scaleX(-1)';
-            img.style.transformOrigin = 'left center'; // чтобы не уезжала влево
-        } else {
-            img.style.transform = 'none';
-        }
+        // Убираем все старые инлайн-стили – теперь управляем через CSS классы
+        img.style.cssText = '';
+        // Добавляем модификатор для стороны (hero/enemy)
+        img.classList.add(target === 'hero' ? 'hero-skin' : 'enemy-skin');
     } else {
+        // Обычная анимация (без изменений)
         img.src = `/assets/fight/${animationFile}`;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
     }
 
     container.innerHTML = '';

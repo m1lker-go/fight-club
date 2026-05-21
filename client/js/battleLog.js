@@ -422,12 +422,11 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
 
             console.log('[SKIN DEBUG] attackerSkinId =', attackerSkinId);
 
-            // Если надет скин "Топор ярости" (ID=13) – добавляем анимацию на атакующем
-            if (true) {
-                console.log('[SKIN DEBUG] Triggering skin animation for ID 13');
-                const skinAnimTarget = isPlayerAttacker ? 'hero' : 'enemy';
-                this.showAnimation(skinAnimTarget, null, true, 13);
-            }
+// Показываем скиновую анимацию ТОЛЬКО если атакует игрок И у него avatar_id === 13
+if (isPlayerAttacker && attackerSkinId === 13) {
+    console.log('[SKIN DEBUG] Triggering skin animation for player with skin ID 13');
+    this.showAnimation('hero', null, true, 13);
+}
             
         } else if (type === 'dodge') {
             animTarget = (attacker === 'player') ? 'enemy' : 'hero';
@@ -669,7 +668,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
     this.hideAnimations();
 
-    // Небольшая задержка, чтобы браузер успел отрисовать карточку
     setTimeout(() => {
         const parentCard = document.querySelector(`.${target}-card`);
         if (!parentCard) {
@@ -699,7 +697,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             console.log(`Контейнер создан и вставлен в карточку`);
         }
 
-        // Задаём контейнеру реальные размеры и позиционирование
         container.style.position = 'absolute';
         container.style.top = '0';
         container.style.left = '0';
@@ -717,7 +714,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             const skinPath = '/assets/skins/animations/attack_skin12.gif';
             img.src = skinPath;
             img.className = 'skin-animation';
-            // Пропорциональная ширина: 600 / 480 = 1.25
             const proportionalWidth = (600 / 480) * cardHeight;
             img.style.position = 'absolute';
             img.style.top = '0';
@@ -727,12 +723,14 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             img.style.pointerEvents = 'none';
 
             if (target === 'hero') {
+                // Игрок: левый край, зеркало относительно левого края
                 img.style.left = '0';
                 img.style.right = 'auto';
                 img.style.transform = 'scaleX(-1)';
                 img.style.transformOrigin = 'left center';
                 console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, зеркало, левый край`);
             } else {
+                // Враг: правый край, без зеркала
                 img.style.left = 'auto';
                 img.style.right = '0';
                 img.style.transform = 'none';
@@ -751,7 +749,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         container.innerHTML = '';
         container.appendChild(img);
 
-        // Проверка через 50 мс, что изображение реально отобразилось
         setTimeout(() => {
             const imgRect = img.getBoundingClientRect();
             console.log(`Итоговые размеры img: ${imgRect.width} x ${imgRect.height}`);
@@ -772,7 +769,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             console.groupEnd();
         }, duration);
 
-    }, 0); // задержка 0 – ждём отрисовки
+    }, 0);
 },
 
     setSpeed(newSpeed) {

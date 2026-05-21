@@ -1,4 +1,4 @@
-// js/tower.js (полностью исправленный)
+// js/tower.js – полностью адаптирован под AnimationManager
 
 let towerStatus = null;
 let selectedClass = null;
@@ -10,6 +10,11 @@ async function loadTowerStatus() {
         return;
     }
     try {
+        // Предзагрузка анимаций (если ещё не сделана)
+        if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
+            AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
+        }
+
         const res = await window.apiRequest('/tower/status', { method: 'GET' });
         if (!res.ok) throw new Error('Failed to load tower status');
         towerStatus = await res.json();
@@ -230,6 +235,13 @@ async function showTowerBattleScreen(battleData) {
     battleData.playerSubclass = playerSubclassForBattle;
     battleData.enemySubclass = battleData.opponent.subclass;
 
+    // ✅ Добавляем ID скинов для анимаций (чтобы BattleLog мог определить skinId)
+    battleData.playerAvatarId = userData.avatar_id;
+    if (battleData.opponent && !battleData.opponent.avatar_id) {
+        // Если сервер не передал avatar_id, ставим 1 (обычный кот)
+        battleData.opponent.avatar_id = 1;
+    }
+
     const playerDisplayClass = towerStatus.chosenClass
         ? (typeof getClassNameRu === 'function' ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
         : getClassNameRu(userData.current_class);
@@ -266,7 +278,7 @@ async function showTowerBattleScreen(battleData) {
                 <div class="hero-card">
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
-${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 5;"></i>' : ''}
+${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
                         <div id="hero-animation" class="animation-container"></div>
@@ -332,6 +344,7 @@ ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new D
         </div>
     `;
 
+    // Инициализация BattleLog (он уже использует AnimationManager)
     BattleLog.init(battleData, document.getElementById('battleLog'), () => {
         handleTowerBattleEnd(battleData);
     });
@@ -365,7 +378,7 @@ async function handleTowerBattleEnd(battleData) {
     towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
-    // ✅ Обновляем данные заданий (например, задание "Башня")
+    // Обновляем задания
     if (typeof refreshTasksData === 'function') {
         await refreshTasksData();
     }
@@ -385,16 +398,12 @@ function showTowerResultScreen(battleData) {
     const passedFloor = floor;
     const expGain = battleData.expGain || 0;
 
-
-    // +++ ЗВУК ОКОНЧАНИЯ БОЯ В БАШНЕ +++
+    // Звук окончания боя
     if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
-        if (victory) {
-            AudioManager.playSound('victory');
-        } else {
-            AudioManager.playSound('defeat');
-        }
+        if (victory) AudioManager.playSound('victory');
+        else AudioManager.playSound('defeat');
     }
-    
+
     const { playerStats, enemyStats } = computeTowerStats(result.messages);
 
     const logArray = result.messages.map(m => {
@@ -495,15 +504,14 @@ function showTowerResultScreen(battleData) {
         }
     }
 
-const backBtn = createButton('Назад', () => {
-    // Возвращаем музыку меню
-    if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
-        AudioManager.startMenuMusic();
-    } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
-        AudioManager.onScreenChange();
-    }
-    renderTower();
-});
+    const backBtn = createButton('Назад', () => {
+        if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
+            AudioManager.startMenuMusic();
+        } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
+            AudioManager.onScreenChange();
+        }
+        renderTower();
+    });
 
     let tabLogBtn, tabStatsBtn;
 

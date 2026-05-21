@@ -666,40 +666,94 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
     },
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
+    console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
     this.hideAnimations();
+    
     const container = document.getElementById(target + '-animation');
-    console.log('[ANIM] target=' + target + ', isSkinAttack=' + isSkinAttack + ', skinId=' + skinId);
+    console.log(`1. Контейнер #${target}-animation:`, container);
+    
     if (!container) {
-        console.error(`[BattleLog] Container ${target}-animation not found`);
+        console.error(`2. ❌ Контейнер НЕ НАЙДЕН!`);
+        console.groupEnd();
         return;
     }
+    
+    console.log(`2. Контейнер существует. Текущий display: ${getComputedStyle(container).display}`);
+    console.log(`3. Размеры контейнера: ${container.offsetWidth}x${container.offsetHeight}`);
+    console.log(`4. Позиция контейнера относительно окна:`, container.getBoundingClientRect());
+    
     const img = document.createElement('img');
     
     if (isSkinAttack && skinId === 13) {   
-        img.src = '/assets/skins/animations/attack_skin12.gif';
+        const skinPath = '/assets/skins/animations/attack_skin12.gif';
+        img.src = skinPath;
         img.className = 'skin-animation';
-        // Добавляем класс для привязки к стороне (hero/enemy)
         img.classList.add(target === 'hero' ? 'hero-skin' : 'enemy-skin');
-        // НИКАКИХ ИНЛАЙН-СТИЛЕЙ! Всё управляется через CSS.
+        
+        console.log(`5. 🎨 СКИНОВАЯ АНИМАЦИЯ:`);
+        console.log(`   - путь: ${skinPath}`);
+        console.log(`   - классы: ${img.className}`);
+        console.log(`   - добавлен класс ${target === 'hero' ? 'hero-skin' : 'enemy-skin'}`);
+        console.log(`   - инлайн-стилей НЕТ:`, img.style.cssText || '(пусто)');
+        
+        // Логируем загрузку изображения
+        img.onload = () => {
+            console.log(`   ✅ Изображение загружено! Размеры: ${img.naturalWidth}x${img.naturalHeight}`);
+            console.log(`   🔍 Вычисленные стили после загрузки:`, window.getComputedStyle(img));
+        };
+        img.onerror = (err) => {
+            console.error(`   ❌ ОШИБКА загрузки изображения! Проверьте путь: ${skinPath}`, err);
+        };
+        
     } else {
-        // Обычные анимации – оставляем как работало раньше
-        img.src = `/assets/fight/${animationFile}`;
-        // Для обычных анимаций можно либо тоже управлять через CSS, 
-        // либо оставить инлайн-стили для совместимости. Оставляем инлайн.
+        // Обычная анимация
+        const regularPath = `/assets/fight/${animationFile}`;
+        img.src = regularPath;
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'cover';
+        console.log(`5. 🎯 ОБЫЧНАЯ анимация: ${regularPath}`);
     }
-
+    
     container.innerHTML = '';
     container.appendChild(img);
     container.style.display = 'flex';
-
+    
+    console.log(`6. После добавления img внутрь контейнера:`);
+    console.log(`   - container.innerHTML: ${container.innerHTML.substring(0, 100)}`);
+    console.log(`   - container.style.display = ${container.style.display}`);
+    console.log(`   - Дочерних элементов: ${container.children.length}`);
+    console.log(`   - img.complete? ${img.complete}, img.naturalWidth: ${img.naturalWidth}`);
+    
+    // Принудительно проверяем, виден ли img
+    setTimeout(() => {
+        const imgInDom = container.querySelector('img');
+        if (imgInDom) {
+            const styles = window.getComputedStyle(imgInDom);
+            console.log(`7. 🔍 Проверка через 50мс:`);
+            console.log(`   - img в DOM: да`);
+            console.log(`   - display: ${styles.display}, visibility: ${styles.visibility}, opacity: ${styles.opacity}`);
+            console.log(`   - width: ${styles.width}, height: ${styles.height}`);
+            console.log(`   - position: ${styles.position}, top/left: ${styles.top}/${styles.left}`);
+            console.log(`   - transform: ${styles.transform}`);
+            console.log(`   - object-fit: ${styles.objectFit}`);
+            console.log(`   - z-index: ${styles.zIndex}`);
+            console.log(`   - outline: ${styles.outline} (если есть рамка, видно)`);
+        } else {
+            console.error(`   ❌ img исчез из DOM!`);
+        }
+    }, 50);
+    
     const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
+    console.log(`8. Таймер на ${duration} мс`);
     setTimeout(() => {
         container.style.display = 'none';
         container.innerHTML = '';
+        console.log(`9. Анимация скрыта.`);
+        console.groupEnd();
     }, duration);
+    
+    console.groupEnd();
 },
 
     setSpeed(newSpeed) {

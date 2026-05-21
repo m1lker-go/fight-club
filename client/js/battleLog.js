@@ -667,44 +667,33 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
-    
-    // Если предыдущая анимация не была скрыта – скрываем
     this.hideAnimations();
     
-    // Пытаемся получить контейнер
     let container = document.getElementById(target + '-animation');
-    
-    // Если контейнер не существует – создаём его на месте
     if (!container) {
-        console.warn(`Контейнер #${target}-animation не найден, создаём заново...`);
+        console.warn(`Контейнер #${target}-animation не найден, создаём...`);
         const parentCard = document.querySelector(`.${target}-card`);
         if (parentCard) {
-            // Создаём контейнер и вставляем его после блока аватара (или в конец карточки)
             container = document.createElement('div');
             container.id = target + '-animation';
             container.className = 'animation-container';
-            // Вставляем перед stat-bar или в конец карточки
-            const statBar = parentCard.querySelector('.hp-bar');
-            if (statBar) {
-                parentCard.insertBefore(container, statBar);
-            } else {
-                parentCard.appendChild(container);
-            }
-            console.log(`✅ Контейнер создан и вставлен в ${target}-card`);
+            parentCard.appendChild(container);
+            console.log(`✅ Контейнер создан и добавлен в карточку`);
         } else {
-            console.error(`Не найдена карточка .${target}-card, анимация невозможна`);
+            console.error(`Карточка .${target}-card не найдена`);
             console.groupEnd();
             return;
         }
     }
-
-    // Теперь контейнер точно существует
-    // Сбрасываем предыдущие инлайн-стили контейнера
-    container.style.position = '';
-    container.style.width = '';
-    container.style.height = '';
-    container.style.top = '';
-    container.style.left = '';
+    
+    // Сбрасываем стили контейнера, чтобы он корректно отображался
+    container.style.cssText = '';
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.display = 'none';
     
     const img = document.createElement('img');
     
@@ -712,35 +701,31 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
         const skinPath = '/assets/skins/animations/attack_skin12.gif';
         img.src = skinPath;
         img.className = 'skin-animation';
-        // Никаких инлайн-стилей – всё делает CSS
+        // Убираем возможные инлайн-стили
         img.style.cssText = '';
-        console.log(`✅ СКИНОВАЯ АНИМАЦИЯ: ${skinPath}, классы: ${img.className}`);
+        console.log(`✅ СКИНОВАЯ АНИМАЦИЯ: ${skinPath}`);
     } else {
-        // Обычная анимация – растягивается на весь контейнер
         img.src = `/assets/fight/${animationFile}`;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
+        img.style.cssText = '';
         console.log(`Обычная анимация: ${animationFile}`);
     }
-
+    
     container.innerHTML = '';
     container.appendChild(img);
     container.style.display = 'block';
-    console.log(`Контейнер: display=${container.style.display}`);
-
-    // Проверяем реальные размеры через 50 мс
+    
+    // Принудительно проверяем размеры через 50 мс
     setTimeout(() => {
-        const imgRect = img.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
+        const imgRect = img.getBoundingClientRect();
         console.log(`Размеры: контейнер = ${containerRect.width}x${containerRect.height}, img = ${imgRect.width}x${imgRect.height}`);
         if (imgRect.width === 0 || imgRect.height === 0) {
-            console.error('❌ РАЗМЕРЫ img НУЛЕВЫЕ! Проверьте CSS: .skin-animation должен иметь height в px.');
+            console.error('❌ РАЗМЕРЫ img НУЛЕВЫЕ! Проверьте CSS.');
         } else {
             console.log('✅ Анимация должна быть видна!');
         }
     }, 50);
-
+    
     const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
     setTimeout(() => {
         if (container) {

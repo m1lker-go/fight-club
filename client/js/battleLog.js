@@ -722,20 +722,18 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             img.style.objectFit = 'contain';
             img.style.pointerEvents = 'none';
 
-  if (target === 'hero') {
-    img.style.left = '0';
-    img.style.right = 'auto';
-    img.style.transform = 'scaleX(-1)';
-    // НЕ ЗАДАВАЙТЕ transform-origin – оставляем по умолчанию (center)
-    console.log(`Герой: левый край, зеркало без смещения блока`);
-}
-} else {
-    // Враг: правый край, без зеркала
-    img.style.left = 'auto';
-    img.style.right = '0';
-    img.style.transform = 'none';
-    console.log(`Враг: высота=${cardHeight}px, ширина=${proportionalWidth}px, правый край`);
-}
+            if (target === 'hero') {
+                img.style.left = '0';
+                img.style.right = 'auto';
+                img.style.transform = 'scaleX(-1)';
+                // transform-origin по умолчанию center – блок не смещается
+                console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, левый край + зеркало`);
+            } else {
+                img.style.left = 'auto';
+                img.style.right = '0';
+                img.style.transform = 'none';
+                console.log(`Враг: высота=${cardHeight}px, ширина=${proportionalWidth}px, правый край`);
+            }
             console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
             img.src = `/assets/fight/${animationFile}`;

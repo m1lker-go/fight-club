@@ -406,50 +406,54 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         let animFile = null;
 
         // Определяем цель и файл анимации
-        if (type === 'attack' || type === 'crit' || type === 'damage') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            const isPlayerAttacker = (attacker === 'player');
+       if (type === 'attack' || type === 'crit' || type === 'damage') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    const isPlayerAttacker = (attacker === 'player');
 
-            let attackerSkinId = null;
-            if (isPlayerAttacker) {
-                attackerSkinId = this.battleData.playerAvatarId || null;
-            } else {
-                attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
-            }
-
-            console.log(`[SKIN DEBUG] attacker=${attacker}, avatar_id=${attackerSkinId}`);
-
-            if (attackerSkinId === 12) {
-                // Анимация для скина "Топор ярости"
-                this.showAnimation(animTarget, 'shot.gif', true, 12);
-                // Обычную анимацию не показываем
-                animFile = null;
-            } else {
-                // Обычная анимация удара
-                animFile = 'shot.gif';
-            }
-        } else if (type === 'dodge') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'missx.gif';
-        } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            if (type === 'fire_ult') animFile = 'fire.gif';
-            else if (type === 'ice_ult') animFile = 'ice.gif';
-            else if (type === 'poison_ult') animFile = 'poison.gif';
-            else animFile = 'ultimate.gif';
-        } else if (type === 'heal' || type === 'buff') {
-            animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-            animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
-        } else if (type === 'frozen_enter' || type === 'frozen_end') {
-            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-            animFile = 'frozenx.gif';
-        }
-
-        // Показываем анимацию, если определена
-        if (animTarget && animFile) {
-            this.showAnimation(animTarget, animFile);
-        }
+    // Проверяем ИМЯ скина, а не ID
+    let attackerSkinName = null;
+    if (isPlayerAttacker) {
+        // у игрока имя скина лежит в userData.avatar (например, 'skin12')
+        attackerSkinName = (typeof userData !== 'undefined' && userData) ? userData.avatar : null;
+    } else {
+        // у врага имя скина может быть в battleData.opponent.avatar или avatar_filename
+        attackerSkinName = (this.battleData.opponent && this.battleData.opponent.avatar) 
+                        || (this.battleData.opponent && this.battleData.opponent.avatar_filename) 
+                        || null;
     }
+
+    console.log(`[SKIN DEBUG] attacker=${attacker}, skinName=${attackerSkinName}`);
+
+    if (attackerSkinName === 'skin12') {
+        // Анимация для скина "Топор ярости"
+        this.showAnimation(animTarget, null, true, 12);
+        // Обычную анимацию не показываем
+        animFile = null;
+    } else {
+        // Обычная анимация удара
+        animFile = 'shot.gif';
+    }
+} else if (type === 'dodge') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    animFile = 'missx.gif';
+} else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    if (type === 'fire_ult') animFile = 'fire.gif';
+    else if (type === 'ice_ult') animFile = 'ice.gif';
+    else if (type === 'poison_ult') animFile = 'poison.gif';
+    else animFile = 'ultimate.gif';
+} else if (type === 'heal' || type === 'buff') {
+    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+    animFile = (type === 'heal') ? 'hill.gif' : 'shield.gif';
+} else if (type === 'frozen_enter' || type === 'frozen_end') {
+    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+    animFile = 'frozenx.gif';
+}
+
+// Показываем анимацию, если определена
+if (animTarget && animFile) {
+    this.showAnimation(animTarget, animFile);
+}
        
     this.parseAndShowFloatingNumber(entry);
     this.currentMsgIndex++;

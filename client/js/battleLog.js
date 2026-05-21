@@ -675,13 +675,17 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
     }
     const img = document.createElement('img');
     
-  if (isSkinAttack && skinId === 13) {
-    img.src = '/assets/skins/animations/attack_skin12.gif';
-    img.className = 'skin-animation';
-    img.classList.add(target === 'hero' ? 'hero-skin' : 'enemy-skin');
+    if (isSkinAttack && skinId === 13) {   
+        img.src = '/assets/skins/animations/attack_skin12.gif';
+        img.className = 'skin-animation';
+        // Добавляем класс для привязки к стороне (hero/enemy)
+        img.classList.add(target === 'hero' ? 'hero-skin' : 'enemy-skin');
+        // НИКАКИХ ИНЛАЙН-СТИЛЕЙ! Всё управляется через CSS.
     } else {
-        // Обычная анимация (без изменений)
+        // Обычные анимации – оставляем как работало раньше
         img.src = `/assets/fight/${animationFile}`;
+        // Для обычных анимаций можно либо тоже управлять через CSS, 
+        // либо оставить инлайн-стили для совместимости. Оставляем инлайн.
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'cover';

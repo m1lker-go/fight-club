@@ -11,6 +11,7 @@ const BattleLog = {
     deathTimerHero: null,
     deathTimerEnemy: null,
     stopped: false,
+    isSkinAnimating: false,
 
     // Локальные переменные для иконок статусов
     playerFrozen: 0,

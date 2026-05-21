@@ -630,6 +630,7 @@ body {
     justify-content: flex-start;
     text-align: center;
     background-color: transparent;
+    overflow: visible !important;
 }
 
 /* Контейнер аватара – адаптивный, сохраняет пропорции 2:3 */

@@ -75,12 +75,13 @@ const BattleLog = {
         setTimeout(() => this.playNext(), 500);
     },
 
-    hideAnimations() {
-        const heroAnim = document.getElementById('hero-animation');
-        const enemyAnim = document.getElementById('enemy-animation');
-        if (heroAnim) heroAnim.style.display = 'none';
-        if (enemyAnim) enemyAnim.style.display = 'none';
-    },
+   hideAnimations() {
+    const heroAnim = document.getElementById('hero-animation');
+    const enemyAnim = document.getElementById('enemy-animation');
+    if (heroAnim) heroAnim.style.display = 'none';
+    if (enemyAnim) enemyAnim.style.display = 'none';
+    this.isSkinAnimating = false;   // сброс флага при принудительном скрытии
+},
 
     applyState(state) {
         if (this.stopped) return;
@@ -665,13 +666,25 @@ if (isPlayerAttacker && attackerSkinId === 13) {
     },
 
 showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
+    // Если это скиновая анимация и она уже запущена – выходим
+    if (isSkinAttack && skinId === 13 && this.isSkinAnimating) {
+        console.log('[ANIM] Скиновая анимация уже проигрывается, пропускаем');
+        return;
+    }
+
     console.group(`[ANIM-DEBUG] ${target} | isSkinAttack=${isSkinAttack} | skinId=${skinId}`);
     this.hideAnimations();
+
+    // Если скиновая – устанавливаем флаг
+    if (isSkinAttack && skinId === 13) {
+        this.isSkinAnimating = true;
+    }
 
     setTimeout(() => {
         const parentCard = document.querySelector(`.${target}-card`);
         if (!parentCard) {
             console.error(`Родительская карточка .${target}-card не найдена`);
+            if (isSkinAttack && skinId === 13) this.isSkinAnimating = false;
             console.groupEnd();
             return;
         }
@@ -683,7 +696,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
 
         // Находим контейнер аватара (первый дочерний div карточки)
         const avatarContainer = parentCard.querySelector('div:first-child');
-        let avatarHeight = cardHeight; // fallback
+        let avatarHeight = cardHeight;
         let avatarTopOffset = 0;
         if (avatarContainer) {
             const avatarRect = avatarContainer.getBoundingClientRect();
@@ -696,6 +709,7 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
 
         if (cardWidth === 0 || cardHeight === 0) {
             console.error('❌ Карточка имеет нулевые размеры – анимация невозможна');
+            if (isSkinAttack && skinId === 13) this.isSkinAnimating = false;
             console.groupEnd();
             return;
         }
@@ -710,7 +724,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             console.log(`Контейнер создан и вставлен в карточку`);
         }
 
-        // Контейнер занимает всю карточку
         container.style.position = 'absolute';
         container.style.top = '0';
         container.style.left = '0';
@@ -728,10 +741,9 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             const skinPath = '/assets/skins/animations/attack_skin12.gif';
             img.src = skinPath;
             img.className = 'skin-animation';
-            // Высота анимации = высоте аватара, ширина пропорциональна
             const proportionalWidth = (600 / 480) * avatarHeight;
             img.style.position = 'absolute';
-            img.style.top = avatarTopOffset + 'px';   // позиционируем относительно верха аватара
+            img.style.top = avatarTopOffset + 'px';
             img.style.height = avatarHeight + 'px';
             img.style.width = proportionalWidth + 'px';
             img.style.objectFit = 'contain';
@@ -741,7 +753,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
                 img.style.left = '0';
                 img.style.right = 'auto';
                 img.style.transform = 'scaleX(-1)';
-                // transform-origin по умолчанию center – блок не смещается
                 console.log(`Герой: высота аватара=${avatarHeight}px, ширина=${proportionalWidth}px, левый край + зеркало`);
             } else {
                 img.style.left = 'auto';
@@ -751,7 +762,6 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             }
             console.log(`✅ СКИНОВАЯ анимация: ${skinPath}`);
         } else {
-            // Обычные анимации остаются без изменений (на всю карточку)
             img.src = `/assets/fight/${animationFile}`;
             img.style.width = '100%';
             img.style.height = '100%';
@@ -778,6 +788,10 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             if (container) {
                 container.style.display = 'none';
                 container.innerHTML = '';
+            }
+            if (isSkinAttack && skinId === 13) {
+                this.isSkinAnimating = false;
+                console.log('Скиновая анимация завершена, флаг сброшен');
             }
             console.log('Анимация скрыта');
             console.groupEnd();

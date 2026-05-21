@@ -630,7 +630,8 @@ body {
     justify-content: flex-start;
     text-align: center;
     background-color: transparent;
-    overflow: visible !important;
+    position: relative;
+    overflow: visible;
 }
 
 /* Контейнер аватара – адаптивный, сохраняет пропорции 2:3 */
@@ -2612,7 +2613,7 @@ body {
     height: 100%;
     pointer-events: none;
     display: none;
-    z-index: 10;
+    z-index: 15;
     overflow: visible; /* обязательно, чтобы анимация могла выходить за пределы */
 }
 .animation-container img {
@@ -2629,7 +2630,7 @@ body {
     height: 100% !important;        /* на всю высоту контейнера */
     object-fit: contain !important; /* сохранять пропорции, не обрезая */
     pointer-events: none;
-    z-index: 10;
+    z-index: 15;
 }
 
 .floating-numbers-container {

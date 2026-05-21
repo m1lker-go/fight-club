@@ -630,8 +630,8 @@ body {
     justify-content: flex-start;
     text-align: center;
     background-color: transparent;
-    position: relative;
-    overflow: visible;
+     position: relative !important;   /* якорь для абсолютного позиционирования */
+    overflow: visible !important;
 }
 
 /* Контейнер аватара – адаптивный, сохраняет пропорции 2:3 */
@@ -2606,45 +2606,49 @@ body {
 
 /* ========== АНИМАЦИИ БОЯ ========== */
 .animation-container {
-    position: static !important;   /* отключаем абсолютное позиционирование */
-    display: none;
-    width: auto !important;
-    height: auto !important;
-    margin: 0;
-    padding: 0;
-    z-index: 15;
-    overflow: visible;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    display: none !important;
+    z-index: 15 !important;
+    overflow: visible !important;
+    background: transparent !important;
 }
 
 
 /* Обычные анимации (не скиновые) растягиваются на весь контейнер */
 .animation-container img:not(.skin-animation) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }
 
 /* Базовые стили для скиновой анимации */
 .skin-animation {
-    display: block;
-    width: auto;
-    height: 200px;          /* фиксированная высота, подгоните под свой дизайн */
-    object-fit: contain;
-    pointer-events: none;
+    position: absolute !important;
+    top: 0 !important;
+    height: 100% !important;
+    width: auto !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
 }
 
 /* Для карточки игрока (герой) – привязка к левому верхнему углу + зеркало */
 .hero-card .skin-animation {
-    margin-left: 0;
-    transform: scaleX(-1);
-    transform-origin: left center;
+    left: 0 !important;
+    right: auto !important;
+    transform: scaleX(-1) !important;
+    transform-origin: left center !important;
 }
 
 /* Для карточки врага – привязка к правому верхнему углу */
 .enemy-card .skin-animation {
-    margin-left: auto;
-    margin-right: 0;
-    transform: none;
+    left: auto !important;
+    right: 0 !important;
+    transform: none !important;
 }
 
 .floating-numbers-container {

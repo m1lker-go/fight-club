@@ -666,6 +666,7 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
     const container = document.getElementById(target + '-animation');
     if (!container) {
         console.error(`[BattleLog] Container ${target}-animation not found`);
+        console.log(`[ANIM] target=${target}, file=${animationFile}, isSkinAttack=${isSkinAttack}, skinId=${skinId}`);
         return;
     }
     const img = document.createElement('img');

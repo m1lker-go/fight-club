@@ -666,22 +666,19 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
     const container = document.getElementById(target + '-animation');
     if (!container) {
         console.error(`[BattleLog] Container ${target}-animation not found`);
-        console.log(`[ANIM] target=${target}, file=${animationFile}, isSkinAttack=${isSkinAttack}, skinId=${skinId}`);
         return;
     }
     const img = document.createElement('img');
     
-    if (isSkinAttack && skinId === 12) {
+    if (isSkinAttack && skinId === 13) {   // <-- было 12, стало 13
         img.src = '/assets/skins/animations/attack_skin12.gif';
         img.className = 'skin-animation';
         
         if (target === 'hero') {
-            // Анимация атакующего игрока: прижимаем к правому краю (к центру экрана) и зеркалим
             img.style.right = '0';
             img.style.left = 'auto';
             img.style.transform = 'scaleX(-1)';
         } else {
-            // Анимация атакующего врага: прижимаем к левому краю (к центру экрана)
             img.style.left = '0';
             img.style.right = 'auto';
         }
@@ -693,8 +690,7 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
     container.appendChild(img);
     container.style.display = 'flex';
 
-    // Длительность: для скина 2 секунды, для остальных — 1 секунда
-    const duration = (isSkinAttack && skinId === 12) ? 2000 : 1000;
+    const duration = (isSkinAttack && skinId === 13) ? 2000 : 1000;
     setTimeout(() => {
         container.style.display = 'none';
         container.innerHTML = '';

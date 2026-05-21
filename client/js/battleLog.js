@@ -399,34 +399,33 @@ if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
     this.logContainer.appendChild(logEntry);
     this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-    // Анимации
+   // Анимации
     const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
     if (!isStackMessage) {
         let animTarget = null;
         let animFile = null;
 
-        // Определяем цель и файл анимации
-if (type === 'attack' || type === 'crit' || type === 'damage') {
-    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-    const isPlayerAttacker = (attacker === 'player');
+        // Определяем цель и файл обычной анимации
+        if (type === 'attack' || type === 'crit' || type === 'damage') {
+            animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            animFile = 'shot.gif';   // обычная анимация удара на противнике
 
-    // Получаем ID скина атакующего
-    let attackerSkinId = null;
-    if (isPlayerAttacker) {
-        attackerSkinId = (typeof userData !== 'undefined' && userData) ? userData.avatar_id : null;
-    } else {
-        attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
-    }
+            const isPlayerAttacker = (attacker === 'player');
 
-    // Обычная анимация удара всегда на цели (противнике)
-    animFile = 'shot.gif';
+            // ID скина атакующего
+            let attackerSkinId = null;
+            if (isPlayerAttacker) {
+                attackerSkinId = (typeof userData !== 'undefined' && userData) ? userData.avatar_id : null;
+            } else {
+                attackerSkinId = (this.battleData.opponent && this.battleData.opponent.avatar_id) || null;
+            }
 
-    // Если надет скин "Топор ярости" (ID=13) – добавляем анимацию на атакующем
-    if (attackerSkinId === 13) {
-        const skinAnimTarget = isPlayerAttacker ? 'hero' : 'enemy';
-        this.showAnimation(skinAnimTarget, null, true, 13);
-    }
-} else if (type === 'dodge') {
+            // Если надет скин "Топор ярости" (ID=13) – добавляем анимацию на атакующем
+            if (attackerSkinId === 13) {
+                const skinAnimTarget = isPlayerAttacker ? 'hero' : 'enemy';
+                this.showAnimation(skinAnimTarget, null, true, 13);
+            }
+        } else if (type === 'dodge') {
             animTarget = (attacker === 'player') ? 'enemy' : 'hero';
             animFile = 'missx.gif';
         } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
@@ -443,10 +442,11 @@ if (type === 'attack' || type === 'crit' || type === 'damage') {
             animFile = 'frozenx.gif';
         }
 
+        // Показываем обычную анимацию, если определена
         if (animTarget && animFile) {
             this.showAnimation(animTarget, animFile);
         }
-    } // Конец if (!isStackMessage)
+    }
 
     this.parseAndShowFloatingNumber(entry);
     this.currentMsgIndex++;

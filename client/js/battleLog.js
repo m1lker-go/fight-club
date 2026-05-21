@@ -722,13 +722,13 @@ showAnimation(target, animationFile, isSkinAttack = false, skinId = null) {
             img.style.objectFit = 'contain';
             img.style.pointerEvents = 'none';
 
-         if (target === 'hero') {
-    // Игрок: левый край + зеркалирование относительно левого края
+  if (target === 'hero') {
     img.style.left = '0';
     img.style.right = 'auto';
     img.style.transform = 'scaleX(-1)';
-    img.style.transformOrigin = 'left center';
-    console.log(`Герой: высота=${cardHeight}px, ширина=${proportionalWidth}px, левый край + зеркало`);
+    // НЕ ЗАДАВАЙТЕ transform-origin – оставляем по умолчанию (center)
+    console.log(`Герой: левый край, зеркало без смещения блока`);
+}
 } else {
     // Враг: правый край, без зеркала
     img.style.left = 'auto';

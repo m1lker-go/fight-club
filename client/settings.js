@@ -1,4 +1,4 @@
-// settings.js – исправлено: аватар всегда соответствует текущему скину + сброс кэша
+// settings.js – исправлено: аватар + кнопка сброса кэша + полная очистка
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -34,16 +34,32 @@ function showLogoutConfirmModal(onConfirm) {
     };
 }
 
-// Функция сброса кэша
+// Функция сброса кэша (полная очистка, сохраняет только sessionToken)
 function clearCacheAndReload() {
-    // Сохраняем sessionToken, если он есть
+    // Сохраняем сессионный токен, если он есть
     const sessionToken = localStorage.getItem('sessionToken');
     // Очищаем всё локальное хранилище
     localStorage.clear();
     if (sessionToken) localStorage.setItem('sessionToken', sessionToken);
     // Очищаем sessionStorage
     sessionStorage.clear();
-    // Пытаемся очистить кэш через Cache API (для PWA)
+    // Очищаем куки
+    document.cookie.split(";").forEach(function(c) {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+    // Очищаем IndexedDB, если используется
+    if (window.indexedDB) {
+        if (indexedDB.databases) {
+            indexedDB.databases().then(dbs => {
+                dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+            }).catch(e => console.warn('Ошибка очистки IndexedDB', e));
+        } else {
+            // Старая версия – пытаемся удалить базу по известному имени (например, 'cat_fight_db')
+            const knownDBs = ['cat_fight_db', 'keyval-store'];
+            knownDBs.forEach(dbName => indexedDB.deleteDatabase(dbName));
+        }
+    }
+    // Очищаем Cache API (для PWA)
     if ('caches' in window) {
         caches.keys().then(names => {
             names.forEach(name => caches.delete(name));
@@ -73,7 +89,6 @@ async function renderSettings() {
         const connections = data.connections || [];
 
         const hasPassword = !!user.password_hash;
-
         const avatarFilename = getAvatarFilenameById(user.avatar_id || 1);
 
         let musicVolumePercent = 60;
@@ -146,7 +161,6 @@ async function renderSettings() {
                     </div>` : ''}
                 </div>
 
-                <!-- ДВЕ КНОПКИ: СБРОС КЭША (25%) и ВЫХОД (75%) -->
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button class="logout-btn" id="clearCacheBtn" style="flex: 1; background-color: #2ecc71; color: white; border-radius: 30px; padding: 12px 0; font-size: 16px; font-weight: bold; border: none; cursor: pointer;">
                         <i class="fas fa-sync-alt"></i>
@@ -246,7 +260,6 @@ async function renderSettings() {
             btn.addEventListener('click', () => {
                 const provider = btn.dataset.provider;
                 const action = btn.dataset.action;
-
                 if (action === 'change-password') {
                     showChangePasswordModal();
                 } else if (provider === 'telegram') {
@@ -263,7 +276,6 @@ async function renderSettings() {
             });
         });
 
-        // Кнопка сброса кэша
         const clearCacheBtn = document.getElementById('clearCacheBtn');
         if (clearCacheBtn) {
             clearCacheBtn.addEventListener('click', () => {
@@ -273,7 +285,6 @@ async function renderSettings() {
             });
         }
 
-        // Кнопка выхода
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
@@ -282,8 +293,7 @@ async function renderSettings() {
             } else {
                 logoutBtn.addEventListener('click', () => {
                     showLogoutConfirmModal(() => {
-                        localStorage.removeItem('sessionToken');
-                        window.location.reload();
+                        clearCacheAndReload();
                     });
                 });
             }

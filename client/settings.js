@@ -1,4 +1,4 @@
-// settings.js – исправлено: аватар всегда соответствует текущему скину
+// settings.js – исправлено: аватар всегда соответствует текущему скину + сброс кэша
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -34,6 +34,27 @@ function showLogoutConfirmModal(onConfirm) {
     };
 }
 
+// Функция сброса кэша
+function clearCacheAndReload() {
+    // Сохраняем sessionToken, если он есть
+    const sessionToken = localStorage.getItem('sessionToken');
+    // Очищаем всё локальное хранилище
+    localStorage.clear();
+    if (sessionToken) localStorage.setItem('sessionToken', sessionToken);
+    // Очищаем sessionStorage
+    sessionStorage.clear();
+    // Пытаемся очистить кэш через Cache API (для PWA)
+    if ('caches' in window) {
+        caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+        }).catch(e => console.warn('Cache API error:', e));
+    }
+    // Перезагружаем страницу с параметром, игнорирующим кэш
+    const url = new URL(window.location.href);
+    url.searchParams.set('force', Date.now());
+    window.location.href = url.toString();
+}
+
 async function renderSettings() {
     const token = localStorage.getItem('sessionToken');
     if (!token) {
@@ -53,10 +74,8 @@ async function renderSettings() {
 
         const hasPassword = !!user.password_hash;
 
-        // ✅ Вычисляем имя файла аватара по avatar_id (гарантирует актуальность)
         const avatarFilename = getAvatarFilenameById(user.avatar_id || 1);
 
-        // Текущая громкость из AudioManager
         let musicVolumePercent = 60;
         let sfxVolumePercent = 70;
         if (typeof AudioManager !== 'undefined') {
@@ -68,14 +87,12 @@ async function renderSettings() {
         if (!content) return;
         content.innerHTML = `
             <div class="settings-container">
-                <!-- Строка профиля: аватар + имя + карандаш -->
                 <div class="settings-profile-row">
                     <img src="/assets/${avatarFilename}" class="settings-avatar">
                     <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
                     <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
                 </div>
 
-                <!-- Музыка -->
                 <div class="settings-volume-row">
                     <div class="volume-label">Музыка</div>
                     <div class="slider-container" id="musicSliderContainer">
@@ -87,7 +104,6 @@ async function renderSettings() {
                     </div>
                 </div>
 
-                <!-- Звуки -->
                 <div class="settings-volume-row">
                     <div class="volume-label">Звуки</div>
                     <div class="slider-container" id="sfxSliderContainer">
@@ -99,10 +115,8 @@ async function renderSettings() {
                     </div>
                 </div>
 
-                <!-- Заголовок привязанных аккаунтов -->
                 <div class="settings-connected-header">ПРИВЯЗАННЫЕ АККАУНТЫ</div>
 
-                <!-- Список привязок -->
                 <div class="connections-list">
                     <div class="connection-row">
                         <span>Telegram</span>
@@ -132,8 +146,14 @@ async function renderSettings() {
                     </div>` : ''}
                 </div>
 
-                <div class="settings-logout">
-                    <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти из аккаунта</button>
+                <!-- ДВЕ КНОПКИ: СБРОС КЭША (25%) и ВЫХОД (75%) -->
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button class="logout-btn" id="clearCacheBtn" style="flex: 1; background-color: #2ecc71; color: white; border-radius: 30px; padding: 12px 0; font-size: 16px; font-weight: bold; border: none; cursor: pointer;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="logout-btn" id="logoutBtn" style="flex: 3; background-color: #e74c3c; color: white; border-radius: 30px; padding: 12px 0; font-size: 16px; font-weight: bold; border: none; cursor: pointer;">
+                        <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
+                    </button>
                 </div>
             </div>
         `;
@@ -243,6 +263,17 @@ async function renderSettings() {
             });
         });
 
+        // Кнопка сброса кэша
+        const clearCacheBtn = document.getElementById('clearCacheBtn');
+        if (clearCacheBtn) {
+            clearCacheBtn.addEventListener('click', () => {
+                if (confirm('Это перезагрузит игру и очистит временные данные. Вы уверены?')) {
+                    clearCacheAndReload();
+                }
+            });
+        }
+
+        // Кнопка выхода
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);

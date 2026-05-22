@@ -1,4 +1,4 @@
-// forge.js (полная обновлённая версия: ресурсная панель, свитки 3 в ряд, кнопка с ценой)
+// forge.js – полностью исправленная версия (WebView + обновление интерфейса)
 
 let currentForgeTab = 'forge';
 let selectedScrollId = null;
@@ -68,7 +68,7 @@ async function renderForge() {
 async function refreshForgeUI() {
     await loadCurrentForgeItems();
     await loadScrolls();
-    renderResourcePanel();            // <-- обновлённая ресурсная панель
+    renderResourcePanel();
     renderForgeSlots();
     loadForgeInventory();
     updateForgeActionButton();
@@ -133,45 +133,45 @@ async function renderForgeSlots() {
         slotsContainer.style.alignItems = 'center';
         slotsContainer.style.gap = '8px';
 
-       // Слот свитка
-const scrollSlot = document.createElement('div');
-scrollSlot.className = 'forge-slot scroll-slot';
-scrollSlot.style.width = '60px';
-scrollSlot.style.height = '60px';
-scrollSlot.style.border = '2px solid #aaa';
-scrollSlot.style.borderRadius = '8px';
-scrollSlot.style.display = 'flex';
-scrollSlot.style.flexDirection = 'column';
-scrollSlot.style.alignItems = 'center';
-scrollSlot.style.justifyContent = 'center';
-scrollSlot.style.cursor = 'pointer';
-scrollSlot.style.background = '#2f3542';
-scrollSlot.style.color = '#aaa';
-scrollSlot.style.fontSize = '11px';
-scrollSlot.style.lineHeight = '1.2';
+        // Слот свитка
+        const scrollSlot = document.createElement('div');
+        scrollSlot.className = 'forge-slot scroll-slot';
+        scrollSlot.style.width = '60px';
+        scrollSlot.style.height = '60px';
+        scrollSlot.style.border = '2px solid #aaa';
+        scrollSlot.style.borderRadius = '8px';
+        scrollSlot.style.display = 'flex';
+        scrollSlot.style.flexDirection = 'column';
+        scrollSlot.style.alignItems = 'center';
+        scrollSlot.style.justifyContent = 'center';
+        scrollSlot.style.cursor = 'pointer';
+        scrollSlot.style.background = '#2f3542';
+        scrollSlot.style.color = '#aaa';
+        scrollSlot.style.fontSize = '11px';
+        scrollSlot.style.lineHeight = '1.2';
 
-// Определяем, какую картинку показывать
-let scrollImg = '/assets/equip/scrolls/scroll_empty.png';
-if (selectedScrollId) {
-    const selectedScroll = scrollsInventory.find(s => s.inv_id === selectedScrollId);
-    if (selectedScroll) {
-        if (selectedScroll.rarity === 'rare') scrollImg = '/assets/equip/scrolls/scroll_rare.png';
-        else if (selectedScroll.rarity === 'epic') scrollImg = '/assets/equip/scrolls/scroll_epic.png';
-        else if (selectedScroll.rarity === 'legendary') scrollImg = '/assets/equip/scrolls/scroll_legendary.png';
-    }
-}
+        // Определяем, какую картинку показывать
+        let scrollImg = '/assets/equip/scrolls/scroll_empty.png';
+        if (selectedScrollId) {
+            const selectedScroll = scrollsInventory.find(s => s.inv_id === selectedScrollId);
+            if (selectedScroll) {
+                if (selectedScroll.rarity === 'rare') scrollImg = '/assets/equip/scrolls/scroll_rare.png';
+                else if (selectedScroll.rarity === 'epic') scrollImg = '/assets/equip/scrolls/scroll_epic.png';
+                else if (selectedScroll.rarity === 'legendary') scrollImg = '/assets/equip/scrolls/scroll_legendary.png';
+            }
+        }
 
-const resultRarity = getResultRarity();
-const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
-const totalChance = Math.min(1, baseChance + selectedScrollBonus);
+        const resultRarity = getResultRarity();
+        const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
+        const totalChance = Math.min(1, baseChance + selectedScrollBonus);
 
-scrollSlot.innerHTML = `
-    <img src="${scrollImg}" style="width: 28px; height: 28px; margin-bottom: 2px;">
-    <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>
-`;
+        scrollSlot.innerHTML = `
+            <img src="${scrollImg}" style="width: 28px; height: 28px; margin-bottom: 2px;">
+            <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>
+        `;
 
-scrollSlot.addEventListener('click', openScrollModal);
-slotsContainer.appendChild(scrollSlot);
+        scrollSlot.addEventListener('click', openScrollModal);
+        slotsContainer.appendChild(scrollSlot);
 
         // Три слота предметов
         for (let i = 0; i < 3; i++) {
@@ -233,32 +233,32 @@ function openScrollModal() {
     modalTitle.innerText = 'Выберите свиток';
     let html = `<div class="packs-grid-new scroll-packs">`;
 
-   const scrollDefs = [
-    { item_id: 1037, rarity: 'rare', name: 'Редкий<br>свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
-    { item_id: 1038, rarity: 'epic', name: 'Эпический<br>свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
-    { item_id: 1039, rarity: 'legendary', name: 'Легендарный<br>свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
-];
+    const scrollDefs = [
+        { item_id: 1037, rarity: 'rare', name: 'Редкий<br>свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
+        { item_id: 1038, rarity: 'epic', name: 'Эпический<br>свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
+        { item_id: 1039, rarity: 'legendary', name: 'Легендарный<br>свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
+    ];
 
-scrollDefs.forEach(def => {
-    const owned = scrollsInventory.filter(s => s.item_id === def.item_id);
-    const count = owned.length;
-    const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
+    scrollDefs.forEach(def => {
+        const owned = scrollsInventory.filter(s => s.item_id === def.item_id);
+        const count = owned.length;
+        const isActive = selectedScrollId && owned.some(s => s.inv_id === selectedScrollId);
 
-    html += `
-        <div style="display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #7f8c8d; background: #232833;">
-            <div class="scroll-card-body" style="padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center;">
-                <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; line-height: 1.3;">${def.name}</div>
-                <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
-                <img src="/assets/equip/scrolls/scroll_${def.rarity}.png" style="width: 48px; height: 48px; margin-bottom: 8px; object-fit: contain;">
-                <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>
+        html += `
+            <div style="display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #7f8c8d; background: #232833;">
+                <div class="scroll-card-body" style="padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center;">
+                    <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; line-height: 1.3;">${def.name}</div>
+                    <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
+                    <img src="/assets/equip/scrolls/scroll_${def.rarity}.png" style="width: 48px; height: 48px; margin-bottom: 8px; object-fit: contain;">
+                    <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>
+                </div>
+                <div class="scroll-card-buttons" style="display: flex; flex-direction: column; width: 100%;">
+                    <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}">Купить</button>
+                    <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}">${isActive ? 'АКТИВНО' : 'Добавить'}</button>
+                </div>
             </div>
-            <div class="scroll-card-buttons" style="display: flex; flex-direction: column; width: 100%;">
-                <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}">Купить</button>
-                <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}">${isActive ? 'АКТИВНО' : 'Добавить'}</button>
-            </div>
-        </div>
-    `;
-});
+        `;
+    });
 
     html += `</div>
         <button id="scrollModalOkBtn" class="btn" style="width: 100%; margin-top: 12px;">ОКЕЙ</button>
@@ -358,22 +358,14 @@ async function loadCurrentForgeItems() {
         return;
     }
     try {
-        const res = await window.apiRequest('/forge/current', {
-            method: 'GET',
-            body: { tab: currentForgeTab }
-        });
-        const text = await res.text();
-        console.log('[loadCurrentForgeItems] raw response:', text);
+        // Для GET-запроса параметры передаём через URL
+        const url = `/forge/current?tab=${currentForgeTab}`;
+        const res = await window.apiRequest(url, { method: 'GET' });
         if (res.ok) {
-            try {
-                const data = JSON.parse(text);
-                window.forgeItems = Array.isArray(data) ? data : [];
-            } catch(e) {
-                console.error('Invalid JSON:', text);
-                window.forgeItems = [];
-            }
+            const data = await res.json();
+            window.forgeItems = Array.isArray(data) ? data : [];
         } else {
-            console.error('Server error status:', res.status, text);
+            console.error('Server error status:', res.status);
             window.forgeItems = [];
         }
     } catch (e) {

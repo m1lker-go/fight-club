@@ -235,10 +235,8 @@ async function showTowerBattleScreen(battleData) {
     battleData.playerSubclass = playerSubclassForBattle;
     battleData.enemySubclass = battleData.opponent.subclass;
 
-    // ✅ Добавляем ID скинов для анимаций (чтобы BattleLog мог определить skinId)
     battleData.playerAvatarId = userData.avatar_id;
     if (battleData.opponent && !battleData.opponent.avatar_id) {
-        // Если сервер не передал avatar_id, ставим 1 (обычный кот)
         battleData.opponent.avatar_id = 1;
     }
 
@@ -275,15 +273,17 @@ async function showTowerBattleScreen(battleData) {
             </div>
 
             <div class="battle-arena">
+                <!-- HERO CARD -->
                 <div class="hero-card">
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
-${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
+                        ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
-                        <div id="hero-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
+                    <!-- АНИМАЦИЯ СНАРУЖИ (после блока аватара) -->
+                    <div id="hero-animation" class="animation-container"></div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
                         <div class="stat-text" id="heroHpText">${battleData.result.playerHpRemain ?? 0}/${battleData.result.playerMaxHp ?? 0}</div>
@@ -318,14 +318,15 @@ ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new D
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
+                <!-- ENEMY CARD -->
                 <div class="enemy-card">
                     <div style="position: relative; margin: 0 auto;">
                         <img src="${enemyAvatarSrc}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
                         <div class="defeat-overlay">ПРОИГРАЛ</div>
-                        <div id="enemy-animation" class="animation-container"></div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
+                    <div id="enemy-animation" class="animation-container"></div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="enemyHp" style="width:${(battleData.result.enemyHpRemain / battleData.result.enemyMaxHp) * 100}%"></div>
                         <div class="stat-text" id="enemyHpText">${battleData.result.enemyHpRemain ?? 0}/${battleData.result.enemyMaxHp ?? 0}</div>
@@ -344,7 +345,11 @@ ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new D
         </div>
     `;
 
-    // Инициализация BattleLog (он уже использует AnimationManager)
+    // РАЗБЛОКИРОВКА ЗВУКА (ВАЖНО ДЛЯ WEBVIEW)
+    if (window.AudioManager && typeof AudioManager.unlockAudio === 'function') {
+        AudioManager.unlockAudio();
+    }
+
     BattleLog.init(battleData, document.getElementById('battleLog'), () => {
         handleTowerBattleEnd(battleData);
     });
@@ -358,7 +363,6 @@ ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new D
         });
     }
 
-    // Страховочный вызов боевой музыки
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
     }

@@ -277,19 +277,29 @@ async function renderSettings() {
             });
         }
 
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-            if (isTelegramWebApp) {
-                logoutBtn.style.display = 'none';
-            } else {
-                logoutBtn.addEventListener('click', () => {
-                    showLogoutConfirmModal(() => {
-                        clearCacheAndReload();
-                    });
-                });
-            }
-        }
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    // Убираем скрытие кнопки в Telegram WebApp – пусть пользователь может выйти
+    logoutBtn.addEventListener('click', () => {
+        showLogoutConfirmModal(() => {
+            // Полная очистка сессии без сохранения токена
+            localStorage.removeItem('sessionToken');
+            localStorage.removeItem('telegram_link_state');
+            localStorage.removeItem('telegram_code_verifier');
+            sessionStorage.clear();
+            // Очистка cookies (опционально)
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            // Сброс глобальных переменных (чтобы не оставалось старых данных)
+            userData = null;
+            userClasses = [];
+            inventory = [];
+            // Перезагрузка страницы (без сохранения токена)
+            window.location.href = window.location.pathname;
+        });
+    });
+}
     } catch (err) {
         console.error(err);
         if (typeof showToast === 'function') showToast('Ошибка загрузки настроек', 1500);

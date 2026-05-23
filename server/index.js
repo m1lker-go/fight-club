@@ -18,20 +18,26 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('client'));
 
 // API routes
+// Подключаем middleware авторизации
+const authMiddleware = require('./middleware/auth');
+
+// Публичные роуты (без авторизации)
 app.use('/auth', require('./routes/auth-ext'));
-app.use('/player', require('./routes/player'));
-app.use('/inventory', require('./routes/inventory'));
-app.use('/shop', require('./routes/shop'));
-app.use('/market', require('./routes/market'));
-app.use('/battle', require('./routes/battle'));
-app.use('/tasks', require('./routes/tasks'));
-app.use('/avatars', require('./routes/avatars'));
-app.use('/forge', require('./routes/forge-server'));
-app.use('/tower', require('./routes/tower-server'));
-app.use('/rank', require('./routes/rank'));
-app.use('/fortune', require('./routes/fortune-server'));
 app.use('/payment', require('./routes/robokassa'));
-app.use('/subscription', require('./routes/subscription'));
+
+// Защищённые API (требуют Bearer токен)
+app.use('/player', authMiddleware, require('./routes/player'));
+app.use('/inventory', authMiddleware, require('./routes/inventory'));
+app.use('/shop', authMiddleware, require('./routes/shop'));
+app.use('/market', authMiddleware, require('./routes/market'));
+app.use('/battle', authMiddleware, require('./routes/battle'));
+app.use('/tasks', authMiddleware, require('./routes/tasks'));
+app.use('/avatars', authMiddleware, require('./routes/avatars'));
+app.use('/forge', authMiddleware, require('./routes/forge-server'));
+app.use('/tower', authMiddleware, require('./routes/tower-server'));
+app.use('/rank', authMiddleware, require('./routes/rank'));
+app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
+app.use('/subscription', authMiddleware, require('./routes/subscription'));
 
 
 app.post('/auth/vk/callback', (req, res) => {

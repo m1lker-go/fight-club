@@ -19,11 +19,8 @@ if (typeof escapeHtml !== 'function') {
 async function loadMessagesSilent() {
     console.log('loadMessagesSilent: начало загрузки');
     try {
-        const token = localStorage.getItem('sessionToken');
-        const res = await window.apiRequest('/auth/messages', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Исправлено: /auth/messages → /user/messages
+        const res = await window.apiRequest('/user/messages', { method: 'GET' });
         const data = await res.json();
         messagesList = data.messages || [];
         console.log('loadMessagesSilent: загружено сообщений', messagesList.length);
@@ -44,11 +41,8 @@ function recalcUnprocessedCount() {
 
 async function loadMessages() {
     try {
-        const token = localStorage.getItem('sessionToken');
-        const res = await window.apiRequest('/auth/messages', {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Исправлено: /auth/messages → /user/messages
+        const res = await window.apiRequest('/user/messages', { method: 'GET' });
         const data = await res.json();
         messagesList = data.messages || [];
         recalcUnprocessedCount();
@@ -117,17 +111,11 @@ async function renderMessageDetail(messageId) {
     const msg = messagesList.find(m => m.id == messageId);
     if (!msg) return;
     
-    const token = localStorage.getItem('sessionToken');
-    if (!token) {
-        showToast('Ошибка: сессия не найдена', 1500);
-        return;
-    }
-    
     if (!msg.is_read) {
         msg.is_read = true;
-        await window.apiRequest('/auth/messages/read', {
+        // Исправлено: /auth/messages/read → /user/messages/read
+        await window.apiRequest('/user/messages/read', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ message_id: messageId })
         });
         recalcUnprocessedCount();
@@ -178,9 +166,9 @@ async function renderMessageDetail(messageId) {
     document.getElementById('backToMessagesBtn').addEventListener('click', () => renderMessages());
     document.getElementById('deleteMessageBtn').addEventListener('click', async () => {
         if (confirm('Удалить сообщение?')) {
-            await window.apiRequest('/auth/messages/delete', {
+            // Исправлено: /auth/messages/delete → /user/messages/delete
+            await window.apiRequest('/user/messages/delete', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ message_id: messageId })
             });
             messagesList = messagesList.filter(m => m.id != messageId);
@@ -201,9 +189,9 @@ async function renderMessageDetail(messageId) {
             btn.addEventListener('click', async (e) => {
                 const chosenClass = btn.dataset.class;
                 try {
-                    const res = await window.apiRequest('/auth/claim-class-reward', {
+                    // Исправлено: /auth/claim-class-reward → /user/claim-class-reward
+                    const res = await window.apiRequest('/user/claim-class-reward', {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ message_id: messageId, chosen_class: chosenClass })
                     });
                     const data = await res.json();
@@ -231,9 +219,9 @@ async function renderMessageDetail(messageId) {
     const claimBtn = document.getElementById('claimRewardBtn');
     if (claimBtn) {
         claimBtn.addEventListener('click', async () => {
-            const res = await window.apiRequest('/auth/messages/claim', {
+            // Исправлено: /auth/messages/claim → /user/messages/claim
+            const res = await window.apiRequest('/user/messages/claim', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ message_id: messageId })
             });
             const data = await res.json();

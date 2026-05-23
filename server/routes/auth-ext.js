@@ -23,10 +23,6 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-function generateToken() {
-    return crypto.randomBytes(32).toString('hex');
-}
-
 async function sendVerificationEmail(email, code) {
     await transporter.sendMail({
         from: process.env.SMTP_FROM,
@@ -135,7 +131,8 @@ async function handleTelegramLogin(initData, referralCode, client) {
 
     await client.query('UPDATE users SET telegram_chat_id = $1 WHERE id = $2', [tgId, userData.id]);
 
-    const sessionToken = generateToken();
+    // ✅ Генерируем JWT-токен
+    const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
     await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
     return { sessionToken, needusername, userId: userData.id, user: userData };
 }
@@ -231,7 +228,8 @@ router.post('/verify-email', async (req, res) => {
         const freshUser = await client.query('SELECT * FROM users WHERE id = $1', [userData.id]);
         userData = freshUser.rows[0];
 
-        const sessionToken = generateToken();
+        // ✅ JWT-токен
+        const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
         await client.query('DELETE FROM email_verifications WHERE email = $1', [email]);
 
@@ -371,7 +369,8 @@ router.get('/telegram/callback', async (req, res) => {
                 }
             }
 
-            const sessionToken = generateToken();
+            // ✅ JWT-токен
+            const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
             await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
             const redirectUrl = `${process.env.CLIENT_URL}?telegram_auth=success&sessionToken=${sessionToken}&needusername=${needusername}&userId=${userData.id}`;
@@ -467,7 +466,8 @@ router.post('/vk-lowcode', async (req, res) => {
             }
         }
 
-        const sessionToken = generateToken();
+        // ✅ JWT-токен
+        const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
 
         res.json({
@@ -513,7 +513,7 @@ router.post('/google', async (req, res) => {
                     await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userId]);
                     userData.current_class = 'warrior';
                 }
-                const sessionToken = generateToken();
+                const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
                 const needusername = !userData.username;
                 return res.json({ success: true, sessionToken, needusername, user: userData });
@@ -543,7 +543,7 @@ router.post('/google', async (req, res) => {
                 }
                 const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
                 const userData = userRes.rows[0];
-                const sessionToken = generateToken();
+                const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
                 const needusername = !userData.username;
                 return res.json({ success: true, sessionToken, needusername, user: userData });
@@ -571,7 +571,7 @@ router.post('/google', async (req, res) => {
                     );
                 }
                 await createWelcomeMessage(client, userData.id);
-                const sessionToken = generateToken();
+                const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
                 await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
                 res.json({ success: true, sessionToken, needusername: true, user: userData });
             }
@@ -997,7 +997,8 @@ router.get('/google-callback', async (req, res) => {
         );
         if (email && !userData.email) await client.query('UPDATE users SET email = $1 WHERE id = $2', [email, userData.id]);
         
-        const sessionToken = generateToken();
+        // ✅ JWT-токен
+        const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
         const redirectUrl = `${process.env.CLIENT_URL}?google_auth=success&sessionToken=${sessionToken}&needusername=${needusername}&userId=${userData.id}`;
         res.redirect(redirectUrl);
@@ -1211,13 +1212,10 @@ router.post('/messages/claim', async (req, res) => {
     }
 });
 
-
 // ==================== РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ EMAIL ====================
 
-// Временное хранение данных регистрации (в памяти, с очисткой)
-const pendingRegistrations = new Map(); // key: email, value: { passwordHash, referralCode, tempUsername, code, expires }
+const pendingRegistrations = new Map();
 
-// Очистка просроченных каждые 10 минут
 setInterval(() => {
     const now = Date.now();
     for (const [email, data] of pendingRegistrations.entries()) {
@@ -1234,28 +1232,24 @@ router.post('/register', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        // Проверяем, не зарегистрирован ли уже email
         const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
         if (existing.rows.length > 0) {
             return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
         }
 
-        // Генерируем код подтверждения
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const passwordHash = await bcrypt.hash(password, 10);
         const referralCode = Math.random().toString(36).substring(2, 10);
         let tempUsername = email.split('@')[0];
 
-        // Сохраняем в Map
         pendingRegistrations.set(email, {
             passwordHash,
             referralCode,
             tempUsername,
             code,
-            expires: Date.now() + 10 * 60 * 1000 // 10 минут
+            expires: Date.now() + 10 * 60 * 1000
         });
 
-        // Отправляем код на email
         await transporter.sendMail({
             from: process.env.SMTP_FROM,
             to: email,
@@ -1278,7 +1272,6 @@ router.post('/verify-registration', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        // Повторная проверка, что email всё ещё свободен (на случай, если за время ввода кода кто-то зарегистрировался)
         const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
         if (existing.rows.length > 0) {
             return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
@@ -1296,7 +1289,6 @@ router.post('/verify-registration', async (req, res) => {
             return res.status(400).json({ error: 'Код истёк. Запросите регистрацию заново.' });
         }
 
-        // Создаём пользователя
         await client.query('BEGIN');
         const newUser = await client.query(
             `INSERT INTO users (email, password_hash, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, registered_via, current_class)
@@ -1305,7 +1297,6 @@ router.post('/verify-registration', async (req, res) => {
         );
         const userData = newUser.rows[0];
 
-        // Создаём классы
         const classes = ['warrior', 'assassin', 'mage'];
         for (let cls of classes) {
             await client.query(
@@ -1316,7 +1307,6 @@ router.post('/verify-registration', async (req, res) => {
             );
         }
 
-        // Добавляем связь с email в user_connections
         await client.query(
             `INSERT INTO user_connections (user_id, provider, email)
              VALUES ($1, 'email', $2)
@@ -1324,13 +1314,13 @@ router.post('/verify-registration', async (req, res) => {
             [userData.id, email]
         );
 
-        // Приветственное сообщение
         await client.query(
             `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
              VALUES ($1, 'Мастер кошачьих боёв', 'Привет, разбойник!', 'Я рад, что ты присоединился к игре! За это я дарю тебе очки навыков для твоего героя! Выбери класс, который получит дополнительно 5 очков навыков. НО запомни, выбрать можно один раз!', 'skill_points_choice', 5, false, false)`,
             [userData.id]
         );
 
+        // ✅ JWT-токен
         const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [token, userData.id]);
 
@@ -1361,7 +1351,6 @@ router.post('/login', async (req, res) => {
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) return res.status(401).json({ error: 'Неверный email или пароль' });
 
-        // Убеждаемся, что current_class установлен
         if (!user.current_class) {
             await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [user.id]);
             user.current_class = 'warrior';
@@ -1495,7 +1484,6 @@ router.post('/change-class', async (req, res) => {
         if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
         const userId = userRes.rows[0].id;
 
-        // Проверяем, что выбранный класс существует у пользователя
         const classCheck = await client.query(
             'SELECT id FROM user_classes WHERE user_id = $1 AND class = $2',
             [userId, class_name]

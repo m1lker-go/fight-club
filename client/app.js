@@ -397,7 +397,7 @@ async function refreshData() {
         return;
     }
     try {
-        const response = await fetchWithRetry('/auth/refresh', {
+        const response = await fetchWithRetry('/user/refresh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         }, 2, 20000);
@@ -428,7 +428,7 @@ async function refreshData() {
 async function refreshTasksOnly() {
     if (!userData || !userData.id) return;
     try {
-        const response = await fetchWithRetry('/auth/refresh', {
+        const response = await fetchWithRetry('/user/refresh', {
             method: 'POST',
             body: JSON.stringify({}) // пустое тело, токен в заголовке
         });

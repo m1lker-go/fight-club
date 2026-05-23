@@ -1139,8 +1139,14 @@ router.post('/start', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, req.body.tg_id, req.body.user_id);
-        if (!user) throw new Error('User not found');
+        // Получаем userId из middleware (уже должен быть в req.userId)
+        const userId = req.userId;
+        if (!userId) throw new Error('User not authorized');
+
+        // Получаем пользователя напрямую по id
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         // Проверка активности подписки VIP Silver
         const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
@@ -1227,7 +1233,7 @@ router.post('/start', async (req, res) => {
             if (isVictory) {
                 expGain = Math.floor(expGain * 1.1);
             } else {
-                expGain += 5;   // награда за поражение уже учтена в монетах, опыт добавляем здесь
+                expGain += 5;
             }
         }
 
@@ -1239,9 +1245,8 @@ router.post('/start', async (req, res) => {
         // Уголь (начисление внутри транзакции) – новые шансы
         const r = Math.random();
         let coalGain = 0;
-        if (r >= 0.5 && r < 0.85) coalGain = 1;      // 35%
-        else if (r >= 0.85) coalGain = 2;              // 15%
-        // иначе 0 (50%)
+        if (r >= 0.5 && r < 0.85) coalGain = 1;
+        else if (r >= 0.85) coalGain = 2;
         if (coalGain > 0) {
             await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, user.id]);
         }
@@ -1283,7 +1288,7 @@ router.post('/start', async (req, res) => {
             }
         }
 
-              // Обновление прогресса угольного задания
+        // Обновление прогресса угольного задания
         if (coalGain > 0) {
             try {
                 await dailyTasks.updateCoalGainProgress(user.id, coalGain);
@@ -1292,7 +1297,7 @@ router.post('/start', async (req, res) => {
             }
         }
 
-        // ===== ДОБАВЛЕНО: Шанс выпадения редкого свитка 5% при победе =====
+        // Шанс выпадения редкого свитка 5% при победе
         let scrollGain = false;
         if (isVictory && Math.random() < 0.05) {
             try {
@@ -1307,7 +1312,6 @@ router.post('/start', async (req, res) => {
                 console.error('Ошибка выдачи свитка:', e);
             }
         }
-        // ================================================================
 
         // Получаем актуальную энергию
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
@@ -1339,7 +1343,7 @@ router.post('/start', async (req, res) => {
             ratingChange,
             newEnergy,
             coalGain,
-            scrollGain   // <-- новое поле
+            scrollGain
         });
     } catch (e) {
         await client.query('ROLLBACK');

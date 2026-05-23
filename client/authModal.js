@@ -1,4 +1,5 @@
 // authModal.js – исправлен: Google и VK теперь правильно сохраняют токен и перезагружают страницу
+// Устранена синтаксическая ошибка в конце файла.
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -271,7 +272,6 @@ async function loginWithVK() {
                     if (data.needusername && typeof showusernameModal === 'function') {
                         showusernameModal(data.userId);
                     } else {
-                        // Полная перезагрузка страницы
                         window.location.href = '/';
                     }
                 } else {
@@ -306,11 +306,11 @@ function showusernameModal(userId) {
     modal.style.display = 'flex';
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
-    
+
     document.getElementById('saveusernameBtn').addEventListener('click', async () => {
         const username = document.getElementById('usernameInput').value.trim();
         if (!username) return;
-        
+
         // Проверка доступности никнейма (публичный эндпоинт)
         const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(username)}`, { method: 'GET' });
         const { available } = await checkRes.json();
@@ -318,7 +318,7 @@ function showusernameModal(userId) {
             showToast('Никнейм уже занят', 1500);
             return;
         }
-        
+
         // Обновление никнейма – защищённый эндпоинт (токен в заголовке)
         const res = await window.apiRequest('/user/update-settings', {
             method: 'POST',
@@ -330,12 +330,6 @@ function showusernameModal(userId) {
         } else {
             const err = await res.json();
             showToast(err.error || 'Ошибка сохранения никнейма', 1500);
-        }
-    });
-}
-        } catch (err) {
-            console.error(err);
-            showToast('Ошибка соединения', 1500);
         }
     });
 }

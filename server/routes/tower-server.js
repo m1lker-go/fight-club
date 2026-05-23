@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot, generateMouseBoss } = require('../utils/botGenerator');
 const dailyTasks = require('../utils/dailyTasks');
 
-console.log('✅ tower-server.js loaded (full version with user_id support)');
+console.log('✅ tower-server.js loaded (full version with req.userId)');
 
 const classGroups = [
     { class: 'warrior', subclasses: ['guardian', 'berserker', 'knight'] },
@@ -55,14 +55,13 @@ function getBotLevel(floor) {
 
 // ========== ПОЛУЧЕНИЕ СТАТУСА БАШНИ ==========
 router.get('/status', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
         let progress = await getOrCreateProgress(client, userId);
         console.log('[STATUS] user ' + userId + ': attempts_today=' + progress.attempts_today + ', attemptsLeft=' + (10 - progress.attempts_today));
@@ -84,15 +83,16 @@ router.get('/status', async (req, res) => {
 
 // ========== ВЫБОР КЛАССА НА СЕЗОН ==========
 router.post('/select-class', async (req, res) => {
-    const { tg_id, user_id, class: className, subclass } = req.body;
-    if ((!tg_id && !user_id) || !className || !subclass) return res.status(400).json({ error: 'Missing data' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { class: className, subclass } = req.body;
+    if (!className || !subclass) return res.status(400).json({ error: 'Missing class or subclass' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
 
         const classCheck = await client.query('SELECT class FROM user_classes WHERE user_id = $1 AND class = $2', [userId, className]);
         if (classCheck.rows.length === 0) throw new Error('Class not available');
@@ -115,16 +115,16 @@ router.post('/select-class', async (req, res) => {
 
 // ========== БОЙ В БАШНЕ ==========
 router.post('/battle', async (req, res) => {
-    const { tg_id, user_id } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
         const username = user.username || 'Player';
 
         let progress = await getOrCreateProgress(client, userId);
@@ -310,10 +310,8 @@ router.post('/battle', async (req, res) => {
             );
         }
 
-        // ===== ВАЖНО: завершаем транзакцию перед вызовом dailyTasks =====
         await client.query('COMMIT');
 
-        // Теперь безопасно вызываем обновление задания башни (отдельный коннект)
         try {
             await dailyTasks.updateTowerTask(userId);
             console.log('[BATTLE] Tower task updated for user ' + userId);
@@ -348,7 +346,7 @@ router.post('/battle', async (req, res) => {
             expGain: isVictory ? expGain : 0,
             leveledUp: leveledUp,
             newLevel: newLevel,
-            towerTaskCompleted: newAttemptsToday === 3   // опционально: задание считается выполненным при 3 попытках
+            towerTaskCompleted: newAttemptsToday === 3
         });
 
     } catch (e) {

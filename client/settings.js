@@ -1,4 +1,4 @@
-// settings.js – исправлено: аватар + кнопка сброса кэша + полная очистка
+// settings.js – исправлено: аватар + кнопка сброса кэша + полная очистка + переход на /user
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -36,36 +36,28 @@ function showLogoutConfirmModal(onConfirm) {
 
 // Функция сброса кэша (полная очистка, сохраняет только sessionToken)
 function clearCacheAndReload() {
-    // Сохраняем сессионный токен, если он есть
     const sessionToken = localStorage.getItem('sessionToken');
-    // Очищаем всё локальное хранилище
     localStorage.clear();
     if (sessionToken) localStorage.setItem('sessionToken', sessionToken);
-    // Очищаем sessionStorage
     sessionStorage.clear();
-    // Очищаем куки
     document.cookie.split(";").forEach(function(c) {
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
-    // Очищаем IndexedDB, если используется
     if (window.indexedDB) {
         if (indexedDB.databases) {
             indexedDB.databases().then(dbs => {
                 dbs.forEach(db => indexedDB.deleteDatabase(db.name));
             }).catch(e => console.warn('Ошибка очистки IndexedDB', e));
         } else {
-            // Старая версия – пытаемся удалить базу по известному имени (например, 'cat_fight_db')
             const knownDBs = ['cat_fight_db', 'keyval-store'];
             knownDBs.forEach(dbName => indexedDB.deleteDatabase(dbName));
         }
     }
-    // Очищаем Cache API (для PWA)
     if ('caches' in window) {
         caches.keys().then(names => {
             names.forEach(name => caches.delete(name));
         }).catch(e => console.warn('Cache API error:', e));
     }
-    // Перезагружаем страницу с параметром, игнорирующим кэш
     const url = new URL(window.location.href);
     url.searchParams.set('force', Date.now());
     window.location.href = url.toString();
@@ -80,7 +72,7 @@ async function renderSettings() {
     }
 
     try {
-        const res = await window.apiRequest('/auth/profile', {
+        const res = await window.apiRequest('/user/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to load profile');
@@ -306,11 +298,11 @@ async function renderSettings() {
 }
 
 async function updateSettings(updates) {
-    const token = localStorage.getItem('sessionToken');
+    // токен больше не передаём в теле, он в заголовке
     try {
-        const res = await window.apiRequest('/auth/update-settings', {
+        const res = await window.apiRequest('/user/update-settings', {
             method: 'POST',
-            body: JSON.stringify({ token, ...updates })
+            body: JSON.stringify(updates)  // только звук/никнейм
         });
         if (!res.ok) throw new Error('Failed to update');
         if (typeof showToast === 'function') showToast('Настройки сохранены', 1000);
@@ -351,16 +343,17 @@ function showusernameEditModal(currentusername) {
             showToast('Никнейм может содержать только английские буквы, цифры и подчёркивание', 1500);
             return;
         }
-        const token = localStorage.getItem('sessionToken');
+        // Проверка доступности никнейма (публичный эндпоинт, не требует токена)
         const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(newusername)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
             showToast('Никнейм уже занят', 1500);
             return;
         }
-        const res = await window.apiRequest('/auth/update-settings', {
+        // Обновление (защищённый эндпоинт)
+        const res = await window.apiRequest('/user/update-settings', {
             method: 'POST',
-            body: JSON.stringify({ token, username: newusername })
+            body: JSON.stringify({ username: newusername })
         });
         if (res.ok) {
             showToast('Никнейм изменён', 1500);
@@ -420,7 +413,7 @@ function showChangePasswordModal() {
         }
         const token = localStorage.getItem('sessionToken');
         try {
-            const res = await fetch(`${window.API_BASE}/auth/change-password`, {
+            const res = await fetch(`${window.API_BASE}/user/change-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -519,10 +512,9 @@ function linkVK() {
                 const tokenData = await VKID.Auth.exchangeCode(code, device_id);
                 const { access_token, user_id, email } = tokenData;
                 
-                const token = localStorage.getItem('sessionToken');
-                const res = await window.apiRequest('/auth/link', {
+                // токен уже в заголовке, не нужно передавать в теле
+                const res = await window.apiRequest('/user/link', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         provider: 'vk',
                         access_token: access_token,
@@ -575,10 +567,8 @@ function linkGoogle() {
                 clearTimeout(timeoutId);
                 googleLinkingInProgress = false;
                 const idToken = response.credential;
-                const token = localStorage.getItem('sessionToken');
-                const res = await window.apiRequest('/auth/link', {
+                const res = await window.apiRequest('/user/link', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ provider: 'google', idToken })
                 });
                 const data = await res.json();

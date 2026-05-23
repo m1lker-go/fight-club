@@ -4,6 +4,7 @@ const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
 const { sendTelegramNotification } = require('./utils/telegram');
 const { resetDailyTasks, resetSeason } = require('./utils/scheduler');
+const authMiddleware = require('./middleware/auth'); // <-- ДОБАВЛЕНО
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 
 console.log('Starting server...');
@@ -17,15 +18,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('client'));
 
-// API routes
-// Подключаем middleware авторизации
-const authMiddleware = require('./middleware/auth');
-
-// Публичные роуты (без авторизации)
+// ========== ПУБЛИЧНЫЕ РОУТЫ (без авторизации) ==========
 app.use('/auth', require('./routes/auth-ext'));
 app.use('/payment', require('./routes/robokassa'));
 
-// Защищённые API (требуют Bearer токен)
+// ========== ЗАЩИЩЁННЫЕ API (требуют Bearer токен) ==========
 app.use('/player', authMiddleware, require('./routes/player'));
 app.use('/inventory', authMiddleware, require('./routes/inventory'));
 app.use('/shop', authMiddleware, require('./routes/shop'));
@@ -39,7 +36,7 @@ app.use('/rank', authMiddleware, require('./routes/rank'));
 app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
 app.use('/subscription', authMiddleware, require('./routes/subscription'));
 
-
+// ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {
     console.log('Received VK callback (unexpected, low-code uses callback mode)');
     res.status(400).json({ error: 'This endpoint is not used. Please use low-code flow.' });
@@ -99,6 +96,7 @@ app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
 });
 
+// ========== АДМИНСКИЕ ЭНДПОИНТЫ (без авторизации, но можно добавить проверку) ==========
 app.get('/admin/update-items', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -314,7 +312,6 @@ async function startServer() {
         cron.schedule('0 0 * * *', resetDailyTasks, { timezone: 'Europe/Moscow' });
         cron.schedule('0 0 1 * *', resetSeason, { timezone: 'Europe/Moscow' });
 
-        // Новая задача: каждый день в 10:00 проверяем истекшие подписки и отправляем уведомления
         cron.schedule('0 10 * * *', async () => {
             console.log('[CRON] Checking expired subscriptions...');
             const client = await pool.connect();

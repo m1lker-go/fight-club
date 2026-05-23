@@ -1,24 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const dailyTasks = require('../utils/dailyTasks');
 
-// Преобразует дату из БД в московскую строку для сравнения
 function toMoscowDateString(dbDate) {
     if (!dbDate) return null;
     const d = new Date(dbDate);
     return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
 }
 
-// Статус подписки и бесплатной монеты (freeCoinAvailable не зависит от подписки)
+// ========== СТАТУС ПОДПИСКИ (требует авторизацию) ==========
 router.get('/status', async (req, res) => {
-    const { user_id } = req.query;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
         const result = await client.query(
             `SELECT subscription_expiry, last_free_sub_coin, last_daily_sub_reward FROM users WHERE id = $1`,
-            [user_id]
+            [userId]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -36,30 +35,32 @@ router.get('/status', async (req, res) => {
             dailySubRewardAvailable = (lastRewardMsk !== todayMsk);
         }
 
-        // Получаем реальные бонусные покупки
         const bonusRes = await client.query(
             'SELECT pack_id FROM bonus_purchases WHERE user_id = $1',
-            [user_id]
+            [userId]
         );
         const bonusPacks = {};
         bonusRes.rows.forEach(r => { bonusPacks[r.pack_id] = true; });
 
         res.json({ hasSubscription, freeCoinAvailable, dailySubRewardAvailable, bonusPacks });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     } finally {
         client.release();
     }
 });
 
-// Получение бесплатной монеты (20 монет) – без привязки к подписке
+// ========== ПОЛУЧИТЬ БЕСПЛАТНУЮ МОНЕТУ ==========
 router.post('/claim-free-coin', async (req, res) => {
-    const { user_id } = req.body;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
-
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         const todayMsk = dailyTasks.getMoscowDate();
         const lastFreeMsk = toMoscowDateString(user.last_free_sub_coin);
@@ -69,7 +70,7 @@ router.post('/claim-free-coin', async (req, res) => {
 
         await client.query(
             `UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2`,
-            [todayMsk, user.id]
+            [todayMsk, userId]
         );
 
         await client.query('COMMIT');
@@ -83,34 +84,31 @@ router.post('/claim-free-coin', async (req, res) => {
     }
 });
 
-// Ежедневная награда для подписчиков (250 монет + 10 угля)
+// ========== ЕЖЕДНЕВНАЯ НАГРАДА ДЛЯ ПОДПИСЧИКОВ ==========
 router.post('/claim-daily-reward', async (req, res) => {
-    const { user_id } = req.body;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
-
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
-        // Проверка активности подписки
         const hasSubscription = user.subscription_expiry ? new Date(user.subscription_expiry) > new Date() : false;
         if (!hasSubscription) {
             throw new Error('Подписка не активна');
         }
 
-        // Проверка, не получал ли уже сегодня
         const todayMsk = dailyTasks.getMoscowDate();
         const lastRewardMsk = toMoscowDateString(user.last_daily_sub_reward);
         if (lastRewardMsk === todayMsk) {
             throw new Error('Ежедневная награда уже получена сегодня');
         }
 
-        // Начисление 250 монет и 10 угля
         await client.query(
             `UPDATE users SET coins = coins + 250, coal = coal + 10, last_daily_sub_reward = $1 WHERE id = $2`,
-            [todayMsk, user.id]
+            [todayMsk, userId]
         );
 
         await client.query('COMMIT');
@@ -124,7 +122,7 @@ router.post('/claim-daily-reward', async (req, res) => {
     }
 });
 
-// Административная выдача подписки (требует секретный ключ)
+// ========== АДМИНИСТРАТИВНАЯ ВЫДАЧА ПОДПИСКИ (публичный, с секретным ключом) ==========
 router.post('/admin/activate', async (req, res) => {
     const { secret, user_id, days } = req.body;
     if (secret !== process.env.ADMIN_SECRET) {
@@ -133,21 +131,20 @@ router.post('/admin/activate', async (req, res) => {
 
     const daysToAdd = days || 30;
     const expiryDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
-    const expiryISO = expiryDate.toISOString();   // UTC с миллисекундами
+    const expiryISO = expiryDate.toISOString();
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [user_id]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         await client.query(
             'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
             [expiryISO, user.id]
         );
 
-        // Единоразовые бонусы
         await client.query(
             'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
             [user.id]

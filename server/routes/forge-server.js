@@ -1,29 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const { generateItemByRarity } = require('../utils/botGenerator');
 const dailyTasks = require('../utils/dailyTasks');
 
 // ========== ВСПОМОГАТЕЛЬНЫЕ ДАННЫЕ ==========
 const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 
-// Шансы успеха при ковке (без свитка)
 const BASE_CRAFT_CHANCES = {
-    common: 1.0,       // не используется
+    common: 1.0,
     uncommon: 0.95,
     rare: 0.85,
     epic: 0.75,
     legendary: 0.65
 };
 
-// Бонусы свитков
 const SCROLL_BONUS = {
-    rare: 0.10,        // +10%
-    epic: 0.20,        // +20%
-    legendary: 0.30    // +30%
+    rare: 0.10,
+    epic: 0.20,
+    legendary: 0.30
 };
 
-// Стоимость ковки (монеты, уголь) для каждого уровня результата
 const CRAFT_COST = {
     uncommon: { coins: 50,  coal: 20 },
     rare:      { coins: 350, coal: 50 },
@@ -31,7 +28,6 @@ const CRAFT_COST = {
     legendary: { coins: 2500, coal: 500 }
 };
 
-// Диапазоны угля при плавке
 const SMELT_COAL = {
     common:    { min: 1,  max: 5 },
     uncommon:  { min: 10, max: 15 },
@@ -44,18 +40,16 @@ const SMELT_COAL = {
 
 // Добавить предмет в кузницу
 router.post('/add', async (req, res) => {
-    const { tg_id, user_id, item_id, tab } = req.body;
-    console.log('[forge/add] Request:', { tg_id, user_id, item_id, tab });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { item_id, tab } = req.body;
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
         return res.status(400).json({ error: 'Invalid tab' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
@@ -84,17 +78,14 @@ router.post('/add', async (req, res) => {
 
 // Убрать предмет из кузницы
 router.post('/remove', async (req, res) => {
-    const { tg_id, user_id, item_id } = req.body;
-    if ((!tg_id && !user_id) || !item_id) {
-        return res.status(400).json({ error: 'Missing parameters' });
-    }
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { item_id } = req.body;
+    if (!item_id) return res.status(400).json({ error: 'Missing item_id' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-
         const item = await client.query(
             'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
             [item_id, userId]
@@ -120,18 +111,15 @@ router.post('/remove', async (req, res) => {
 
 // Получить список ID предметов в указанной вкладке кузницы
 router.get('/current', async (req, res) => {
-    const { tg_id, user_id, tab } = req.query;
-    if ((!tg_id && !user_id)) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { tab } = req.query;
     if (!tab || (tab !== 'forge' && tab !== 'smelt')) {
         return res.status(400).json({ error: 'Invalid tab' });
     }
-
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
-
         const result = await client.query(
             'SELECT id FROM inventory WHERE user_id = $1 AND in_forge = true AND forge_tab = $2',
             [userId, tab]
@@ -147,21 +135,17 @@ router.get('/current', async (req, res) => {
 
 // Получить список свитков пользователя (для модального окна)
 router.get('/scrolls', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-
         const result = await client.query(
             `SELECT i.id as inv_id, i.item_id, it.name, it.rarity, i.equipped
              FROM inventory i
              JOIN items it ON i.item_id = it.id
              WHERE i.user_id = $1 AND it.type = 'scroll' AND i.equipped = false`,
-            [user.id]
+            [userId]
         );
-        // Добавляем бонус свитка
         const scrolls = result.rows.map(row => ({
             inv_id: row.inv_id,
             item_id: row.item_id,
@@ -180,16 +164,20 @@ router.get('/scrolls', async (req, res) => {
 
 // Ковка
 router.post('/craft', async (req, res) => {
-    const { tg_id, user_id, item_ids, chosen_class, scroll_id } = req.body;
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { item_ids, chosen_class, scroll_id } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length !== 3) {
         return res.status(400).json({ error: 'Need exactly 3 items' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        // Получаем пользователя
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         // 1. Проверка предметов
         const items = await client.query(
@@ -203,12 +191,12 @@ router.post('/craft', async (req, res) => {
         if (!rarities.every(r => r === firstRarity)) {
             throw new Error('Items must have the same rarity');
         }
-        const sourceRarity = firstRarity; // например 'common'
+        const sourceRarity = firstRarity;
         const currentIndex = RARITY_ORDER.indexOf(sourceRarity);
         if (currentIndex === -1 || currentIndex === RARITY_ORDER.length - 1) {
             throw new Error('Cannot upgrade this rarity');
         }
-        const resultRarity = RARITY_ORDER[currentIndex + 1]; // то, что пытаемся получить
+        const resultRarity = RARITY_ORDER[currentIndex + 1];
 
         // 2. Проверка свитка (если есть)
         let scrollBonus = 0;
@@ -301,16 +289,20 @@ router.post('/craft', async (req, res) => {
 
 // Плавка (с добавлением угля)
 router.post('/smelt', async (req, res) => {
-    const { tg_id, user_id, item_ids } = req.body;
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { item_ids } = req.body;
     if (!Array.isArray(item_ids) || item_ids.length === 0 || item_ids.length > 5) {
         return res.status(400).json({ error: 'Need 1 to 5 items' });
     }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        // Получаем пользователя (для проверки наличия)
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+
         let coinsGain = 0;
         let diamondsGain = 0;
         let coalGain = 0;
@@ -344,7 +336,6 @@ router.post('/smelt', async (req, res) => {
                     diamondsGain += 2 + Math.floor(Math.random() * 4);
                     break;
             }
-            // Уголь
             const coalRange = SMELT_COAL[rarity];
             if (coalRange) {
                 coalGain += Math.floor(Math.random() * (coalRange.max - coalRange.min + 1)) + coalRange.min;

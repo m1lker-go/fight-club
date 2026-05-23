@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 const dailyTasks = require('../utils/dailyTasks');
 
-// Единая функция получения московской даты (синхронизирована со сбросом заданий)
+// Единая функция получения московской даты
 const getMoscowDate = () => dailyTasks.getMoscowDate();
 
-// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
 function toMoscowDateString(dbDate) {
     if (!dbDate) return null;
     const d = new Date(dbDate);
@@ -93,22 +92,18 @@ function generateItemFromChest(chestType) {
     return item;
 }
 
+// ========== ПОКУПКА СУНДУКА ==========
 router.post('/buychest', async (req, res) => {
-    let { tg_id, user_id, chestType } = req.body;
-    // Гарантируем, что идентификаторы – целые числа
-    if (tg_id) tg_id = parseInt(tg_id, 10);
-    if (user_id) user_id = parseInt(user_id, 10);
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { chestType } = req.body;
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-        let coins = user.coins;
-        let diamonds = user.diamonds;
-        let lastFree = user.last_free_common_chest;
-
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
         const today = getMoscowDate();
 
         let priceCoins = 0;
@@ -117,7 +112,7 @@ router.post('/buychest', async (req, res) => {
 
         switch (chestType) {
             case 'common':
-                if (toMoscowDateString(lastFree) !== today) {
+                if (toMoscowDateString(user.last_free_common_chest) !== today) {
                     isFree = true;
                 } else {
                     priceCoins = 100;
@@ -140,8 +135,8 @@ router.post('/buychest', async (req, res) => {
         }
 
         if (!isFree) {
-            if (priceCoins > 0 && coins < priceCoins) throw new Error('Not enough coins');
-            if (priceDiamonds > 0 && diamonds < priceDiamonds) throw new Error('Not enough diamonds');
+            if (priceCoins > 0 && user.coins < priceCoins) throw new Error('Not enough coins');
+            if (priceDiamonds > 0 && user.diamonds < priceDiamonds) throw new Error('Not enough diamonds');
             if (priceCoins > 0) await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [priceCoins, userId]);
             if (priceDiamonds > 0) await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [priceDiamonds, userId]);
         } else {
@@ -164,13 +159,13 @@ router.post('/buychest', async (req, res) => {
             `INSERT INTO inventory (user_id, item_id, equipped, name, type, rarity, class_restriction, owner_class,
                 atk_bonus, def_bonus, hp_bonus, spd_bonus,
                 crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
-            [userId, itemId, false, item.name, item.type, item.rarity, 'any', item.owner_class,
+             VALUES ($1, $2, false, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+            [userId, itemId, item.name, item.type, item.rarity, 'any', item.owner_class,
              item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
              item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
         );
 
-        if (item.rarity === 'rare' || item.rarity === 'epic' || item.rarity === 'legendary') {
+        if (['rare', 'epic', 'legendary'].includes(item.rarity)) {
             await dailyTasks.updateChestProgress(userId, item.rarity);
         }
 
@@ -185,21 +180,20 @@ router.post('/buychest', async (req, res) => {
     }
 });
 
+// ========== ПОКУПКА МОНЕТ ЗА АЛМАЗЫ ==========
 router.post('/buy-coins', async (req, res) => {
-    let { tg_id, user_id, coins, price } = req.body;
-    if (tg_id) tg_id = parseInt(tg_id, 10);
-    if (user_id) user_id = parseInt(user_id, 10);
-
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { coins, price } = req.body;
     if (!coins || !price) return res.status(400).json({ error: 'Missing coins or price' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        if (user.diamonds < price) throw new Error('Not enough diamonds');
-        await client.query('UPDATE users SET diamonds = diamonds - $1, coins = coins + $2 WHERE id = $3', [price, coins, user.id]);
+        const userRes = await client.query('SELECT diamonds FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        if (userRes.rows[0].diamonds < price) throw new Error('Not enough diamonds');
+        await client.query('UPDATE users SET diamonds = diamonds - $1, coins = coins + $2 WHERE id = $3', [price, coins, userId]);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -211,17 +205,16 @@ router.post('/buy-coins', async (req, res) => {
     }
 });
 
-// ========== МОНЕТНЫЙ ДВОР ==========
-
+// ========== БЕСПЛАТНЫЙ УГОЛЬ (проверка) ==========
 router.get('/freecoal', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT last_free_coal_date FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
         const today = getMoscowDate();
-        const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
+        const lastFreeMsk = toMoscowDateString(userRes.rows[0].last_free_coal_date);
         const freeAvailable = lastFreeMsk !== today;
         res.json({ freeAvailable });
     } catch (e) {
@@ -232,38 +225,35 @@ router.get('/freecoal', async (req, res) => {
     }
 });
 
+// ========== ПОКУПКА УГЛЯ ЗА АЛМАЗЫ (или бесплатный) ==========
 router.post('/buy-coal', async (req, res) => {
-    console.log('[buy-coal] START', req.body);
-    let { tg_id, user_id, amount, price, free } = req.body;
-    if (tg_id) tg_id = parseInt(tg_id, 10);
-    if (user_id) user_id = parseInt(user_id, 10);
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { amount, price, free } = req.body;
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        if (!tg_id && !user_id) {
-            throw new Error('tg_id or user_id required');
-        }
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
         const today = getMoscowDate();
+
         if (free) {
             const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
             if (lastFreeMsk === today) throw new Error('Бесплатный уголь уже получен сегодня');
-            await client.query('UPDATE users SET coal = coal + $1, last_free_coal_date = $2 WHERE id = $3', [amount, today, user.id]);
+            await client.query('UPDATE users SET coal = coal + $1, last_free_coal_date = $2 WHERE id = $3', [amount, today, userId]);
         } else {
             if (user.diamonds < price) throw new Error('Not enough diamonds');
-            await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, user.id]);
+            await client.query('UPDATE users SET diamonds = diamonds - $1, coal = coal + $2 WHERE id = $3', [price, amount, userId]);
         }
         await client.query('COMMIT');
-        console.log('[buy-coal] SUCCESS');
 
         try {
-            await dailyTasks.updateCoalGainProgress(user.id, amount);
+            await dailyTasks.updateCoalGainProgress(userId, amount);
         } catch (e) {
             console.error('[buy-coal] updateCoalGainProgress error:', e);
         }
-
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -274,28 +264,34 @@ router.post('/buy-coal', async (req, res) => {
     }
 });
 
+// ========== ПОКУПКА УГЛЯ ЗА МОНЕТЫ ==========
 router.post('/buy-coal-coins', async (req, res) => {
-    let { user_id, amount } = req.body;
-    if (user_id) user_id = parseInt(user_id, 10);
-    if (!user_id || !amount) return res.status(400).json({ error: 'Missing user_id or amount' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { amount } = req.body;
+    if (!amount) return res.status(400).json({ error: 'Missing amount' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
+
         const priceCoins = (amount / 10) * 100;
         const maxDaily = 1000;
         const purchasedToday = user.coal_purchased_today || 0;
         if (purchasedToday + amount > maxDaily) throw new Error(`Daily limit exceeded (max ${maxDaily} coal)`);
         if (user.coins < priceCoins) throw new Error('Not enough coins');
+
         await client.query(
             `UPDATE users SET coins = coins - $1, coal = coal + $2, coal_purchased_today = coal_purchased_today + $2 WHERE id = $3`,
-            [priceCoins, amount, user.id]
+            [priceCoins, amount, userId]
         );
         await client.query('COMMIT');
+
         try {
-            await dailyTasks.updateCoalGainProgress(user.id, amount);
+            await dailyTasks.updateCoalGainProgress(userId, amount);
         } catch (e) {
             console.error('[buy-coal-coins] updateCoalGainProgress error:', e);
         }
@@ -309,14 +305,15 @@ router.post('/buy-coal-coins', async (req, res) => {
     }
 });
 
+// ========== ЛИМИТ ПОКУПКИ УГЛЯ ЗА МОНЕТЫ ==========
 router.get('/coal-limit', async (req, res) => {
-    const { user_id } = req.query;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
-        const purchasedToday = user.coal_purchased_today || 0;
+        const userRes = await client.query('SELECT coal_purchased_today FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const purchasedToday = userRes.rows[0].coal_purchased_today || 0;
         const maxDaily = 1000;
         res.json({ purchasedToday, maxDaily });
     } catch (e) {
@@ -326,20 +323,20 @@ router.get('/coal-limit', async (req, res) => {
     }
 });
 
+// ========== ПОКУПКА ЗОЛОТА (МОНЕТ) ЗА АЛМАЗЫ (альтернативный) ==========
 router.post('/buy-gold', async (req, res) => {
-    let { tg_id, user_id, amount, price } = req.body;
-    if (tg_id) tg_id = parseInt(tg_id, 10);
-    if (user_id) user_id = parseInt(user_id, 10);
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { amount, price } = req.body;
     if (!amount || !price) return res.status(400).json({ error: 'Missing amount or price' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        if (user.diamonds < price) throw new Error('Not enough diamonds');
-        await client.query('UPDATE users SET diamonds = diamonds - $1, coins = coins + $2 WHERE id = $3', [price, amount, user.id]);
+        const userRes = await client.query('SELECT diamonds FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        if (userRes.rows[0].diamonds < price) throw new Error('Not enough diamonds');
+        await client.query('UPDATE users SET diamonds = diamonds - $1, coins = coins + $2 WHERE id = $3', [price, amount, userId]);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -351,16 +348,16 @@ router.post('/buy-gold', async (req, res) => {
     }
 });
 
-// ========== ПОДПИСКА VIP SILVER ==========
+// ========== ПОДПИСКА: СТАТУС БЕСПЛАТНОЙ МОНЕТЫ ==========
 router.get('/subscription/free-coin-status', async (req, res) => {
-    const { user_id } = req.query;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT last_free_sub_coin FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
         const today = getMoscowDate();
-        const lastMsk = toMoscowDateString(user.last_free_sub_coin);
+        const lastMsk = toMoscowDateString(userRes.rows[0].last_free_sub_coin);
         const available = lastMsk !== today;
         res.json({ available });
     } catch (e) {
@@ -370,23 +367,21 @@ router.get('/subscription/free-coin-status', async (req, res) => {
     }
 });
 
+// ========== ПОДПИСКА: ЗАБРАТЬ БЕСПЛАТНУЮ МОНЕТУ ==========
 router.post('/subscription/claim-free-coin', async (req, res) => {
-    console.log('[claim-free-coin] START', req.body);
-    let { user_id } = req.body;
-    if (user_id) user_id = parseInt(user_id, 10);
-
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        if (!user_id) throw new Error('user_id required');
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
         const today = getMoscowDate();
         const lastMsk = toMoscowDateString(user.last_free_sub_coin);
         if (lastMsk === today) throw new Error('Already claimed today');
-        await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, user.id]);
+        await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, userId]);
         await client.query('COMMIT');
-        console.log('[claim-free-coin] SUCCESS');
         res.json({ success: true });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -397,19 +392,19 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
     }
 });
 
-// Покупка свитков
+// ========== ПОКУПКА СВИТКОВ ==========
 router.post('/buy-scroll', async (req, res) => {
-    let { tg_id, user_id, scroll_id } = req.body;
-    if (tg_id) tg_id = parseInt(tg_id, 10);
-    if (user_id) user_id = parseInt(user_id, 10);
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { scroll_id } = req.body;
     if (![1037, 1038, 1039].includes(scroll_id)) return res.status(400).json({ error: 'Invalid scroll' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         let price, currency;
         if (scroll_id === 1037) { price = 500; currency = 'coins'; }
@@ -419,23 +414,20 @@ router.post('/buy-scroll', async (req, res) => {
         if (currency === 'coins' && user.coins < price) throw new Error('Not enough coins');
         if (currency === 'diamonds' && user.diamonds < price) throw new Error('Not enough diamonds');
 
-        // Получаем шаблон свитка из items
         const itemRes = await client.query('SELECT * FROM items WHERE id = $1', [scroll_id]);
         if (itemRes.rows.length === 0) throw new Error('Scroll item not found');
         const scroll = itemRes.rows[0];
 
-        // Списываем валюту
         if (currency === 'coins') {
-            await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, user.id]);
+            await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, userId]);
         } else {
-            await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [price, user.id]);
+            await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [price, userId]);
         }
 
-        // Добавляем в инвентарь
         await client.query(
             `INSERT INTO inventory (user_id, item_id, equipped, in_forge, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
              VALUES ($1, $2, false, false, $3, $4, $5, 'any', $6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)`,
-            [user.id, scroll_id, scroll.name, scroll.type, scroll.rarity, scroll.owner_class]
+            [userId, scroll_id, scroll.name, scroll.type, scroll.rarity, scroll.owner_class]
         );
 
         await client.query('COMMIT');

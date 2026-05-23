@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const dailyTasks = require('../utils/dailyTasks');
 const { generateItemByRarity } = require('../utils/botGenerator');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 
 // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ АДВЕНТА ========================
 
-// Преобразует дату из БД в московскую строку (для сравнения)
 const toMoscowDateString = (dbDate) => {
     if (!dbDate) return null;
     const d = new Date(dbDate);
@@ -40,13 +39,13 @@ function getAdventReward(day, daysInMonth) {
 // ======================== АДВЕНТ-КАЛЕНДАРЬ ========================
 
 router.get('/advent', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = userRes.rows[0];
         let lastClaimed = user.advent_last_claimed_day || 0;
         let lastClaimDate = user.advent_last_claim_date;
         let adventMonth = user.advent_month;
@@ -82,14 +81,15 @@ router.get('/advent', async (req, res) => {
 });
 
 router.post('/advent/claim', async (req, res) => {
-    const { tg_id, user_id, classChoice } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { classChoice } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
         let lastClaimed = user.advent_last_claimed_day || 0;
         let lastClaimDate = user.advent_last_claim_date;
         let adventMonth = user.advent_month;
@@ -181,14 +181,15 @@ router.post('/advent/claim', async (req, res) => {
 // ======================== ЕЖЕДНЕВНЫЕ ЗАДАНИЯ ========================
 
 router.get('/daily/list', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = userRes.rows[0];
         const tasks = await dailyTasks.getTasksList(user);
-        const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
+        const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
         const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
         const allTasks = tasks.filter(t => t.id !== 9);
         const completedTasksCount = allTasks.filter(t => t.completed).length;
@@ -207,13 +208,16 @@ router.get('/daily/list', async (req, res) => {
 });
 
 router.post('/daily/claim', async (req, res) => {
-    const { tg_id, user_id, task_id, class_choice } = req.body;
-    if ((!tg_id && !user_id) || !task_id) return res.status(400).json({ error: 'Missing data' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { task_id, class_choice } = req.body;
+    if (!task_id) return res.status(400).json({ error: 'Missing data' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         if (user.daily_tasks_mask & (1 << (task_id - 1))) {
             throw new Error('Task already claimed');
@@ -235,7 +239,7 @@ router.post('/daily/claim', async (req, res) => {
             }
             isCompleted = countCompleted >= 10;
         } else if ([1, 2, 3].includes(task.id)) {
-            const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [user.id]);
+            const streakRes = await client.query('SELECT daily_win_streak FROM users WHERE id = $1', [userId]);
             const dailyWinStreak = streakRes.rows[0]?.daily_win_streak || 0;
             if (dailyWinStreak >= 10) {
                 isCompleted = true;
@@ -252,14 +256,14 @@ router.post('/daily/claim', async (req, res) => {
 
         let leveledUp = false;
         if (task.reward_type === 'coins') {
-            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, user.id]);
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [task.reward_amount, userId]);
         } else if (task.reward_type === 'diamonds') {
-            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [task.reward_amount, user.id]);
+            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [task.reward_amount, userId]);
         } else if (task.reward_type === 'exp') {
             if (!class_choice) throw new Error('class_choice required for exp reward');
             const classRes = await client.query(
                 'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
-                [user.id, class_choice]
+                [userId, class_choice]
             );
             if (classRes.rows.length === 0) throw new Error('Class not found');
             let { level, exp, skill_points } = classRes.rows[0];
@@ -274,12 +278,12 @@ router.post('/daily/claim', async (req, res) => {
             }
             await client.query(
                 'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
-                [level, exp, skill_points, user.id, class_choice]
+                [level, exp, skill_points, userId, class_choice]
             );
         }
         await client.query(
             'UPDATE users SET daily_tasks_mask = daily_tasks_mask | $1 WHERE id = $2',
-            [1 << (task_id - 1), user.id]
+            [1 << (task_id - 1), userId]
         );
         await client.query('COMMIT');
         res.json({ success: true, leveledUp });
@@ -293,27 +297,27 @@ router.post('/daily/claim', async (req, res) => {
 });
 
 router.post('/daily/update/battle', async (req, res) => {
-    let { tg_id, user_id, class_played, is_victory } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
-
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { class_played, is_victory } = req.body;
     const victory = is_victory === true || is_victory === 'true';
 
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
 
-        await dailyTasks.updateBattleProgress(user.id, class_played, victory);
+        await dailyTasks.updateBattleProgress(userId, class_played, victory);
 
         if (victory) {
             await client.query(
                 'UPDATE users SET daily_win_streak = COALESCE(daily_win_streak, 0) + 1, last_streak_date = CURRENT_DATE WHERE id = $1',
-                [user.id]
+                [userId]
             );
         } else {
             await client.query(
                 'UPDATE users SET daily_win_streak = 0 WHERE id = $1',
-                [user.id]
+                [userId]
             );
         }
 
@@ -327,13 +331,14 @@ router.post('/daily/update/battle', async (req, res) => {
 });
 
 router.post('/daily/update/exp', async (req, res) => {
-    const { tg_id, user_id, exp_gained } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { exp_gained } = req.body;
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        await dailyTasks.updateExpProgress(user.id, exp_gained);
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        await dailyTasks.updateExpProgress(userId, exp_gained);
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -344,13 +349,14 @@ router.post('/daily/update/exp', async (req, res) => {
 });
 
 router.post('/daily/update/chest', async (req, res) => {
-    const { tg_id, user_id, item_rarity } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { item_rarity } = req.body;
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        await dailyTasks.updateChestProgress(user.id, item_rarity);
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        await dailyTasks.updateChestProgress(userId, item_rarity);
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -361,13 +367,13 @@ router.post('/daily/update/chest', async (req, res) => {
 });
 
 router.post('/daily/update/profile', async (req, res) => {
-    const { tg_id, user_id } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        await dailyTasks.updateProfileProgress(user.id);
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        await dailyTasks.updateProfileProgress(userId);
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -378,12 +384,13 @@ router.post('/daily/update/profile', async (req, res) => {
 });
 
 router.post('/daily/update/ads', async (req, res) => {
-    const { tg_id, user_id } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
 
         const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
 
@@ -392,7 +399,7 @@ router.post('/daily/update/ads', async (req, res) => {
 
             const userRow = await client.query(
                 'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
-                [user.id]
+                [userId]
             );
             let progress = dailyTasks.parseProgress(userRow.rows[0].daily_tasks_progress);
             let mask = userRow.rows[0].daily_tasks_mask;
@@ -416,11 +423,11 @@ router.post('/daily/update/ads', async (req, res) => {
                     mask |= (1 << (taskId - 1));
                     const { reward_type, reward_amount } = taskRes.rows[0];
                     if (reward_type === 'coins') {
-                        await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, user.id]);
+                        await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, userId]);
                     } else if (reward_type === 'diamonds') {
-                        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [reward_amount, user.id]);
+                        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [reward_amount, userId]);
                     } else if (reward_type === 'coal') {
-                        await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, user.id]);
+                        await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, userId]);
                     }
                     progress[taskId] = target;
                 }
@@ -428,13 +435,13 @@ router.post('/daily/update/ads', async (req, res) => {
 
             await client.query(
                 'UPDATE users SET daily_tasks_progress = $1, daily_tasks_mask = $2 WHERE id = $3',
-                [JSON.stringify(progress), mask, user.id]
+                [JSON.stringify(progress), mask, userId]
             );
 
             await client.query('COMMIT');
             res.json({ success: true, autoCompleted: true });
         } else {
-            await dailyTasks.updateWatchAdsProgress(user.id);
+            await dailyTasks.updateWatchAdsProgress(userId);
             res.json({ success: true });
         }
     } catch (e) {

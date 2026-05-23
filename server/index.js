@@ -35,6 +35,7 @@ app.use('/tower', authMiddleware, require('./routes/tower-server'));
 app.use('/rank', authMiddleware, require('./routes/rank'));
 app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
 app.use('/subscription', authMiddleware, require('./routes/subscription'));
+app.use('/user', authMiddleware, require('./routes/user'));  
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {

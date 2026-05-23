@@ -586,12 +586,12 @@ router.post('/google', async (req, res) => {
 
 // ========== ПРОФИЛЬ, НАСТРОЙКИ, ПРИВЯЗКА, ОБНОВЛЕНИЕ ==========
 router.get('/profile', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'No token' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const userRes = await client.query('SELECT * FROM users WHERE session_token = $1', [token]);
-        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const user = userRes.rows[0];
         await rechargeEnergy(client, user.id);
         const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [user.id]);
@@ -786,13 +786,13 @@ router.post('/link', async (req, res) => {
 });
 
 router.post('/refresh', async (req, res) => {
-    const { tg_id, user_id } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = userRes.rows[0];
         await rechargeEnergy(client, userId);
         const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         const userData = updatedUser.rows[0];

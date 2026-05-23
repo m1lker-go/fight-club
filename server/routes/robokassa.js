@@ -1,10 +1,10 @@
-// routes/robokassa.js – надёжная версия БЕЗ Receipt и с работающей проверкой вебхука
+// routes/robokassa.js – исправлено (без getUserByIdentifier, прямой запрос)
 
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 
 const MERCHANT_LOGIN = process.env.MERCHANT_LOGIN;
 const PASSWORD1      = process.env.PASSWORD1;
@@ -165,14 +165,17 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
             await client.query('COMMIT');
             return true;
         }
-        const user = await getUserByIdentifier(client, null, userId);
-        if (!user) throw new Error('Пользователь не найден');
-       const daysToAdd = 30; // можно оставить 30 дней, как и было
-const expiryDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
-const expiryISO = expiryDate.toISOString();   // полный UTC timestamp
+        // Прямой запрос пользователя по ID
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('Пользователь не найден');
+        const user = userRes.rows[0];
+
+        const daysToAdd = 30;
+        const expiryDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
+        const expiryISO = expiryDate.toISOString();
         await client.query(
-           'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
-[expiryISO, user.id]
+            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
+            [expiryISO, user.id]
         );
         await client.query(`
             CREATE TABLE IF NOT EXISTS subscription_activations (
@@ -201,7 +204,7 @@ const expiryISO = expiryDate.toISOString();   // полный UTC timestamp
             'coins', 1500
         );
         await client.query('COMMIT');
-        console.log(`[Robokassa] Подписка активирована для user ${user.id} до ${expiryDateStr}`);
+        console.log(`[Robokassa] Подписка активирована для user ${user.id} до ${expiryISO}`);
         return true;
     } catch (err) {
         await client.query('ROLLBACK');

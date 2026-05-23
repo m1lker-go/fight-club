@@ -4,41 +4,31 @@ const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const dailyTasks = require('../utils/dailyTasks');
 
-// Единая функция получения московской даты (синхронизирована со сбросом в scheduler.js)
 const getMoscowDate = () => dailyTasks.getMoscowDate();
 
-// Преобразует дату из БД в строку 'YYYY-MM-DD' по московскому времени
 function toMoscowDateString(dbDate) {
     if (!dbDate) return null;
     const d = new Date(dbDate);
     return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
 }
 
-// ========== ТЕСТОВЫЙ МАРШРУТ ==========
+// ========== ТЕСТОВЫЙ МАРШРУТ (можно удалить позже) ==========
 router.get('/test', async (req, res) => {
     try {
-        console.log('=== TEST ROUTE CALLED ===');
-        console.log('Query params:', req.query);
-        
         const result = await pool.query('SELECT 1+1 as sum');
-        
         res.json({ 
             status: 'ok', 
             db: 'connected',
             test: result.rows[0].sum,
-            time: new Date().toISOString(),
-            query: req.query
+            time: new Date().toISOString()
         });
     } catch (e) {
-        console.error('TEST ROUTE ERROR:', e);
-        res.status(500).json({ 
-            status: 'error', 
-            message: e.message,
-            stack: e.stack 
-        });
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
 });
 
+// Вспомогательная функция для восстановления энергии
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
     if (user.rows.length === 0) return;
@@ -55,105 +45,15 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-function validateTgId(tg_id) {
-    if (tg_id === undefined || tg_id === null) return false;
-    const num = Number(tg_id);
-    return !isNaN(num) && num > 0;
-}
-
-// ========== БЕСПЛАТНЫЙ СУНДУК ==========
-router.get('/freechest', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    
-    console.log('=== FREE CHEST CHECK ===');
-    console.log('tg_id:', tg_id, 'user_id:', user_id);
-    
-    if (!tg_id && !user_id) {
-        return res.status(400).json({ error: 'tg_id or user_id required' });
-    }
-    
+// ========== ПОЛУЧИТЬ ПРОФИЛЬ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ==========
+router.get('/profile', async (req, res) => {
+    const userId = req.userId;
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        
-        const today = getMoscowDate();
-        const lastFreeMsk = toMoscowDateString(user.last_free_common_chest);
-        const freeAvailable = lastFreeMsk !== today;
-        
-        console.log('freeAvailable:', freeAvailable);
-        res.json({ freeAvailable });
-    } catch (e) {
-        console.error('Database error:', e);
-        res.status(500).json({ error: 'Database error' });
-    } finally {
-        client.release();
-    }
-});
+        await rechargeEnergy(client, userId);
 
-// ========== БЕСПЛАТНЫЙ УГОЛЬ ==========
-router.get('/freecoal', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    
-    console.log('=== FREE COAL CHECK ===');
-    console.log('tg_id:', tg_id, 'user_id:', user_id);
-    
-    if (!tg_id && !user_id) {
-        return res.status(400).json({ error: 'tg_id or user_id required' });
-    }
-    
-    const client = await pool.connect();
-    try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        
-        const today = getMoscowDate();
-        const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
-        const freeAvailable = lastFreeMsk !== today;
-        
-        console.log('freeAvailable:', freeAvailable);
-        res.json({ freeAvailable });
-    } catch (e) {
-        console.error('Database error:', e);
-        res.status(500).json({ error: 'Database error' });
-    } finally {
-        client.release();
-    }
-});
-
-// ========== ЛИМИТ ПОКУПКИ УГЛЯ ЗА МОНЕТЫ ==========
-router.get('/coal-limit', async (req, res) => {
-    const { user_id } = req.query;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
-    const client = await pool.connect();
-    try {
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
-        const purchasedToday = user.coal_purchased_today || 0;
-        const maxDaily = 1000;
-        res.json({ purchasedToday, maxDaily });
-    } catch (e) {
-        console.error('Error fetching coal limit:', e);
-        res.status(500).json({ error: e.message });
-    } finally {
-        client.release();
-    }
-});
-
-router.get('/:tg_id', async (req, res) => {
-    const { tg_id } = req.params;
-    
-    if (!validateTgId(tg_id)) {
-        console.log('Invalid tg_id in /:tg_id:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
-    
-    const client = await pool.connect();
-    try {
-        const user = await client.query('SELECT * FROM users WHERE tg_id = $1', [tg_id]);
+        const user = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-
-        await rechargeEnergy(client, user.rows[0].id);
 
         const inventory = await client.query(
             `SELECT 
@@ -180,12 +80,12 @@ router.get('/:tg_id', async (req, res) => {
             FROM inventory i
             JOIN items it ON i.item_id = it.id
             WHERE i.user_id = $1`,
-            [user.rows[0].id]
+            [userId]
         );
 
         const classes = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1',
-            [user.rows[0].id]
+            [userId]
         );
 
         res.json({
@@ -193,45 +93,101 @@ router.get('/:tg_id', async (req, res) => {
             inventory: inventory.rows,
             classes: classes.rows
         });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
     } finally {
         client.release();
     }
 });
 
-router.get('/class/:tg_id/:class', async (req, res) => {
-    const { tg_id, class: className } = req.params;
-    
-    if (!validateTgId(tg_id)) {
-        console.log('Invalid tg_id in /class:', tg_id);
-        return res.status(400).json({ error: 'Invalid tg_id format' });
-    }
-    
+// ========== БЕСПЛАТНЫЙ СУНДУК ==========
+router.get('/freechest', async (req, res) => {
+    const userId = req.userId;
     const client = await pool.connect();
     try {
-        const user = await client.query('SELECT id FROM users WHERE tg_id = $1', [tg_id]);
+        const user = await client.query('SELECT last_free_common_chest FROM users WHERE id = $1', [userId]);
         if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         
+        const today = getMoscowDate();
+        const lastFreeMsk = toMoscowDateString(user.rows[0].last_free_common_chest);
+        const freeAvailable = lastFreeMsk !== today;
+        
+        res.json({ freeAvailable });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
+    }
+});
+
+// ========== БЕСПЛАТНЫЙ УГОЛЬ ==========
+router.get('/freecoal', async (req, res) => {
+    const userId = req.userId;
+    const client = await pool.connect();
+    try {
+        const user = await client.query('SELECT last_free_coal_date FROM users WHERE id = $1', [userId]);
+        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        
+        const today = getMoscowDate();
+        const lastFreeMsk = toMoscowDateString(user.rows[0].last_free_coal_date);
+        const freeAvailable = lastFreeMsk !== today;
+        
+        res.json({ freeAvailable });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
+    }
+});
+
+// ========== ЛИМИТ ПОКУПКИ УГЛЯ ЗА МОНЕТЫ ==========
+router.get('/coal-limit', async (req, res) => {
+    const userId = req.userId;
+    const client = await pool.connect();
+    try {
+        const user = await client.query('SELECT coal_purchased_today FROM users WHERE id = $1', [userId]);
+        if (user.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const purchasedToday = user.rows[0].coal_purchased_today || 0;
+        const maxDaily = 1000;
+        res.json({ purchasedToday, maxDaily });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// ========== ИНФОРМАЦИЯ О КЛАССЕ ==========
+router.get('/class/:className', async (req, res) => {
+    const userId = req.userId;
+    const { className } = req.params;
+    const client = await pool.connect();
+    try {
         const classData = await client.query(
             'SELECT * FROM user_classes WHERE user_id = $1 AND class = $2',
-            [user.rows[0].id, className]
+            [userId, className]
         );
         if (classData.rows.length === 0) return res.status(404).json({ error: 'Class not found' });
         res.json(classData.rows[0]);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     } finally {
         client.release();
     }
 });
 
+// ========== УЛУЧШИТЬ ХАРАКТЕРИСТИКУ ==========
 router.post('/upgrade', async (req, res) => {
-    const { tg_id, user_id, class: className, stat, points } = req.body;
-    
+    const userId = req.userId;
+    const { class: className, stat, points } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-
         const classData = await client.query(
             'SELECT skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
             [userId, className]
@@ -245,7 +201,6 @@ router.post('/upgrade', async (req, res) => {
         );
 
         await updatePlayerPower(client, userId, className);
-
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -256,20 +211,15 @@ router.post('/upgrade', async (req, res) => {
     }
 });
 
+// ========== СМЕНИТЬ ТЕКУЩИЙ КЛАСС ==========
 router.post('/class', async (req, res) => {
-    const { tg_id, user_id, class: newClass } = req.body;
-    
+    const userId = req.userId;
+    const { class: newClass } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-
         await client.query('UPDATE users SET current_class = $1 WHERE id = $2', [newClass, userId]);
-
         await updatePlayerPower(client, userId, newClass);
-
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -280,21 +230,17 @@ router.post('/class', async (req, res) => {
     }
 });
 
+// ========== СМЕНИТЬ ПОДКЛАСС ==========
 router.post('/subclass', async (req, res) => {
-    const { tg_id, user_id, subclass } = req.body;
-    
+    const userId = req.userId;
+    const { subclass } = req.body;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-        const currentClass = user.current_class;
-
+        const currentClass = await client.query('SELECT current_class FROM users WHERE id = $1', [userId]);
+        if (currentClass.rows.length === 0) throw new Error('User not found');
         await client.query('UPDATE users SET subclass = $1 WHERE id = $2', [subclass, userId]);
-
-        await updatePlayerPower(client, userId, currentClass);
-
+        await updatePlayerPower(client, userId, currentClass.rows[0].current_class);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -305,19 +251,13 @@ router.post('/subclass', async (req, res) => {
     }
 });
 
+// ========== СМЕНИТЬ АВАТАР (СКИН) ==========
 router.post('/avatar', async (req, res) => {
-    const { tg_id, user_id, avatar_id } = req.body;
-    
-    if (!avatar_id) {
-        return res.status(400).json({ error: 'Missing avatar_id' });
-    }
-    
+    const userId = req.userId;
+    const { avatar_id } = req.body;
+    if (!avatar_id) return res.status(400).json({ error: 'Missing avatar_id' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
-
         const owned = await client.query(
             'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
             [userId, avatar_id]
@@ -325,30 +265,11 @@ router.post('/avatar', async (req, res) => {
         if (owned.rows.length === 0) {
             return res.status(403).json({ error: 'Avatar not owned' });
         }
-
         await client.query('UPDATE users SET avatar_id = $1 WHERE id = $2', [avatar_id, userId]);
         res.json({ success: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
-    } finally {
-        client.release();
-    }
-});
-
-router.get('/coal-limit', async (req, res) => {
-    const { user_id } = req.query;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
-    const client = await pool.connect();
-    try {
-        const user = await getUserByIdentifier(client, null, user_id);
-        if (!user) throw new Error('User not found');
-        const purchasedToday = user.coal_purchased_today || 0;
-        const maxDaily = 1000;
-        res.json({ purchasedToday, maxDaily });
-    } catch (e) {
-        console.error('Error in /coal-limit:', e);
-        res.status(500).json({ error: e.message });
     } finally {
         client.release();
     }

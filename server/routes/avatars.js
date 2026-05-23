@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 
-// Получить список всех доступных аватаров
+// Получить список всех доступных аватаров (публичный, без авторизации)
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(
@@ -16,16 +16,13 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Получить список купленных аватаров пользователя (по tg_id или user_id)
-router.get('/user/:tg_id', async (req, res) => {
-    const { tg_id } = req.params;
-    const { user_id } = req.query; // поддерживаем user_id как query параметр
+// Получить список купленных аватаров текущего пользователя (требует авторизацию)
+router.get('/user', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
-
         const result = await client.query(
             'SELECT avatar_id FROM user_avatars WHERE user_id = $1',
             [userId]
@@ -39,23 +36,25 @@ router.get('/user/:tg_id', async (req, res) => {
     }
 });
 
-// Купить аватар
+// Купить аватар (требует авторизацию)
 router.post('/buy', async (req, res) => {
-    const { tg_id, user_id, avatar_id } = req.body;
-    if ((!tg_id && !user_id) || !avatar_id) return res.status(400).json({ error: 'Missing data' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { avatar_id } = req.body;
+    if (!avatar_id) return res.status(400).json({ error: 'Missing avatar_id' });
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-        let { coins, diamonds } = user;
+        const userRes = await client.query('SELECT coins, diamonds FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const { coins, diamonds } = userRes.rows[0];
 
-        const avatar = await client.query('SELECT price_gold, price_diamonds FROM avatars WHERE id = $1', [avatar_id]);
-        if (avatar.rows.length === 0) throw new Error('Avatar not found');
-        const { price_gold, price_diamonds } = avatar.rows[0];
+        const avatarRes = await client.query('SELECT price_gold, price_diamonds FROM avatars WHERE id = $1', [avatar_id]);
+        if (avatarRes.rows.length === 0) throw new Error('Avatar not found');
+        const { price_gold, price_diamonds } = avatarRes.rows[0];
 
         if (price_gold > 0 && coins < price_gold) throw new Error('Not enough coins');
         if (price_diamonds > 0 && diamonds < price_diamonds) throw new Error('Not enough diamonds');
@@ -89,7 +88,7 @@ router.post('/buy', async (req, res) => {
     }
 });
 
-// Получить аватар по ID
+// Получить аватар по ID (публичный, без авторизации)
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {

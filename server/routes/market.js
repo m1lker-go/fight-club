@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 
 // GET /market – публичный список предметов, без авторизации
 router.get('/', async (req, res) => {
@@ -44,16 +44,16 @@ router.get('/', async (req, res) => {
 
 // POST /buy – покупка предмета
 router.post('/buy', async (req, res) => {
-    const { tg_id, user_id, item_id } = req.body;
-    if ((!tg_id && !user_id) || !item_id) {
-        return res.status(400).json({ error: 'Missing buyer identifier or item_id' });
-    }
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { item_id } = req.body;
+    if (!item_id) return res.status(400).json({ error: 'Missing item_id' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const buyer = await getUserByIdentifier(client, tg_id, user_id);
-        if (!buyer) throw new Error('Buyer not found');
-        const buyerId = buyer.id;
+        const buyerRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (buyerRes.rows.length === 0) throw new Error('Buyer not found');
+        const buyer = buyerRes.rows[0];
         const buyerCoins = buyer.coins;
 
         const itemRes = await client.query('SELECT * FROM inventory WHERE id = $1 AND for_sale = true', [item_id]);
@@ -62,12 +62,12 @@ router.post('/buy', async (req, res) => {
         const sellerId = item.user_id;
         const price = item.price;
 
-        if (sellerId === buyerId) throw new Error('Cannot buy your own item');
+        if (sellerId === userId) throw new Error('Cannot buy your own item');
         if (buyerCoins < price) throw new Error('Not enough coins');
 
-        await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, buyerId]);
+        await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [price, userId]);
         await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [price, sellerId]);
-        await client.query('UPDATE inventory SET user_id = $1, for_sale = false, price = NULL WHERE id = $2', [buyerId, item_id]);
+        await client.query('UPDATE inventory SET user_id = $1, for_sale = false, price = NULL WHERE id = $2', [userId, item_id]);
 
         await client.query('COMMIT');
         res.json({ success: true });
@@ -82,17 +82,13 @@ router.post('/buy', async (req, res) => {
 
 // POST /remove – снять свой предмет с продажи
 router.post('/remove', async (req, res) => {
-    const { tg_id, user_id, item_id } = req.body;
-    if ((!tg_id && !user_id) || !item_id) {
-        return res.status(400).json({ error: 'Missing parameters' });
-    }
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { item_id } = req.body;
+    if (!item_id) return res.status(400).json({ error: 'Missing item_id' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-
         const itemRes = await client.query('SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true', [item_id, userId]);
         if (itemRes.rows.length === 0) throw new Error('Item not found or not yours');
 
@@ -111,18 +107,15 @@ router.post('/remove', async (req, res) => {
 
 // POST /update-price – изменить цену своего предмета в маркете
 router.post('/update-price', async (req, res) => {
-    const { tg_id, user_id, item_id, new_price } = req.body;
-    if ((!tg_id && !user_id) || !item_id || !new_price || new_price <= 0) {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { item_id, new_price } = req.body;
+    if (!item_id || !new_price || new_price <= 0) {
         return res.status(400).json({ error: 'Invalid price or missing parameters' });
     }
-
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
-
         const itemRes = await client.query('SELECT * FROM inventory WHERE id = $1 AND user_id = $2 AND for_sale = true', [item_id, userId]);
         if (itemRes.rows.length === 0) throw new Error('Item not found or not yours');
 

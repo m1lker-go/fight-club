@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const dailyTasks = require('../utils/dailyTasks');
 

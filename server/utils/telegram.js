@@ -1,6 +1,5 @@
 const { SocksProxyAgent } = require('socks-proxy-agent');
 
-const proxyUrl = 'socks5://XtrYph:GneBKv@193.187.147.243:8000';
 const agent = new SocksProxyAgent(proxyUrl);
 
 const BOT_TOKEN = process.env.BOT_TOKEN;

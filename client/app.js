@@ -1,4 +1,4 @@
-// app.js – основная логика приложения
+// app.js – основная логика приложения (исправлено под авторизацию через Bearer-токен)
 
 let tg = null;
 let user = null;
@@ -56,12 +56,8 @@ window.apiRequest = async function(endpoint, options = {}) {
         }
     }
     
-  if (userData && userData.id) {
-    bodyObj.user_id = Array.isArray(userData.id) ? Number(userData.id[0]) : Number(userData.id);
-}
-if (userData && userData.tg_id) {
-    bodyObj.tg_id = Array.isArray(userData.tg_id) ? Number(userData.tg_id[0]) : Number(userData.tg_id);
-}
+    // ========== БОЛЬШЕ НЕ ПЕРЕДАЁМ tg_id И user_id – сервер берёт их из токена ==========
+    // (удалены строки, добавлявшие user_id и tg_id)
     
     const fetchOptions = {
         method: method,
@@ -70,6 +66,12 @@ if (userData && userData.tg_id) {
             ...(options.headers || {})
         }
     };
+    
+    // Добавляем заголовок авторизации, если есть токен и запрос не к публичным эндпоинтам
+    const token = localStorage.getItem('sessionToken');
+    if (token && !endpoint.startsWith('/auth') && !endpoint.includes('/auth/')) {
+        fetchOptions.headers['Authorization'] = `Bearer ${token}`;
+    }
     
     let finalUrl;
     if (method === 'GET') {
@@ -100,7 +102,6 @@ if (userData && userData.tg_id) {
         } catch (e) {
             data = { error: 'Invalid JSON response', raw: responseText };
         }
-        // Возвращаем объект, совместимый с ожиданиями (с json() методом)
         return {
             ok: response.ok,
             status: response.status,
@@ -170,12 +171,11 @@ async function autoLoginTelegram() {
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
                 sessionToken = data.sessionToken;
-                    if (data.need && typeof showusernameModal === 'function') {
+                if (data.need && typeof showusernameModal === 'function') {
                     showusernameModal(data.userId);
                     return true;
                 } else {
                     await loadUserDataByToken(data.sessionToken);
-                    // Инициализация ironSource после загрузки профиля через Telegram
                     if (typeof initIronSourceAds === 'function' && userData && userData.id) {
                         initIronSourceAds(userData.id);
                     }
@@ -195,9 +195,7 @@ async function autoLoginTelegram() {
 async function loadUserDataByToken(token) {
     try {
         console.log('loadUserDataByToken: fetching profile...');
-        const res = await window.apiRequest('/auth/profile', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await window.apiRequest('/player/profile', { method: 'GET' });
         if (res.ok) {
             const data = await res.json();
             console.log('Profile data received, user id:', data.user?.id);
@@ -210,21 +208,18 @@ async function loadUserDataByToken(token) {
             recalculatePower();
             updateTopBar();
             showScreen('main');
-            // Предзагрузка всех анимаций боя
-if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
-    AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
-}
+            if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
+                AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
+            }
             if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
             updateMainMenuNewIcons();
             checkAdvent();
             hideSplashScreen();
-            // Обновляем бейджи после загрузки
             if (typeof window.updateTradeBadges === 'function') {
                 window.updateTradeBadges();
             }
-             // === Инициализация ironSource ===
             if (typeof initIronSourceAds === 'function' && userData && userData.id) {
-            initIronSourceAds(userData.id);
+                initIronSourceAds(userData.id);
             }
             console.log('loadUserDataByToken: success');
             return true;
@@ -246,10 +241,7 @@ async function checkAuth() {
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         try {
-            const res = await window.apiRequest('/auth/profile', {
-                headers: { 'Authorization': `Bearer ${sessionToken}` },
-                signal: controller.signal
-            });
+            const res = await window.apiRequest('/player/profile', { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
 
             if (res.ok) {
@@ -263,21 +255,18 @@ async function checkAuth() {
                 recalculatePower();
                 updateTopBar();
                 showScreen('main');
-                // Предзагрузка всех анимаций боя
-if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
-    AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
-}
+                if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
+                    AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
+                }
                 updateMainMenuNewIcons();
                 checkAdvent();
                 hideSplashScreen();
                 if (typeof window.updateTradeBadges === 'function') {
                     window.updateTradeBadges();
                 }
-                            // === Инициализация ironSource ===
-            if (typeof initIronSourceAds === 'function' && userData && userData.id) {
-                initIronSourceAds(userData.id);
-            }
-            // ================================
+                if (typeof initIronSourceAds === 'function' && userData && userData.id) {
+                    initIronSourceAds(userData.id);
+                }
                 console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {
@@ -297,9 +286,7 @@ if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 
     if (isTelegramWebApp) {
         console.log('checkAuth: trying auto login via Telegram');
         const autoLogged = await autoLoginTelegram();
-        if (autoLogged) {
-            return true;
-        }
+        if (autoLogged) return true;
     }
 
     hideSplashScreen();
@@ -351,11 +338,10 @@ async function checkAdvent() {
     if (!userData || !userData.id) return;
     adventCheckLock = true;
     try {
-        const res = await window.apiRequest(`/tasks/advent?tg_id=${userData.tg_id || ''}&user_id=${userData.id}&_=${Date.now()}`);
+        const res = await window.apiRequest(`/tasks/advent?_=${Date.now()}`, { method: 'GET' });
         if (!res.ok) return;
         const data = await res.json();
         if (data.nextAvailable !== null && data.nextAvailable !== undefined) {
-            // Ждём, пока showAdventModal загрузится (если скрипт ещё не подтянулся)
             if (typeof showAdventModal !== 'function') {
                 await new Promise((resolve, reject) => {
                     const start = Date.now();
@@ -413,8 +399,7 @@ async function refreshData() {
     try {
         const response = await fetchWithRetry('/auth/refresh', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tg_id: userData.tg_id, user_id: userData.id })
+            headers: { 'Content-Type': 'application/json' }
         }, 2, 20000);
         const data = await response.json();
         if (data.user) {
@@ -445,7 +430,7 @@ async function refreshTasksOnly() {
     try {
         const response = await fetchWithRetry('/auth/refresh', {
             method: 'POST',
-            body: JSON.stringify({ tg_id: userData.tg_id, user_id: userData.id })
+            body: JSON.stringify({}) // пустое тело, токен в заголовке
         });
         const data = await response.json();
         if (data.user) {
@@ -498,10 +483,10 @@ function showScreen(screen) {
     }
 
     switch (screen) {
-   case 'main':
-    renderMain();
-    updateTradeBadges();
-    break;
+        case 'main':
+            renderMain();
+            updateTradeBadges();
+            break;
         case 'equip': renderEquip(); break;
         case 'trade': renderTrade(); break;
         case 'messages': renderMessages(); break;
@@ -545,7 +530,7 @@ function renderForgeFallback() {
 async function loadAvatars() {
     if (avatarsList) return avatarsList;
     try {
-        const res = await window.apiRequest('/avatars');
+        const res = await window.apiRequest('/avatars', { method: 'GET' });
         if (!res.ok) throw new Error('Failed to fetch avatars');
         avatarsList = await res.json();
         return avatarsList;
@@ -622,6 +607,7 @@ function handleExternalAuth() {
             if (needusername && typeof showusernameModal === 'function') {
                 showusernameModal(userId);
             } else {
+                // Просто перезагружаем страницу (без параметров)
                 window.location.replace(window.location.pathname);
             }
         }

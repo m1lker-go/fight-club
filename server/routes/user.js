@@ -4,6 +4,7 @@ const { pool } = require('../db');
 const { rechargeEnergy } = require('../utils/energy');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -16,7 +17,6 @@ router.get('/profile', async (req, res) => {
     try {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const user = userRes.rows[0];
         await rechargeEnergy(client, userId);
         const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         const userData = updatedUser.rows[0];
@@ -216,7 +216,6 @@ router.post('/refresh', async (req, res) => {
     try {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const user = userRes.rows[0];
         await rechargeEnergy(client, userId);
         const updatedUser = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         const userData = updatedUser.rows[0];
@@ -417,6 +416,35 @@ router.post('/change-class', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        client.release();
+    }
+});
+
+// ========== СМЕНА ПАРОЛЯ (требует авторизации) ==========
+router.put('/change-password', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Old and new passwords required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Новый пароль должен быть не менее 6 символов' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        const user = userRes.rows[0];
+        if (!user.password_hash) return res.status(400).json({ error: 'У вас не установлен пароль' });
+
+        const valid = await bcrypt.compare(oldPassword, user.password_hash);
+        if (!valid) return res.status(401).json({ error: 'Неверный старый пароль' });
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, userId]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Ошибка смены пароля' });
     } finally {
         client.release();
     }

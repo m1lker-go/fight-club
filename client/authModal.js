@@ -306,29 +306,33 @@ function showusernameModal(userId) {
     modal.style.display = 'flex';
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
+    
     document.getElementById('saveusernameBtn').addEventListener('click', async () => {
         const username = document.getElementById('usernameInput').value.trim();
         if (!username) return;
-        try {
-            const check = await fetch(`${window.API_BASE}/auth/check-username?username=${encodeURIComponent(username)}`);
-            const { available } = await check.json();
-            if (!available) {
-                showToast('Никнейм уже занят', 1500);
-                return;
-            }
-            const token = localStorage.getItem('sessionToken');
-            const res = await fetch(`${window.API_BASE}/auth/update-settings`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, username })
-            });
-            if (res.ok) {
-                modal.style.display = 'none';
-                location.reload();
-            } else {
-                const err = await res.json();
-                showToast(err.error || 'Ошибка сохранения никнейма', 1500);
-            }
+        
+        // Проверка доступности никнейма (публичный эндпоинт)
+        const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(username)}`, { method: 'GET' });
+        const { available } = await checkRes.json();
+        if (!available) {
+            showToast('Никнейм уже занят', 1500);
+            return;
+        }
+        
+        // Обновление никнейма – защищённый эндпоинт (токен в заголовке)
+        const res = await window.apiRequest('/user/update-settings', {
+            method: 'POST',
+            body: JSON.stringify({ username })
+        });
+        if (res.ok) {
+            modal.style.display = 'none';
+            location.reload();
+        } else {
+            const err = await res.json();
+            showToast(err.error || 'Ошибка сохранения никнейма', 1500);
+        }
+    });
+}
         } catch (err) {
             console.error(err);
             showToast('Ошибка соединения', 1500);

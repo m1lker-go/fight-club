@@ -1,4 +1,4 @@
-// authModal.js – полная версия для WebView (все кнопки работают через внешний браузер)
+// authModal.js – исправлен: Google и VK теперь правильно сохраняют токен и перезагружают страницу
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -9,7 +9,6 @@ let googleLoginInProgress = false;
 let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
 
-// Определение WebView
 function isWebView() {
     const ua = navigator.userAgent.toLowerCase();
     if (/wv/.test(ua)) return true;
@@ -70,7 +69,6 @@ function showAuthModal() {
             if (window.Telegram?.WebApp?.initData && !webView) {
                 autoLoginTelegram();
             } else {
-                // Открываем бота во внешнем браузере
                 window.open('https://t.me/CatFightingBot?start=webview_login', '_blank');
                 showToast('После авторизации в Telegram вернитесь в игру', 3000);
             }
@@ -82,7 +80,6 @@ function showAuthModal() {
     if (vkBtn) {
         vkBtn.addEventListener('click', () => {
             if (webView) {
-                // Открываем VK OAuth во внешнем браузере
                 const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/vk/callback');
                 const url = `https://oauth.vk.com/authorize?client_id=54525890&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131&state=webview_login`;
                 window.open(url, '_blank');
@@ -93,7 +90,7 @@ function showAuthModal() {
         });
     }
 
-    // Google (работает в WebView, оставляем)
+    // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {
         if (webView) {
             window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
@@ -118,7 +115,6 @@ function showAuthModal() {
     setAuthMode('login');
 }
 
-// === ОСТАЛЬНЫЕ ФУНКЦИИ (без изменений) ===
 function setAuthMode(mode) {
     authMode = mode;
     const loginBtn = document.getElementById('toggleLogin');
@@ -271,8 +267,13 @@ async function loginWithVK() {
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needusername && typeof showusernameModal === 'function') showusernameModal(data.userId);
-                    else location.reload();
+                    console.log('[VK] Токен сохранён, перезагрузка...');
+                    if (data.needusername && typeof showusernameModal === 'function') {
+                        showusernameModal(data.userId);
+                    } else {
+                        // Полная перезагрузка страницы
+                        window.location.href = '/';
+                    }
                 } else {
                     showToast(data.error || 'Ошибка входа через VK', 1500);
                 }

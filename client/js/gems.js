@@ -229,105 +229,77 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-    // Обработчик бесплатной монеты (20 coins)
-    const freeBtn = document.getElementById('freeCoinBtnNew');
-    if (freeBtn) {
-        freeBtn.addEventListener('click', async () => {
-            console.log('[gems] free coin button clicked');
-            if (pendingFreeCoin) return;
-            pendingFreeCoin = true;
-            if (!freeCoinAvailable) {
-                showToast('Бесплатная монета уже получена сегодня', 1500);
-                pendingFreeCoin = false;
-                return;
-            }
-            try {
-                const res = await window.apiRequest('/subscription/claim-free-coin', {
-                    method: 'POST',
-                    body: JSON.stringify({ user_id: userData.id })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast('+20 монет!', 1500);
-                    await refreshData();
-                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-                    modal.style.display = 'none';
-                    const subContent = document.getElementById('tradeSubContent');
-                    if (subContent) renderGems(subContent);
-                } else {
-                    showToast(data.error || 'Ошибка', 1500);
-                }
-            } catch (err) {
-                console.error('[gems] FREE COIN: ошибка', err);
-                showToast('Ошибка соединения', 1500);
-            } finally {
-                pendingFreeCoin = false;
-            }
-        });
-    }
 
-    // Обработчик покупки подписки (POST-форма) – показывается только если подписки нет
-    const buyBtn = document.getElementById('buySubscriptionBtnNew');
-    if (buyBtn) {
-        buyBtn.addEventListener('click', async () => {
-            console.log('[gems] buy subscription button clicked');
-            try {
-                const res = await window.apiRequest('/payment/create', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        userId: userData.id,
-                        amount: 599,
-                        description: 'VIP Silver подписка на 30 дней',
-                        returnUrl: 'https://cat-fight.ru/success',
-                        metadata: { type: 'subscription' }
-                    })
-                });
-                const data = await res.json();
-                if (data.confirmationUrl) {
-                    submitRobokassaForm(data.confirmationUrl);
-                } else {
-                    showToast('Ошибка создания подписки: ' + (data.error || 'неизвестная ошибка'), 2000);
-                }
-            } catch (err) {
-                console.error('[gems] Subscription error:', err);
-                showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+// Обработчик бесплатной монеты (20 coins)
+const freeBtn = document.getElementById('freeCoinBtnNew');
+if (freeBtn) {
+    freeBtn.addEventListener('click', async () => {
+        console.log('[gems] free coin button clicked');
+        if (pendingFreeCoin) return;
+        pendingFreeCoin = true;
+        if (!freeCoinAvailable) {
+            showToast('Бесплатная монета уже получена сегодня', 1500);
+            pendingFreeCoin = false;
+            return;
+        }
+        try {
+            // user_id больше не передаём – сервер берёт из токена
+            const res = await window.apiRequest('/subscription/claim-free-coin', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('+20 монет!', 1500);
+                await refreshData();
+                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                modal.style.display = 'none';
+                const subContent = document.getElementById('tradeSubContent');
+                if (subContent) renderGems(subContent);
+            } else {
+                showToast(data.error || 'Ошибка', 1500);
             }
-        });
-    }
+        } catch (err) {
+            console.error('[gems] FREE COIN: ошибка', err);
+            showToast('Ошибка соединения', 1500);
+        } finally {
+            pendingFreeCoin = false;
+        }
+    });
+}
 
-    // Обработчик ежедневной награды для подписчиков
-    const dailyBtn = document.getElementById('dailyRewardBtn');
-    if (dailyBtn && !dailyBtn.disabled) {
-        dailyBtn.addEventListener('click', async () => {
-            console.log('[gems] daily reward button clicked');
-            dailyBtn.disabled = true;
-            try {
-                const res = await window.apiRequest('/subscription/claim-daily-reward', {
-                    method: 'POST',
-                    body: JSON.stringify({ user_id: userData.id })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showToast(`+${data.coins} монет, +${data.coal} угля!`, 2000);
-                    // Обновляем статус, чтобы кнопка стала неактивной
-                    subscriptionStatus.dailySubRewardAvailable = false;
-                    // Перерисовываем модальное окно
-                    await refreshData();
-                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-                    modal.style.display = 'none';
-                    const subContent = document.getElementById('tradeSubContent');
-                    if (subContent) renderGems(subContent);
-                } else {
-                    showToast(data.error || 'Ошибка', 1500);
-                    dailyBtn.disabled = false;
-                }
-            } catch (err) {
-                console.error('[gems] daily reward error:', err);
-                showToast('Ошибка соединения', 1500);
+// Обработчик ежедневной награды для подписчиков
+const dailyBtn = document.getElementById('dailyRewardBtn');
+if (dailyBtn && !dailyBtn.disabled) {
+    dailyBtn.addEventListener('click', async () => {
+        console.log('[gems] daily reward button clicked');
+        dailyBtn.disabled = true;
+        try {
+            // user_id больше не передаём – сервер берёт из токена
+            const res = await window.apiRequest('/subscription/claim-daily-reward', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`+${data.coins} монет, +${data.coal} угля!`, 2000);
+                subscriptionStatus.dailySubRewardAvailable = false;
+                await refreshData();
+                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                modal.style.display = 'none';
+                const subContent = document.getElementById('tradeSubContent');
+                if (subContent) renderGems(subContent);
+            } else {
+                showToast(data.error || 'Ошибка', 1500);
                 dailyBtn.disabled = false;
             }
-        });
-    }
+        } catch (err) {
+            console.error('[gems] daily reward error:', err);
+            showToast('Ошибка соединения', 1500);
+            dailyBtn.disabled = false;
+        }
+    });
+}
 
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';

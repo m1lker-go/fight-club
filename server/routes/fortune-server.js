@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getUserByIdentifier } = require('../db');
+const { pool } = require('../db');
 const { generateItemByRarity } = require('../utils/botGenerator');
 const dailyTasks = require('../utils/dailyTasks');
 
@@ -34,14 +34,11 @@ function getRandomPrize() {
 
 // инициализация / получение статуса
 router.get('/status', async (req, res) => {
-    const { tg_id, user_id } = req.query;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        const userId = user.id;
-        const today = getMoscowDate();   // <-- используем московскую дату
+        const today = getMoscowDate();
         await client.query(`
             INSERT INTO user_fortune (user_id, free_spins_left, purchased_today, last_reset_date)
             VALUES ($1, 3, 0, $2)
@@ -70,15 +67,16 @@ router.get('/status', async (req, res) => {
 
 // Покупка билетов
 router.post('/buy-tickets', async (req, res) => {
-    const { tg_id, user_id, count } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { count } = req.body;
     if (!count || count < 1 || count > 100) return res.status(400).json({ error: 'Invalid count' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
+        const user = userRes.rows[0];
         const today = getMoscowDate();
         // проверяем лимит покупок за день
         const fortuneRes = await client.query(
@@ -109,14 +107,13 @@ router.post('/buy-tickets', async (req, res) => {
 
 // Вращение колеса
 router.post('/spin', async (req, res) => {
-    const { tg_id, user_id } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
-        const userId = user.id;
+        const userRes = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) throw new Error('User not found');
         // получаем текущее состояние
         let fortune = await client.query(
             'SELECT free_spins_left, paid_spins FROM user_fortune WHERE user_id = $1',
@@ -159,17 +156,13 @@ router.post('/spin', async (req, res) => {
             );
         } else if (prize.type === 'coal') {
             await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [prize.amount, userId]);
-            // обновляем задание на получение угля (id 13) – вынесем после COMMIT
         } else if (prize.type === 'exp') {
-            // опыт обрабатывается отдельным эндпоинтом /claim-exp, здесь ничего не делаем, только сохраняем prize
             responsePrize.expAmount = prize.amount;
         }
 
-        // Всё, что связано с обновлением dailyTasks, должно быть после COMMIT !!!
-        // Закрываем транзакцию
         await client.query('COMMIT');
 
-        // Теперь безопасно вызываем обновление заданий
+        // Обновление заданий после COMMIT
         try {
             if (prize.type === 'coal') {
                 await dailyTasks.updateCoalGainProgress(userId, prize.amount);
@@ -189,15 +182,15 @@ router.post('/spin', async (req, res) => {
 
 // Начисление опыта (для опыта)
 router.post('/claim-exp', async (req, res) => {
-    const { tg_id, user_id, exp, class: chosenClass } = req.body;
-    if (!tg_id && !user_id) return res.status(400).json({ error: 'tg_id or user_id required' });
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { exp, class: chosenClass } = req.body;
+    if (!exp || !chosenClass) return res.status(400).json({ error: 'exp and class required' });
     const client = await pool.connect();
     try {
-        const user = await getUserByIdentifier(client, tg_id, user_id);
-        if (!user) throw new Error('User not found');
         const classRes = await client.query(
             'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
-            [user.id, chosenClass]
+            [userId, chosenClass]
         );
         if (classRes.rows.length === 0) throw new Error('Class not found');
         let { level, exp: currentExp } = classRes.rows[0];
@@ -211,14 +204,13 @@ router.post('/claim-exp', async (req, res) => {
         }
         await client.query(
             'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
-            [level, currentExp, user.id, chosenClass]
+            [level, currentExp, userId, chosenClass]
         );
         res.json({ success: true, leveledUp });
     } catch (e) {
         console.error(e);
         res.status(400).json({ error: e.message });
-    } finally { client.release();
-    }
+    } finally { client.release(); }
 });
 
 module.exports = router;

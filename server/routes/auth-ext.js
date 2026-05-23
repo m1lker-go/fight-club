@@ -273,6 +273,7 @@ router.post('/telegram-auto', async (req, res) => {
 router.get('/telegram/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send('Missing code');
+
     console.log('Telegram state:', state);
 
     const clientId = process.env.TELEGRAM_CLIENT_ID;
@@ -377,7 +378,9 @@ router.get('/telegram/callback', async (req, res) => {
 
 router.post('/vk-lowcode', async (req, res) => {
     const { access_token, user_id, email } = req.body;
-    if (!access_token || !user_id) return res.status(400).json({ error: 'Missing access_token or user_id' });
+    if (!access_token || !user_id) {
+        return res.status(400).json({ error: 'Missing access_token or user_id' });
+    }
 
     const client = await pool.connect();
     try {
@@ -759,23 +762,6 @@ router.post('/notify-message', async (req, res) => {
     }
 });
 
-router.post('/register', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email и пароль обязательны' });
-    if (password.length < 6) return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
-
-    const client = await pool.connect();
-    try {
-        const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-        if (existing.rows.length > 0) {
-            return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
-        }
-
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const passwordHash = await bcrypt.hash(password, 10);
-        const referralCode = Math.random().toString(36).substring(2, 10);
-        let tempUsername = email.split('@')[0];
-
 // ==================== РЕГИСТРАЦИЯ С ПОДТВЕРЖДЕНИЕМ EMAIL ====================
 
 const pendingRegistrations = new Map();
@@ -884,7 +870,6 @@ router.post('/verify-registration', async (req, res) => {
             [userData.id]
         );
 
-        // ✅ JWT-токен
         const token = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [token, userData.id]);
 
@@ -901,7 +886,6 @@ router.post('/verify-registration', async (req, res) => {
     }
 });
 
-// Вход по паролю
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email и пароль обязательны' });
@@ -937,7 +921,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Смена пароля (требуется сессионный токен)
 router.put('/change-password', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token' });
@@ -966,7 +949,6 @@ router.put('/change-password', async (req, res) => {
     }
 });
 
-// Забыли пароль — отправка ссылки для сброса
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
@@ -1002,7 +984,6 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
-// Сброс пароля по токену из ссылки
 router.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
     if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password required' });
@@ -1026,40 +1007,6 @@ router.post('/reset-password', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Ошибка сброса пароля' });
-    } finally {
-        client.release();
-    }
-});
-
-// ========== ДОБАВЛЕН ЭНДПОИНТ ДЛЯ СМЕНЫ ТЕКУЩЕГО КЛАССА ==========
-router.post('/change-class', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'No token' });
-
-    const { class_name } = req.body;
-    if (!class_name) return res.status(400).json({ error: 'Class name required' });
-
-    const validClasses = ['warrior', 'assassin', 'mage'];
-    if (!validClasses.includes(class_name)) return res.status(400).json({ error: 'Invalid class' });
-
-    const client = await pool.connect();
-    try {
-        const userRes = await client.query('SELECT id, current_class FROM users WHERE session_token = $1', [token]);
-        if (userRes.rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
-        const userId = userRes.rows[0].id;
-
-        const classCheck = await client.query(
-            'SELECT id FROM user_classes WHERE user_id = $1 AND class = $2',
-            [userId, class_name]
-        );
-        if (classCheck.rows.length === 0) return res.status(400).json({ error: 'Class not found for this user' });
-
-        await client.query('UPDATE users SET current_class = $1 WHERE id = $2', [class_name, userId]);
-
-        res.json({ success: true, current_class: class_name });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
     } finally {
         client.release();
     }

@@ -597,23 +597,67 @@ function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
 
+    // Google OAuth (вход)
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
         const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
         if (sessionToken) {
+            console.log('[ExternalAuth] Google: sessionToken получен');
             localStorage.setItem('sessionToken', sessionToken);
             if (needusername && typeof showusernameModal === 'function') {
                 showusernameModal(userId);
             } else {
-                // Просто перезагружаем страницу (без параметров)
                 window.location.replace(window.location.pathname);
             }
+        } else {
+            console.error('[ExternalAuth] Google: sessionToken отсутствует');
         }
         handled = true;
     }
 
+    // VK OAuth (вход)
+    const vkAuth = urlParams.get('vk_auth');
+    if (vkAuth === 'success') {
+        const sessionToken = urlParams.get('sessionToken');
+        const needusername = urlParams.get('needusername') === 'true';
+        const userId = urlParams.get('userId');
+        if (sessionToken) {
+            console.log('[ExternalAuth] VK: sessionToken получен');
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needusername && typeof showusernameModal === 'function') {
+                showusernameModal(userId);
+            } else {
+                window.location.replace(window.location.pathname);
+            }
+        } else {
+            console.error('[ExternalAuth] VK: sessionToken отсутствует');
+        }
+        handled = true;
+    }
+
+    // Telegram OAuth (вход)
+    const telegramAuth = urlParams.get('telegram_auth');
+    if (telegramAuth === 'success') {
+        const sessionToken = urlParams.get('sessionToken');
+        const needusername = urlParams.get('needusername') === 'true';
+        const userId = urlParams.get('userId');
+        if (sessionToken) {
+            console.log('[ExternalAuth] Telegram: sessionToken получен');
+            localStorage.setItem('sessionToken', sessionToken);
+            if (needusername && typeof showusernameModal === 'function') {
+                showusernameModal(userId);
+            } else {
+                window.location.replace(window.location.pathname);
+            }
+        } else {
+            console.error('[ExternalAuth] Telegram: sessionToken отсутствует');
+        }
+        handled = true;
+    }
+
+    // Google привязка (link)
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
         if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
@@ -621,22 +665,7 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    const vkAuth = urlParams.get('vk_auth');
-    if (vkAuth === 'success') {
-        const sessionToken = urlParams.get('sessionToken');
-        const needusername = urlParams.get('needusername') === 'true';
-        const userId = urlParams.get('userId');
-        if (sessionToken) {
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needusername && typeof showusernameModal === 'function') {
-                showusernameModal(userId);
-            } else {
-                window.location.replace(window.location.pathname);
-            }
-        }
-        handled = true;
-    }
-
+    // VK привязка (link)
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
         if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
@@ -644,22 +673,7 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    const telegramAuth = urlParams.get('telegram_auth');
-    if (telegramAuth === 'success') {
-        const sessionToken = urlParams.get('sessionToken');
-        const needusername = urlParams.get('needusername') === 'true';
-        const userId = urlParams.get('userId');
-        if (sessionToken) {
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needusername && typeof showusernameModal === 'function') {
-                showusernameModal(userId);
-            } else {
-                window.location.replace(window.location.pathname);
-            }
-        }
-        handled = true;
-    }
-
+    // Telegram привязка (link)
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
         if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);

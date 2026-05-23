@@ -213,7 +213,7 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 function renderSkins(container) {
     Promise.all([
         window.apiRequest('/avatars', { method: 'GET' }).then(res => res.json()),
-        window.apiRequest(`/avatars/user/${userData.tg_id}`, { method: 'GET' }).then(res => res.json())
+        window.apiRequest('/avatars/user/me', { method: 'GET' }).then(res => res.json())
     ])
     .then(([allAvatars, ownedIds]) => {
         const activeAvatarId = userData.avatar_id || 1;

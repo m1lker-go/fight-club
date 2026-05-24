@@ -1,6 +1,4 @@
-const { SocksProxyAgent } = require('socks-proxy-agent');
-
-const agent = new SocksProxyAgent(proxyUrl);
+const fetch = require('node-fetch');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CLIENT_URL = process.env.CLIENT_URL || 'https://cat-fight.ru';
@@ -34,8 +32,8 @@ async function sendTelegramNotification(chatId, subject, body, rewardText = null
                         { text: '📬 Открыть игру', web_app: { url: CLIENT_URL } }
                     ]]
                 }
-            }),
-            agent: agent
+            })
+            // агент proxy удалён
         });
 
         const responseText = await response.text();

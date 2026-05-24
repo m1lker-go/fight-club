@@ -109,13 +109,20 @@ async function createRewardMessage(client, userId, subject, body, rewardType, re
 async function handleDiamondsPayment(userId, outSum, invId, shpParams) {
     const client = await pool.connect();
     try {
+        // Проверка существования пользователя
+        const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userCheck.rows.length === 0) {
+            console.error(`[Robokassa] User ${userId} not found for diamonds payment`);
+            return false;
+        }
+
         const pending = await client.query(
             'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1',
             [String(invId)]
         );
         if (pending.rows.length === 0) {
             console.warn(`[Robokassa] Нет данных для invId ${invId}`);
-            return true;
+            return true; // Уже обработано?
         }
         const { diamonds, bonus, pack_id } = pending.rows[0];
         let diamondsToAdd = parseInt(diamonds) || 0;
@@ -157,6 +164,16 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        
+        // Проверка существования пользователя
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) {
+            console.error(`[Robokassa] User ${userId} not found for subscription`);
+            await client.query('ROLLBACK');
+            return false;
+        }
+        const user = userRes.rows[0];
+
         const existing = await client.query(
             'SELECT 1 FROM subscription_activations WHERE inv_id = $1',
             [String(invId)]
@@ -165,11 +182,7 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
             await client.query('COMMIT');
             return true;
         }
-        // Прямой запрос пользователя по ID
-        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
-        if (userRes.rows.length === 0) throw new Error('Пользователь не найден');
-        const user = userRes.rows[0];
-
+        
         const daysToAdd = 30;
         const expiryDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
         const expiryISO = expiryDate.toISOString();

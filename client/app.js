@@ -691,6 +691,8 @@ function handleExternalAuth() {
     return handled;
 }
 
+window.loadUserDataByToken = loadUserDataByToken;
+window.showScreen = showScreen;
 window.updateMessagesBadge = updateMessagesBadge;
 
 handleExternalAuth();

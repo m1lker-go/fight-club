@@ -77,19 +77,15 @@ function showAuthModal() {
     }
 
     // VK
-    const vkBtn = document.getElementById('vkAuthBtn');
-    if (vkBtn) {
-        vkBtn.addEventListener('click', () => {
-            if (webView) {
-                const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/vk/callback');
-                const url = `https://oauth.vk.com/authorize?client_id=54525890&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131&state=webview_login`;
-                window.open(url, '_blank');
-                showToast('После авторизации в VK вернитесь в игру', 3000);
-            } else {
-                loginWithVK();
-            }
-        });
+ const vkBtn = document.getElementById('vkAuthBtn');
+if (vkBtn) {
+    // В VK Mini App кнопка не нужна – вход автоматический
+    if (webView) {
+        vkBtn.style.display = 'none';
+    } else {
+        vkBtn.addEventListener('click', loginWithVK);
     }
+}
 
     // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {

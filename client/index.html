@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Cat Fighting</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -13,9 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://vk.com/js/api/openapi.js?169" type="text/javascript"></script>
-    <!-- VK ID SDK (альтернативный, может пригодиться) -->
-    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
+    <!-- VK Bridge (обязателен для модерации) -->
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <!-- Иконки сайта -->
     <link rel="icon" type="image/png" href="/assets/favicon.png">
@@ -49,7 +47,7 @@
         </div>
     </div>
 
-    <!-- Модальные окна (перенесены ПЕРЕД скриптами) -->
+    <!-- Модальные окна -->
     <div id="roleModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -116,44 +114,5 @@
     <script src="js/mint.js"></script>
     <script src="js/gems.js"></script>
     <script src="app.js"></script>
-
-    <!-- Вспомогательный скрипт для VK Low-code (глобальная callback-функция) -->
-    <script>
-        // Эта функция будет вызвана виджетом VK после успешной авторизации
-        window.vkAuthCallback = function(response) {
-            if (response && response.session) {
-                const user = response.session.user;
-                // Отправляем данные на сервер для входа
-                fetch('https://api.cat-fight.ru/auth/vk-lowcode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user: user, access_token: response.session.sid })
-                }).then(res => res.json()).then(data => {
-                    if (data.success) {
-                        localStorage.setItem('sessionToken', data.sessionToken);
-                        if (data.needNickname) {
-                            if (typeof showNicknameModal === 'function') showNicknameModal(data.userId);
-                        } else {
-                            location.reload();
-                        }
-                    } else {
-                        alert('Ошибка входа через VK: ' + data.error);
-                    }
-                }).catch(err => console.error('VK lowcode fetch error:', err));
-            }
-        };
-
-        // Инициализация виджета (будет вызвана из loginWithVK при необходимости)
-        window.initVKWidget = function(containerId) {
-            if (typeof VK !== 'undefined' && VK.Widgets) {
-                VK.Widgets.Auth(containerId, {
-                    onAuth: window.vkAuthCallback,
-                    authUrl: '/auth/vk-lowcode' // не используется напрямую, но оставим
-                });
-            } else {
-                console.error('VK API не загружен');
-            }
-        };
-    </script>
 </body>
 </html>

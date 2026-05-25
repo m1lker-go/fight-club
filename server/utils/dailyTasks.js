@@ -63,9 +63,14 @@ async function updateTaskProgress(userId, taskId, inc) {
         }
         let prog = parseProgress(daily_tasks_progress);
         const old = prog[taskId] || 0;
-        prog[taskId] = old + inc;
+        let newVal = old + inc;
+        // Ограничиваем прогресс для заданий 1,2,3 максимум 10
+        if (taskId === 1 || taskId === 2 || taskId === 3) {
+            newVal = Math.min(newVal, 10);
+        }
+        prog[taskId] = newVal;
         await client.query('UPDATE users SET daily_tasks_progress=$1 WHERE id=$2', [JSON.stringify(prog), userId]);
-        log(`task ${taskId}: ${old} → ${prog[taskId]}`);
+        log(`task ${taskId}: ${old} → ${newVal}`);
         return true;
     } finally { client.release(); }
 }

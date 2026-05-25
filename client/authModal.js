@@ -296,14 +296,22 @@ async function loginWithVK() {
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    console.log('[VK] Токен сохранён, перезагрузка...');
-                    if (data.needusername && typeof showusernameModal === 'function') {
-                        showusernameModal(data.userId);
-                    } else {
-                        window.location.href = '/';
-                    }
+if (data.success) {
+    localStorage.setItem('sessionToken', data.sessionToken);
+    console.log('[VK] Токен сохранён, загрузка данных...');
+    if (data.needusername && typeof showusernameModal === 'function') {
+        showusernameModal(data.userId);
+    } else {
+        const loaded = await window.loadUserDataByToken(data.sessionToken);
+        if (loaded) {
+            const modal = document.getElementById('roleModal');
+            if (modal) modal.style.display = 'none';
+            if (typeof window.showScreen === 'function') window.showScreen('main');
+        } else {
+            console.error('[VK] Не удалось загрузить данные, перезагрузка...');
+            window.location.reload();
+        }
+    }
                 } else {
                     showToast(data.error || 'Ошибка входа через VK', 1500);
                 }

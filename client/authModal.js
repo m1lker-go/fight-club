@@ -119,9 +119,10 @@ if (vkBtn) {
                 showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
             }
         } else {
-            // Браузер или WebView – используем старый попап через VKID SDK (работающий)
+            // Браузер или WebView – используем старый попап через VKID SDK
             console.log('[VK] Браузерный режим, запускаем VKID SDK');
-            loginWithVK(); // эту функцию вы уже имеете (с VKID.Config.init)
+            // Функция loginWithVK уже должна быть определена в вашем authModal.js
+            loginWithVK();
         }
     });
 }

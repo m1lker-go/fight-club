@@ -321,10 +321,11 @@ async function loginWithVK() {
             showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
         }
     }, 120000);
-    if (!window.VKIDSDK) {
+    // Проверяем глобальный объект VKID (а не VKIDSDK)
+    if (!window.VKID) {
         showToast('Загрузка VK SDK...', 1000);
         setTimeout(() => {
-            if (window.VKIDSDK) loginWithVK();
+            if (window.VKID) loginWithVK();
             else {
                 clearTimeout(timeoutId);
                 vkLoginInProgress = false;
@@ -333,7 +334,7 @@ async function loginWithVK() {
         }, 500);
         return;
     }
-    const VKID = window.VKIDSDK;
+    const VKID = window.VKID;
     VKID.Config.init({
         app: 54525890,
         redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback',

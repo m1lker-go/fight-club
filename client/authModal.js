@@ -76,50 +76,56 @@ function showAuthModal() {
         });
     }
 
-
-// VK
-// VK
-const vkBtn = document.getElementById('vkAuthBtn');
-if (vkBtn) {
-    vkBtn.addEventListener('click', async () => {
-        // Если VK Bridge доступен (работаем внутри VK Mini App)
-        if (typeof vkBridge !== 'undefined') {
-            try {
-                const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-                const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
-                    app_id: 54599234,   // ваш ID приложения
-                    scope: ''
-                });
-                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        access_token: authToken.access_token,
-                        user_id: userInfo.id,
-                        email: userInfo.email || null
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needusername && typeof showusernameModal === 'function') {
-                        showusernameModal(data.userId);
+    // VK
+    const vkBtn = document.getElementById('vkAuthBtn');
+    if (vkBtn) {
+        vkBtn.addEventListener('click', async () => {
+            // Если VK Bridge доступен (работаем внутри VK Mini App)
+            if (typeof vkBridge !== 'undefined') {
+                try {
+                    const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                    const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
+                        app_id: 54599234,   // ваш ID приложения
+                        scope: ''
+                    });
+                    const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            access_token: authToken.access_token,
+                            user_id: userInfo.id,
+                            email: userInfo.email || null
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        localStorage.setItem('sessionToken', data.sessionToken);
+                        if (data.needusername && typeof showusernameModal === 'function') {
+                            showusernameModal(data.userId);
+                        } else {
+                            const loaded = await window.loadUserDataByToken(data.sessionToken);
+                            if (loaded) {
+                                const modalEl = document.getElementById('roleModal');
+                                if (modalEl) modalEl.style.display = 'none';
+                                if (typeof window.showScreen === 'function') window.showScreen('main');
+                            } else {
+                                console.error('[VK Bridge] Не удалось загрузить данные, перезагрузка...');
+                                window.location.reload();
+                            }
+                        }
                     } else {
-                        window.location.reload();
+                        showToast(data.error || 'Ошибка входа через VK', 1500);
                     }
-                } else {
-                    showToast(data.error || 'Ошибка входа через VK', 1500);
+                } catch (err) {
+                    console.error('VK Bridge auth error:', err);
+                    showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
-            } catch (err) {
-                console.error('VK Bridge auth error:', err);
-                showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
+            } else {
+                // Обычный браузер или WebView, где VK Bridge недоступен
+                loginWithVK();
             }
-        } else {
-            // Обычный браузер или WebView, где VK Bridge недоступен
-            loginWithVK();
-        }
-    });
-}
+        });
+    }
 
     // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {
@@ -296,22 +302,22 @@ async function loginWithVK() {
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
-if (data.success) {
-    localStorage.setItem('sessionToken', data.sessionToken);
-    console.log('[VK] Токен сохранён, загрузка данных...');
-    if (data.needusername && typeof showusernameModal === 'function') {
-        showusernameModal(data.userId);
-    } else {
-        const loaded = await window.loadUserDataByToken(data.sessionToken);
-        if (loaded) {
-            const modal = document.getElementById('roleModal');
-            if (modal) modal.style.display = 'none';
-            if (typeof window.showScreen === 'function') window.showScreen('main');
-        } else {
-            console.error('[VK] Не удалось загрузить данные, перезагрузка...');
-            window.location.reload();
-        }
-    }
+                if (data.success) {
+                    localStorage.setItem('sessionToken', data.sessionToken);
+                    console.log('[VK] Токен сохранён, загрузка данных...');
+                    if (data.needusername && typeof showusernameModal === 'function') {
+                        showusernameModal(data.userId);
+                    } else {
+                        const loaded = await window.loadUserDataByToken(data.sessionToken);
+                        if (loaded) {
+                            const modal = document.getElementById('roleModal');
+                            if (modal) modal.style.display = 'none';
+                            if (typeof window.showScreen === 'function') window.showScreen('main');
+                        } else {
+                            console.error('[VK] Не удалось загрузить данные, перезагрузка...');
+                            window.location.reload();
+                        }
+                    }
                 } else {
                     showToast(data.error || 'Ошибка входа через VK', 1500);
                 }

@@ -78,6 +78,7 @@ function showAuthModal() {
 
     // VK
 // VK
+// VK
 const vkBtn = document.getElementById('vkAuthBtn');
 if (vkBtn) {
     vkBtn.addEventListener('click', async () => {

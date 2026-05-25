@@ -1257,36 +1257,21 @@ router.post('/start', async (req, res) => {
         // Завершаем транзакцию
         await client.query('COMMIT');
 
-        // === Всё, что после COMMIT ===
-
-        // Задания на победы (классовое)
-        if (isVictory) {
-            const taskId = user.current_class === 'warrior' ? 1 : (user.current_class === 'assassin' ? 2 : (user.current_class === 'mage' ? 3 : null));
-            if (taskId) {
-                try {
-                    await dailyTasks.updateTaskProgress(user.id, taskId, 1);
-                } catch (e) {
-                    console.error('updateTaskProgress error:', e);
-                }
-            }
-        }
-
+             
         // Автозавершение заданий при 10 победах подряд
-        if (dailyStreak >= 10) {
-            try {
-                const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
-                let progress = userTasks.rows[0].daily_tasks_progress ? JSON.parse(userTasks.rows[0].daily_tasks_progress) : {};
-                for (let taskId of [1,2,3]) {
-                    const bit = 1 << (taskId-1);
-                    if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
-                        progress[taskId] = Math.min(progress[taskId] || 0, 5);
-                    }
-                }
-                await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
-            } catch (e) {
-                console.error('Auto-complete tasks error:', e);
+      if (dailyStreak >= 10) {
+    try {
+        const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
+        let progress = userTasks.rows[0].daily_tasks_progress ? JSON.parse(userTasks.rows[0].daily_tasks_progress) : {};
+        for (let taskId of [1,2,3]) {
+            const bit = 1 << (taskId-1);
+            if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
+                progress[taskId] = 10;   // ✅ ИСПРАВЛЕНО
             }
         }
+        await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
+    } catch (e) { console.error('Auto-complete tasks error:', e); }
+}
 
         // Обновление прогресса угольного задания
         if (coalGain > 0) {

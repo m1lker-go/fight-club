@@ -323,23 +323,20 @@ async function loginWithVK() {
         }
     }, 120000);
 
-    console.log('[VK] Проверяем window.VKID:', window.VKID);
-    if (!window.VKID) {
-        console.warn('[VK] VKID не загружен, ждём 500 мс...');
-        showToast('Загрузка VK SDK...', 1000);
-        setTimeout(() => {
-            if (window.VKID) {
-                console.log('[VK] VKID загрузился, повторяем вызов');
-                loginWithVK();
-            } else {
-                clearTimeout(timeoutId);
-                vkLoginInProgress = false;
-                console.error('[VK] VKID так и не загрузился');
-                showToast('Ошибка загрузки VK SDK', 1500);
-            }
-        }, 500);
-        return;
+   const possibleNames = ['VKID', 'VKIDSDK', 'VKIDAuth', 'VK'];
+let vkidObj = null;
+for (let name of possibleNames) {
+    if (window[name]) {
+        vkidObj = window[name];
+        console.log('[VK] Найден объект:', name);
+        break;
     }
+}
+if (!vkidObj) {
+    console.warn('[VK] Объект VK не найден. Доступные глобальные ключи:', Object.keys(window).filter(k => k.toLowerCase().includes('vk')));
+    showToast('Ошибка загрузки VK SDK', 1500);
+    return;
+}
 
     const VKID = window.VKID;
     console.log('[VK] Инициализация VKID.Config');

@@ -39,10 +39,17 @@ window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
-// ========== Инициализация VK Bridge (только в VK Mini App) ==========
+
+// Инициализация VK Bridge и автоматический вход
 if (typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
-        .then(() => console.log('[VK Bridge] init OK'))
+        .then(() => {
+            console.log('[VK Bridge] init OK');
+            // Если нет токена, пытаемся войти автоматически
+            if (!localStorage.getItem('sessionToken')) {
+                autoLoginVK();
+            }
+        })
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
 

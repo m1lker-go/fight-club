@@ -33,7 +33,7 @@ let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
 let lastBattleLog = null;
-let sessionToken = null; // объявляем глобально
+let sessionToken = null;
 
 window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
@@ -243,6 +243,7 @@ async function loadUserDataByToken(token, retries = 3) {
             const res = await window.apiRequest('/player/profile', { method: 'GET' });
             if (res.ok) {
                 const data = await res.json();
+                console.log('[loadUserDataByToken] Данные получены:', data.user?.id, 'classes:', data.userClasses?.length);
                 userData = data.user;
                 userClasses = data.userClasses || [];
                 inventory = data.inventory || [];
@@ -251,10 +252,14 @@ async function loadUserDataByToken(token, retries = 3) {
                 userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
                 recalculatePower();
                 updateTopBar();
-                showScreen('main');
-                // Принудительно перерисовываем главный экран, если он активен
-                if (currentScreen === 'main' && typeof renderMain === 'function') {
+                // Принудительно обновляем экран, даже если он уже main
+                if (currentScreen === 'main') {
                     renderMain();
+                } else {
+                    showScreen('main');
+                }
+                if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
+                    AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
                 }
                 if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
                 updateMainMenuNewIcons();
@@ -661,7 +666,6 @@ function handleExternalAuth() {
         } else {
             const loaded = await loadUserDataByToken(sessionToken);
             if (loaded) {
-                // Закрыть модальное окно, если оно открыто
                 const modal = document.getElementById('roleModal');
                 if (modal) modal.style.display = 'none';
                 showScreen('main');
@@ -730,10 +734,7 @@ function handleExternalAuth() {
     }
 
     if (handled && window.location.search) {
-        // На случай, если параметры остались
-        if (!window.location.pathname.includes('?')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
     return handled;
 }

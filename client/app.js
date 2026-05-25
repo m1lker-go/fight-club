@@ -252,20 +252,14 @@ async function loadUserDataByToken(token, retries = 3) {
                 userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
                 recalculatePower();
                 updateTopBar();
-                // Принудительно обновляем экран, даже если он уже main
+
+                // Принудительное обновление экрана
                 if (currentScreen === 'main') {
                     renderMain();
                 } else {
                     showScreen('main');
-// Принудительное обновление данных через таймаут (гарантирует отрисовку)
-setTimeout(() => {
-    recalculatePower();
-    updateTopBar();
-    if (currentScreen === 'main') {
-        renderMain();
-    }
-}, 100);
                 }
+
                 if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
                     AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
                 }
@@ -279,15 +273,17 @@ setTimeout(() => {
                 if (typeof initIronSourceAds === 'function' && userData && userData.id) {
                     initIronSourceAds(userData.id);
                 }
+
+                // Дополнительная гарантия отображения (через 100 мс)
+                setTimeout(() => {
+                    recalculatePower();
+                    updateTopBar();
+                    if (currentScreen === 'main') {
+                        renderMain();
+                    }
+                }, 100);
+
                 console.log('loadUserDataByToken: success');
-                // Принудительное обновление экрана
-setTimeout(() => {
-    recalculatePower();
-    updateTopBar();
-    if (currentScreen === 'main') {
-        renderMain();
-    }
-}, 100);
                 return true;
             } else {
                 console.error(`Profile fetch failed: ${res.status}`);
@@ -685,11 +681,12 @@ function handleExternalAuth() {
                 const modal = document.getElementById('roleModal');
                 if (modal) modal.style.display = 'none';
                 showScreen('main');
-setTimeout(() => {
-    if (currentScreen === 'main') {
-        renderMain();
-    }
-}, 100);
+                // Дополнительная гарантия отображения данных
+                setTimeout(() => {
+                    if (currentScreen === 'main') {
+                        renderMain();
+                    }
+                }, 100);
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 console.error('[OAuth] Failed to load user data, reloading...');

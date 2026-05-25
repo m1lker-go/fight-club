@@ -1012,4 +1012,50 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+// VK OAuth callback (для браузерного входа через редирект)
+router.get('/vk/callback', async (req, res) => {
+    const { code, error, state } = req.query;
+    if (error || !code) {
+        console.error('[VK Callback] error:', error);
+        return res.redirect(`${process.env.CLIENT_URL}?auth_error=vk`);
+    }
+    try {
+        // Обмен кода на токен
+        const params = new URLSearchParams({
+            client_id: process.env.VK_CLIENT_ID, // 54525890
+            client_secret: process.env.VK_CLIENT_SECRET,
+            code: code,
+            redirect_uri: `${process.env.API_BASE}/auth/vk/callback`,
+        });
+        const tokenRes = await fetch('https://oauth.vk.com/access_token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
+        });
+        const tokenData = await tokenRes.json();
+        if (tokenData.error) throw new Error(tokenData.error_description);
+
+        // Теперь вызываем /vk-lowcode (этот эндпоинт у вас уже есть)
+        const lowcodeRes = await fetch(`${process.env.API_BASE}/auth/vk-lowcode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                access_token: tokenData.access_token,
+                user_id: tokenData.user_id,
+                email: tokenData.email || null
+            })
+        });
+        const data = await lowcodeRes.json();
+        if (data.success) {
+            const redirectUrl = `${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${data.sessionToken}&needusername=${data.needusername}&userId=${data.userId}`;
+            res.redirect(redirectUrl);
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (err) {
+        console.error('[VK Callback] error:', err);
+        res.redirect(`${process.env.CLIENT_URL}?auth_error=vk`);
+    }
+});
+
 module.exports = router;

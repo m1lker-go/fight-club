@@ -37,6 +37,12 @@ let lastBattleLog = null;
 window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
+// Инициализация VK Bridge (только в VK Mini App)
+if (typeof vkBridge !== 'undefined') {
+    vkBridge.send('VKWebAppInit', {})
+        .then(() => console.log('[VK Bridge] init OK'))
+        .catch(e => console.error('[VK Bridge] init error:', e));
+}
 
 window.apiRequest = async function(endpoint, options = {}) {
     console.log('[apiRequest]', endpoint, options);
@@ -597,23 +603,37 @@ function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
 
+    // Общая функция обработки успешной авторизации
+    async function handleOAuthSuccess(sessionToken, needusername, userId) {
+        if (!sessionToken) {
+            console.error('[OAuth] No sessionToken');
+            return false;
+        }
+        localStorage.setItem('sessionToken', sessionToken);
+        if (needusername && typeof showusernameModal === 'function') {
+            showusernameModal(userId);
+        } else {
+            // Загружаем данные пользователя без перезагрузки страницы
+            const loaded = await loadUserDataByToken(sessionToken);
+            if (loaded) {
+                showScreen('main');
+                // Убираем параметры из URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                console.error('[OAuth] Failed to load user data, reloading...');
+                window.location.reload();
+            }
+        }
+        return true;
+    }
+
     // Google OAuth (вход)
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
         const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
-        if (sessionToken) {
-            console.log('[ExternalAuth] Google: sessionToken получен');
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needusername && typeof showusernameModal === 'function') {
-                showusernameModal(userId);
-            } else {
-                window.location.replace(window.location.pathname);
-            }
-        } else {
-            console.error('[ExternalAuth] Google: sessionToken отсутствует');
-        }
+        handleOAuthSuccess(sessionToken, needusername, userId);
         handled = true;
     }
 
@@ -623,17 +643,7 @@ function handleExternalAuth() {
         const sessionToken = urlParams.get('sessionToken');
         const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
-        if (sessionToken) {
-            console.log('[ExternalAuth] VK: sessionToken получен');
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needusername && typeof showusernameModal === 'function') {
-                showusernameModal(userId);
-            } else {
-                window.location.replace(window.location.pathname);
-            }
-        } else {
-            console.error('[ExternalAuth] VK: sessionToken отсутствует');
-        }
+        handleOAuthSuccess(sessionToken, needusername, userId);
         handled = true;
     }
 
@@ -643,17 +653,7 @@ function handleExternalAuth() {
         const sessionToken = urlParams.get('sessionToken');
         const needusername = urlParams.get('needusername') === 'true';
         const userId = urlParams.get('userId');
-        if (sessionToken) {
-            console.log('[ExternalAuth] Telegram: sessionToken получен');
-            localStorage.setItem('sessionToken', sessionToken);
-            if (needusername && typeof showusernameModal === 'function') {
-                showusernameModal(userId);
-            } else {
-                window.location.replace(window.location.pathname);
-            }
-        } else {
-            console.error('[ExternalAuth] Telegram: sessionToken отсутствует');
-        }
+        handleOAuthSuccess(sessionToken, needusername, userId);
         handled = true;
     }
 
@@ -683,7 +683,12 @@ function handleExternalAuth() {
     }
 
     if (handled && window.location.search) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+        // Удаляем параметры, если они не были удалены в handleOAuthSuccess (например, при ошибке)
+        if (!window.location.pathname.includes('?')) {
+            // уже удалили
+        } else {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
     return handled;
 }

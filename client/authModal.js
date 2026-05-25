@@ -82,7 +82,8 @@ function showAuthModal() {
         vkBtn.addEventListener('click', async () => {
             console.log('[VK] Кнопка нажата, Bridge доступен?', typeof vkBridge !== 'undefined');
             // Внутри VK Mini App
-            if (typeof vkBridge !== 'undefined') {
+            const isVKWebApp = typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru';
+if (isVKWebApp) {
                 console.log('[VK] Используем VK Bridge (миниапп)');
                 try {
                     const userInfo = await vkBridge.send('VKWebAppGetUserInfo');

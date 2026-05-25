@@ -1,5 +1,4 @@
-// authModal.js – исправлен: Google и VK через редирект (браузер/WebView) + Bridge (миниапп)
-// Данные загружаются без перезагрузки
+// authModal.js – исправлен: Google и VK через редирект, данные загружаются без перезагрузки
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -76,11 +75,11 @@ function showAuthModal() {
         });
     }
 
-    // VK – для VK Mini App используем Bridge, для браузера/WebView – редирект
+    // VK – для VK Mini App используем Bridge, для браузера – редирект
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', async () => {
-            // Если внутри VK Mini App (есть vkBridge и домен не наш)
+            // Внутри VK Mini App (есть vkBridge и домен не наш)
             if (typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru') {
                 console.log('[VK] Используем VK Bridge (миниапп)');
                 try {

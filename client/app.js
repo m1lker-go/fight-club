@@ -245,7 +245,7 @@ async function loadUserDataByToken(token, retries = 3) {
                 const data = await res.json();
                 console.log('[loadUserDataByToken] Данные получены:', data.user?.id, 'classes:', data.userClasses?.length);
                 userData = data.user;
-                userClasses = data.userClasses || [];
+                userClasses = data.classes || [];
                 inventory = data.inventory || [];
                 BOT_USERNAME = data.bot_username || '';
                 await loadAvatars();
@@ -316,7 +316,7 @@ async function checkAuth() {
             if (res.ok) {
                 const data = await res.json();
                 userData = data.user;
-                userClasses = data.userClasses || [];
+                userClasses = data.classes || [];
                 inventory = data.inventory || [];
                 BOT_USERNAME = data.bot_username || '';
                 await loadAvatars();

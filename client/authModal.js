@@ -77,62 +77,63 @@ function showAuthModal() {
     }
 
     // VK – для VK Mini App используем Bridge, для браузера – редирект
-    const vkBtn = document.getElementById('vkAuthBtn');
-    if (vkBtn) {
-        vkBtn.addEventListener('click', async () => {
-            console.log('[VK] Кнопка нажата, Bridge доступен?', typeof vkBridge !== 'undefined');
-            // Внутри VK Mini App
-            const isVKWebApp = typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru';
-if (isVKWebApp) {
-                console.log('[VK] Используем VK Bridge (миниапп)');
-                try {
-                    const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-                    const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
-                        app_id: 54599234,
-                        scope: ''
-                    });
-                    const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            access_token: authToken.access_token,
-                            user_id: userInfo.id,
-                            email: userInfo.email || null
-                        })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        localStorage.setItem('sessionToken', data.sessionToken);
-                        if (data.needusername && typeof showusernameModal === 'function') {
-                            showusernameModal(data.userId);
-                        } else {
-                            const loaded = await window.loadUserDataByToken(data.sessionToken);
-                            if (loaded) {
-                                const modalEl = document.getElementById('roleModal');
-                                if (modalEl) modalEl.style.display = 'none';
-                                if (typeof window.showScreen === 'function') window.showScreen('main');
-                            } else {
-                                console.error('[VK Bridge] Не удалось загрузить данные, перезагрузка...');
-                                window.location.reload();
-                            }
-                        }
+  const vkBtn = document.getElementById('vkAuthBtn');
+if (vkBtn) {
+    vkBtn.addEventListener('click', async () => {
+        // Определяем, работаем ли мы внутри VK Mini App (наличие Bridge и не наш домен)
+        const isVKWebApp = typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru';
+        console.log('[VK] isVKWebApp:', isVKWebApp);
+        if (isVKWebApp) {
+            // VK Mini App – используем VK Bridge
+            console.log('[VK] Используем VK Bridge (миниапп)');
+            try {
+                const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
+                    app_id: 54599234,
+                    scope: ''
+                });
+                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        access_token: authToken.access_token,
+                        user_id: userInfo.id,
+                        email: userInfo.email || null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('sessionToken', data.sessionToken);
+                    if (data.needusername && typeof showusernameModal === 'function') {
+                        showusernameModal(data.userId);
                     } else {
-                        showToast(data.error || 'Ошибка входа через VK', 1500);
+                        const loaded = await window.loadUserDataByToken(data.sessionToken);
+                        if (loaded) {
+                            const modalEl = document.getElementById('roleModal');
+                            if (modalEl) modalEl.style.display = 'none';
+                            if (typeof window.showScreen === 'function') window.showScreen('main');
+                        } else {
+                            console.error('[VK Bridge] Не удалось загрузить данные, перезагрузка...');
+                            window.location.reload();
+                        }
                     }
-                } catch (err) {
-                    console.error('VK Bridge auth error:', err);
-                    showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
+                } else {
+                    showToast(data.error || 'Ошибка входа через VK', 1500);
                 }
-            } else {
-                // Браузер или WebView – используем редирект
-                console.log('[VK] Браузерный режим, редирект на OAuth');
-                const clientId = 54525890; // ID standalone-приложения
-                const redirectUri = encodeURIComponent(`${window.API_BASE}/auth/vk/callback`);
-                const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
-                window.location.href = url;
+            } catch (err) {
+                console.error('VK Bridge auth error:', err);
+                showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
             }
-        });
-    }
+        } else {
+            // Браузер или WebView – редирект
+            console.log('[VK] Браузерный режим, редирект на OAuth');
+            const clientId = 54525890;
+            const redirectUri = encodeURIComponent(`${window.API_BASE}/auth/vk/callback`);
+            const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
+            window.location.href = url;
+        }
+    });
+}
 
     // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {

@@ -39,11 +39,49 @@ window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
+// ========== VK Bridge инициализация + автовход ==========
+async function autoLoginVK() {
+    if (localStorage.getItem('sessionToken')) return false;
+    if (typeof vkBridge === 'undefined') return false;
+    try {
+        const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+        const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: '' });
+        const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                access_token: authToken.access_token,
+                user_id: userInfo.id,
+                email: userInfo.email || null
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('sessionToken', data.sessionToken);
+            await loadUserDataByToken(data.sessionToken);
+            if (data.needusername && typeof showusernameModal === 'function') {
+                showusernameModal(data.userId);
+            } else {
+                const modal = document.getElementById('roleModal');
+                if (modal) modal.style.display = 'none';
+                showScreen('main');
+            }
+            return true;
+        }
+    } catch (err) {
+        console.error('[VK AutoLogin]', err);
+    }
+    return false;
+}
 
-// Инициализация VK Bridge (только для VK Mini App)
 if (typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
-        .then(() => console.log('[VK Bridge] init OK'))
+        .then(() => {
+            console.log('[VK Bridge] init OK');
+            if (!localStorage.getItem('sessionToken')) {
+                autoLoginVK().catch(console.error);
+            }
+        })
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
 
@@ -177,7 +215,6 @@ async function autoLoginTelegram() {
             const data = await response.json();
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
-                // ❌ Не нужно присваивать sessionToken = data.sessionToken – переменная уже объявлена глобально, но это излишне
                 if (data.need && typeof showusernameModal === 'function') {
                     showusernameModal(data.userId);
                     return true;
@@ -215,7 +252,20 @@ async function loadUserDataByToken(token, retries = 3) {
                 recalculatePower();
                 updateTopBar();
                 showScreen('main');
-                // ... остальные вызовы (loadMessagesSilent, updateMainMenuNewIcons, etc)
+                // Принудительно перерисовываем главный экран, если он активен
+                if (currentScreen === 'main' && typeof renderMain === 'function') {
+                    renderMain();
+                }
+                if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
+                updateMainMenuNewIcons();
+                checkAdvent();
+                hideSplashScreen();
+                if (typeof window.updateTradeBadges === 'function') {
+                    window.updateTradeBadges();
+                }
+                if (typeof initIronSourceAds === 'function' && userData && userData.id) {
+                    initIronSourceAds(userData.id);
+                }
                 console.log('loadUserDataByToken: success');
                 return true;
             } else {
@@ -611,6 +661,9 @@ function handleExternalAuth() {
         } else {
             const loaded = await loadUserDataByToken(sessionToken);
             if (loaded) {
+                // Закрыть модальное окно, если оно открыто
+                const modal = document.getElementById('roleModal');
+                if (modal) modal.style.display = 'none';
                 showScreen('main');
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {

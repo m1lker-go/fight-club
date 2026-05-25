@@ -1,4 +1,5 @@
 // authModal.js – исправлен: Google и VK через редирект, данные загружаются без перезагрузки
+// + добавлена отладочная печать для VK кнопки
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -79,8 +80,10 @@ function showAuthModal() {
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', async () => {
+            console.log('[VK] Кнопка нажата, Bridge доступен?', typeof vkBridge !== 'undefined');
             // Внутри VK Mini App
             if (typeof vkBridge !== 'undefined') {
+                console.log('[VK] Используем VK Bridge (миниапп)');
                 try {
                     const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
                     const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
@@ -102,7 +105,6 @@ function showAuthModal() {
                         if (data.needusername && typeof showusernameModal === 'function') {
                             showusernameModal(data.userId);
                         } else {
-                            // Загружаем данные без перезагрузки
                             const loaded = await window.loadUserDataByToken(data.sessionToken);
                             if (loaded) {
                                 const modalEl = document.getElementById('roleModal');
@@ -122,6 +124,7 @@ function showAuthModal() {
                 }
             } else {
                 // Браузер или WebView – используем редирект
+                console.log('[VK] Браузерный режим, редирект на OAuth');
                 const clientId = 54525890; // ID standalone-приложения
                 const redirectUri = encodeURIComponent(`${window.API_BASE}/auth/vk/callback`);
                 const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
@@ -269,8 +272,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// Функция loginWithVK больше не нужна, так как редирект уходит сразу
-// Удаляем, чтобы не было конфликта
+// Функция loginWithVK удалена, используется прямой редирект
 
 function showusernameModal(userId) {
     const modal = document.getElementById('roleModal');
@@ -316,3 +318,4 @@ function showusernameModal(userId) {
 
 window.showAuthModal = showAuthModal;
 window.showusernameModal = showusernameModal;
+console.log('[authModal.js] Загружен, showAuthModal определена');

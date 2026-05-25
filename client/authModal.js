@@ -77,16 +77,44 @@ function showAuthModal() {
     }
 
     // VK
+// VK
 const vkBtn = document.getElementById('vkAuthBtn');
 if (vkBtn) {
-    vkBtn.addEventListener('click', () => {
+    vkBtn.addEventListener('click', async () => {
         if (webView) {
-            const redirectUri = encodeURIComponent('https://api.cat-fight.ru/auth/vk/callback');
-            const url = `https://oauth.vk.com/authorize?...`;
-            window.open(url, '_blank');
-            showToast('После авторизации в VK вернитесь в игру', 3000);
+            // В VK Mini App используем VK Bridge
+            try {
+                const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
+                    app_id: 54525890,  // ID вашего VK приложения
+                    scope: ''
+                });
+                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        access_token: authToken.access_token,
+                        user_id: userInfo.id,
+                        email: userInfo.email || null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('sessionToken', data.sessionToken);
+                    if (data.needusername && typeof showusernameModal === 'function') {
+                        showusernameModal(data.userId);
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    showToast(data.error || 'Ошибка входа через VK', 1500);
+                }
+            } catch (err) {
+                console.error('VK Bridge auth error:', err);
+                showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
+            }
         } else {
-            loginWithVK();
+            loginWithVK();  // обычный поток для браузера
         }
     });
 }

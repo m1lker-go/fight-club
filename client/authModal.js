@@ -310,6 +310,7 @@ function showusernameModal(userId) {
 }
 
 async function loginWithVK() {
+    console.log('[VK] loginWithVK started');
     if (vkLoginInProgress) {
         showToast('Вход через VK уже выполняется', 1500);
         return;
@@ -321,20 +322,27 @@ async function loginWithVK() {
             showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
         }
     }, 120000);
-    // Проверяем глобальный объект VKID (а не VKIDSDK)
+
+    console.log('[VK] Проверяем window.VKID:', window.VKID);
     if (!window.VKID) {
+        console.warn('[VK] VKID не загружен, ждём 500 мс...');
         showToast('Загрузка VK SDK...', 1000);
         setTimeout(() => {
-            if (window.VKID) loginWithVK();
-            else {
+            if (window.VKID) {
+                console.log('[VK] VKID загрузился, повторяем вызов');
+                loginWithVK();
+            } else {
                 clearTimeout(timeoutId);
                 vkLoginInProgress = false;
+                console.error('[VK] VKID так и не загрузился');
                 showToast('Ошибка загрузки VK SDK', 1500);
             }
         }, 500);
         return;
     }
+
     const VKID = window.VKID;
+    console.log('[VK] Инициализация VKID.Config');
     VKID.Config.init({
         app: 54525890,
         redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback',
@@ -342,13 +350,17 @@ async function loginWithVK() {
         source: VKID.ConfigSource.LOWCODE,
         scope: 'email',
     });
+    console.log('[VK] Вызов VKID.Auth.login()');
     VKID.Auth.login()
         .then(async (response) => {
+            console.log('[VK] Авторизация успешна, получен code');
             clearTimeout(timeoutId);
             const { code, device_id } = response;
             try {
+                console.log('[VK] Обмен кода на токен...');
                 const tokenData = await VKID.Auth.exchangeCode(code, device_id);
                 const { access_token, user_id, email } = tokenData;
+                console.log('[VK] Токен получен, отправка на сервер');
                 const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -372,10 +384,11 @@ async function loginWithVK() {
                         }
                     }
                 } else {
+                    console.error('[VK] Ошибка сервера:', data.error);
                     showToast(data.error || 'Ошибка входа через VK', 1500);
                 }
             } catch (err) {
-                console.error('VK auth error:', err);
+                console.error('[VK] Ошибка при обмене кода:', err);
                 showToast('Ошибка авторизации VK: ' + (err.message || 'неизвестная'), 1500);
             } finally {
                 vkLoginInProgress = false;
@@ -384,7 +397,7 @@ async function loginWithVK() {
         .catch((error) => {
             clearTimeout(timeoutId);
             vkLoginInProgress = false;
-            console.error('VK login error:', error);
+            console.error('[VK] Ошибка при вызове VKID.Auth.login():', error);
             showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
         });
 }

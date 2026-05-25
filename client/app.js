@@ -33,17 +33,20 @@ let currentPower = 0;
 let BOT_USERNAME = '';
 let avatarsList = null;
 let lastBattleLog = null;
+let sessionToken = null; // объявляем глобально
 
 window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
-// Инициализация VK Bridge (только в VK Mini App)
+
+// ========== Инициализация VK Bridge (только в VK Mini App) ==========
 if (typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
         .then(() => console.log('[VK Bridge] init OK'))
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
 
+// ========== Универсальный apiRequest с Bearer-токеном ==========
 window.apiRequest = async function(endpoint, options = {}) {
     console.log('[apiRequest]', endpoint, options);
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
@@ -62,9 +65,6 @@ window.apiRequest = async function(endpoint, options = {}) {
         }
     }
     
-    // ========== БОЛЬШЕ НЕ ПЕРЕДАЁМ tg_id И user_id – сервер берёт их из токена ==========
-    // (удалены строки, добавлявшие user_id и tg_id)
-    
     const fetchOptions = {
         method: method,
         headers: {
@@ -73,7 +73,7 @@ window.apiRequest = async function(endpoint, options = {}) {
         }
     };
     
-    // Добавляем заголовок авторизации, если есть токен и запрос не к публичным эндпоинтам
+    // Добавляем заголовок авторизации для защищённых эндпоинтов
     const token = localStorage.getItem('sessionToken');
     if (token && !endpoint.startsWith('/auth') && !endpoint.includes('/auth/')) {
         fetchOptions.headers['Authorization'] = `Bearer ${token}`;
@@ -176,7 +176,7 @@ async function autoLoginTelegram() {
             const data = await response.json();
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
-                sessionToken = data.sessionToken;
+                // ❌ Не нужно присваивать sessionToken = data.sessionToken – переменная уже объявлена глобально, но это излишне
                 if (data.need && typeof showusernameModal === 'function') {
                     showusernameModal(data.userId);
                     return true;
@@ -238,7 +238,8 @@ async function loadUserDataByToken(token) {
     return false;
 }
 
-let sessionToken = localStorage.getItem('sessionToken');
+// Инициализация sessionToken после объявления функции loadUserDataByToken
+sessionToken = localStorage.getItem('sessionToken');
 
 async function checkAuth() {
     console.log('checkAuth: sessionToken =', sessionToken);
@@ -436,7 +437,7 @@ async function refreshTasksOnly() {
     try {
         const response = await fetchWithRetry('/user/refresh', {
             method: 'POST',
-            body: JSON.stringify({}) // пустое тело, токен в заголовке
+            body: JSON.stringify({})
         });
         const data = await response.json();
         if (data.user) {
@@ -599,11 +600,11 @@ window.renderProfileBonuses = renderProfileBonuses;
 window.renderFortune = renderFortune;
 window.renderAlchemy = renderAlchemy;
 
+// ========== Обработка внешней авторизации (Google/VK/Telegram) без перезагрузки ==========
 function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
 
-    // Общая функция обработки успешной авторизации
     async function handleOAuthSuccess(sessionToken, needusername, userId) {
         if (!sessionToken) {
             console.error('[OAuth] No sessionToken');
@@ -613,11 +614,9 @@ function handleExternalAuth() {
         if (needusername && typeof showusernameModal === 'function') {
             showusernameModal(userId);
         } else {
-            // Загружаем данные пользователя без перезагрузки страницы
             const loaded = await loadUserDataByToken(sessionToken);
             if (loaded) {
                 showScreen('main');
-                // Убираем параметры из URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 console.error('[OAuth] Failed to load user data, reloading...');
@@ -683,10 +682,8 @@ function handleExternalAuth() {
     }
 
     if (handled && window.location.search) {
-        // Удаляем параметры, если они не были удалены в handleOAuthSuccess (например, при ошибке)
+        // На случай, если параметры остались
         if (!window.location.pathname.includes('?')) {
-            // уже удалили
-        } else {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }

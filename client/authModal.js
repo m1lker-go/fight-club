@@ -78,18 +78,20 @@ function showAuthModal() {
 
     // VK
 // VK
-// VK
 const vkBtn = document.getElementById('vkAuthBtn');
 if (vkBtn) {
     vkBtn.addEventListener('click', async () => {
         if (webView) {
-            // В VK Mini App используем VK Bridge
+            // VK Mini App: используем VK Bridge
             try {
+                // 1. Получаем данные пользователя
                 const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                // 2. Запрашиваем токен доступа (можно без прав, scope пустой)
                 const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
                     app_id: 54525890,  // ID вашего VK приложения
                     scope: ''
                 });
+                // 3. Отправляем на сервер
                 const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -115,7 +117,8 @@ if (vkBtn) {
                 showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
             }
         } else {
-            loginWithVK();  // обычный поток для браузера
+            // Обычный браузер: используем существующую функцию loginWithVK
+            loginWithVK();
         }
     });
 }

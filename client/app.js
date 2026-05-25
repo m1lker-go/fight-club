@@ -199,42 +199,36 @@ async function autoLoginTelegram() {
     return false;
 }
 
-async function loadUserDataByToken(token) {
-    try {
-        console.log('loadUserDataByToken: fetching profile...');
-        const res = await window.apiRequest('/player/profile', { method: 'GET' });
-        if (res.ok) {
-            const data = await res.json();
-            console.log('Profile data received, user id:', data.user?.id);
-            userData = data.user;
-            userClasses = data.userClasses || [];
-            inventory = data.inventory || [];
-            BOT_USERNAME = data.bot_username || '';
-            await loadAvatars();
-            userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
-            recalculatePower();
-            updateTopBar();
-            showScreen('main');
-            if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
-                AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
+async function loadUserDataByToken(token, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            console.log(`loadUserDataByToken: попытка ${i+1}...`);
+            const res = await window.apiRequest('/player/profile', { method: 'GET' });
+            if (res.ok) {
+                const data = await res.json();
+                userData = data.user;
+                userClasses = data.userClasses || [];
+                inventory = data.inventory || [];
+                BOT_USERNAME = data.bot_username || '';
+                await loadAvatars();
+                userData.avatar = getAvatarFilenameById(userData.avatar_id || 1);
+                recalculatePower();
+                updateTopBar();
+                showScreen('main');
+                // ... остальные вызовы (loadMessagesSilent, updateMainMenuNewIcons, etc)
+                console.log('loadUserDataByToken: success');
+                return true;
+            } else {
+                console.error(`Profile fetch failed: ${res.status}`);
+                if (res.status === 401) {
+                    localStorage.removeItem('sessionToken');
+                    return false;
+                }
             }
-            if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
-            updateMainMenuNewIcons();
-            checkAdvent();
-            hideSplashScreen();
-            if (typeof window.updateTradeBadges === 'function') {
-                window.updateTradeBadges();
-            }
-            if (typeof initIronSourceAds === 'function' && userData && userData.id) {
-                initIronSourceAds(userData.id);
-            }
-            console.log('loadUserDataByToken: success');
-            return true;
-        } else {
-            console.error('Profile fetch failed:', res.status);
+        } catch (e) {
+            console.error('Load user data error:', e);
         }
-    } catch (e) {
-        console.error('Load user data error:', e);
+        if (i < retries - 1) await new Promise(r => setTimeout(r, 1000));
     }
     return false;
 }

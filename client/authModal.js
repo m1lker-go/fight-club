@@ -77,21 +77,15 @@ function showAuthModal() {
     }
 
     // VK – для VK Mini App используем Bridge, для браузера – редирект
-  const vkBtn = document.getElementById('vkAuthBtn');
+const vkBtn = document.getElementById('vkAuthBtn');
 if (vkBtn) {
     vkBtn.addEventListener('click', async () => {
-        // Определяем, работаем ли мы внутри VK Mini App (наличие Bridge и не наш домен)
-        const isVKWebApp = typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru';
-        console.log('[VK] isVKWebApp:', isVKWebApp);
-        if (isVKWebApp) {
-            // VK Mini App – используем VK Bridge
+        // Если внутри VK Mini App (есть vkBridge и домен не наш)
+        if (typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru') {
             console.log('[VK] Используем VK Bridge (миниапп)');
             try {
                 const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-                const authToken = await vkBridge.send('VKWebAppGetAuthToken', {
-                    app_id: 54599234,
-                    scope: ''
-                });
+                const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: '' });
                 const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -125,16 +119,12 @@ if (vkBtn) {
                 showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
             }
         } else {
-            // Браузер или WebView – редирект
-            console.log('[VK] Браузерный режим, редирект на OAuth');
-            const clientId = 54525890;
-            const redirectUri = encodeURIComponent(`${window.API_BASE}/auth/vk/callback`);
-            const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
-            window.location.href = url;
+            // Браузер или WebView – используем старый попап через VKID SDK (работающий)
+            console.log('[VK] Браузерный режим, запускаем VKID SDK');
+            loginWithVK(); // эту функцию вы уже имеете (с VKID.Config.init)
         }
     });
 }
-
     // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {
         if (webView) {

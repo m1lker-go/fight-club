@@ -118,18 +118,22 @@ function showAuthModal() {
                 }
             }
             // WebView – нативная авторизация через Android
-         else if (webView) {
+    else if (webView) {
     console.log('[VK] WebView режим, вызов нативной авторизации');
     console.log('[VK] typeof Android:', typeof Android);
     if (typeof Android !== 'undefined') {
         console.log('[VK] Android.startVKAuth type:', typeof Android.startVKAuth);
         if (typeof Android.startVKAuth === 'function') {
+            console.log('[VK] Calling Android.startVKAuth...');
             Android.startVKAuth();
+            console.log('[VK] Android.startVKAuth called');
         } else {
             console.error('[VK] Android.startVKAuth is not a function');
         }
     } else {
         console.error('[VK] Android object is undefined');
+    }
+}
         // Попытка повторно запросить интерфейс через evaluateJavascript
         setTimeout(() => {
             if (typeof Android !== 'undefined') {

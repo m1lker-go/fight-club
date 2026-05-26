@@ -1118,8 +1118,8 @@ function showSkinModal(avatarId, avatarFilename, owned) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    fetch(`${window.API_BASE}/avatars`)
-        .then(res => res.json())
+   window.apiRequest('/avatars', { method: 'GET' })
+    .then(res => res.ok ? res.json() : [])
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
             if (!avatar) {

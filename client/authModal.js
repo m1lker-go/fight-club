@@ -271,12 +271,12 @@ function loadVKIDSDK() {
             return;
         }
         const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js';
+        script.src = 'https://unpkg.com/@vkid/sdk@2.0.0/dist-sdk/umd/index.js'; // фиксированная версия
         script.onload = () => {
             if (window.VKIDSDK) {
                 resolve(window.VKIDSDK);
             } else {
-                reject(new Error('VKIDSDK not found after load'));
+                reject(new Error('VKIDSDK not found'));
             }
         };
         script.onerror = () => reject(new Error('Failed to load VKID SDK'));

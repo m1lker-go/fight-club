@@ -121,6 +121,8 @@ function showAuthModal() {
             else if (webView) {
                 console.log('[VK] WebView режим, вызов нативной авторизации');
                 if (typeof Android !== 'undefined' && Android.startVKAuth) {
+                   console.log('[VK] Android объект:', typeof Android);
+console.log('[VK] Android.startVKAuth:', typeof Android.startVKAuth);
                     Android.startVKAuth();
                 } else {
                     showToast('Ошибка: интерфейс Android не найден', 1500);

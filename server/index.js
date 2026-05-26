@@ -15,16 +15,21 @@ console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 
-// ========== НАСТРОЙКА CORS (ДОБАВЛЕНА) ==========
+// ========== НАСТРОЙКА CORS (без дублирования заголовка) ==========
+const allowedOrigins = ['https://cat-fight.ru', 'https://api.cat-fight.ru'];
 app.use(cors({
-    origin: ['https://cat-fight.ru', 'https://api.cat-fight.ru'], // ваш домен
+    origin: function (origin, callback) {
+        // Разрешаем запросы без origin (например, из мобильных приложений)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']   // разрешённые заголовки
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('client'));
 
 // ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));

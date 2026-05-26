@@ -1,4 +1,4 @@
-// authModal.js – low‑code OAuth для браузера, редирект для WebView, Bridge для миниаппа
+// authModal.js – стабильная версия (low‑code для браузера, Bridge для миниаппа, редирект для WebView)
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -61,7 +61,7 @@ function showAuthModal() {
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
 
-   const webView = true; // принудительно для APK
+    const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
     // Telegram
@@ -117,14 +117,14 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             }
-            // WebView – редирект на OAuth (маскируемся под браузер)
-          else if (webView) {
-    console.log('[VK] WebView режим, редирект на OAuth');
-    const clientId = 54525890; // ваш client_id
-    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
-    const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
-    window.location.href = url;
-}
+            // WebView – редирект на OAuth
+            else if (webView) {
+                console.log('[VK] WebView режим, редирект на OAuth');
+                const clientId = 54525890;
+                const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
+                const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
+                window.location.href = url;
+            }
             // Браузер – low‑code попап
             else {
                 console.log('[VK] Браузерный режим, low‑code OAuth');

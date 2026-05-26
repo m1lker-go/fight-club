@@ -1,4 +1,4 @@
-// authModal.js – восстановлен из старых работающих файлов (low‑code на клиенте, Bridge для миниаппа)
+// authModal.js – использует виджет VK (работает в браузере) и VK Bridge (миниапп)
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -75,7 +75,7 @@ function showAuthModal() {
         });
     }
 
-    // VK – для миниаппа Bridge, для браузера – старый low‑code
+    // VK – для миниаппа Bridge, для браузера – виджет VK
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', async () => {
@@ -115,8 +115,8 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             } else {
-                // Браузер – low‑code (рабочий)
-                console.log('[VK] Браузерный режим, low‑code OAuth');
+                // Браузер – виджет VK
+                console.log('[VK] Браузерный режим, открываем виджет');
                 loginWithVK();
             }
         });
@@ -259,81 +259,61 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-async function loginWithVK() {
+// ========== Вход через VK с помощью виджета ==========
+function loginWithVK() {
     if (vkLoginInProgress) {
         showToast('Вход через VK уже выполняется', 1500);
         return;
     }
     vkLoginInProgress = true;
-    const timeoutId = setTimeout(() => {
-        if (vkLoginInProgress) {
-            vkLoginInProgress = false;
-            showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
-        }
-    }, 120000);
-    if (!window.VKIDSDK) {
-        showToast('Загрузка VK SDK...', 1000);
-        setTimeout(() => {
-            if (window.VKIDSDK) loginWithVK();
-            else {
-                clearTimeout(timeoutId);
-                vkLoginInProgress = false;
-                showToast('Ошибка загрузки VK SDK', 1500);
-            }
-        }, 500);
+
+    // Создаём контейнер для виджета
+    let container = document.getElementById('vkWidgetContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'vkWidgetContainer';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        container.style.zIndex = '10000';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        document.body.appendChild(container);
+    }
+    container.innerHTML = '<div id="vk_auth" style="width: 400px; height: 400px;"></div>';
+    container.style.display = 'flex';
+
+    // Инициализируем виджет
+    if (typeof window.initVKWidget === 'function') {
+        window.initVKWidget('vk_auth');
+    } else {
+        console.error('initVKWidget not defined');
+        container.style.display = 'none';
+        vkLoginInProgress = false;
+        showToast('Ошибка загрузки виджета VK', 1500);
         return;
     }
-    const VKID = window.VKIDSDK;
-    VKID.Config.init({
-        app: 54525890,
-        redirectUrl: 'https://api.cat-fight.ru/auth/vk/callback',
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.LOWCODE,
-        scope: 'email',
-    });
-    VKID.Auth.login()
-        .then(async (response) => {
-            clearTimeout(timeoutId);
-            const { code, device_id } = response;
-            try {
-                const tokenData = await VKID.Auth.exchangeCode(code, device_id);
-                const { access_token, user_id, email } = tokenData;
-                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token, user_id, email })
-                });
-                if (!res.ok) throw new Error(await res.text());
-                const data = await res.json();
-                if (data.success) {
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    console.log('[VK] Токен сохранён, загрузка данных...');
-                    if (data.needusername && typeof showusernameModal === 'function') {
-                        showusernameModal(data.userId);
-                    } else {
-                        if (typeof window.loadUserDataByToken === 'function') {
-                            await window.loadUserDataByToken(data.sessionToken);
-                        }
-                        const modal = document.getElementById('roleModal');
-                        if (modal) modal.style.display = 'none';
-                        if (typeof window.showScreen === 'function') window.showScreen('main');
-                    }
-                } else {
-                    showToast(data.error || 'Ошибка входа через VK', 1500);
-                }
-            } catch (err) {
-                console.error('VK auth error:', err);
-                showToast('Ошибка авторизации VK: ' + (err.message || 'неизвестная'), 1500);
-            } finally {
-                vkLoginInProgress = false;
-            }
-        })
-        .catch((error) => {
-            clearTimeout(timeoutId);
+
+    // Закрытие при клике вне виджета (опционально)
+    container.addEventListener('click', (e) => {
+        if (e.target === container) {
+            container.style.display = 'none';
             vkLoginInProgress = false;
-            console.error('VK login error:', error);
-            showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
-        });
+        }
+    });
+
+    // Таймаут на случай ошибки
+    setTimeout(() => {
+        if (vkLoginInProgress) {
+            container.style.display = 'none';
+            vkLoginInProgress = false;
+            showToast('Вход через VK отменён (таймаут)', 3000);
+        }
+    }, 120000);
 }
 
 function showusernameModal(userId) {

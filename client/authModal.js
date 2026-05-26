@@ -61,7 +61,7 @@ function showAuthModal() {
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
 
-    const webView = isWebView();
+   const webView = true; // принудительно для APK
     console.log('[AuthModal] WebView detected:', webView);
 
     // Telegram

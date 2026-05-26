@@ -1,4 +1,4 @@
-// mint.js – Монетный двор (обновлённый: без заголовков, с свитками)
+// mint.js – Монетный двор (исправлен: добавлен _t для обхода кеша)
 
 let freeCoalAvailable = false;
 let coalLimit = { purchasedToday: 0, maxDaily: 1000 };
@@ -8,7 +8,8 @@ console.log('[mint.js] loaded');
 async function updateMintBadge() {
     console.log('[updateMintBadge] start');
     try {
-        const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
+        // Добавляем _t для принудительного обновления
+        const res = await window.apiRequest(`/player/freecoal?_t=${Date.now()}`, { method: 'GET' });
         const data = await res.json();
         freeCoalAvailable = data.freeAvailable;
         console.log('[updateMintBadge] freeCoalAvailable =', freeCoalAvailable);
@@ -27,7 +28,8 @@ async function updateMintBadge() {
 async function loadCoalLimit() {
     console.log('[loadCoalLimit] start');
     try {
-        const res = await window.apiRequest('/player/coal-limit', { method: 'GET' });
+        // Добавляем _t
+        const res = await window.apiRequest(`/player/coal-limit?_t=${Date.now()}`, { method: 'GET' });
         const data = await res.json();
         coalLimit = { purchasedToday: data.purchasedToday || 0, maxDaily: data.maxDaily || 1000 };
         console.log('[loadCoalLimit] loaded', coalLimit);
@@ -48,7 +50,8 @@ async function renderMint(container) {
     }
 
     try {
-        const res = await window.apiRequest('/player/freecoal', { method: 'GET' });
+        // Обновляем статус бесплатного угля перед отрисовкой
+        const res = await window.apiRequest(`/player/freecoal?_t=${Date.now()}`, { method: 'GET' });
         const data = await res.json();
         freeCoalAvailable = data.freeAvailable;
         console.log('[renderMint] freeCoalAvailable =', freeCoalAvailable);
@@ -59,27 +62,26 @@ async function renderMint(container) {
     await loadCoalLimit();
 
     const coalDiamondItems = [
-    { amount: 10, price: 2, currency: 'diamonds', free: freeCoalAvailable, image: '/assets/gold/buy_coal_1.png' },
-    { amount: 50, price: 8, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_2.png' },
-    { amount: 250, price: 35, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_3.png' }
-];
+        { amount: 10, price: 2, currency: 'diamonds', free: freeCoalAvailable, image: '/assets/gold/buy_coal_1.png' },
+        { amount: 50, price: 8, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_2.png' },
+        { amount: 250, price: 35, currency: 'diamonds', free: false, image: '/assets/gold/buy_coal_3.png' }
+    ];
 
     const coalCoinItems = [
-    { amount: 10, price: 25, currency: 'coins', image: '/assets/gold/buy_coal_1.png' },
-    { amount: 50, price: 100, currency: 'coins', image: '/assets/gold/buy_coal_2.png' },
-    { amount: 250, price: 450, currency: 'coins', image: '/assets/gold/buy_coal_3.png' }
-];
+        { amount: 10, price: 25, currency: 'coins', image: '/assets/gold/buy_coal_1.png' },
+        { amount: 50, price: 100, currency: 'coins', image: '/assets/gold/buy_coal_2.png' },
+        { amount: 250, price: 450, currency: 'coins', image: '/assets/gold/buy_coal_3.png' }
+    ];
 
     const goldItems = [
-    { amount: 100, price: 11, currency: 'diamonds', image: '/assets/gold/buy_gold_1.png' },
-    { amount: 250, price: 28, currency: 'diamonds', image: '/assets/gold/buy_gold_2.png' },
-    { amount: 500, price: 55, currency: 'diamonds', image: '/assets/gold/buy_gold_3.png' },
-    { amount: 1000, price: 110, currency: 'diamonds', image: '/assets/gold/buy_gold_4.png' },
-    { amount: 2000, price: 210, currency: 'diamonds', image: '/assets/gold/buy_gold_5.png' },
-    { amount: 5000, price: 500, currency: 'diamonds', image: '/assets/gold/buy_gold_6.png' }
-];
+        { amount: 100, price: 11, currency: 'diamonds', image: '/assets/gold/buy_gold_1.png' },
+        { amount: 250, price: 28, currency: 'diamonds', image: '/assets/gold/buy_gold_2.png' },
+        { amount: 500, price: 55, currency: 'diamonds', image: '/assets/gold/buy_gold_3.png' },
+        { amount: 1000, price: 110, currency: 'diamonds', image: '/assets/gold/buy_gold_4.png' },
+        { amount: 2000, price: 210, currency: 'diamonds', image: '/assets/gold/buy_gold_5.png' },
+        { amount: 5000, price: 500, currency: 'diamonds', image: '/assets/gold/buy_gold_6.png' }
+    ];
 
-    // Свитки – пути исправлены на /assets/equip/scrolls/, названия в 2 строки
     const scrollItems = [
         { id: 1037, name: 'Редкий<br>Свиток', rarity: 'rare', price: 500, currency: 'coins', image: '/assets/equip/scrolls/scroll_rare.png' },
         { id: 1038, name: 'Эпический<br>Свиток', rarity: 'epic', price: 50, currency: 'diamonds', image: '/assets/equip/scrolls/scroll_epic.png' },
@@ -88,7 +90,7 @@ async function renderMint(container) {
 
     let html = `<div class="mint-page">`;
 
-    // Уголь за алмазы (без заголовка)
+    // Уголь за алмазы
     html += `<div class="mint-grid coal-grid">`;
     coalDiamondItems.forEach(item => {
         const btnDisabled = (!item.free && userData.diamonds < item.price);
@@ -106,7 +108,7 @@ async function renderMint(container) {
     });
     html += `</div>`;
 
-    // Уголь за монеты (без заголовка)
+    // Уголь за монеты
     html += `<div class="mint-grid coal-grid">`;
     coalCoinItems.forEach(item => {
         const remaining = coalLimit.maxDaily - coalLimit.purchasedToday;
@@ -126,7 +128,7 @@ async function renderMint(container) {
     });
     html += `</div>`;
 
-    // Золото за алмазы (без заголовка)
+    // Золото за алмазы
     html += `<div class="mint-grid gold-grid">`;
     goldItems.forEach(item => {
         const btnDisabled = (userData.diamonds < item.price);
@@ -143,7 +145,7 @@ async function renderMint(container) {
     });
     html += `</div>`;
 
-    // Свитки (используем ту же сетку)
+    // Свитки
     html += `<div class="mint-grid coal-grid">`;
     scrollItems.forEach(scroll => {
         const currencySymbol = scroll.currency === 'coins' ? `<i class="fas fa-coins"></i>` : `<i class="fas fa-gem"></i>`;
@@ -159,11 +161,10 @@ async function renderMint(container) {
             </div>`;
     });
     html += `</div>`;
-
     html += `</div>`;
     container.innerHTML = html;
 
-    // Обработчики кнопок
+    // Обработчики кнопок (без изменений, работают через apiRequest)
     container.querySelectorAll('.mint-buy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const type = btn.dataset.type;
@@ -171,7 +172,6 @@ async function renderMint(container) {
             const price = parseInt(btn.dataset.price);
             const currency = btn.dataset.currency;
             const isFree = btn.dataset.free === 'true';
-            console.log('[mint] button clicked', { type, amount, price, currency, isFree });
 
             if (type === 'coal_diamond' && isFree) {
                 try {
@@ -181,6 +181,7 @@ async function renderMint(container) {
                         showToast(`+${amount} угля!`, 1500);
                         await refreshData();
                         updateMintBadge();
+                        renderMint(container);
                     } else {
                         showToast('Ошибка: ' + data.error, 1500);
                     }
@@ -268,7 +269,7 @@ async function renderMint(container) {
     });
 }
 
-// Функция подтверждения (уже должна быть в проекте, если нет – определим)
+// Функция подтверждения (если отсутствует)
 if (typeof showConfirmModal !== 'function') {
     window.showConfirmModal = function(message, onConfirm) {
         const modal = document.getElementById('roleModal');

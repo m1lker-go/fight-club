@@ -1,4 +1,4 @@
-// authModal.js – low‑code OAuth для браузера, нативная авторизация для WebView, Bridge для миниаппа
+// authModal.js – low‑code OAuth для браузера, редирект для WebView, Bridge для миниаппа
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -117,27 +117,24 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             }
-        // WebView – редирект на OAuth (маскируемся под браузер)
-else if (webView) {
-    console.log('[VK] WebView режим, редирект на OAuth');
-    console.log('[VK] Маскируемся под обычный браузер, редирект на VK');
-    const clientId = 54525890;  // Ваш client_id для standalone-приложения (замените при необходимости)
-    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
-    const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
-    console.log('[VK] Redirect URL:', url);
-    window.location.href = url;
-}
-        // Попытка повторно запросить интерфейс через evaluateJavascript
-        setTimeout(() => {
-            if (typeof Android !== 'undefined') {
-                Android.startVKAuth();
-            } else {
-                console.error('[VK] Still undefined, showing toast');
-                showToast('Ошибка: интерфейс Android не найден. Перезагрузите приложение.', 3000);
+            // WebView – редирект на OAuth (маскируемся под браузер)
+            else if (webView) {
+                console.log('[VK] WebView режим, редирект на OAuth');
+                console.log('[VK] Маскируемся под обычный браузер, редирект на VK');
+                const clientId = 54525890;  // Ваш client_id для standalone-приложения (замените при необходимости)
+                const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
+                const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
+                console.log('[VK] Redirect URL:', url);
+                window.location.href = url;
             }
-        }, 500);
+            // Браузер – low‑code попап
+            else {
+                console.log('[VK] Браузерный режим, low‑code OAuth');
+                loginWithVK();
+            }
+        });
     }
-}
+
     // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {
         if (webView) {
@@ -147,7 +144,7 @@ else if (webView) {
         }
     });
 
-    // Остальное без изменений
+    // Остальное
     document.getElementById('loginCredentialsBtn')?.addEventListener('click', () => {
         document.querySelector('.auth-methods').style.display = 'none';
         document.querySelector('.auth-credentials-form').style.display = 'block';
@@ -275,7 +272,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== LOW‑CODE OAuth для браузера (сохраняем) ==========
+// ========== LOW‑CODE OAuth для браузера ==========
 function loadVKIDSDK() {
     return new Promise((resolve, reject) => {
         if (window.VKIDSDK) {

@@ -290,12 +290,12 @@ async function loginWithVK() {
         return;
     }
     vkLoginInProgress = true;
-    const timeoutId = setTimeout(() => {
-        if (vkLoginInProgress) {
-            vkLoginInProgress = false;
-            showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
-        }
-    }, 120000);
+ const timeoutId = setTimeout(() => {
+    if (vkLoginInProgress) {
+        vkLoginInProgress = false;
+        showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
+    }
+}, 30000); // было 120000
 
     try {
         const VKID = await loadVKIDSDK();

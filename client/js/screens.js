@@ -1052,64 +1052,64 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 
 function renderSkins(container) {
     if (!container) return;
-    Promise.all([
-        fetch(`${window.API_BASE}/avatars`).then(res => res.json()),
-        window.apiRequest('/avatars/user/me', { method: 'GET' }).then(res => res.json())
-    ])
-    .then(([allAvatars, ownedIds]) => {
-        const activeAvatarId = userData.avatar_id || 1;
-        const ownedSet = new Set(ownedIds);
-        ownedSet.add(1);
+    // Используем apiRequest (с токеном) для получения списка аватаров
+    window.apiRequest('/avatars', { method: 'GET' })
+        .then(res => res.ok ? res.json() : [])
+        .then(allAvatars => {
+            const activeAvatarId = userData.avatar_id || 1;
+            // Временно: считаем купленным только активный аватар и аватар по умолчанию (id=1)
+            // Позже замените на реальный запрос к /user/avatars
+            const ownedSet = new Set([1, activeAvatarId]);
 
-        const sortedAvatars = [...allAvatars].sort((a, b) => {
-            if (a.id === activeAvatarId) return -1;
-            if (b.id === activeAvatarId) return 1;
-            return (a.name || '').localeCompare(b.name || '');
-        });
-
-        let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">';
-        sortedAvatars.forEach(avatar => {
-            const isActive = avatar.id === activeAvatarId;
-            const isOwned = ownedSet.has(avatar.id);
-            const priceGold = parseInt(avatar.price_gold, 10) || 0;
-            const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
-
-            let priceHtml = '';
-            if (!isOwned) {
-                let parts = [];
-                if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
-                if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
-                if (parts.length > 0) {
-                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">${parts.join(' + ')}</div>`;
-                } else {
-                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">Бесплатно</div>`;
-                }
-            }
-
-            html += `
-                <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
-                    ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
-                    <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
-                    ${priceHtml}
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-
-        container.querySelectorAll('[data-avatar-id]').forEach(div => {
-            div.addEventListener('click', () => {
-                const avatarId = parseInt(div.dataset.avatarId);
-                const avatarFilename = div.dataset.avatarFilename;
-                const owned = div.dataset.owned === 'true';
-                showSkinModal(avatarId, avatarFilename, owned);
+            const sortedAvatars = [...allAvatars].sort((a, b) => {
+                if (a.id === activeAvatarId) return -1;
+                if (b.id === activeAvatarId) return 1;
+                return (a.name || '').localeCompare(b.name || '');
             });
+
+            let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">';
+            sortedAvatars.forEach(avatar => {
+                const isActive = avatar.id === activeAvatarId;
+                const isOwned = ownedSet.has(avatar.id);
+                const priceGold = parseInt(avatar.price_gold, 10) || 0;
+                const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+
+                let priceHtml = '';
+                if (!isOwned) {
+                    let parts = [];
+                    if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
+                    if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
+                    if (parts.length > 0) {
+                        priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">${parts.join(' + ')}</div>`;
+                    } else {
+                        priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">Бесплатно</div>`;
+                    }
+                }
+
+                html += `
+                    <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
+                        ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
+                        <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
+                        ${priceHtml}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            container.querySelectorAll('[data-avatar-id]').forEach(div => {
+                div.addEventListener('click', () => {
+                    const avatarId = parseInt(div.dataset.avatarId);
+                    const avatarFilename = div.dataset.avatarFilename;
+                    const owned = div.dataset.owned === 'true';
+                    showSkinModal(avatarId, avatarFilename, owned);
+                });
+            });
+        })
+        .catch(err => {
+            console.error('Error loading avatars:', err);
+            container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
         });
-    })
-    .catch(err => {
-        console.error('Error loading avatars:', err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
-    });
 }
 
 function showSkinModal(avatarId, avatarFilename, owned) {

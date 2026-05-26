@@ -117,40 +117,15 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             }
-            // WebView – нативная авторизация через Android
-  else if (webView) {
-    console.log('[VK] WebView режим, вызов нативной авторизации');
-    if (typeof Android !== 'undefined') {
-        console.log('[VK] Android объект существует, тип:', typeof Android);
-        if (typeof Android.startVKAuth === 'function') {
-            console.log('[VK] Метод startVKAuth найден, вызываем...');
-            try {
-                Android.startVKAuth();
-                console.log('[VK] Вызов Android.startVKAuth выполнен без ошибок');
-            } catch (e) {
-                console.error('[VK] Ошибка при вызове Android.startVKAuth:', e);
-            }
-        } else {
-            console.error('[VK] Android.startVKAuth не является функцией, тип:', typeof Android.startVKAuth);
-            // Дополнительная проверка: выведем все свойства объекта Android
-            console.log('[VK] Свойства Android:', Object.keys(Android));
-        }
-    } else {
-        console.error('[VK] Объект Android не определён');
-        // Попробуем ещё раз через 0.5 сек
-        setTimeout(() => {
-            if (typeof Android !== 'undefined') {
-                console.log('[VK] Android появился после задержки, повторяем');
-                if (typeof Android.startVKAuth === 'function') {
-                    Android.startVKAuth();
-                } else {
-                    console.error('[VK] Android.startVKAuth всё ещё не функция');
-                }
-            } else {
-                console.error('[VK] Android так и не появился');
-            }
-        }, 500);
-    }
+        // WebView – редирект на OAuth (маскируемся под браузер)
+else if (webView) {
+    console.log('[VK] WebView режим, редирект на OAuth');
+    console.log('[VK] Маскируемся под обычный браузер, редирект на VK');
+    const clientId = 54525890;  // Ваш client_id для standalone-приложения (замените при необходимости)
+    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
+    const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
+    console.log('[VK] Redirect URL:', url);
+    window.location.href = url;
 }
         // Попытка повторно запросить интерфейс через evaluateJavascript
         setTimeout(() => {

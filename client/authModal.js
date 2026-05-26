@@ -122,32 +122,12 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             } 
-     else if (webView) {
-    console.log('[VK] WebView режим, открываем виджет VK');
-    let container = document.getElementById('vkWidgetContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'vkWidgetContainer';
-        container.style.position = 'fixed';
-        container.style.top = '0';
-        container.style.left = '0';
-        container.style.width = '100%';
-        container.style.height = '100%';
-        container.style.backgroundColor = 'rgba(0,0,0,0.8)';
-        container.style.zIndex = '10000';
-        container.style.display = 'flex';
-        container.style.alignItems = 'center';
-        container.style.justifyContent = 'center';
-        document.body.appendChild(container);
-    }
-    container.innerHTML = '<div id="vk_auth" style="width: 400px; height: 400px;"></div>';
-    container.style.display = 'flex';
-    if (typeof window.initVKWidget === 'function') {
-        window.initVKWidget('vk_auth');
+   else if (webView) {
+    console.log('[VK] WebView режим, вызов нативной авторизации');
+    if (typeof Android !== 'undefined' && Android.startVKAuth) {
+        Android.startVKAuth();
     } else {
-        console.error('initVKWidget not defined');
-        container.style.display = 'none';
-        showToast('Ошибка загрузки виджета VK', 1500);
+        showToast('Ошибка: интерфейс Android не найден', 1500);
     }
 }
             else {

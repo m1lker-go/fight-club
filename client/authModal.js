@@ -118,15 +118,13 @@ function showAuthModal() {
                 }
             }
             // WebView – редирект на OAuth (маскируемся под браузер)
-            else if (webView) {
-                console.log('[VK] WebView режим, редирект на OAuth');
-                console.log('[VK] Маскируемся под обычный браузер, редирект на VK');
-                const clientId = 54525890;  // Ваш client_id для standalone-приложения (замените при необходимости)
-                const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
-                const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
-                console.log('[VK] Redirect URL:', url);
-                window.location.href = url;
-            }
+          else if (webView) {
+    console.log('[VK] WebView режим, редирект на OAuth');
+    const clientId = 54525890; // ваш client_id
+    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
+    const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
+    window.location.href = url;
+}
             // Браузер – low‑code попап
             else {
                 console.log('[VK] Браузерный режим, low‑code OAuth');

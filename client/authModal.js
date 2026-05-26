@@ -1,4 +1,4 @@
-// authModal.js – Google и VK (low‑code попап) для браузера/WebView, VK Bridge для миниаппа
+// authModal.js – low‑code для браузера, Bridge для миниаппа
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -75,11 +75,11 @@ function showAuthModal() {
         });
     }
 
-    // VK – для VK Mini App – Bridge, для браузера/WebView – low‑code попап
+    // VK – для VK Mini App – Bridge, для браузера – low‑code попап
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', async () => {
-            // VK Mini App
+            // Если это VK Mini App (есть vkBridge и домен не наш)
             if (typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru') {
                 console.log('[VK] Используем VK Bridge (миниапп)');
                 try {
@@ -100,15 +100,13 @@ function showAuthModal() {
                         if (data.needusername && typeof showusernameModal === 'function') {
                             showusernameModal(data.userId);
                         } else {
-                            const loaded = await window.loadUserDataByToken(data.sessionToken);
-                            if (loaded) {
-                                const modalEl = document.getElementById('roleModal');
-                                if (modalEl) modalEl.style.display = 'none';
-                                if (typeof window.showScreen === 'function') window.showScreen('main');
-                            } else {
-                                console.error('[VK Bridge] Не удалось загрузить данные, перезагрузка...');
-                                window.location.reload();
+                            // Загружаем данные без перезагрузки
+                            if (typeof window.loadUserDataByToken === 'function') {
+                                await window.loadUserDataByToken(data.sessionToken);
                             }
+                            const modalEl = document.getElementById('roleModal');
+                            if (modalEl) modalEl.style.display = 'none';
+                            if (typeof window.showScreen === 'function') window.showScreen('main');
                         }
                     } else {
                         showToast(data.error || 'Ошибка входа через VK', 1500);
@@ -117,14 +115,11 @@ function showAuthModal() {
                     console.error('VK Bridge auth error:', err);
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
-           } else {
-    // Браузер или WebView – редирект на OAuth (без попапа)
-    console.log('[VK] Браузерный режим, редирект на OAuth');
-    const clientId = 54525890;
-    const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
-    const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
-    window.location.href = url;
-}
+            } else {
+                // Браузер или WebView – low‑code попап (старый работающий способ)
+                console.log('[VK] Браузерный режим, low‑code попап');
+                loginWithVK();
+            }
         });
     }
 
@@ -192,14 +187,12 @@ async function handleCredentialsSubmit() {
             if (data.needusername && typeof showusernameModal === 'function') {
                 showusernameModal(data.userId);
             } else {
-                const loaded = await window.loadUserDataByToken(data.sessionToken);
-                if (loaded) {
-                    const modal = document.getElementById('roleModal');
-                    if (modal) modal.style.display = 'none';
-                    if (typeof window.showScreen === 'function') window.showScreen('main');
-                } else {
-                    window.location.reload();
+                if (typeof window.loadUserDataByToken === 'function') {
+                    await window.loadUserDataByToken(data.sessionToken);
                 }
+                const modal = document.getElementById('roleModal');
+                if (modal) modal.style.display = 'none';
+                if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {
             errorDiv.textContent = data.error || 'Ошибка';
@@ -267,7 +260,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== LOW‑CODE OAuth для VK (попап) ==========
+// ========== LOW‑CODE OAuth для VK (попап) – старый работающий код ==========
 async function loginWithVK() {
     if (vkLoginInProgress) {
         showToast('Вход через VK уже выполняется', 1500);
@@ -280,8 +273,7 @@ async function loginWithVK() {
             showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
         }
     }, 120000);
-
-    // Ждём загрузки VKID SDK
+    // Проверяем наличие VKID SDK (глобальный объект VKID)
     if (!window.VKID) {
         showToast('Загрузка VK SDK...', 1000);
         const checkSDK = setInterval(() => {
@@ -312,11 +304,9 @@ async function loginWithVK() {
         .then(async (response) => {
             clearTimeout(timeoutId);
             const { code, device_id } = response;
-            // Отправляем code и device_id на сервер
-            const res = await fetch(`${window.API_BASE}/auth/vk/callback?code=${code}&device_id=${device_id}`);
-            // Сервер сам сделает редирект на клиент с токеном, поэтому ничего больше не делаем
-            console.log('[VK] Код отправлен на сервер, ожидаем редирект...');
-            // Не закрываем модалку, редирект произойдёт автоматически
+            // Отправляем код на сервер (серверный callback обработает и сделает редирект)
+            // Используем GET-запрос к /auth/vk/callback
+            window.location.href = `${window.API_BASE}/auth/vk/callback?code=${code}&device_id=${device_id}`;
         })
         .catch((error) => {
             clearTimeout(timeoutId);
@@ -358,8 +348,10 @@ function showusernameModal(userId) {
         });
         if (res.ok) {
             modal.style.display = 'none';
-            const loaded = await window.loadUserDataByToken(localStorage.getItem('sessionToken'));
-            if (loaded && typeof window.showScreen === 'function') window.showScreen('main');
+            if (typeof window.loadUserDataByToken === 'function') {
+                await window.loadUserDataByToken(localStorage.getItem('sessionToken'));
+            }
+            if (typeof window.showScreen === 'function') window.showScreen('main');
             else location.reload();
         } else {
             const err = await res.json();

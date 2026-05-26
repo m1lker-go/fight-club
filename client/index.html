@@ -119,7 +119,7 @@
     <script src="js/gems.js"></script>
     <script src="app.js"></script>
 
-    <script>
+       <script>
         // Функция обратного вызова для виджета VK
         window.vkAuthCallback = async function(response) {
             if (response && response.session) {
@@ -157,9 +157,10 @@
             }
         };
 
-        // Инициализация виджета (будет вызвана из loginWithVK)
+        // Инициализация виджета
         window.initVKWidget = function(containerId) {
             if (typeof VK !== 'undefined' && VK.Widgets) {
+                VK.init({ apiId: 54525890 }); // Ваш client_id
                 VK.Widgets.Auth(containerId, {
                     onAuth: window.vkAuthCallback,
                     authUrl: '/auth/vk-lowcode'

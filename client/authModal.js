@@ -1,5 +1,4 @@
-// authModal.js – low‑code OAuth с динамической загрузкой VKID SDK
-// (исправлено: для WebView используется вызов нативного метода Android.startVKAuth)
+// authModal.js – low‑code OAuth для браузера, нативная авторизация для WebView, Bridge для миниаппа
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -11,15 +10,11 @@ let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
 
 function isWebView() {
-    // Если есть объект Android (интерфейс из APK) – точно WebView
     if (typeof window.Android !== 'undefined') return true;
-    // Флаг, установленный из Android (через evaluateJavascript)
     if (window.isAppWebView === true) return true;
-    // User-Agent
     const ua = navigator.userAgent.toLowerCase();
     if (/wv/.test(ua)) return true;
     if (/(android|iphone|ipad)/.test(ua) && !/chrome/.test(ua)) return true;
-    // Telegram WebApp – не WebView
     if (window.Telegram?.WebApp?.initData) return false;
     return false;
 }
@@ -82,11 +77,11 @@ function showAuthModal() {
         });
     }
 
-    // VK – для миниаппа Bridge, для браузера low‑code, для WebView – нативная авторизация через Android
+    // VK – универсальный обработчик
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', async () => {
-            // VK Mini App
+            // VK Mini App – Bridge
             if (typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru') {
                 console.log('[VK] Используем VK Bridge (миниапп)');
                 try {
@@ -121,17 +116,18 @@ function showAuthModal() {
                     console.error('VK Bridge auth error:', err);
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
-            } 
-   else if (webView) {
-    console.log('[VK] WebView режим, вызов нативной авторизации');
-    if (typeof Android !== 'undefined' && Android.startVKAuth) {
-        Android.startVKAuth();
-    } else {
-        showToast('Ошибка: интерфейс Android не найден', 1500);
-    }
-}
+            }
+            // WebView – нативная авторизация через Android
+            else if (webView) {
+                console.log('[VK] WebView режим, вызов нативной авторизации');
+                if (typeof Android !== 'undefined' && Android.startVKAuth) {
+                    Android.startVKAuth();
+                } else {
+                    showToast('Ошибка: интерфейс Android не найден', 1500);
+                }
+            }
+            // Браузер – low‑code попап
             else {
-                // Браузер – low‑code попап
                 console.log('[VK] Браузерный режим, low‑code OAuth');
                 loginWithVK();
             }
@@ -147,7 +143,7 @@ function showAuthModal() {
         }
     });
 
-    // Остальное
+    // Остальное без изменений
     document.getElementById('loginCredentialsBtn')?.addEventListener('click', () => {
         document.querySelector('.auth-methods').style.display = 'none';
         document.querySelector('.auth-credentials-form').style.display = 'block';
@@ -275,7 +271,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== LOW‑CODE OAuth с динамической загрузкой VKID SDK ==========
+// ========== LOW‑CODE OAuth для браузера (сохраняем) ==========
 function loadVKIDSDK() {
     return new Promise((resolve, reject) => {
         if (window.VKIDSDK) {
@@ -322,7 +318,6 @@ async function loginWithVK() {
         const response = await VKID.Auth.login();
         clearTimeout(timeoutId);
         const { code, device_id } = response;
-        // Обмениваем код на токен на клиенте
         const tokenData = await VKID.Auth.exchangeCode(code, device_id);
         const { access_token, user_id, email } = tokenData;
         const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {

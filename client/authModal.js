@@ -122,15 +122,14 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             } 
-            else if (webView) {
-                // WebView – вызов нативной авторизации через VK SDK
-                console.log('[VK] WebView режим, вызов нативной авторизации');
-                if (typeof Android !== 'undefined' && Android.startVKAuth) {
-                    Android.startVKAuth();
-                } else {
-                    showToast('Ошибка: интерфейс Android не найден', 1500);
-                }
-            }
+           else if (webView) {
+    console.log('[VK] WebView режим, вызов нативной авторизации');
+    if (typeof Android !== 'undefined' && Android.startVKAuth) {
+        Android.startVKAuth();
+    } else {
+        showToast('Ошибка: интерфейс Android не найден', 1500);
+    }
+}
             else {
                 // Браузер – low‑code попап
                 console.log('[VK] Браузерный режим, low‑code OAuth');

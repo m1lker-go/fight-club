@@ -1013,51 +1013,48 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // VK OAuth callback (для браузерного входа через редирект)
-// VK OAuth callback (для браузерного входа через редирект)
 router.get('/vk/callback', async (req, res) => {
-    const { code, error, device_id } = req.query;
-    console.log('[VK Callback] Received request, code:', code, 'error:', error);
+    const { code, error } = req.query;
+    console.log('[VK Callback] code:', code, 'error:', error);
 
-    // 1. Проверяем, что код получен
     if (error || !code) {
         console.error('[VK Callback] Error or no code provided');
         return res.redirect(`${process.env.CLIENT_URL}?auth_error=vk`);
     }
 
     try {
-        // 2. Готовим параметры для обмена кода на токены
-        const params = new URLSearchParams({
-            client_id: process.env.VK_CLIENT_ID,   // Ваш client_id (54525890)
-            client_secret: process.env.VK_CLIENT_SECRET,
-            code: code,
-            device_id: device_id,                 // device_id из запроса
-            grant_type: 'authorization_code'
-        });
+        // Старый VK OAuth — правильный эндпоинт, не требует device_id
+        const redirectUri = process.env.VK_REDIRECT_URI || 'https://api.cat-fight.ru/auth/vk/callback';
 
-        // 3. Отправляем запрос к API VK ID на обмен кода
-        const tokenResponse = await fetch('https://id.vk.com/oauth2/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params
-        });
+        const tokenUrl = new URL('https://oauth.vk.com/access_token');
+        tokenUrl.searchParams.set('client_id', process.env.VK_CLIENT_ID);
+        tokenUrl.searchParams.set('client_secret', process.env.VK_CLIENT_SECRET);
+        tokenUrl.searchParams.set('redirect_uri', redirectUri);
+        tokenUrl.searchParams.set('code', code);
 
+        const tokenResponse = await fetch(tokenUrl.toString());
         const tokenData = await tokenResponse.json();
+
+        console.log('[VK Callback] token response:', JSON.stringify(tokenData));
+
         if (tokenData.error) {
-            throw new Error(tokenData.error_description || 'Token exchange failed');
+            throw new Error(tokenData.error_description || 'VK token exchange failed');
         }
 
-        // 4. Извлекаем access_token и user_id из ответа
-        const { access_token, user_id, email, id_token } = tokenData;
-        console.log(`[VK Callback] Tokens received for user ${user_id}`);
+        const { access_token, user_id, email } = tokenData;
 
-        // 5. Вызываем ваш существующий эндпоинт /auth/vk-lowcode
-        //    Этот эндпоинт уже умеет создавать/находить пользователя и выдавать JWT
-        const lowcodeRes = await fetch(`${process.env.API_BASE}/auth/vk-lowcode`, {
+        if (!access_token || !user_id) {
+            throw new Error('No access_token or user_id from VK');
+        }
+
+        // Вызываем существующий обработчик создания/поиска пользователя
+        const apiBase = process.env.API_BASE || 'http://localhost:5001';
+        const lowcodeRes = await fetch(`${apiBase}/auth/vk-lowcode`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                access_token: access_token,
-                user_id: user_id,
+                access_token,
+                user_id,
                 email: email || null
             })
         });
@@ -1067,13 +1064,12 @@ router.get('/vk/callback', async (req, res) => {
             throw new Error(data.error || 'Lowcode endpoint failed');
         }
 
-        // 6. Редиректим пользователя обратно на фронтенд с токеном
         const redirectUrl = `${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${data.sessionToken}&needusername=${data.needusername}&userId=${data.userId}`;
-        console.log('[VK Callback] Success, redirecting to:', redirectUrl);
+        console.log('[VK Callback] Success, redirecting');
         res.redirect(redirectUrl);
 
     } catch (err) {
-        console.error('[VK Callback] Critical error:', err);
+        console.error('[VK Callback] Critical error:', err.message);
         res.redirect(`${process.env.CLIENT_URL}?auth_error=vk`);
     }
 });

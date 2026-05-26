@@ -1053,7 +1053,7 @@ router.get('/vk/callback', async (req, res) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 access_token,
-                user_id,
+                user_id: String(user_id),
                 email: email || null
             })
         });

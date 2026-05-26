@@ -10,6 +10,10 @@ let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
 
 function isWebView() {
+    // Если есть интерфейс от Android-приложения – точно WebView
+    if (typeof Android !== 'undefined' && Android.isAppWebView && Android.isAppWebView()) {
+        return true;
+    }
     const ua = navigator.userAgent.toLowerCase();
     if (/wv/.test(ua)) return true;
     if (/(android|iphone|ipad)/.test(ua) && !/chrome/.test(ua)) return true;

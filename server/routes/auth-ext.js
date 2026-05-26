@@ -1048,7 +1048,7 @@ router.get('/vk/callback', async (req, res) => {
         }
 
         // Вызываем существующий обработчик создания/поиска пользователя
-        const lowcodeRes = await fetch('/auth/vk-lowcode', { ... });
+        const lowcodeRes = await fetch('/auth/vk-lowcode', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

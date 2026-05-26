@@ -108,6 +108,8 @@ window.apiRequest = async function(endpoint, options = {}) {
         method: method,
         headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',   // ← антикеш
+            'Pragma': 'no-cache',                                     // ← для старых прокси
             ...(options.headers || {})
         }
     };
@@ -126,6 +128,8 @@ window.apiRequest = async function(endpoint, options = {}) {
                 params.append(key, value);
             }
         }
+        // Антикеш-параметр (уникальный timestamp)
+        params.append('_t', Date.now());
         const separator = url.includes('?') ? '&' : '?';
         finalUrl = url + separator + params.toString();
     } else {

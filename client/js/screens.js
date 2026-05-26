@@ -1059,7 +1059,9 @@ function renderSkins(container) {
             const activeAvatarId = userData.avatar_id || 1;
             // Временно: считаем купленным только активный аватар и аватар по умолчанию (id=1)
             // Позже замените на реальный запрос к /user/avatars
-            const ownedSet = new Set([1, activeAvatarId]);
+            const ownedIds = await window.apiRequest('/user/avatars', { method: 'GET' }).then(r => r.json());
+const ownedSet = new Set(ownedIds);
+ownedSet.add(1); // аватар по умолчанию всегда доступен
 
             const sortedAvatars = [...allAvatars].sort((a, b) => {
                 if (a.id === activeAvatarId) return -1;

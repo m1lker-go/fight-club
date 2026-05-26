@@ -1,10 +1,11 @@
 const express = require('express');
+const cors = require('cors');          // ← добавлено
 const cron = require('node-cron');
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
 const { sendTelegramNotification } = require('./utils/telegram');
 const { resetDailyTasks, resetSeason } = require('./utils/scheduler');
-const authMiddleware = require('./middleware/auth'); // <-- ДОБАВЛЕНО
+const authMiddleware = require('./middleware/auth');
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 
 console.log('Starting server...');
@@ -14,15 +15,22 @@ console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 
+// ========== НАСТРОЙКА CORS (ДОБАВЛЕНА) ==========
+app.use(cors({
+    origin: ['https://cat-fight.ru', 'https://api.cat-fight.ru'], // ваш домен
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']   // разрешённые заголовки
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('client'));
 
-// ========== ПУБЛИЧНЫЕ РОУТЫ (без авторизации) ==========
+// ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));
 app.use('/payment', require('./routes/robokassa'));
 
-// ========== ЗАЩИЩЁННЫЕ API (требуют Bearer токен) ==========
+// ========== ЗАЩИЩЁННЫЕ API ==========
 app.use('/player', authMiddleware, require('./routes/player'));
 app.use('/inventory', authMiddleware, require('./routes/inventory'));
 app.use('/shop', authMiddleware, require('./routes/shop'));
@@ -35,7 +43,7 @@ app.use('/tower', authMiddleware, require('./routes/tower-server'));
 app.use('/rank', authMiddleware, require('./routes/rank'));
 app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
 app.use('/subscription', authMiddleware, require('./routes/subscription'));
-app.use('/user', authMiddleware, require('./routes/user'));  
+app.use('/user', authMiddleware, require('./routes/user')); 
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {

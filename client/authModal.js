@@ -121,7 +121,7 @@ function showAuthModal() {
                 // Браузер или WebView – редирект на OAuth (без SDK)
                 console.log('[VK] Браузерный режим, редирект на OAuth');
                 const clientId = 54525890;
-                const redirectUri = encodeURIComponent(`${window.API_BASE}/auth/vk/callback`);
+                const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
                 const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
                 window.location.href = url;
             }

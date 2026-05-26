@@ -119,23 +119,21 @@ function showAuthModal() {
             }
             // WebView – нативная авторизация через Android
             else if (webView) {
-                console.log('[VK] WebView режим, вызов нативной авторизации');
-                if (typeof Android !== 'undefined' && Android.startVKAuth) {
-                   console.log('[VK] Android объект:', typeof Android);
-console.log('[VK] Android.startVKAuth:', typeof Android.startVKAuth);
-                    Android.startVKAuth();
-                } else {
-                    showToast('Ошибка: интерфейс Android не найден', 1500);
-                }
+    console.log('[VK] WebView режим, вызов нативной авторизации');
+    if (typeof Android !== 'undefined' && Android.startVKAuth) {
+        Android.startVKAuth();
+    } else {
+        console.error('[VK] Android interface not found, retrying...');
+        // Повторная попытка через 1 секунду
+        setTimeout(() => {
+            if (typeof Android !== 'undefined' && Android.startVKAuth) {
+                Android.startVKAuth();
+            } else {
+                showToast('Ошибка: интерфейс Android не найден. Перезагрузите страницу.', 1500);
             }
-            // Браузер – low‑code попап
-            else {
-                console.log('[VK] Браузерный режим, low‑code OAuth');
-                loginWithVK();
-            }
-        });
+        }, 1000);
     }
-
+}
     // Google
     document.getElementById('googleAuthBtn')?.addEventListener('click', () => {
         if (webView) {

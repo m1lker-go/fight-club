@@ -118,20 +118,38 @@ function showAuthModal() {
                 }
             }
             // WebView – нативная авторизация через Android
-    else if (webView) {
+  else if (webView) {
     console.log('[VK] WebView режим, вызов нативной авторизации');
-    console.log('[VK] typeof Android:', typeof Android);
     if (typeof Android !== 'undefined') {
-        console.log('[VK] Android.startVKAuth type:', typeof Android.startVKAuth);
+        console.log('[VK] Android объект существует, тип:', typeof Android);
         if (typeof Android.startVKAuth === 'function') {
-            console.log('[VK] Calling Android.startVKAuth...');
-            Android.startVKAuth();
-            console.log('[VK] Android.startVKAuth called');
+            console.log('[VK] Метод startVKAuth найден, вызываем...');
+            try {
+                Android.startVKAuth();
+                console.log('[VK] Вызов Android.startVKAuth выполнен без ошибок');
+            } catch (e) {
+                console.error('[VK] Ошибка при вызове Android.startVKAuth:', e);
+            }
         } else {
-            console.error('[VK] Android.startVKAuth is not a function');
+            console.error('[VK] Android.startVKAuth не является функцией, тип:', typeof Android.startVKAuth);
+            // Дополнительная проверка: выведем все свойства объекта Android
+            console.log('[VK] Свойства Android:', Object.keys(Android));
         }
     } else {
-        console.error('[VK] Android object is undefined');
+        console.error('[VK] Объект Android не определён');
+        // Попробуем ещё раз через 0.5 сек
+        setTimeout(() => {
+            if (typeof Android !== 'undefined') {
+                console.log('[VK] Android появился после задержки, повторяем');
+                if (typeof Android.startVKAuth === 'function') {
+                    Android.startVKAuth();
+                } else {
+                    console.error('[VK] Android.startVKAuth всё ещё не функция');
+                }
+            } else {
+                console.error('[VK] Android так и не появился');
+            }
+        }, 500);
     }
 }
         // Попытка повторно запросить интерфейс через evaluateJavascript

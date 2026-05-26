@@ -122,7 +122,7 @@ function showAuthModal() {
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
             } 
-       else if (webView) {
+     else if (webView) {
     console.log('[VK] WebView режим, открываем виджет VK');
     let container = document.getElementById('vkWidgetContainer');
     if (!container) {
@@ -142,7 +142,6 @@ function showAuthModal() {
     }
     container.innerHTML = '<div id="vk_auth" style="width: 400px; height: 400px;"></div>';
     container.style.display = 'flex';
-    
     if (typeof window.initVKWidget === 'function') {
         window.initVKWidget('vk_auth');
     } else {

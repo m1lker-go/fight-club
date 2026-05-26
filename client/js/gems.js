@@ -1,4 +1,4 @@
-// gems.js – Алмазная лавка (подписка + пакеты алмазов, везде POST-форма)
+// gems.js – Алмазная лавка (исправлен: добавлен _t для обхода кеша)
 
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
@@ -8,7 +8,8 @@ console.log('[gems.js] loaded');
 async function loadSubscriptionStatus() {
     console.log('[loadSubscriptionStatus] start');
     try {
-        const res = await window.apiRequest('/subscription/status', { method: 'GET' });
+        // Добавляем _t для принудительного обновления
+        const res = await window.apiRequest(`/subscription/status?_t=${Date.now()}`, { method: 'GET' });
         const data = await res.json();
         subscriptionStatus = data;
         console.log('[loadSubscriptionStatus] status:', data);
@@ -49,20 +50,21 @@ async function renderGems(container) {
         return;
     }
 
+    // Перед рендером загружаем свежий статус (с _t)
     const status = await loadSubscriptionStatus();
     const hasSubscription = status?.hasSubscription || false;
     const freeCoinAvailable = status?.freeCoinAvailable || false;
     const bonusBought = status?.bonusPacks || {};
 
-    // Пакеты алмазов (50 алмазов – тестовая цена 1 ₽, остальные – обычные)
-   const packs = [
-    { id: 1, diamonds: 50, price: 99, image: 'buy_diamond_1.png', bonus: true },
-    { id: 2, diamonds: 150, price: 399, image: 'buy_diamond_2.png', bonus: true },
-    { id: 3, diamonds: 350, price: 899, image: 'buy_diamond_3.png', bonus: true },
-    { id: 4, diamonds: 700, price: 1599, image: 'buy_diamond_4.png', bonus: true },
-    { id: 5, diamonds: 1150, price: 2499, image: 'buy_diamond_5.png', bonus: true },
-    { id: 6, diamonds: 1800, price: 3999, image: 'buy_diamond_6.png', bonus: true }
-];
+    const packs = [
+        { id: 1, diamonds: 50, price: 99, image: 'buy_diamond_1.png', bonus: true },
+        { id: 2, diamonds: 150, price: 399, image: 'buy_diamond_2.png', bonus: true },
+        { id: 3, diamonds: 350, price: 899, image: 'buy_diamond_3.png', bonus: true },
+        { id: 4, diamonds: 700, price: 1599, image: 'buy_diamond_4.png', bonus: true },
+        { id: 5, diamonds: 1150, price: 2499, image: 'buy_diamond_5.png', bonus: true },
+        { id: 6, diamonds: 1800, price: 3999, image: 'buy_diamond_6.png', bonus: true }
+    ];
+
     let html = `
         <div class="gems-page">
             <div class="subscription-card-new">
@@ -111,7 +113,7 @@ async function renderGems(container) {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
-    // --- Обработчики покупки алмазов (теперь через POST-форму) ---
+    // --- Обработчики покупки алмазов ---
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
@@ -141,7 +143,6 @@ async function renderGems(container) {
 
                 const data = await res.json();
                 if (data.confirmationUrl) {
-                    // Отправляем POST-форму вместо простого редиректа
                     submitRobokassaForm(data.confirmationUrl);
                 } else {
                     showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
@@ -166,17 +167,14 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
 
-    // Кнопка 20 монет – показывается всегда, если награда доступна
     const freeCoinButton = freeCoinAvailable ? `
         <button class="subscription-free-btn-new" id="freeCoinBtnNew">
             <img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">
             20 <i class="fas fa-coins"></i>
         </button>` : '';
 
-    // Определяем, что показать в качестве основной кнопки (подписка / ежедневная награда)
     let mainButtonHtml = '';
     if (hasSubscription) {
-        // Подписка активна – показываем кнопку ежедневной награды, если она доступна
         const dailyAvailable = subscriptionStatus?.dailySubRewardAvailable;
         if (dailyAvailable) {
             mainButtonHtml = `
@@ -191,7 +189,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 </button>`;
         }
     } else {
-        // Подписки нет – стандартная кнопка оформления
         mainButtonHtml = `
             <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
                 Оформить за 599 ₽/мес
@@ -206,19 +203,19 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-chart-line" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Дополнительные награды в бою:<br> +10% опыта <i class="fas fa-star" style="color: #aaa;"></i>, +10% монет <i class="fas fa-coins" style="color: #aaa;"></i></div>
+                <div class="sub-desc">Дополнительные награды в бою:<br> +10% опыта, +10% монет</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-shield-alt" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Награда в случае поражения:<br> +5 опыта <i class="fas fa-star" style="color: #aaa;"></i>, +5 монет <i class="fas fa-coins" style="color: #aaa;"></i></div>
+                <div class="sub-desc">Награда в случае поражения:<br> +5 опыта, +5 монет</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-gift" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Ежедневная награда:<br> 250 монет <i class="fas fa-coins" style="color: #aaa;"></i>, 10 угля <i class="fas fa-cube" style="color: #aaa;"></i></div>
+                <div class="sub-desc">Ежедневная награда:<br> 250 монет, 10 угля</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-gem" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Награда при оформлении:<br> 1500 монет <i class="fas fa-coins" style="color: #aaa;"></i>, 50 угля <i class="fas fa-cube" style="color: #aaa;"></i>, 100 алмазов <i class="fas fa-gem" style="color: #aaa;"></i></div>
+                <div class="sub-desc">Награда при оформлении:<br> 1500 монет, 50 угля, 100 алмазов</div>
             </div>
             <div class="subscription-buttons-new">
                 ${freeCoinButton}
@@ -229,77 +226,102 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-
-// Обработчик бесплатной монеты (20 coins)
-const freeBtn = document.getElementById('freeCoinBtnNew');
-if (freeBtn) {
-    freeBtn.addEventListener('click', async () => {
-        console.log('[gems] free coin button clicked');
-        if (pendingFreeCoin) return;
-        pendingFreeCoin = true;
-        if (!freeCoinAvailable) {
-            showToast('Бесплатная монета уже получена сегодня', 1500);
-            pendingFreeCoin = false;
-            return;
-        }
-        try {
-            // user_id больше не передаём – сервер берёт из токена
-            const res = await window.apiRequest('/subscription/claim-free-coin', {
-                method: 'POST',
-                body: JSON.stringify({})
-            });
-            const data = await res.json();
-            if (data.success) {
-                showToast('+20 монет!', 1500);
-                await refreshData();
-                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-                modal.style.display = 'none';
-                const subContent = document.getElementById('tradeSubContent');
-                if (subContent) renderGems(subContent);
-            } else {
-                showToast(data.error || 'Ошибка', 1500);
+    // Обработчик бесплатной монеты
+    const freeBtn = document.getElementById('freeCoinBtnNew');
+    if (freeBtn) {
+        freeBtn.addEventListener('click', async () => {
+            console.log('[gems] free coin button clicked');
+            if (pendingFreeCoin) return;
+            pendingFreeCoin = true;
+            if (!freeCoinAvailable) {
+                showToast('Бесплатная монета уже получена сегодня', 1500);
+                pendingFreeCoin = false;
+                return;
             }
-        } catch (err) {
-            console.error('[gems] FREE COIN: ошибка', err);
-            showToast('Ошибка соединения', 1500);
-        } finally {
-            pendingFreeCoin = false;
-        }
-    });
-}
+            try {
+                const res = await window.apiRequest('/subscription/claim-free-coin', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('+20 монет!', 1500);
+                    await refreshData();
+                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                    modal.style.display = 'none';
+                    const subContent = document.getElementById('tradeSubContent');
+                    if (subContent) renderGems(subContent);
+                } else {
+                    showToast(data.error || 'Ошибка', 1500);
+                }
+            } catch (err) {
+                console.error('[gems] FREE COIN: ошибка', err);
+                showToast('Ошибка соединения', 1500);
+            } finally {
+                pendingFreeCoin = false;
+            }
+        });
+    }
 
-// Обработчик ежедневной награды для подписчиков
-const dailyBtn = document.getElementById('dailyRewardBtn');
-if (dailyBtn && !dailyBtn.disabled) {
-    dailyBtn.addEventListener('click', async () => {
-        console.log('[gems] daily reward button clicked');
-        dailyBtn.disabled = true;
-        try {
-            // user_id больше не передаём – сервер берёт из токена
-            const res = await window.apiRequest('/subscription/claim-daily-reward', {
-                method: 'POST',
-                body: JSON.stringify({})
-            });
-            const data = await res.json();
-            if (data.success) {
-                showToast(`+${data.coins} монет, +${data.coal} угля!`, 2000);
-                subscriptionStatus.dailySubRewardAvailable = false;
-                await refreshData();
-                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-                modal.style.display = 'none';
-                const subContent = document.getElementById('tradeSubContent');
-                if (subContent) renderGems(subContent);
-            } else {
-                showToast(data.error || 'Ошибка', 1500);
+    // Обработчик ежедневной награды для подписчиков
+    const dailyBtn = document.getElementById('dailyRewardBtn');
+    if (dailyBtn && !dailyBtn.disabled) {
+        dailyBtn.addEventListener('click', async () => {
+            console.log('[gems] daily reward button clicked');
+            dailyBtn.disabled = true;
+            try {
+                const res = await window.apiRequest('/subscription/claim-daily-reward', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`+${data.coins} монет, +${data.coal} угля!`, 2000);
+                    subscriptionStatus.dailySubRewardAvailable = false;
+                    await refreshData();
+                    if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                    modal.style.display = 'none';
+                    const subContent = document.getElementById('tradeSubContent');
+                    if (subContent) renderGems(subContent);
+                } else {
+                    showToast(data.error || 'Ошибка', 1500);
+                    dailyBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error('[gems] daily reward error:', err);
+                showToast('Ошибка соединения', 1500);
                 dailyBtn.disabled = false;
             }
-        } catch (err) {
-            console.error('[gems] daily reward error:', err);
-            showToast('Ошибка соединения', 1500);
-            dailyBtn.disabled = false;
-        }
-    });
-}
+        });
+    }
+
+    // Кнопка оформления подписки
+    const buySubBtn = document.getElementById('buySubscriptionBtnNew');
+    if (buySubBtn) {
+        buySubBtn.addEventListener('click', async () => {
+            console.log('[gems] buy subscription clicked');
+            try {
+                const res = await window.apiRequest('/payment/create', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        userId: userData.id,
+                        amount: 599,
+                        description: 'Подписка VIP Silver на 30 дней',
+                        metadata: { type: 'subscription' }
+                    })
+                });
+                const data = await res.json();
+                if (data.confirmationUrl) {
+                    submitRobokassaForm(data.confirmationUrl);
+                } else {
+                    showToast('Ошибка создания платежа', 2000);
+                }
+            } catch (err) {
+                console.error('[gems] subscription error:', err);
+                showToast('Сетевая ошибка', 2000);
+            }
+        });
+    }
 
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';

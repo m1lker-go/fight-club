@@ -108,8 +108,7 @@ window.apiRequest = async function(endpoint, options = {}) {
         method: method,
         headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',   // ← антикеш
-            'Pragma': 'no-cache',                                     // ← для старых прокси
+            // НЕ ДОБАВЛЯЙТЕ Cache-Control или Pragma – они вызывают CORS preflight
             ...(options.headers || {})
         }
     };

@@ -10,19 +10,15 @@ let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
 
 function isWebView() {
-    // 1. Самый надёжный способ – флаг, переданный из Android (через addJavascriptInterface)
-    if (typeof window.Android !== 'undefined' && typeof window.Android.isAppWebView === 'function') {
-        try {
-            if (window.Android.isAppWebView()) return true;
-        } catch(e) {}
-    }
-    // 2. Признак от Android (можно установить в onPageFinished)
+    // Если есть объект Android (интерфейс из APK) – точно WebView
+    if (typeof window.Android !== 'undefined') return true;
+    // Флаг, установленный из Android (через evaluateJavascript)
     if (window.isAppWebView === true) return true;
-    // 3. User-Agent
+    // User-Agent
     const ua = navigator.userAgent.toLowerCase();
     if (/wv/.test(ua)) return true;
     if (/(android|iphone|ipad)/.test(ua) && !/chrome/.test(ua)) return true;
-    // 4. Telegram WebApp – не WebView
+    // Telegram WebApp – не WebView
     if (window.Telegram?.WebApp?.initData) return false;
     return false;
 }

@@ -1013,47 +1013,67 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // VK OAuth callback (для браузерного входа через редирект)
+// VK OAuth callback (для браузерного входа через редирект)
 router.get('/vk/callback', async (req, res) => {
-    const { code, error, state } = req.query;
+    const { code, error, device_id } = req.query;
+    console.log('[VK Callback] Received request, code:', code, 'error:', error);
+
+    // 1. Проверяем, что код получен
     if (error || !code) {
-        console.error('[VK Callback] error:', error);
+        console.error('[VK Callback] Error or no code provided');
         return res.redirect(`${process.env.CLIENT_URL}?auth_error=vk`);
     }
+
     try {
-        // Обмен кода на токен
+        // 2. Готовим параметры для обмена кода на токены
         const params = new URLSearchParams({
-            client_id: process.env.VK_CLIENT_ID, // 54525890
+            client_id: process.env.VK_CLIENT_ID,   // Ваш client_id (54525890)
             client_secret: process.env.VK_CLIENT_SECRET,
             code: code,
-            redirect_uri: `${process.env.API_BASE}/auth/vk/callback`,
+            device_id: device_id,                 // device_id из запроса
+            grant_type: 'authorization_code'
         });
-        const tokenRes = await fetch('https://oauth.vk.com/access_token', {
+
+        // 3. Отправляем запрос к API VK ID на обмен кода
+        const tokenResponse = await fetch('https://id.vk.com/oauth2/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: params
         });
-        const tokenData = await tokenRes.json();
-        if (tokenData.error) throw new Error(tokenData.error_description);
 
-        // Теперь вызываем /vk-lowcode (этот эндпоинт у вас уже есть)
+        const tokenData = await tokenResponse.json();
+        if (tokenData.error) {
+            throw new Error(tokenData.error_description || 'Token exchange failed');
+        }
+
+        // 4. Извлекаем access_token и user_id из ответа
+        const { access_token, user_id, email, id_token } = tokenData;
+        console.log(`[VK Callback] Tokens received for user ${user_id}`);
+
+        // 5. Вызываем ваш существующий эндпоинт /auth/vk-lowcode
+        //    Этот эндпоинт уже умеет создавать/находить пользователя и выдавать JWT
         const lowcodeRes = await fetch(`${process.env.API_BASE}/auth/vk-lowcode`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                access_token: tokenData.access_token,
-                user_id: tokenData.user_id,
-                email: tokenData.email || null
+                access_token: access_token,
+                user_id: user_id,
+                email: email || null
             })
         });
+
         const data = await lowcodeRes.json();
-        if (data.success) {
-            const redirectUrl = `${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${data.sessionToken}&needusername=${data.needusername}&userId=${data.userId}`;
-            res.redirect(redirectUrl);
-        } else {
-            throw new Error(data.error);
+        if (!data.success) {
+            throw new Error(data.error || 'Lowcode endpoint failed');
         }
+
+        // 6. Редиректим пользователя обратно на фронтенд с токеном
+        const redirectUrl = `${process.env.CLIENT_URL}?vk_auth=success&sessionToken=${data.sessionToken}&needusername=${data.needusername}&userId=${data.userId}`;
+        console.log('[VK Callback] Success, redirecting to:', redirectUrl);
+        res.redirect(redirectUrl);
+
     } catch (err) {
-        console.error('[VK Callback] error:', err);
+        console.error('[VK Callback] Critical error:', err);
         res.redirect(`${process.env.CLIENT_URL}?auth_error=vk`);
     }
 });

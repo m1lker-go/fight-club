@@ -75,12 +75,12 @@ function showAuthModal() {
         });
     }
 
-    // VK – для миниаппа Bridge, для браузера – low‑code
+     // VK – для миниаппа Bridge, для браузера low‑code, для WebView – редирект
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', async () => {
+            // VK Mini App
             if (typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru') {
-                // VK Mini App – Bridge
                 console.log('[VK] Используем VK Bridge (миниапп)');
                 try {
                     const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
@@ -114,8 +114,17 @@ function showAuthModal() {
                     console.error('VK Bridge auth error:', err);
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
-            } else {
-                // Браузер – low‑code OAuth
+            } 
+            else if (webView) {
+                // WebView – редирект на OAuth (не попап)
+                console.log('[VK] WebView режим, редирект на OAuth');
+                const clientId = 54525890;
+                const redirectUri = encodeURIComponent('https://cat-fight.ru/auth/vk/callback');
+                const url = `https://oauth.vk.com/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email&v=5.131`;
+                window.location.href = url;
+            }
+            else {
+                // Браузер – low‑code попап
                 console.log('[VK] Браузерный режим, low‑code OAuth');
                 loginWithVK();
             }

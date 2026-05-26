@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');          // ← добавлено
 const cron = require('node-cron');
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
@@ -15,21 +14,9 @@ console.log('BOT_USERNAME:', process.env.BOT_USERNAME);
 
 const app = express();
 
-// ========== НАСТРОЙКА CORS (без дублирования заголовка) ==========
-//const allowedOrigins = ['https://cat-fight.ru', 'https://api.cat-fight.ru'];
-//app.use(cors({
-  //  origin: function (origin, callback) {
-        // Разрешаем запросы без origin (например, из мобильных приложений)
-    //    if (!origin) return callback(null, true);
-      //  if (allowedOrigins.includes(origin)) {
-        //    callback(null, true);
-        //} else {
-          //  callback(new Error('Not allowed by CORS'));
-        //}
-    //},
-    //credentials: true,
-    //allowedHeaders: ['Content-Type', 'Authorization']
-//}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('client'));
 
 // ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));
@@ -48,7 +35,7 @@ app.use('/tower', authMiddleware, require('./routes/tower-server'));
 app.use('/rank', authMiddleware, require('./routes/rank'));
 app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
 app.use('/subscription', authMiddleware, require('./routes/subscription'));
-app.use('/user', authMiddleware, require('./routes/user')); 
+app.use('/user', authMiddleware, require('./routes/user'));
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {
@@ -110,7 +97,7 @@ app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
 });
 
-// ========== АДМИНСКИЕ ЭНДПОИНТЫ (без авторизации, но можно добавить проверку) ==========
+// ========== АДМИНСКИЕ ЭНДПОИНТЫ ==========
 app.get('/admin/update-items', async (req, res) => {
     const client = await pool.connect();
     try {

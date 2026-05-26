@@ -12,7 +12,7 @@ function toMoscowDateString(dbDate) {
     return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
 }
 
-// ========== ТЕСТОВЫЙ МАРШРУТ (можно удалить позже) ==========
+// ========== ТЕСТОВЫЙ МАРШРУТ ==========
 router.get('/test', async (req, res) => {
     try {
         const result = await pool.query('SELECT 1+1 as sum');
@@ -28,7 +28,6 @@ router.get('/test', async (req, res) => {
     }
 });
 
-// Вспомогательная функция для восстановления энергии (с защитой от NULL)
 async function rechargeEnergy(client, userId) {
     const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
     if (user.rows.length === 0) return;
@@ -36,7 +35,6 @@ async function rechargeEnergy(client, userId) {
     let last = user.rows[0].last_energy;
     let currentEnergy = user.rows[0].energy;
     
-    // Если last_energy не установлен (NULL), считаем, что энергии полная и не обновляем
     if (!last) {
         if (currentEnergy < 20) {
             await client.query('UPDATE users SET energy = 20, last_energy = NOW() WHERE id = $1', [userId]);
@@ -58,8 +56,9 @@ async function rechargeEnergy(client, userId) {
     }
 }
 
-// ========== ПОЛУЧИТЬ ПРОФИЛЬ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ==========
+// ========== ПОЛУЧИТЬ ПРОФИЛЬ ==========
 router.get('/profile', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const userId = req.userId;
     const client = await pool.connect();
     try {
@@ -116,6 +115,7 @@ router.get('/profile', async (req, res) => {
 
 // ========== БЕСПЛАТНЫЙ СУНДУК ==========
 router.get('/freechest', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const userId = req.userId;
     const client = await pool.connect();
     try {
@@ -137,6 +137,7 @@ router.get('/freechest', async (req, res) => {
 
 // ========== БЕСПЛАТНЫЙ УГОЛЬ ==========
 router.get('/freecoal', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const userId = req.userId;
     const client = await pool.connect();
     try {
@@ -158,6 +159,7 @@ router.get('/freecoal', async (req, res) => {
 
 // ========== ЛИМИТ ПОКУПКИ УГЛЯ ЗА МОНЕТЫ ==========
 router.get('/coal-limit', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const userId = req.userId;
     const client = await pool.connect();
     try {
@@ -176,6 +178,7 @@ router.get('/coal-limit', async (req, res) => {
 
 // ========== ИНФОРМАЦИЯ О КЛАССЕ ==========
 router.get('/class/:className', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const userId = req.userId;
     const { className } = req.params;
     const client = await pool.connect();

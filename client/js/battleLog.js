@@ -456,6 +456,25 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
+        // ========== ЗВУКИ БОЯ ==========
+if (window.AudioManager && window.AudioManager.playSound) {
+    if (type === 'attack' || type === 'crit' || type === 'damage') {
+        if (attacker === 'player') {
+            // Мы атакуем и попадаем
+            if (type === 'crit') AudioManager.playSound('crit');
+            else AudioManager.playSound('attack');
+        } else {
+            // Враг атакует и попадает по нам – звук защиты (блок/боль)
+            AudioManager.playSound('defend');
+        }
+    } else if (type === 'dodge') {
+        // Уворот (не важно, чей) – звук уворота
+        AudioManager.playSound('dodge');
+    } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+        // Любая ультимейт-способность – звук магии
+        AudioManager.playSound('magic');
+    }
+}
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
             let animTarget = null;

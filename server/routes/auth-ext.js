@@ -1052,7 +1052,7 @@ router.get('/vk/callback', async (req, res) => {
                 user_id: String(user_id),
                 email: email || null
             })
-        });
+        }); 
 
         const data = await lowcodeRes.json();
         if (!data.success) {

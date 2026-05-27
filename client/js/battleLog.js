@@ -471,7 +471,7 @@ const BattleLog = {
             let options = {};
 
             // Определяем, кто наносит удар/уклоняется/использует ульту
-           if (type === 'attack' || type === 'crit' || type === 'damage') {
+         if (type === 'attack' || type === 'crit' || type === 'damage') {
     const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
     const isSkinAttack = (attackerAvatarId === 13);
     if (isSkinAttack) {
@@ -482,7 +482,6 @@ const BattleLog = {
         animTarget = (attacker === 'player') ? 'enemy' : 'hero';
         animType = 'attack';
     }
-}
 } else if (type === 'dodge') {
                 // Уворот – анимация на том, кто уклоняется (защитник)
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';

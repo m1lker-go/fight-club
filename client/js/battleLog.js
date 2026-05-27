@@ -481,18 +481,26 @@ if (window.AudioManager && window.AudioManager.playSound) {
             let animType = null;
             let options = {};
 
-           if (type === 'attack' || type === 'crit' || type === 'damage') {
-    const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
-    const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
-    if (isSkinAttack) {
-        animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-        animType = 'attack';
-        options = { isSkinAttack: true, skinId: attackerAvatarId };
-    } else {
-        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-        animType = 'attack';
-    }
-}
+       if (type === 'attack' || type === 'crit' || type === 'damage') {
+                const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
+                const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
+                if (isSkinAttack) {
+                    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                    animType = 'attack';
+                    options = { isSkinAttack: true, skinId: attackerAvatarId };
+                } else {
+                    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                    animType = 'attack';
+                }
+            } else if (type === 'dodge') {
+                const defender = (attacker === 'player') ? 'enemy' : 'hero';
+                animTarget = defender;
+                animType = 'dodge';
+                const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
+                const isSkinDodge = window.AnimationManager && window.AnimationManager.hasSkinAnimation(defenderAvatarId);
+                if (isSkinDodge) {
+                    options = { isSkinAttack: true, skinId: defenderAvatarId, isDodge: true };
+                }
            } else if (type === 'dodge') {
     const defender = (attacker === 'player') ? 'enemy' : 'hero';
     animTarget = defender;

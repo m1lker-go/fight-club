@@ -1,6 +1,7 @@
 //fight-club/server/utils/scheduler.js
 
 const { pool } = require('../db');
+const dailyTasks = require('./dailyTasks'); // добавить импорт
 
 // Ежедневный сброс (задания, башня, лотерея, уголь, сундук, подписка, серия побед, лимиты, реклама)
 async function resetDailyTasks() {
@@ -9,13 +10,20 @@ async function resetDailyTasks() {
     try {
         await client.query('BEGIN');
 
+        // Получаем сегодняшнюю дату по Москве
+        const today = dailyTasks.getMoscowDate();
+        // Вычисляем вчерашнюю дату (для last_streak_date)
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
         // Сброс ежедневных заданий
         await client.query(`
             UPDATE users 
             SET daily_tasks_mask = 0, 
                 daily_tasks_progress = '{}',
-                last_daily_reset = CURRENT_DATE
-        `);
+                last_daily_reset = $1
+        `, [today]);
 
         // Сброс попыток башни
         await client.query(`
@@ -28,8 +36,8 @@ async function resetDailyTasks() {
             UPDATE user_fortune 
             SET free_spins_left = 3, 
                 purchased_today = 0, 
-                last_reset_date = CURRENT_DATE
-        `);
+                last_reset_date = $1
+        `, [today]);
 
         // Сброс бесплатного угля
         await client.query(`
@@ -49,12 +57,12 @@ async function resetDailyTasks() {
             SET last_free_sub_coin = NULL
         `);
 
-        // Сброс ежедневной серии побед и даты
+        // Сброс ежедневной серии побед и даты (устанавливаем yesterday, чтобы при следующем бое серия сбросилась)
         await client.query(`
             UPDATE users 
             SET daily_win_streak = 0,
-                last_streak_date = CURRENT_DATE - 1
-        `);
+                last_streak_date = $1
+        `, [yesterdayStr]);
 
         // Сброс лимита покупки угля за монеты
         await client.query(`
@@ -80,7 +88,7 @@ async function resetDailyTasks() {
     }
 }
 
-// Ежемесячный сброс рейтинга и выдача наград
+// Ежемесячный сброс рейтинга и выдача наград (без изменений, но можно тоже использовать today для даты)
 async function resetSeason() {
     console.log('[SCHEDULER] Запуск сезонного сброса рейтинга и выдачи наград');
     const client = await pool.connect();

@@ -166,6 +166,7 @@ function showBattleScreen(battleData) {
 
     // Инициализация лога боя
     battleData.playerAvatarId = userData.avatar_id;
+    battleData.enemyAvatarId = battleData.opponent.avatar_id;   // ← добавлено
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
     // Обработчик скорости

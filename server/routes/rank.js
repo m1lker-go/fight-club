@@ -2,21 +2,20 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Проверка и сброс сезонного рейтинга (каждые 3 месяца) – можно оставить для будущего использования
+// Проверка и сброс сезонного рейтинга (оставляем без изменений)
 async function checkSeasonReset() {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth(); // 0-11
 
-    // Начало текущего квартала
     let seasonStart;
-    if (month < 3) { // янв-март
+    if (month < 3) {
         seasonStart = new Date(year, 0, 1);
-    } else if (month < 6) { // апр-июнь
+    } else if (month < 6) {
         seasonStart = new Date(year, 3, 1);
-    } else if (month < 9) { // июль-сент
+    } else if (month < 9) {
         seasonStart = new Date(year, 6, 1);
-    } else { // окт-дек
+    } else {
         seasonStart = new Date(year, 9, 1);
     }
 
@@ -38,7 +37,7 @@ async function checkSeasonReset() {
     }
 }
 
-// Топ по рейтингу
+// Топ по рейтингу (без изменений)
 router.get('/rating', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -58,33 +57,35 @@ router.get('/rating', async (req, res) => {
     }
 });
 
-// Топ по силе (максимальная сила среди классов игрока) – показываем всех, даже без боёв
+// Топ по силе (исправлено: один пользователь – одна запись, максимальная сила)
 router.get('/power', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT 
+            SELECT DISTINCT ON (u.id)
                 u.username,
-                uc.power as power,
-                uc.class as class
+                uc.power,
+                uc.class
             FROM users u
             JOIN user_classes uc ON u.id = uc.user_id
             WHERE u.username != 'test'
-              AND uc.power = (SELECT MAX(power) FROM user_classes WHERE user_id = u.id)
-            ORDER BY uc.power DESC
-            LIMIT 100
+            ORDER BY u.id, uc.power DESC, uc.class
         `);
-        res.json(result.rows);
+        // Сортируем результат по силе убыванию
+        result.rows.sort((a, b) => b.power - a.power);
+        // Ограничиваем 100 записями
+        const top100 = result.rows.slice(0, 100);
+        res.json(top100);
     } catch (e) {
         console.error('Ошибка получения силы:', e);
         res.status(500).json({ error: 'Database error' });
     }
 });
 
-// Топ башни по этажам
+// Топ башни (исправлено: один пользователь – максимальный этаж)
 router.get('/tower', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT 
+            SELECT DISTINCT ON (u.id)
                 u.username,
                 tl.floor,
                 tl.achieved_at,
@@ -94,9 +95,12 @@ router.get('/tower', async (req, res) => {
             JOIN users u ON tl.user_id = u.id
             LEFT JOIN tower_progress tp ON tl.user_id = tp.user_id
             WHERE u.username != 'test'
-            ORDER BY tl.floor DESC, tl.achieved_at ASC
+            ORDER BY u.id, tl.floor DESC, tl.achieved_at ASC
         `);
-        res.json(result.rows);
+        // Сортируем по этажам убыванию
+        result.rows.sort((a, b) => b.floor - a.floor);
+        const top100 = result.rows.slice(0, 100);
+        res.json(top100);
     } catch (e) {
         console.error('Ошибка получения рейтинга башни:', e);
         res.status(500).json({ error: 'Database error' });

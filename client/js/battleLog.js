@@ -472,14 +472,19 @@ const BattleLog = {
 
             // Определяем, кто наносит удар/уклоняется/использует ульту
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-                // Атака – анимация на цели (тот, кто получает урон)
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animType = 'attack';
-                // Проверяем скиновую атаку у атакующего (игрок или враг)
-                const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
-                if (attackerAvatarId === 13) {
-                    options = { isSkinAttack: true, skinId: 13 };
-                }
+    const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
+    const isSkinAttack = (attackerAvatarId === 13);
+    if (isSkinAttack) {
+        // Скиновая анимация атаки – на атакующем (герой или враг)
+        animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+        animType = 'attack';
+        options = { isSkinAttack: true, skinId: 13 };
+    } else {
+        // Обычная анимация эффекта удара – на цели (получателе урона)
+        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+        animType = 'attack';
+    }
+}
             } else if (type === 'dodge') {
                 // Уворот – анимация на том, кто уклоняется (защитник)
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';

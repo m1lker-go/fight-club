@@ -274,6 +274,11 @@ router.post('/avatar', async (req, res) => {
     if (!avatar_id) return res.status(400).json({ error: 'Missing avatar_id' });
     const client = await pool.connect();
     try {
+        // Базовый аватар доступен всем без проверки владения
+        if (avatar_id === 1) {
+            await client.query('UPDATE users SET avatar_id = 1 WHERE id = $1', [userId]);
+            return res.json({ success: true });
+        }
         const owned = await client.query(
             'SELECT id FROM user_avatars WHERE user_id = $1 AND avatar_id = $2',
             [userId, avatar_id]
@@ -290,5 +295,4 @@ router.post('/avatar', async (req, res) => {
         client.release();
     }
 });
-
 module.exports = router;

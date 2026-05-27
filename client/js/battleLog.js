@@ -27,6 +27,7 @@ const BattleLog = {
     enemyBurnStacks: 0,
     playerRage: 0,
     enemyRage: 0,
+    floatingSlots: { hero: [false, false, false], enemy: [false, false, false] }, 
 
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
@@ -57,7 +58,8 @@ const BattleLog = {
         this.enemyBurnStacks = 0;
         this.playerRage = 0;
         this.enemyRage = 0;
-
+        this.floatingSlots = { hero: [false, false, false], enemy: [false, false, false] };
+        
         this.messages = battleData.result.messages ? [...battleData.result.messages] : [];
         this.states = battleData.result.states ? [...battleData.result.states] : [];
         this.currentMsgIndex = 0;

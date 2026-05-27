@@ -1157,11 +1157,14 @@ router.post('/start', async (req, res) => {
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
         
-        // Сброс daily_win_streak при смене дня (московское время)
+      // Сброс daily_win_streak при смене дня (московское время)
 const today = dailyTasks.getMoscowDate();
 let dailyStreak = user.daily_win_streak || 0;
-// Сравниваем строки дат (уже в московском формате)
-if (user.last_streak_date?.toISOString?.().slice(0, 10) !== today && user.last_streak_date !== today) {
+// Проверяем, была ли последняя дата серии сегодня (по Москве)
+if (user.last_streak_date) {
+    const lastDateStr = user.last_streak_date.toISOString().slice(0, 10);
+    if (lastDateStr !== today) dailyStreak = 0;
+} else {
     dailyStreak = 0;
 }
         

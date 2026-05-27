@@ -457,31 +457,28 @@ const BattleLog = {
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
         // ========== ЗВУКИ БОЯ ==========
-if (window.AudioManager && window.AudioManager.playSound) {
-    if (type === 'attack' || type === 'crit' || type === 'damage') {
-        if (attacker === 'player') {
-            // Мы атакуем и попадаем
-            if (type === 'crit') AudioManager.playSound('crit');
-            else AudioManager.playSound('attack');
-        } else {
-            // Враг атакует и попадает по нам – звук защиты (блок/боль)
-            AudioManager.playSound('defend');
+        if (window.AudioManager && window.AudioManager.playSound) {
+            if (type === 'attack' || type === 'crit' || type === 'damage') {
+                if (attacker === 'player') {
+                    if (type === 'crit') AudioManager.playSound('crit');
+                    else AudioManager.playSound('attack');
+                } else {
+                    AudioManager.playSound('defend');
+                }
+            } else if (type === 'dodge') {
+                AudioManager.playSound('dodge');
+            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+                AudioManager.playSound('magic');
+            }
         }
-    } else if (type === 'dodge') {
-        // Уворот (не важно, чей) – звук уворота
-        AudioManager.playSound('dodge');
-    } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-        // Любая ультимейт-способность – звук магии
-        AudioManager.playSound('magic');
-    }
-}
+
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
             let animTarget = null;
             let animType = null;
             let options = {};
 
-       if (type === 'attack' || type === 'crit' || type === 'damage') {
+            if (type === 'attack' || type === 'crit' || type === 'damage') {
                 const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
                 const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
                 if (isSkinAttack) {
@@ -501,15 +498,6 @@ if (window.AudioManager && window.AudioManager.playSound) {
                 if (isSkinDodge) {
                     options = { isSkinAttack: true, skinId: defenderAvatarId, isDodge: true };
                 }
-           } else if (type === 'dodge') {
-    const defender = (attacker === 'player') ? 'enemy' : 'hero';
-    animTarget = defender;
-    animType = 'dodge';
-    const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
-    const isSkinDodge = window.AnimationManager && window.AnimationManager.hasSkinAnimation(defenderAvatarId);
-    if (isSkinDodge) {
-        options = { isSkinAttack: true, skinId: defenderAvatarId, isDodge: true };
-    }
             } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
                 animTarget = (attacker === 'player') ? 'enemy' : 'hero';
                 if (type === 'fire_ult') animType = 'fire_ult';

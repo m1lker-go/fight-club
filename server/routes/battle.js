@@ -1194,10 +1194,6 @@ if (user.last_streak_date) {
         let newStreak = user.win_streak || 0;
         let ratingChange = -15;
 
-        // Обновляем daily_win_streak
-        if (isVictory) dailyStreak++;
-        else dailyStreak = 0;
-        await client.query('UPDATE users SET daily_win_streak = $1, last_streak_date = $2 WHERE id = $3', [dailyStreak, today, user.id]);
 
         // Награды и рейтинг
         if (isVictory) {

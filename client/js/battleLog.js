@@ -378,37 +378,57 @@ const BattleLog = {
         }
     },
 
-    showFloatingNumber(target, value, icon, colorClass) {
-        const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
-        const container = document.getElementById(containerId);
-        if (!container) return;
+showFloatingNumber(target, value, icon, colorClass) {
+    const containerId = target === 'hero' ? 'hero-floating' : 'enemy-floating';
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-        const numDiv = document.createElement('div');
-        numDiv.className = `floating-number ${colorClass}`;
+    // Получаем слоты для данного таргета
+    const slots = this.floatingSlots[target];
+    // Ищем свободный слот (0,1,2)
+    let slotIndex = slots.findIndex(occupied => !occupied);
+    if (slotIndex === -1) {
+        // Если все заняты, используем последний (перезаписываем)
+        slotIndex = slots.length - 1;
+    }
+    // Занимаем слот
+    slots[slotIndex] = true;
 
-        // Случайное смещение по горизонтали
-        const randomX = (Math.random() - 0.5) * 40;
-        numDiv.style.left = `calc(50% + ${randomX}px)`;
-        numDiv.style.top = '50%';
+    // Смещения по вертикали: -30, 0, +30 пикселей от центра
+    const offsets = [-30, 0, 30];
+    const yOffset = offsets[slotIndex];
 
-        const sign = value > 0 ? '+' : '';
-        let iconPath = '';
-        switch (icon) {
-            case '⚔️': iconPath = '/assets/icon-log/icon-damage.png'; break;
-            case '🔥': iconPath = '/assets/icon-log/icon-fire.png'; break;
-            case '💧': iconPath = '/assets/icon-log/icon-poison.png'; break;
-            case '❄️': iconPath = '/assets/icon-log/icon-ice.png'; break;
-            case '❤️': iconPath = '/assets/icon-log/icon-heal.png'; break;
-            case '🛡️': iconPath = '/assets/icon-log/icon-shield.png'; break;
-            default: iconPath = '/assets/icon-log/icon-damage.png';
+    const numDiv = document.createElement('div');
+    numDiv.className = `floating-number ${colorClass}`;
+
+    // Горизонтальное смещение - небольшой случайный разброс
+    const randomX = (Math.random() - 0.5) * 30;
+    numDiv.style.left = `calc(50% + ${randomX}px)`;
+    numDiv.style.top = `calc(50% + ${yOffset}px)`;
+
+    const sign = value > 0 ? '+' : '';
+    const absValue = Math.abs(value);
+    let iconPath = '';
+    switch (icon) {
+        case '⚔️': iconPath = '/assets/icon-log/icon-damage.png'; break;
+        case '🔥': iconPath = '/assets/icon-log/icon-fire.png'; break;
+        case '💧': iconPath = '/assets/icon-log/icon-poison.png'; break;
+        case '❄️': iconPath = '/assets/icon-log/icon-ice.png'; break;
+        case '❤️': iconPath = '/assets/icon-log/icon-heal.png'; break;
+        case '🛡️': iconPath = '/assets/icon-log/icon-shield.png'; break;
+        default: iconPath = '/assets/icon-log/icon-damage.png';
+    }
+    numDiv.innerHTML = `${sign}${absValue} <img src="${iconPath}" class="floating-icon" alt="">`;
+    container.appendChild(numDiv);
+
+    setTimeout(() => {
+        if (numDiv.parentNode) numDiv.remove();
+        // Освобождаем слот
+        if (this.floatingSlots && this.floatingSlots[target] && this.floatingSlots[target][slotIndex] === true) {
+            this.floatingSlots[target][slotIndex] = false;
         }
-        numDiv.innerHTML = `${sign}${value} <img src="${iconPath}" class="floating-icon" alt="">`;
-        container.appendChild(numDiv);
-
-        setTimeout(() => {
-            if (numDiv.parentNode) numDiv.remove();
-        }, 2000);
-    },
+    }, 2000);
+},
 
     // ========== ОСНОВНОЙ ЦИКЛ playNext (сохраняем вашу логику, добавляем вызовы новых методов) ==========
     playNext() {

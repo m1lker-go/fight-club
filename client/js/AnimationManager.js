@@ -1,12 +1,8 @@
 // AnimationManager.js
-// Единый менеджер для всех анимаций боя (обычные, скиновые, увороты)
-
 window.AnimationManager = (function() {
-    // Кэш загруженных изображений
     const imageCache = new Map();
     const activeAnimations = { hero: false, enemy: false };
     
-    // Список анимаций для предзагрузки (обычные)
     const commonAnimations = {
         attack: '/assets/fight/shot.gif',
         dodge: '/assets/fight/missx.gif',
@@ -19,16 +15,17 @@ window.AnimationManager = (function() {
         frozen: '/assets/fight/frozenx.gif'
     };
     
-    // Скиновые анимации (по ID скина)
     const skinAnimations = {
         13: {
             attack: '/assets/skins/animations/attack_skin12.gif',
             dodge: '/assets/skins/animations/dodge_skin12.gif'
+        },
+        12: {
+            attack: '/assets/skins/animations/attack_skin11.gif',
+            dodge: '/assets/skins/animations/dodge_skin11.gif'
         }
-        // при необходимости добавить другие скины
     };
     
-    // Предзагрузка изображений
     function preloadImage(url) {
         return new Promise((resolve, reject) => {
             if (imageCache.has(url)) {
@@ -45,14 +42,11 @@ window.AnimationManager = (function() {
         });
     }
     
-    // Предзагрузка всех анимаций (вызывать при старте игры)
     function preloadAllAnimations() {
         const promises = [];
-        // Обычные анимации
         for (const url of Object.values(commonAnimations)) {
             promises.push(preloadImage(url).catch(err => console.warn(err.message)));
         }
-        // Скиновые анимации
         for (const skin of Object.values(skinAnimations)) {
             for (const url of Object.values(skin)) {
                 promises.push(preloadImage(url).catch(err => console.warn(err.message)));
@@ -61,22 +55,24 @@ window.AnimationManager = (function() {
         return Promise.all(promises);
     }
     
-    // Воспроизведение анимации
-    // target: 'hero' или 'enemy'
-    // animType: 'attack', 'dodge', 'fire_ult', 'ice_ult', 'poison_ult', 'ultimate', 'heal', 'buff', 'frozen'
-    // options: { isSkinAttack: false, skinId: null, isDodge: false }
     function playAnimation(target, animType, options = {}) {
         const { isSkinAttack = false, skinId = null, isDodge = false } = options;
-        
         return new Promise((resolve) => {
+            if (activeAnimations[target]) {
+                console.log(`[AnimationManager] анимация на ${target} уже идёт, пропуск`);
+                resolve();
+                return;
+            }
+            activeAnimations[target] = true;
+            
             const container = document.getElementById(`${target}-animation`);
             if (!container) {
                 console.warn(`[AnimationManager] Контейнер ${target}-animation не найден`);
+                activeAnimations[target] = false;
                 resolve();
                 return;
             }
             
-            // Определяем URL анимации
             let url = null;
             let isSkin = false;
             let skinSpecific = false;
@@ -94,7 +90,6 @@ window.AnimationManager = (function() {
             }
             
             if (!url) {
-                // Обычная анимация
                 if (animType === 'dodge') url = commonAnimations.dodge;
                 else if (animType === 'fire_ult') url = commonAnimations.fire_ult;
                 else if (animType === 'ice_ult') url = commonAnimations.ice_ult;
@@ -103,16 +98,16 @@ window.AnimationManager = (function() {
                 else if (animType === 'heal') url = commonAnimations.heal;
                 else if (animType === 'buff') url = commonAnimations.buff;
                 else if (animType === 'frozen') url = commonAnimations.frozen;
-                else url = commonAnimations.attack; // 'attack' по умолчанию
+                else url = commonAnimations.attack;
             }
             
             if (!url) {
                 console.warn(`[AnimationManager] Неизвестный тип анимации: ${animType}`);
+                activeAnimations[target] = false;
                 resolve();
                 return;
             }
             
-            // Получаем изображение из кэша или загружаем
             let img = imageCache.get(url);
             if (!img) {
                 img = new Image();
@@ -120,11 +115,9 @@ window.AnimationManager = (function() {
                 imageCache.set(url, img);
             }
             
-            // Создаём новый элемент img (клонировать нельзя, создаём заново)
             const animImg = img.cloneNode(true);
             animImg.style.position = 'absolute';
             
-            // Получаем размеры аватара
             const parentCard = document.querySelector(`.${target}-card`);
             if (!parentCard) {
                 console.warn(`[AnimationManager] Карточка .${target}-card не найдена`);
@@ -134,6 +127,7 @@ window.AnimationManager = (function() {
                 setTimeout(() => {
                     container.style.display = 'none';
                     container.innerHTML = '';
+                    activeAnimations[target] = false;
                     resolve();
                 }, 1000);
                 return;
@@ -149,11 +143,8 @@ window.AnimationManager = (function() {
                 avatarTopOffset = avatarRect.top - cardRect.top;
             }
             
-            // Позиционирование в зависимости от типа анимации
             if (isSkin && skinSpecific) {
-                // Скиновая анимация (атака или уворот)
                 if (animType === 'dodge') {
-                    // Уворот: по центру аватара, без зеркала, ширина = ширине карточки (аватара)
                     animImg.style.top = avatarTopOffset + 'px';
                     animImg.style.left = '50%';
                     animImg.style.transform = 'translateX(-50%)';
@@ -162,8 +153,7 @@ window.AnimationManager = (function() {
                     animImg.style.maxHeight = avatarHeight + 'px';
                     animImg.style.objectFit = 'contain';
                 } else {
-                    // Атака скином: левый край + зеркало для героя, правый край для врага
-                    const proportionalWidth = (600 / 480) * avatarHeight; // для attack_skin12.gif (600x480)
+                    const proportionalWidth = (600 / 480) * avatarHeight;
                     animImg.style.height = avatarHeight + 'px';
                     animImg.style.width = proportionalWidth + 'px';
                     animImg.style.objectFit = 'contain';
@@ -179,7 +169,6 @@ window.AnimationManager = (function() {
                     }
                 }
             } else {
-                // Обычная анимация: центрирована, ширина = 100% от карточки
                 animImg.style.top = avatarTopOffset + 'px';
                 animImg.style.left = '50%';
                 animImg.style.transform = 'translateX(-50%)';
@@ -190,24 +179,25 @@ window.AnimationManager = (function() {
             }
             
             animImg.style.pointerEvents = 'none';
-            
             container.innerHTML = '';
             container.appendChild(animImg);
             container.style.display = 'block';
             
-            // Длительность анимации: для скиновой атаки 2000 мс, для остальных 1000 мс
             const duration = (isSkin && skinSpecific && animType !== 'dodge') ? 2000 : 1000;
             setTimeout(() => {
                 container.style.display = 'none';
                 container.innerHTML = '';
+                activeAnimations[target] = false;
                 resolve();
             }, duration);
         });
     }
     
-    // Публичное API
     return {
         preloadAllAnimations,
-        playAnimation
+        playAnimation,
+        hasSkinAnimation: function(skinId) {
+            return !!skinAnimations[skinId];
+        }
     };
 })();

@@ -271,6 +271,15 @@ router.post('/buy-coal-coins', async (req, res) => {
     const { amount } = req.body;
     if (!amount) return res.status(400).json({ error: 'Missing amount' });
 
+    // Цены фиксированы и должны совпадать с клиентскими (mint.js)
+    const priceMap = {
+        10: 25,
+        50: 100,
+        250: 450
+    };
+    const priceCoins = priceMap[amount];
+    if (!priceCoins) return res.status(400).json({ error: 'Invalid amount' });
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -278,7 +287,6 @@ router.post('/buy-coal-coins', async (req, res) => {
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
 
-        const priceCoins = (amount / 10) * 100;
         const maxDaily = 1000;
         const purchasedToday = user.coal_purchased_today || 0;
         if (purchasedToday + amount > maxDaily) throw new Error(`Daily limit exceeded (max ${maxDaily} coal)`);

@@ -1156,11 +1156,15 @@ router.post('/start', async (req, res) => {
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
-        // Сброс daily_win_streak при смене дня
-        const today = new Date().toISOString().slice(0, 10);
-        let dailyStreak = user.daily_win_streak || 0;
-        if (user.last_streak_date?.toISOString().slice(0, 10) !== today) dailyStreak = 0;
-
+        
+        // Сброс daily_win_streak при смене дня (московское время)
+const today = dailyTasks.getMoscowDate();
+let dailyStreak = user.daily_win_streak || 0;
+// Сравниваем строки дат (уже в московском формате)
+if (user.last_streak_date?.toISOString?.().slice(0, 10) !== today && user.last_streak_date !== today) {
+    dailyStreak = 0;
+}
+        
         // Данные игрока
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [user.id, user.current_class]);
         if (!classData.rows.length) throw new Error('Class not found');

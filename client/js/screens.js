@@ -1053,10 +1053,15 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 async function renderSkins(container) {
     if (!container) return;
     try {
-        const allAvatars = await window.apiRequest('/avatars', { method: 'GET' }).then(res => res.ok ? res.json() : []);
+        const [allAvatarsRes, ownedAvatarsRes] = await Promise.all([
+            window.apiRequest('/avatars', { method: 'GET' }),
+            window.apiRequest('/avatars/user', { method: 'GET' })
+        ]);
+        const allAvatars = allAvatarsRes.ok ? await allAvatarsRes.json() : [];
+        const ownedIds = ownedAvatarsRes.ok ? await ownedAvatarsRes.json() : [];
+        const ownedSet = new Set(ownedIds);
+        ownedSet.add(1); // базовый аватар всегда считается купленным
         const activeAvatarId = userData.avatar_id || 1;
-        // Временно: считаем купленным только активный аватар и аватар по умолчанию (id=1)
-        const ownedSet = new Set([1, activeAvatarId]);
 
         const sortedAvatars = [...allAvatars].sort((a, b) => {
             if (a.id === activeAvatarId) return -1;
@@ -1107,6 +1112,7 @@ async function renderSkins(container) {
         container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
     }
 }
+
 
 function showSkinModal(avatarId, avatarFilename, owned) {
     const modal = document.getElementById('roleModal');

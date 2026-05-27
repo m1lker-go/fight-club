@@ -1,5 +1,4 @@
-// battleLog.js – исправленная версия с интеграцией AnimationManager
-// (скиновые анимации для игрока и врага, удалён старый showAnimation)
+// battleLog.js – финальная версия с поддержкой AnimationManager и всплывающих чисел
 
 const BattleLog = {
     messages: [],
@@ -15,7 +14,6 @@ const BattleLog = {
     deathTimerEnemy: null,
     stopped: false,
 
-    // Локальные переменные для иконок статусов
     playerFrozen: 0,
     enemyFrozen: 0,
     playerShield: 0,
@@ -288,7 +286,6 @@ const BattleLog = {
         return text;
     },
 
-    // ========== МЕТОДЫ ДЛЯ ВСПЛЫВАЮЩИХ ЧИСЕЛ ==========
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;
         const type = entry.type;
@@ -344,7 +341,6 @@ const BattleLog = {
             }
         }
 
-        // Отдельно вампиризм и отражение
         if (type === 'attack' || type === 'crit') {
             const vampMatch = msgText.match(/вампиризм \+(\d+)/i);
             if (vampMatch) {
@@ -405,7 +401,6 @@ const BattleLog = {
         }, 2000);
     },
 
-    // ========== ОСНОВНОЙ ЦИКЛ playNext (с AnimationManager) ==========
     playNext() {
         if (this.stopped) {
             console.log('[BattleLog] stopped, ignoring');
@@ -424,7 +419,6 @@ const BattleLog = {
 
         console.log(`[BattleLog] #${this.currentMsgIndex} type=${type}, attacker=${attacker}, text="${msgText.substring(0,60)}..."`);
 
-        // Специальная обработка для берсерка (оставляем как есть)
         const isBerserker = (attacker === 'player' && this.battleData.playerSubclass === 'berserker') ||
                             (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
 
@@ -446,7 +440,6 @@ const BattleLog = {
             }, 1500 / this.speed);
         }
 
-        // Лог-запись
         const logEntry = document.createElement('div');
         let entryClass = 'log-entry';
         if (type === 'dodge') entryClass += ' dodge-message';
@@ -463,31 +456,27 @@ const BattleLog = {
         this.logContainer.appendChild(logEntry);
         this.logContainer.scrollTop = this.logContainer.scrollHeight;
 
-        // ========== АНИМАЦИИ через AnimationManager (скиновые + обычные) ==========
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
-            let animTarget = null;   // 'hero' или 'enemy' – на кого показывать анимацию
-            let animType = null;     // 'attack', 'dodge', 'fire_ult', etc.
+            let animTarget = null;
+            let animType = null;
             let options = {};
 
-            // Определяем, кто наносит удар/уклоняется/использует ульту
-         if (type === 'attack' || type === 'crit' || type === 'damage') {
-    const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
-    const isSkinAttack = (attackerAvatarId === 13);
-    if (isSkinAttack) {
-        animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-        animType = 'attack';
-        options = { isSkinAttack: true, skinId: 13 };
-    } else {
-        animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-        animType = 'attack';
-    }
-} else if (type === 'dodge') {
-                // Уворот – анимация на том, кто уклоняется (защитник)
+            if (type === 'attack' || type === 'crit' || type === 'damage') {
+                const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
+                const isSkinAttack = (attackerAvatarId === 13);
+                if (isSkinAttack) {
+                    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                    animType = 'attack';
+                    options = { isSkinAttack: true, skinId: 13 };
+                } else {
+                    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+                    animType = 'attack';
+                }
+            } else if (type === 'dodge') {
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';
                 animTarget = defender;
                 animType = 'dodge';
-                // Проверяем скиновый уворот у защитника
                 const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
                 if (defenderAvatarId === 13) {
                     options = { isSkinAttack: true, skinId: 13, isDodge: true };
@@ -507,15 +496,10 @@ const BattleLog = {
             }
 
             if (animTarget && animType) {
-                if (options.isSkinAttack) {
-                    window.AnimationManager.playAnimation(animTarget, animType, options);
-                } else {
-                    window.AnimationManager.playAnimation(animTarget, animType);
-                }
+                window.AnimationManager.playAnimation(animTarget, animType, options);
             }
         }
 
-        // Всплывающие числа
         this.parseAndShowFloatingNumber(entry);
         this.currentMsgIndex++;
 

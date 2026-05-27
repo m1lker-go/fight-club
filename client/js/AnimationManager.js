@@ -4,6 +4,7 @@
 window.AnimationManager = (function() {
     // Кэш загруженных изображений
     const imageCache = new Map();
+    const activeAnimations = { hero: false, enemy: false };
     
     // Список анимаций для предзагрузки (обычные)
     const commonAnimations = {

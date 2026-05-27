@@ -1161,8 +1161,9 @@ router.post('/start', async (req, res) => {
 const today = dailyTasks.getMoscowDate();
 let dailyStreak = user.daily_win_streak || 0;
 if (user.last_streak_date) {
-    const lastDateStr = user.last_streak_date.toISOString().slice(0, 10);
-    if (lastDateStr !== today) dailyStreak = 0;
+    // Преобразуем дату из БД в московскую строку YYYY-MM-DD
+    const lastDateMsk = new Date(user.last_streak_date).toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+    if (lastDateMsk !== today) dailyStreak = 0;
 } else {
     dailyStreak = 0;
 }

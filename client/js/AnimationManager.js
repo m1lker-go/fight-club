@@ -1,8 +1,9 @@
-// AnimationManager.js
+// AnimationManager.js — исправленная версия
 window.AnimationManager = (function() {
-    const imageCache = new Map();
+    const imageCache = new Map();       // url -> HTMLImageElement (полностью загруженный)
     const activeAnimations = { hero: false, enemy: false };
-    
+    const pendingTimeouts = { hero: null, enemy: null };
+
     const commonAnimations = {
         attack: '/assets/fight/shot.gif',
         dodge: '/assets/fight/missx.gif',
@@ -14,7 +15,7 @@ window.AnimationManager = (function() {
         buff: '/assets/fight/shield.gif',
         frozen: '/assets/fight/frozenx.gif'
     };
-    
+
     const skinAnimations = {
         13: {
             attack: '/assets/skins/animations/attack_skin12.gif',
@@ -25,8 +26,9 @@ window.AnimationManager = (function() {
             dodge: '/assets/skins/animations/dodge_skin11.gif'
         }
     };
-    
-    function preloadImage(url) {
+
+    // Загрузка одного изображения с ожиданием
+    function loadImage(url) {
         return new Promise((resolve, reject) => {
             if (imageCache.has(url)) {
                 resolve(imageCache.get(url));
@@ -41,163 +43,183 @@ window.AnimationManager = (function() {
             img.src = url;
         });
     }
-    
+
+    // Предзагрузка всех анимаций (вызывать при старте игры)
     function preloadAllAnimations() {
-        const promises = [];
-        for (const url of Object.values(commonAnimations)) {
-            promises.push(preloadImage(url).catch(err => console.warn(err.message)));
-        }
-        for (const skin of Object.values(skinAnimations)) {
-            for (const url of Object.values(skin)) {
-                promises.push(preloadImage(url).catch(err => console.warn(err.message)));
-            }
-        }
-        return Promise.all(promises);
+        const urls = [
+            ...Object.values(commonAnimations),
+            ...Object.values(skinAnimations).flatMap(skin => Object.values(skin))
+        ];
+        return Promise.all(urls.map(url => loadImage(url).catch(e => console.warn(e.message))));
     }
-    
-    function playAnimation(target, animType, options = {}) {
+
+    // Остановить текущую анимацию на цели (принудительно)
+    function stopAnimation(target) {
+        if (pendingTimeouts[target]) {
+            clearTimeout(pendingTimeouts[target]);
+            pendingTimeouts[target] = null;
+        }
+        const container = document.getElementById(`${target}-animation`);
+        if (container) {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }
+        activeAnimations[target] = false;
+    }
+
+    // Определить URL анимации по параметрам
+    function getAnimationUrl(animType, options) {
         const { isSkinAttack = false, skinId = null, isDodge = false } = options;
-        return new Promise((resolve) => {
-            if (activeAnimations[target]) {
-                console.log(`[AnimationManager] анимация на ${target} уже идёт, пропуск`);
-                resolve();
-                return;
-            }
-            activeAnimations[target] = true;
-            
-            const container = document.getElementById(`${target}-animation`);
-            if (!container) {
-                console.warn(`[AnimationManager] Контейнер ${target}-animation не найден`);
-                activeAnimations[target] = false;
-                resolve();
-                return;
-            }
-            
-            let url = null;
-            let isSkin = false;
-            let skinSpecific = false;
-            
-            if (isSkinAttack && skinId && skinAnimations[skinId]) {
-                if (isDodge && skinAnimations[skinId].dodge) {
-                    url = skinAnimations[skinId].dodge;
-                    isSkin = true;
-                    skinSpecific = true;
-                } else if (skinAnimations[skinId].attack) {
-                    url = skinAnimations[skinId].attack;
-                    isSkin = true;
-                    skinSpecific = true;
-                }
-            }
-            
-            if (!url) {
-                if (animType === 'dodge') url = commonAnimations.dodge;
-                else if (animType === 'fire_ult') url = commonAnimations.fire_ult;
-                else if (animType === 'ice_ult') url = commonAnimations.ice_ult;
-                else if (animType === 'poison_ult') url = commonAnimations.poison_ult;
-                else if (animType === 'ultimate') url = commonAnimations.ultimate;
-                else if (animType === 'heal') url = commonAnimations.heal;
-                else if (animType === 'buff') url = commonAnimations.buff;
-                else if (animType === 'frozen') url = commonAnimations.frozen;
-                else url = commonAnimations.attack;
-            }
-            
-            if (!url) {
-                console.warn(`[AnimationManager] Неизвестный тип анимации: ${animType}`);
-                activeAnimations[target] = false;
-                resolve();
-                return;
-            }
-            
-            let img = imageCache.get(url);
-            if (!img) {
-                img = new Image();
-                img.src = url;
-                imageCache.set(url, img);
-            }
-            
-            const animImg = img.cloneNode(true);
-            animImg.style.position = 'absolute';
-            
-            const parentCard = document.querySelector(`.${target}-card`);
-            if (!parentCard) {
-                console.warn(`[AnimationManager] Карточка .${target}-card не найдена`);
-                container.innerHTML = '';
-                container.appendChild(animImg);
-                container.style.display = 'block';
-                setTimeout(() => {
-                    container.style.display = 'none';
-                    container.innerHTML = '';
-                    activeAnimations[target] = false;
-                    resolve();
-                }, 1000);
-                return;
-            }
-            
-            const cardRect = parentCard.getBoundingClientRect();
-            const avatarContainer = parentCard.querySelector('div:first-child');
-            let avatarHeight = cardRect.height;
-            let avatarTopOffset = 0;
-            if (avatarContainer) {
-                const avatarRect = avatarContainer.getBoundingClientRect();
-                avatarHeight = avatarRect.height;
-                avatarTopOffset = avatarRect.top - cardRect.top;
-            }
-            
-            if (isSkin && skinSpecific) {
-                if (animType === 'dodge') {
-                    animImg.style.top = avatarTopOffset + 'px';
-                    animImg.style.left = '50%';
-                    animImg.style.transform = 'translateX(-50%)';
-                    animImg.style.width = '100%';
-                    animImg.style.height = 'auto';
-                    animImg.style.maxHeight = avatarHeight + 'px';
-                    animImg.style.objectFit = 'contain';
-                } else {
-                    const proportionalWidth = (600 / 480) * avatarHeight;
-                    animImg.style.height = avatarHeight + 'px';
-                    animImg.style.width = proportionalWidth + 'px';
-                    animImg.style.objectFit = 'contain';
-                    animImg.style.top = avatarTopOffset + 'px';
-                    if (target === 'hero') {
-                        animImg.style.left = '0';
-                        animImg.style.right = 'auto';
-                        animImg.style.transform = 'scaleX(-1)';
-                    } else {
-                        animImg.style.left = 'auto';
-                        animImg.style.right = '0';
-                        animImg.style.transform = 'none';
-                    }
-                }
+
+        if (isSkinAttack && skinId && skinAnimations[skinId]) {
+            if (isDodge && skinAnimations[skinId].dodge)
+                return skinAnimations[skinId].dodge;
+            if (!isDodge && skinAnimations[skinId].attack)
+                return skinAnimations[skinId].attack;
+        }
+
+        switch (animType) {
+            case 'dodge': return commonAnimations.dodge;
+            case 'fire_ult': return commonAnimations.fire_ult;
+            case 'ice_ult': return commonAnimations.ice_ult;
+            case 'poison_ult': return commonAnimations.poison_ult;
+            case 'ultimate': return commonAnimations.ultimate;
+            case 'heal': return commonAnimations.heal;
+            case 'buff': return commonAnimations.buff;
+            case 'frozen': return commonAnimations.frozen;
+            default: return commonAnimations.attack;
+        }
+    }
+
+    // Получить длительность анимации (можно анализировать GIF, но проще — из атрибута data-duration или фиксированно)
+    // Пока оставим 1000 мс для всех, кроме скинов-атак
+    function getAnimationDuration(animType, isSkinAttack, skinId) {
+        if (isSkinAttack && skinId && skinAnimations[skinId] && animType !== 'dodge') {
+            return 2000;   // скиновые атаки дольше
+        }
+        return 1000;
+    }
+
+    // Позиционирование анимации
+    function positionAnimation(imgElement, target, avatarTopOffset, avatarHeight, isSkin, isDodge) {
+        const card = document.querySelector(`.${target}-card`);
+        if (!card) return;
+
+        if (isSkin && !isDodge) {
+            // Скиновая атака: растягиваем по высоте аватара, ширина пропорциональна (600/480)
+            const proportionalWidth = (600 / 480) * avatarHeight;
+            imgElement.style.height = avatarHeight + 'px';
+            imgElement.style.width = proportionalWidth + 'px';
+            imgElement.style.objectFit = 'contain';
+            imgElement.style.top = avatarTopOffset + 'px';
+            if (target === 'hero') {
+                imgElement.style.left = '0';
+                imgElement.style.right = 'auto';
+                imgElement.style.transform = 'scaleX(-1)';
             } else {
-                animImg.style.top = avatarTopOffset + 'px';
-                animImg.style.left = '50%';
-                animImg.style.transform = 'translateX(-50%)';
-                animImg.style.width = '100%';
-                animImg.style.height = 'auto';
-                animImg.style.maxHeight = avatarHeight + 'px';
-                animImg.style.objectFit = 'contain';
+                imgElement.style.left = 'auto';
+                imgElement.style.right = '0';
+                imgElement.style.transform = 'none';
             }
-            
-            animImg.style.pointerEvents = 'none';
+        } else {
+            // Обычная анимация или уклонение — центрируем, ограничиваем по высоте аватара
+            imgElement.style.top = avatarTopOffset + 'px';
+            imgElement.style.left = '50%';
+            imgElement.style.transform = 'translateX(-50%)';
+            imgElement.style.width = '100%';
+            imgElement.style.height = 'auto';
+            imgElement.style.maxHeight = avatarHeight + 'px';
+            imgElement.style.objectFit = 'contain';
+        }
+    }
+
+    async function playAnimation(target, animType, options = {}) {
+        // Прерываем предыдущую анимацию, если она ещё идёт
+        if (activeAnimations[target]) {
+            console.log(`[AnimationManager] анимация на ${target} уже идёт, останавливаем и заменяем`);
+            stopAnimation(target);
+        }
+
+        activeAnimations[target] = true;
+
+        const container = document.getElementById(`${target}-animation`);
+        if (!container) {
+            console.warn(`[AnimationManager] Контейнер ${target}-animation не найден`);
+            activeAnimations[target] = false;
+            return;
+        }
+
+        const url = getAnimationUrl(animType, options);
+        if (!url) {
+            console.warn(`[AnimationManager] URL не определён для ${animType}`);
+            activeAnimations[target] = false;
+            return;
+        }
+
+        // Ждём загрузки изображения
+        let img;
+        try {
+            img = await loadImage(url);
+        } catch (err) {
+            console.error(err);
+            activeAnimations[target] = false;
+            return;
+        }
+
+        // Клонируем загруженное изображение
+        const animImg = img.cloneNode(true);
+        animImg.style.position = 'absolute';
+        animImg.style.pointerEvents = 'none';
+
+        // Определяем позиционирование
+        const parentCard = document.querySelector(`.${target}-card`);
+        if (!parentCard) {
+            console.warn(`[AnimationManager] Карточка .${target}-card не найдена`);
             container.innerHTML = '';
             container.appendChild(animImg);
             container.style.display = 'block';
-            
-            const duration = (isSkin && skinSpecific && animType !== 'dodge') ? 2000 : 1000;
-            setTimeout(() => {
+            const duration = getAnimationDuration(animType, options.isSkinAttack, options.skinId);
+            pendingTimeouts[target] = setTimeout(() => {
                 container.style.display = 'none';
                 container.innerHTML = '';
                 activeAnimations[target] = false;
-                resolve();
+                pendingTimeouts[target] = null;
             }, duration);
-        });
+            return;
+        }
+
+        const cardRect = parentCard.getBoundingClientRect();
+        // Ищем элемент с классом avatar или первый div (лучше по классу)
+        const avatarContainer = parentCard.querySelector('.avatar') || parentCard.querySelector('div:first-child');
+        let avatarHeight = cardRect.height;
+        let avatarTopOffset = 0;
+        if (avatarContainer) {
+            const avatarRect = avatarContainer.getBoundingClientRect();
+            avatarHeight = avatarRect.height;
+            avatarTopOffset = avatarRect.top - cardRect.top;
+        }
+
+        const isSkin = !!(options.isSkinAttack && options.skinId && skinAnimations[options.skinId]);
+        const isDodge = (animType === 'dodge') || options.isDodge;
+        positionAnimation(animImg, target, avatarTopOffset, avatarHeight, isSkin, isDodge);
+
+        container.innerHTML = '';
+        container.appendChild(animImg);
+        container.style.display = 'block';
+
+        const duration = getAnimationDuration(animType, options.isSkinAttack, options.skinId);
+        pendingTimeouts[target] = setTimeout(() => {
+            container.style.display = 'none';
+            container.innerHTML = '';
+            activeAnimations[target] = false;
+            pendingTimeouts[target] = null;
+        }, duration);
     }
-    
+
     return {
         preloadAllAnimations,
         playAnimation,
-        hasSkinAnimation: function(skinId) {
-            return !!skinAnimations[skinId];
-        }
+        stopAnimation,
+        hasSkinAnimation: (skinId) => !!skinAnimations[skinId]
     };
 })();

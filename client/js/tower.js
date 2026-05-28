@@ -279,10 +279,9 @@ async function showTowerBattleScreen(battleData) {
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div class="defeat-overlay">Проиграл</div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
-                    <!-- АНИМАЦИЯ СНАРУЖИ (после блока аватара) -->
                     <div id="hero-animation" class="animation-container"></div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
@@ -323,7 +322,7 @@ async function showTowerBattleScreen(battleData) {
                     <div style="position: relative; margin: 0 auto;">
                         <img src="${enemyAvatarSrc}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">ПРОИГРАЛ</div>
+                        <div class="defeat-overlay">Проиграл</div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div id="enemy-animation" class="animation-container"></div>
@@ -349,6 +348,12 @@ async function showTowerBattleScreen(battleData) {
     if (window.AudioManager && typeof AudioManager.unlockAudio === 'function') {
         AudioManager.unlockAudio();
     }
+
+    // ДОБАВЛЕНО: ID аватара врага для скиновых анимаций
+    battleData.enemyAvatarId = battleData.opponent.avatar_id;
+
+    // ДОБАВЛЕНО: очистка текста затемнения для нового боя
+    document.querySelectorAll('.defeat-overlay').forEach(el => el.textContent = '');
 
     BattleLog.init(battleData, document.getElementById('battleLog'), () => {
         handleTowerBattleEnd(battleData);
@@ -531,7 +536,7 @@ function showTowerResultScreen(battleData) {
         const statsHtml = `
             <table class="stats-battle">
                 <thead>
-                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
+                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th><tr>
                 </thead>
                 <tbody>
                     <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>

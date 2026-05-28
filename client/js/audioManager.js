@@ -32,6 +32,7 @@ const AudioManager = (function() {
     let menuTrackEndHandler = null;
     let pendingResume = null;
     let audioUnlocked = false;
+    let wasPlayingBeforeHide = false; // флаг для паузы при скрытии
 
     // Загрузка настроек из localStorage
     function loadSettings() {
@@ -73,30 +74,29 @@ const AudioManager = (function() {
         }
     }
 
-   function startMenuMusic() {
-    if (!isMusicEnabled) return;
-    unlockAudio().then(() => {
-        // Если уже играет меню-трек и режим меню – не перезапускаем
-        if (currentMode === 'menu' && currentMusic && menuTracks.includes(currentMusic.src)) return;
-        // Останавливаем всё, что играет, и сбрасываем режим
-        stopMusic();
-        currentMode = 'menu';
-        const track = menuTracks[currentMenuTrackIndex];
-        currentMusic = new Audio(track);
-        currentMusic.loop = false;
-        currentMusic.volume = musicVolume;
-        menuTrackEndHandler = function() {
-            currentMenuTrackIndex = (currentMenuTrackIndex + 1) % menuTracks.length;
-            startMenuMusic();
-        };
-        currentMusic.addEventListener('ended', menuTrackEndHandler);
-        currentMusic.play().catch(e => console.warn('Music play error:', e));
-    });
-}
+    function startMenuMusic() {
+        if (!isMusicEnabled) return;
+        unlockAudio().then(() => {
+            // Если уже играет меню-трек и режим меню – не перезапускаем
+            if (currentMode === 'menu' && currentMusic && menuTracks.includes(currentMusic.src)) return;
+            // Останавливаем всё, что играет, и сбрасываем режим
+            stopMusic();
+            currentMode = 'menu';
+            const track = menuTracks[currentMenuTrackIndex];
+            currentMusic = new Audio(track);
+            currentMusic.loop = false;
+            currentMusic.volume = musicVolume;
+            menuTrackEndHandler = function() {
+                currentMenuTrackIndex = (currentMenuTrackIndex + 1) % menuTracks.length;
+                startMenuMusic();
+            };
+            currentMusic.addEventListener('ended', menuTrackEndHandler);
+            currentMusic.play().catch(e => console.warn('Music play error:', e));
+        });
+    }
 
     function startFightMusic() {
         if (!isMusicEnabled) return;
-        // Разблокируем аудиоконтекст перед запуском
         unlockAudio().then(() => {
             if (currentMode === 'fight' && currentMusic && currentMusic.src.includes(fightTrack)) return;
             stopMusic();
@@ -112,7 +112,6 @@ const AudioManager = (function() {
         if (!isSfxEnabled) return;
         const url = sounds[soundKey];
         if (!url) return;
-        // Разблокировка перед воспроизведением звука
         unlockAudio().then(() => {
             const sfx = new Audio(url);
             sfx.volume = sfxVolume;
@@ -198,8 +197,28 @@ const AudioManager = (function() {
     function getMusicEnabled() { return isMusicEnabled; }
     function getSfxEnabled() { return isSfxEnabled; }
 
+    // ========== НОВЫЙ МЕТОД: автопауза при скрытии вкладки ==========
+    function initVisibilityListener() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                if (currentMusic && !currentMusic.paused) {
+                    wasPlayingBeforeHide = true;
+                    currentMusic.pause();
+                    console.log('[AudioManager] Page hidden, music paused');
+                }
+            } else if (document.visibilityState === 'visible') {
+                if (wasPlayingBeforeHide && isMusicEnabled && currentMusic) {
+                    currentMusic.play().catch(e => console.warn('Could not resume music on page visible:', e));
+                    console.log('[AudioManager] Page visible, music resumed');
+                }
+                wasPlayingBeforeHide = false;
+            }
+        });
+    }
+
     function init() {
         loadSettings();
+        initVisibilityListener(); // подключаем слушатель
         if (isMusicEnabled && musicVolume > 0) {
             setTimeout(() => {
                 if (document.querySelector('.battle-screen') === null) {

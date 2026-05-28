@@ -92,7 +92,7 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-arena">
-                <!-- === HERO CARD (исправлено: анимация снаружи от обрезающего блока) === -->
+                <!-- === HERO CARD === -->
                 <div class="hero-card">
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
@@ -101,7 +101,6 @@ function showBattleScreen(battleData) {
                         <div class="defeat-overlay">Проиграл</div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
-                    <!-- АНИМАЦИЯ ВНЕ БЛОКА С overflow: hidden -->
                     <div id="hero-animation" class="animation-container"></div>
                     <div class="stat-bar hp-bar" style="width: 100px; margin: 3px auto;">
                         <div class="stat-fill hp-fill" id="heroHp" style="width:${(battleData.result.playerHpRemain / battleData.result.playerMaxHp) * 100}%"></div>
@@ -137,7 +136,7 @@ function showBattleScreen(battleData) {
                     <div class="debuff-slot" data-side="enemy" data-slot="4"></div>
                 </div>
 
-                <!-- === ENEMY CARD (аналогично) === -->
+                <!-- === ENEMY CARD === -->
                 <div class="enemy-card">
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
@@ -166,7 +165,11 @@ function showBattleScreen(battleData) {
 
     // Инициализация лога боя
     battleData.playerAvatarId = userData.avatar_id;
-    battleData.enemyAvatarId = battleData.opponent.avatar_id;   // ← добавлено
+    battleData.enemyAvatarId = battleData.opponent.avatar_id;
+
+    // Очищаем текст затемнения для нового боя
+    document.querySelectorAll('.defeat-overlay').forEach(el => el.textContent = '');
+
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
     // Обработчик скорости
@@ -358,7 +361,7 @@ async function showBattleResult(battleData, timeOut = false) {
     header.innerText = resultText;
     container.appendChild(header);
 
-   // Блок наград (2 колонки)
+    // Блок наград (2 колонки)
     const rewardsGrid = document.createElement('div');
     rewardsGrid.className = 'battle-result-stats-grid';
 
@@ -452,7 +455,7 @@ async function showBattleResult(battleData, timeOut = false) {
                 <tbody>
                     <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
                     <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}<td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
                     <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
                     <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
                     <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
@@ -475,24 +478,6 @@ async function showBattleResult(battleData, timeOut = false) {
     container.appendChild(resultContent);
 
     content.appendChild(container);
-
-    // Показываем "Проиграл" синхронно с результатом
-    setTimeout(() => {
-        const heroCard = document.querySelector('.hero-card');
-        const enemyCard = document.querySelector('.enemy-card');
-        
-        if (winner === 'enemy' || battleData.result.playerHpRemain <= 0) {
-            heroCard?.classList.add('defeated');
-        } else {
-            heroCard?.classList.remove('defeated');
-        }
-        
-        if (winner === 'player' || battleData.result.enemyHpRemain <= 0) {
-            enemyCard?.classList.add('defeated');
-        } else {
-            enemyCard?.classList.remove('defeated');
-        }
-    }, 100);
 }
 
 window.startBattle = startBattle;

@@ -567,11 +567,29 @@ const BattleLog = {
         }
     },
 
-    setSpeed(newSpeed) {
+     setSpeed(newSpeed) {
         this.speed = newSpeed;
         clearTimeout(this.interval);
         this.playNext();
     },
+
+    stop() {
+        if (this.interval) {
+            clearTimeout(this.interval);
+            this.interval = null;
+        }
+        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+        this.hideAnimations();
+        this.stopped = true;
+        this.messages = [];
+        this.states = [];
+        this.currentMsgIndex = 0;
+        this.currentStateIndex = 0;
+        this.battleData = null;
+        this.onFinish = null;
+    },
+
 
 finish() {
     clearTimeout(this.interval);

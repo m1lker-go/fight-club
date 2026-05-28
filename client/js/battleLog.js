@@ -574,28 +574,33 @@ const BattleLog = {
         this.playNext();
     },
 
-    finish() {
-        clearTimeout(this.interval);
-        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        this.hideAnimations();
-        if (this.onFinish) this.onFinish(this.battleData);
-    },
+finish() {
+    clearTimeout(this.interval);
+    if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+    if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+    this.hideAnimations();
 
-    stop() {
-        if (this.interval) {
-            clearTimeout(this.interval);
-            this.interval = null;
-        }
-        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-        this.hideAnimations();
-        this.stopped = true;
-        this.messages = [];
-        this.states = [];
-        this.currentMsgIndex = 0;
-        this.currentStateIndex = 0;
-        this.battleData = null;
-        this.onFinish = null;
+    // Определяем победителя
+    const winner = this.battleData.result.winner;
+    const heroCard = document.querySelector('.hero-card');
+    const enemyCard = document.querySelector('.enemy-card');
+
+    // Добавляем класс defeated проигравшему
+    if (winner === 'player') {
+        if (enemyCard) enemyCard.classList.add('defeated');
+        if (heroCard) heroCard.classList.remove('defeated');
+    } else if (winner === 'enemy') {
+        if (heroCard) heroCard.classList.add('defeated');
+        if (enemyCard) enemyCard.classList.remove('defeated');
+    } else {
+        // Ничья – оба defeated
+        if (heroCard) heroCard.classList.add('defeated');
+        if (enemyCard) enemyCard.classList.add('defeated');
     }
+
+    // Ждём 1.5 секунды, затем вызываем onFinish
+    setTimeout(() => {
+        if (this.onFinish) this.onFinish(this.battleData);
+    }, 1500);
+}
 };

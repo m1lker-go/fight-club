@@ -579,25 +579,54 @@ finish() {
     if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
     this.hideAnimations();
 
-    // Определяем победителя
     const winner = this.battleData.result.winner;
     const heroCard = document.querySelector('.hero-card');
     const enemyCard = document.querySelector('.enemy-card');
 
-    // Добавляем класс defeated проигравшему
+    // Функция для анимации печати текста
+    const animateTyping = (element, text, delay = 80) => {
+        if (!element) return;
+        element.textContent = ''; // очищаем
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < text.length) {
+                element.textContent += text[i];
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, delay);
+    };
+
+    // Показываем затемнение и запускаем печать
     if (winner === 'player') {
-        if (enemyCard) enemyCard.classList.add('defeated');
+        if (enemyCard) {
+            enemyCard.classList.add('defeated');
+            const overlay = enemyCard.querySelector('.defeat-overlay');
+            if (overlay) animateTyping(overlay, 'Проиграл');
+        }
         if (heroCard) heroCard.classList.remove('defeated');
     } else if (winner === 'enemy') {
-        if (heroCard) heroCard.classList.add('defeated');
+        if (heroCard) {
+            heroCard.classList.add('defeated');
+            const overlay = heroCard.querySelector('.defeat-overlay');
+            if (overlay) animateTyping(overlay, 'Проиграл');
+        }
         if (enemyCard) enemyCard.classList.remove('defeated');
     } else {
-        // Ничья – оба defeated
-        if (heroCard) heroCard.classList.add('defeated');
-        if (enemyCard) enemyCard.classList.add('defeated');
+        // Ничья – оба
+        if (heroCard) {
+            heroCard.classList.add('defeated');
+            const overlay = heroCard.querySelector('.defeat-overlay');
+            if (overlay) animateTyping(overlay, 'Проиграл');
+        }
+        if (enemyCard) {
+            enemyCard.classList.add('defeated');
+            const overlay = enemyCard.querySelector('.defeat-overlay');
+            if (overlay) animateTyping(overlay, 'Проиграл');
+        }
     }
 
-    // Ждём 1.5 секунды, затем вызываем onFinish
     setTimeout(() => {
         if (this.onFinish) this.onFinish(this.battleData);
     }, 1500);

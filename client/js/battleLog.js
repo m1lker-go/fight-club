@@ -148,8 +148,6 @@ const BattleLog = {
         this.renderEffects('player');
         this.renderEffects('enemy');
 
-    ,
-
     buildEffectsList(side) {
         const effects = [];
         if (side === 'player') {

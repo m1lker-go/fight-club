@@ -148,31 +148,7 @@ const BattleLog = {
         this.renderEffects('player');
         this.renderEffects('enemy');
 
-        const heroCard = document.querySelector('.hero-card');
-        const enemyCard = document.querySelector('.enemy-card');
-
-        if (state.playerHp <= 0 && heroCard && !heroCard.classList.contains('defeated')) {
-            if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-            this.deathTimerHero = setTimeout(() => {
-                if (heroCard) heroCard.classList.add('defeated');
-            }, 2000);
-        }
-        if (state.playerHp > 0 && heroCard && heroCard.classList.contains('defeated')) {
-            if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-            heroCard.classList.remove('defeated');
-        }
-
-        if (state.enemyHp <= 0 && enemyCard && !enemyCard.classList.contains('defeated')) {
-            if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-            this.deathTimerEnemy = setTimeout(() => {
-                if (enemyCard) enemyCard.classList.add('defeated');
-            }, 2000);
-        }
-        if (state.enemyHp > 0 && enemyCard && enemyCard.classList.contains('defeated')) {
-            if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-            enemyCard.classList.remove('defeated');
-        }
-    },
+    ,
 
     buildEffectsList(side) {
         const effects = [];

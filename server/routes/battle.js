@@ -1262,20 +1262,29 @@ if (user.last_streak_date) {
 
              
         // Автозавершение заданий при 10 победах подряд
-      if (dailyStreak >= 10) {
+    if (dailyStreak >= 10) {
     try {
         const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
-        let progress = userTasks.rows[0].daily_tasks_progress ? JSON.parse(userTasks.rows[0].daily_tasks_progress) : {};
+        let progress = userTasks.rows[0].daily_tasks_progress;
+        // Если progress — строка, парсим, иначе оставляем как есть
+        if (typeof progress === 'string') {
+            try {
+                progress = JSON.parse(progress);
+            } catch(e) {
+                progress = {};
+            }
+        } else if (!progress || typeof progress !== 'object') {
+            progress = {};
+        }
         for (let taskId of [1,2,3]) {
             const bit = 1 << (taskId-1);
             if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
-                progress[taskId] = 10;   // ✅ ИСПРАВЛЕНО
+                progress[taskId] = 10;
             }
         }
         await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
     } catch (e) { console.error('Auto-complete tasks error:', e); }
 }
-
         // Обновление прогресса угольного задания
         if (coalGain > 0) {
             try {

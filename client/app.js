@@ -39,6 +39,30 @@ window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
+// ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
+window.isVKMiniApp = (function() {
+    // Проверяем наличие VK Bridge
+    if (typeof window.vkBridge === 'undefined') return false;
+    // Проверяем User Agent
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('vk')) return true;
+    // Проверяем параметры запуска VK
+    if (window.location.search.includes('vk_access_token_settings')) return true;
+    // Также можно проверить, что приложение запущено в iframe VK
+    if (window.self !== window.top && document.referrer.includes('vk.com')) return true;
+    return false;
+})();
+
+if (window.isVKMiniApp) {
+    console.log('[App] VK Mini App detected, applying horizontal CSS');
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/css/vk-horizontal.css';
+    document.head.appendChild(link);
+} else {
+    console.log('[App] Not VK Mini App, default vertical mode');
+}
+
 // ========== VK Bridge инициализация + автовход ==========
 async function autoLoginVK() {
     if (localStorage.getItem('sessionToken')) return false;

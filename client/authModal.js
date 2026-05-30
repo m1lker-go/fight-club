@@ -24,8 +24,26 @@ function showAuthModal() {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Вход в игру';
-    modalBody.innerHTML = `
-        <div class="auth-container">
+
+    // Проверяем, запущено ли приложение в VK Mini App (глобальный флаг из app.js)
+    const isVK = window.isVKMiniApp === true;
+
+    let authMethodsHtml = '';
+    if (isVK) {
+        // Только VK Bridge
+        authMethodsHtml = `
+            <div class="auth-methods">
+                <button class="auth-btn vk-btn" id="vkOnlyAuthBtn" style="background-color: #4680C2;">
+                    <i class="fab fa-vk"></i> Войти через VK ID
+                </button>
+                <div class="auth-note" style="font-size:12px; color:#aaa; text-align:center; margin-top:10px;">
+                    Авторизация только через VK ID
+                </div>
+            </div>
+        `;
+    } else {
+        // Полный набор кнопок для остальных окружений
+        authMethodsHtml = `
             <div class="auth-methods">
                 <button class="auth-btn telegram-btn" id="telegramAuthBtn">
                     <i class="fab fa-telegram-plane"></i> Войти через Telegram
@@ -40,6 +58,12 @@ function showAuthModal() {
                     <i class="fas fa-key"></i> Войти по логину и паролю
                 </button>
             </div>
+        `;
+    }
+
+    modalBody.innerHTML = `
+        <div class="auth-container">
+            ${authMethodsHtml}
             <div class="auth-credentials-form" style="display:none; margin-top: 10px;">
                 <div class="auth-toggle-group">
                     <button class="auth-toggle-btn top" id="toggleLogin">Вход</button>
@@ -64,26 +88,12 @@ function showAuthModal() {
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // Telegram
-    const telegramBtn = document.getElementById('telegramAuthBtn');
-    if (telegramBtn) {
-        telegramBtn.addEventListener('click', () => {
-            if (window.Telegram?.WebApp?.initData && !webView) {
-                autoLoginTelegram();
-            } else {
-                window.open('https://t.me/CatFightingBot?start=webview_login', '_blank');
-                showToast('После авторизации в Telegram вернитесь в игру', 3000);
-            }
-        });
-    }
-
-    // VK – универсальный обработчик
-    const vkBtn = document.getElementById('vkAuthBtn');
-    if (vkBtn) {
-        vkBtn.addEventListener('click', async () => {
-            // VK Mini App – Bridge
-            if (typeof vkBridge !== 'undefined' && window.location.hostname !== 'cat-fight.ru') {
-                console.log('[VK] Используем VK Bridge (миниапп)');
+    // --- Обработчики для VK Mini App (только кнопка) ---
+    if (isVK) {
+        const vkOnlyBtn = document.getElementById('vkOnlyAuthBtn');
+        if (vkOnlyBtn) {
+            vkOnlyBtn.addEventListener('click', async () => {
+                console.log('[VK] Авторизация через VK Bridge (миниапп)');
                 try {
                     const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
                     const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: '' });
@@ -116,37 +126,71 @@ function showAuthModal() {
                     console.error('VK Bridge auth error:', err);
                     showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
                 }
-            }
-            // Браузер – low‑code попап
-            else {
-                console.log('[VK] Браузерный режим, low‑code OAuth');
-                loginWithVK();
+            });
+        }
+        // В VK миниаппе остальные кнопки не создаются, поэтому дополнительных обработчиков нет
+        return; // чтобы не добавлять обработчики для других кнопок, которых нет в DOM
+    }
+
+    // --- Обработчики для остальных окружений (браузер, Telegram, APK) ---
+    // Telegram
+    const telegramBtn = document.getElementById('telegramAuthBtn');
+    if (telegramBtn) {
+        telegramBtn.addEventListener('click', () => {
+            if (window.Telegram?.WebApp?.initData && !webView) {
+                autoLoginTelegram();
+            } else {
+                window.open('https://t.me/CatFightingBot?start=webview_login', '_blank');
+                showToast('После авторизации в Telegram вернитесь в игру', 3000);
             }
         });
     }
 
-    // Google
-    document.getElementById('googleAuthBtn')?.addEventListener('click', () => {
-        if (webView) {
-            window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
-        } else {
-            loginWithGoogle();
-        }
-    });
+    // VK (браузерный low‑code)
+    const vkBtn = document.getElementById('vkAuthBtn');
+    if (vkBtn) {
+        vkBtn.addEventListener('click', () => {
+            console.log('[VK] Браузерный режим, low‑code OAuth');
+            loginWithVK();
+        });
+    }
 
-    // Остальное
-    document.getElementById('loginCredentialsBtn')?.addEventListener('click', () => {
-        document.querySelector('.auth-methods').style.display = 'none';
-        document.querySelector('.auth-credentials-form').style.display = 'block';
-        setAuthMode('login');
-    });
-    document.getElementById('toggleLogin')?.addEventListener('click', () => setAuthMode('login'));
-    document.getElementById('toggleRegister')?.addEventListener('click', () => setAuthMode('register'));
-    document.getElementById('credentialsSubmitBtn')?.addEventListener('click', handleCredentialsSubmit);
-    document.getElementById('forgotPasswordLink')?.addEventListener('click', (e) => {
+    // Google
+    const googleBtn = document.getElementById('googleAuthBtn');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', () => {
+            if (webView) {
+                window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
+            } else {
+                loginWithGoogle();
+            }
+        });
+    }
+
+    // Email / пароль
+    const credBtn = document.getElementById('loginCredentialsBtn');
+    if (credBtn) {
+        credBtn.addEventListener('click', () => {
+            document.querySelector('.auth-methods').style.display = 'none';
+            document.querySelector('.auth-credentials-form').style.display = 'block';
+            setAuthMode('login');
+        });
+    }
+
+    const toggleLogin = document.getElementById('toggleLogin');
+    const toggleRegister = document.getElementById('toggleRegister');
+    if (toggleLogin) toggleLogin.addEventListener('click', () => setAuthMode('login'));
+    if (toggleRegister) toggleRegister.addEventListener('click', () => setAuthMode('register'));
+
+    const submitBtn = document.getElementById('credentialsSubmitBtn');
+    if (submitBtn) submitBtn.addEventListener('click', handleCredentialsSubmit);
+
+    const forgotLink = document.getElementById('forgotPasswordLink');
+    if (forgotLink) forgotLink.addEventListener('click', (e) => {
         e.preventDefault();
         showForgotPasswordModal();
     });
+
     setAuthMode('login');
 }
 

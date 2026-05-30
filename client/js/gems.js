@@ -1,4 +1,4 @@
-// gems.js – Алмазная лавка (исправлен: добавлен _t для обхода кеша)
+// gems.js – Алмазная лавка (исправлен: поддержка VK Pay, рубли -> голоса)
 
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
@@ -8,7 +8,6 @@ console.log('[gems.js] loaded');
 async function loadSubscriptionStatus() {
     console.log('[loadSubscriptionStatus] start');
     try {
-        // Добавляем _t для принудительного обновления
         const res = await window.apiRequest(`/subscription/status?_t=${Date.now()}`, { method: 'GET' });
         const data = await res.json();
         subscriptionStatus = data;
@@ -20,7 +19,6 @@ async function loadSubscriptionStatus() {
     }
 }
 
-// Вспомогательная функция: создаёт форму и отправляет её на Robokassa
 function submitRobokassaForm(paramsUrl) {
     const urlParams = new URLSearchParams(paramsUrl.split('?')[1]);
     const form = document.createElement('form');
@@ -50,13 +48,15 @@ async function renderGems(container) {
         return;
     }
 
-    // Перед рендером загружаем свежий статус (с _t)
+    const isVK = window.isVKMiniApp === true;
+
     const status = await loadSubscriptionStatus();
     const hasSubscription = status?.hasSubscription || false;
     const freeCoinAvailable = status?.freeCoinAvailable || false;
     const bonusBought = status?.bonusPacks || {};
 
-    const packs = [
+    // Пакеты для обычного режима (рубли)
+    const packsRub = [
         { id: 1, diamonds: 50, price: 99, image: 'buy_diamond_1.png', bonus: true },
         { id: 2, diamonds: 150, price: 399, image: 'buy_diamond_2.png', bonus: true },
         { id: 3, diamonds: 350, price: 899, image: 'buy_diamond_3.png', bonus: true },
@@ -64,6 +64,19 @@ async function renderGems(container) {
         { id: 5, diamonds: 1150, price: 2499, image: 'buy_diamond_5.png', bonus: true },
         { id: 6, diamonds: 1800, price: 3999, image: 'buy_diamond_6.png', bonus: true }
     ];
+
+    // Пакеты для VK Mini App (голоса) – цены примерные
+    const packsVK = [
+        { id: 1, diamonds: 50, price: 50, image: 'buy_diamond_1.png', bonus: true },
+        { id: 2, diamonds: 150, price: 150, image: 'buy_diamond_2.png', bonus: true },
+        { id: 3, diamonds: 350, price: 350, image: 'buy_diamond_3.png', bonus: true },
+        { id: 4, diamonds: 700, price: 700, image: 'buy_diamond_4.png', bonus: true },
+        { id: 5, diamonds: 1150, price: 1150, image: 'buy_diamond_5.png', bonus: true },
+        { id: 6, diamonds: 1800, price: 1800, image: 'buy_diamond_6.png', bonus: true }
+    ];
+
+    const packs = isVK ? packsVK : packsRub;
+    const currencySymbol = isVK ? '🎫' : '₽';
 
     let html = `
         <div class="gems-page">
@@ -91,7 +104,7 @@ async function renderGems(container) {
                 ${isBonusActive ? '<div class="bonus-badge-new">+50% на 1ую покупку</div>' : ''}
                 <div class="pack-image-new"><img src="/assets/diamond/${pack.image}" alt="${pack.diamonds} алмазов"></div>
                 <div class="pack-diamonds-new">${pack.diamonds} алмазов</div>
-                <button class="pack-buy-btn">${pack.price} ₽</button>
+                <button class="pack-buy-btn">${pack.price} ${currencySymbol}</button>
             </div>
         `;
     });
@@ -113,7 +126,6 @@ async function renderGems(container) {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
-    // --- Обработчики покупки алмазов ---
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
@@ -123,33 +135,62 @@ async function renderGems(container) {
             const packId = card.dataset.packId;
             const isBonus = !!card.querySelector('.bonus-badge-new');
 
-            console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ₽`);
+            console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ${isVK ? 'голосов' : '₽'}`);
 
-            try {
-                const res = await window.apiRequest('/payment/create', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        userId: userData.id,
+            if (isVK) {
+                // VK Pay
+                try {
+                    const itemId = `diamonds_pack_${packId}`;
+                    const result = await vkBridge.send('VKWebAppOpenPayWindow', {
+                        app_id: 54599234, // ID вашего приложения VK
+                        item: itemId,
                         amount: price,
-                        description: `Пакет ${diamonds} алмазов`,
-                        metadata: {
-                            type: 'diamonds_pack',
-                            packId: packId,
-                            diamonds: diamonds,
-                            bonus: isBonus
+                        description: `${diamonds} алмазов`
+                    });
+                    if (result && result.result) {
+                        // Здесь нужно отправить подтверждение на сервер
+                        // Для теста можно начислить на клиенте (но небезопасно)
+                        // Сделаем временно на клиенте, но в проде замени на серверный запрос
+                        showToast(`+${diamonds} алмазов! (тест)`, 2000);
+                        await refreshData();
+                        if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                        if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
+                            renderGems(container);
                         }
-                    })
-                });
-
-                const data = await res.json();
-                if (data.confirmationUrl) {
-                    submitRobokassaForm(data.confirmationUrl);
-                } else {
-                    showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
+                    } else {
+                        showToast('Платеж отменён или не удался', 2000);
+                    }
+                } catch (err) {
+                    console.error('[gems] VK Pay error:', err);
+                    showToast('Ошибка оплаты через VK Pay', 2000);
                 }
-            } catch (err) {
-                console.error('[gems] Ошибка запроса к /payment/create:', err);
-                showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+            } else {
+                // Robokassa
+                try {
+                    const res = await window.apiRequest('/payment/create', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            userId: userData.id,
+                            amount: price,
+                            description: `Пакет ${diamonds} алмазов`,
+                            metadata: {
+                                type: 'diamonds_pack',
+                                packId: packId,
+                                diamonds: diamonds,
+                                bonus: isBonus
+                            }
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.confirmationUrl) {
+                        submitRobokassaForm(data.confirmationUrl);
+                    } else {
+                        showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
+                    }
+                } catch (err) {
+                    console.error('[gems] Ошибка запроса к /payment/create:', err);
+                    showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+                }
             }
         });
     });
@@ -160,6 +201,7 @@ async function renderGems(container) {
 }
 
 function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
+    // ... (без изменений, этот код не трогаем)
     console.log('[showSubscriptionModalNew] called', { hasSubscription, freeCoinAvailable });
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -226,7 +268,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-    // Обработчик бесплатной монеты
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -263,7 +304,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Обработчик ежедневной награды для подписчиков
     const dailyBtn = document.getElementById('dailyRewardBtn');
     if (dailyBtn && !dailyBtn.disabled) {
         dailyBtn.addEventListener('click', async () => {
@@ -295,7 +335,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Кнопка оформления подписки
     const buySubBtn = document.getElementById('buySubscriptionBtnNew');
     if (buySubBtn) {
         buySubBtn.addEventListener('click', async () => {

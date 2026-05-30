@@ -1,4 +1,5 @@
 // settings.js – исправлено: аватар + кнопка сброса кэша + полная очистка + переход на /user
+// + адаптация для VK Mini App (скрытие привязок, выхода, редактирования имени)
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -34,7 +35,6 @@ function showLogoutConfirmModal(onConfirm) {
     };
 }
 
-// Функция сброса кэша (полная очистка, сохраняет только sessionToken)
 function clearCacheAndReload() {
     const sessionToken = localStorage.getItem('sessionToken');
     localStorage.clear();
@@ -90,40 +90,16 @@ async function renderSettings() {
             sfxVolumePercent = Math.round(AudioManager.getSfxVolume() * 100);
         }
 
+        const isVK = window.isVKMiniApp === true;
+
         const content = document.getElementById('content');
         if (!content) return;
-        content.innerHTML = `
-            <div class="settings-container">
-                <div class="settings-profile-row">
-                    <img src="/assets/${avatarFilename}" class="settings-avatar">
-                    <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
-                    <button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>
-                </div>
 
-                <div class="settings-volume-row">
-                    <div class="volume-label">Музыка</div>
-                    <div class="slider-container" id="musicSliderContainer">
-                        <div class="slider-track">
-                            <div class="slider-fill" id="musicFill" style="width: ${musicVolumePercent}%;"></div>
-                            <div class="slider-thumb" id="musicThumb" style="left: ${musicVolumePercent}%;"></div>
-                        </div>
-                        <div class="slider-percent" id="musicPercent">${musicVolumePercent}%</div>
-                    </div>
-                </div>
-
-                <div class="settings-volume-row">
-                    <div class="volume-label">Звуки</div>
-                    <div class="slider-container" id="sfxSliderContainer">
-                        <div class="slider-track">
-                            <div class="slider-fill" id="sfxFill" style="width: ${sfxVolumePercent}%;"></div>
-                            <div class="slider-thumb" id="sfxThumb" style="left: ${sfxVolumePercent}%;"></div>
-                        </div>
-                        <div class="slider-percent" id="sfxPercent">${sfxVolumePercent}%</div>
-                    </div>
-                </div>
-
+        let connectionsHtml = '';
+        if (!isVK) {
+            // Полный блок привязок для обычного режима
+            connectionsHtml = `
                 <div class="settings-connected-header">ПРИВЯЗАННЫЕ АККАУНТЫ</div>
-
                 <div class="connections-list">
                     <div class="connection-row">
                         <span>Telegram</span>
@@ -152,14 +128,68 @@ async function renderSettings() {
                         <button class="link-btn" data-action="change-password">Изменить</button>
                     </div>` : ''}
                 </div>
+            `;
+        } else {
+            // В VK Mini App – только пояснение
+            connectionsHtml = `
+                <div class="settings-connected-header">АККАУНТ VK</div>
+                <div class="connections-list">
+                    <div class="connection-row" style="justify-content: center;">
+                        <span style="color: #aaa;">Авторизация через VK ID</span>
+                    </div>
+                    <div class="connection-row" style="justify-content: center;">
+                        <span>${user.username || user.email || 'Пользователь VK'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Определяем, нужно ли показывать кнопку выхода (скрываем в VK Mini App и Telegram WebApp)
+        const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+        const hideLogout = isVK || isTelegramWebApp;
+        const hideEditName = isVK; // в VK запрещаем редактирование имени
+
+        content.innerHTML = `
+            <div class="settings-container">
+                <div class="settings-profile-row">
+                    <img src="/assets/${avatarFilename}" class="settings-avatar">
+                    <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
+                    ${!hideEditName ? `<button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>` : ''}
+                </div>
+
+                <div class="settings-volume-row">
+                    <div class="volume-label">Музыка</div>
+                    <div class="slider-container" id="musicSliderContainer">
+                        <div class="slider-track">
+                            <div class="slider-fill" id="musicFill" style="width: ${musicVolumePercent}%;"></div>
+                            <div class="slider-thumb" id="musicThumb" style="left: ${musicVolumePercent}%;"></div>
+                        </div>
+                        <div class="slider-percent" id="musicPercent">${musicVolumePercent}%</div>
+                    </div>
+                </div>
+
+                <div class="settings-volume-row">
+                    <div class="volume-label">Звуки</div>
+                    <div class="slider-container" id="sfxSliderContainer">
+                        <div class="slider-track">
+                            <div class="slider-fill" id="sfxFill" style="width: ${sfxVolumePercent}%;"></div>
+                            <div class="slider-thumb" id="sfxThumb" style="left: ${sfxVolumePercent}%;"></div>
+                        </div>
+                        <div class="slider-percent" id="sfxPercent">${sfxVolumePercent}%</div>
+                    </div>
+                </div>
+
+                ${connectionsHtml}
 
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button class="logout-btn" id="clearCacheBtn" style="flex: 1; background-color: #2ecc71; color: white; border-radius: 30px; padding: 12px 0; font-size: 16px; font-weight: bold; border: none; cursor: pointer;">
                         <i class="fas fa-sync-alt"></i>
                     </button>
+                    ${!hideLogout ? `
                     <button class="logout-btn" id="logoutBtn" style="flex: 3; background-color: #e74c3c; color: white; border-radius: 30px; padding: 12px 0; font-size: 16px; font-weight: bold; border: none; cursor: pointer;">
                         <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
                     </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -240,33 +270,38 @@ async function renderSettings() {
         setupSlider('musicSliderContainer', 'musicFill', 'musicThumb', 'musicPercent', true);
         setupSlider('sfxSliderContainer', 'sfxFill', 'sfxThumb', 'sfxPercent', false);
 
-        // Обработчики
-        const editusernameBtn = document.getElementById('editusernameBtn');
-        if (editusernameBtn) {
-            editusernameBtn.addEventListener('click', () => {
-                showusernameEditModal(user.username || user.username || '');
-            });
+        // Обработчики (только если кнопки существуют)
+        if (!hideEditName) {
+            const editusernameBtn = document.getElementById('editusernameBtn');
+            if (editusernameBtn) {
+                editusernameBtn.addEventListener('click', () => {
+                    showusernameEditModal(user.username || user.username || '');
+                });
+            }
         }
 
-        document.querySelectorAll('.link-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const provider = btn.dataset.provider;
-                const action = btn.dataset.action;
-                if (action === 'change-password') {
-                    showChangePasswordModal();
-                } else if (provider === 'telegram') {
-                    linkTelegram();
-                } else if (provider === 'google') {
-                    linkGoogle();
-                } else if (provider === 'vk') {
-                    linkVK();
-                } else if (provider === 'email') {
-                    showToast('Привязка email в разработке', 1500);
-                } else {
-                    showToast(`Привязка ${provider} в разработке`, 1500);
-                }
+        if (!isVK) {
+            // Обработчики привязок (только для не-VK режима)
+            document.querySelectorAll('.link-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const provider = btn.dataset.provider;
+                    const action = btn.dataset.action;
+                    if (action === 'change-password') {
+                        showChangePasswordModal();
+                    } else if (provider === 'telegram') {
+                        linkTelegram();
+                    } else if (provider === 'google') {
+                        linkGoogle();
+                    } else if (provider === 'vk') {
+                        linkVK();
+                    } else if (provider === 'email') {
+                        showToast('Привязка email в разработке', 1500);
+                    } else {
+                        showToast(`Привязка ${provider} в разработке`, 1500);
+                    }
+                });
             });
-        });
+        }
 
         const clearCacheBtn = document.getElementById('clearCacheBtn');
         if (clearCacheBtn) {
@@ -277,25 +312,20 @@ async function renderSettings() {
             });
         }
 
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-    const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-    if (isTelegramWebApp) {
-        logoutBtn.style.display = 'none';  // скрываем кнопку в Telegram
-    } else {
-        logoutBtn.addEventListener('click', () => {
-            showLogoutConfirmModal(() => {
-                // Удаляем токен и данные сессии, но не трогаем кэш
-                localStorage.removeItem('sessionToken');
-                localStorage.removeItem('telegram_link_state');
-                localStorage.removeItem('telegram_code_verifier');
-                sessionStorage.clear();
-                // Перезагружаем страницу (без параметров)
-                window.location.href = window.location.pathname;
-            });
-        });
-    }
-}
+        if (!hideLogout) {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    showLogoutConfirmModal(() => {
+                        localStorage.removeItem('sessionToken');
+                        localStorage.removeItem('telegram_link_state');
+                        localStorage.removeItem('telegram_code_verifier');
+                        sessionStorage.clear();
+                        window.location.href = window.location.pathname;
+                    });
+                });
+            }
+        }
     } catch (err) {
         console.error(err);
         if (typeof showToast === 'function') showToast('Ошибка загрузки настроек', 1500);
@@ -304,11 +334,10 @@ if (logoutBtn) {
 }
 
 async function updateSettings(updates) {
-    // токен больше не передаём в теле, он в заголовке
     try {
         const res = await window.apiRequest('/user/update-settings', {
             method: 'POST',
-            body: JSON.stringify(updates)  // только звук/никнейм
+            body: JSON.stringify(updates)
         });
         if (!res.ok) throw new Error('Failed to update');
         if (typeof showToast === 'function') showToast('Настройки сохранены', 1000);
@@ -349,14 +378,12 @@ function showusernameEditModal(currentusername) {
             showToast('Никнейм может содержать только английские буквы, цифры и подчёркивание', 1500);
             return;
         }
-        // Проверка доступности никнейма (публичный эндпоинт, не требует токена)
         const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(newusername)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
             showToast('Никнейм уже занят', 1500);
             return;
         }
-        // Обновление (защищённый эндпоинт)
         const res = await window.apiRequest('/user/update-settings', {
             method: 'POST',
             body: JSON.stringify({ username: newusername })
@@ -378,7 +405,6 @@ function showusernameEditModal(currentusername) {
     };
 }
 
-// ========== СМЕНА ПАРОЛЯ ==========
 function showChangePasswordModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -518,7 +544,6 @@ function linkVK() {
                 const tokenData = await VKID.Auth.exchangeCode(code, device_id);
                 const { access_token, user_id, email } = tokenData;
                 
-                // токен уже в заголовке, не нужно передавать в теле
                 const res = await window.apiRequest('/user/link', {
                     method: 'POST',
                     body: JSON.stringify({

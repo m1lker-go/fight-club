@@ -380,47 +380,57 @@ router.get('/telegram/callback', async (req, res) => {
 router.post('/vk-launch', async (req, res) => {
     try {
         const launchParams = req.body;
-        const { sign, vk_user_id, ...params } = launchParams;
+        const { sign, ...params } = launchParams;
         
-        if (!sign || !vk_user_id) {
-            return res.status(400).json({ error: 'Missing sign or vk_user_id' });
+        if (!sign) {
+            return res.status(401).json({ error: 'Missing sign' });
         }
         
-        // Секретный ключ приложения из .env (не путать с VK_API_SECRET)
         const appSecret = process.env.VK_APP_SECRET;
         if (!appSecret) {
             console.error('[VK Launch] VK_APP_SECRET not set');
-            return res.status(500).json({ error: 'Server configuration error' });
+            return res.status(500).json({ error: 'Server config error' });
         }
         
-        // Сортировка ключей и формирование строки для подписи
+        // 1. Сортируем ключи по алфавиту
         const sortedKeys = Object.keys(params).sort();
-        let checkString = '';
+        // 2. Формируем строку "ключ=значение" для каждого параметра
+        let signString = '';
         for (const key of sortedKeys) {
-            checkString += `${key}=${params[key]}`;
+            signString += `${key}=${params[key]}`;
         }
-        const expectedSign = crypto.createHash('md5').update(checkString + appSecret).digest('hex');
+        // 3. Вычисляем MD5 от (signString + appSecret)
+        const expectedSign = crypto.createHash('md5').update(signString + appSecret).digest('hex');
+        
+        console.log('[VK Launch] signString:', signString);
+        console.log('[VK Launch] expectedSign:', expectedSign);
+        console.log('[VK Launch] received sign:', sign);
         
         if (expectedSign !== sign) {
-            console.error('[VK Launch] Invalid signature', expectedSign, sign);
             return res.status(401).json({ error: 'Invalid signature' });
+        }
+        
+        // Проверка пройдена – далее логика создания/поиска пользователя
+        const vkUserId = params.vk_user_id;
+        if (!vkUserId) {
+            return res.status(400).json({ error: 'No vk_user_id' });
         }
         
         const client = await pool.connect();
         try {
             // Ищем пользователя по vk_id
-            let userResult = await client.query('SELECT * FROM users WHERE vk_id = $1', [String(vk_user_id)]);
+            let userResult = await client.query('SELECT * FROM users WHERE vk_id = $1', [String(vkUserId)]);
             let user;
             let needusername = false;
             
             if (userResult.rows.length === 0) {
                 // Создаём нового пользователя
-                const tempUsername = `user_${vk_user_id}`;
+                const tempUsername = `user_${vkUserId}`;
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 const newUser = await client.query(
                     `INSERT INTO users (vk_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
-                    [String(vk_user_id), tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                    [String(vkUserId), tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
                 );
                 user = newUser.rows[0];
                 needusername = true;
@@ -446,6 +456,10 @@ router.post('/vk-launch', async (req, res) => {
             } else {
                 user = userResult.rows[0];
                 needusername = !user.username || user.username.startsWith('user_');
+                // Обновляем vk_id на всякий случай (если вдруг не было)
+                if (!user.vk_id) {
+                    await client.query('UPDATE users SET vk_id = $1 WHERE id = $2', [String(vkUserId), user.id]);
+                }
             }
             
             // Генерируем JWT токен

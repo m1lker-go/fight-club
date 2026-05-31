@@ -65,14 +65,14 @@ async function renderGems(container) {
         { id: 6, diamonds: 1800, price: 3999, image: 'buy_diamond_6.png', bonus: true }
     ];
 
-    // Пакеты для VK Mini App (голоса) – цены примерные
+    // Пакеты для VK Mini App (голоса) – цены в голосах
     const packsVK = [
-        { id: 1, diamonds: 50, price: 50, image: 'buy_diamond_1.png', bonus: true },
-        { id: 2, diamonds: 150, price: 150, image: 'buy_diamond_2.png', bonus: true },
-        { id: 3, diamonds: 350, price: 350, image: 'buy_diamond_3.png', bonus: true },
-        { id: 4, diamonds: 700, price: 700, image: 'buy_diamond_4.png', bonus: true },
-        { id: 5, diamonds: 1150, price: 1150, image: 'buy_diamond_5.png', bonus: true },
-        { id: 6, diamonds: 1800, price: 1800, image: 'buy_diamond_6.png', bonus: true }
+        { id: 1, diamonds: 50, price: 15, image: 'buy_diamond_1.png', bonus: true },
+        { id: 2, diamonds: 150, price: 57, image: 'buy_diamond_2.png', bonus: true },
+        { id: 3, diamonds: 350, price: 129, image: 'buy_diamond_3.png', bonus: true },
+        { id: 4, diamonds: 700, price: 229, image: 'buy_diamond_4.png', bonus: true },
+        { id: 5, diamonds: 1150, price: 357, image: 'buy_diamond_5.png', bonus: true },
+        { id: 6, diamonds: 1800, price: 572, image: 'buy_diamond_6.png', bonus: true }
     ];
 
     const packs = isVK ? packsVK : packsRub;
@@ -126,13 +126,14 @@ async function renderGems(container) {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
+    // Обработчики покупки алмазных пакетов
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
             e.stopPropagation();
             const diamonds = parseInt(card.dataset.diamonds);
             const price = parseInt(card.dataset.price);
-            const packId = card.dataset.packId;
+            const packId = parseInt(card.dataset.packId);
             const isBonus = !!card.querySelector('.bonus-badge-new');
 
             console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ${isVK ? 'голосов' : '₽'}`);
@@ -140,22 +141,32 @@ async function renderGems(container) {
             if (isVK) {
                 // VK Pay
                 try {
-                    const itemId = `diamonds_pack_${packId}`;
                     const result = await vkBridge.send('VKWebAppOpenPayWindow', {
-                        app_id: 54599234, // ID вашего приложения VK
-                        item: itemId,
-                        amount: price,
+                        app_id: 48198,          // ID вашего приложения VK
+                        item: packId.toString(),   // itemdefid из кабинета (1..6)
+                        amount: price,             // цена в голосах
                         description: `${diamonds} алмазов`
                     });
                     if (result && result.result) {
-                        // Здесь нужно отправить подтверждение на сервер
-                        // Для теста можно начислить на клиенте (но небезопасно)
-                        // Сделаем временно на клиенте, но в проде замени на серверный запрос
-                        showToast(`+${diamonds} алмазов! (тест)`, 2000);
-                        await refreshData();
-                        if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-                        if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
-                            renderGems(container);
+                        // Отправляем подтверждение на сервер
+                        const confirmRes = await window.apiRequest('/payment/vk-confirm', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                itemdefid: packId,
+                                transactionId: result.transaction_id,
+                                diamonds: diamonds,
+                                bonus: isBonus
+                            })
+                        });
+                        if (confirmRes.ok) {
+                            showToast(`+${diamonds} алмазов!`, 2000);
+                            await refreshData();
+                            if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                            if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
+                                renderGems(container);
+                            }
+                        } else {
+                            showToast('Ошибка начисления алмазов', 2000);
                         }
                     } else {
                         showToast('Платеж отменён или не удался', 2000);
@@ -201,13 +212,13 @@ async function renderGems(container) {
 }
 
 function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
-    // ... (без изменений, этот код не трогаем)
-    console.log('[showSubscriptionModalNew] called', { hasSubscription, freeCoinAvailable });
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
+
+    const isVK = window.isVKMiniApp === true;
 
     const freeCoinButton = freeCoinAvailable ? `
         <button class="subscription-free-btn-new" id="freeCoinBtnNew">
@@ -268,6 +279,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
+    // Обработчик бесплатной монеты
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -304,6 +316,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
+    // Обработчик ежедневной награды для подписчиков
     const dailyBtn = document.getElementById('dailyRewardBtn');
     if (dailyBtn && !dailyBtn.disabled) {
         dailyBtn.addEventListener('click', async () => {
@@ -335,29 +348,69 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
+    // Обработчик покупки подписки (разделение по окружению)
     const buySubBtn = document.getElementById('buySubscriptionBtnNew');
     if (buySubBtn) {
         buySubBtn.addEventListener('click', async () => {
             console.log('[gems] buy subscription clicked');
-            try {
-                const res = await window.apiRequest('/payment/create', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        userId: userData.id,
-                        amount: 599,
-                        description: 'Подписка VIP Silver на 30 дней',
-                        metadata: { type: 'subscription' }
-                    })
-                });
-                const data = await res.json();
-                if (data.confirmationUrl) {
-                    submitRobokassaForm(data.confirmationUrl);
-                } else {
-                    showToast('Ошибка создания платежа', 2000);
+            if (isVK) {
+                // VK Pay для подписки
+                try {
+                    const result = await vkBridge.send('VKWebAppOpenPayWindow', {
+                        app_id: 54599234,          // ID вашего приложения VK
+                        item: '7',                 // itemdefid подписки (7)
+                        amount: 86,                // цена в голосах (599 руб / 7 = 85.57 -> 86)
+                        description: 'VIP Silver подписка на 30 дней'
+                    });
+                    if (result && result.result) {
+                        // Отправляем подтверждение на сервер
+                        const confirmRes = await window.apiRequest('/payment/vk-confirm', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                itemdefid: 7,
+                                transactionId: result.transaction_id,
+                                subscription: true
+                            })
+                        });
+                        if (confirmRes.ok) {
+                            showToast('Подписка активирована!', 2000);
+                            await refreshData();
+                            if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                            modal.style.display = 'none';
+                            const subContent = document.getElementById('tradeSubContent');
+                            if (subContent) renderGems(subContent);
+                        } else {
+                            showToast('Ошибка активации подписки', 2000);
+                        }
+                    } else {
+                        showToast('Платеж отменён или не удался', 2000);
+                    }
+                } catch (err) {
+                    console.error('[gems] VK Pay subscription error:', err);
+                    showToast('Ошибка оплаты подписки через VK Pay', 2000);
                 }
-            } catch (err) {
-                console.error('[gems] subscription error:', err);
-                showToast('Сетевая ошибка', 2000);
+            } else {
+                // Robokassa
+                try {
+                    const res = await window.apiRequest('/payment/create', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            userId: userData.id,
+                            amount: 599,
+                            description: 'Подписка VIP Silver на 30 дней',
+                            metadata: { type: 'subscription' }
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.confirmationUrl) {
+                        submitRobokassaForm(data.confirmationUrl);
+                    } else {
+                        showToast('Ошибка создания платежа', 2000);
+                    }
+                } catch (err) {
+                    console.error('[gems] subscription error:', err);
+                    showToast('Сетевая ошибка', 2000);
+                }
             }
         });
     }

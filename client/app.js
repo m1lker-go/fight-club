@@ -128,6 +128,8 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
         .then(() => {
             console.log('[VK Bridge] init OK');
             const params = getVKLaunchParams();
+            console.log('[VK] params full:', JSON.stringify(params));
+            console.log('[VK] vk_user_id:', params.vk_user_id, 'sign:', params.sign);
             if (!params.vk_user_id || !params.sign) {
                 console.warn('[VK] No launch params, fallback to normal auth');
                 checkAuth();
@@ -141,6 +143,7 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
         })
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
+
 // ========== Универсальный apiRequest с Bearer-токеном (условное хранилище) ==========
 window.apiRequest = async function(endpoint, options = {}) {
     console.log('[apiRequest]', endpoint, options);

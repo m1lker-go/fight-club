@@ -41,17 +41,22 @@ window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.go
 
 // ========== УНИВЕРСАЛЬНОЕ ПОЛУЧЕНИЕ ПАРАМЕТРОВ VK (search или hash) ==========
 function getVKLaunchParams() {
-    // Сначала ищем в строке запроса
-    let searchParams = new URLSearchParams(window.location.search);
-    let result = {};
+    // Получаем полный URL, включая search и hash
+    let fullUrl = window.location.href;
+    let queryString = '';
+    if (fullUrl.includes('?')) {
+        queryString = fullUrl.split('?')[1].split('#')[0]; // берём часть после ? до #
+    }
+    const searchParams = new URLSearchParams(queryString);
+    const result = {};
     for (const [key, value] of searchParams.entries()) {
         if (key.startsWith('vk_')) {
             result[key] = value;
         }
     }
-    // Если не нашли, пробуем хэш (для случаев, когда параметры в #)
+    // Если ничего не нашли, пробуем hash (на случай, если параметры в якоре)
     if (Object.keys(result).length === 0 && window.location.hash) {
-        const hash = window.location.hash.substring(1); // убираем #
+        const hash = window.location.hash.substring(1);
         const hashParams = new URLSearchParams(hash);
         for (const [key, value] of hashParams.entries()) {
             if (key.startsWith('vk_')) {
@@ -59,6 +64,7 @@ function getVKLaunchParams() {
             }
         }
     }
+    console.log('[VK] getVKLaunchParams result:', result);
     return result;
 }
 

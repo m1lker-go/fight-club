@@ -42,6 +42,8 @@ window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.go
 // ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
 window.isVKMiniApp = (function() {
     if (typeof window.vkBridge === 'undefined') return false;
+    const hash = window.location.hash;
+    if (hash && (hash.includes('vk_user_id') || hash.includes('sign'))) return true;
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('vk')) return true;
     if (window.location.search.includes('vk_access_token_settings')) return true;
@@ -59,18 +61,28 @@ if (window.isVKMiniApp) {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
 
+
 // ========== VK Mini App авторизация через параметры запуска (sessionStorage) ==========
-async function autoLoginVKLaunch() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const launchParams = {};
+
+function getVKLaunchParams() {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#')) return {};
+    // Убираем первый символ '#'
+    const paramsString = hash.substring(1);
+    const urlParams = new URLSearchParams(paramsString);
+    const result = {};
     for (const [key, value] of urlParams.entries()) {
         if (key.startsWith('vk_')) {
-            launchParams[key] = value;
+            result[key] = value;
         }
     }
+    return result;
+}
+
+async function autoLoginVKLaunch() {
+    const launchParams = getVKLaunchParams();
     if (!launchParams.vk_user_id || !launchParams.sign) {
-        console.error('[VK] Missing launch params');
-        showErrorSplash();
+        console.log('[VK] Missing launch params in hash, skipping autoLoginVKLaunch');
         return false;
     }
     try {

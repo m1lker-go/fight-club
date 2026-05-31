@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 
 const GMR_ID = 48198;
-const VK_API_SECRET = process.env.VK_API_SECRET; // I3BEj6UXESVawEQR
+const VK_API_SECRET = process.env.VK_API_SECRET;
 
 router.post('/payment-url', async (req, res) => {
     try {

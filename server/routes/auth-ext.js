@@ -376,44 +376,92 @@ router.get('/telegram/callback', async (req, res) => {
     }
 });
 
+// ========== VK MINI APP LAUNCH AUTH (параметры запуска, подпись) ==========
 router.post('/vk-launch', async (req, res) => {
-    const launchParams = req.body;
-    const { sign, vk_user_id, ...params } = launchParams;
-    if (!sign || !vk_user_id) {
-        return res.status(400).json({ error: 'Missing sign or vk_user_id' });
-    }
-    const appSecret = process.env.VK_APP_SECRET; // секретный ключ из настроек приложения VK
-    const sortedKeys = Object.keys(params).sort();
-    let checkString = '';
-    for (const key of sortedKeys) {
-        checkString += `${key}=${params[key]}`;
-    }
-    const expectedSign = crypto.createHash('md5').update(checkString + appSecret).digest('hex');
-    if (expectedSign !== sign) {
-        return res.status(401).json({ error: 'Invalid signature' });
-    }
-    const client = await pool.connect();
     try {
-        let user = await client.query('SELECT * FROM users WHERE vk_id = $1', [vk_user_id]);
-        let needusername = false;
-        if (user.rows.length === 0) {
-            const newUser = await client.query(
-                `INSERT INTO users (vk_id, username, coins, diamonds, rating, energy, last_energy, win_streak, current_class)
-                 VALUES ($1, $2, 0, 0, 1000, 20, NOW(), 0, 'warrior') RETURNING *`,
-                [vk_user_id, `user_${vk_user_id}`]
-            );
-            user = newUser;
-            needusername = true;
-            // Также создать записи в user_classes
+        const launchParams = req.body;
+        const { sign, vk_user_id, ...params } = launchParams;
+        
+        if (!sign || !vk_user_id) {
+            return res.status(400).json({ error: 'Missing sign or vk_user_id' });
         }
-        const sessionToken = jwt.sign({ userId: user.rows[0].id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-        await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, user.rows[0].id]);
-        res.json({ success: true, sessionToken, needusername, userId: user.rows[0].id });
+        
+        // Секретный ключ приложения из .env (не путать с VK_API_SECRET)
+        const appSecret = process.env.VK_APP_SECRET;
+        if (!appSecret) {
+            console.error('[VK Launch] VK_APP_SECRET not set');
+            return res.status(500).json({ error: 'Server configuration error' });
+        }
+        
+        // Сортировка ключей и формирование строки для подписи
+        const sortedKeys = Object.keys(params).sort();
+        let checkString = '';
+        for (const key of sortedKeys) {
+            checkString += `${key}=${params[key]}`;
+        }
+        const expectedSign = crypto.createHash('md5').update(checkString + appSecret).digest('hex');
+        
+        if (expectedSign !== sign) {
+            console.error('[VK Launch] Invalid signature', expectedSign, sign);
+            return res.status(401).json({ error: 'Invalid signature' });
+        }
+        
+        const client = await pool.connect();
+        try {
+            // Ищем пользователя по vk_id
+            let userResult = await client.query('SELECT * FROM users WHERE vk_id = $1', [String(vk_user_id)]);
+            let user;
+            let needusername = false;
+            
+            if (userResult.rows.length === 0) {
+                // Создаём нового пользователя
+                const tempUsername = `user_${vk_user_id}`;
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                const newUser = await client.query(
+                    `INSERT INTO users (vk_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
+                    [String(vk_user_id), tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                );
+                user = newUser.rows[0];
+                needusername = true;
+                
+                // Добавляем классы
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(
+                        `INSERT INTO user_classes (user_id, class, skill_points, level, exp)
+                         VALUES ($1, $2, 0, 1, 0)
+                         ON CONFLICT (user_id, class) DO NOTHING`,
+                        [user.id, cls]
+                    );
+                }
+                // Приветственное сообщение
+                await client.query(
+                    `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+                     VALUES ($1, 'Мастер кошачьих боёв', 'Привет, разбойник!', 
+                     'Я рад, что ты присоединился к игре! За это я дарю тебе очки навыков для твоего героя! Выбери класс, который получит дополнительно 5 очков навыков. НО запомни, выбрать можно один раз!', 
+                     'skill_points_choice', 5, false, false)`,
+                    [user.id]
+                );
+            } else {
+                user = userResult.rows[0];
+                needusername = !user.username || user.username.startsWith('user_');
+            }
+            
+            // Генерируем JWT токен
+            const sessionToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+            await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, user.id]);
+            
+            res.json({ success: true, sessionToken, needusername, userId: user.id, user });
+        } catch (err) {
+            console.error('[VK Launch] DB error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        } finally {
+            client.release();
+        }
     } catch (err) {
-        console.error(err);
+        console.error('[VK Launch] unexpected error:', err);
         res.status(500).json({ error: 'Server error' });
-    } finally {
-        client.release();
     }
 });
 

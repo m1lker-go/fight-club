@@ -113,6 +113,19 @@ if (isVK) {
                     body: JSON.stringify(requestBody)
                 });
                 const data = await res.json();
+                console.log('[VK] Full server response:', data);
+if (!data.success) {
+    console.error('[VK] Server error:', data.error);
+    showToast(data.error || 'Ошибка входа', 1500);
+    return;
+}
+if (!data.sessionToken) {
+    console.error('[VK] No sessionToken in response!');
+    showToast('Токен не получен, обратитесь в поддержку', 1500);
+    return;
+}
+localStorage.setItem('sessionToken', data.sessionToken);
+console.log('[VK] Token saved, proceeding...');
                 console.log('[VK] Ответ сервера:', data);   // ← ВАЖНО: смотрим, что пришло
 
                 if (data.success) {

@@ -49,8 +49,8 @@ router.post('/', async (req, res) => {
     console.log('[Payment Callback] Received:', JSON.stringify(req.body));
     const { notification_type, order_id, item_id, user_id, status, ...rest } = req.body;
     
-    // Уведомление get_item – запрос информации о товаре
-    if (notification_type === 'get_item') {
+    // Уведомление get_item или get_item_test (тестовый режим)
+    if (notification_type === 'get_item' || notification_type === 'get_item_test') {
         const item = itemsCatalog[item_id];
         if (!item) {
             return res.status(404).json({ error: 'Item not found' });
@@ -65,8 +65,8 @@ router.post('/', async (req, res) => {
         });
     }
     
-    // Уведомление order_status_change – изменение статуса заказа
-    if (notification_type === 'order_status_change') {
+    // Уведомление order_status_change или order_status_change_test (тестовый режим)
+    if (notification_type === 'order_status_change' || notification_type === 'order_status_change_test') {
         if (status === 'chargeable') {
             // Платёж успешен – начисляем товар
             const client = await pool.connect();

@@ -392,15 +392,19 @@ router.post('/vk-launch', async (req, res) => {
             return res.status(500).json({ error: 'Server config error' });
         }
         
-          // 1. Сортируем ключи по алфавиту
+        // 1. Сортируем ключи по алфавиту
         const sortedKeys = Object.keys(params).sort();
-        // 2. Формируем строку "ключ=значение" для каждого параметра
-        let signString = '';
-        for (const key of sortedKeys) {
-            signString += `${key}=${params[key]}`;
-        }
-        // 3. Вычисляем HMAC-SHA256 в base64url
-        const expectedSign = crypto.createHmac('sha256', appSecret).update(signString).digest('base64url');
+        // 2. Формируем строку "ключ=значение&ключ=значение" с URL-кодированием
+        const signString = sortedKeys
+            .map(key => `${key}=${encodeURIComponent(params[key])}`)
+            .join('&');
+        // 3. Вычисляем HMAC-SHA256 в base64url (без padding)
+        const expectedSign = crypto.createHmac('sha256', appSecret)
+            .update(signString)
+            .digest('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=$/, '');
         
         console.log('[VK Launch] signString:', signString);
         console.log('[VK Launch] expectedSign:', expectedSign);
@@ -418,13 +422,11 @@ router.post('/vk-launch', async (req, res) => {
         
         const client = await pool.connect();
         try {
-            // Ищем пользователя по vk_id
             let userResult = await client.query('SELECT * FROM users WHERE vk_id = $1', [String(vkUserId)]);
             let user;
             let needusername = false;
             
             if (userResult.rows.length === 0) {
-                // Создаём нового пользователя
                 const tempUsername = `user_${vkUserId}`;
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 const newUser = await client.query(
@@ -435,7 +437,6 @@ router.post('/vk-launch', async (req, res) => {
                 user = newUser.rows[0];
                 needusername = true;
                 
-                // Добавляем классы
                 const classes = ['warrior', 'assassin', 'mage'];
                 for (let cls of classes) {
                     await client.query(
@@ -445,7 +446,6 @@ router.post('/vk-launch', async (req, res) => {
                         [user.id, cls]
                     );
                 }
-                // Приветственное сообщение
                 await client.query(
                     `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
                      VALUES ($1, 'Мастер кошачьих боёв', 'Привет, разбойник!', 
@@ -456,13 +456,11 @@ router.post('/vk-launch', async (req, res) => {
             } else {
                 user = userResult.rows[0];
                 needusername = !user.username || user.username.startsWith('user_');
-                // Обновляем vk_id на всякий случай (если вдруг не было)
                 if (!user.vk_id) {
                     await client.query('UPDATE users SET vk_id = $1 WHERE id = $2', [String(vkUserId), user.id]);
                 }
             }
             
-            // Генерируем JWT токен
             const sessionToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
             await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, user.id]);
             

@@ -357,7 +357,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 // VK Pay для подписки
                 try {
                     const result = await vkBridge.send('VKWebAppOpenPayWindow', {
-                        app_id: 54599234,          // ID вашего приложения VK
+                        app_id: 48198,          // ID вашего приложения VK
                         item: '7',                 // itemdefid подписки (7)
                         amount: 86,                // цена в голосах (599 руб / 7 = 85.57 -> 86)
                         description: 'VIP Silver подписка на 30 дней'

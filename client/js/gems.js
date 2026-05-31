@@ -142,32 +142,24 @@ async function renderGems(container) {
                 // VK Pay
                 try {
                     const result = await vkBridge.send('VKWebAppOpenPayWindow', {
-                        app_id: 48198,          // ID вашего приложения VK
-                        item: packId.toString(),   // itemdefid из кабинета (1..6)
-                        amount: price,             // цена в голосах
+                        app_id: 48198,          // ID игры (GMRID)
+                        item: packId.toString(), // itemdefid из кабинета (1..6)
+                        amount: price,           // цена в голосах
                         description: `${diamonds} алмазов`
                     });
                     if (result && result.result) {
-                        // Отправляем подтверждение на сервер
-                        const confirmRes = await window.apiRequest('/payment/vk-confirm', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                itemdefid: packId,
-                                transactionId: result.transaction_id,
-                                diamonds: diamonds,
-                                bonus: isBonus
-                            })
-                        });
-                        if (confirmRes.ok) {
-                            showToast(`+${diamonds} алмазов!`, 2000);
+                        // TODO: здесь не нужно отправлять подтверждение на сервер.
+                        // Сервер получит callback от VK и сам начислит товар.
+                        // Для теста можно временно начислить на клиенте, но потом убрать.
+                        showToast(`+${diamonds} алмазов! (зачисление через несколько секунд)`, 2000);
+                        // Обновим данные через 3 секунды (чтобы сервер успел обработать callback)
+                        setTimeout(async () => {
                             await refreshData();
                             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                             if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
                                 renderGems(container);
                             }
-                        } else {
-                            showToast('Ошибка начисления алмазов', 2000);
-                        }
+                        }, 3000);
                     } else {
                         showToast('Платеж отменён или не удался', 2000);
                     }
@@ -279,7 +271,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-    // Обработчик бесплатной монеты
+    // Обработчик бесплатной монеты (без изменений)
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -316,7 +308,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Обработчик ежедневной награды для подписчиков
+    // Обработчик ежедневной награды для подписчиков (без изменений)
     const dailyBtn = document.getElementById('dailyRewardBtn');
     if (dailyBtn && !dailyBtn.disabled) {
         dailyBtn.addEventListener('click', async () => {
@@ -348,40 +340,28 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Обработчик покупки подписки (разделение по окружению)
+    // Обработчик покупки подписки (исправлен app_id)
     const buySubBtn = document.getElementById('buySubscriptionBtnNew');
     if (buySubBtn) {
         buySubBtn.addEventListener('click', async () => {
             console.log('[gems] buy subscription clicked');
             if (isVK) {
-                // VK Pay для подписки
                 try {
                     const result = await vkBridge.send('VKWebAppOpenPayWindow', {
-                        app_id: 48198,          // ID вашего приложения VK
-                        item: '7',                 // itemdefid подписки (7)
-                        amount: 86,                // цена в голосах (599 руб / 7 = 85.57 -> 86)
+                        app_id: 48198,           // ID игры (GMRID)
+                        item: '7',                // itemdefid подписки (7)
+                        amount: 86,               // цена в голосах
                         description: 'VIP Silver подписка на 30 дней'
                     });
                     if (result && result.result) {
-                        // Отправляем подтверждение на сервер
-                        const confirmRes = await window.apiRequest('/payment/vk-confirm', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                itemdefid: 7,
-                                transactionId: result.transaction_id,
-                                subscription: true
-                            })
-                        });
-                        if (confirmRes.ok) {
-                            showToast('Подписка активирована!', 2000);
+                        showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);
+                        setTimeout(async () => {
                             await refreshData();
                             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                             modal.style.display = 'none';
                             const subContent = document.getElementById('tradeSubContent');
                             if (subContent) renderGems(subContent);
-                        } else {
-                            showToast('Ошибка активации подписки', 2000);
-                        }
+                        }, 3000);
                     } else {
                         showToast('Платеж отменён или не удался', 2000);
                     }

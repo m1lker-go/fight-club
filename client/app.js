@@ -102,37 +102,41 @@ async function autoLoginVKLaunch() {
             sessionStorage.setItem('sessionToken', data.sessionToken);
             await loadUserDataByToken(data.sessionToken);
             
-      // --- ОБНОВЛЕНИЕ ИМЕНИ ИЗ VK (с задержкой и проверкой) ---
-if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
-    // Даём время на полную загрузку userData
-    await new Promise(resolve => setTimeout(resolve, 100));
-    console.log('[VK] userData after load:', userData);
-    
-    if (userData && userData.username && userData.username.startsWith('user_')) {
-        try {
-            const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-            const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
-            console.log('[VK] Received from VK:', fullName);
-            if (fullName) {
-                const updRes = await window.apiRequest('/user/update-username', {
-                    method: 'POST',
-                    body: JSON.stringify({ username: fullName })
-                });
-                if (updRes.ok) {
-                    userData.username = fullName;
-                    updateTopBar();
-                    console.log('[VK] Username updated to', fullName);
-                } else {
-                    const errData = await updRes.json();
-                    console.error('[VK] Update username error:', errData);
-                }
+// --- ОБНОВЛЕНИЕ ИМЕНИ ИЗ VK (с подробными логами) ---
+console.log('[VK] DEBUG: window.isVKMiniApp =', window.isVKMiniApp);
+console.log('[VK] DEBUG: typeof vkBridge =', typeof vkBridge);
+console.log('[VK] DEBUG: userData =', userData);
+console.log('[VK] DEBUG: username =', userData?.username);
+console.log('[VK] DEBUG: startsWith user_?', userData?.username?.startsWith('user_'));
+
+if (window.isVKMiniApp && typeof vkBridge !== 'undefined' && userData && userData.username && userData.username.startsWith('user_')) {
+    console.log('[VK] DEBUG: Condition passed, trying to update username');
+    try {
+        const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+        const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
+        console.log('[VK] DEBUG: fullName from VK =', fullName);
+        if (fullName) {
+            const updRes = await window.apiRequest('/user/update-username', {
+                method: 'POST',
+                body: JSON.stringify({ username: fullName })
+            });
+            const updData = await updRes.json();
+            console.log('[VK] DEBUG: update response =', updData);
+            if (updRes.ok) {
+                userData.username = fullName;
+                updateTopBar();
+                console.log('[VK] Username updated to', fullName);
+            } else {
+                console.error('[VK] Failed to update username:', updData.error);
             }
-        } catch (err) {
-            console.error('[VK] Could not update username', err);
+        } else {
+            console.warn('[VK] fullName is empty');
         }
-    } else {
-        console.log('[VK] Username not updated (already set or not user_ format):', userData?.username);
+    } catch (err) {
+        console.error('[VK] Could not update username', err);
     }
+} else {
+    console.log('[VK] DEBUG: Condition failed, skip username update');
 }
             // ---------------------------------------------------------
             

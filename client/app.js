@@ -41,27 +41,21 @@ window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.go
 
 // ========== УНИВЕРСАЛЬНОЕ ПОЛУЧЕНИЕ ПАРАМЕТРОВ VK (search или hash) ==========
 function getVKLaunchParams() {
-    // Получаем полный URL, включая search и hash
     let fullUrl = window.location.href;
     let queryString = '';
     if (fullUrl.includes('?')) {
-        queryString = fullUrl.split('?')[1].split('#')[0]; // берём часть после ? до #
+        queryString = fullUrl.split('?')[1].split('#')[0];
     }
     const searchParams = new URLSearchParams(queryString);
     const result = {};
     for (const [key, value] of searchParams.entries()) {
-        if (key.startsWith('vk_')) {
-            result[key] = value;
-        }
+        result[key] = value;  // сохраняем все параметры, включая sign
     }
-    // Если ничего не нашли, пробуем hash (на случай, если параметры в якоре)
     if (Object.keys(result).length === 0 && window.location.hash) {
         const hash = window.location.hash.substring(1);
         const hashParams = new URLSearchParams(hash);
         for (const [key, value] of hashParams.entries()) {
-            if (key.startsWith('vk_')) {
-                result[key] = value;
-            }
+            result[key] = value;
         }
     }
     console.log('[VK] getVKLaunchParams result:', result);
@@ -147,7 +141,6 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
         })
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
-
 // ========== Универсальный apiRequest с Bearer-токеном (условное хранилище) ==========
 window.apiRequest = async function(endpoint, options = {}) {
     console.log('[apiRequest]', endpoint, options);

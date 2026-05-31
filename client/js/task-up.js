@@ -47,38 +47,54 @@ function renderReferral() {
             '<button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>' +
         '</div>';
 
-    referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
-        navigator.clipboard.writeText(referralLink).then(() => {
+    // Универсальная функция fallback-копирования
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
             showToast('Ссылка скопирована!', 1500);
-        }).catch(() => {
-            showToast('Ошибка копирования', 1500)
-        });
+        } catch (e) {
+            showToast('Не удалось скопировать. Попробуйте позже.', 1500);
+        }
+        document.body.removeChild(textarea);
+    }
+
+    // Кнопка копирования (с fallback)
+    referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
+        navigator.clipboard.writeText(referralLink)
+            .then(() => showToast('Ссылка скопирована!', 1500))
+            .catch(() => fallbackCopy(referralLink));
     });
 
+    // Кнопка "Поделиться"
     referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
         if (isVK && typeof vkBridge !== 'undefined') {
-            // Поделиться через VK Bridge
-            vkBridge.send('VKWebAppShare', { link: referralLink })
-                .then(() => {
-                    showToast('Приглашение отправлено!', 1500);
-                })
+            // Формируем текст сообщения со ссылкой
+            const shareText = `Присоединяйся к игре Cat Fighting! 🐱\n${referralLink}`;
+            vkBridge.send('VKWebAppShare', { text: shareText })
+                .then(() => showToast('Приглашение отправлено!', 1500))
                 .catch((err) => {
                     console.error('VK share error:', err);
-                    showToast('Не удалось открыть окно приглашения', 1500);
+                    fallbackCopy(referralLink);
                 });
         } else if (window.Telegram?.WebApp?.shareURL) {
             window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
         } else if (window.Telegram?.WebApp?.openTelegramLink) {
             window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
         } else {
-            navigator.clipboard.writeText(referralLink).then(() => {
-                showToast('Ссылка скопирована!', 1500);
-            });
+            fallbackCopy(referralLink);
         }
     });
 
     return referralDiv;
 }
+
+
 
 function showAdventModal(data) {
     const modal = document.getElementById('roleModal');

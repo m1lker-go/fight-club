@@ -586,6 +586,32 @@ async function refreshData() {
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
             if (window.refreshTasksData) window.refreshTasksData();
             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+
+            // +++ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ НАВЫКОВ И УРОВНЯ +++
+            // Если открыт профиль и вкладка "Улучшить" – перерисовываем навыки
+            if (currentScreen === 'profile' && typeof profileTab !== 'undefined' && profileTab === 'upgrade') {
+                const profileContent = document.getElementById('profileContent');
+                if (profileContent && typeof renderSkills === 'function') {
+                    renderSkills(profileContent);
+                }
+            }
+            // Если открыт главный экран – обновляем отображение уровня и опыта
+            if (currentScreen === 'main') {
+                const classData = getCurrentClassData();
+                const levelSpan = document.querySelector('.level-display');
+                const expSpan = document.querySelector('.exp-display');
+                if (levelSpan && expSpan && classData) {
+                    const nextExp = Math.floor(80 * Math.pow(classData.level, 1.5));
+                    levelSpan.innerText = classData.level;
+                    expSpan.innerText = `${classData.exp}/${nextExp}`;
+                    const expBarFill = document.querySelector('.exp-bar-fill');
+                    if (expBarFill) {
+                        const percent = (classData.exp / nextExp) * 100;
+                        expBarFill.style.width = `${percent}%`;
+                    }
+                }
+            }
+            // +++ КОНЕЦ ДОБАВЛЕННОГО БЛОКА +++
         }
     } catch (e) {
         console.error('Refresh error:', e);

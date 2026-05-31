@@ -277,12 +277,29 @@ async function showBattleResult(battleData, timeOut = false) {
     }
 
     // 2. Проверка повышения уровня
-    if (battleData.reward?.leveledUp) {
-        try {
-            await refreshData();
-        } catch(e) { console.error('refreshData ошибка:', e); }
-        showLevelUpModal(userData.current_class);
-    }
+   if (battleData.reward?.leveledUp) {
+    try {
+        await refreshData();
+        // Принудительно обновляем вкладку "Улучшить" в профиле, если она открыта
+        if (currentScreen === 'profile' && profileTab === 'upgrade') {
+            renderSkills(document.getElementById('profileContent'));
+        }
+        // Если на главном экране – обновляем отображение уровня
+        if (currentScreen === 'main') {
+            const levelSpan = document.querySelector('.level-display');
+            const expSpan = document.querySelector('.exp-display');
+            if (levelSpan && expSpan && userData) {
+                const classData = getCurrentClassData();
+                const nextExp = Math.floor(80 * Math.pow(classData.level, 1.5));
+                levelSpan.innerText = classData.level;
+                expSpan.innerText = `${classData.exp}/${nextExp}`;
+                const expBarFill = document.querySelector('.exp-bar-fill');
+                if (expBarFill) expBarFill.style.width = ((classData.exp / nextExp) * 100) + '%';
+            }
+        }
+    } catch(e) { console.error('refreshData ошибка:', e); }
+    showLevelUpModal(userData.current_class);
+}
 
     // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };

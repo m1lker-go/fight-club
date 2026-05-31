@@ -392,15 +392,15 @@ router.post('/vk-launch', async (req, res) => {
             return res.status(500).json({ error: 'Server config error' });
         }
         
-        // 1. Сортируем ключи по алфавиту
+          // 1. Сортируем ключи по алфавиту
         const sortedKeys = Object.keys(params).sort();
         // 2. Формируем строку "ключ=значение" для каждого параметра
         let signString = '';
         for (const key of sortedKeys) {
             signString += `${key}=${params[key]}`;
         }
-        // 3. Вычисляем MD5 от (signString + appSecret)
-        const expectedSign = crypto.createHash('md5').update(signString + appSecret).digest('hex');
+        // 3. Вычисляем HMAC-SHA256 в base64url
+        const expectedSign = crypto.createHmac('sha256', appSecret).update(signString).digest('base64url');
         
         console.log('[VK Launch] signString:', signString);
         console.log('[VK Launch] expectedSign:', expectedSign);

@@ -1,91 +1,75 @@
+// server/routes/vk-payment-url.js
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const { pool } = require('../db');
+const axios = require('axios');
 
-router.post('/vk-callback', async (req, res) => {
-    const secret = process.env.VK_PAY_SECRET;
-    if (!secret) {
-        console.error('VK_PAY_SECRET not set');
-        return res.status(500).send('Internal error');
-    }
+const GMR_ID = 48198;
+const VK_API_SECRET = process.env.VK_API_SECRET; // I3BEj6UXESVawEQR
 
-    const { sig, ...data } = req.body;
-    const sortedKeys = Object.keys(data).sort();
-    let signatureString = '';
-    for (const key of sortedKeys) {
-        signatureString += `${key}=${data[key]}`;
-    }
-    const mySig = crypto.createHmac('sha256', secret).update(signatureString).digest('hex');
-    if (mySig !== sig) {
-        console.error('Invalid VK Pay signature');
-        return res.status(403).send('Invalid signature');
-    }
-
-    if (data.status !== 'success') {
-        return res.send('OK');
-    }
-
-    const vkUserId = data.user_id;
-    const itemdefid = parseInt(data.item, 10);
-    const transactionId = data.transaction_id;
-
-    const client = await pool.connect();
+router.post('/payment-url', async (req, res) => {
     try {
-        await client.query('BEGIN');
-
-        // Проверка повтора
-        const already = await client.query('SELECT 1 FROM vk_payments WHERE transaction_id = $1', [transactionId]);
-        if (already.rowCount > 0) {
-            await client.query('COMMIT');
-            return res.send('OK');
+        const { item_id, amount, description } = req.body;
+        const user = req.user; // предполагается, что у вас есть middleware аутентификации, которая кладёт user в req
+        if (!user || !user.id) {
+            return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        // Найти внутреннего пользователя по vk_user_id (через таблицу user_connections)
-        const userRes = await client.query(
-            'SELECT user_id FROM user_connections WHERE provider = $1 AND provider_id = $2',
-            ['vk', String(vkUserId)]
+        // Получаем VK user_id из вашей таблицы user_connections
+        const { pool } = require('../db');
+        const vkRes = await pool.query(
+            'SELECT provider_id FROM user_connections WHERE user_id = $1 AND provider = $2',
+            [user.id, 'vk']
         );
-        if (userRes.rowCount === 0) {
-            console.error(`No user for vk_id ${vkUserId}`);
-            await client.query('ROLLBACK');
-            return res.status(400).send('User not found');
-        }
-        const userId = userRes.rows[0].user_id;
-
-        // Начисление по itemdefid
-        if (itemdefid >= 1 && itemdefid <= 6) {
-            const diamondsMap = {1:50,2:150,3:350,4:700,5:1150,6:1800};
-            let diamonds = diamondsMap[itemdefid];
-            // Бонус 50% при первой покупке пакета
-            const bonusCheck = await client.query('SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, itemdefid]);
-            if (bonusCheck.rowCount === 0) {
-                diamonds = Math.floor(diamonds * 1.5);
-                await client.query('INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)', [userId, itemdefid]);
-            }
-            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamonds, userId]);
-        } else if (itemdefid === 7) {
-            // Подписка на 30 дней
-            const expiry = new Date();
-            expiry.setDate(expiry.getDate() + 30);
-            await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiry, userId]);
-            // Награда при оформлении
-            await client.query('UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1', [userId]);
+        let vkUserId = user.id;
+        if (vkRes.rowCount > 0) {
+            vkUserId = vkRes.rows[0].provider_id;
         } else {
-            console.error(`Unknown itemdefid ${itemdefid}`);
-            await client.query('ROLLBACK');
-            return res.status(400).send('Unknown item');
+            // Если пользователь залогинен не через VK, но пытается купить в VK Mini App – ошибка
+            return res.status(400).json({ error: 'VK user not linked' });
         }
 
-        await client.query('INSERT INTO vk_payments (transaction_id, user_id, itemdefid) VALUES ($1, $2, $3)', [transactionId, userId, itemdefid]);
-        await client.query('COMMIT');
-        res.send('OK');
+        const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // Формируем merchant_param (обязательные поля)
+        const merchantParam = {
+            uid: String(vkUserId),      // id пользователя VK
+            ip: userIp,
+            amount: amount,             // цена в голосах (число)
+            currency: 'RUB',            // для RU-региона – рубли
+            description: description.slice(0, 50),
+            item_id: String(item_id),
+            additional_param: `order_${Date.now()}_${user.id}`
+        };
+
+        // Для метода billing/item/client нужно передать ids (строка с id товара)
+        const ids = String(item_id);
+        const merchantParamJson = JSON.stringify(merchantParam);
+        
+        // Строка для подписи: "ids=...&merchant_param={...}" (без URL-кодирования)
+        const signString = `ids=${ids}&merchant_param=${merchantParamJson}`;
+        const sign = crypto.createHash('md5').update(signString + VK_API_SECRET).digest('hex');
+
+        const url = `https://vkplay.ru/app/${GMR_ID}/billing/item/client?sign=${sign}`;
+        
+        // Тело запроса в формате x-www-form-urlencoded
+        const body = new URLSearchParams();
+        body.append('ids', ids);
+        body.append('merchant_param', merchantParamJson);
+
+        const response = await axios.post(url, body.toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        if (response.data && response.data.status === 'ok') {
+            return res.json({ paymentUrl: response.data.url });
+        } else {
+            console.error('VK billing error:', response.data);
+            return res.status(400).json({ error: response.data.errmsg || 'VK payment error' });
+        }
     } catch (err) {
-        await client.query('ROLLBACK');
-        console.error(err);
-        res.status(500).send('Error');
-    } finally {
-        client.release();
+        console.error('[vk-payment-url]', err.response?.data || err.message);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

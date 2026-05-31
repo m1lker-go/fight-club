@@ -39,13 +39,39 @@ window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
+// ========== УНИВЕРСАЛЬНОЕ ПОЛУЧЕНИЕ ПАРАМЕТРОВ VK (search или hash) ==========
+function getVKLaunchParams() {
+    // Сначала ищем в строке запроса
+    let searchParams = new URLSearchParams(window.location.search);
+    let result = {};
+    for (const [key, value] of searchParams.entries()) {
+        if (key.startsWith('vk_')) {
+            result[key] = value;
+        }
+    }
+    // Если не нашли, пробуем хэш (для случаев, когда параметры в #)
+    if (Object.keys(result).length === 0 && window.location.hash) {
+        const hash = window.location.hash.substring(1); // убираем #
+        const hashParams = new URLSearchParams(hash);
+        for (const [key, value] of hashParams.entries()) {
+            if (key.startsWith('vk_')) {
+                result[key] = value;
+            }
+        }
+    }
+    return result;
+}
+
 // ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
 window.isVKMiniApp = (function() {
     if (typeof window.vkBridge === 'undefined') return false;
-    const search = window.location.search;
-    if (search.includes('vk_user_id') || search.includes('sign')) return true;
+    // Проверяем наличие параметров VK
+    const params = getVKLaunchParams();
+    if (params.vk_user_id && params.sign) return true;
+    // Альтернативные признаки
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('vk')) return true;
+    if (window.location.search.includes('vk_access_token_settings')) return true;
     if (window.self !== window.top && document.referrer.includes('vk.com')) return true;
     return false;
 })();
@@ -54,30 +80,18 @@ if (window.isVKMiniApp) {
     console.log('[App] VK Mini App detected, applying horizontal CSS');
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    //link.href = '/css/vk-horizontal.css';
+    // link.href = '/css/vk-horizontal.css';
     document.head.appendChild(link);
 } else {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
 
-
-// ========== VK Mini App авторизация через параметры запуска (sessionStorage) ==========
-
-function getVKLaunchParams() {
-    const searchParams = new URLSearchParams(window.location.search);
-    const result = {};
-    for (const [key, value] of searchParams.entries()) {
-        if (key.startsWith('vk_')) {
-            result[key] = value;
-        }
-    }
-    return result;
-}
-
+// ========== VK MINI APP АВТОРИЗАЦИЯ ЧЕРЕЗ ПАРАМЕТРЫ ЗАПУСКА ==========
 async function autoLoginVKLaunch() {
     const launchParams = getVKLaunchParams();
+    console.log('[VK] autoLoginVKLaunch params:', launchParams);
     if (!launchParams.vk_user_id || !launchParams.sign) {
-        console.log('[VK] Missing launch params in hash, skipping autoLoginVKLaunch');
+        console.log('[VK] Missing launch params, skipping autoLoginVKLaunch');
         return false;
     }
     try {
@@ -113,6 +127,12 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
         .then(() => {
             console.log('[VK Bridge] init OK');
+            const params = getVKLaunchParams();
+            if (!params.vk_user_id || !params.sign) {
+                console.warn('[VK] No launch params, fallback to normal auth');
+                checkAuth();
+                return;
+            }
             if (!sessionStorage.getItem('sessionToken')) {
                 autoLoginVKLaunch().catch(console.error);
             } else {

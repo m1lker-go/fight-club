@@ -188,24 +188,28 @@ router.post('/claim-exp', async (req, res) => {
     if (!exp || !chosenClass) return res.status(400).json({ error: 'exp and class required' });
     const client = await pool.connect();
     try {
-        const classRes = await client.query(
-            'SELECT level, exp FROM user_classes WHERE user_id = $1 AND class = $2',
+        let classRes = await client.query(
+            'SELECT level, exp, skill_points FROM user_classes WHERE user_id = $1 AND class = $2',
             [userId, chosenClass]
         );
         if (classRes.rows.length === 0) throw new Error('Class not found');
-        let { level, exp: currentExp } = classRes.rows[0];
+        let { level, exp: currentExp, skill_points } = classRes.rows[0];
         currentExp += exp;
         const expNeeded = (lvl) => Math.floor(80 * Math.pow(lvl, 1.5));
         let leveledUp = false;
         while (currentExp >= expNeeded(level)) {
             currentExp -= expNeeded(level);
             level++;
+            const pointsToAdd = (level <= 14) ? 3 : 5;
+            skill_points += pointsToAdd;
             leveledUp = true;
         }
         await client.query(
-            'UPDATE user_classes SET level = $1, exp = $2 WHERE user_id = $3 AND class = $4',
-            [level, currentExp, userId, chosenClass]
+            'UPDATE user_classes SET level = $1, exp = $2, skill_points = $3 WHERE user_id = $4 AND class = $5',
+            [level, currentExp, skill_points, userId, chosenClass]
         );
+        const { updatePlayerPower } = require('../utils/power');
+        await updatePlayerPower(client, userId, chosenClass);
         res.json({ success: true, leveledUp });
     } catch (e) {
         console.error(e);

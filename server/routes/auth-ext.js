@@ -377,8 +377,11 @@ router.get('/telegram/callback', async (req, res) => {
 });
 
 router.post('/vk-lowcode', async (req, res) => {
+    console.log('[VK lowcode] ====== REQUEST RECEIVED ======');
+    console.log('[VK lowcode] Body:', JSON.stringify(req.body, null, 2));
     const { access_token, user_id, email } = req.body;
     if (!access_token || !user_id) {
+        console.log('[VK lowcode] Missing access_token or user_id');
         return res.status(400).json({ error: 'Missing access_token or user_id' });
     }
 
@@ -457,12 +460,18 @@ router.post('/vk-lowcode', async (req, res) => {
             }
         }
 
+        console.log('[VK lowcode] About to generate token for user', userData.id);
+        console.log('[VK lowcode] JWT_SECRET exists?', !!process.env.JWT_SECRET);
         const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        console.log('[VK lowcode] Token generated:', sessionToken);
         await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+        console.log('[VK lowcode] Token saved to DB for user', userData.id);
 
-        res.json({ success: true, sessionToken, needusername, userId: userData.id, user: userData });
+        const responsePayload = { success: true, sessionToken, needusername, userId: userData.id, user: userData };
+        console.log('[VK lowcode] Sending response:', JSON.stringify(responsePayload));
+        res.json(responsePayload);
     } catch (err) {
-        console.error('VK lowcode error:', err);
+        console.error('[VK lowcode] ERROR:', err.message, err.stack);
         res.status(500).json({ error: 'Server error: ' + err.message });
     } finally {
         client.release();

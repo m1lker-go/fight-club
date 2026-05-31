@@ -41,17 +41,14 @@ window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.go
 
 // ========== УНИВЕРСАЛЬНОЕ ПОЛУЧЕНИЕ ПАРАМЕТРОВ VK (search или hash) ==========
 function getVKLaunchParams() {
-    let fullUrl = window.location.href;
-    let queryString = '';
-    if (fullUrl.includes('?')) {
-        queryString = fullUrl.split('?')[1].split('#')[0];
-    }
-    const searchParams = new URLSearchParams(queryString);
+    // Извлекаем параметры из search
+    const searchParams = new URLSearchParams(window.location.search);
     const result = {};
     for (const [key, value] of searchParams.entries()) {
-        result[key] = value;  // сохраняем все параметры, включая sign
+        result[key] = value;
     }
-    if (Object.keys(result).length === 0 && window.location.hash) {
+    // Дополняем параметрами из hash
+    if (window.location.hash) {
         const hash = window.location.hash.substring(1);
         const hashParams = new URLSearchParams(hash);
         for (const [key, value] of hashParams.entries()) {
@@ -61,7 +58,6 @@ function getVKLaunchParams() {
     console.log('[VK] getVKLaunchParams result:', result);
     return result;
 }
-
 // ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
 window.isVKMiniApp = (function() {
     if (typeof window.vkBridge === 'undefined') return false;

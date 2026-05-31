@@ -1,4 +1,4 @@
-// gems.js – Алмазная лавка (исправлен: VK Pay через серверный URL, Robokassa сохранена)
+// gems.js – Алмазная лавка (VK Mini App: VKWebAppShowOrderBox, остальные – Robokassa)
 
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
@@ -36,54 +36,6 @@ function submitRobokassaForm(paramsUrl) {
     document.body.appendChild(form);
     form.submit();
 }
-
-// ================= НОВЫЕ ФУНКЦИИ ДЛЯ VK PAY (по документации) =================
-async function requestVkPaymentUrl(itemId, priceInVoices, description) {
-    try {
-        const response = await window.apiRequest('/api/vk/payment-url', {
-            method: 'POST',
-            body: JSON.stringify({
-                item_id: itemId,
-                amount: priceInVoices,
-                description: description
-            })
-        });
-        const data = await response.json();
-        if (!data.paymentUrl) {
-            throw new Error(data.error || 'Не удалось получить платёжный URL');
-        }
-        return data.paymentUrl;
-    } catch (err) {
-        console.error('[requestVkPaymentUrl]', err);
-        return null;
-    }
-}
-
-function openVkPayWindow(url) {
-    const width = 600;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    const win = window.open(url, 'vkPayWindow', `width=${width},height=${height},left=${left},top=${top}`);
-    if (!win) {
-        showToast('Пожалуйста, разрешите всплывающие окна для этого сайта', 3000);
-        return null;
-    }
-    // Отслеживаем закрытие окна
-    const checkClosed = setInterval(() => {
-        if (win.closed) {
-            clearInterval(checkClosed);
-            refreshData().then(() => {
-                if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
-                    renderGems(document.getElementById('tradeSubContent'));
-                }
-                if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
-            }).catch(console.error);
-        }
-    }, 500);
-    return win;
-}
-// ============================================================================
 
 async function renderGems(container) {
     console.log('[renderGems] called, container:', container);
@@ -187,12 +139,27 @@ async function renderGems(container) {
             console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ${isVK ? 'голосов' : '₽'}`);
 
             if (isVK) {
-                // НОВЫЙ СПОСОБ: через серверный URL
-                const paymentUrl = await requestVkPaymentUrl(packId, price, `${diamonds} алмазов`);
-                if (paymentUrl) {
-                    openVkPayWindow(paymentUrl);
-                } else {
-                    showToast('Ошибка инициализации платежа VK Pay', 2000);
+                // VK Mini App: официальный метод VKWebAppShowOrderBox
+                try {
+                    const result = await vkBridge.send('VKWebAppShowOrderBox', {
+                        type: 'item',
+                        item: String(packId)   // itemdefid товара (1..6)
+                    });
+                    if (result) {
+                        showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
+                        setTimeout(async () => {
+                            await refreshData();
+                            if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
+                                renderGems(container);
+                            }
+                            if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                        }, 3000);
+                    } else {
+                        showToast('Платеж отменён', 2000);
+                    }
+                } catch (err) {
+                    console.error('[gems] VKWebAppShowOrderBox error:', err);
+                    showToast('Ошибка оплаты через VK Pay', 2000);
                 }
             } else {
                 // Robokassa (без изменений)
@@ -373,11 +340,26 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         buySubBtn.addEventListener('click', async () => {
             console.log('[gems] buy subscription clicked');
             if (isVK) {
-                const paymentUrl = await requestVkPaymentUrl(7, 86, 'VIP Silver подписка на 30 дней');
-                if (paymentUrl) {
-                    openVkPayWindow(paymentUrl);
-                } else {
-                    showToast('Ошибка инициализации подписки', 2000);
+                try {
+                    const result = await vkBridge.send('VKWebAppShowOrderBox', {
+                        type: 'item',
+                        item: '7'   // itemdefid подписки
+                    });
+                    if (result) {
+                        showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);
+                        setTimeout(async () => {
+                            await refreshData();
+                            if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
+                                renderGems(document.getElementById('tradeSubContent'));
+                            }
+                            if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
+                        }, 3000);
+                    } else {
+                        showToast('Платеж отменён', 2000);
+                    }
+                } catch (err) {
+                    console.error('[gems] VK subscription error:', err);
+                    showToast('Ошибка оплаты подписки', 2000);
                 }
             } else {
                 try {

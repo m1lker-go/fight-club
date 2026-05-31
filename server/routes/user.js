@@ -92,22 +92,17 @@ router.post('/update-username', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { username } = req.body;
-    if (!username) return res.status(400). json({ error: 'No username provided' });
+    if (!username) return res.status(400).json({ error: 'No username' });
     const client = await pool.connect();
     try {
-        // Проверяем, не занят ли никнейм другим пользователем
         const existing = await client.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
-        if (existing.rows.length > 0) {
-            return res.status(409).json({ error: 'Username already taken' });
-        }
+        if (existing.rows.length > 0) return res.status(409).json({ error: 'Username taken' });
         await client.query('UPDATE users SET username = $1 WHERE id = $2', [username, userId]);
         res.json({ success: true, username });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
-    } finally {
-        client.release();
-    }
+    } finally { client.release(); }
 });
 
 // ========== ПРИВЯЗКА АККАУНТОВ ==========

@@ -71,28 +71,22 @@ function renderReferral() {
             .catch(() => fallbackCopy(referralLink));
     });
 
-    // Кнопка "Поделиться"
-    referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
-        if (isVK && typeof vkBridge !== 'undefined') {
-            // Формируем текст сообщения со ссылкой
-            const shareText = `Присоединяйся к игре Cat Fighting! 🐱\n${referralLink}`;
-            vkBridge.send('VKWebAppShare', { text: shareText })
-                .then(() => showToast('Приглашение отправлено!', 1500))
-                .catch((err) => {
-                    console.error('VK share error:', err);
-                    fallbackCopy(referralLink);
-                });
-        } else if (window.Telegram?.WebApp?.shareURL) {
-            window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
-        } else if (window.Telegram?.WebApp?.openTelegramLink) {
-            window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
-        } else {
-            fallbackCopy(referralLink);
-        }
-    });
+  // Кнопка "Поделиться"
+referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
+    if (isVK && typeof vkBridge !== 'undefined') {
+        // В VK Mini App копируем ссылку, так как VKWebAppShare не всегда вставляет ссылку в сообщение
+        fallbackCopy(referralLink);
+        showToast('Ссылка скопирована! Отправь её другу в сообщении.', 3000);
+    } else if (window.Telegram?.WebApp?.shareURL) {
+        window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
+    } else if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
+    } else {
+        fallbackCopy(referralLink);
+    }
+});
 
-    return referralDiv;
-}
+return referralDiv;
 
 
 

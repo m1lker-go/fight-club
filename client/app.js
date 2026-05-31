@@ -102,26 +102,38 @@ async function autoLoginVKLaunch() {
             sessionStorage.setItem('sessionToken', data.sessionToken);
             await loadUserDataByToken(data.sessionToken);
             
-            // --- ОБНОВЛЕНИЕ ИМЕНИ ИЗ VK (если текущее имя начинается с user_) ---
-            if (window.isVKMiniApp && typeof vkBridge !== 'undefined' && userData && userData.username && userData.username.startsWith('user_')) {
-                try {
-                    const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-                    const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
-                    if (fullName) {
-                        const updRes = await window.apiRequest('/user/update-username', {
-                            method: 'POST',
-                            body: JSON.stringify({ username: fullName })
-                        });
-                        if (updRes.ok) {
-                            userData.username = fullName;
-                            updateTopBar(); // обновить отображение имени в интерфейсе
-                            console.log('[VK] Username updated to', fullName);
-                        }
-                    }
-                } catch (err) {
-                    console.warn('[VK] Could not update username', err);
+      // --- ОБНОВЛЕНИЕ ИМЕНИ ИЗ VK (с задержкой и проверкой) ---
+if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
+    // Даём время на полную загрузку userData
+    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log('[VK] userData after load:', userData);
+    
+    if (userData && userData.username && userData.username.startsWith('user_')) {
+        try {
+            const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+            const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
+            console.log('[VK] Received from VK:', fullName);
+            if (fullName) {
+                const updRes = await window.apiRequest('/user/update-username', {
+                    method: 'POST',
+                    body: JSON.stringify({ username: fullName })
+                });
+                if (updRes.ok) {
+                    userData.username = fullName;
+                    updateTopBar();
+                    console.log('[VK] Username updated to', fullName);
+                } else {
+                    const errData = await updRes.json();
+                    console.error('[VK] Update username error:', errData);
                 }
             }
+        } catch (err) {
+            console.error('[VK] Could not update username', err);
+        }
+    } else {
+        console.log('[VK] Username not updated (already set or not user_ format):', userData?.username);
+    }
+}
             // ---------------------------------------------------------
             
             if (data.needusername && typeof showusernameModal === 'function') {

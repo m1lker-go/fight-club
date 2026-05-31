@@ -587,8 +587,8 @@ async function refreshData() {
             if (window.refreshTasksData) window.refreshTasksData();
             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
 
-            // +++ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ НАВЫКОВ И УРОВНЯ +++
-            // Если открыт профиль и вкладка "Улучшить" – перерисовываем навыки
+            // +++ НОВЫЙ БЛОК: ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ НАВЫКОВ И УРОВНЯ +++
+            // Если открыт профиль и активна вкладка "Улучшить" – перерисовываем навыки
             if (currentScreen === 'profile' && typeof profileTab !== 'undefined' && profileTab === 'upgrade') {
                 const profileContent = document.getElementById('profileContent');
                 if (profileContent && typeof renderSkills === 'function') {
@@ -611,7 +611,7 @@ async function refreshData() {
                     }
                 }
             }
-            // +++ КОНЕЦ ДОБАВЛЕННОГО БЛОКА +++
+            // +++ КОНЕЦ БЛОКА +++
         }
     } catch (e) {
         console.error('Refresh error:', e);

@@ -101,6 +101,29 @@ async function autoLoginVKLaunch() {
         if (data.success && data.sessionToken) {
             sessionStorage.setItem('sessionToken', data.sessionToken);
             await loadUserDataByToken(data.sessionToken);
+            
+            // --- ОБНОВЛЕНИЕ ИМЕНИ ИЗ VK (если текущее имя начинается с user_) ---
+            if (window.isVKMiniApp && typeof vkBridge !== 'undefined' && userData && userData.username && userData.username.startsWith('user_')) {
+                try {
+                    const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                    const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
+                    if (fullName) {
+                        const updRes = await window.apiRequest('/user/update-username', {
+                            method: 'POST',
+                            body: JSON.stringify({ username: fullName })
+                        });
+                        if (updRes.ok) {
+                            userData.username = fullName;
+                            updateTopBar(); // обновить отображение имени в интерфейсе
+                            console.log('[VK] Username updated to', fullName);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('[VK] Could not update username', err);
+                }
+            }
+            // ---------------------------------------------------------
+            
             if (data.needusername && typeof showusernameModal === 'function') {
                 showusernameModal(data.userId);
             } else {

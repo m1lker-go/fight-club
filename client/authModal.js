@@ -1,4 +1,5 @@
-// authModal.js – low‑code для браузера, Bridge для миниаппа
+// authModal.js – модальное окно входа для всех платформ, кроме VK Mini App
+// В VK Mini App авторизация происходит автоматически через параметры запуска, поэтому модалка не показывается.
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -25,41 +26,29 @@ function showAuthModal() {
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Вход в игру';
 
-    // Проверяем, запущено ли приложение в VK Mini App (глобальный флаг из app.js)
-    const isVK = window.isVKMiniApp === true;
-
-    let authMethodsHtml = '';
-    if (isVK) {
-        // Только VK Bridge
-        authMethodsHtml = `
-            <div class="auth-methods">
-                <button class="auth-btn vk-btn" id="vkOnlyAuthBtn" style="background-color: #4680C2;">
-                    <i class="fab fa-vk"></i> Войти через VK ID
-                </button>
-                <div class="auth-note" style="font-size:12px; color:#aaa; text-align:center; margin-top:10px;">
-                    Авторизация только через VK ID
-                </div>
-            </div>
-        `;
-    } else {
-        // Полный набор кнопок для остальных окружений
-        authMethodsHtml = `
-            <div class="auth-methods">
-                <button class="auth-btn telegram-btn" id="telegramAuthBtn">
-                    <i class="fab fa-telegram-plane"></i> Войти через Telegram
-                </button>
-                <button class="auth-btn google-btn" id="googleAuthBtn">
-                    <i class="fab fa-google"></i> Войти через Google
-                </button>
-                <button class="auth-btn vk-btn" id="vkAuthBtn">
-                    <i class="fab fa-vk"></i> Войти через VK
-                </button>
-                <button class="auth-btn credentials-btn" id="loginCredentialsBtn">
-                    <i class="fas fa-key"></i> Войти по логину и паролю
-                </button>
-            </div>
-        `;
+    // Если это VK Mini App – не показываем модалку, авторизация автоматическая
+    if (window.isVKMiniApp === true) {
+        console.log('[AuthModal] VK Mini App: skipping modal, auto-login should handle auth');
+        return;
     }
+
+    // Для всех остальных окружений (Telegram, браузер, APK) – полный набор кнопок
+    const authMethodsHtml = `
+        <div class="auth-methods">
+            <button class="auth-btn telegram-btn" id="telegramAuthBtn">
+                <i class="fab fa-telegram-plane"></i> Войти через Telegram
+            </button>
+            <button class="auth-btn google-btn" id="googleAuthBtn">
+                <i class="fab fa-google"></i> Войти через Google
+            </button>
+            <button class="auth-btn vk-btn" id="vkAuthBtn">
+                <i class="fab fa-vk"></i> Войти через VK
+            </button>
+            <button class="auth-btn credentials-btn" id="loginCredentialsBtn">
+                <i class="fas fa-key"></i> Войти по логину и паролю
+            </button>
+        </div>
+    `;
 
     modalBody.innerHTML = `
         <div class="auth-container">
@@ -88,77 +77,7 @@ function showAuthModal() {
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
- // --- Обработчики для VK Mini App (только кнопка) ---
-if (isVK) {
-    const vkOnlyBtn = document.getElementById('vkOnlyAuthBtn');
-    if (vkOnlyBtn) {
-        vkOnlyBtn.addEventListener('click', async () => {
-            console.log('[VK] Авторизация через VK Bridge (миниапп)');
-            try {
-                const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-                // Запрашиваем токен с scope 'email'
-                const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: 'email' });
-                
-                const requestBody = {
-                    access_token: authToken.access_token,
-                    user_id: userInfo.id,
-                };
-                if (userInfo.email) {
-                    requestBody.email = userInfo.email;
-                }
-                
-                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-                const data = await res.json();
-                console.log('[VK] Full server response:', data);
-if (!data.success) {
-    console.error('[VK] Server error:', data.error);
-    showToast(data.error || 'Ошибка входа', 1500);
-    return;
-}
-if (!data.sessionToken) {
-    console.error('[VK] No sessionToken in response!');
-    showToast('Токен не получен, обратитесь в поддержку', 1500);
-    return;
-}
-localStorage.setItem('sessionToken', data.sessionToken);
-console.log('[VK] Token saved, proceeding...');
-                console.log('[VK] Ответ сервера:', data);   // ← ВАЖНО: смотрим, что пришло
-
-                if (data.success) {
-                    if (!data.sessionToken) {
-                        console.error('[VK] Сервер не вернул sessionToken');
-                        showToast('Ошибка авторизации: не получен токен', 1500);
-                        return;
-                    }
-                    localStorage.setItem('sessionToken', data.sessionToken);
-                    if (data.needusername && typeof showusernameModal === 'function') {
-                        showusernameModal(data.userId);
-                    } else {
-                        if (typeof window.loadUserDataByToken === 'function') {
-                            await window.loadUserDataByToken(data.sessionToken);
-                        }
-                        const modalEl = document.getElementById('roleModal');
-                        if (modalEl) modalEl.style.display = 'none';
-                        if (typeof window.showScreen === 'function') window.showScreen('main');
-                    }
-                } else {
-                    console.error('[VK] Ошибка от сервера:', data.error);
-                    showToast(data.error || 'Ошибка входа через VK', 1500);
-                }
-            } catch (err) {
-                console.error('VK Bridge auth error:', err);
-                showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
-            }
-        });
-    }
-    // В VK миниаппе остальные кнопки не создаются, поэтому дополнительных обработчиков нет
-    return; // чтобы не добавлять обработчики для других кнопок, которых нет в DOM
-}
-    // --- Обработчики для остальных окружений (браузер, Telegram, APK) ---
+    // --- Обработчики для остальных окружений ---
     // Telegram
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
@@ -332,7 +251,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== LOW‑CODE OAuth для браузера ==========
+// ========== LOW‑CODE OAuth для браузера (не для VK Mini App) ==========
 function loadVKIDSDK() {
     return new Promise((resolve, reject) => {
         if (window.VKIDSDK) {
@@ -340,7 +259,7 @@ function loadVKIDSDK() {
             return;
         }
         const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js'; // старая версия
+        script.src = 'https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js';
         script.onload = () => {
             if (window.VKIDSDK) {
                 resolve(window.VKIDSDK);
@@ -457,3 +376,24 @@ function showusernameModal(userId) {
 
 window.showAuthModal = showAuthModal;
 window.showusernameModal = showusernameModal;
+
+// Вспомогательная функция для автологина в Telegram (если не определена)
+async function autoLoginTelegram() {
+    if (!window.Telegram?.WebApp?.initData) return false;
+    try {
+        const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: window.Telegram.WebApp.initData })
+        });
+        const data = await response.json();
+        if (data.sessionToken) {
+            localStorage.setItem('sessionToken', data.sessionToken);
+            await window.loadUserDataByToken(data.sessionToken);
+            return true;
+        }
+    } catch (err) {
+        console.error('Telegram autoLogin error:', err);
+    }
+    return false;
+}

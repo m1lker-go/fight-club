@@ -1,4 +1,4 @@
-// app.js – основная логика приложения (исправлено под авторизацию через Bearer-токен)
+// app.js – основная логика приложения (исправлено: VK Mini App авторизация через параметры запуска и sessionStorage)
 
 let tg = null;
 let user = null;
@@ -41,14 +41,10 @@ window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.go
 
 // ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
 window.isVKMiniApp = (function() {
-    // Проверяем наличие VK Bridge
     if (typeof window.vkBridge === 'undefined') return false;
-    // Проверяем User Agent
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('vk')) return true;
-    // Проверяем параметры запуска VK
     if (window.location.search.includes('vk_access_token_settings')) return true;
-    // Также можно проверить, что приложение запущено в iframe VK
     if (window.self !== window.top && document.referrer.includes('vk.com')) return true;
     return false;
 })();
@@ -63,25 +59,30 @@ if (window.isVKMiniApp) {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
 
-// ========== VK Bridge инициализация + автовход ==========
-async function autoLoginVK() {
-    if (localStorage.getItem('sessionToken')) return false;
-    if (typeof vkBridge === 'undefined') return false;
+// ========== VK Mini App авторизация через параметры запуска (sessionStorage) ==========
+async function autoLoginVKLaunch() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const launchParams = {};
+    for (const [key, value] of urlParams.entries()) {
+        if (key.startsWith('vk_')) {
+            launchParams[key] = value;
+        }
+    }
+    if (!launchParams.vk_user_id || !launchParams.sign) {
+        console.error('[VK] Missing launch params');
+        showErrorSplash();
+        return false;
+    }
     try {
-        const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-        const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: '' });
-        const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+        const response = await fetch(`${window.API_BASE}/auth/vk-launch`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                access_token: authToken.access_token,
-                user_id: userInfo.id,
-                email: userInfo.email || null
-            })
+            body: JSON.stringify(launchParams)
         });
-        const data = await res.json();
-        if (data.success) {
-            localStorage.setItem('sessionToken', data.sessionToken);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        if (data.success && data.sessionToken) {
+            sessionStorage.setItem('sessionToken', data.sessionToken);
             await loadUserDataByToken(data.sessionToken);
             if (data.needusername && typeof showusernameModal === 'function') {
                 showusernameModal(data.userId);
@@ -91,25 +92,30 @@ async function autoLoginVK() {
                 showScreen('main');
             }
             return true;
+        } else {
+            console.error('[VK] auth error:', data.error);
         }
     } catch (err) {
-        console.error('[VK AutoLogin]', err);
+        console.error('[VK] autoLoginVKLaunch error:', err);
     }
+    showErrorSplash();
     return false;
 }
 
-if (typeof vkBridge !== 'undefined') {
+if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
         .then(() => {
             console.log('[VK Bridge] init OK');
-            if (!localStorage.getItem('sessionToken')) {
-                autoLoginVK().catch(console.error);
+            if (!sessionStorage.getItem('sessionToken')) {
+                autoLoginVKLaunch().catch(console.error);
+            } else {
+                loadUserDataByToken(sessionStorage.getItem('sessionToken')).catch(console.error);
             }
         })
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
 
-// ========== Универсальный apiRequest с Bearer-токеном ==========
+// ========== Универсальный apiRequest с Bearer-токеном (условное хранилище) ==========
 window.apiRequest = async function(endpoint, options = {}) {
     console.log('[apiRequest]', endpoint, options);
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
@@ -132,13 +138,13 @@ window.apiRequest = async function(endpoint, options = {}) {
         method: method,
         headers: {
             'Content-Type': 'application/json',
-            // НЕ ДОБАВЛЯЙТЕ Cache-Control или Pragma – они вызывают CORS preflight
             ...(options.headers || {})
         }
     };
     
-    // Добавляем заголовок авторизации для защищённых эндпоинтов
-    const token = localStorage.getItem('sessionToken');
+    // Определяем хранилище токена
+    const storage = window.isVKMiniApp ? sessionStorage : localStorage;
+    const token = storage.getItem('sessionToken');
     if (token && !endpoint.startsWith('/auth') && !endpoint.includes('/auth/')) {
         fetchOptions.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -151,7 +157,6 @@ window.apiRequest = async function(endpoint, options = {}) {
                 params.append(key, value);
             }
         }
-        // Антикеш-параметр (уникальный timestamp)
         params.append('_t', Date.now());
         const separator = url.includes('?') ? '&' : '?';
         finalUrl = url + separator + params.toString();
@@ -280,7 +285,6 @@ async function loadUserDataByToken(token, retries = 3) {
                 recalculatePower();
                 updateTopBar();
 
-                // Принудительное обновление экрана
                 if (currentScreen === 'main') {
                     renderMain();
                 } else {
@@ -301,7 +305,6 @@ async function loadUserDataByToken(token, retries = 3) {
                     initIronSourceAds(userData.id);
                 }
 
-                // Дополнительная гарантия отображения (через 100 мс)
                 setTimeout(() => {
                     recalculatePower();
                     updateTopBar();
@@ -315,7 +318,8 @@ async function loadUserDataByToken(token, retries = 3) {
             } else {
                 console.error(`Profile fetch failed: ${res.status}`);
                 if (res.status === 401) {
-                    localStorage.removeItem('sessionToken');
+                    const storage = window.isVKMiniApp ? sessionStorage : localStorage;
+                    storage.removeItem('sessionToken');
                     return false;
                 }
             }
@@ -327,19 +331,22 @@ async function loadUserDataByToken(token, retries = 3) {
     return false;
 }
 
-// Инициализация sessionToken после объявления функции loadUserDataByToken
-sessionToken = localStorage.getItem('sessionToken');
+// Инициализация sessionToken в зависимости от окружения
+if (window.isVKMiniApp) {
+    sessionToken = sessionStorage.getItem('sessionToken');
+} else {
+    sessionToken = localStorage.getItem('sessionToken');
+}
 
 async function checkAuth() {
     console.log('checkAuth: sessionToken =', sessionToken);
+    const storage = window.isVKMiniApp ? sessionStorage : localStorage;
     if (sessionToken) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
-
         try {
             const res = await window.apiRequest('/player/profile', { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
-
             if (res.ok) {
                 const data = await res.json();
                 userData = data.user;
@@ -367,7 +374,7 @@ async function checkAuth() {
                 return true;
             } else {
                 console.warn('checkAuth: token invalid, removing');
-                localStorage.removeItem('sessionToken');
+                storage.removeItem('sessionToken');
                 sessionToken = null;
             }
         } catch (e) {
@@ -708,7 +715,6 @@ function handleExternalAuth() {
                 const modal = document.getElementById('roleModal');
                 if (modal) modal.style.display = 'none';
                 showScreen('main');
-                // Дополнительная гарантия отображения данных
                 setTimeout(() => {
                     if (currentScreen === 'main') {
                         renderMain();
@@ -723,7 +729,7 @@ function handleExternalAuth() {
         return true;
     }
 
-    // Google OAuth (вход)
+    // Google OAuth
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -733,7 +739,7 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // VK OAuth (вход)
+    // VK OAuth (браузерный, не для мини-аппа)
     const vkAuth = urlParams.get('vk_auth');
     if (vkAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -743,7 +749,7 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // Telegram OAuth (вход)
+    // Telegram OAuth
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -753,23 +759,19 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // Google привязка (link)
+    // Привязка аккаунтов (опционально)
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
         if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
-
-    // VK привязка (link)
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
         if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
-
-    // Telegram привязка (link)
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
         if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);

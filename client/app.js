@@ -55,7 +55,7 @@ if (window.isVKMiniApp) {
     console.log('[App] VK Mini App detected, applying horizontal CSS');
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/css/vk-horizontal.css';
+    //link.href = '/css/vk-horizontal.css';
     document.head.appendChild(link);
 } else {
     console.log('[App] Not VK Mini App, default vertical mode');

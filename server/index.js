@@ -21,6 +21,7 @@ app.use(express.static('client'));
 // ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));
 app.use('/payment', require('./routes/robokassa'));
+app.use('/vk-pay', require('./routes/vk-pay')); 
 
 // ========== ЗАЩИЩЁННЫЕ API ==========
 app.use('/player', authMiddleware, require('./routes/player'));

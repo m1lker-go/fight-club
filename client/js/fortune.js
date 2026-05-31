@@ -160,13 +160,11 @@ function animateWheel(targetAngle) {
             renderWheel(currentAngle);
             localStorage.setItem('fortuneCurrentAngle', currentAngle.toString());
             if (prizeResult) {
-                // Обработка выигрыша
                 if (prizeResult.type === 'exp') {
                     showClassChoiceModalForFortune(prizeResult.amount);
                 } else {
                     let msg = `Вы выиграли: ${prizeResult.name}`;
                     showToast(msg, 2000);
-                    // Обновляем бейджи, если награда влияет на бесплатные бонусы
                     if (typeof window.updateTradeBadges === 'function') {
                         window.updateTradeBadges();
                     }
@@ -297,6 +295,7 @@ async function fortuneSpin() {
     animateWheel(targetRad);
 }
 
+// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ==========
 function showClassChoiceModalForFortune(expAmount) {
     return new Promise((resolve) => {
         const modal = document.getElementById('roleModal');
@@ -322,11 +321,16 @@ function showClassChoiceModalForFortune(expAmount) {
             });
             const data = await res.json();
             if (data.success) {
+                // ОБЯЗАТЕЛЬНО ОБНОВЛЯЕМ ДАННЫЕ КЛИЕНТА
+                await refreshData();
                 showToast(`Опыт добавлен классу ${getClassNameRu(chosenClass)}`, 1500);
                 if (data.leveledUp) showLevelUpModal(chosenClass);
-                // Обновляем бейджи (если нужно)
                 if (typeof window.updateTradeBadges === 'function') {
                     window.updateTradeBadges();
+                }
+                // Обновляем экран фортуны (количество билетов и т.п.)
+                if (currentScreen === 'fortune') {
+                    renderFortune();
                 }
             } else {
                 showToast('Ошибка начисления опыта', 1500);
@@ -339,6 +343,7 @@ function showClassChoiceModalForFortune(expAmount) {
         window.onclick = (event) => { if (event.target === modal) { modal.style.display = 'none'; resolve(null); } };
     });
 }
+// ========================================
 
 function showFortuneRules() {
     const modal = document.getElementById('roleModal');
@@ -400,7 +405,7 @@ function showFortuneRules() {
                         <td style="padding: 10px 8px; text-align: center;">9%</td>
                      </tr>
                 </tbody>
-            </td>
+            </table>
             <button id="closeRulesBtn" style="width:100%; padding: 12px; border-radius: 8px; background: #2a303c; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px;">Назад</button>
         </div>
     `;

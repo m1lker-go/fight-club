@@ -143,7 +143,8 @@ async function renderGems(container) {
                 try {
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
                         type: 'item',
-                        item: String(packId)   // itemdefid товара (1..6)
+                        item: String(packId),
+                        demo: true 
                     });
                     if (result) {
                         showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
@@ -343,7 +344,8 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 try {
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
                         type: 'item',
-                        item: '7'   // itemdefid подписки
+                        item: '7',
+                        demo: true
                     });
                     if (result) {
                         showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);

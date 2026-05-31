@@ -2,9 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Секретный ключ для подтверждения уведомлений (из настроек приложения, раздел "Платежи")
-const APP_SECRET = process.env.VK_APP_SECRET; // тот же, что и для авторизации, или отдельный? По документации – секретный ключ приложения
-
 // Информация о товарах (itemdefid -> название, цена в голосах, картинка)
 const itemsCatalog = {
     1: { title: '50 алмазов', price: 15, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_1.png' },
@@ -23,7 +20,6 @@ async function grantItem(userId, itemId) {
         if (itemId >= 1 && itemId <= 6) {
             const diamondsMap = { 1: 50, 2: 150, 3: 350, 4: 700, 5: 1150, 6: 1800 };
             let diamonds = diamondsMap[itemId];
-            // Бонус 50% при первой покупке пакета
             const bonusCheck = await client.query('SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, itemId]);
             if (bonusCheck.rowCount === 0) {
                 diamonds = Math.floor(diamonds * 1.5);
@@ -31,11 +27,9 @@ async function grantItem(userId, itemId) {
             }
             await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamonds, userId]);
         } else if (itemId === 7) {
-            // Подписка на 30 дней
             const expiry = new Date();
             expiry.setDate(expiry.getDate() + 30);
             await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiry, userId]);
-            // Награда при оформлении
             await client.query('UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1', [userId]);
         } else {
             throw new Error('Unknown itemId');
@@ -47,9 +41,9 @@ async function grantItem(userId, itemId) {
 
 router.post('/', async (req, res) => {
     console.log('[Payment Callback] Received:', JSON.stringify(req.body));
-    const { notification_type, order_id, item_id, user_id, status, ...rest } = req.body;
-    
-    // Уведомление get_item или get_item_test (тестовый режим)
+    const { notification_type, order_id, item_id, user_id, status } = req.body;
+
+    // Обработка get_item и get_item_test
     if (notification_type === 'get_item' || notification_type === 'get_item_test') {
         const item = itemsCatalog[item_id];
         if (!item) {
@@ -64,17 +58,14 @@ router.post('/', async (req, res) => {
             }
         });
     }
-    
-    // Уведомление order_status_change или order_status_change_test (тестовый режим)
+
+    // Обработка order_status_change и order_status_change_test
     if (notification_type === 'order_status_change' || notification_type === 'order_status_change_test') {
         if (status === 'chargeable') {
-            // Платёж успешен – начисляем товар
             const client = await pool.connect();
             try {
-                // Проверяем, не обработан ли уже этот order_id
                 const existing = await client.query('SELECT 1 FROM vk_payments WHERE order_id = $1', [order_id]);
                 if (existing.rowCount === 0) {
-                    // Находим внутреннего пользователя по vk_user_id
                     const userRes = await client.query('SELECT id FROM users WHERE vk_id = $1', [String(user_id)]);
                     if (userRes.rowCount === 0) {
                         console.error(`User with vk_id ${user_id} not found`);
@@ -98,17 +89,14 @@ router.post('/', async (req, res) => {
                 client.release();
             }
         } else if (status === 'refunded') {
-            // Возврат – можно залогировать, но товар не отнимаем (по желанию)
             console.log(`[Payment] Order ${order_id} refunded`);
             res.json({ response: { status: 'ok' } });
         } else {
-            // Другие статусы (pending и т.д.) – просто ок
             res.json({ response: { status: 'ok' } });
         }
         return;
     }
-    
-    // Неизвестный тип уведомления
+
     res.status(400).json({ error: 'Unknown notification_type' });
 });
 

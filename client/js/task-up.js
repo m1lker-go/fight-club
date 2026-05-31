@@ -22,7 +22,17 @@ function renderReferral() {
     referralDiv.style.boxSizing = 'border-box';
     referralDiv.style.backgroundColor = '#2a303c';
 
-    const referralLink = 'https://t.me/' + (window.BOT_USERNAME || 'CatFightingBot') + '?start=' + (userData.referral_code || 'ref');
+    const isVK = window.isVKMiniApp === true;
+    let referralLink = '';
+
+    if (isVK) {
+        // Для VK Mini App – ссылка на мини-приложение с параметром ref
+        const appId = 54599234; // ID вашего VK Mini App
+        referralLink = `https://vk.com/app${appId}?ref=${userData.referral_code}`;
+    } else {
+        // Telegram ссылка
+        referralLink = 'https://t.me/' + (window.BOT_USERNAME || 'CatFightingBot') + '?start=' + (userData.referral_code || 'ref');
+    }
 
     referralDiv.innerHTML =
         '<div style="flex: 2; min-width: 0;">' +
@@ -46,7 +56,17 @@ function renderReferral() {
     });
 
     referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
-        if (window.Telegram?.WebApp?.shareURL) {
+        if (isVK && typeof vkBridge !== 'undefined') {
+            // Поделиться через VK Bridge
+            vkBridge.send('VKWebAppShare', { link: referralLink })
+                .then(() => {
+                    showToast('Приглашение отправлено!', 1500);
+                })
+                .catch((err) => {
+                    console.error('VK share error:', err);
+                    showToast('Не удалось открыть окно приглашения', 1500);
+                });
+        } else if (window.Telegram?.WebApp?.shareURL) {
             window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
         } else if (window.Telegram?.WebApp?.openTelegramLink) {
             window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));

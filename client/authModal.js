@@ -88,50 +88,63 @@ function showAuthModal() {
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // --- Обработчики для VK Mini App (только кнопка) ---
-    if (isVK) {
-        const vkOnlyBtn = document.getElementById('vkOnlyAuthBtn');
-        if (vkOnlyBtn) {
-            vkOnlyBtn.addEventListener('click', async () => {
-                console.log('[VK] Авторизация через VK Bridge (миниапп)');
-                try {
-                    const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-                    const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: '' });
-                    const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            access_token: authToken.access_token,
-                            user_id: userInfo.id,
-                            email: userInfo.email || null
-                        })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        localStorage.setItem('sessionToken', data.sessionToken);
-                        if (data.needusername && typeof showusernameModal === 'function') {
-                            showusernameModal(data.userId);
-                        } else {
-                            if (typeof window.loadUserDataByToken === 'function') {
-                                await window.loadUserDataByToken(data.sessionToken);
-                            }
-                            const modalEl = document.getElementById('roleModal');
-                            if (modalEl) modalEl.style.display = 'none';
-                            if (typeof window.showScreen === 'function') window.showScreen('main');
-                        }
-                    } else {
-                        showToast(data.error || 'Ошибка входа через VK', 1500);
-                    }
-                } catch (err) {
-                    console.error('VK Bridge auth error:', err);
-                    showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
+ // --- Обработчики для VK Mini App (только кнопка) ---
+if (isVK) {
+    const vkOnlyBtn = document.getElementById('vkOnlyAuthBtn');
+    if (vkOnlyBtn) {
+        vkOnlyBtn.addEventListener('click', async () => {
+            console.log('[VK] Авторизация через VK Bridge (миниапп)');
+            try {
+                const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                // Запрашиваем токен с scope 'email'
+                const authToken = await vkBridge.send('VKWebAppGetAuthToken', { app_id: 54599234, scope: 'email' });
+                
+                const requestBody = {
+                    access_token: authToken.access_token,
+                    user_id: userInfo.id,
+                };
+                if (userInfo.email) {
+                    requestBody.email = userInfo.email;
                 }
-            });
-        }
-        // В VK миниаппе остальные кнопки не создаются, поэтому дополнительных обработчиков нет
-        return; // чтобы не добавлять обработчики для других кнопок, которых нет в DOM
-    }
+                
+                const res = await fetch(`${window.API_BASE}/auth/vk-lowcode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                const data = await res.json();
+                console.log('[VK] Ответ сервера:', data);   // ← ВАЖНО: смотрим, что пришло
 
+                if (data.success) {
+                    if (!data.sessionToken) {
+                        console.error('[VK] Сервер не вернул sessionToken');
+                        showToast('Ошибка авторизации: не получен токен', 1500);
+                        return;
+                    }
+                    localStorage.setItem('sessionToken', data.sessionToken);
+                    if (data.needusername && typeof showusernameModal === 'function') {
+                        showusernameModal(data.userId);
+                    } else {
+                        if (typeof window.loadUserDataByToken === 'function') {
+                            await window.loadUserDataByToken(data.sessionToken);
+                        }
+                        const modalEl = document.getElementById('roleModal');
+                        if (modalEl) modalEl.style.display = 'none';
+                        if (typeof window.showScreen === 'function') window.showScreen('main');
+                    }
+                } else {
+                    console.error('[VK] Ошибка от сервера:', data.error);
+                    showToast(data.error || 'Ошибка входа через VK', 1500);
+                }
+            } catch (err) {
+                console.error('VK Bridge auth error:', err);
+                showToast('Не удалось авторизоваться. Проверьте, что вы залогинены в VK.', 1500);
+            }
+        });
+    }
+    // В VK миниаппе остальные кнопки не создаются, поэтому дополнительных обработчиков нет
+    return; // чтобы не добавлять обработчики для других кнопок, которых нет в DOM
+}
     // --- Обработчики для остальных окружений (браузер, Telegram, APK) ---
     // Telegram
     const telegramBtn = document.getElementById('telegramAuthBtn');

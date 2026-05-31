@@ -427,12 +427,24 @@ router.post('/vk-launch', async (req, res) => {
             let needusername = false;
             
             if (userResult.rows.length === 0) {
+                // --- РЕФЕРАЛЬНАЯ ЛОГИКА (VK) ---
+                const refCode = launchParams.ref || null;
+                let referredById = null;
+                if (refCode) {
+                    const referrer = await client.query('SELECT id FROM users WHERE referral_code = $1', [refCode]);
+                    if (referrer.rows.length) {
+                        referredById = referrer.rows[0].id;
+                        await client.query('UPDATE users SET coins = coins + 100 WHERE id = $1', [referredById]);
+                        console.log(`[VK Launch] Referral applied: new user ${vkUserId} referred by ${referredById}`);
+                    }
+                }
+                // ---------------------------------
                 const tempUsername = `user_${vkUserId}`;
                 const referralCode = Math.random().toString(36).substring(2, 10);
                 const newUser = await client.query(
-                    `INSERT INTO users (vk_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
-                    [String(vkUserId), tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                    `INSERT INTO users (vk_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class, referred_by)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior', $13) RETURNING *`,
+                    [String(vkUserId), tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true, referredById]
                 );
                 user = newUser.rows[0];
                 needusername = true;

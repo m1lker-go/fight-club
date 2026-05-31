@@ -21,13 +21,10 @@ app.use(express.static('client'));
 // ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));
 app.use('/payment', require('./routes/robokassa'));
-// app.use('/vk-pay', require('./routes/vk-pay')); // СТАРЫЙ НЕРАБОЧИЙ ОБРАБОТЧИК – отключён
-
-// ========== НОВЫЕ РОУТЫ ДЛЯ VK PLAY (ПО ДОКУМЕНТАЦИИ) ==========
-// Callback для уведомлений об оплате (без авторизации, т.к. его вызывает VK)
-app.use('/', require('./routes/vk-callback'));
-// Эндпоинт для получения платёжного URL (требует авторизации)
-app.use('/api/vk', authMiddleware, require('./routes/vk-payment-url'));
+app.use('/vk-payment-callback', require('./routes/vk-payment-callback')); // добавлен
+// app.use('/vk-pay', require('./routes/vk-pay')); // отключён
+// app.use('/', require('./routes/vk-callback')); // удалён или закомментирован
+// app.use('/api/vk', authMiddleware, require('./routes/vk-payment-url')); // можно удалить, если не используется
 
 // ========== ЗАЩИЩЁННЫЕ API ==========
 app.use('/player', authMiddleware, require('./routes/player'));

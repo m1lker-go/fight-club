@@ -42,11 +42,13 @@ window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.go
 // ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
 window.isVKMiniApp = (function() {
     if (typeof window.vkBridge === 'undefined') return false;
+    const search = window.location.search;
     const hash = window.location.hash;
-    if (hash && (hash.includes('vk_user_id') || hash.includes('sign'))) return true;
+    // проверяем наличие параметров запуска ВК
+    if (search.includes('vk_user_id') || search.includes('sign')) return true;
+    if (hash.includes('vk_user_id') || hash.includes('sign')) return true;
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('vk')) return true;
-    if (window.location.search.includes('vk_access_token_settings')) return true;
     if (window.self !== window.top && document.referrer.includes('vk.com')) return true;
     return false;
 })();
@@ -65,15 +67,25 @@ if (window.isVKMiniApp) {
 // ========== VK Mini App авторизация через параметры запуска (sessionStorage) ==========
 
 function getVKLaunchParams() {
-    const hash = window.location.hash;
-    if (!hash || !hash.startsWith('#')) return {};
-    // Убираем первый символ '#'
-    const paramsString = hash.substring(1);
-    const urlParams = new URLSearchParams(paramsString);
-    const result = {};
-    for (const [key, value] of urlParams.entries()) {
+    // сначала ищем в строке запроса (search)
+    const searchParams = new URLSearchParams(window.location.search);
+    let result = {};
+    for (const [key, value] of searchParams.entries()) {
         if (key.startsWith('vk_')) {
             result[key] = value;
+        }
+    }
+    // если не нашли, пробуем хэш (на случай, если в будущем поменяется)
+    if (Object.keys(result).length === 0) {
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#')) {
+            const paramsString = hash.substring(1);
+            const urlParams = new URLSearchParams(paramsString);
+            for (const [key, value] of urlParams.entries()) {
+                if (key.startsWith('vk_')) {
+                    result[key] = value;
+                }
+            }
         }
     }
     return result;

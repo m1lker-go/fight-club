@@ -1,9 +1,8 @@
-// task-up.js (исправленный) – поддержка угля, рекламы, фортуны
+// task-up.js – полностью исправленный (синтаксис и реферальная система)
 
 let countdownInterval = null;
-let lastTasksData = null;  // храним последние данные заданий
+let lastTasksData = null;
 
-// Функция для проверки наличия неполученных наград
 function hasUnclaimedTasks() {
     if (!lastTasksData) return false;
     return lastTasksData.some(task => !task.completed && task.progress >= task.target_value);
@@ -26,11 +25,9 @@ function renderReferral() {
     let referralLink = '';
 
     if (isVK) {
-        // Для VK Mini App – ссылка на мини-приложение с параметром ref
-        const appId = 54599234; // ID вашего VK Mini App
+        const appId = 54599234;
         referralLink = `https://vk.com/app${appId}?ref=${userData.referral_code}`;
     } else {
-        // Telegram ссылка
         referralLink = 'https://t.me/' + (window.BOT_USERNAME || 'CatFightingBot') + '?start=' + (userData.referral_code || 'ref');
     }
 
@@ -47,7 +44,6 @@ function renderReferral() {
             '<button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>' +
         '</div>';
 
-    // Универсальная функция fallback-копирования
     function fallbackCopy(text) {
         const textarea = document.createElement('textarea');
         textarea.value = text;
@@ -64,31 +60,27 @@ function renderReferral() {
         document.body.removeChild(textarea);
     }
 
-    // Кнопка копирования (с fallback)
     referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(referralLink)
             .then(() => showToast('Ссылка скопирована!', 1500))
             .catch(() => fallbackCopy(referralLink));
     });
 
-  // Кнопка "Поделиться"
-referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
-    if (isVK && typeof vkBridge !== 'undefined') {
-        // В VK Mini App копируем ссылку, так как VKWebAppShare не всегда вставляет ссылку в сообщение
-        fallbackCopy(referralLink);
-        showToast('Ссылка скопирована! Отправь её другу в сообщении.', 3000);
-    } else if (window.Telegram?.WebApp?.shareURL) {
-        window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
-    } else if (window.Telegram?.WebApp?.openTelegramLink) {
-        window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
-    } else {
-        fallbackCopy(referralLink);
-    }
-});
+    referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
+        if (isVK && typeof vkBridge !== 'undefined') {
+            fallbackCopy(referralLink);
+            showToast('Ссылка скопирована! Отправь её другу в сообщении.', 3000);
+        } else if (window.Telegram?.WebApp?.shareURL) {
+            window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
+        } else if (window.Telegram?.WebApp?.openTelegramLink) {
+            window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
+        } else {
+            fallbackCopy(referralLink);
+        }
+    });
 
-return referralDiv;
-
-
+    return referralDiv;
+}
 
 function showAdventModal(data) {
     const modal = document.getElementById('roleModal');
@@ -97,16 +89,14 @@ function showAdventModal(data) {
     if (!modal || !modalTitle || !modalBody) return;
 
     modalTitle.innerHTML = 'Адвент-календарь';
-    modalBody.innerHTML = ''; // очищаем
+    modalBody.innerHTML = '';
 
-    // Вставляем календарь, используя уже готовую логику renderAdventCalendar, но в модалку
     const tempContainer = document.createElement('div');
-    renderAdventCalendarInContainer(data, tempContainer); // нужна функция рендеринга календаря в контейнер
+    renderAdventCalendarInContainer(data, tempContainer);
     modalBody.appendChild(tempContainer);
 
     modal.style.display = 'flex';
 
-    // Обработчик закрытия (крестик)
     const closeBtn = modal.querySelector('.close');
     const closeModal = () => { modal.style.display = 'none'; };
     if (closeBtn) closeBtn.onclick = closeModal;
@@ -150,7 +140,6 @@ function renderAdventCalendarInContainer(data, container) {
     html += '</div>';
     container.innerHTML = html;
 
-    // Вешаем обработчики на доступные дни
     container.querySelectorAll('.advent-day.available').forEach(div => {
         div.addEventListener('click', () => {
             const day = parseInt(div.dataset.day);
@@ -161,13 +150,12 @@ function renderAdventCalendarInContainer(data, container) {
 
 window.showAdventModal = showAdventModal;
 
-// Всплывающее уведомление о награде (без затемнения, без крестика)
 function showRewardToast(title, iconClass, subtitle) {
     iconClass = iconClass || 'fa-coins';
     subtitle = subtitle || '';
     const toast = document.createElement('div');
     toast.className = 'reward-toast';
-   let inner = '<div class="reward-toast-content"><i class="fas ' + iconClass + '" style="font-size:20px;"></i><div><div class="reward-toast-title">' + title + '</div>';
+    let inner = '<div class="reward-toast-content"><i class="fas ' + iconClass + '" style="font-size:20px;"></i><div><div class="reward-toast-title">' + title + '</div>';
     if (subtitle) {
         inner += '<div class="reward-toast-sub">' + subtitle + '</div>';
     }
@@ -180,13 +168,11 @@ function showRewardToast(title, iconClass, subtitle) {
         setTimeout(() => {
             toast.classList.remove('show');
             toast.addEventListener('transitionend', () => toast.remove());
-            // fallback remove
             setTimeout(() => { if (toast.parentNode) toast.remove(); }, 400);
         }, 2000);
     });
 }
 
-// Переводы для новых заданий
 if (typeof dailyTaskTranslations === 'undefined') window.dailyTaskTranslations = {};
 Object.assign(dailyTaskTranslations, {
     fortune_spin: { name: 'Покрутить рулетку', description: 'Сыграйте в Фортуну 1 раз' },
@@ -269,18 +255,17 @@ async function loadDailyTasks() {
         activeTasks.forEach((task, index) => {
             const clampedProgress = Math.min(task.progress, task.target_value);
             const progressPercent = (clampedProgress / task.target_value) * 100;
-            
-            // Отображение награды в зависимости от типа
+
             let rewardHtml = '';
             if (task.reward_type === 'coins') {
-    rewardHtml = task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>';
-} else if (task.reward_type === 'coal') {
-    rewardHtml = task.reward_amount + ' <i class="fas fa-cube" style="color:white;"></i>';
-} else if (task.reward_type === 'diamonds') {
-    rewardHtml = task.reward_amount + ' <i class="fas fa-gem" style="color:white;"></i>';
-} else {
-    rewardHtml = task.reward_amount + ' EXP';
-}
+                rewardHtml = task.reward_amount + ' <i class="fas fa-coins" style="color:white;"></i>';
+            } else if (task.reward_type === 'coal') {
+                rewardHtml = task.reward_amount + ' <i class="fas fa-cube" style="color:white;"></i>';
+            } else if (task.reward_type === 'diamonds') {
+                rewardHtml = task.reward_amount + ' <i class="fas fa-gem" style="color:white;"></i>';
+            } else {
+                rewardHtml = task.reward_amount + ' EXP';
+            }
 
             const translated = dailyTaskTranslations[task.name] || {};
             const displayName = translated.name || task.name;
@@ -309,9 +294,8 @@ async function loadDailyTasks() {
                     '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + clampedProgress + '/' + task.target_value + '</div>' +
                 '</div>';
 
-             let isReadyToClaim = false;
+            let isReadyToClaim = false;
 
-            // Обычные задания: проверяем достижение цели
             if (task.id !== 9) {
                 isReadyToClaim = (task.progress >= task.target_value);
             }
@@ -364,9 +348,6 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
-
-
-        
         document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             if (!btn.dataset.taskId) return;
 
@@ -375,55 +356,44 @@ async function loadDailyTasks() {
                 const rewardType = btn.dataset.rewardType;
                 const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
-                // Находим текущее задание в данных для проверки готовности
                 const currentTask = activeTasks.find(t => t.id === taskId);
                 const isReady = currentTask ? currentTask.progress >= currentTask.target_value : false;
 
-                // Задания на просмотр рекламы: если ещё не готово – показываем rewarded video
-               // Внутри обработчика клика на кнопку задания
-
-if ((taskId === 11 || taskId === 12) && !isReady) {
-    const ready = await checkAdsReady();
-    if (!ready) {
-        showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
-        return;
-    }
-
-    const watched = await showRewardedAd();
-    if (watched) {
-        try {
-            const updRes = await window.apiRequest('/tasks/daily/update/ads', {
-                method: 'POST',
-                body: JSON.stringify({})
-            });
-            const updData = await updRes.json();
-            if (updData.success) {
-                if (updData.autoCompleted) {
-                    showToast('Награда за рекламу получена!', 1500);
-                } else {
-                    showToast('Прогресс рекламы обновлён!', 1500);
+                if ((taskId === 11 || taskId === 12) && !isReady) {
+                    const ready = await checkAdsReady();
+                    if (!ready) {
+                        showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
+                        return;
+                    }
+                    const watched = await showRewardedAd();
+                    if (watched) {
+                        try {
+                            const updRes = await window.apiRequest('/tasks/daily/update/ads', {
+                                method: 'POST',
+                                body: JSON.stringify({})
+                            });
+                            const updData = await updRes.json();
+                            if (updData.success) {
+                                if (updData.autoCompleted) {
+                                    showToast('Награда за рекламу получена!', 1500);
+                                } else {
+                                    showToast('Прогресс рекламы обновлён!', 1500);
+                                }
+                                if (typeof loadDailyTasks === 'function') loadDailyTasks();
+                                if (typeof refreshData === 'function') refreshData();
+                            } else {
+                                showToast('Ошибка обновления прогресса', 1500);
+                            }
+                        } catch (err) {
+                            console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
+                            showToast('Ошибка соединения', 1500);
+                        }
+                    } else {
+                        showToast('Вы не досмотрели рекламу до конца.', 2000);
+                    }
+                    return;
                 }
-                // Обновляем список заданий и данные пользователя
-                if (typeof loadDailyTasks === 'function') {
-                    loadDailyTasks();
-                }
-                if (typeof refreshData === 'function') {
-                    refreshData();
-                }
-            } else {
-                showToast('Ошибка обновления прогресса', 1500);
-            }
-        } catch (err) {
-            console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
-            showToast('Ошибка соединения', 1500);
-        }
-    } else {
-        showToast('Вы не досмотрели рекламу до конца.', 2000);
-    }
-    return; // прерываем стандартную обработку – задание обработано
-}
 
-                // Обычная логика получения награды (для всех заданий, включая готовые рекламные)
                 if (rewardType === 'exp') {
                     claimDailyExp(taskId, rewardAmount);
                 } else {
@@ -433,12 +403,9 @@ if ((taskId === 11 || taskId === 12) && !isReady) {
                     });
                     const data = await res.json();
                     if (data.error) {
-                       showToast(data.error, 1500);
+                        showToast(data.error, 1500);
                     } else {
-                        // Звук получения награды
-                        if (typeof AudioManager !== 'undefined') {
-                            AudioManager.playSound('reward');
-                        }
+                        if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
                         if (rewardType === 'coal') {
                             showRewardToast('+' + rewardAmount + ' угля', 'fa-cube');
                         } else {
@@ -450,7 +417,6 @@ if ((taskId === 11 || taskId === 12) && !isReady) {
                 }
             });
         });
-        
 
         const allCompleted = completedTasksCount >= totalTasksCount;
         if (countdownContainer) {
@@ -464,9 +430,7 @@ if ((taskId === 11 || taskId === 12) && !isReady) {
         }
 
         lastTasksData = tasksData;
-        if (window.updateMainMenuNewIcons) {
-            window.updateMainMenuNewIcons();
-        }
+        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
 
     } catch (e) {
         console.error('Error loading daily tasks:', e);
@@ -481,9 +445,7 @@ async function refreshTasksData() {
         if (data.tasks) {
             lastTasksData = data.tasks;
             if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
-            if (typeof loadDailyTasks === 'function') {
-                loadDailyTasks();
-            }
+            if (typeof loadDailyTasks === 'function') loadDailyTasks();
         }
     } catch (e) {
         console.error('Failed to refresh tasks data', e);
@@ -516,15 +478,9 @@ function updateCountdownDisplay() {
             '<div class="countdown-timer-wrapper">' +
                 '<div class="countdown-label">Новые задания появятся через:</div>' +
                 '<div class="countdown-digits">' +
-                    '<div class="digit-box">' +
-                        '<div class="digit-value">' + hoursStr + '</div>' +
-                        '<div class="digit-unit">часов</div>' +
-                    '</div>' +
+                    '<div class="digit-box"><div class="digit-value">' + hoursStr + '</div><div class="digit-unit">часов</div></div>' +
                     '<div class="colon">:</div>' +
-                    '<div class="digit-box">' +
-                        '<div class="digit-value">' + minutesStr + '</div>' +
-                        '<div class="digit-unit">минут</div>' +
-                    '</div>' +
+                    '<div class="digit-box"><div class="digit-value">' + minutesStr + '</div><div class="digit-unit">минут</div></div>' +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -636,9 +592,7 @@ function claimAdventDay(day, daysInMonth) {
             showToast(data.error, 1500);
             isClaiming = false;
         } else {
-            if (typeof AudioManager !== 'undefined') {
-                AudioManager.playSound('reward');
-            }
+            if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
             if (reward.type === 'coins') {
                 showRewardToast('+' + reward.amount + ' монет', 'fa-coins');
             } else if (reward.type === 'item' && data.item) {
@@ -698,14 +652,10 @@ function showClassChoiceModalForAdvent(expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                if (typeof AudioManager !== 'undefined') {
-                    AudioManager.playSound('reward');
-                }
+                if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
                 showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
-                if (data.leveledUp) {
-                    showLevelUpModal(classChoice);
-                }
+                if (data.leveledUp) showLevelUpModal(classChoice);
                 window.apiRequest('/tasks/advent', { method: 'GET' })
                     .then(res => res.json())
                     .then(updatedData => renderAdventCalendar(updatedData));
@@ -750,14 +700,10 @@ function claimDailyExp(taskId, expAmount) {
             if (data.error) {
                 showToast(data.error, 1500);
             } else {
-                if (typeof AudioManager !== 'undefined') {
-                    AudioManager.playSound('reward');
-                }
+                if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
                 showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
-                if (data.leveledUp) {
-                    showLevelUpModal(classChoice);
-                }
+                if (data.leveledUp) showLevelUpModal(classChoice);
                 renderTasks();
             }
         });

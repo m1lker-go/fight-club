@@ -675,6 +675,26 @@ function showScreen(screen) {
             .catch(e => console.warn('Не удалось обновить задание профиля:', e));
     }
 
+    // Динамическая загрузка task-up.js для экрана заданий
+    if (screen === 'tasks' && typeof renderTasks === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/js/task-up.js';
+        script.onload = () => {
+            if (typeof renderTasks === 'function') {
+                renderTasks();
+            } else {
+                console.error('renderTasks still not defined after load');
+                content.innerHTML = '<p style="color:#aaa;">Ошибка загрузки заданий. Попробуйте позже.</p>';
+            }
+        };
+        script.onerror = () => {
+            console.error('Failed to load task-up.js');
+            content.innerHTML = '<p style="color:#aaa;">Не удалось загрузить задания. Проверьте соединение.</p>';
+        };
+        document.head.appendChild(script);
+        return;
+    }
+
     switch (screen) {
         case 'main':
             renderMain();

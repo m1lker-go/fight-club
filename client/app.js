@@ -695,6 +695,26 @@ function showScreen(screen) {
         return;
     }
 
+    // Динамическая загрузка tournament.js для экрана турнира
+    if (screen === 'tournament' && typeof renderTournament === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/js/tournament.js';
+        script.onload = () => {
+            if (typeof renderTournament === 'function') {
+                renderTournament();
+            } else {
+                console.error('renderTournament still not defined after load');
+                content.innerHTML = '<p style="color:#aaa;">Ошибка загрузки турнира. Попробуйте позже.</p>';
+            }
+        };
+        script.onerror = () => {
+            console.error('Failed to load tournament.js');
+            content.innerHTML = '<p style="color:#aaa;">Не удалось загрузить турнир. Проверьте соединение.</p>';
+        };
+        document.head.appendChild(script);
+        return;
+    }
+
     switch (screen) {
         case 'main':
             renderMain();
@@ -729,6 +749,12 @@ function showScreen(screen) {
         case 'market': renderMarket(); break;
         case 'fortune': renderFortune(); break;
         case 'alchemy': renderAlchemy(); break;
+        case 'tournament':
+            renderTournament();
+            break;
+        case 'clans':
+            content.innerHTML = '<p style="text-align:center; color:#aaa;">Кланы временно недоступны</p>';
+            break;
         default: renderMain();
     }
 

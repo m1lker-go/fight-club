@@ -53,8 +53,8 @@ function renderMain() {
                 <div class="main-buttons-col left">
                     <div class="btn-grid">
                         <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Почта</span></button>
-                        <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn empty-btn"></button>
+                        <button class="main-icon-btn" data-screen="clans"><i class="fas fa-users"></i><span>Кланы</span></button>
+                        <button class="main-icon-btn" data-screen="tournament"><i class="fas fa-trophy"></i><span>Турнир</span></button>
                         <button class="main-icon-btn empty-btn"></button>
                         <button class="main-icon-btn" data-screen="settings"><i class="fas fa-cog"></i><span>Настройки</span></button>
                         <button class="main-icon-btn empty-btn"></button>

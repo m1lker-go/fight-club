@@ -56,8 +56,6 @@ async function renderTournamentTab() {
 
         const canRegister = status.canRegister;
         const isRegistered = status.isRegistered;
-        const registeredClass = status.registeredClass;
-        const registeredSubclass = status.registeredSubclass;
         const tournamentActive = status.tournamentActive;
         const tournamentCompleted = status.tournamentCompleted;
 
@@ -70,7 +68,7 @@ async function renderTournamentTab() {
             return;
         }
         if (canRegister && !tournamentActive) {
-            // Форма регистрации – две строки (Класс и Роль)
+            // Класс-селектор (три кнопки)
             const classesHtml = `
                 <div style="display: flex; align-items: center; margin-bottom: 15px;">
                     <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Класс</div>
@@ -82,18 +80,17 @@ async function renderTournamentTab() {
                 </div>
             `;
 
-            let subclassesHtml = '';
-            if (selectedTournamentClass) {
-                const subclasses = getSubclassesForClass(selectedTournamentClass);
-                subclassesHtml = `
-                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                        <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Роль</div>
-                        <select id="tournamentSubclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
-                            ${subclasses.map(sc => `<option value="${sc}" ${selectedTournamentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
-                        </select>
-                    </div>
-                `;
-            }
+            // Всегда показываем селектор подкласса (с первым значением, если класс не выбран)
+            let defaultSubclasses = getSubclassesForClass(selectedTournamentClass || 'warrior');
+            let currentSubclass = selectedTournamentSubclass || defaultSubclasses[0];
+            const subclassesHtml = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Роль</div>
+                    <select id="tournamentSubclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
+                        ${defaultSubclasses.map(sc => `<option value="${sc}" ${currentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
+                    </select>
+                </div>
+            `;
 
             container.innerHTML = `
                 <div class="tournament-registration">
@@ -107,13 +104,15 @@ async function renderTournamentTab() {
                 </div>
             `;
 
-            // Обработчики выбора класса
+            // Обработчики выбора класса (обновляют селектор подкласса)
             document.querySelectorAll('.class-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const className = btn.dataset.class;
                     if (className === selectedTournamentClass) return;
                     selectedTournamentClass = className;
-                    selectedTournamentSubclass = null;
+                    // Сбросить выбранный подкласс на первый из нового класса
+                    const newSubclasses = getSubclassesForClass(className);
+                    selectedTournamentSubclass = newSubclasses[0];
                     await window.apiRequest('/tournament/select-class', {
                         method: 'POST',
                         body: JSON.stringify({ class: className })
@@ -132,7 +131,8 @@ async function renderTournamentTab() {
                         method: 'POST',
                         body: JSON.stringify({ subclass })
                     });
-                    renderTournamentTab();
+                    // Не перерисовываем всю страницу, просто сохраняем
+                    // renderTournamentTab(); // можно не вызывать, чтобы не мигало
                 });
             }
 
@@ -155,7 +155,6 @@ async function renderTournamentTab() {
                 });
             }
 
-            // Кнопка отмены
             const unregBtn = document.getElementById('tournamentUnregisterBtn');
             if (unregBtn) {
                 unregBtn.addEventListener('click', async () => {
@@ -242,15 +241,23 @@ async function renderLeadersTab() {
     try {
         const leadersRes = await window.apiRequest('/tournament/leaders');
         const leaders = await leadersRes.json();
-        if (!leaders.length) {
-            container.innerHTML = '<p style="color:#aaa; text-align:center;">Таблица лидеров пока пуста</p>';
-            return;
+
+        // Всегда показываем таблицу с заголовком
+        let html = '<div style="padding: 0 10px;"><h3 style="text-align:center; color:#00aaff; margin:10px 0;">Таблица лидеров</h3>';
+        html += '<table class="tournament-leaders-table"><thead><tr><th>Место</th><th>Игрок</th><th>Класс</th><th>Турнирные очки</th></tr></thead><tbody>';
+        if (leaders.length === 0) {
+            html += '<tr class="empty-leaders-row"><td colspan="4">Пока нет данных</td></tr>';
+        } else {
+            leaders.forEach((item, idx) => {
+                html += `<tr>
+                    <td style="text-align:center;">${idx+1}</td>
+                    <td>${escapeHtml(item.username)}</td>
+                    <td>${getClassNameRu(item.current_class)}</td>
+                    <td style="text-align:center;">${item.tournament_points}</td>
+                </tr>`;
+            });
         }
-        let html = '<table class="tournament-leaders-table"><thead><tr><th>Место</th><th>Игрок</th><th>Класс</th><th>Турнирные очки</th></tr></thead><tbody>';
-        leaders.forEach((item, idx) => {
-            html += `<tr><td style="text-align:center;">${idx+1}</td><td>${escapeHtml(item.username)}</td><td>${getClassNameRu(item.current_class)}</td><td style="text-align:center;">${item.tournament_points}</td></tr>`;
-        });
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         container.innerHTML = html;
     } catch (err) {
         console.error(err);

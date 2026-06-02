@@ -4946,30 +4946,6 @@ body {
     box-sizing: border-box;
 }
 
-/* Заголовок – после вкладок, по центру */
-.tournament-header {
-    background-color: #1a1f2b;
-    padding: 10px 16px;
-    text-align: center;
-    position: relative;
-    border-bottom: 1px solid #00aaff;
-}
-.tournament-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-    margin: 0;
-}
-.tournament-help-icon {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #00aaff;
-    font-size: 22px;
-    cursor: pointer;
-}
-
 /* Вкладки – правильные скругления */
 .tournament-tabs {
     display: flex;
@@ -5012,18 +4988,34 @@ body {
     background-color: #232833;
 }
 
+/* Заголовок */
+.tournament-header {
+    background-color: #1a1f2b;
+    padding: 10px 16px;
+    text-align: center;
+    position: relative;
+    border-bottom: 1px solid #00aaff;
+}
+.tournament-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+}
+.tournament-help-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #00aaff;
+    font-size: 22px;
+    cursor: pointer;
+}
+
 /* Форма регистрации */
 .tournament-registration {
     padding: 10px;
 }
-.tournament-registration p {
-    color: #aaa;
-    font-size: 14px;
-    margin: 8px 0;
-    text-align: center;
-}
-
-/* Строка выбора класса (как на главном экране) */
 .tournament-class-row {
     display: flex;
     align-items: center;
@@ -5060,8 +5052,6 @@ body {
     background-color: #00aaff;
     color: white;
 }
-
-/* Строка выбора роли */
 .tournament-role-row {
     display: flex;
     align-items: center;
@@ -5083,8 +5073,6 @@ body {
     padding: 8px 12px;
     font-size: 14px;
 }
-
-/* Кнопка действия */
 .tournament-action-btn {
     background-color: #00aaff;
     border: none;
@@ -5096,7 +5084,6 @@ body {
     cursor: pointer;
     margin: 15px 0 10px;
     width: 100%;
-    transition: opacity 0.2s;
 }
 .tournament-action-btn.secondary {
     background-color: #2f3542;
@@ -5114,7 +5101,7 @@ body {
     text-align: center;
 }
 
-/* Сетка турнира (результаты) */
+/* Сетка турнира */
 .tournament-bracket {
     display: flex;
     flex-direction: column;

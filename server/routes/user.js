@@ -281,14 +281,16 @@ router.post('/refresh', async (req, res) => {
     }
 });
 
-// ========== СООБЩЕНИЯ ==========
+// ========== СООБЩЕНИЯ (расширенные) ==========
 router.get('/messages', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
         const messages = await client.query(
-            `SELECT id, from_text as "from", sender_avatar, subject, body, reward_type, reward_amount, is_read, is_claimed, created_at
+            `SELECT id, from_text as "from", sender_avatar, subject, body, 
+                    reward_coins, reward_diamonds, reward_exp, reward_exp_class, reward_chest, reward_chest_amount,
+                    is_read, is_claimed, created_at
              FROM user_messages
              WHERE user_id = $1
              ORDER BY created_at DESC`,
@@ -341,36 +343,71 @@ router.post('/messages/claim', async (req, res) => {
     const { message_id } = req.body;
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
         const msgRes = await client.query(
-            'SELECT reward_type, reward_amount, reward_type2, reward_amount2, is_claimed FROM user_messages WHERE id = $1 AND user_id = $2',
+            `SELECT reward_coins, reward_diamonds, reward_exp, reward_exp_class, reward_chest, reward_chest_amount, is_claimed 
+             FROM user_messages WHERE id = $1 AND user_id = $2`,
             [message_id, userId]
         );
         if (msgRes.rows.length === 0) return res.status(404).json({ error: 'Message not found' });
         const msg = msgRes.rows[0];
         if (msg.is_claimed) return res.status(400).json({ error: 'Reward already claimed' });
 
-        let rewardText = '';
-        if (msg.reward_type && msg.reward_amount) {
-            if (msg.reward_type === 'coins') {
-                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_amount, userId]);
-                rewardText += `${msg.reward_amount} монет`;
-            } else if (msg.reward_type === 'diamonds') {
-                await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_amount, userId]);
-                rewardText += `${msg.reward_amount} алмазов`;
-            }
+        const rewards = [];
+
+        // Монеты
+        if (msg.reward_coins > 0) {
+            await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_coins, userId]);
+            rewards.push(`${msg.reward_coins} монет`);
         }
-        if (msg.reward_type2 && msg.reward_amount2) {
-            if (msg.reward_type2 === 'coins') {
-                await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_amount2, userId]);
-                rewardText += (rewardText ? ' и ' : '') + `${msg.reward_amount2} монет`;
-            } else if (msg.reward_type2 === 'diamonds') {
-                await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_amount2, userId]);
-                rewardText += (rewardText ? ' и ' : '') + `${msg.reward_amount2} алмазов`;
-            }
+        // Алмазы
+        if (msg.reward_diamonds > 0) {
+            await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_diamonds, userId]);
+            rewards.push(`${msg.reward_diamonds} алмазов`);
         }
+        // Опыт (используем функцию addExp, которая должна быть определена)
+        if (msg.reward_exp > 0 && msg.reward_exp_class) {
+            const { addExp } = require('../utils/exp'); // путь к вашей функции
+            const leveledUp = await addExp(client, userId, msg.reward_exp_class, msg.reward_exp);
+            if (leveledUp) {
+                const { updatePlayerPower } = require('../utils/power');
+                await updatePlayerPower(client, userId, msg.reward_exp_class);
+            }
+            rewards.push(`${msg.reward_exp} опыта для класса ${msg.reward_exp_class}`);
+        }
+        // Сундук (генерируем предмет)
+        if (msg.reward_chest) {
+            const { generateItemByRarity } = require('../utils/botGenerator');
+            const chestCount = msg.reward_chest_amount || 1;
+            for (let i = 0; i < chestCount; i++) {
+                const item = generateItemByRarity(msg.reward_chest, null);
+                const itemRes = await client.query(
+                    `INSERT INTO items (name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus,
+                        crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus) 
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
+                    [item.name, item.type, item.rarity, 'any', item.owner_class,
+                     item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
+                     item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
+                );
+                const itemId = itemRes.rows[0].id;
+                await client.query(
+                    `INSERT INTO inventory (user_id, item_id, equipped, name, type, rarity, class_restriction, owner_class,
+                        atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus) 
+                     VALUES ($1, $2, false, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+                    [userId, itemId, item.name, item.type, item.rarity, 'any', item.owner_class,
+                     item.atk_bonus, item.def_bonus, item.hp_bonus, item.spd_bonus,
+                     item.crit_bonus, item.crit_dmg_bonus, item.agi_bonus, item.int_bonus, item.vamp_bonus, item.reflect_bonus]
+                );
+            }
+            const chestName = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' }[msg.reward_chest] || msg.reward_chest;
+            rewards.push(`${chestName} сундук${chestCount > 1 ? 'ы' : ''}`);
+        }
+
         await client.query('UPDATE user_messages SET is_claimed = true WHERE id = $1', [message_id]);
-        res.json({ success: true, reward_text: rewardText });
+        await client.query('COMMIT');
+        res.json({ success: true, reward_text: rewards.join(', ') });
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: err.message });
     } finally {

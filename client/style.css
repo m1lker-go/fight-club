@@ -4942,15 +4942,40 @@ body {
     height: 100%;
 }
 
+/* Заголовок турнира */
+.tournament-header {
+    background-color: #1a1f2b;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #00aaff;
+}
+.tournament-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+}
+.tournament-help-icon {
+    color: #00aaff;
+    font-size: 22px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.tournament-help-icon:hover {
+    opacity: 0.8;
+}
+
+/* Вкладки – острые края, только внешние скругления */
 .tournament-tabs {
     display: flex;
     background-color: #2a303c;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 12px 12px 0 0;
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
     flex-shrink: 0;
 }
-
 .tournament-tab {
     flex: 1;
     background-color: #232833;
@@ -4961,14 +4986,18 @@ body {
     cursor: pointer;
     color: #aaa;
     transition: background-color 0.2s, color 0.2s;
-    border-radius: 10px 10px 0 0;
+    border-radius: 0;
 }
-
+.tournament-tab:first-child {
+    border-radius: 0 12px 0 0;
+}
+.tournament-tab:last-child {
+    border-radius: 12px 0 0 0;
+}
 .tournament-tab.active {
     background-color: #00aaff;
     color: white;
 }
-
 .tournament-tab:not(.active):hover {
     background-color: #2f3542;
     color: #ccc;
@@ -4981,76 +5010,72 @@ body {
     background-color: #232833;
 }
 
-/* Регистрация */
+/* Форма регистрации – класс и подкласс как на главном экране */
 .tournament-registration {
-    text-align: center;
     padding: 10px;
 }
-
 .tournament-registration h3 {
     color: #00aaff;
     margin-bottom: 10px;
+    text-align: center;
 }
-
 .tournament-registration p {
     color: #aaa;
     font-size: 14px;
     margin: 8px 0;
+    text-align: center;
 }
-
-.tournament-class-list {
+.tournament-class-selector {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 15px 0;
-}
-
-.tournament-class-option {
-    background-color: #2a303c;
-    padding: 12px;
-    border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    border: 1px solid #3a4050;
-}
-
-.tournament-class-option:hover {
     background-color: #2f3542;
-    border-color: #00aaff;
+    border-radius: 30px;
+    padding: 4px;
+    margin: 15px 0;
+    gap: 4px;
 }
-
-.tournament-check {
-    color: #2ecc71;
-    font-size: 20px;
+.tournament-class-btn {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    background-color: #2f3542;
+    color: #aaa;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    text-align: center;
+    border-radius: 25px;
+}
+.tournament-class-btn.active {
+    background-color: #00aaff;
+    color: white;
+}
+.tournament-class-btn:not(.active):hover {
+    background-color: #3a4050;
 }
 
 .tournament-subclass-selector {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
     margin: 15px 0;
     flex-wrap: wrap;
 }
-
 .tournament-subclass-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 30px;
-    padding: 8px 16px;
+    padding: 8px 20px;
     color: #aaa;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.2s;
 }
-
 .tournament-subclass-btn.active {
     background-color: #00aaff;
     border-color: #00aaff;
     color: white;
 }
-
 .tournament-subclass-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
@@ -5069,37 +5094,33 @@ body {
     width: 100%;
     transition: opacity 0.2s;
 }
-
 .tournament-action-btn.secondary {
     background-color: #2f3542;
     color: #aaa;
     border: 1px solid #aaa;
 }
-
 .tournament-action-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
-
 .tournament-info {
     font-size: 12px;
     color: #aaa;
     margin-top: 10px;
+    text-align: center;
 }
 
-/* Сетка турнира (bracket) */
+/* Сетка турнира */
 .tournament-bracket {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
-
 .tournament-round {
     background-color: #2a303c;
     border-radius: 12px;
     overflow: hidden;
 }
-
 .tournament-round-title {
     background-color: #1a1f2b;
     padding: 8px 12px;
@@ -5108,7 +5129,6 @@ body {
     text-align: center;
     font-size: 14px;
 }
-
 .tournament-match {
     display: flex;
     align-items: center;
@@ -5117,11 +5137,9 @@ body {
     border-bottom: 1px solid #1a1f2b;
     position: relative;
 }
-
 .tournament-match:last-child {
     border-bottom: none;
 }
-
 .tournament-player {
     flex: 1;
     font-size: 14px;
@@ -5131,18 +5149,15 @@ body {
     text-overflow: ellipsis;
     text-align: center;
 }
-
 .tournament-player.winner {
     font-weight: bold;
     color: #2ecc71;
 }
-
 .tournament-vs {
     margin: 0 8px;
     color: #aaa;
     font-size: 12px;
 }
-
 .tournament-replay-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
@@ -5157,12 +5172,10 @@ body {
     color: #aaa;
     transition: all 0.2s;
 }
-
 .tournament-replay-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
 }
-
 .tournament-close-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
@@ -5182,7 +5195,6 @@ body {
     font-size: 14px;
     background-color: #232833;
 }
-
 .tournament-leaders-table th {
     background-color: #1a1f2b;
     color: white;
@@ -5190,17 +5202,14 @@ body {
     text-align: center;
     font-weight: bold;
 }
-
 .tournament-leaders-table td {
     padding: 10px 8px;
     text-align: center;
     border-bottom: 1px solid #2a303c;
 }
-
 .tournament-leaders-table tbody tr:nth-child(odd) {
     background-color: #232833;
 }
-
 .tournament-leaders-table tbody tr:nth-child(even) {
     background-color: #2a303c;
 }
@@ -5225,12 +5234,12 @@ body {
         order: 3;
         margin-left: 0;
     }
-    .tournament-class-option {
-        padding: 8px;
+    .tournament-class-btn {
         font-size: 14px;
+        padding: 8px 0;
     }
     .tournament-subclass-btn {
-        padding: 6px 12px;
+        padding: 6px 14px;
         font-size: 12px;
     }
 }

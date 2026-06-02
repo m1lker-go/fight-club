@@ -70,7 +70,45 @@ async function renderTournamentTab() {
             return;
         }
         if (canRegister && !tournamentActive) {
+           
             // Форма регистрации (как на главном экране)
+const userClassesList = userClasses || [];
+
+let classesHtml = `
+    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Класс</div>
+        <div class="class-selector" style="flex: 1; margin-left: 10px;">
+            <button class="class-btn ${selectedTournamentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+            <button class="class-btn ${selectedTournamentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+            <button class="class-btn ${selectedTournamentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+        </div>
+    </div>
+`;
+
+let subclassesHtml = '';
+if (selectedTournamentClass) {
+    const subclasses = getSubclassesForClass(selectedTournamentClass);
+    subclassesHtml = `
+        <div style="display: flex; align-items: center;">
+            <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Роль</div>
+            <select id="tournamentSubclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
+                ${subclasses.map(sc => `<option value="${sc}" ${selectedTournamentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
+            </select>
+        </div>
+    `;
+}
+
+container.innerHTML = `
+    <div class="tournament-registration">
+        ${classesHtml}
+        <div id="tournamentSubclassArea">${subclassesHtml}</div>
+        <button id="tournamentRegisterBtn" class="tournament-action-btn" ${isRegistered ? 'disabled' : ''}>
+            ${isRegistered ? 'Вы уже зарегистрированы' : 'Записаться'}
+        </button>
+        ${isRegistered ? `<button id="tournamentUnregisterBtn" class="tournament-action-btn secondary">Отменить запись</button>` : ''}
+        <div class="tournament-info">Регистрация до 19:50. Снаряжение фиксируется при регистрации.</div>
+    </div>
+`;
             const userClassesList = userClasses || [];
 
             let classesHtml = `

@@ -940,3 +940,132 @@ const unlockHandler = () => {
 };
 document.addEventListener('click', unlockHandler);
 document.addEventListener('touchstart', unlockHandler);
+
+
+
+//debug кнопка
+
+// ========== ДЕБАГ-КНОПКА ДЛЯ ID 1 И 2 (плавающая шестерёнка) ==========
+(function() {
+    let debugButtonAdded = false;
+
+    function addDebugButton() {
+        if (debugButtonAdded) return;
+        if (!userData || (userData.id !== 1 && userData.id !== 2)) return;
+        debugButtonAdded = true;
+
+        // Контейнер для логов
+        const logs = [];
+        const maxLogs = 200;
+
+        // Перехватываем console
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addLog(type, args) {
+            const message = args.map(arg => {
+                if (typeof arg === 'object') return JSON.stringify(arg);
+                return String(arg);
+            }).join(' ');
+            logs.unshift(`[${new Date().toLocaleTimeString()}] [${type}] ${message}`);
+            if (logs.length > maxLogs) logs.pop();
+        }
+
+        console.log = function(...args) { addLog('LOG', args); originalLog.apply(console, args); };
+        console.error = function(...args) { addLog('ERROR', args); originalError.apply(console, args); };
+        console.warn = function(...args) { addLog('WARN', args); originalWarn.apply(console, args); };
+
+        window.addEventListener('error', function(e) {
+            addLog('ERROR', [e.message, 'at', e.filename, 'line', e.lineno]);
+        });
+
+        // Кнопка
+        const btn = document.createElement('div');
+        btn.innerHTML = '<i class="fas fa-cog"></i>';
+        btn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background: #00aaff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        `;
+        btn.onmouseenter = () => btn.style.opacity = '1';
+        btn.onmouseleave = () => btn.style.opacity = '0.7';
+
+        // Модальное окно
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 10%;
+            left: 5%;
+            width: 90%;
+            height: 80%;
+            background: #1a1f2b;
+            border: 2px solid #00aaff;
+            border-radius: 12px;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        `;
+        modal.innerHTML = `
+            <div style="padding: 10px; background: #2a303c; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: white; font-weight: bold;">📋 Логи отладки</span>
+                <button id="closeDebugBtn" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>
+            </div>
+            <textarea id="debugLogs" readonly style="flex: 1; background: #232833; color: #ddd; border: none; padding: 10px; font-family: monospace; font-size: 12px; resize: none;"></textarea>
+            <div style="padding: 10px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="copyLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">Копировать</button>
+                <button id="clearLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">Очистить</button>
+            </div>
+        `;
+        document.body.appendChild(btn);
+        document.body.appendChild(modal);
+
+        function updateModal() {
+            const textarea = document.getElementById('debugLogs');
+            if (textarea) textarea.value = logs.join('\n');
+        }
+
+        btn.addEventListener('click', () => {
+            updateModal();
+            modal.style.display = 'flex';
+        });
+        document.getElementById('closeDebugBtn').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+        document.getElementById('copyLogsBtn').addEventListener('click', () => {
+            const textarea = document.getElementById('debugLogs');
+            textarea.select();
+            document.execCommand('copy');
+            if (typeof showToast === 'function') showToast('Логи скопированы', 1500);
+        });
+        document.getElementById('clearLogsBtn').addEventListener('click', () => {
+            logs.length = 0;
+            updateModal();
+            if (typeof showToast === 'function') showToast('Логи очищены', 1500);
+        });
+    }
+
+    // Ждём появления userData
+    let checkInterval = setInterval(() => {
+        if (typeof userData !== 'undefined' && userData && userData.id) {
+            clearInterval(checkInterval);
+            addDebugButton();
+        }
+    }, 500);
+})();

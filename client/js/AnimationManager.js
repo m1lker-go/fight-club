@@ -147,17 +147,20 @@ function playAnimation(target, animType, options = {}) {
         }
 
         // Позиционирование
-        if (isSkin && skinSpecific) {
-            if (animType === 'dodge') {
-                // Скиновый уворот – центрируем
-                animImg.style.top = avatarTopOffset + 'px';
-                animImg.style.left = '50%';
-                animImg.style.transform = 'translateX(-50%)';
-                animImg.style.width = '100%';
-                animImg.style.height = 'auto';
-                animImg.style.maxHeight = avatarHeight + 'px';
-                animImg.style.objectFit = 'contain';
-            } else {
+       if (isSkin && skinSpecific) {
+    if (animType === 'dodge') {
+        animImg.style.top = avatarTopOffset + 'px';
+        animImg.style.left = '50%';
+        let transform = 'translateX(-50%)';
+        if (target === 'hero') {
+            transform += ' scaleX(-1)';
+        }
+        animImg.style.transform = transform;
+        animImg.style.width = '100%';
+        animImg.style.height = 'auto';
+        animImg.style.maxHeight = avatarHeight + 'px';
+        animImg.style.objectFit = 'contain';
+    } else {
                 // Скиновая атака – растягиваем по высоте
                 const proportionalWidth = (600 / 480) * avatarHeight;
                 animImg.style.height = avatarHeight + 'px';

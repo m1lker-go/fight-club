@@ -17,15 +17,9 @@ async function renderTournament() {
                 <button class="tournament-tab active" data-tab="tournament">Турнир</button>
                 <button class="tournament-tab" data-tab="leaders">Лидеры</button>
             </div>
-            <div class="tournament-header">
-                <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
-                <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
-            </div>
             <div id="tournamentContent" class="tournament-content"></div>
         </div>
     `;
-
-    document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
 
     document.querySelectorAll('.tournament-tab').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -68,11 +62,11 @@ async function renderTournamentTab() {
             return;
         }
         if (canRegister && !tournamentActive) {
-            // Класс-селектор (три кнопки)
+            // Форма регистрации
             const classesHtml = `
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Класс</div>
-                    <div class="class-selector" style="flex: 1; margin-left: 10px;">
+                <div class="tournament-class-row">
+                    <div class="tournament-class-label">Класс</div>
+                    <div class="class-selector">
                         <button class="class-btn ${selectedTournamentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
                         <button class="class-btn ${selectedTournamentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
                         <button class="class-btn ${selectedTournamentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
@@ -80,19 +74,24 @@ async function renderTournamentTab() {
                 </div>
             `;
 
-            // Всегда показываем селектор подкласса (с первым значением, если класс не выбран)
-            let defaultSubclasses = getSubclassesForClass(selectedTournamentClass || 'warrior');
-            let currentSubclass = selectedTournamentSubclass || defaultSubclasses[0];
-            const subclassesHtml = `
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <div style="width: 70px; text-align: left; font-weight: bold; color: white;">Роль</div>
-                    <select id="tournamentSubclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;">
-                        ${defaultSubclasses.map(sc => `<option value="${sc}" ${currentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
-                    </select>
-                </div>
-            `;
+            let subclassesHtml = '';
+            if (selectedTournamentClass) {
+                const subclasses = getSubclassesForClass(selectedTournamentClass);
+                subclassesHtml = `
+                    <div class="tournament-role-row">
+                        <div class="tournament-role-label">Роль</div>
+                        <select id="tournamentSubclassSelect">
+                            ${subclasses.map(sc => `<option value="${sc}" ${selectedTournamentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
 
             container.innerHTML = `
+                <div class="tournament-header" style="margin-bottom: 12px;">
+                    <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
+                    <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
+                </div>
                 <div class="tournament-registration">
                     ${classesHtml}
                     <div id="tournamentSubclassArea">${subclassesHtml}</div>
@@ -170,6 +169,107 @@ async function renderTournamentTab() {
             return;
         }
 
+async function renderTournament() {
+    const content = document.getElementById('content');
+    if (!content) return;
+
+    content.innerHTML = `
+        <div class="tournament-container">
+            <div class="tournament-tabs">
+                <button class="tournament-tab active" data-tab="tournament">Турнир</button>
+                <button class="tournament-tab" data-tab="leaders">Лидеры</button>
+            </div>
+            <div id="tournamentContent" class="tournament-content"></div>
+        </div>
+    `;
+
+    document.querySelectorAll('.tournament-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tournament-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.dataset.tab;
+            if (tab === 'tournament') renderTournamentTab();
+            else renderLeadersTab();
+        });
+    });
+
+    await renderTournamentTab();
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => {
+        if (document.querySelector('.tournament-tab.active')?.dataset.tab === 'leaders') {
+            renderLeadersTab();
+        }
+    }, 60000);
+}
+
+async function renderTournamentTab() {
+    const container = document.getElementById('tournamentContent');
+    if (!container) return;
+
+    try {
+        const statusRes = await window.apiRequest('/tournament/status');
+        const status = await statusRes.json();
+
+        const canRegister = status.canRegister;
+        const isRegistered = status.isRegistered;
+        const tournamentActive = status.tournamentActive;
+        const tournamentCompleted = status.tournamentCompleted;
+
+        if (tournamentCompleted && !tournamentActive) {
+            await renderBracket();
+            return;
+        }
+        if (tournamentActive && !tournamentCompleted) {
+            await renderBracket();
+            return;
+        }
+        if (canRegister && !tournamentActive) {
+            // Форма регистрации
+            const classesHtml = `
+                <div class="tournament-class-row">
+                    <div class="tournament-class-label">Класс</div>
+                    <div class="class-selector">
+                        <button class="class-btn ${selectedTournamentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                        <button class="class-btn ${selectedTournamentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                        <button class="class-btn ${selectedTournamentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                    </div>
+                </div>
+            `;
+
+            let subclassesHtml = '';
+            if (selectedTournamentClass) {
+                const subclasses = getSubclassesForClass(selectedTournamentClass);
+                subclassesHtml = `
+                    <div class="tournament-role-row">
+                        <div class="tournament-role-label">Роль</div>
+                        <select id="tournamentSubclassSelect">
+                            ${subclasses.map(sc => `<option value="${sc}" ${selectedTournamentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="tournament-header" style="margin-bottom: 12px;">
+                    <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
+                    <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
+                </div>
+                <div class="tournament-registration">
+                    ${classesHtml}
+                    <div id="tournamentSubclassArea">${subclassesHtml}</div>
+                    <button id="tournamentRegisterBtn" class="tournament-action-btn" ${isRegistered ? 'disabled' : ''}>
+                        ${isRegistered ? 'Вы уже зарегистрированы' : 'Записаться'}
+                    </button>
+                    ${isRegistered ? `<button id="tournamentUnregisterBtn" class="tournament-action-btn secondary">Отменить запись</button>` : ''}
+                    <div class="tournament-info">Регистрация до 19:50. Снаряжение фиксируется при регистрации.</div>
+                </div>
+            `;
+
+            // Обработчики (код не меняется)
+            // ... (оставьте как есть)
+            return;
+        }
+
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не начался. Загляните позже.</p>';
     } catch (err) {
         console.error(err);
@@ -177,91 +277,66 @@ async function renderTournamentTab() {
     }
 }
 
-async function renderBracket() {
-    const container = document.getElementById('tournamentContent');
-    if (!container) return;
-    try {
-        const bracketRes = await window.apiRequest('/tournament/bracket');
-        const bracket = await bracketRes.json();
-        if (!bracket.matches || bracket.matches.length === 0) {
-            container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не завершён, результаты скоро появятся.</p>';
-            return;
-        }
-
-        const rounds = {};
-        bracket.matches.forEach(m => {
-            if (!rounds[m.round]) rounds[m.round] = [];
-            rounds[m.round].push(m);
-        });
-
-        let html = '<div class="tournament-bracket">';
-        for (let roundNum = 1; roundNum <= 6; roundNum++) {
-            const roundMatches = rounds[roundNum] || [];
-            if (roundMatches.length === 0 && roundNum === 6) break;
-            html += `<div class="tournament-round"><div class="tournament-round-title">${getRoundName(roundNum)}</div>`;
-            roundMatches.forEach(match => {
-                const isUserMatch = (match.player1_id === userData.id || match.player2_id === userData.id);
-                const hasReplay = !!match.match_log;
-                html += `
-                    <div class="tournament-match">
-                        <div class="tournament-player ${match.winner_id === match.player1_id ? 'winner' : ''}">${escapeHtml(match.player1_name || '—')}</div>
-                        <div class="tournament-vs">VS</div>
-                        <div class="tournament-player ${match.winner_id === match.player2_id ? 'winner' : ''}">${escapeHtml(match.player2_name || '—')}</div>
-                        ${isUserMatch && hasReplay ? `<button class="tournament-replay-btn" data-match-id="${match.id}"><i class="fas fa-play"></i></button>` : ''}
-                    </div>
-                `;
-            });
-            html += `</div>`;
-        }
-        html += '</div><button id="closeBracketBtn" class="tournament-close-btn">Закрыть</button>';
-        container.innerHTML = html;
-
-        document.querySelectorAll('.tournament-replay-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const matchId = btn.dataset.matchId;
-                const matchRes = await window.apiRequest(`/tournament/match/${matchId}`);
-                const matchData = await matchRes.json();
-                if (matchData.log) {
-                    showReplayModal(matchData.log);
-                } else {
-                    showToast('Лог боя не найден', 1500);
-                }
-            });
-        });
-        document.getElementById('closeBracketBtn')?.addEventListener('click', () => renderTournamentTab());
-    } catch (err) {
-        console.error(err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки сетки турнира</p>';
-    }
-}
-
 async function renderLeadersTab() {
     const container = document.getElementById('tournamentContent');
     if (!container) return;
+
+    // Заголовок таблицы лидеров (без иконки вопроса)
+    container.innerHTML = `
+        <div class="leaders-header" style="background-color: #1a1f2b; padding: 12px; text-align: center; font-weight: bold; color: white; font-size: 16px; border-radius: 8px; margin-bottom: 12px;">
+            Таблица лидеров
+        </div>
+        <div id="leadersTableContainer"></div>
+    `;
+    const tableContainer = document.getElementById('leadersTableContainer');
+
     try {
         const leadersRes = await window.apiRequest('/tournament/leaders');
         const leaders = await leadersRes.json();
 
-        // Всегда показываем таблицу с заголовком
-        let html = '<div style="padding: 0 10px;"><h3 style="text-align:center; color:#00aaff; margin:10px 0;">Таблица лидеров</h3>';
-        html += '<table class="tournament-leaders-table"><thead><tr><th>Место</th><th>Игрок</th><th>Класс</th><th>Турнирные очки</th></tr></thead><tbody>';
-        if (leaders.length === 0) {
-            html += '<tr class="empty-leaders-row"><td colspan="4">Пока нет данных</td></tr>';
-        } else {
-            leaders.forEach((item, idx) => {
-                html += `<tr>
-                    <td style="text-align:center;">${idx+1}</td>
-                    <td>${escapeHtml(item.username)}</td>
-                    <td>${getClassNameRu(item.current_class)}</td>
-                    <td style="text-align:center;">${item.tournament_points}</td>
-                </tr>`;
-            });
+        if (!leaders.length) {
+            tableContainer.innerHTML = `
+                <table class="tournament-leaders-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 12px 8px; background-color: #1a1f2b; color: white;">Место</th>
+                            <th style="padding: 12px 8px; background-color: #1a1f2b; color: white;">Игрок</th>
+                            <th style="padding: 12px 8px; background-color: #1a1f2b; color: white;">Очки</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="3" style="text-align:center; padding: 20px; color: #aaa;">Нет данных</td></tr>
+                    </tbody>
+                </table>
+            `;
+            return;
         }
-        html += '</tbody></table></div>';
-        container.innerHTML = html;
+
+        let html = `
+            <table class="tournament-leaders-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px 8px; background-color: #1a1f2b; color: white;">Место</th>
+                        <th style="padding: 12px 8px; background-color: #1a1f2b; color: white;">Игрок</th>
+                        <th style="padding: 12px 8px; background-color: #1a1f2b; color: white;">Очки</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        leaders.forEach((item, idx) => {
+            html += `
+                <tr>
+                    <td style="padding: 10px 8px; text-align: center;">${idx+1}</td>
+                    <td style="padding: 10px 8px;">${escapeHtml(item.username)}</td>
+                    <td style="padding: 10px 8px; text-align: center;">${item.tournament_points}</td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table>`;
+        tableContainer.innerHTML = html;
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки лидеров</p>';
+        tableContainer.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки лидеров</p>';
     }
 }
 

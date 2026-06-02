@@ -4940,6 +4940,10 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 /* Заголовок – после вкладок, по центру */
@@ -5018,13 +5022,27 @@ body {
     margin: 8px 0;
     text-align: center;
 }
-/* Класс-селектор (три кнопки) */
+
+/* Строка выбора класса (как на главном экране) */
+.tournament-class-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.tournament-class-label {
+    width: 70px;
+    text-align: left;
+    font-weight: bold;
+    color: white;
+}
 .class-selector {
     display: flex;
     background-color: #2f3542;
     border-radius: 30px;
     padding: 4px;
     gap: 4px;
+    flex: 1;
+    margin-left: 10px;
 }
 .class-btn {
     flex: 1;
@@ -5035,7 +5053,6 @@ body {
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
     text-align: center;
     border-radius: 25px;
 }
@@ -5043,6 +5060,30 @@ body {
     background-color: #00aaff;
     color: white;
 }
+
+/* Строка выбора роли */
+.tournament-role-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.tournament-role-label {
+    width: 70px;
+    text-align: left;
+    font-weight: bold;
+    color: white;
+}
+#tournamentSubclassSelect {
+    flex: 1;
+    margin-left: 10px;
+    background-color: #2f3542;
+    color: white;
+    border: 1px solid #00aaff;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
 /* Кнопка действия */
 .tournament-action-btn {
     background-color: #00aaff;
@@ -5073,7 +5114,7 @@ body {
     text-align: center;
 }
 
-/* Сетка турнира (результаты) – стили остаются без изменений */
+/* Сетка турнира (результаты) */
 .tournament-bracket {
     display: flex;
     flex-direction: column;
@@ -5150,6 +5191,16 @@ body {
 }
 
 /* Таблица лидеров */
+.leaders-header {
+    background-color: #1a1f2b;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    font-size: 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+}
 .tournament-leaders-table {
     width: 100%;
     border-collapse: collapse;
@@ -5174,7 +5225,7 @@ body {
     background-color: #2a303c;
 }
 
-/* Адаптация */
+/* Адаптация для мобильных */
 @media (max-width: 480px) {
     .tournament-match {
         flex-wrap: wrap;
@@ -5193,5 +5244,14 @@ body {
     .tournament-replay-btn {
         order: 3;
         margin-left: 0;
+    }
+    .tournament-class-label,
+    .tournament-role-label {
+        width: 60px;
+        font-size: 14px;
+    }
+    .class-btn {
+        font-size: 14px;
+        padding: 8px 0;
     }
 }

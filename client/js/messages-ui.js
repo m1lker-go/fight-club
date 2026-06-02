@@ -1,9 +1,8 @@
-// messages-ui.js – UI сообщений (почта)
+// messages-ui.js – UI сообщений (почта) с поддержкой нескольких наград
 
 let messagesList = [];
 let unreadMessagesCount = 0;
 
-// Экранирование HTML (должно быть определено глобально, но продублируем для независимости)
 if (typeof escapeHtml !== 'function') {
     window.escapeHtml = function(str) {
         if (!str) return '';
@@ -19,7 +18,6 @@ if (typeof escapeHtml !== 'function') {
 async function loadMessagesSilent() {
     console.log('loadMessagesSilent: начало загрузки');
     try {
-        // Исправлено: /auth/messages → /user/messages
         const res = await window.apiRequest('/user/messages', { method: 'GET' });
         const data = await res.json();
         messagesList = data.messages || [];
@@ -33,7 +31,9 @@ async function loadMessagesSilent() {
 function recalcUnprocessedCount() {
     if (!messagesList) return;
     const unread = messagesList.filter(m => !m.is_read).length;
-    const unclaimedRewards = messagesList.filter(m => !m.is_claimed && m.reward_type && m.reward_amount).length;
+    const unclaimedRewards = messagesList.filter(m => !m.is_claimed && (
+        m.reward_coins > 0 || m.reward_diamonds > 0 || m.reward_exp > 0 || m.reward_chest
+    )).length;
     unreadMessagesCount = unread + unclaimedRewards;
     console.log('recalcUnprocessedCount: unread=', unread, 'unclaimed=', unclaimedRewards, 'total=', unreadMessagesCount);
     if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
@@ -41,7 +41,6 @@ function recalcUnprocessedCount() {
 
 async function loadMessages() {
     try {
-        // Исправлено: /auth/messages → /user/messages
         const res = await window.apiRequest('/user/messages', { method: 'GET' });
         const data = await res.json();
         messagesList = data.messages || [];
@@ -51,6 +50,23 @@ async function loadMessages() {
         console.error('Ошибка загрузки сообщений:', e);
         return [];
     }
+}
+
+function hasReward(msg) {
+    return (msg.reward_coins > 0) || (msg.reward_diamonds > 0) || (msg.reward_exp > 0) || msg.reward_chest;
+}
+
+function formatRewardText(msg) {
+    const parts = [];
+    if (msg.reward_coins > 0) parts.push(`${msg.reward_coins} монет`);
+    if (msg.reward_diamonds > 0) parts.push(`${msg.reward_diamonds} алмазов`);
+    if (msg.reward_exp > 0) parts.push(`${msg.reward_exp} опыта (${msg.reward_exp_class})`);
+    if (msg.reward_chest) {
+        const chestName = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' }[msg.reward_chest] || msg.reward_chest;
+        const amount = msg.reward_chest_amount || 1;
+        parts.push(`${chestName} сундук${amount > 1 ? 'ы' : ''}`);
+    }
+    return parts.join(', ');
 }
 
 async function renderMessages() {
@@ -84,7 +100,7 @@ async function renderMessages() {
         
         const info = document.createElement('div');
         info.className = 'message-info';
-        const rewardIcon = (!msg.is_claimed && msg.reward_type && msg.reward_amount) ? 
+        const rewardIcon = (!msg.is_claimed && hasReward(msg)) ? 
             `<span class="reward-icon" style="margin-left: 8px;"><i class="fas fa-gift" style="color:#f1c40f;"></i></span>` : '';
         info.innerHTML = `
             <div class="message-sender">${escapeHtml(msg.from)}</div>
@@ -113,7 +129,6 @@ async function renderMessageDetail(messageId) {
     
     if (!msg.is_read) {
         msg.is_read = true;
-        // Исправлено: /auth/messages/read → /user/messages/read
         await window.apiRequest('/user/messages/read', {
             method: 'POST',
             body: JSON.stringify({ message_id: messageId })
@@ -122,15 +137,10 @@ async function renderMessageDetail(messageId) {
     }
     
     let rewardDisplay = '';
-    if (!msg.is_claimed && msg.reward_type && msg.reward_amount) {
-        let rewardText = '';
-        if (msg.reward_type === 'coins') rewardText = `${msg.reward_amount} монет`;
-        else if (msg.reward_type === 'diamonds') rewardText = `${msg.reward_amount} алмазов`;
-        else if (msg.reward_type === 'exp') rewardText = `${msg.reward_amount} опыта`;
-        else rewardText = `${msg.reward_amount} ${msg.reward_type}`;
+    if (!msg.is_claimed && hasReward(msg)) {
         rewardDisplay = `
             <div class="message-reward-info">
-                <i class="fas fa-gift"></i> Награда: ${rewardText}
+                <i class="fas fa-gift"></i> Награда: ${formatRewardText(msg)}
             </div>
         `;
     }
@@ -152,13 +162,7 @@ async function renderMessageDetail(messageId) {
             ${rewardDisplay}
             <div class="message-detail-actions">
                 <button class="reply-btn" id="replyBtn">Ответить</button>
-                ${!msg.is_claimed && msg.reward_type === 'skill_points_choice' ? `
-                    <div class="class-choice-buttons">
-                        <button class="class-choice-btn" data-class="warrior">Воин</button>
-                        <button class="class-choice-btn" data-class="assassin">Ассасин</button>
-                        <button class="class-choice-btn" data-class="mage">Маг</button>
-                    </div>
-                ` : (!msg.is_claimed && msg.reward_type && msg.reward_amount ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : '')}
+                ${!msg.is_claimed && hasReward(msg) ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : ''}
             </div>
         </div>
     `;
@@ -166,7 +170,6 @@ async function renderMessageDetail(messageId) {
     document.getElementById('backToMessagesBtn').addEventListener('click', () => renderMessages());
     document.getElementById('deleteMessageBtn').addEventListener('click', async () => {
         if (confirm('Удалить сообщение?')) {
-            // Исправлено: /auth/messages/delete → /user/messages/delete
             await window.apiRequest('/user/messages/delete', {
                 method: 'POST',
                 body: JSON.stringify({ message_id: messageId })
@@ -183,43 +186,9 @@ async function renderMessageDetail(messageId) {
         });
     }
     
-    const classChoiceBtns = document.querySelectorAll('.class-choice-btn');
-    if (classChoiceBtns.length) {
-        classChoiceBtns.forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const chosenClass = btn.dataset.class;
-                try {
-                    // Исправлено: /auth/claim-class-reward → /user/claim-class-reward
-                    const res = await window.apiRequest('/user/claim-class-reward', {
-                        method: 'POST',
-                        body: JSON.stringify({ message_id: messageId, chosen_class: chosenClass })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        if (typeof AudioManager !== 'undefined') {
-                            AudioManager.playSound('reward');
-                        }
-                        const classNameRu = chosenClass === 'warrior' ? 'Воин' : (chosenClass === 'assassin' ? 'Ассасин' : 'Маг');
-                        showToast(`Вы выбрали класс ${classNameRu} и получили 5 очков навыков!`, 2000);
-                        msg.is_claimed = true;
-                        await refreshData();
-                        recalcUnprocessedCount();
-                        renderMessageDetail(messageId);
-                    } else {
-                        showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), 1500);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showToast('Ошибка соединения', 1500);
-                }
-            });
-        });
-    }
-    
     const claimBtn = document.getElementById('claimRewardBtn');
     if (claimBtn) {
         claimBtn.addEventListener('click', async () => {
-            // Исправлено: /auth/messages/claim → /user/messages/claim
             const res = await window.apiRequest('/user/messages/claim', {
                 method: 'POST',
                 body: JSON.stringify({ message_id: messageId })
@@ -229,11 +198,7 @@ async function renderMessageDetail(messageId) {
                 if (typeof AudioManager !== 'undefined') {
                     AudioManager.playSound('reward');
                 }
-                let icon = '';
-                if (msg.reward_type === 'coins') icon = '<i class="fas fa-coins"></i> ';
-                else if (msg.reward_type === 'diamonds') icon = '<i class="fas fa-gem"></i> ';
-                else icon = '<i class="fas fa-gift"></i> ';
-                showToast(`${icon}Вы получили: ${data.reward_text}`, 2000);
+                showToast(`Вы получили: ${data.reward_text}`, 2000);
                 msg.is_claimed = true;
                 await refreshData();
                 recalcUnprocessedCount();
@@ -245,7 +210,6 @@ async function renderMessageDetail(messageId) {
     }
 }
 
-// Экспорт в глобальную область
 window.loadMessagesSilent = loadMessagesSilent;
 window.renderMessages = renderMessages;
 window.renderMessageDetail = renderMessageDetail;

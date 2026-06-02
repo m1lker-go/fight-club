@@ -3,7 +3,7 @@ const cron = require('node-cron');
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
 const { sendTelegramNotification } = require('./utils/telegram');
-const { resetDailyTasks, resetSeason } = require('./utils/scheduler');
+const { resetDailyTasks, resetSeason, runTournament } = require('./utils/scheduler');
 const authMiddleware = require('./middleware/auth');
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 
@@ -40,6 +40,7 @@ app.use('/rank', authMiddleware, require('./routes/rank'));
 app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
 app.use('/subscription', authMiddleware, require('./routes/subscription'));
 app.use('/user', authMiddleware, require('./routes/user'));
+app.use('/tournament', authMiddleware, require('./routes/tournament-server'));
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {
@@ -316,6 +317,7 @@ async function startServer() {
         // ========== ПЛАНИРОВЩИК CRON ==========
         cron.schedule('0 0 * * *', resetDailyTasks, { timezone: 'Europe/Moscow' });
         cron.schedule('0 0 1 * *', resetSeason, { timezone: 'Europe/Moscow' });
+        cron.schedule('0 20 * * *', runTournament, { timezone: 'Europe/Moscow' });
 
         cron.schedule('0 10 * * *', async () => {
             console.log('[CRON] Checking expired subscriptions...');
@@ -350,7 +352,7 @@ async function startServer() {
             }
         }, { timezone: 'Europe/Moscow' });
         
-        console.log('✅ Планировщик cron запущен (ежедневный сброс в 00:00, ежемесячный 1-го числа, проверка подписок в 10:00)');
+        console.log('✅ Планировщик cron запущен (ежедневный сброс в 00:00, ежемесячный 1-го числа, проверка подписок в 10:00, турнир в 20:00)');
     } catch (err) {
         console.error('❌ Ошибка при запуске сервера:', err);
         process.exit(1);

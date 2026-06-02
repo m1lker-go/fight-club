@@ -4,6 +4,8 @@ let tournamentData = null;
 let currentBracket = null;
 let currentLeaders = null;
 let refreshInterval = null;
+let selectedTournamentClass = null;
+let selectedTournamentSubclass = null;
 
 async function renderTournament() {
     const content = document.getElementById('content');
@@ -13,7 +15,7 @@ async function renderTournament() {
         <div class="tournament-container">
             <div class="tournament-header">
                 <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
-                <i class="fas fa-question-circle" id="tournamentInfoBtn"></i>
+                <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
             </div>
             <div class="tournament-tabs">
                 <button class="tournament-tab active" data-tab="tournament">Турнир</button>
@@ -23,7 +25,7 @@ async function renderTournament() {
         </div>
     `;
 
-    document.getElementById('tournamentInfoBtn').addEventListener('click', showTournamentInfoModal);
+    document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
 
     document.querySelectorAll('.tournament-tab').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -42,38 +44,6 @@ async function renderTournament() {
             renderLeadersTab();
         }
     }, 60000);
-}
-
-function showTournamentInfoModal() {
-    const modal = document.getElementById('roleModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'О турнире';
-    modalBody.innerHTML = `
-        <div style="padding: 5px 10px;">
-            <p style="margin-bottom: 15px;"><i class="fas fa-trophy" style="color: #aaa; width: 24px;"></i> <strong>Ежедневный турнир "Золотой Коготь"</strong> — это место, где сражаются лучшие воины.</p>
-            <p style="margin-bottom: 15px;"><i class="fas fa-clock" style="color: #aaa; width: 24px;"></i> Регистрация: с 00:00 до 19:50 МСК. Начало: в 20:00 МСК.</p>
-            <p style="margin-bottom: 15px;"><i class="fas fa-users" style="color: #aaa; width: 24px;"></i> Участвуют 64 игрока (при нехватке — «тени» реальных игроков, они не получают наград).</p>
-            <p style="margin-bottom: 15px;"><i class="fas fa-chart-line" style="color: #aaa; width: 24px;"></i> Сетка случайная, бои симулируются автоматически. Вы можете просмотреть свои бои после завершения турнира.</p>
-            <p style="margin-bottom: 15px;"><i class="fas fa-gem" style="color: #aaa; width: 24px;"></i> Награды за места:</p>
-            <ul style="margin-left: 30px; margin-bottom: 15px; color: #ddd;">
-                <li>1 место: 500 монет, 15 алмазов, 250 опыта, Редкий сундук, 20 ТО</li>
-                <li>2 место: 400 монет, 10 алмазов, 200 опыта, Необычный сундук, 15 ТО</li>
-                <li>3 место: 300 монет, 5 алмазов, 150 опыта, Необычный сундук, 12 ТО</li>
-                <li>4 место: 250 монет, 120 опыта, 10 ТО</li>
-                <li>5-8 места: 200 монет, 100 опыта, 8 ТО</li>
-                <li>9-16 места: 150 монет, 75 опыта, 6 ТО</li>
-                <li>17-32 места: 100 монет, 50 опыта, 4 ТО</li>
-                <li>33-64 места: 50 монет, 15 опыта, 2 ТО</li>
-            </ul>
-            <p style="margin-bottom: 15px;"><i class="fas fa-calendar-alt" style="color: #aaa; width: 24px;"></i> Сезон длится один календарный месяц. В конце сезона 32 лучших игрока переходят в следующую лигу. Топ-3 игроков по итогам сезона получают VIP Silver подписку на 30 дней.</p>
-            <p><i class="fas fa-check-circle" style="color: #aaa; width: 24px;"></i> Турнирные очки (ТО) копятся за каждый турнир и влияют на переход в лигу.</p>
-        </div>
-    `;
-    modal.style.display = 'flex';
-    const closeBtn = modal.querySelector('.close');
-    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
 
 async function renderTournamentTab() {
@@ -95,38 +65,41 @@ async function renderTournamentTab() {
             await renderBracket();
             return;
         }
-
         if (tournamentActive && !tournamentCompleted) {
             await renderBracket();
             return;
         }
-
         if (canRegister && !tournamentActive) {
-            // Регистрация открыта
-            let classesHtml = '';
+            // Форма регистрации (как на главном экране)
             const userClassesList = userClasses || [];
-            for (let cls of userClassesList) {
-                const isSelected = (registeredClass === cls.class);
-                classesHtml += `
-                    <div class="tournament-class-option ${isSelected ? 'selected' : ''}" data-class="${cls.class}" data-subclasses='${JSON.stringify(getSubclassesForClass(cls.class))}'>
-                        <strong>${getClassNameRu(cls.class)}</strong> (уровень ${cls.level})
-                        ${isSelected ? '<span class="tournament-check">✓</span>' : ''}
+
+            let classesHtml = `
+                <div class="class-selector">
+                    <button class="class-btn ${selectedTournamentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
+                    <button class="class-btn ${selectedTournamentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
+                    <button class="class-btn ${selectedTournamentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                </div>
+            `;
+
+            let subclassesHtml = '';
+            if (selectedTournamentClass) {
+                const subclasses = getSubclassesForClass(selectedTournamentClass);
+                subclassesHtml = `
+                    <div class="tournament-subclass-selector">
+                        <div class="role-label">Роль</div>
+                        <select id="tournamentSubclassSelect">
+                            ${subclasses.map(sc => `<option value="${sc}" ${selectedTournamentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
+                        </select>
                     </div>
                 `;
             }
 
-            let subclassesHtml = '';
-            if (registeredClass) {
-                const subclasses = getSubclassesForClass(registeredClass);
-                subclassesHtml = `<div class="tournament-subclass-selector">
-                    ${subclasses.map(sc => `<button class="tournament-subclass-btn ${registeredSubclass === sc ? 'active' : ''}" data-subclass="${sc}">${getRoleNameRu(sc)}</button>`).join('')}
-                </div>`;
-            }
-
             container.innerHTML = `
                 <div class="tournament-registration">
+                    <h3>Ежедневный турнир</h3>
+                    <p>Начало в 20:00 МСК. Участвуют 64 игрока.</p>
                     <p>Выберите класс и роль, которые будут участвовать в турнире.</p>
-                    <div class="tournament-class-list">${classesHtml}</div>
+                    ${classesHtml}
                     <div id="tournamentSubclassArea">${subclassesHtml}</div>
                     <button id="tournamentRegisterBtn" class="tournament-action-btn" ${isRegistered ? 'disabled' : ''}>
                         ${isRegistered ? 'Вы уже зарегистрированы' : 'Записаться'}
@@ -137,40 +110,42 @@ async function renderTournamentTab() {
             `;
 
             // Обработчики выбора класса
-            document.querySelectorAll('.tournament-class-option').forEach(el => {
-                el.addEventListener('click', async () => {
-                    const className = el.dataset.class;
-                    const res = await window.apiRequest('/tournament/select-class', {
+            document.querySelectorAll('.class-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const className = btn.dataset.class;
+                    if (className === selectedTournamentClass) return;
+                    selectedTournamentClass = className;
+                    selectedTournamentSubclass = null;
+                    await window.apiRequest('/tournament/select-class', {
                         method: 'POST',
                         body: JSON.stringify({ class: className })
                     });
-                    if (res.ok) {
-                        renderTournamentTab();
-                    } else {
-                        showToast('Ошибка выбора класса', 1500);
-                    }
+                    renderTournamentTab();
                 });
             });
 
-            // Обработчики выбора подкласса
-            document.querySelectorAll('.tournament-subclass-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const subclass = btn.dataset.subclass;
-                    const res = await window.apiRequest('/tournament/select-subclass', {
+            // Обработчик выбора подкласса
+            const subclassSelect = document.getElementById('tournamentSubclassSelect');
+            if (subclassSelect) {
+                subclassSelect.addEventListener('change', async () => {
+                    const subclass = subclassSelect.value;
+                    selectedTournamentSubclass = subclass;
+                    await window.apiRequest('/tournament/select-subclass', {
                         method: 'POST',
                         body: JSON.stringify({ subclass })
                     });
-                    if (res.ok) {
-                        renderTournamentTab();
-                    } else {
-                        showToast('Ошибка выбора роли', 1500);
-                    }
+                    renderTournamentTab();
                 });
-            });
+            }
 
+            // Кнопка записи
             const regBtn = document.getElementById('tournamentRegisterBtn');
             if (regBtn && !isRegistered) {
                 regBtn.addEventListener('click', async () => {
+                    if (!selectedTournamentClass || !selectedTournamentSubclass) {
+                        showToast('Сначала выберите класс и роль', 1500);
+                        return;
+                    }
                     const res = await window.apiRequest('/tournament/register', { method: 'POST' });
                     const data = await res.json();
                     if (data.success) {
@@ -182,6 +157,7 @@ async function renderTournamentTab() {
                 });
             }
 
+            // Кнопка отмены
             const unregBtn = document.getElementById('tournamentUnregisterBtn');
             if (unregBtn) {
                 unregBtn.addEventListener('click', async () => {
@@ -197,10 +173,10 @@ async function renderTournamentTab() {
             return;
         }
 
-        container.innerHTML = '<p style="color:#aaa;">Турнир ещё не начался. Загляните позже.</p>';
+        container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не начался. Загляните позже.</p>';
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки данных турнира</p>';
+        container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки данных турнира</p>';
     }
 }
 
@@ -211,17 +187,16 @@ async function renderBracket() {
         const bracketRes = await window.apiRequest('/tournament/bracket');
         const bracket = await bracketRes.json();
         if (!bracket.matches || bracket.matches.length === 0) {
-            container.innerHTML = '<p style="color:#aaa;">Турнир ещё не завершён, результаты скоро появятся.</p>';
+            container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не завершён, результаты скоро появятся.</p>';
             return;
         }
-        
-        // Группируем матчи по раундам
+
         const rounds = {};
         bracket.matches.forEach(m => {
             if (!rounds[m.round]) rounds[m.round] = [];
             rounds[m.round].push(m);
         });
-        
+
         let html = '<div class="tournament-bracket">';
         for (let roundNum = 1; roundNum <= 6; roundNum++) {
             const roundMatches = rounds[roundNum] || [];
@@ -243,7 +218,7 @@ async function renderBracket() {
         }
         html += '</div><button id="closeBracketBtn" class="tournament-close-btn">Закрыть</button>';
         container.innerHTML = html;
-        
+
         document.querySelectorAll('.tournament-replay-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const matchId = btn.dataset.matchId;
@@ -270,23 +245,18 @@ async function renderLeadersTab() {
         const leadersRes = await window.apiRequest('/tournament/leaders');
         const leaders = await leadersRes.json();
         if (!leaders.length) {
-            container.innerHTML = '<p style="color:#aaa;">Таблица лидеров пока пуста</p>';
+            container.innerHTML = '<p style="color:#aaa; text-align:center;">Таблица лидеров пока пуста</p>';
             return;
         }
         let html = '<table class="tournament-leaders-table"><thead><tr><th>Место</th><th>Игрок</th><th>Класс</th><th>Турнирные очки</th></tr></thead><tbody>';
         leaders.forEach((item, idx) => {
-            html += `<tr>
-                <td>${idx+1}</td>
-                <td>${escapeHtml(item.username)}</td>
-                <td>${getClassNameRu(item.current_class)}</td>
-                <td>${item.tournament_points}</td>
-            </tr>`;
+            html += `<tr><td>${idx+1}</td><td>${escapeHtml(item.username)}</td><td>${getClassNameRu(item.current_class)}</td><td>${item.tournament_points}</td></tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки лидеров</p>';
+        container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки лидеров</p>';
     }
 }
 
@@ -297,8 +267,7 @@ function showReplayModal(log) {
     modalTitle.innerText = 'Просмотр боя';
     modalBody.innerHTML = `<div id="replayLog" class="battle-log" style="height: 300px; overflow-y: auto;"></div>`;
     modal.style.display = 'flex';
-    
-    // Используем BattleLog для воспроизведения (имитируем)
+
     const replayContainer = document.getElementById('replayLog');
     if (replayContainer && log.messages) {
         log.messages.forEach(msg => {
@@ -311,9 +280,31 @@ function showReplayModal(log) {
     } else {
         modalBody.innerHTML = '<p style="color:#aaa;">Лог боя не может быть отображён</p>';
     }
-    
+
     const closeBtn = modal.querySelector('.close');
     closeBtn.onclick = () => modal.style.display = 'none';
+}
+
+function showTournamentRulesModal() {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    modalTitle.innerHTML = '<i class="fas fa-trophy" style="margin-right: 8px;"></i> Турнир "Золотой Коготь"';
+    modalBody.innerHTML = `
+        <div style="padding: 5px 10px;">
+            <p><i class="fas fa-calendar-alt" style="color:#00aaff; width: 24px;"></i> <strong>Ежедневный турнир</strong> – начало в 20:00 МСК. Участвуют 64 игрока.</p>
+            <p><i class="fas fa-users" style="color:#00aaff; width: 24px;"></i> <strong>Регистрация</strong> – с 00:00 до 19:50. Выберите класс и роль, снаряжение фиксируется.</p>
+            <p><i class="fas fa-chart-line" style="color:#00aaff; width: 24px;"></i> <strong>Турнирные очки (ТО)</strong> – начисляются за каждое занятое место. Чем выше место, тем больше ТО.</p>
+            <p><i class="fas fa-gem" style="color:#00aaff; width: 24px;"></i> <strong>Награды за турнир</strong> – монеты, алмазы, опыт и сундуки согласно занятому месту.</p>
+            <p><i class="fas fa-crown" style="color:#00aaff; width: 24px;"></i> <strong>Ежемесячный бонус</strong> – игроки, занявшие 1-3 места в итоговом рейтинге сезона, получают VIP Silver подписку на 30 дней.</p>
+            <p><i class="fas fa-chart-simple" style="color:#00aaff; width: 24px;"></i> <strong>Лиги</strong> – по итогам сезона лучшие игроки переходят в следующую лигу (бронза → серебро → золото → платина → алмаз).</p>
+            <p style="margin-top: 16px; font-size: 13px; color:#aaa;">Просматривайте свои бои, анализируйте тактику и поднимайтесь в рейтинге!</p>
+        </div>
+    `;
+    modal.style.display = 'flex';
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
 
 function getSubclassesForClass(className) {

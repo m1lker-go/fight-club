@@ -16,14 +16,19 @@ window.AnimationManager = (function() {
     };
     
     const skinAnimations = {
-        13: {
-            attack: '/assets/skins/animations/attack_skin12.gif',
-            dodge: '/assets/skins/animations/dodge_skin12.gif'
-        },
+       
         12: {
             attack: '/assets/skins/animations/attack_skin11.gif',
             dodge: '/assets/skins/animations/dodge_skin11.gif'
-        }
+        },
+         13: {
+            attack: '/assets/skins/animations/attack_skin12.gif',
+            dodge: '/assets/skins/animations/dodge_skin12.gif'
+        },
+        14: {
+        attack: '/assets/skins/animations/attack_skin14.gif',
+        dodge: '/assets/skins/animations/dodge_skin14.gif'
+    }
     };
     
     function preloadImage(url) {

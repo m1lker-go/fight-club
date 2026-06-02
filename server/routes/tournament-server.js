@@ -14,20 +14,21 @@ const TOURNAMENT_START_HOUR = 20;
 // Вспомогательная функция: получить или создать текущий сезон
 async function getCurrentSeason(client) {
     const today = getMoscowDate();
+    // Начало текущего месяца (1-е число)
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Конец текущего месяца (последний день)
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Пытаемся найти сезон, который покрывает сегодняшнюю дату
     let season = await client.query(
         'SELECT * FROM tournament_seasons WHERE start_date <= $1 AND end_date >= $1',
         [today]
     );
     if (season.rows.length === 0) {
-        // Создаём новый сезон (на месяц)
-        const startDate = new Date(today);
-        const endDate = new Date(today);
-        endDate.setMonth(endDate.getMonth() + 1);
-        endDate.setDate(endDate.getDate() - 1);
-        const name = `Сезон ${startDate.toLocaleDateString('ru-RU')}`;
+        const name = `Сезон ${startOfMonth.toLocaleDateString('ru-RU')}`;
         const newSeason = await client.query(
             'INSERT INTO tournament_seasons (name, start_date, end_date, league) VALUES ($1, $2, $3, $4) RETURNING id',
-            [name, startDate, endDate, 'bronze']
+            [name, startOfMonth, endOfMonth, 'bronze']
         );
         return newSeason.rows[0].id;
     }

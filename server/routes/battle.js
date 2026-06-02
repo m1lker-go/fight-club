@@ -1354,3 +1354,4 @@ if (user.last_streak_date) {
 module.exports = router;
 module.exports.simulateBattle = simulateBattle;
 module.exports.calculateStats = calculateStats;
+module.exports = { simulateBattle, calculateStats };

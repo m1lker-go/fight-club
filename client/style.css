@@ -4942,7 +4942,7 @@ body {
     height: 100%;
 }
 
-/* Заголовок турнира */
+/* Заголовок (тёмная полоса, как в других разделах) */
 .tournament-header {
     background-color: #1a1f2b;
     padding: 12px 16px;
@@ -4967,13 +4967,12 @@ body {
     opacity: 0.8;
 }
 
-/* Вкладки – острые края, только внешние скругления */
+/* Вкладки – только верхние внешние скругления */
 .tournament-tabs {
     display: flex;
     background-color: #2a303c;
     gap: 0;
     padding: 0;
-    border-radius: 0;
     flex-shrink: 0;
 }
 .tournament-tab {
@@ -4989,10 +4988,10 @@ body {
     border-radius: 0;
 }
 .tournament-tab:first-child {
-    border-radius: 0 12px 0 0;
+    border-radius: 12px 0 0 0;
 }
 .tournament-tab:last-child {
-    border-radius: 12px 0 0 0;
+    border-radius: 0 12px 0 0;
 }
 .tournament-tab.active {
     background-color: #00aaff;
@@ -5010,7 +5009,7 @@ body {
     background-color: #232833;
 }
 
-/* Форма регистрации – класс и подкласс как на главном экране */
+/* Форма регистрации – стили как на главном экране */
 .tournament-registration {
     padding: 10px;
 }
@@ -5025,7 +5024,8 @@ body {
     margin: 8px 0;
     text-align: center;
 }
-.tournament-class-selector {
+/* Класс-селектор (три кнопки) */
+.class-selector {
     display: flex;
     background-color: #2f3542;
     border-radius: 30px;
@@ -5033,7 +5033,7 @@ body {
     margin: 15px 0;
     gap: 4px;
 }
-.tournament-class-btn {
+.class-btn {
     flex: 1;
     padding: 10px 0;
     border: none;
@@ -5046,41 +5046,32 @@ body {
     text-align: center;
     border-radius: 25px;
 }
-.tournament-class-btn.active {
+.class-btn.active {
     background-color: #00aaff;
     color: white;
 }
-.tournament-class-btn:not(.active):hover {
-    background-color: #3a4050;
-}
-
+/* Селектор подкласса (выпадающий список) */
 .tournament-subclass-selector {
     display: flex;
-    gap: 10px;
-    justify-content: center;
+    align-items: center;
     margin: 15px 0;
-    flex-wrap: wrap;
 }
-.tournament-subclass-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 30px;
-    padding: 8px 20px;
-    color: #aaa;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.tournament-subclass-btn.active {
-    background-color: #00aaff;
-    border-color: #00aaff;
+.tournament-subclass-selector .role-label {
+    width: 70px;
+    text-align: left;
+    font-weight: bold;
     color: white;
 }
-.tournament-subclass-btn:hover {
-    border-color: #00aaff;
-    color: #00aaff;
+.tournament-subclass-selector select {
+    flex: 1;
+    background-color: #2f3542;
+    color: white;
+    border: 1px solid #00aaff;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 14px;
 }
-
+/* Кнопка действия */
 .tournament-action-btn {
     background-color: #00aaff;
     border: none;
@@ -5110,7 +5101,7 @@ body {
     text-align: center;
 }
 
-/* Сетка турнира */
+/* Сетка турнира (результаты) */
 .tournament-bracket {
     display: flex;
     flex-direction: column;
@@ -5135,7 +5126,6 @@ body {
     justify-content: space-between;
     padding: 12px;
     border-bottom: 1px solid #1a1f2b;
-    position: relative;
 }
 .tournament-match:last-child {
     border-bottom: none;
@@ -5170,7 +5160,6 @@ body {
     cursor: pointer;
     margin-left: 10px;
     color: #aaa;
-    transition: all 0.2s;
 }
 .tournament-replay-btn:hover {
     border-color: #00aaff;
@@ -5200,7 +5189,6 @@ body {
     color: white;
     padding: 12px 8px;
     text-align: center;
-    font-weight: bold;
 }
 .tournament-leaders-table td {
     padding: 10px 8px;
@@ -5214,7 +5202,7 @@ body {
     background-color: #2a303c;
 }
 
-/* Адаптив для мобильных */
+/* Адаптация для маленьких экранов */
 @media (max-width: 480px) {
     .tournament-match {
         flex-wrap: wrap;
@@ -5233,13 +5221,5 @@ body {
     .tournament-replay-btn {
         order: 3;
         margin-left: 0;
-    }
-    .tournament-class-btn {
-        font-size: 14px;
-        padding: 8px 0;
-    }
-    .tournament-subclass-btn {
-        padding: 6px 14px;
-        font-size: 12px;
     }
 }

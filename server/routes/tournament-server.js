@@ -13,16 +13,14 @@ const TOURNAMENT_START_HOUR = 20;
 
 // Вспомогательная функция: получить или создать текущий сезон
 async function getCurrentSeason(client) {
-    const today = getMoscowDate();
-    // Начало текущего месяца (1-е число)
+    const todayStr = getMoscowDate(); // строка 'YYYY-MM-DD'
+    const today = new Date(todayStr);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    // Конец текущего месяца (последний день)
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     
-    // Пытаемся найти сезон, который покрывает сегодняшнюю дату
     let season = await client.query(
         'SELECT * FROM tournament_seasons WHERE start_date <= $1 AND end_date >= $1',
-        [today]
+        [todayStr]
     );
     if (season.rows.length === 0) {
         const name = `Сезон ${startOfMonth.toLocaleDateString('ru-RU')}`;

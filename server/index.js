@@ -43,6 +43,7 @@ app.use('/user', authMiddleware, require('./routes/user'));
 app.use('/tournament', authMiddleware, require('./routes/tournament-server'));
 app.use('/clans', authMiddleware, require('./routes/clans-server'));
 
+
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {
     console.log('Received VK callback (unexpected, low-code uses callback mode)');

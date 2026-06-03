@@ -416,10 +416,19 @@ function renderMyClan(clan, members, userRole) {
                     <div style="width: 48px; height: 48px; background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
                     </div>
-                    <div>
-                        <h2 style="margin:0;">${escapeHtml(clan.name)}</h2>
-                        <div>Уровень ${clan.level} (опыт: ${clan.exp})</div>
-                    </div>
+                   <div>
+    <h2 style="margin:0;">${escapeHtml(clan.name)}</h2>
+    <div style="font-size: 12px; color: #aaa;">Уровень клана: ${clan.level}</div>
+    <div style="margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
+            <span style="color: white;">Опыт клана:</span>
+            <span style="color: #00aaff;">${clan.exp} / ${clan.level * 100}</span>
+        </div>
+        <div style="background-color: #2f3542; height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="background-color: #00aaff; width: ${Math.min(100, (clan.exp / (clan.level * 100)) * 100)}%; height: 100%; border-radius: 4px;"></div>
+        </div>
+    </div>
+</div>
                 </div>
             </div>
             <div class="clans-tabs">
@@ -561,6 +570,39 @@ async function renderClanTalents(container, clan) {
 
 function renderTalentRow(name, value, key) {
     return `<div class="clans-talent-row"><span class="clans-talent-name">${name}</span><span class="clans-talent-value">+${value}</span><div class="clans-talent-controls"><button data-stat="${key}" data-op="decr">-</button><span>0</span><button data-stat="${key}" data-op="incr">+</button></div></div>`;
+}
+
+// Вкладка "Управление кланом" (только для лидера)
+function renderClanSettings(container, clan) {
+    container.innerHTML = `
+        <div style="padding: 12px;">
+            <div class="clans-form-group">
+                <label>Название клана</label>
+                <input type="text" id="editClanName" value="${escapeHtml(clan.name)}" maxlength="30">
+            </div>
+            <div class="clans-form-group">
+                <label>Описание клана</label>
+                <textarea id="editClanDescription" rows="3" placeholder="Описание">${escapeHtml(clan.description || '')}</textarea>
+            </div>
+            <button id="saveClanSettingsBtn" class="clans-submit-btn">Сохранить изменения</button>
+            <hr style="margin: 20px 0;">
+            <button id="disbandClanBtn" class="clans-submit-btn" style="background-color:#e74c3c;">⚠️ Расформировать клан</button>
+        </div>
+    `;
+    
+    document.getElementById('saveClanSettingsBtn')?.addEventListener('click', async () => {
+        const newName = document.getElementById('editClanName').value.trim();
+        const newDesc = document.getElementById('editClanDescription').value;
+        // TODO: добавить эндпоинты на сервере для обновления названия и описания
+        showToast('Сохранение настроек будет доступно в следующем обновлении', 1500);
+    });
+    
+    document.getElementById('disbandClanBtn')?.addEventListener('click', async () => {
+        if (confirm('ВНИМАНИЕ! Расформирование клана удалит всех участников и сам клан. Отменить будет нельзя. Продолжить?')) {
+            // TODO: добавить эндпоинт для расформирования
+            showToast('Расформирование клана будет доступно в следующем обновлении', 1500);
+        }
+    });
 }
 
 function escapeHtml(str) {

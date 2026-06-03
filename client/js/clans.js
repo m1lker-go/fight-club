@@ -116,7 +116,7 @@ async function renderClansList() {
                     </td>
                     <td class="clans-name-cell">
                         <div class="clan-name">${escapeHtml(clan.name)}</div>
-                        <div class="clan-level">Уровень ${clan.level}</div>
+                        <div class="clan-level">${clan.level} уровень</div>
                     </td>
                     <td>${memberCount}/${maxMembers}</td>
                     <td><button class="clans-view-btn" data-clan-id="${clan.id}">Просмотр</button></td>

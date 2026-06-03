@@ -1,3 +1,5 @@
+//server/routes/tournament-server.js
+
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -7,7 +9,7 @@ const { updatePlayerPower } = require('../utils/power');
 const { getMoscowDate } = require('../utils/dailyTasks');
 
 // Константы
-const TOURNAMENT_SIZE = 64;
+const TOURNAMENT_SIZE = 32;  // изменено с 64 на 32
 const REGISTRATION_DEADLINE_HOUR = 19; // 19:50 МСК
 const TOURNAMENT_START_HOUR = 20;
 

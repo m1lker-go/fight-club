@@ -356,27 +356,27 @@ function renderMyClan(clan, members, userRole) {
     const maxExp = getExpNeeded(clan.level);
     const expPercent = Math.min(100, (clan.exp / maxExp) * 100);
     content.innerHTML = `
-        <div class="clans-container">
-            <div style="background-color: #1a1f2b; padding: 12px; text-align: center; border-bottom: 1px solid #00aaff;">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                    <div style="width: 48px; height: 48px; background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
+       <div class="clans-container">
+    <div style="background-color: #1a1f2b; padding: 12px; text-align: center; border-bottom: 1px solid #00aaff;">
+        <div style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-left: 12px;">
+            <div style="width: 48px; height: 48px; background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
+            </div>
+            <div>
+                <h2 style="margin:0;">${escapeHtml(clan.name)}</h2>
+                <div style="font-size: 12px; color: #aaa;">Уровень клана: ${clan.level}</div>
+                <div style="margin-top: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
+                        <span style="color: white; margin-right: 8px;">Опыт клана:</span>
+                        <span style="color: #00aaff;">${clan.exp} / ${maxExp}</span>
                     </div>
-                    <div>
-                        <h2 style="margin:0;">${escapeHtml(clan.name)}</h2>
-                        <div style="font-size: 12px; color: #aaa;">Уровень клана: ${clan.level}</div>
-                        <div style="margin-top: 8px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
-                                <span style="color: white;">Опыт клана:</span>
-                                <span style="color: #00aaff;">${clan.exp} / ${maxExp}</span>
-                            </div>
-                            <div style="background-color: #2f3542; height: 8px; border-radius: 4px; overflow: hidden;">
-                                <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 4px;"></div>
-                            </div>
-                        </div>
+                    <div style="background-color: #2f3542; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 4px;"></div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
             <div class="clans-tab-grid">
                 <div class="clans-tab-row">
                     <button class="clans-tab-btn ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info"><i class="fas fa-users"></i><span>Соратники</span></button>
@@ -612,8 +612,11 @@ async function renderClanCheckin(container, clan) {
     } else {
         html += `<p>✅ Вы уже отметились сегодня!</p>`;
     }
-    html += `<div class="clan-stats" style="margin-top:12px;">За отметку: +50 монет, +5 угля, +10 опыта клану</div>
-             <div class="clan-stats">Если все отметятся: +100 опыта клану</div></div>`;
+    html += `<div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
+                За отметку: +50 монет, +5 угля, +10 опыта клану<br>
+                Если все отметятся: +100 опыта клану
+             </div>`;
+    html += `</div>`;
     container.innerHTML = html;
     
     const checkinBtn = document.getElementById('checkinBtn');
@@ -649,7 +652,6 @@ async function renderClanCheckin(container, clan) {
         });
     }
 }
-
 // ------------------- ОСТАЛЬНЫЕ ФУНКЦИИ (КАЗНА, ТАЛАНТЫ, УПРАВЛЕНИЕ) -------------------
 async function renderClanTreasury(container, clan) {
     const res = await window.apiRequest('/clans/treasury');
@@ -671,8 +673,30 @@ async function renderClanTalents(container, clan) {
     const bonuses = await res.json();
     const totalPoints = bonuses.total_points;
     const maxPoints = clan.level * 5;
-    let html = `<div style="margin-bottom:12px;">Куплено очков: ${totalPoints} / ${maxPoints}</div><div class="clans-talents-list">${renderTalentRow('Здоровье', bonuses.bonus_hp, 'hp')}${renderTalentRow('Атака', bonuses.bonus_attack, 'attack')}${renderTalentRow('Защита', bonuses.bonus_defense, 'defense')}${renderTalentRow('Ловкость', bonuses.bonus_agility, 'agility')}${renderTalentRow('Крит. урон', bonuses.bonus_crit_damage, 'crit_damage')}${renderTalentRow('Вампиризм', bonuses.bonus_vampirism, 'vampirism')}</div>`;
+    
+    let html = `<div style="margin-bottom:12px;">Куплено очков: ${totalPoints} / ${maxPoints}</div>
+                <div class="clans-talents-list">`;
+    html += renderTalentRow('Здоровье', bonuses.bonus_hp, 'hp');
+    html += renderTalentRow('Атака', bonuses.bonus_attack, 'attack');
+    html += renderTalentRow('Защита', bonuses.bonus_defense, 'defense');
+    html += renderTalentRow('Ловкость', bonuses.bonus_agility, 'agility');
+    html += renderTalentRow('Крит. урон', bonuses.bonus_crit_damage, 'crit_damage');
+    html += renderTalentRow('Вампиризм', bonuses.bonus_vampirism, 'vampirism');
+    html += `</div>`;
     container.innerHTML = html;
+}
+
+function renderTalentRow(name, value, key) {
+    return `
+        <div class="clans-talent-row">
+            <span class="clans-talent-name">${name}</span>
+            <span class="clans-talent-value" style="text-align:center; min-width:50px;">+${value}</span>
+            <div class="clans-talent-controls-group">
+                <button class="talent-btn talent-minus" data-stat="${key}" data-op="decr">−</button>
+                <button class="talent-btn talent-plus" data-stat="${key}" data-op="incr">+</button>
+            </div>
+        </div>
+    `;
 }
 
 function renderTalentRow(name, value, key) {

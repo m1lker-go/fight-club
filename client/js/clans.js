@@ -423,20 +423,23 @@ function renderMyClan(clan, members, userRole) {
     else if (currentClanTab === 'settings' && userRole === 'leader') renderClanSettings(tabContent, clan);
 }
 
-// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОНЛАЙН-КРУЖКАМИ, НА ВСЮ ШИРИНУ) -------------------
+// ------------------- ТАБЛИЦА СОРАТНИКОВ (ИСПРАВЛЕННАЯ) -------------------
 function renderClanInfo(container, clan, members, userRole) {
-    const maxMembers = getMaxMembers(clan.level);
     const today = new Date().toLocaleDateString('ru-RU');
     const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
     
     let html = `<table class="clans-members-table" style="width:100%; table-layout:fixed; font-size:13px; border-collapse:collapse;">
-        <thead><tr style="background-color:#1a1f2b;">
-            <th style="color:white; width:35%; padding:8px 4px; font-size:12px;">Игрок</th>
-            <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Роль</th>
-            <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Статус</th>
-            <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Отметка</th>
-            <th style="width:20%;"></th>
-        </table></thead><tbody>`;
+        <thead>
+            <tr style="background-color:#1a1f2b;">
+                <th style="color:white; width:35%; padding:8px 4px; font-size:12px;">Игрок</th>
+                <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Роль</th>
+                <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Статус</th>
+                <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Отметка</th>
+                <th style="width:20%;"></th>
+            </tr>
+        </thead>
+        <tbody>`;
+    
     for (const m of members) {
         const statusColor = getStatusColor(m.last_energy);
         const statusIcon = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${statusColor}; margin:0 auto;"></span>`;
@@ -445,10 +448,12 @@ function renderClanInfo(container, clan, members, userRole) {
         if (m.id === userData.id) {
             checkinIcon = userCheckinStatus ? '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>' : '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
         } else {
+            // Для других участников пока заглушка, позже можно брать из серверного поля checkedTodayList
             checkinIcon = '<span style="color:#555;">—</span>';
         }
-        // Ограничение длины имени с многоточием
+        
         const displayName = m.username.length > 20 ? m.username.substring(0,18)+'…' : m.username;
+        
         html += `
             <tr style="border-bottom:1px solid #2a303c;">
                 <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding:6px 4px;">${escapeHtml(displayName)}</td>
@@ -464,6 +469,7 @@ function renderClanInfo(container, clan, members, userRole) {
             </tr>
         `;
     }
+    
     html += `</tbody></table>`;
     container.innerHTML = html;
     
@@ -489,7 +495,6 @@ function renderClanInfo(container, clan, members, userRole) {
     container.querySelectorAll('[data-action="demote"]').forEach(btn => {
         btn.addEventListener('click', async () => {
             const userId = btn.dataset.userId;
-            // Используем promote, но роль 'member' (если на сервере нет demote)
             const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: userId, role: 'member' }) });
             const data = await res.json();
             if (data.success) { showToast('Офицер снят', 1500); renderClans(); }

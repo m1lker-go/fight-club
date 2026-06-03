@@ -74,11 +74,13 @@ async function refreshForgeUI() {
     updateForgeActionButton();
 }
 
-// ========== РЕСУРСНАЯ ПАНЕЛЬ (4 строки) ==========
+// ========== РЕСУРСНАЯ ПАНЕЛЬ (6 строк) ==========
 function renderResourcePanel() {
     const panel = document.getElementById('forgeResources');
     if (!panel) return;
     const coal = userData?.coal || 0;
+    const steel = userData?.steel_ingots || 0;
+    const gold = userData?.gold_ingots || 0;
     const rare = scrollsInventory.filter(s => s.rarity === 'rare').length;
     const epic = scrollsInventory.filter(s => s.rarity === 'epic').length;
     const legend = scrollsInventory.filter(s => s.rarity === 'legendary').length;
@@ -100,10 +102,18 @@ function renderResourcePanel() {
             <i class="fas fa-scroll" style="color: #f1c40f;"></i>
             <span class="resource-value">${legend}</span>
         </div>
+        <div class="resource-row">
+            <i class="fas fa-coins" style="color: #aaa;"></i>
+            <span class="resource-value">${steel}</span>
+        </div>
+        <div class="resource-row">
+            <i class="fas fa-crown" style="color: #f1c40f;"></i>
+            <span class="resource-value">${gold}</span>
+        </div>
     `;
 }
 
-// Загрузка свитков с сервера
+// Загрузка свитков с сервера (без изменений)
 async function loadScrolls() {
     if (!userData || !userData.id) {
         scrollsInventory = [];
@@ -638,8 +648,12 @@ async function performForgeAction() {
                 if (typeof AudioManager !== 'undefined') AudioManager.playSound('forge');
                 let msg = `Вы получили ${data.coins} монет`;
                 if (data.diamonds > 0) msg += `, ${data.diamonds} алмазов`;
-                if (data.coal > 0) msg += ` и ${data.coal} угля`;
-                showToast(msg, 2000);
+                if (data.steel > 0) msg += `, ${data.steel} стальных слитков`;
+                if (data.gold > 0) msg += `, ${data.gold} золотых слитков`;
+                if (data.rareScrolls > 0) msg += `, ${data.rareScrolls} редких свитков`;
+                if (data.epicScrolls > 0) msg += `, ${data.epicScrolls} эпических свитков`;
+                if (data.legendaryScrolls > 0) msg += `, ${data.legendaryScrolls} легендарных свитков`;
+                showToast(msg, 3000);
                 await refreshData();
                 if (currentScreen === 'forge') {
                     await refreshForgeUI();

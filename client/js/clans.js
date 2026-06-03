@@ -472,7 +472,20 @@ function showCreateClanModal() {
             <button id="confirmCreateClan" class="clans-submit-btn">Создать</button>
         </div>
     `;
-    const colors = ['#e74c3c','#3498db','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393','#7f8c8d','#2c3e50','#95a5a6','#34495e'];
+    const colors = [
+    '#1a1f2b', // тёмно-синий (почти чёрный)
+    '#000000', // чёрный
+    '#ffffff', // белый
+    '#7f8c8d', // серый
+    '#3498db', // голубой
+    '#9b59b6', // фиолетовый
+    '#f1c40f', // жёлтый
+    '#e74c3c', // красный
+    '#e67e22', // оранжевый
+    '#27ae60', // тёмно-зелёный
+    '#8e44ad', // пурпурный
+    '#1abc9c'  // бирюзовый
+];
     function renderPalette(containerId, selectedColor, onChange) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';

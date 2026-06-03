@@ -5,9 +5,16 @@ let clanListSearch = '';
 let clanListType = 'all';
 
 const ICON_MAP = {
-    1: 'fa-cat', 2: 'fa-dog', 3: 'fa-sword', 4: 'fa-axe',
-    5: 'fa-shield-halded', 6: 'fa-skull', 7: 'fa-mask',
-    8: 'fa-crown', 9: 'fa-bolt', 10: 'fa-dragon'
+    1: 'fa-cat',              // Кот
+    2: 'fa-dog',              // Пёс
+    3: 'fa-dragon',           // Дракон (вместо меча)
+    4: 'fa-crown',            // Корона (вместо топора)
+    5: 'fa-skull',            // Череп (вместо щита)
+    6: 'fa-mask',             // Маска
+    7: 'fa-bolt',             // Молния
+    8: 'fa-feather',          // Перо
+    9: 'fa-paw',              // Лапа
+    10: 'fa-fist-raised'      // Кулак
 };
 
 // Цвета для палитры (12 штук)
@@ -74,17 +81,14 @@ async function renderClansList() {
     const res = await window.apiRequest('/clans/list');
     const clans = await res.json();
     
-    // Фильтрация и сортировка
+    // Фильтрация по типу и поиску (сортировка убрана, оставляем только уровень по умолчанию)
     let filtered = clans.filter(c => {
         if (clanListType !== 'all' && c.join_type !== clanListType) return false;
         if (clanListSearch && !c.name.toLowerCase().includes(clanListSearch.toLowerCase())) return false;
         return true;
     });
-    filtered.sort((a, b) => {
-        if (clanListSort === 'level') return b.level - a.level;
-        if (clanListSort === 'members') return (b.current_members || 0) - (a.current_members || 0);
-        return a.name.localeCompare(b.name);
-    });
+    // Сортировка по уровню (убывание) – всегда
+    filtered.sort((a, b) => b.level - a.level);
     
     const maxRows = 10;
     const rowsToShow = Math.max(filtered.length, maxRows);
@@ -102,13 +106,11 @@ async function renderClansList() {
                         <option value="application" ${clanListType === 'application' ? 'selected' : ''}>По заявкам</option>
                         <option value="invite_only" ${clanListType === 'invite_only' ? 'selected' : ''}>Закрытые</option>
                     </select>
-                    <select id="clanSortSelect" class="clans-filter-select">
-                        <option value="level" ${clanListSort === 'level' ? 'selected' : ''}>По уровню</option>
-                        <option value="members" ${clanListSort === 'members' ? 'selected' : ''}>По участникам</option>
-                        <option value="name" ${clanListSort === 'name' ? 'selected' : ''}>По названию</option>
-                    </select>
                 </div>
-                <button id="clanApplyFiltersBtn" class="clans-apply-btn">Применить</button>
+                <div class="clans-filters-actions">
+                    <button id="clanResetFiltersBtn" class="clans-reset-btn">Сброс</button>
+                    <button id="clanApplyFiltersBtn" class="clans-apply-btn">Применить</button>
+                </div>
             </div>
             <table class="clans-table">
                 <thead>
@@ -159,10 +161,14 @@ async function renderClansList() {
     
     // Обработчики
     document.getElementById('createClanBtn')?.addEventListener('click', () => showCreateClanModal());
+    document.getElementById('clanResetFiltersBtn')?.addEventListener('click', () => {
+        clanListSearch = '';
+        clanListType = 'all';
+        renderClansList();
+    });
     document.getElementById('clanApplyFiltersBtn')?.addEventListener('click', () => {
         clanListSearch = document.getElementById('clanSearchInput').value;
         clanListType = document.getElementById('clanTypeSelect').value;
-        clanListSort = document.getElementById('clanSortSelect').value;
         renderClansList();
     });
     document.querySelectorAll('.clans-view-btn').forEach(btn => {

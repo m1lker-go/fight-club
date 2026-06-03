@@ -16,17 +16,31 @@ const ICON_MAP = {
 };
 
 // Главная точка входа
+// Главная точка входа (с индикатором загрузки)
 async function renderClans() {
     const content = document.getElementById('content');
     if (!content) return;
-    
-    const res = await window.apiRequest('/clans/my');
-    const data = await res.json();
-    
-    if (data.inClan) {
-        renderMyClan(data.clan, data.members, data.userRole);
-    } else {
-        renderClansList();
+
+    // Моментально показываем спиннер
+    content.innerHTML = `
+        <div class="clans-loading" style="text-align: center; padding: 40px; color: #aaa;">
+            <i class="fas fa-spinner fa-pulse fa-2x"></i><br>
+            Загрузка кланов...
+        </div>
+    `;
+
+    try {
+        const res = await window.apiRequest('/clans/my');
+        const data = await res.json();
+
+        if (data.inClan) {
+            renderMyClan(data.clan, data.members, data.userRole);
+        } else {
+            await renderClansList(); // теперь списко тоже покажет спиннер
+        }
+    } catch (err) {
+        console.error('Ошибка загрузки кланов:', err);
+        content.innerHTML = '<div style="text-align: center; padding: 40px; color: #aaa;">Ошибка загрузки. Попробуйте позже.</div>';
     }
 }
 

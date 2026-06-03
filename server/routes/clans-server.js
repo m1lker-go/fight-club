@@ -3,6 +3,14 @@ const router = express.Router();
 const { pool } = require('../db');
 
 // ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -------------------
+
+// Функция получения московской даты (YYYY-MM-DD)
+function getMoscowDate() {
+    const d = new Date();
+    const msk = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    return msk.toISOString().split('T')[0];
+}
+
 // ------------------- МАТ ОТКРЫЛСЯ -------------------
 const forbiddenWords = [
   'мат', 'хуй', 'пизда', 'бля', 'ебать', 'писька', 'хер', 'залупа', 'мудак', 'говно','член',
@@ -52,15 +60,18 @@ function isNameValid(name) {
     return true;
 }
 
+// Новая формула опыта клана (более высокая)
 async function addClanExp(clanId, expGain, client) {
     const clanRes = await client.query('SELECT level, exp FROM clans WHERE id = $1', [clanId]);
     if (clanRes.rows.length === 0) return;
     let { level, exp } = clanRes.rows[0];
     exp += expGain;
-    const expNeeded = level * 100;
+    
+    // Функция требуемого опыта для уровня
+    const expNeededForLevel = (lvl) => Math.floor(2000 * Math.pow(lvl, 1.5)); // ~2000, ~5600, ~10300, ~16000, ~22300, ...
     let leveledUp = false;
-    while (exp >= expNeeded) {
-        exp -= expNeeded;
+    while (exp >= expNeededForLevel(level)) {
+        exp -= expNeededForLevel(level);
         level++;
         leveledUp = true;
     }
@@ -101,7 +112,6 @@ router.post('/create', async (req, res) => {
     if (!isNameValid(name)) {
         return res.status(400).json({ error: 'Некорректное название (3-30 символов, без мата)' });
     }
-    // icon_id от 1 до 10
     if (!icon_id || icon_id < 1 || icon_id > 10) {
         return res.status(400).json({ error: 'Неверный ID иконки' });
     }
@@ -139,10 +149,7 @@ router.post('/create', async (req, res) => {
             [name, icon_id, icon_bg_color, icon_border_color, icon_color, userId, coinsCost, diamondsCost]
         );
         const clan = newClan.rows[0];
-        await client.query(
-            `INSERT INTO clan_members (clan_id, user_id, role) VALUES ($1, $2, 'leader')`,
-            [clan.id, userId]
-        );
+        await client.query(`INSERT INTO clan_members (clan_id, user_id, role) VALUES ($1, $2, 'leader')`, [clan.id, userId]);
         await client.query(`INSERT INTO clan_treasury (clan_id, coins) VALUES ($1, 0)`, [clan.id]);
         await client.query(`INSERT INTO clan_bonuses (clan_id) VALUES ($1)`, [clan.id]);
         
@@ -167,21 +174,17 @@ router.get('/my', async (req, res) => {
     const client = await pool.connect();
     try {
         const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
-        if (memberRes.rows.length === 0) {
-            return res.json({ inClan: false });
-        }
+        if (memberRes.rows.length === 0) return res.json({ inClan: false });
         const clanId = memberRes.rows[0].clan_id;
         const clanRes = await client.query(
-            `SELECT c.*, 
-                    (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
+            `SELECT c.*, (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
              FROM clans c WHERE c.id = $1`,
             [clanId]
         );
         const clan = clanRes.rows[0];
         const membersRes = await client.query(
             `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at
-             FROM clan_members cm
-             JOIN users u ON cm.user_id = u.id
+             FROM clan_members cm JOIN users u ON cm.user_id = u.id
              WHERE cm.clan_id = $1
              ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
             [clanId]
@@ -202,7 +205,7 @@ router.get('/list', async (req, res) => {
     const offset = (page - 1) * limit;
     const client = await pool.connect();
     try {
-        let query = `
+        const query = `
             SELECT c.id, c.name, c.icon_id, c.icon_bg_color, c.icon_border_color, c.icon_color,
                    c.level, c.exp,
                    (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as current_members
@@ -243,15 +246,11 @@ router.post('/join', async (req, res) => {
         const maxMembers = 10 + (level - 1);
         if (member_count >= maxMembers) throw new Error('Нет свободных мест');
         
-        await client.query(
-            'INSERT INTO clan_members (clan_id, user_id, role) VALUES ($1, $2, $3)',
-            [clan_id, userId, 'member']
-        );
+        await client.query(`INSERT INTO clan_members (clan_id, user_id, role) VALUES ($1, $2, 'member')`, [clan_id, userId]);
         const userRes = await client.query('SELECT username FROM users WHERE id = $1', [userId]);
         const username = userRes.rows[0].username;
         await client.query(
-            `INSERT INTO clan_messages (clan_id, user_id, message, created_at)
-             VALUES ($1, $2, $3, NOW())`,
+            `INSERT INTO clan_messages (clan_id, user_id, message, created_at) VALUES ($1, $2, $3, NOW())`,
             [clan_id, userId, `${username} вступил в клан!`]
         );
         await client.query('COMMIT');
@@ -280,8 +279,7 @@ router.post('/leave', async (req, res) => {
         const userRes = await client.query('SELECT username FROM users WHERE id = $1', [userId]);
         const username = userRes.rows[0].username;
         await client.query(
-            `INSERT INTO clan_messages (clan_id, user_id, message, created_at)
-             VALUES ($1, $2, $3, NOW())`,
+            `INSERT INTO clan_messages (clan_id, user_id, message, created_at) VALUES ($1, $2, $3, NOW())`,
             [clan_id, userId, `${username} покинул клан`]
         );
         await client.query('COMMIT');
@@ -315,8 +313,7 @@ router.post('/kick', async (req, res) => {
         const userRes = await client.query('SELECT username FROM users WHERE id = $1', [target_user_id]);
         const username = userRes.rows[0].username;
         await client.query(
-            `INSERT INTO clan_messages (clan_id, user_id, message, created_at)
-             VALUES ($1, $2, $3, NOW())`,
+            `INSERT INTO clan_messages (clan_id, user_id, message, created_at) VALUES ($1, $2, $3, NOW())`,
             [clan_id, userId, `${username} был исключён из клана`]
         );
         await client.query('COMMIT');
@@ -341,10 +338,7 @@ router.post('/promote', async (req, res) => {
         if (current.rows.length === 0) throw new Error('Вы не в клане');
         const { clan_id, role } = current.rows[0];
         if (role !== 'leader') throw new Error('Только лидер может назначать офицеров');
-        await client.query(
-            'UPDATE clan_members SET role = $1 WHERE user_id = $2 AND clan_id = $3',
-            ['officer', target_user_id, clan_id]
-        );
+        await client.query('UPDATE clan_members SET role = $1 WHERE user_id = $2 AND clan_id = $3', ['officer', target_user_id, clan_id]);
         await client.query('COMMIT');
         res.json({ success: true });
     } catch (e) {
@@ -395,8 +389,7 @@ router.post('/chat/send', async (req, res) => {
         if (memberRes.rows.length === 0) throw new Error('Вы не состоите в клане');
         const clanId = memberRes.rows[0].clan_id;
         await client.query(
-            `INSERT INTO clan_messages (clan_id, user_id, message, created_at)
-             VALUES ($1, $2, $3, NOW())`,
+            `INSERT INTO clan_messages (clan_id, user_id, message, created_at) VALUES ($1, $2, $3, NOW())`,
             [clanId, userId, message]
         );
         res.json({ success: true });
@@ -418,11 +411,9 @@ router.get('/chat', async (req, res) => {
         const clanId = memberRes.rows[0].clan_id;
         const messages = await client.query(
             `SELECT cm.message, cm.created_at, u.username, u.avatar_id
-             FROM clan_messages cm
-             JOIN users u ON cm.user_id = u.id
+             FROM clan_messages cm JOIN users u ON cm.user_id = u.id
              WHERE cm.clan_id = $1
-             ORDER BY cm.created_at DESC
-             LIMIT 100`,
+             ORDER BY cm.created_at DESC LIMIT 100`,
             [clanId]
         );
         res.json(messages.rows.reverse());
@@ -433,7 +424,7 @@ router.get('/chat', async (req, res) => {
     }
 });
 
-// 11. Ежедневная отметка (check-in)
+// 11. Ежедневная отметка (check-in) – исправлено использование getMoscowDate
 router.get('/checkin/status', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -441,7 +432,7 @@ router.get('/checkin/status', async (req, res) => {
     try {
         const memberRes = await client.query('SELECT clan_id, daily_checkin_date FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) return res.json({ error: 'Не в клане' });
-        const today = new Date().toISOString().slice(0,10);
+        const today = getMoscowDate();
         const alreadyChecked = memberRes.rows[0].daily_checkin_date === today;
         const totalMembers = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [memberRes.rows[0].clan_id]);
         const checkedToday = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2', [memberRes.rows[0].clan_id, today]);
@@ -462,13 +453,13 @@ router.post('/checkin', async (req, res) => {
         const memberRes = await client.query('SELECT clan_id, daily_checkin_date FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         const clanId = memberRes.rows[0].clan_id;
-        const today = new Date().toISOString().slice(0,10);
-        if (memberRes.rows[0].daily_checkin_date === today) throw new Error('Вы уже отметились сегодня');
+        const today = getMoscowDate();
+        const lastCheckin = memberRes.rows[0].daily_checkin_date;
+        if (lastCheckin === today) throw new Error('Вы уже отметились сегодня');
         
         const coinsReward = 50;
         const coalReward = 5;
         await client.query('UPDATE users SET coins = coins + $1, coal = coal + $2 WHERE id = $3', [coinsReward, coalReward, userId]);
-        
         await client.query('UPDATE clan_members SET daily_checkin_date = $1 WHERE user_id = $2', [today, userId]);
         
         await addClanExp(clanId, 10, client);
@@ -527,9 +518,7 @@ router.post('/donate', async (req, res) => {
         await client.query('UPDATE clan_treasury SET coins = coins + $1 WHERE clan_id = $2', [amount, clanId]);
         
         const expGain = Math.floor(amount / 100);
-        if (expGain > 0) {
-            await addClanExp(clanId, expGain, client);
-        }
+        if (expGain > 0) await addClanExp(clanId, expGain, client);
         
         await client.query('COMMIT');
         res.json({ success: true });
@@ -637,7 +626,6 @@ router.post('/redistribute', async (req, res) => {
     }
 });
 
-
 // 17. Получить публичную информацию о клане (для просмотра)
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
@@ -645,17 +633,14 @@ router.get('/:id', async (req, res) => {
     const userId = req.userId;
     const client = await pool.connect();
     try {
-        // Основная информация
         const clanRes = await client.query(
-            `SELECT c.*, 
-                    (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
+            `SELECT c.*, (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
              FROM clans c WHERE c.id = $1`,
             [clanId]
         );
         if (clanRes.rows.length === 0) return res.status(404).json({ error: 'Клан не найден' });
         const clan = clanRes.rows[0];
         
-        // Список участников с их силой (через player_stats)
         const membersRes = await client.query(
             `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at,
                     COALESCE(ps.power, 0) as power
@@ -667,7 +652,6 @@ router.get('/:id', async (req, res) => {
             [clanId]
         );
         
-        // Определяем, состоит ли текущий пользователь в этом клане
         let userMembership = null;
         if (userId) {
             const userMember = await client.query(
@@ -679,6 +663,95 @@ router.get('/:id', async (req, res) => {
         
         res.json({ clan, members: membersRes.rows, userMembership });
     } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 18. Редактирование настроек клана (только лидер)
+router.put('/:id/settings', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const clanId = parseInt(req.params.id);
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    const { name, description, icon_id, icon_bg_color, icon_border_color, icon_color } = req.body;
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const roleRes = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
+        if (roleRes.rows.length === 0 || roleRes.rows[0].role !== 'leader') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Только лидер может редактировать клан' });
+        }
+        
+        if (name !== undefined) {
+            if (!isNameValid(name)) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Некорректное название (3-30 символов, без мата)' });
+            }
+            const existing = await client.query('SELECT id FROM clans WHERE name = $1 AND id != $2', [name, clanId]);
+            if (existing.rows.length > 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Клан с таким названием уже существует' });
+            }
+            await client.query('UPDATE clans SET name = $1 WHERE id = $2', [name, clanId]);
+        }
+        if (description !== undefined) {
+            await client.query('UPDATE clans SET description = $1 WHERE id = $2', [description, clanId]);
+        }
+        if (icon_id !== undefined && icon_id >= 1 && icon_id <= 10) {
+            await client.query('UPDATE clans SET icon_id = $1 WHERE id = $2', [icon_id, clanId]);
+        }
+        if (icon_bg_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_bg_color)) {
+            await client.query('UPDATE clans SET icon_bg_color = $1 WHERE id = $2', [icon_bg_color, clanId]);
+        }
+        if (icon_border_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_border_color)) {
+            await client.query('UPDATE clans SET icon_border_color = $1 WHERE id = $2', [icon_border_color, clanId]);
+        }
+        if (icon_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_color)) {
+            await client.query('UPDATE clans SET icon_color = $1 WHERE id = $2', [icon_color, clanId]);
+        }
+        
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 19. Расформировать клан (только лидер)
+router.delete('/:id', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const clanId = parseInt(req.params.id);
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const roleRes = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
+        if (roleRes.rows.length === 0 || roleRes.rows[0].role !== 'leader') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Только лидер может расформировать клан' });
+        }
+        // Удаляем все связанные данные
+        await client.query('DELETE FROM clan_members WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clan_messages WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clan_treasury WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clan_bonuses WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clans WHERE id = $1', [clanId]);
+        
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
         console.error(e);
         res.status(500).json({ error: e.message });
     } finally {

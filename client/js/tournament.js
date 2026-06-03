@@ -1,4 +1,4 @@
-// tournament.js – Турнирная система (64 участника, ежедневно в 20:00 МСК)
+// tournament.js – Турнирная система (32 участника, ежедневно в 20:00 МСК)
 
 let tournamentData = null;
 let currentBracket = null;
@@ -53,7 +53,6 @@ async function renderTournamentTab() {
         const tournamentActive = status.tournamentActive;
         const tournamentCompleted = status.tournamentCompleted;
 
-        // Восстанавливаем выбранные класс и подкласс из статуса (если есть)
         if (!selectedTournamentClass && status.registeredClass) {
             selectedTournamentClass = status.registeredClass;
             selectedTournamentSubclass = status.registeredSubclass;
@@ -68,7 +67,6 @@ async function renderTournamentTab() {
             return;
         }
         if (canRegister && !tournamentActive) {
-            // Форма регистрации
             const classesHtml = `
                 <div class="tournament-class-row">
                     <div class="tournament-class-label">Класс</div>
@@ -111,13 +109,11 @@ async function renderTournamentTab() {
 
             document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
 
-            // Обработчики выбора класса (с автоматическим выбором первого подкласса)
             document.querySelectorAll('.class-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const className = btn.dataset.class;
                     if (className === selectedTournamentClass) return;
                     selectedTournamentClass = className;
-                    // Выбираем первый подкласс для нового класса
                     const subclasses = getSubclassesForClass(className);
                     selectedTournamentSubclass = subclasses[0];
                     await window.apiRequest('/tournament/select-class', {
@@ -132,7 +128,6 @@ async function renderTournamentTab() {
                 });
             });
 
-            // Обработчик выбора подкласса
             const subclassSelect = document.getElementById('tournamentSubclassSelect');
             if (subclassSelect) {
                 subclassSelect.addEventListener('change', async () => {
@@ -142,11 +137,9 @@ async function renderTournamentTab() {
                         method: 'POST',
                         body: JSON.stringify({ subclass })
                     });
-                    // Не перерисовываем всю страницу, чтобы не мигало
                 });
             }
 
-            // Кнопка записи
             const regBtn = document.getElementById('tournamentRegisterBtn');
             if (regBtn && !isRegistered) {
                 regBtn.addEventListener('click', async () => {
@@ -165,7 +158,6 @@ async function renderTournamentTab() {
                 });
             }
 
-            // Кнопка отмены
             const unregBtn = document.getElementById('tournamentUnregisterBtn');
             if (unregBtn) {
                 unregBtn.addEventListener('click', async () => {
@@ -206,9 +198,10 @@ async function renderBracket() {
         });
 
         let html = '<div class="tournament-bracket">';
-        for (let roundNum = 1; roundNum <= 6; roundNum++) {
+        // Для 32 участников: 1/16 (раунд 1), 1/8 (2), 1/4 (3), 1/2 (4), финал + матч за 3 место (5)
+        for (let roundNum = 1; roundNum <= 5; roundNum++) {
             const roundMatches = rounds[roundNum] || [];
-            if (roundMatches.length === 0 && roundNum === 6) break;
+            if (roundMatches.length === 0 && roundNum === 5) break;
             html += `<div class="tournament-round"><div class="tournament-round-title">${getRoundName(roundNum)}</div>`;
             roundMatches.forEach(match => {
                 const isUserMatch = (match.player1_id === userData.id || match.player2_id === userData.id);
@@ -267,7 +260,7 @@ async function renderLeadersTab() {
                         <tr><th>Место</th><th>Игрок</th><th>Очки</th></tr>
                     </thead>
                     <tbody>
-                        <td><td colspan="3" style="text-align:center; padding: 20px; color: #aaa;">Нет данных</td></tr>
+                        <tr><td colspan="3" style="text-align:center; padding: 20px; color: #aaa;">Нет данных</td></tr>
                     </tbody>
                 </table>
             `;
@@ -278,7 +271,7 @@ async function renderLeadersTab() {
         leaders.forEach((item, idx) => {
             html += `<tr><td style="text-align:center;">${idx+1}</td><td>${escapeHtml(item.username)}</td><td style="text-align:center;">${item.tournament_points}</td></tr>`;
         });
-        html += '</tbody></td>';
+        html += '</tbody></table>';
         tableContainer.innerHTML = html;
     } catch (err) {
         console.error(err);
@@ -318,7 +311,7 @@ function showTournamentRulesModal() {
     modalTitle.innerHTML = '<i class="fas fa-trophy" style="margin-right: 8px;"></i> Турнир "Золотой Коготь"';
     modalBody.innerHTML = `
         <div style="padding: 5px 10px;">
-            <p><i class="fas fa-calendar-alt" style="color:#00aaff; width: 24px;"></i> <strong>Ежедневный турнир</strong> – начало в 20:00 МСК. Участвуют 64 игрока.</p>
+            <p><i class="fas fa-calendar-alt" style="color:#00aaff; width: 24px;"></i> <strong>Ежедневный турнир</strong> – начало в 20:00 МСК. Участвуют 32 игрока.</p>
             <p><i class="fas fa-users" style="color:#00aaff; width: 24px;"></i> <strong>Регистрация</strong> – с 00:00 до 19:50. Выберите класс и роль, снаряжение фиксируется.</p>
             <p><i class="fas fa-chart-line" style="color:#00aaff; width: 24px;"></i> <strong>Турнирные очки (ТО)</strong> – начисляются за каждое занятое место. Чем выше место, тем больше ТО.</p>
             <p><i class="fas fa-gem" style="color:#00aaff; width: 24px;"></i> <strong>Награды за турнир</strong> – монеты, алмазы, опыт и сундуки согласно занятому месту.</p>
@@ -343,7 +336,13 @@ function getSubclassesForClass(className) {
 }
 
 function getRoundName(roundNum) {
-    const names = {1: '1/64', 2: '1/32', 3: '1/16', 4: '1/8', 5: '1/4', 6: '1/2', 7: 'Финал'};
+    const names = {
+        1: '1/16 финала',
+        2: '1/8 финала',
+        3: '1/4 финала',
+        4: '1/2 финала',
+        5: 'Финал / Матч за 3 место'
+    };
     return names[roundNum] || `Раунд ${roundNum}`;
 }
 

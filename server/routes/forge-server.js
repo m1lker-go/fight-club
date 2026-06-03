@@ -305,7 +305,11 @@ router.post('/smelt', async (req, res) => {
 
         let coinsGain = 0;
         let diamondsGain = 0;
-        let coalGain = 0;
+        let steelGain = 0;
+        let goldGain = 0;
+        let rareScrollGain = 0;
+        let epicScrollGain = 0;
+        let legendaryScrollGain = 0;
 
         const items = await client.query(
             'SELECT * FROM inventory WHERE id = ANY($1::int[]) AND user_id = $2 AND equipped = false AND for_sale = false AND in_forge = true',
@@ -319,36 +323,87 @@ router.post('/smelt', async (req, res) => {
             const rarity = item.rarity.toLowerCase();
             switch (rarity) {
                 case 'common':
-                    coinsGain += Math.floor(Math.random() * 21) + 65;
+                    coinsGain += Math.floor(Math.random() * 21) + 65;      // 65-85
+                    steelGain += Math.floor(Math.random() * 6);           // 0-5
                     break;
                 case 'uncommon':
-                    coinsGain += Math.floor(Math.random() * 41) + 120;
+                    coinsGain += Math.floor(Math.random() * 41) + 120;    // 120-160
+                    steelGain += Math.floor(Math.random() * 10) + 6;      // 6-15
+                    if (Math.random() < 0.5) diamondsGain += 1;           // 0-1 алмаз
+                    if (Math.random() < 0.3) rareScrollGain += 1;         // 0-1 редкий свиток
                     break;
                 case 'rare':
-                    coinsGain += Math.floor(Math.random() * 201) + 400;
+                    coinsGain += Math.floor(Math.random() * 201) + 400;    // 400-600
+                    steelGain += Math.floor(Math.random() * 10) + 16;      // 16-25
+                    goldGain += Math.floor(Math.random() * 2);             // 0-1 золотой слиток
+                    if (Math.random() < 0.4) diamondsGain += 1;            // 0-1 алмаз (дополнительно)
+                    if (Math.random() < 0.2) rareScrollGain += 1;          // 0-1 редкий свиток
                     break;
                 case 'epic':
-                    coinsGain += Math.floor(Math.random() * 501) + 1000;
-                    if (Math.random() < 0.5) diamondsGain += 1;
+                    coinsGain += Math.floor(Math.random() * 501) + 1000;   // 1000-1500
+                    steelGain += Math.floor(Math.random() * 10) + 26;      // 26-35
+                    goldGain += Math.floor(Math.random() * 8) + 1;         // 1-8 золотых слитков
+                    diamondsGain += Math.floor(Math.random() * 46) + 5;     // 5-50 алмазов
+                    if (Math.random() < 0.5) epicScrollGain += 1;          // 0-1 эпический свиток
                     break;
                 case 'legendary':
-                    coinsGain += Math.floor(Math.random() * 1001) + 2000;
-                    diamondsGain += 2 + Math.floor(Math.random() * 4);
+                    coinsGain += Math.floor(Math.random() * 1001) + 2000;  // 2000-3000
+                    steelGain += Math.floor(Math.random() * 66) + 35;      // 35-100
+                    goldGain += Math.floor(Math.random() * 16) + 10;       // 10-25 золотых слитков
+                    diamondsGain += Math.floor(Math.random() * 126) + 75;   // 75-200 алмазов
+                    if (Math.random() < 0.6) legendaryScrollGain += 1;     // 0-1 легендарный свиток
+                    if (Math.random() < 0.3) legendaryScrollGain += 1;     // дополнительный шанс на второй свиток
                     break;
-            }
-            const coalRange = SMELT_COAL[rarity];
-            if (coalRange) {
-                coalGain += Math.floor(Math.random() * (coalRange.max - coalRange.min + 1)) + coalRange.min;
             }
         }
 
+        // Начисляем ресурсы
         await client.query(
-            'UPDATE users SET coins = coins + $1, diamonds = diamonds + $2, coal = coal + $3 WHERE id = $4',
-            [coinsGain, diamondsGain, coalGain, userId]
+            `UPDATE users SET 
+                coins = coins + $1, 
+                diamonds = diamonds + $2,
+                steel_ingots = steel_ingots + $3,
+                gold_ingots = gold_ingots + $4
+             WHERE id = $5`,
+            [coinsGain, diamondsGain, steelGain, goldGain, userId]
         );
 
+        // Начисляем свитки (если есть) – создаём новые предметы в инвентаре
+        const addScroll = async (scrollId, scrollName, scrollRarity) => {
+            const scrollItem = await client.query(
+                `INSERT INTO items (name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
+                 VALUES ($1, 'scroll', $2, 'any', 'warrior', 0,0,0,0,0,0,0,0,0,0) RETURNING id`,
+                [scrollName, scrollRarity]
+            );
+            const itemId = scrollItem.rows[0].id;
+            await client.query(
+                `INSERT INTO inventory (user_id, item_id, equipped, in_forge, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
+                 VALUES ($1, $2, false, false, $3, 'scroll', $4, 'any', 'warrior', 0,0,0,0,0,0,0,0,0,0)`,
+                [userId, itemId, scrollName, scrollRarity]
+            );
+        };
+
+        for (let i = 0; i < rareScrollGain; i++) {
+            await addScroll(1037, 'Редкий свиток', 'rare');
+        }
+        for (let i = 0; i < epicScrollGain; i++) {
+            await addScroll(1038, 'Эпический свиток', 'epic');
+        }
+        for (let i = 0; i < legendaryScrollGain; i++) {
+            await addScroll(1039, 'Легендарный свиток', 'legendary');
+        }
+
         await client.query('COMMIT');
-        res.json({ success: true, coins: coinsGain, diamonds: diamondsGain, coal: coalGain });
+        res.json({ 
+            success: true, 
+            coins: coinsGain, 
+            diamonds: diamondsGain,
+            steel: steelGain,
+            gold: goldGain,
+            rareScrolls: rareScrollGain,
+            epicScrolls: epicScrollGain,
+            legendaryScrolls: legendaryScrollGain
+        });
     } catch (e) {
         await client.query('ROLLBACK');
         console.error('[forge/smelt] Error:', e);

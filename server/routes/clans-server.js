@@ -14,12 +14,11 @@ function getMaxMembers(level) {
     return 10 + Math.floor((level - 1) / 5);
 }
 
-// Формула опыта: 1 уровень → 1000, 20 → ~103k, 25 → ~149k
 function getExpNeeded(level) {
     return Math.floor(1000 * Math.pow(level, 1.45) / 1000) * 1000;
 }
 
-// ------------------- МАТ ОТКРЫЛСЯ -------------------
+// ------------------- МАТ -------------------
 const forbiddenWords = [
   'мат', 'хуй', 'пизда', 'бля', 'ебать', 'писька', 'хер', 'залупа', 'мудак', 'говно','член',
   'редиска', 'лох', 'сука', 'пидор', 'гнида', 'тварь', 'шлюха', 'блядина', 'еблан', 'долбоеб',
@@ -35,7 +34,7 @@ const forbiddenWords = [
   'slut', 'whore', 'cock', 'pussy', 'twat', 'motherfucker', 'faggot', 'nigger', 'retard', 'wanker',
   'bloody', 'bugger', 'arse', 'arsehole', 'bollocks', 'cocksucker', 'dumbass', 'jackass', 'douchebag',
   'douche', 'dickhead', 'shithead', 'fuckhead', 'buttface', 'turd', 'scumbag', 'sonofabitch', 'goddamn',
-  'goddammit', 'horseshit', 'bullshit', 'fuckshit', 'shitfuck', 'bitchass', 'bastard', 'dickwad',
+  'goddammit', 'horseshit', 'bullshit', 'fuckshit', 'shitfuck', 'bitchass', 'dickwad',
   'fuckface', 'asswipe', 'asshat', 'shitstain', 'cum', 'cumshot', 'cumdump', 'jizz', 'semen', 'fap',
   'masturbate', 'screw', 'screwed', 'fucking', 'shitting', 'bitching', 'motherfucking', 'goddamned',
   'noob', 'n00b', 'nooblet', 'scrub', 'pleb', 'peasant', 'fail', 'loser', 'idiot', 'moron', 'imbecile',
@@ -158,7 +157,7 @@ router.post('/create', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 2. Получить информацию о своём клане (с отметками)
+// 2. Получить информацию о своём клане (с last_energy и списком отметившихся)
 router.get('/my', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -174,7 +173,7 @@ router.get('/my', async (req, res) => {
         );
         const clan = clanRes.rows[0];
         
-        // Список участников с last_energy
+        // Участники с last_energy
         const membersRes = await client.query(
             `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy
              FROM clan_members cm JOIN users u ON cm.user_id = u.id
@@ -189,14 +188,14 @@ router.get('/my', async (req, res) => {
             `SELECT user_id FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2`,
             [clanId, today]
         );
-        const checkedTodaySet = new Set(checkedRes.rows.map(r => r.user_id));
+        const checkedTodayList = checkedRes.rows.map(r => r.user_id);
         
         res.json({
             inClan: true,
             clan,
             members: membersRes.rows,
             userRole: memberRes.rows[0].role,
-            checkedTodayList: Array.from(checkedTodaySet)
+            checkedTodayList
         });
     } catch (e) {
         console.error(e);
@@ -407,7 +406,7 @@ router.get('/chat', async (req, res) => {
     } finally { client.release(); }
 });
 
-// ========== ЕЖЕДНЕВНАЯ ОТМЕТКА (CHECK-IN) ==========
+// ========== ЕЖЕДНЕВНАЯ ОТМЕТКА ==========
 router.get('/checkin/status', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -471,7 +470,7 @@ router.post('/checkin', async (req, res) => {
     }
 });
 
-// 12. Клановая казна (получить)
+// 12. Клановая казна
 router.get('/treasury', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -487,7 +486,7 @@ router.get('/treasury', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 13. Пожертвовать монеты в казну
+// 13. Пожертвовать монеты
 router.post('/donate', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -513,7 +512,7 @@ router.post('/donate', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 14. Клановые бонусы (получить)
+// 14. Клановые бонусы
 router.get('/bonuses', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -532,7 +531,7 @@ router.get('/bonuses', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 15. Купить очко навыка (только лидер)
+// 15. Купить очко навыка
 router.post('/buy-point', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -565,7 +564,7 @@ router.post('/buy-point', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 16. Перераспределить очки (только лидер)
+// 16. Перераспределить очки
 router.post('/redistribute', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -594,7 +593,7 @@ router.post('/redistribute', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Получить публичную информацию о клане (для просмотра) – добавлено last_energy
+// 17. Получить публичную информацию о клане (для просмотра) – с last_energy
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
     if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });

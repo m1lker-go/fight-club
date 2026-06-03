@@ -10,7 +10,6 @@ function getMoscowDate() {
     return msk.toISOString().split('T')[0];
 }
 
-
 function getMaxMembers(level) {
     return 10 + Math.floor((level - 1) / 5);
 }
@@ -68,7 +67,6 @@ function isNameValid(name) {
     return true;
 }
 
-// Основная функция начисления опыта (с новым порогом)
 async function addClanExp(clanId, expGain, client) {
     const clanRes = await client.query('SELECT level, exp FROM clans WHERE id = $1', [clanId]);
     if (clanRes.rows.length === 0) return;
@@ -160,7 +158,7 @@ router.post('/create', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 2. Получить информацию о своём клане
+// 2. Получить информацию о своём клане (добавлено last_energy)
 router.get('/my', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -176,7 +174,7 @@ router.get('/my', async (req, res) => {
         );
         const clan = clanRes.rows[0];
         const membersRes = await client.query(
-            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at
+            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy
              FROM clan_members cm JOIN users u ON cm.user_id = u.id
              WHERE cm.clan_id = $1
              ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
@@ -403,7 +401,7 @@ router.get('/checkin/status', async (req, res) => {
             [userId]
         );
         if (memberRes.rows.length === 0) return res.json({ error: 'Не в клане' });
-        const today = getMoscowDate(); // предполагаем, что функция есть
+        const today = getMoscowDate();
         const lastCheckin = memberRes.rows[0].daily_checkin_date;
         const alreadyChecked = lastCheckin ? lastCheckin.toISOString().slice(0,10) === today : false;
 
@@ -579,7 +577,7 @@ router.post('/redistribute', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Получить публичную информацию о клане (для просмотра) – исправлено без player_stats
+// 17. Получить публичную информацию о клане (для просмотра) – добавлено last_energy
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
     if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
@@ -595,7 +593,7 @@ router.get('/:id', async (req, res) => {
         const clan = clanRes.rows[0];
         
         const membersRes = await client.query(
-            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at,
+            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy,
                     0 as power
              FROM clan_members cm
              JOIN users u ON cm.user_id = u.id

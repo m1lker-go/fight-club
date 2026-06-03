@@ -434,55 +434,35 @@ router.post('/checkin', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // Блокируем запись пользователя
+        // Получаем клан пользователя и блокируем строку
         const memberRes = await client.query(
             `SELECT clan_id, daily_checkin_date FROM clan_members WHERE user_id = $1 FOR UPDATE`,
             [userId]
         );
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         const clanId = memberRes.rows[0].clan_id;
-        const today = getMoscowDate();
-        const lastCheckin = memberRes.rows[0].daily_checkin_date;
-        if (lastCheckin && lastCheckin.toISOString().slice(0,10) === today) {
+        const today = getMoscowDate(); // YYYY-MM-DD
+        const lastDate = memberRes.rows[0].daily_checkin_date;
+        if (lastDate && lastDate.toISOString().slice(0,10) === today) {
             throw new Error('Вы уже отметились сегодня');
         }
-
-        // Награда игроку
-        const coinsReward = 50;
-        const coalReward = 5;
-        await client.query(
-            `UPDATE users SET coins = coins + $1, coal = coal + $2 WHERE id = $3`,
-            [coinsReward, coalReward, userId]
-        );
-
-        // Обновляем дату отметки (явно приводим к DATE)
-        const updateRes = await client.query(
-            `UPDATE clan_members SET daily_checkin_date = $1::date WHERE user_id = $2`,
-            [today, userId]
-        );
-        console.log(`[checkin] Updated ${updateRes.rowCount} row for user ${userId}`);
-
-        // Начисляем опыт клану
+        // Награда
+        await client.query('UPDATE users SET coins = coins + 50, coal = coal + 5 WHERE id = $1', [userId]);
+        // Обновляем дату
+        await client.query('UPDATE clan_members SET daily_checkin_date = $1 WHERE user_id = $2', [today, userId]);
+        // Опыт клану
         await addClanExp(clanId, 10, client);
-
-        // Проверяем, все ли отметились
-        const totalMembers = await client.query(
-            `SELECT COUNT(*) FROM clan_members WHERE clan_id = $1`,
-            [clanId]
-        );
-        const checkedToday = await client.query(
-            `SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2`,
-            [clanId, today]
-        );
-        if (parseInt(checkedToday.rows[0].count) === parseInt(totalMembers.rows[0].count)) {
+        // Бонус за всех
+        const total = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [clanId]);
+        const checked = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2', [clanId, today]);
+        if (parseInt(checked.rows[0].count) === parseInt(total.rows[0].count)) {
             await addClanExp(clanId, 100, client);
         }
-
         await client.query('COMMIT');
-        res.json({ success: true, coins: coinsReward, coal: coalReward });
+        res.json({ success: true, coins: 50, coal: 5 });
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('[checkin] Error:', e.message);
+        console.error('Checkin error:', e.message);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

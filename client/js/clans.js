@@ -444,15 +444,48 @@ async function renderClanChat(container, clan) {
 async function renderClanCheckin(container, clan) {
     const res = await window.apiRequest('/clans/checkin/status');
     const status = await res.json();
-    let html = `<div style="text-align:center;"><p>Сегодня отметилось: ${status.checked_today} / ${status.total_members}</p>${!status.already_checked ? '<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>' : '<p>Вы уже отметились сегодня!</p>'}<div class="clan-stats" style="margin-top:12px;">За отметку: +50 монет, +5 угля, +10 опыта клану</div><div class="clan-stats">Если все отметятся: +100 опыта клану</div></div>`;
+    let html = `<div style="text-align:center;"><p>Сегодня отметилось: ${status.checked_today} / ${status.total_members}</p>`;
+    if (!status.already_checked) {
+        html += `<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>`;
+    } else {
+        html += `<p>Вы уже отметились сегодня!</p>`;
+    }
+    html += `<div class="clan-stats" style="margin-top:12px;">За отметку: +50 монет, +5 угля, +10 опыта клану</div>
+             <div class="clan-stats">Если все отметятся: +100 опыта клану</div></div>`;
     container.innerHTML = html;
+    
     const checkinBtn = document.getElementById('checkinBtn');
-    checkinBtn?.addEventListener('click', async () => {
-        const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) { showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000); renderClanCheckin(container, clan); if (typeof refreshData === 'function') refreshData(); }
-        else showToast(data.error, 1500);
-    });
+    if (checkinBtn) {
+        let isProcessing = false; // локальный флаг
+        checkinBtn.addEventListener('click', async () => {
+            if (isProcessing) return;
+            isProcessing = true;
+            const btn = checkinBtn;
+            const originalText = btn.innerText;
+            btn.innerText = '⏳';
+            btn.disabled = true;
+            try {
+                const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
+                    // Перерисовываем вкладку, чтобы обновить статус и убрать кнопку
+                    await renderClanCheckin(container, clan);
+                    if (typeof refreshData === 'function') refreshData();
+                } else {
+                    showToast(data.error, 1500);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                showToast('Ошибка сети', 1500);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            } finally {
+                isProcessing = false;
+            }
+        });
+    }
 }
 
 async function renderClanTreasury(container, clan) {

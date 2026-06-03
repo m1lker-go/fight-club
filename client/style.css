@@ -5876,6 +5876,7 @@ body {
     color: #aaa;
 }
 .clan-header-exp {
+    text-align: center;
     margin-top: 6px;
 }
 .clan-header-exp .exp-bar-bg {
@@ -5889,6 +5890,24 @@ body {
     height: 100%;
     width: 0%;
 }
+.clan-header-exp .exp-label {
+    display: inline-block;
+    font-size: 10px;
+    color: white;
+    margin-right: 5px;
+}
+.clan-header-exp .exp-value {
+    display: inline-block;
+    font-size: 10px;
+    color: #00aaff;
+}
+.clan-header-exp .exp-bar-bg {
+    margin-top: 4px;
+    width: 100%;
+}
+
+
+
 
 /* Вкладки 3×2 – скругления только нижних углов у крайних кнопок */
 .clans-tab-grid {
@@ -5960,10 +5979,7 @@ body {
     font-size: 14px;
     box-sizing: border-box;
 }
-.clans-form-group textarea {
-    resize: vertical;
-    font-family: inherit;
-}
+
 
 /* Кнопки талантов: общий контур, иконки, скругления */
 .clans-talent-row {

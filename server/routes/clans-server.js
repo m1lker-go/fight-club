@@ -757,17 +757,24 @@ router.post('/cancel-application', async (req, res) => {
 });
 
 // 22. Получить список заявок для лидера
+// 22. Получить список заявок для лидера (исправленный)
 router.get('/applications', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
+        // Получаем clan_id текущего пользователя
         const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         if (memberRes.rows[0].role !== 'leader') throw new Error('Только лидер может просматривать заявки');
         const clanId = memberRes.rows[0].clan_id;
+        
+        // Получаем заявки с дополнительной информацией о кандидатах
         const apps = await client.query(
-            `SELECT ca.id, ca.user_id, ca.created_at, u.username, u.avatar_id
+            `SELECT ca.id, ca.user_id, ca.created_at, u.username, u.avatar_id,
+                    u.level AS hero_level, 
+                    u.selected_class AS hero_class,
+                    u.power AS power
              FROM clan_applications ca
              JOIN users u ON ca.user_id = u.id
              WHERE ca.clan_id = $1 AND ca.status = 'pending'
@@ -776,6 +783,7 @@ router.get('/applications', async (req, res) => {
         );
         res.json(apps.rows);
     } catch (e) {
+        console.error(e);
         res.status(400).json({ error: e.message });
     } finally {
         client.release();

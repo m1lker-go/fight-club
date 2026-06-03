@@ -594,7 +594,7 @@ router.post('/redistribute', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Получить публичную информацию о клане
+// 17. Получить публичную информацию о клане (с проверкой статуса заявки)
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
     if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
@@ -608,6 +608,7 @@ router.get('/:id', async (req, res) => {
         );
         if (clanRes.rows.length === 0) return res.status(404).json({ error: 'Клан не найден' });
         const clan = clanRes.rows[0];
+
         const membersRes = await client.query(
             `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy, 0 as power
              FROM clan_members cm
@@ -616,6 +617,7 @@ router.get('/:id', async (req, res) => {
              ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
             [clanId]
         );
+
         let userMembership = null;
         if (userId) {
             const userMember = await client.query(
@@ -624,11 +626,24 @@ router.get('/:id', async (req, res) => {
             );
             if (userMember.rows.length) userMembership = userMember.rows[0].role;
         }
-        res.json({ clan, members: membersRes.rows, userMembership });
+
+        // --- ДОБАВЛЯЕМ СТАТУС ЗАЯВКИ ДЛЯ ТЕКУЩЕГО ИГРОКА ---
+        let userApplicationStatus = null;
+        if (userId) {
+            const appCheck = await client.query(
+                'SELECT status FROM clan_applications WHERE clan_id = $1 AND user_id = $2 AND status = $3',
+                [clanId, userId, 'pending']
+            );
+            if (appCheck.rows.length > 0) userApplicationStatus = appCheck.rows[0].status;
+        }
+
+        res.json({ clan, members: membersRes.rows, userMembership, userApplicationStatus });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: e.message });
-    } finally { client.release(); }
+    } finally {
+        client.release();
+    }
 });
 
 // 18. Редактирование настроек клана (добавлен join_type)
@@ -757,24 +772,21 @@ router.post('/cancel-application', async (req, res) => {
 });
 
 // 22. Получить список заявок для лидера
-// 22. Получить список заявок для лидера (исправленный)
 router.get('/applications', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        // Получаем clan_id текущего пользователя
         const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         if (memberRes.rows[0].role !== 'leader') throw new Error('Только лидер может просматривать заявки');
         const clanId = memberRes.rows[0].clan_id;
-        
-        // Получаем заявки с дополнительной информацией о кандидатах
+
         const apps = await client.query(
             `SELECT ca.id, ca.user_id, ca.created_at, u.username, u.avatar_id,
                     u.level AS hero_level, 
-                    u.selected_class AS hero_class,
-                    u.power AS power
+                    u.current_class AS hero_class,
+                    (SELECT power FROM user_classes WHERE user_id = u.id AND class = u.current_class LIMIT 1) AS power
              FROM clan_applications ca
              JOIN users u ON ca.user_id = u.id
              WHERE ca.clan_id = $1 AND ca.status = 'pending'

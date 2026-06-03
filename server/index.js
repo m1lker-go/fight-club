@@ -41,6 +41,7 @@ app.use('/fortune', authMiddleware, require('./routes/fortune-server'));
 app.use('/subscription', authMiddleware, require('./routes/subscription'));
 app.use('/user', authMiddleware, require('./routes/user'));
 app.use('/tournament', authMiddleware, require('./routes/tournament-server'));
+app.use('/clans', require('./routes/clans'));
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {

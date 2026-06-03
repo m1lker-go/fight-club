@@ -451,7 +451,7 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
         box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     `;
     let actionsHtml = '';
-    if (userRole === 'leader') {
+    if (currentUserRole === 'leader') {
         if (role !== 'leader') {
             actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
             if (role === 'member') {
@@ -461,7 +461,7 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
             }
             actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="transfer">👑 Передать лидерство</div>`;
         }
-    } else if (userRole === 'officer') {
+    } else if (currentUserRole === 'officer') {
         if (role !== 'leader' && role !== 'officer') {
             actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
         }

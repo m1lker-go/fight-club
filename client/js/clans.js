@@ -5,11 +5,11 @@ let currentClanTab = 'info'; // info, chat, checkin, treasury, talents, settings
 const ICON_MAP = {
     1: 'fa-cat',                    // Кот
     2: 'fa-dog',                    // Пёс
-    3: 'arrow-archery',             // вместо меча
-    4: 'axe-battle',                // топор
-    5: 'shield-cat',                // щит
+    3: 'fa-solid fa-hockey-mask',             // вместо меча
+    4: 'fa-duotone fa-solid fa-masks-theater',                // топор
+    5: 'fa-solid fa-castle',                // щит
     6: 'fa-skull',                  // череп
-    7: 'wolf-pack-battalion',       // вместо маски
+    7: 'fa-skull-cow',       // вместо маски
     8: 'fa-crown',                  // корона
     9: 'fa-bolt',                   // молния
     10: 'fa-dragon'                 // дракон

@@ -423,7 +423,98 @@ function renderMyClan(clan, members, userRole) {
     else if (currentClanTab === 'settings' && userRole === 'leader') renderClanSettings(tabContent, clan);
 }
 
-// ------------------- ТАБЛИЦА СОРАТНИКОВ (ИСПРАВЛЕННАЯ) -------------------
+// ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ МЕНЮ -------------------
+let activeMenu = null;
+
+function closeMemberMenus() {
+    if (activeMenu) {
+        activeMenu.remove();
+        activeMenu = null;
+    }
+}
+
+function showMemberMenu(userId, username, role, targetElement, currentUserRole) {
+    closeMemberMenus();
+    const rect = targetElement.getBoundingClientRect();
+    const menuDiv = document.createElement('div');
+    menuDiv.className = 'clan-member-menu';
+    menuDiv.style.cssText = `
+        position: fixed;
+        top: ${rect.bottom + 5}px;
+        left: ${rect.left}px;
+        background: #2a303c;
+        border: 1px solid #00aaff;
+        border-radius: 8px;
+        padding: 5px 0;
+        z-index: 10000;
+        min-width: 150px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    `;
+    let actionsHtml = '';
+    if (userRole === 'leader') {
+        if (role !== 'leader') {
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
+            if (role === 'member') {
+                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="promote">⭐ Назначить офицером</div>`;
+            } else if (role === 'officer') {
+                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="demote">⬇️ Снять офицера</div>`;
+            }
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="transfer">👑 Передать лидерство</div>`;
+        }
+    } else if (userRole === 'officer') {
+        if (role !== 'leader' && role !== 'officer') {
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
+        }
+    }
+    if (actionsHtml === '') {
+        actionsHtml = `<div class="menu-item-action disabled">Нет доступных действий</div>`;
+    }
+    menuDiv.innerHTML = actionsHtml;
+    document.body.appendChild(menuDiv);
+    activeMenu = menuDiv;
+    
+    const clickOutside = (e) => {
+        if (!menuDiv.contains(e.target) && !targetElement.contains(e.target)) {
+            closeMemberMenus();
+            document.removeEventListener('click', clickOutside);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', clickOutside), 0);
+    
+    menuDiv.querySelectorAll('.menu-item-action[data-action]').forEach(item => {
+        item.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const action = item.dataset.action;
+            const targetUserId = item.dataset.userId;
+            closeMemberMenus();
+            if (action === 'kick') {
+                const res = await window.apiRequest('/clans/kick', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                const data = await res.json();
+                if (data.success) { showToast('Игрок исключён', 1500); renderClans(); }
+                else showToast(data.error, 1500);
+            } else if (action === 'promote') {
+                const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                const data = await res.json();
+                if (data.success) { showToast('Назначен офицером', 1500); renderClans(); }
+                else showToast(data.error, 1500);
+            } else if (action === 'demote') {
+                const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId, role: 'member' }) });
+                const data = await res.json();
+                if (data.success) { showToast('Офицер снят', 1500); renderClans(); }
+                else showToast(data.error, 1500);
+            } else if (action === 'transfer') {
+                if (confirm(`Передать лидерство игроку ${username}?`)) {
+                    const res = await window.apiRequest('/clans/transfer', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                    const data = await res.json();
+                    if (data.success) { showToast('Лидерство передано', 1500); renderClans(); }
+                    else showToast(data.error, 1500);
+                }
+            }
+        });
+    });
+}
+
+// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ВЫПАДАЮЩИМ МЕНЮ) -------------------
 function renderClanInfo(container, clan, members, userRole) {
     const today = new Date().toLocaleDateString('ru-RU');
     const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
@@ -431,85 +522,51 @@ function renderClanInfo(container, clan, members, userRole) {
     let html = `<table class="clans-members-table" style="width:100%; table-layout:fixed; font-size:13px; border-collapse:collapse;">
         <thead>
             <tr style="background-color:#1a1f2b;">
-                <th style="color:white; width:35%; padding:8px 4px; font-size:12px;">Игрок</th>
-                <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Роль</th>
+                <th style="color:white; width:40%; padding:8px 4px; font-size:12px;">Игрок</th>
+                <th style="color:white; width:20%; padding:8px 4px; font-size:12px;">Роль</th>
                 <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Статус</th>
                 <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Отметка</th>
-                <th style="width:20%;"></th>
             </tr>
         </thead>
         <tbody>`;
     
     for (const m of members) {
         const statusColor = getStatusColor(m.last_energy);
-        const statusIcon = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${statusColor}; margin:0 auto;"></span>`;
+        const statusIcon = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${statusColor};"></span>`;
         
         let checkinIcon = '';
         if (m.id === userData.id) {
             checkinIcon = userCheckinStatus ? '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>' : '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
         } else {
-            // Для других участников пока заглушка, позже можно брать из серверного поля checkedTodayList
+            // Для других участников заглушка (позже можно добавить из серверного ответа)
             checkinIcon = '<span style="color:#555;">—</span>';
         }
         
         const displayName = m.username.length > 20 ? m.username.substring(0,18)+'…' : m.username;
+        const hasActions = (userRole === 'leader' && m.role !== 'leader') || (userRole === 'officer' && m.role === 'member');
+        const menuTrigger = hasActions ? `<i class="fas fa-chevron-down clan-menu-trigger" data-user-id="${m.id}" data-username="${escapeHtml(m.username)}" data-role="${m.role}" style="color:#00aaff; cursor:pointer; margin-left:6px;"></i>` : '';
         
         html += `
             <tr style="border-bottom:1px solid #2a303c;">
-                <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding:6px 4px;">${escapeHtml(displayName)}</td>
+                <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding:6px 4px;">
+                    ${escapeHtml(displayName)}${menuTrigger}
+                </td>
                 <td style="padding:6px 4px;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
                 <td style="text-align:center; padding:6px 4px;">${statusIcon}</td>
                 <td style="text-align:center; padding:6px 4px;">${checkinIcon}</td>
-                <td style="text-align:right; padding:6px 4px;">
-                    ${userRole === 'leader' && m.role !== 'leader' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="kick" style="font-size:11px; padding:2px 8px;">Исключить</button>` : ''}
-                    ${userRole === 'leader' && m.role === 'member' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="promote" style="font-size:11px; padding:2px 8px;">Назначить</button>` : ''}
-                    ${userRole === 'leader' && m.role === 'officer' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="demote" style="font-size:11px; padding:2px 8px;">Снять</button>` : ''}
-                    ${userRole === 'leader' && m.role !== 'leader' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="transfer" style="font-size:11px; padding:2px 8px;">Передать</button>` : ''}
-                </td>
             </tr>
         `;
     }
-    
     html += `</tbody></table>`;
     container.innerHTML = html;
     
-    // Обработчики кнопок
-    container.querySelectorAll('[data-action="kick"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = btn.dataset.userId;
-            const res = await window.apiRequest('/clans/kick', { method: 'POST', body: JSON.stringify({ target_user_id: userId }) });
-            const data = await res.json();
-            if (data.success) { showToast('Игрок исключён', 1500); renderClans(); }
-            else showToast(data.error, 1500);
-        });
-    });
-    container.querySelectorAll('[data-action="promote"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = btn.dataset.userId;
-            const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: userId }) });
-            const data = await res.json();
-            if (data.success) { showToast('Назначен офицером', 1500); renderClans(); }
-            else showToast(data.error, 1500);
-        });
-    });
-    container.querySelectorAll('[data-action="demote"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = btn.dataset.userId;
-            const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: userId, role: 'member' }) });
-            const data = await res.json();
-            if (data.success) { showToast('Офицер снят', 1500); renderClans(); }
-            else showToast(data.error, 1500);
-        });
-    });
-    container.querySelectorAll('[data-action="transfer"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            if (confirm('Передать лидерство этому игроку?')) {
-                const userId = btn.dataset.userId;
-                const res = await window.apiRequest('/clans/transfer', { method: 'POST', body: JSON.stringify({ target_user_id: userId }) });
-                const data = await res.json();
-                if (data.success) { showToast('Лидерство передано', 1500); renderClans(); }
-                else showToast(data.error, 1500);
-            }
+    document.querySelectorAll('.clan-menu-trigger').forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const userId = parseInt(trigger.dataset.userId);
+            const username = trigger.dataset.username;
+            const role = trigger.dataset.role;
+            showMemberMenu(userId, username, role, trigger, userRole);
         });
     });
 }

@@ -442,13 +442,17 @@ async function renderClanChat(container, clan) {
 }
 
 async function renderClanCheckin(container, clan) {
-    const res = await window.apiRequest('/clans/checkin/status');
-    const status = await res.json();
+    // Проверяем локальное хранилище
+    const today = new Date().toLocaleDateString('ru-RU');
+    const lastCheckin = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`);
+    const alreadyCheckedLocally = (lastCheckin === today);
+    
     let html = `<div style="text-align:center;"><p>Сегодня отметилось: ${status.checked_today} / ${status.total_members}</p>`;
-    if (!status.already_checked) {
+    
+    if (!alreadyCheckedLocally) {
         html += `<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>`;
     } else {
-        html += `<p>Вы уже отметились сегодня!</p>`;
+        html += `<p>✅ Вы уже отметились сегодня!</p>`;
     }
     html += `<div class="clan-stats" style="margin-top:12px;">За отметку: +50 монет, +5 угля, +10 опыта клану</div>
              <div class="clan-stats">Если все отметятся: +100 опыта клану</div></div>`;
@@ -456,7 +460,7 @@ async function renderClanCheckin(container, clan) {
     
     const checkinBtn = document.getElementById('checkinBtn');
     if (checkinBtn) {
-        let isProcessing = false; // локальный флаг
+        let isProcessing = false;
         checkinBtn.addEventListener('click', async () => {
             if (isProcessing) return;
             isProcessing = true;
@@ -468,9 +472,11 @@ async function renderClanCheckin(container, clan) {
                 const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
+                    // Сохраняем отметку в localStorage
+                    localStorage.setItem(`clan_checkin_${clan.id}_${userData.id}`, today);
                     showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
-                    // Перерисовываем вкладку, чтобы обновить статус и убрать кнопку
-                    await renderClanCheckin(container, clan);
+                    // Перерисовываем вкладку, чтобы кнопка исчезла
+                    renderClanCheckin(container, clan);
                     if (typeof refreshData === 'function') refreshData();
                 } else {
                     showToast(data.error, 1500);

@@ -761,12 +761,12 @@ async function renderClanTalents(container, clan) {
                     Доступно для распределения: ${available}
                 </div>
                 <div class="clans-talents-list">`;
-    html += renderTalentRow('Здоровье', bonuses.bonus_hp, 'hp', available === 0 && distributed === totalPoints);
-    html += renderTalentRow('Атака', bonuses.bonus_attack, 'attack', available === 0 && distributed === totalPoints);
-    html += renderTalentRow('Защита', bonuses.bonus_defense, 'defense', available === 0 && distributed === totalPoints);
-    html += renderTalentRow('Ловкость', bonuses.bonus_agility, 'agility', available === 0 && distributed === totalPoints);
-    html += renderTalentRow('Крит. урон', bonuses.bonus_crit_damage, 'crit_damage', available === 0 && distributed === totalPoints);
-    html += renderTalentRow('Вампиризм', bonuses.bonus_vampirism, 'vampirism', available === 0 && distributed === totalPoints);
+    html += renderTalentRow('Здоровье', bonuses.bonus_hp, 'hp');
+    html += renderTalentRow('Атака', bonuses.bonus_attack, 'attack');
+    html += renderTalentRow('Защита', bonuses.bonus_defense, 'defense');
+    html += renderTalentRow('Ловкость', bonuses.bonus_agility, 'agility');
+    html += renderTalentRow('Крит. урон', bonuses.bonus_crit_damage, 'crit_damage');
+    html += renderTalentRow('Вампиризм', bonuses.bonus_vampirism, 'vampirism');
     html += `</div>`;
     container.innerHTML = html;
     
@@ -777,7 +777,6 @@ async function renderClanTalents(container, clan) {
             const op = btn.dataset.op; // 'incr' или 'decr'
             const delta = op === 'incr' ? 1 : -1;
             
-            // Блокируем кнопку на время запроса
             btn.disabled = true;
             try {
                 const adjustRes = await window.apiRequest('/clans/adjust-talent', {
@@ -793,16 +792,12 @@ async function renderClanTalents(container, clan) {
                     valueSpan.innerText = `+${currentVal + delta}`;
                     
                     // Обновляем доступные очки в заголовке
-                    const availableSpan = container.querySelector('.clans-talents-list')?.previousElementSibling;
-                    if (availableSpan) {
-                        // Пересчитаем распределённые и доступные
-                        const newDistributed = (currentVal + delta) + 
-                            [...container.querySelectorAll('.clans-talent-value')]
-                                .filter(span => span !== valueSpan)
-                                .reduce((sum, span) => sum + parseInt(span.innerText.replace('+', '')), 0);
-                        const totalPointsVal = totalPoints;
-                        const newAvailable = totalPointsVal - newDistributed;
-                        availableSpan.innerHTML = `Куплено очков: ${totalPointsVal} / ${maxPoints}<br>Доступно для распределения: ${newAvailable}`;
+                    const infoDiv = container.querySelector('div[style*="margin-bottom:12px"]');
+                    if (infoDiv) {
+                        const allValues = [...container.querySelectorAll('.clans-talent-value')].map(span => parseInt(span.innerText.replace('+', '')));
+                        const newDistributed = allValues.reduce((sum, v) => sum + v, 0);
+                        const newAvailable = totalPoints - newDistributed;
+                        infoDiv.innerHTML = `Куплено очков: ${totalPoints} / ${maxPoints}<br>Доступно для распределения: ${newAvailable}`;
                     }
                     
                     showToast('Распределение обновлено', 1000);
@@ -818,14 +813,14 @@ async function renderClanTalents(container, clan) {
     });
 }
 
-function renderTalentRow(name, value, key, disabled) {
+function renderTalentRow(name, value, key) {
     return `
         <div class="clans-talent-row">
             <span class="clans-talent-name">${name}</span>
             <span class="clans-talent-value">+${value}</span>
             <div class="clans-talent-controls-group">
-                <button class="talent-btn talent-minus" data-stat="${key}" data-op="decr" ${disabled && value === 0 ? 'disabled' : ''}><i class="fas fa-minus"></i></button>
-                <button class="talent-btn talent-plus" data-stat="${key}" data-op="incr" ${disabled && value === totalPoints ? 'disabled' : ''}><i class="fas fa-plus"></i></button>
+                <button class="talent-btn talent-minus" data-stat="${key}" data-op="decr"><i class="fas fa-minus"></i></button>
+                <button class="talent-btn talent-plus" data-stat="${key}" data-op="incr"><i class="fas fa-plus"></i></button>
             </div>
         </div>
     `;

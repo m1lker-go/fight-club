@@ -1,4 +1,4 @@
-// ========== МОДУЛЬ КЛАНОВ ==========
+// ========== МОДУЛЬ КЛАНОВ (ПОЛНАЯ ВЕРСИЯ СО ВСЕМИ ПРАВКАМИ) ==========
 let currentClanTab = 'info';
 let clanListSearch = '';
 let clanListType = 'all';
@@ -77,6 +77,12 @@ function getStatusColor(lastEnergy) {
     if (diffDays === 1) return '#f1c40f';
     if (diffDays <= 7) return '#aaa';
     return '#e74c3c';
+}
+
+// ------------------- ПЕРЕВОД КЛАССА -------------------
+function translateClass(classKey) {
+    const classes = { warrior: 'Воин', assassin: 'Ассасин', mage: 'Маг' };
+    return classes[classKey] || classKey || '—';
 }
 
 // ------------------- ИНИЦИАЛИЗАЦИЯ ЗАКРЫТИЯ МОДАЛОК -------------------
@@ -198,7 +204,7 @@ async function renderClansList() {
     document.querySelectorAll('.clan-row').forEach(row => row.addEventListener('click', () => showClanDetailsModal(row.dataset.clanId)));
 }
 
-// ------------------- МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА (с заявками) -------------------
+// ------------------- МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА (С ПРОВЕРКОЙ ЗАЯВКИ) -------------------
 async function showClanDetailsModal(clanId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -214,6 +220,7 @@ async function showClanDetailsModal(clanId) {
         const clan = data.clan;
         const members = data.members || [];
         const userMembership = data.userMembership;
+        const userApplicationStatus = data.userApplicationStatus || null; // 'pending' или null
         const iconClass = ICON_MAP[clan.icon_id] || 'fa-users';
         const maxMembers = getMaxMembers(clan.level);
         const sortedMembers = [...members].sort((a,b) => {
@@ -230,6 +237,22 @@ async function showClanDetailsModal(clanId) {
         if (sortedMembers.length > 20) membersHtml += `<li>... и ещё ${sortedMembers.length-20}</li>`;
         membersHtml += '</ul></div>';
         modalTitle.innerText = clan.name;
+        
+        let actionButtons = '';
+        if (userMembership) {
+            actionButtons = `<button id="clanLeaveBtn" class="btn btn-danger">Покинуть клан</button>`;
+        } else if (clan.join_type === 'open') {
+            actionButtons = `<button id="clanJoinBtn" class="btn btn-success">Присоединиться</button>`;
+        } else if (clan.join_type === 'application') {
+            if (userApplicationStatus === 'pending') {
+                actionButtons = `<button class="btn btn-disabled" disabled>Заявка отправлена</button>`;
+            } else {
+                actionButtons = `<button id="clanApplyBtn" class="btn btn-primary">Подать заявку</button>`;
+            }
+        } else {
+            actionButtons = `<button class="btn btn-disabled" disabled>Закрыт</button>`;
+        }
+        
         modalBody.innerHTML = `
             <div class="clan-details">
                 <div class="clan-details-header">
@@ -244,10 +267,7 @@ async function showClanDetailsModal(clanId) {
                 </div>
                 ${membersHtml}
                 <div class="clan-details-actions">
-                    ${userMembership ? `<button id="clanLeaveBtn" class="btn btn-danger">Покинуть клан</button>` : 
-                        (clan.join_type === 'open' ? `<button id="clanJoinBtn" class="btn btn-success">Присоединиться</button>` : 
-                        (clan.join_type === 'application' ? `<button id="clanApplyBtn" class="btn btn-primary">Подать заявку</button>` : 
-                        `<button class="btn btn-disabled" disabled>Закрыт</button>`))}
+                    ${actionButtons}
                     <button id="closeModalBtn" class="btn">Закрыть</button>
                 </div>
             </div>
@@ -262,8 +282,11 @@ async function showClanDetailsModal(clanId) {
         document.getElementById('clanApplyBtn')?.addEventListener('click', async () => {
             const res = await window.apiRequest('/clans/apply', { method: 'POST', body: JSON.stringify({ clan_id: clanId }) });
             const data = await res.json();
-            if (data.success) { showToast('Заявка отправлена!',1500); modal.style.display='none'; renderClans(); }
-            else showToast(data.error,1500);
+            if (data.success) { 
+                showToast('Заявка отправлена!',1500);
+                modal.style.display='none';
+                renderClans();
+            } else showToast(data.error,1500);
         });
         document.getElementById('clanLeaveBtn')?.addEventListener('click', async () => {
             if (confirm('Вы уверены, что хотите покинуть клан?')) {
@@ -359,7 +382,7 @@ function showCreateClanModal() {
     modal.style.display = 'flex';
 }
 
-// ------------------- МОЙ КЛАН (С ЦЕНТРИРОВАННОЙ ШАПКОЙ И ВКЛАДКАМИ, ДОБАВЛЕНА ВКЛАДКА ЗАЯВКИ) -------------------
+// ------------------- МОЙ КЛАН (С ЦЕНТРИРОВАННОЙ ШАПКОЙ И ВКЛАДКАМИ) -------------------
 function renderMyClan(clan, members, userRole, checkedTodayList = []) {
     const content = document.getElementById('content');
     const iconClass = ICON_MAP[clan.icon_id] || 'fa-users';
@@ -368,7 +391,6 @@ function renderMyClan(clan, members, userRole, checkedTodayList = []) {
     
     content.innerHTML = `
         <div class="clans-container">
-            <!-- Центрированная шапка с иконкой слева -->
             <div class="clan-header">
                 <div class="clan-header-icon" style="background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color};">
                     <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
@@ -385,7 +407,6 @@ function renderMyClan(clan, members, userRole, checkedTodayList = []) {
                     </div>
                 </div>
             </div>
-            <!-- Вкладки 3×2 (скругления только нижних углов) -->
             <div class="clans-tab-grid">
                 <div class="clans-tab-row">
                     <button class="clans-tab-btn ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info"><i class="fas fa-users"></i><span>Соратники</span></button>
@@ -566,7 +587,7 @@ function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
                 <td style="padding:6px 4px;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
                 <td style="text-align:center; padding:6px 4px;">${statusIcon}</td>
                 <td style="text-align:center; padding:6px 4px;">${checkinIcon}</td>
-             </tr>
+            </tr>
         `;
     }
     html += `</tbody></table>`;
@@ -665,12 +686,42 @@ async function renderClanCheckin(container, clan) {
     }
 }
 
-// ------------------- КАЗНА -------------------
+// ------------------- КАЗНА + ПОКУПКА ОЧКОВ НАВЫКОВ -------------------
 async function renderClanTreasury(container, clan) {
-    const res = await window.apiRequest('/clans/treasury');
-    const treasury = await res.json();
-    let html = `<div class="clans-treasury-balance">💰 ${treasury.coins} монет в казне</div><div class="clans-donate-form"><input type="number" id="donateAmount" placeholder="Сумма" min="1"><button id="donateBtn">Пожертвовать</button></div><div style="font-size:12px; color:#aaa;">За каждые 100 пожертвованных монет клан получает +1 опыт.</div>`;
+    const treasuryRes = await window.apiRequest('/clans/treasury');
+    const treasury = await treasuryRes.json();
+    const bonusesRes = await window.apiRequest('/clans/bonuses');
+    const bonuses = await bonusesRes.json();
+    const totalPoints = bonuses.total_points;
+    const maxPoints = clan.level * 5;
+    
+    let cost = 2000;
+    if (totalPoints >= 5 && totalPoints < 10) cost = 3000;
+    else if (totalPoints >= 10 && totalPoints < 20) cost = 4500;
+    else if (totalPoints >= 20) cost = 6000;
+    
+    let html = `
+        <div class="clans-treasury-balance">💰 ${treasury.coins} монет в казне</div>
+        <div class="clans-donate-form">
+            <input type="number" id="donateAmount" placeholder="Сумма" min="1">
+            <button id="donateBtn">Пожертвовать</button>
+        </div>
+        <div style="font-size:12px; color:#aaa; margin-bottom:20px;">За каждые 100 пожертвованных монет клан получает +1 опыт.</div>
+        <div style="margin-top:16px; padding-top:12px; border-top:1px solid #3a4050;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>Клановые навыки</strong><br>
+                    <span style="font-size:12px;">Куплено очков: ${totalPoints} / ${maxPoints}</span>
+                </div>
+                <button id="buySkillBtn" class="clans-submit-btn" style="width:auto; padding:6px 16px;">
+                    <i class="fas fa-coins"></i> ${cost} монет
+                </button>
+            </div>
+            <div style="font-size:11px; color:#aaa; margin-top:6px;">Покупка очка увеличивает бонусы для всех участников в клановых битвах</div>
+        </div>
+    `;
     container.innerHTML = html;
+    
     document.getElementById('donateBtn')?.addEventListener('click', async () => {
         const amount = parseInt(document.getElementById('donateAmount').value);
         if (isNaN(amount) || amount <= 0) { showToast('Введите корректную сумму', 1500); return; }
@@ -679,9 +730,21 @@ async function renderClanTreasury(container, clan) {
         if (data.success) { showToast(`Вы пожертвовали ${amount} монет!`, 1500); renderClanTreasury(container, clan); if (typeof refreshData === 'function') refreshData(); }
         else showToast(data.error, 1500);
     });
+    
+    document.getElementById('buySkillBtn')?.addEventListener('click', async () => {
+        const res = await window.apiRequest('/clans/buy-point', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`Очко навыка куплено за ${data.cost} монет!`, 1500);
+            renderClanTreasury(container, clan);
+            if (typeof refreshData === 'function') refreshData();
+        } else {
+            showToast(data.error, 1500);
+        }
+    });
 }
 
-// ------------------- ТАЛАНТЫ (НОВЫЕ КНОПКИ [+|-] БЕЗ 0) -------------------
+// ------------------- ТАЛАНТЫ (КНОПКИ [+|-]) -------------------
 async function renderClanTalents(container, clan) {
     const res = await window.apiRequest('/clans/bonuses');
     const bonuses = await res.json();
@@ -749,7 +812,7 @@ function renderTalentRow(name, value, key) {
     `;
 }
 
-// ------------------- УПРАВЛЕНИЕ (С SELECT ТИПА ВСТУПЛЕНИЯ И STATIC TEXTAREA) -------------------
+// ------------------- УПРАВЛЕНИЕ (НАСТРОЙКИ) -------------------
 function renderClanSettings(container, clan) {
     let currentIconId = clan.icon_id;
     let currentBgColor = clan.icon_bg_color;
@@ -853,7 +916,7 @@ function renderClanSettings(container, clan) {
     });
 }
 
-// ------------------- ЗАЯВКИ (ДЛЯ ЛИДЕРА) -------------------
+// ------------------- ЗАЯВКИ (ДЛЯ ЛИДЕРА) – РАСШИРЕННАЯ ТАБЛИЦА -------------------
 async function renderClanApplications(container, clan) {
     const res = await window.apiRequest('/clans/applications');
     const applications = await res.json();
@@ -865,17 +928,38 @@ async function renderClanApplications(container, clan) {
         container.innerHTML = '<div style="color:#aaa; text-align:center;">Нет заявок на вступление</div>';
         return;
     }
-    let html = `<div class="clans-applications-list"><table class="clans-members-table"><thead><tr><th>Игрок</th><th>Подана</th><th></th></tr></thead><tbody>`;
+    let html = `
+        <table class="clans-members-table" style="width:100%; font-size:13px;">
+            <thead>
+                <tr>
+                    <th>Игрок</th>
+                    <th>Уровень</th>
+                    <th>Класс</th>
+                    <th>Сила</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
     for (const app of applications) {
+        const level = app.hero_level || 1;
+        const heroClass = translateClass(app.hero_class);
+        const power = app.power || 0;
         const date = new Date(app.created_at).toLocaleString();
-        html += `<tr>
-            <td>${escapeHtml(app.username)}</td>
-            <td style="font-size:12px;">${date}</td>
-            <td><button class="clans-action-btn accept-app" data-id="${app.id}">Принять</button>
-            <button class="clans-action-btn reject-app" data-id="${app.id}">Отклонить</button></td>
-        </tr>`;
+        html += `
+            <tr>
+                <td><strong>${escapeHtml(app.username)}</strong><br><span style="font-size:10px; color:#aaa;">${date}</span></td>
+                <td>${level}</td>
+                <td>${heroClass}</td>
+                <td>${power}</td>
+                <td>
+                    <button class="clans-action-btn accept-app" data-id="${app.id}" style="background-color:#2ecc71; color:white;"><i class="fas fa-check"></i></button>
+                    <button class="clans-action-btn reject-app" data-id="${app.id}" style="background-color:#e74c3c; color:white;"><i class="fas fa-times"></i></button>
+                </td>
+            </tr>
+        `;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody></table>`;
     container.innerHTML = html;
     
     document.querySelectorAll('.accept-app').forEach(btn => {
@@ -886,7 +970,7 @@ async function renderClanApplications(container, clan) {
             if (data.success) {
                 showToast('Заявка принята', 1000);
                 renderClanApplications(container, clan);
-                renderClans(); // обновить весь клан
+                renderClans();
             } else showToast(data.error, 1500);
         });
     });

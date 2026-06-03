@@ -698,4 +698,171 @@ router.delete('/:id', async (req, res) => {
     } finally { client.release(); }
 });
 
+// ========== ЗАЯВКИ НА ВСТУПЛЕНИЕ ==========
+
+// 20. Подать заявку
+router.post('/apply', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { clan_id } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Проверка, не в клане ли уже
+        const existingMember = await client.query('SELECT 1 FROM clan_members WHERE user_id = $1', [userId]);
+        if (existingMember.rows.length > 0) throw new Error('Вы уже состоите в клане');
+        // Проверка существования клана и его типа
+        const clanRes = await client.query('SELECT id, join_type FROM clans WHERE id = $1', [clan_id]);
+        if (clanRes.rows.length === 0) throw new Error('Клан не найден');
+        const { join_type } = clanRes.rows[0];
+        if (join_type !== 'application') throw new Error('Этот клан не принимает заявки');
+        // Проверка, не подана ли уже заявка
+        const existingApp = await client.query(
+            'SELECT 1 FROM clan_applications WHERE clan_id = $1 AND user_id = $2 AND status = $3',
+            [clan_id, userId, 'pending']
+        );
+        if (existingApp.rows.length > 0) throw new Error('Вы уже подали заявку в этот клан');
+        await client.query(
+            'INSERT INTO clan_applications (clan_id, user_id, status, created_at) VALUES ($1, $2, $3, NOW())',
+            [clan_id, userId, 'pending']
+        );
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 21. Отменить свою заявку (опционально)
+router.post('/cancel-application', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { clan_id } = req.body;
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'DELETE FROM clan_applications WHERE clan_id = $1 AND user_id = $2 AND status = $3',
+            [clan_id, userId, 'pending']
+        );
+        if (result.rowCount === 0) throw new Error('Заявка не найдена');
+        res.json({ success: true });
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 22. Получить список заявок для лидера
+router.get('/applications', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const client = await pool.connect();
+    try {
+        const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
+        if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
+        if (memberRes.rows[0].role !== 'leader') throw new Error('Только лидер может просматривать заявки');
+        const clanId = memberRes.rows[0].clan_id;
+        const apps = await client.query(
+            `SELECT ca.id, ca.user_id, ca.created_at, u.username, u.avatar_id
+             FROM clan_applications ca
+             JOIN users u ON ca.user_id = u.id
+             WHERE ca.clan_id = $1 AND ca.status = 'pending'
+             ORDER BY ca.created_at ASC`,
+            [clanId]
+        );
+        res.json(apps.rows);
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 23. Принять заявку (лидер)
+router.post('/accept-application', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { application_id } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Проверка прав лидера
+        const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
+        if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
+        if (memberRes.rows[0].role !== 'leader') throw new Error('Только лидер может принимать заявки');
+        const clanId = memberRes.rows[0].clan_id;
+        // Получить заявку
+        const appRes = await client.query(
+            'SELECT user_id FROM clan_applications WHERE id = $1 AND clan_id = $2 AND status = $3',
+            [application_id, clanId, 'pending']
+        );
+        if (appRes.rows.length === 0) throw new Error('Заявка не найдена');
+        const applicantId = appRes.rows[0].user_id;
+        // Проверка, не в клане ли уже
+        const existing = await client.query('SELECT 1 FROM clan_members WHERE user_id = $1', [applicantId]);
+        if (existing.rows.length > 0) throw new Error('Пользователь уже в клане');
+        // Проверка мест
+        const clanInfo = await client.query('SELECT level, name FROM clans WHERE id = $1', [clanId]);
+        const level = clanInfo.rows[0].level;
+        const memberCountRes = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [clanId]);
+        const memberCount = parseInt(memberCountRes.rows[0].count);
+        const maxMembers = getMaxMembers(level);
+        if (memberCount >= maxMembers) throw new Error('Нет свободных мест');
+        // Принять: добавить в члены, удалить заявку
+        await client.query('INSERT INTO clan_members (clan_id, user_id, role) VALUES ($1, $2, $3)', [clanId, applicantId, 'member']);
+        await client.query('DELETE FROM clan_applications WHERE id = $1', [application_id]);
+        // Отправить системное сообщение
+        await client.query(
+            `INSERT INTO user_messages (user_id, from_text, subject, body, is_read, is_claimed)
+             VALUES ($1, 'Система', 'Заявка принята', $2, false, false)`,
+            [applicantId, `Ваша заявка на вступление в клан "${clanInfo.rows[0].name}" принята!`]
+        );
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 24. Отклонить заявку (лидер)
+router.post('/reject-application', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { application_id } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
+        if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
+        if (memberRes.rows[0].role !== 'leader') throw new Error('Только лидер может отклонять заявки');
+        const clanId = memberRes.rows[0].clan_id;
+        const appRes = await client.query(
+            'SELECT user_id FROM clan_applications WHERE id = $1 AND clan_id = $2 AND status = $3',
+            [application_id, clanId, 'pending']
+        );
+        if (appRes.rows.length === 0) throw new Error('Заявка не найдена');
+        const applicantId = appRes.rows[0].user_id;
+        await client.query('DELETE FROM clan_applications WHERE id = $1', [application_id]);
+        await client.query(
+            `INSERT INTO user_messages (user_id, from_text, subject, body, is_read, is_claimed)
+             VALUES ($1, 'Система', 'Заявка отклонена', 'Ваша заявка на вступление в клан отклонена лидером.', false, false)`,
+            [applicantId]
+        );
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

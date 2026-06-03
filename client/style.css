@@ -5254,21 +5254,20 @@ body {
 /* Вкладки */
 .clans-tabs {
     display: flex;
+    flex-wrap: wrap;
     background-color: #2a303c;
-    gap: 0;
-    flex-shrink: 0;
+    gap: 1px;
 }
 .clans-tab {
-    flex: 1;
+    flex: 1 0 auto;
+    min-width: 80px;
     background-color: #232833;
     border: none;
-    padding: 12px 0;
-    font-size: 14px;
+    padding: 8px 0;
+    font-size: 13px;
     font-weight: bold;
     cursor: pointer;
     color: #aaa;
-    border-radius: 0;
-    transition: none;
 }
 .clans-tab:first-child {
     border-radius: 12px 0 0 0;
@@ -5318,14 +5317,14 @@ body {
 /* Панель фильтров */
 .clans-filters-panel {
     background-color: #2a303c;
-    padding: 8px 12px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 .clans-filters-group {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
 }
 .clans-filter-input {
@@ -5333,7 +5332,7 @@ body {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     color: white;
     font-size: 14px;
 }
@@ -5342,31 +5341,29 @@ body {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     color: white;
     font-size: 14px;
 }
 .clans-filters-actions {
     display: flex;
-    gap: 8px;
-    justify-content: flex-start;
+    gap: 10px;
 }
 .clans-reset-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 6px 16px;
+    padding: 8px 16px;
     color: #aaa;
     font-size: 14px;
     cursor: pointer;
     flex: 1;
-    max-width: 100px;
 }
 .clans-apply-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 6px 24px;
+    padding: 8px 24px;
     color: #aaa;
     font-size: 14px;
     cursor: pointer;

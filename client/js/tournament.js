@@ -83,8 +83,8 @@ async function renderTournamentTab() {
             return;
         }
 
-        // 2. Если турнир завершён – показываем сообщение о завершении и кнопку обновления
-        //    (чтобы можно было перейти к регистрации, когда она откроется)
+        // 2. Если турнир завершён – показываем сообщение о завершении,
+        //    а также кнопку отмены регистрации (если пользователь всё ещё числится зарегистрированным)
         if (tournamentCompleted) {
             container.innerHTML = `
                 <div class="tournament-header">
@@ -95,11 +95,24 @@ async function renderTournamentTab() {
                     <i class="fas fa-trophy" style="font-size: 48px; color: #f1c40f;"></i>
                     <p style="margin-top: 15px;">Турнир завершён. Следующий турнир начнётся завтра в 20:00 МСК.</p>
                     <p>Регистрация откроется завтра в 00:00 МСК.</p>
-                    <button id="refreshTournamentBtn" class="tournament-action-btn">Обновить</button>
+                    ${status.isRegistered ? `<button id="forceUnregisterBtn" class="tournament-action-btn secondary" style="margin-top: 10px;">Отменить мою регистрацию</button>` : ''}
+                    <button id="refreshTournamentBtn" class="tournament-action-btn" style="margin-top: 10px;">Обновить</button>
                 </div>
             `;
             document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
             document.getElementById('refreshTournamentBtn')?.addEventListener('click', () => renderTournamentTab());
+            const unregBtn = document.getElementById('forceUnregisterBtn');
+            if (unregBtn) {
+                unregBtn.addEventListener('click', async () => {
+                    const res = await window.apiRequest('/tournament/unregister', { method: 'POST' });
+                    if (res.ok) {
+                        showToast('Регистрация отменена', 1500);
+                        renderTournamentTab();
+                    } else {
+                        showToast('Ошибка отмены', 1500);
+                    }
+                });
+            }
             return;
         }
 

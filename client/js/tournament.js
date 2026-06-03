@@ -6,6 +6,7 @@ let currentLeaders = null;
 let refreshInterval = null;
 let selectedTournamentClass = null;
 let selectedTournamentSubclass = null;
+let tournamentRefreshInterval = null;
 
 async function renderTournament() {
     const content = document.getElementById('content');
@@ -31,6 +32,17 @@ async function renderTournament() {
         });
     });
 
+    // Автообновление каждые 30 секунд для отображения актуального статуса турнира
+    if (tournamentRefreshInterval) clearInterval(tournamentRefreshInterval);
+    tournamentRefreshInterval = setInterval(() => {
+        const activeTab = document.querySelector('.tournament-tab.active')?.dataset.tab;
+        if (activeTab === 'tournament') {
+            renderTournamentTab();
+        } else if (activeTab === 'leaders') {
+            renderLeadersTab();
+        }
+    }, 30000);
+
     await renderTournamentTab();
     if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(() => {
@@ -48,25 +60,51 @@ async function renderTournamentTab() {
         const statusRes = await window.apiRequest('/tournament/status');
         const status = await statusRes.json();
 
-        const canRegister = status.canRegister;
+        let canRegister = status.canRegister;
         const isRegistered = status.isRegistered;
-        const tournamentActive = status.tournamentActive;
+        let tournamentActive = status.tournamentActive;
         const tournamentCompleted = status.tournamentCompleted;
+
+        // Дополнительная проверка: если турнир завершён, то регистрация невозможна,
+        // даже если canRegister вернул true (на случай рассинхрона)
+        if (tournamentCompleted) {
+            canRegister = false;
+            tournamentActive = false;
+        }
 
         if (!selectedTournamentClass && status.registeredClass) {
             selectedTournamentClass = status.registeredClass;
             selectedTournamentSubclass = status.registeredSubclass;
         }
 
-        if (tournamentCompleted && !tournamentActive) {
-            await renderBracket();
-            return;
-        }
+        // 1. Если турнир активен (идёт) и не завершён – показываем сетку
         if (tournamentActive && !tournamentCompleted) {
             await renderBracket();
             return;
         }
-        if (canRegister && !tournamentActive) {
+
+        // 2. Если турнир завершён – показываем сообщение о завершении и кнопку обновления
+        //    (чтобы можно было перейти к регистрации, когда она откроется)
+        if (tournamentCompleted) {
+            container.innerHTML = `
+                <div class="tournament-header">
+                    <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
+                    <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
+                </div>
+                <div style="text-align: center; padding: 20px; color: #aaa;">
+                    <i class="fas fa-trophy" style="font-size: 48px; color: #f1c40f;"></i>
+                    <p style="margin-top: 15px;">Турнир завершён. Следующий турнир начнётся завтра в 20:00 МСК.</p>
+                    <p>Регистрация откроется завтра в 00:00 МСК.</p>
+                    <button id="refreshTournamentBtn" class="tournament-action-btn">Обновить</button>
+                </div>
+            `;
+            document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
+            document.getElementById('refreshTournamentBtn')?.addEventListener('click', () => renderTournamentTab());
+            return;
+        }
+
+        // 3. Если можно зарегистрироваться и турнир ещё не начался
+        if (canRegister && !tournamentActive && !tournamentCompleted) {
             const classesHtml = `
                 <div class="tournament-class-row">
                     <div class="tournament-class-label">Класс</div>
@@ -173,6 +211,7 @@ async function renderTournamentTab() {
             return;
         }
 
+        // 4. Иное (например, регистрация ещё не открыта, но и турнир не начат)
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не начался. Загляните позже.</p>';
     } catch (err) {
         console.error(err);
@@ -198,7 +237,6 @@ async function renderBracket() {
         });
 
         let html = '<div class="tournament-bracket">';
-        // Для 32 участников: 1/16 (раунд 1), 1/8 (2), 1/4 (3), 1/2 (4), финал + матч за 3 место (5)
         for (let roundNum = 1; roundNum <= 5; roundNum++) {
             const roundMatches = rounds[roundNum] || [];
             if (roundMatches.length === 0 && roundNum === 5) break;

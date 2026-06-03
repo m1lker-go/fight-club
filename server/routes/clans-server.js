@@ -2,10 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-
 // ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -------------------
 
-// Запрещённые слова (добавьте реальные)
 const forbiddenWords = ['мат', 'хуй', 'пизда', 'бля', 'ебать'];
 
 function isNameValid(name) {
@@ -17,13 +15,12 @@ function isNameValid(name) {
     return true;
 }
 
-// Начисление опыта клану (и повышение уровня)
 async function addClanExp(clanId, expGain, client) {
     const clanRes = await client.query('SELECT level, exp FROM clans WHERE id = $1', [clanId]);
     if (clanRes.rows.length === 0) return;
     let { level, exp } = clanRes.rows[0];
     exp += expGain;
-    const expNeeded = level * 100; // формула: 100 * уровень
+    const expNeeded = level * 100;
     let leveledUp = false;
     while (exp >= expNeeded) {
         exp -= expNeeded;
@@ -32,7 +29,6 @@ async function addClanExp(clanId, expGain, client) {
     }
     await client.query('UPDATE clans SET level = $1, exp = $2 WHERE id = $3', [level, exp, clanId]);
     if (leveledUp) {
-        // Уведомление участников
         const members = await client.query('SELECT user_id FROM clan_members WHERE clan_id = $1', [clanId]);
         for (const m of members.rows) {
             await client.query(
@@ -45,14 +41,12 @@ async function addClanExp(clanId, expGain, client) {
     }
 }
 
-// Получить роль пользователя в клане
 async function getUserRoleInClan(userId, client) {
     const res = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
     if (res.rows.length === 0) return null;
     return { clanId: res.rows[0].clan_id, role: res.rows[0].role };
 }
 
-// Проверка прав (leader или officer)
 async function isLeaderOrOfficer(userId, clanId, client) {
     const res = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
     if (res.rows.length === 0) return false;
@@ -65,16 +59,15 @@ async function isLeaderOrOfficer(userId, clanId, client) {
 router.post('/create', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const { name, icon_class, icon_bg_color, icon_border_color, icon_color, payment_method } = req.body;
+    const { name, icon_id, icon_bg_color, icon_border_color, icon_color, payment_method } = req.body;
     
     if (!isNameValid(name)) {
         return res.status(400).json({ error: 'Некорректное название (3-30 символов, без мата)' });
     }
-    const allowedIcons = ['fa-sword', 'fa-axe', 'fa-shield-halded', 'fa-cat', 'fa-dog', 'fa-skull', 'fa-mask', 'fa-crown', 'fa-bolt', 'fa-dragon'];
-    if (!allowedIcons.includes(icon_class)) {
-        return res.status(400).json({ error: 'Неверная иконка' });
+    // icon_id от 1 до 10
+    if (!icon_id || icon_id < 1 || icon_id > 10) {
+        return res.status(400).json({ error: 'Неверный ID иконки' });
     }
-    // Простая валидация цветов (hex)
     const hexPattern = /^#[0-9A-Fa-f]{6}$/;
     if (!hexPattern.test(icon_bg_color) || !hexPattern.test(icon_border_color) || !hexPattern.test(icon_color)) {
         return res.status(400).json({ error: 'Неверный формат цвета' });
@@ -83,7 +76,6 @@ router.post('/create', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // Проверяем, не состоит ли уже в клане
         const existing = await client.query('SELECT 1 FROM clan_members WHERE user_id = $1', [userId]);
         if (existing.rows.length > 0) {
             return res.status(400).json({ error: 'Вы уже состоите в клане' });
@@ -105,16 +97,15 @@ router.post('/create', async (req, res) => {
         }
         
         const newClan = await client.query(
-            `INSERT INTO clans (name, icon_class, icon_bg_color, icon_border_color, icon_color, leader_id, coins_cost, diamonds_cost)
+            `INSERT INTO clans (name, icon_id, icon_bg_color, icon_border_color, icon_color, leader_id, coins_cost, diamonds_cost)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [name, icon_class, icon_bg_color, icon_border_color, icon_color, userId, coinsCost, diamondsCost]
+            [name, icon_id, icon_bg_color, icon_border_color, icon_color, userId, coinsCost, diamondsCost]
         );
         const clan = newClan.rows[0];
         await client.query(
             `INSERT INTO clan_members (clan_id, user_id, role) VALUES ($1, $2, 'leader')`,
             [clan.id, userId]
         );
-        // Создаём запись в казне и бонусах
         await client.query(`INSERT INTO clan_treasury (clan_id, coins) VALUES ($1, 0)`, [clan.id]);
         await client.query(`INSERT INTO clan_bonuses (clan_id) VALUES ($1)`, [clan.id]);
         
@@ -175,7 +166,7 @@ router.get('/list', async (req, res) => {
     const client = await pool.connect();
     try {
         let query = `
-            SELECT c.id, c.name, c.icon_class, c.icon_bg_color, c.icon_border_color, c.icon_color,
+            SELECT c.id, c.name, c.icon_id, c.icon_bg_color, c.icon_border_color, c.icon_color,
                    c.level, c.exp,
                    (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as current_members
             FROM clans c
@@ -437,18 +428,14 @@ router.post('/checkin', async (req, res) => {
         const today = new Date().toISOString().slice(0,10);
         if (memberRes.rows[0].daily_checkin_date === today) throw new Error('Вы уже отметились сегодня');
         
-        // Награда игроку
         const coinsReward = 50;
         const coalReward = 5;
         await client.query('UPDATE users SET coins = coins + $1, coal = coal + $2 WHERE id = $3', [coinsReward, coalReward, userId]);
         
-        // Обновляем дату отметки
         await client.query('UPDATE clan_members SET daily_checkin_date = $1 WHERE user_id = $2', [today, userId]);
         
-        // Начисляем опыт клану +10
         await addClanExp(clanId, 10, client);
         
-        // Проверяем, отметились ли все участники
         const totalMembers = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [clanId]);
         const checkedToday = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2', [clanId, today]);
         if (parseInt(checkedToday.rows[0].count) === parseInt(totalMembers.rows[0].count)) {
@@ -496,16 +483,12 @@ router.post('/donate', async (req, res) => {
         if (memberRes.rows.length === 0) throw new Error('Не в клане');
         const clanId = memberRes.rows[0].clan_id;
         
-        // Проверяем баланс игрока
         const userRes = await client.query('SELECT coins FROM users WHERE id = $1', [userId]);
         if (userRes.rows[0].coins < amount) throw new Error('Недостаточно монет');
         
-        // Списываем у игрока
         await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [amount, userId]);
-        // Добавляем в казну
         await client.query('UPDATE clan_treasury SET coins = coins + $1 WHERE clan_id = $2', [amount, clanId]);
         
-        // Начисляем опыт клану за каждые 100 монет
         const expGain = Math.floor(amount / 100);
         if (expGain > 0) {
             await addClanExp(clanId, expGain, client);
@@ -555,7 +538,6 @@ router.post('/buy-point', async (req, res) => {
         if (!roleInfo || roleInfo.role !== 'leader') throw new Error('Только лидер может покупать очки');
         const clanId = roleInfo.clanId;
         
-        // Получаем текущий уровень клана и купленные очки
         const clan = await client.query('SELECT level FROM clans WHERE id = $1', [clanId]);
         const level = clan.rows[0].level;
         const bonuses = await client.query('SELECT total_points FROM clan_bonuses WHERE clan_id = $1', [clanId]);
@@ -563,17 +545,14 @@ router.post('/buy-point', async (req, res) => {
         const maxPoints = level * 5;
         if (totalPoints >= maxPoints) throw new Error('Достигнут максимум очков для этого уровня');
         
-        // Определяем стоимость следующего очка
         let cost = 2000;
         if (totalPoints >= 5 && totalPoints < 10) cost = 3000;
         else if (totalPoints >= 10 && totalPoints < 20) cost = 4500;
         else if (totalPoints >= 20) cost = 6000;
         
-        // Проверяем казну
         const treasury = await client.query('SELECT coins FROM clan_treasury WHERE clan_id = $1', [clanId]);
         if (treasury.rows[0].coins < cost) throw new Error('Недостаточно монет в казне');
         
-        // Списываем монеты и увеличиваем total_points
         await client.query('UPDATE clan_treasury SET coins = coins - $1 WHERE clan_id = $2', [cost, clanId]);
         totalPoints++;
         await client.query('UPDATE clan_bonuses SET total_points = $1 WHERE clan_id = $2', [totalPoints, clanId]);

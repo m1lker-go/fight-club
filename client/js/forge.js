@@ -103,11 +103,11 @@ function renderResourcePanel() {
             <span class="resource-value">${legend}</span>
         </div>
         <div class="resource-row">
-            <i class="fas fa-coins" style="color: #aaa;"></i>
+            <i class="fas fa-cubes" style="color: #aaa;"></i>
             <span class="resource-value">${steel}</span>
         </div>
         <div class="resource-row">
-            <i class="fas fa-crown" style="color: #f1c40f;"></i>
+            <i class="fas fa-cubes" style="color: #f1c40f;"></i>
             <span class="resource-value">${gold}</span>
         </div>
     `;

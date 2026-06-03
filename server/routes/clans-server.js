@@ -832,6 +832,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 18. Редактирование настроек клана (добавлен join_type)
+// 18. Редактирование настроек клана (добавлен join_type и проверка описания)
 router.put('/:id/settings', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -852,7 +853,10 @@ router.put('/:id/settings', async (req, res) => {
             if (existing.rows.length > 0) throw new Error('Клан с таким названием уже существует');
             await client.query('UPDATE clans SET name = $1 WHERE id = $2', [name, clanId]);
         }
-        if (description !== undefined) await client.query('UPDATE clans SET description = $1 WHERE id = $2', [description, clanId]);
+        if (description !== undefined) {
+            if (!isDescriptionValid(description)) throw new Error('Описание должно быть не длиннее 150 символов и не содержать запрещённых слов');
+            await client.query('UPDATE clans SET description = $1 WHERE id = $2', [description, clanId]);
+        }
         if (join_type !== undefined) {
             if (!['open', 'application', 'invite_only'].includes(join_type)) throw new Error('Неверный тип вступления');
             await client.query('UPDATE clans SET join_type = $1 WHERE id = $2', [join_type, clanId]);
@@ -867,9 +871,10 @@ router.put('/:id/settings', async (req, res) => {
         await client.query('ROLLBACK');
         console.error(e);
         res.status(400).json({ error: e.message });
-    } finally { client.release(); }
+    } finally {
+        client.release();
+    }
 });
-
 // 19. Расформировать клан
 router.delete('/:id', async (req, res) => {
     const userId = req.userId;

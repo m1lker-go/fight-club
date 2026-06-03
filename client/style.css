@@ -5238,399 +5238,133 @@ body {
 }
 
 
-/* ========== КЛАНЫ – ОТДЕЛЬНЫЕ СТИЛИ ========== */
+/* ========== КЛАНЫ – ЕДИНЫЙ СТИЛЬ С ИГРОЙ ========== */
+
+/* Контейнер */
 .clans-container {
-    background-color: #232833;
+    background-color: #1a1f2b;
     border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     height: 100%;
-    width: 100%;
 }
 
-/* Вкладки */
-.clans-tabs {
-    display: flex;
-    background-color: #2a303c;
-    gap: 0;
-    flex-shrink: 0;
-}
-.clans-tab {
-    flex: 1;
-    background-color: #232833;
-    border: none;
-    padding: 12px 0;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #aaa;
-    border-radius: 0;
-    transition: none;
-}
-.clans-tab:first-child {
-    border-radius: 12px 0 0 0;
-}
-.clans-tab:last-child {
-    border-radius: 0 12px 0 0;
-}
-.clans-tab.active {
-    background-color: #00aaff;
-    color: white;
-}
-
-/* Контент внутри вкладок */
-.clans-tab-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px;
-}
-
-/* Список кланов (карточки) */
-.clans-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.clan-card {
-    background-color: #2a303c;
-    border-radius: 12px;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.clan-card:hover {
+/* Кнопка создания */
+.clans-create-btn {
     background-color: #2f3542;
-}
-.clan-icon {
-    width: 48px;
-    height: 48px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 8px;
-    flex-shrink: 0;
-}
-.clan-info {
-    flex: 1;
-}
-.clan-name {
-    font-weight: bold;
-    font-size: 16px;
-    color: white;
-}
-.clan-stats {
-    font-size: 12px;
+    border: 1px solid #aaa;
+    border-radius: 30px;
+    padding: 8px 20px;
     color: #aaa;
-    margin-top: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+    margin: 12px;
 }
-.clan-members {
-    font-size: 12px;
+.clans-create-btn:hover {
+    border-color: #00aaff;
     color: #00aaff;
 }
-.clan-join-btn {
+
+/* Заголовок */
+.clans-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background-color: #1a1f2b;
+    padding: 12px;
+    margin: 0;
+    border-bottom: 1px solid #00aaff;
+}
+
+/* Блок фильтров (светлый фон как в маркете) */
+.clans-filters-panel {
+    background-color: #2a303c;
+    padding: 12px;
+    border-radius: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.clans-filters-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.clans-filter-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
     padding: 6px 16px;
-    color: #aaa;
-    cursor: pointer;
-    font-size: 12px;
-}
-.clan-join-btn:hover {
-    border-color: #00aaff;
-    color: #00aaff;
-}
-
-/* Форма создания клана */
-.clans-create-form {
-    background-color: #2a303c;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-}
-.clans-form-group {
-    margin-bottom: 16px;
-}
-.clans-form-group label {
-    display: block;
     color: white;
-    margin-bottom: 6px;
     font-size: 14px;
-}
-.clans-form-group input, 
-.clans-form-group select {
-    width: 100%;
-    padding: 10px;
-    background-color: #1a1f2b;
-    border: 1px solid #aaa;
-    border-radius: 8px;
-    color: white;
-}
-.clans-icon-preview {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-.clans-icon-box {
-    width: 64px;
-    height: 64px;
-    background-color: #2c3e50;
-    border-radius: 12px;
-    border: 3px solid #f1c40f;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    color: white;
-}
-.clans-color-palette {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.clans-color-option {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
     cursor: pointer;
-    border: 2px solid transparent;
+    transition: all 0.2s;
 }
-.clans-color-option.selected {
-    border-color: white;
-    transform: scale(1.1);
-}
-.clans-payment-method {
-    display: flex;
-    gap: 16px;
-    margin: 12px 0;
-}
-.clans-payment-method label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.clans-submit-btn {
+.clans-filter-btn.active {
     background-color: #00aaff;
-    border: none;
-    border-radius: 30px;
-    padding: 12px;
+    border-color: #00aaff;
     color: white;
-    font-weight: bold;
-    cursor: pointer;
-    width: 100%;
 }
-
-/* Таблица участников */
-.clans-members-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.clans-members-table th,
-.clans-members-table td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #1a1f2b;
-}
-.clans-members-table th {
+.clans-filter-btn:hover:not(.active) {
+    border-color: #00aaff;
     color: #00aaff;
 }
-.clans-role-badge {
-    font-size: 11px;
-    background-color: #1a1f2b;
-    padding: 2px 6px;
-    border-radius: 20px;
-    color: #aaa;
-}
-.clans-role-badge.leader { background-color: #f1c40f; color: #1a1f2b; }
-.clans-role-badge.officer { background-color: #2ecc71; color: #1a1f2b; }
-
-/* Чат */
-.clans-chat {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-.clans-chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    background-color: #1a1f2b;
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 8px;
-}
-.clans-chat-message {
-    margin-bottom: 8px;
-    font-size: 13px;
-}
-.clans-chat-message strong {
-    color: #00aaff;
-}
-.clans-chat-message.system {
-    color: #aaa;
-    font-style: italic;
-}
-.clans-chat-input {
-    display: flex;
-    gap: 8px;
-}
-.clans-chat-input input {
-    flex: 1;
-    padding: 10px;
-    background-color: #2a303c;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    color: white;
-}
-.clans-chat-input button {
-    background-color: #00aaff;
-    border: none;
-    border-radius: 20px;
-    padding: 0 16px;
-    color: white;
-    cursor: pointer;
-}
-
-/* Казна */
-.clans-treasury-balance {
-    background-color: #1a1f2b;
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    color: #f1c40f;
-    margin-bottom: 16px;
-}
-.clans-donate-form {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-.clans-donate-form input {
-    flex: 1;
-    padding: 10px;
-    background-color: #2a303c;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    color: white;
-}
-.clans-donate-form button {
+.clans-apply-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 0 16px;
-    color: white;
-    cursor: pointer;
-}
-
-/* Таланты */
-.clans-talents-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.clans-talent-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #2a303c;
-    padding: 10px;
-    border-radius: 12px;
-}
-.clans-talent-name {
-    font-weight: bold;
-}
-.clans-talent-value {
-    font-size: 16px;
-    font-weight: bold;
-    color: #00aaff;
-}
-.clans-talent-controls button {
-    background-color: #2f3542;
-    border: none;
-    border-radius: 20px;
-    padding: 4px 12px;
-    color: white;
-    cursor: pointer;
-}
-
-/* Кнопки управления (исключить, повысить) */
-.clans-action-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 11px;
-    cursor: pointer;
+    padding: 6px 20px;
     color: #aaa;
-    margin: 0 2px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
-.clans-action-btn.danger {
-    border-color: #e74c3c;
-    color: #e74c3c;
-}
-.clans-action-btn:hover {
+.clans-apply-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
 }
 
-
-/* ========== КЛАНЫ – НОВЫЕ СТИЛИ ДЛЯ ТАБЛИЦЫ И МОДАЛКИ ========== */
-.clans-list-header {
-    padding: 12px;
-    background-color: #1a1f2b;
-    border-bottom: 1px solid #00aaff;
-}
-.clans-list-header h3 {
-    margin: 0 0 10px 0;
-    color: white;
-}
-.clans-filters {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.clans-filters input, .clans-filters select {
-    padding: 6px 10px;
-    background-color: #2a303c;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    color: white;
-}
+/* Таблица кланов (как в рейтинге) */
 .clans-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 14px;
 }
 .clans-table th {
     background-color: #1a1f2b;
-    padding: 10px 6px;
-    text-align: left;
     color: #00aaff;
     font-weight: bold;
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #2a303c;
 }
 .clans-table td {
-    padding: 8px 6px;
-    vertical-align: middle;
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid #2a303c;
 }
-.clans-table .even-row {
-    background-color: #2a303c;
-}
-.clans-table .odd-row {
+.clans-table tbody tr:nth-child(odd) {
     background-color: #232833;
+}
+.clans-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
 }
 .clans-table .empty-row td {
     text-align: center;
     color: #555;
-    padding: 12px;
 }
+
+/* Иконка в таблице */
 .clan-icon-small {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5649,6 +5383,7 @@ body {
     border: 1px solid #aaa;
     border-radius: 20px;
     padding: 4px 12px;
+    font-size: 12px;
     color: #aaa;
     cursor: pointer;
 }
@@ -5656,6 +5391,7 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
+
 /* Модальное окно просмотра клана */
 .clan-details {
     max-height: 70vh;
@@ -5677,6 +5413,7 @@ body {
 }
 .clan-details-info h2 {
     margin: 0 0 5px 0;
+    color: white;
 }
 .clan-details-members h4 {
     margin: 10px 0;
@@ -5713,8 +5450,4 @@ body {
     background-color: #00aaff;
     color: white;
     border: none;
-}
-.btn-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }

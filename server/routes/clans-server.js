@@ -558,7 +558,7 @@ router.post('/redistribute', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Получить публичную информацию о клане (для просмотра)
+// 17. Получить публичную информацию о клане (для просмотра) – исправлено без player_stats
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
     if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
@@ -572,26 +572,33 @@ router.get('/:id', async (req, res) => {
         );
         if (clanRes.rows.length === 0) return res.status(404).json({ error: 'Клан не найден' });
         const clan = clanRes.rows[0];
+        
         const membersRes = await client.query(
             `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at,
-                    COALESCE(ps.power, 0) as power
+                    0 as power
              FROM clan_members cm
              JOIN users u ON cm.user_id = u.id
-             LEFT JOIN player_stats ps ON ps.user_id = u.id AND ps.class = u.current_class
              WHERE cm.clan_id = $1
-             ORDER BY cm.role = 'leader' DESC, ps.power DESC`,
+             ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
             [clanId]
         );
+        
         let userMembership = null;
         if (userId) {
-            const userMember = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
+            const userMember = await client.query(
+                'SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2',
+                [userId, clanId]
+            );
             if (userMember.rows.length) userMembership = userMember.rows[0].role;
         }
+        
         res.json({ clan, members: membersRes.rows, userMembership });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: e.message });
-    } finally { client.release(); }
+    } finally {
+        client.release();
+    }
 });
 
 // 18. Редактирование настроек клана (только лидер)

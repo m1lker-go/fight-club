@@ -594,124 +594,7 @@ router.post('/redistribute', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Получить публичную информацию о клане (с проверкой статуса заявки)
-router.get('/:id', async (req, res) => {
-    const clanId = parseInt(req.params.id);
-    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
-    const userId = req.userId;
-    const client = await pool.connect();
-    try {
-        const clanRes = await client.query(
-            `SELECT c.*, (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
-             FROM clans c WHERE c.id = $1`,
-            [clanId]
-        );
-        if (clanRes.rows.length === 0) return res.status(404).json({ error: 'Клан не найден' });
-        const clan = clanRes.rows[0];
 
-        const membersRes = await client.query(
-            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy, 0 as power
-             FROM clan_members cm
-             JOIN users u ON cm.user_id = u.id
-             WHERE cm.clan_id = $1
-             ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
-            [clanId]
-        );
-
-        let userMembership = null;
-        if (userId) {
-            const userMember = await client.query(
-                'SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2',
-                [userId, clanId]
-            );
-            if (userMember.rows.length) userMembership = userMember.rows[0].role;
-        }
-
-        // --- ДОБАВЛЯЕМ СТАТУС ЗАЯВКИ ДЛЯ ТЕКУЩЕГО ИГРОКА ---
-        let userApplicationStatus = null;
-        if (userId) {
-            const appCheck = await client.query(
-                'SELECT status FROM clan_applications WHERE clan_id = $1 AND user_id = $2 AND status = $3',
-                [clanId, userId, 'pending']
-            );
-            if (appCheck.rows.length > 0) userApplicationStatus = appCheck.rows[0].status;
-        }
-
-        res.json({ clan, members: membersRes.rows, userMembership, userApplicationStatus });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: e.message });
-    } finally {
-        client.release();
-    }
-});
-
-// 18. Редактирование настроек клана (добавлен join_type)
-router.put('/:id/settings', async (req, res) => {
-    const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const clanId = parseInt(req.params.id);
-    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
-    const { name, description, icon_id, icon_bg_color, icon_border_color, icon_color, join_type } = req.body;
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        const roleRes = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
-        if (roleRes.rows.length === 0 || roleRes.rows[0].role !== 'leader') {
-            await client.query('ROLLBACK');
-            return res.status(403).json({ error: 'Только лидер может редактировать клан' });
-        }
-        if (name !== undefined) {
-            if (!isNameValid(name)) throw new Error('Некорректное название (3-30 символов, без мата)');
-            const existing = await client.query('SELECT id FROM clans WHERE name = $1 AND id != $2', [name, clanId]);
-            if (existing.rows.length > 0) throw new Error('Клан с таким названием уже существует');
-            await client.query('UPDATE clans SET name = $1 WHERE id = $2', [name, clanId]);
-        }
-        if (description !== undefined) await client.query('UPDATE clans SET description = $1 WHERE id = $2', [description, clanId]);
-        if (join_type !== undefined) {
-            if (!['open', 'application', 'invite_only'].includes(join_type)) throw new Error('Неверный тип вступления');
-            await client.query('UPDATE clans SET join_type = $1 WHERE id = $2', [join_type, clanId]);
-        }
-        if (icon_id !== undefined && icon_id >= 1 && icon_id <= 10) await client.query('UPDATE clans SET icon_id = $1 WHERE id = $2', [icon_id, clanId]);
-        if (icon_bg_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_bg_color)) await client.query('UPDATE clans SET icon_bg_color = $1 WHERE id = $2', [icon_bg_color, clanId]);
-        if (icon_border_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_border_color)) await client.query('UPDATE clans SET icon_border_color = $1 WHERE id = $2', [icon_border_color, clanId]);
-        if (icon_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_color)) await client.query('UPDATE clans SET icon_color = $1 WHERE id = $2', [icon_color, clanId]);
-        await client.query('COMMIT');
-        res.json({ success: true });
-    } catch (e) {
-        await client.query('ROLLBACK');
-        console.error(e);
-        res.status(400).json({ error: e.message });
-    } finally { client.release(); }
-});
-
-// 19. Расформировать клан
-router.delete('/:id', async (req, res) => {
-    const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const clanId = parseInt(req.params.id);
-    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        const roleRes = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
-        if (roleRes.rows.length === 0 || roleRes.rows[0].role !== 'leader') {
-            await client.query('ROLLBACK');
-            return res.status(403).json({ error: 'Только лидер может расформировать клан' });
-        }
-        await client.query('DELETE FROM clan_members WHERE clan_id = $1', [clanId]);
-        await client.query('DELETE FROM clan_messages WHERE clan_id = $1', [clanId]);
-        await client.query('DELETE FROM clan_treasury WHERE clan_id = $1', [clanId]);
-        await client.query('DELETE FROM clan_bonuses WHERE clan_id = $1', [clanId]);
-        await client.query('DELETE FROM clans WHERE id = $1', [clanId]);
-        await client.query('COMMIT');
-        res.json({ success: true });
-    } catch (e) {
-        await client.query('ROLLBACK');
-        console.error(e);
-        res.status(500).json({ error: e.message });
-    } finally { client.release(); }
-});
 
 // ========== ЗАЯВКИ НА ВСТУПЛЕНИЕ ==========
 
@@ -883,6 +766,126 @@ router.post('/reject-application', async (req, res) => {
     } finally {
         client.release();
     }
+});
+
+
+// 17. Получить публичную информацию о клане (с проверкой статуса заявки)
+router.get('/:id', async (req, res) => {
+    const clanId = parseInt(req.params.id);
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    const userId = req.userId;
+    const client = await pool.connect();
+    try {
+        const clanRes = await client.query(
+            `SELECT c.*, (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
+             FROM clans c WHERE c.id = $1`,
+            [clanId]
+        );
+        if (clanRes.rows.length === 0) return res.status(404).json({ error: 'Клан не найден' });
+        const clan = clanRes.rows[0];
+
+        const membersRes = await client.query(
+            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy, 0 as power
+             FROM clan_members cm
+             JOIN users u ON cm.user_id = u.id
+             WHERE cm.clan_id = $1
+             ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
+            [clanId]
+        );
+
+        let userMembership = null;
+        if (userId) {
+            const userMember = await client.query(
+                'SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2',
+                [userId, clanId]
+            );
+            if (userMember.rows.length) userMembership = userMember.rows[0].role;
+        }
+
+        // --- ДОБАВЛЯЕМ СТАТУС ЗАЯВКИ ДЛЯ ТЕКУЩЕГО ИГРОКА ---
+        let userApplicationStatus = null;
+        if (userId) {
+            const appCheck = await client.query(
+                'SELECT status FROM clan_applications WHERE clan_id = $1 AND user_id = $2 AND status = $3',
+                [clanId, userId, 'pending']
+            );
+            if (appCheck.rows.length > 0) userApplicationStatus = appCheck.rows[0].status;
+        }
+
+        res.json({ clan, members: membersRes.rows, userMembership, userApplicationStatus });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
+// 18. Редактирование настроек клана (добавлен join_type)
+router.put('/:id/settings', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const clanId = parseInt(req.params.id);
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    const { name, description, icon_id, icon_bg_color, icon_border_color, icon_color, join_type } = req.body;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const roleRes = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
+        if (roleRes.rows.length === 0 || roleRes.rows[0].role !== 'leader') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Только лидер может редактировать клан' });
+        }
+        if (name !== undefined) {
+            if (!isNameValid(name)) throw new Error('Некорректное название (3-30 символов, без мата)');
+            const existing = await client.query('SELECT id FROM clans WHERE name = $1 AND id != $2', [name, clanId]);
+            if (existing.rows.length > 0) throw new Error('Клан с таким названием уже существует');
+            await client.query('UPDATE clans SET name = $1 WHERE id = $2', [name, clanId]);
+        }
+        if (description !== undefined) await client.query('UPDATE clans SET description = $1 WHERE id = $2', [description, clanId]);
+        if (join_type !== undefined) {
+            if (!['open', 'application', 'invite_only'].includes(join_type)) throw new Error('Неверный тип вступления');
+            await client.query('UPDATE clans SET join_type = $1 WHERE id = $2', [join_type, clanId]);
+        }
+        if (icon_id !== undefined && icon_id >= 1 && icon_id <= 10) await client.query('UPDATE clans SET icon_id = $1 WHERE id = $2', [icon_id, clanId]);
+        if (icon_bg_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_bg_color)) await client.query('UPDATE clans SET icon_bg_color = $1 WHERE id = $2', [icon_bg_color, clanId]);
+        if (icon_border_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_border_color)) await client.query('UPDATE clans SET icon_border_color = $1 WHERE id = $2', [icon_border_color, clanId]);
+        if (icon_color && /^#[0-9A-Fa-f]{6}$/i.test(icon_color)) await client.query('UPDATE clans SET icon_color = $1 WHERE id = $2', [icon_color, clanId]);
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(400).json({ error: e.message });
+    } finally { client.release(); }
+});
+
+// 19. Расформировать клан
+router.delete('/:id', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const clanId = parseInt(req.params.id);
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const roleRes = await client.query('SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2', [userId, clanId]);
+        if (roleRes.rows.length === 0 || roleRes.rows[0].role !== 'leader') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Только лидер может расформировать клан' });
+        }
+        await client.query('DELETE FROM clan_members WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clan_messages WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clan_treasury WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clan_bonuses WHERE clan_id = $1', [clanId]);
+        await client.query('DELETE FROM clans WHERE id = $1', [clanId]);
+        await client.query('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally { client.release(); }
 });
 
 module.exports = router;

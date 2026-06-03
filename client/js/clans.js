@@ -3,16 +3,16 @@ let currentClanTab = 'info'; // info, chat, checkin, treasury, talents, settings
 
 // Маппинг icon_id (1-10) → класс Font Awesome
 const ICON_MAP = {
-    1: 'fa-cat',
-    2: 'fa-dog',
-    3: 'fa-sword',
-    4: 'fa-axe',
-    5: 'fa-shield-halded',
-    6: 'fa-skull',
-    7: 'fa-mask',
-    8: 'fa-crown',
-    9: 'fa-bolt',
-    10: 'fa-dragon'
+    1: 'fa-cat',                    // Кот
+    2: 'fa-dog',                    // Пёс
+    3: 'arrow-archery',             // вместо меча
+    4: 'axe-battle',                // топор
+    5: 'shield-cat',                // щит
+    6: 'fa-skull',                  // череп
+    7: 'wolf-pack-battalion',       // вместо маски
+    8: 'fa-crown',                  // корона
+    9: 'fa-bolt',                   // молния
+    10: 'fa-dragon'                 // дракон
 };
 
 // Главная точка входа
@@ -386,18 +386,18 @@ function showCreateClanModal() {
                     </div>
                     <div>
                         <div>Выберите иконку:</div>
-                        <select id="iconSelect">
-                            <option value="1">Кот</option>
-                            <option value="2">Пёс</option>
-                            <option value="3">Меч</option>
-                            <option value="4">Топор</option>
-                            <option value="5">Щит</option>
-                            <option value="6">Череп</option>
-                            <option value="7">Маска</option>
-                            <option value="8">Корона</option>
-                            <option value="9">Молния</option>
-                            <option value="10">Дракон</option>
-                        </select>
+                      <select id="iconSelect">
+    <option value="1">Кот</option>
+    <option value="2">Пёс</option>
+    <option value="3">Лук (стрела)</option>
+    <option value="4">Боевой топор</option>
+    <option value="5">Щит-кот</option>
+    <option value="6">Череп</option>
+    <option value="7">Волчья стая</option>
+    <option value="8">Корона</option>
+    <option value="9">Молния</option>
+    <option value="10">Дракон</option>
+</select>
                     </div>
                 </div>
                 <div style="margin: 12px 0;">Цвет фона:</div>

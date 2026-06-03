@@ -5238,7 +5238,7 @@ body {
 }
 
 
-/* ========== КЛАНЫ – ПОЛНЫЙ КОМПЛЕКТ СТИЛЕЙ ========== */
+/* ========== КЛАНЫ – ПОЛНЫЙ КОМПЛЕКТ СТИЛЕЙ (исправленный, без дублей) ========== */
 
 /* Общий контейнер */
 .clans-container {
@@ -5251,58 +5251,386 @@ body {
     width: 100%;
 }
 
-/* Вкладки */
-.clans-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    background-color: #2a303c;
-    gap: 1px;
+/* ---------- ШАПКА КЛАНА (ИКОНКА СЛЕВА, ТЕКСТ ПО ЦЕНТРУ) ---------- */
+.clan-header {
+    position: relative;
+    background-color: #1a1f2b;
+    padding: 12px;
+    border-bottom: 1px solid #00aaff;
+    text-align: center;
 }
-.clans-tab {
-    flex: 1 0 auto;
-    min-width: 80px;
-    background-color: #232833;
-    border: none;
-    padding: 8px 0;
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
+.clan-header-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.clan-header-title {
+    text-align: center;
+}
+.clan-header-title h2 {
+    margin: 0;
+    color: white;
+    font-size: 1.3rem;
+}
+.clan-header-level {
+    font-size: 12px;
     color: #aaa;
 }
-.clans-tab:first-child {
-    border-radius: 12px 0 0 0;
+.clan-header-exp {
+    text-align: center;
+    margin-top: 6px;
 }
-.clans-tab:last-child {
-    border-radius: 0 12px 0 0;
+.clan-header-exp .exp-label {
+    display: inline-block;
+    font-size: 10px;
+    color: white;
+    margin-right: 5px;
 }
-.clans-tab.active {
+.clan-header-exp .exp-value {
+    display: inline-block;
+    font-size: 10px;
+    color: #00aaff;
+}
+.clan-header-exp .exp-bar-bg {
+    background-color: #2f3542;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+    width: 100%;
+}
+.clan-header-exp .exp-bar-fill {
     background-color: #00aaff;
+    height: 100%;
+    width: 0%;
+}
+
+/* ---------- ВКЛАДКИ 3×2 (СКРУГЛЕНИЯ: У ВЕРХНЕГО РЯДА – СВЕРХУ, У НИЖНЕГО – СНИЗУ) ---------- */
+.clans-tab-grid {
+    background-color: #2a303c;
+    padding: 2px;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+.clans-tab-row {
+    display: flex;
+    gap: 1px;
+}
+.clans-tab-btn {
+    flex: 1;
+    background-color: #232833;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    gap: 4px;
+    cursor: pointer;
+    color: #aaa;
+    font-size: 11px;
+    font-weight: normal;
+    transition: none;
+    border-radius: 0 !important;
+}
+/* Верхний ряд: скругления только сверху */
+.clans-tab-row:first-child .clans-tab-btn:first-child {
+    border-radius: 12px 0 0 0 !important;
+}
+.clans-tab-row:first-child .clans-tab-btn:last-child {
+    border-radius: 0 12px 0 0 !important;
+}
+/* Нижний ряд: скругления только снизу */
+.clans-tab-row:last-child .clans-tab-btn:first-child {
+    border-radius: 0 0 0 12px !important;
+}
+.clans-tab-row:last-child .clans-tab-btn:last-child {
+    border-radius: 0 0 12px 0 !important;
+}
+.clans-tab-btn i {
+    font-size: 18px;
+    color: #aaa;
+}
+.clans-tab-btn span {
+    font-size: 10px;
+    color: #aaa;
+}
+.clans-tab-btn.active {
+    background-color: #00aaff;
+}
+.clans-tab-btn.active i,
+.clans-tab-btn.active span {
     color: white;
 }
+.clans-tab-btn.disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.clans-tab-btn:not(.active):not(.disabled):hover {
+    background-color: #2f3542;
+}
+.clans-tab-btn:not(.active):not(.disabled):hover i,
+.clans-tab-btn:not(.active):not(.disabled):hover span {
+    color: #00aaff;
+}
+
+/* ---------- ОБЛАСТЬ КОНТЕНТА ВКЛАДОК ---------- */
 .clans-tab-content {
     flex: 1;
     overflow-y: auto;
     padding: 12px;
 }
 
-/* Кнопка создания клана (в списке) */
-.clans-create-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
+/* ---------- КНОПКИ ОБЩИЕ ---------- */
+.clans-submit-btn {
+    background-color: #00aaff;
+    border: none;
     border-radius: 30px;
-    padding: 8px 20px;
-    color: #aaa;
+    padding: 12px;
+    color: white;
     font-weight: bold;
     cursor: pointer;
-    margin: 12px;
-    display: inline-block;
+    width: 100%;
 }
-.clans-create-btn:hover {
+.clans-submit-btn:hover {
+    opacity: 0.9;
+}
+.clans-action-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    color: #aaa;
+    margin: 0 2px;
+}
+.clans-action-btn.danger {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+.clans-action-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
 }
 
-/* Заголовок списка */
+/* ---------- ТАБЛИЦА УЧАСТНИКОВ ---------- */
+.clans-members-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.clans-members-table th,
+.clans-members-table td {
+    padding: 8px 4px;
+    text-align: left;
+    border-bottom: 1px solid #2a303c;
+}
+.clans-members-table th {
+    background-color: #1a1f2b;
+    color: #00aaff;
+    font-weight: bold;
+}
+.clans-members-table tbody tr:nth-child(odd) {
+    background-color: #232833;
+}
+.clans-members-table tbody tr:nth-child(even) {
+    background-color: #2a303c;
+}
+.clans-role-badge {
+    font-size: 11px;
+    background-color: #1a1f2b;
+    padding: 2px 6px;
+    border-radius: 20px;
+    color: #aaa;
+}
+.clans-role-badge.leader { background-color: #f1c40f; color: #1a1f2b; }
+.clans-role-badge.officer { background-color: #2ecc71; color: #1a1f2b; }
+
+/* ---------- ЧАТ ---------- */
+.clans-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.clans-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #1a1f2b;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+.clans-chat-message {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+.clans-chat-message strong {
+    color: #00aaff;
+}
+.clans-chat-input {
+    display: flex;
+    gap: 8px;
+}
+.clans-chat-input input {
+    flex: 1;
+    padding: 10px;
+    background-color: #2a303c;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    color: white;
+}
+.clans-chat-input button {
+    background-color: #00aaff;
+    border: none;
+    border-radius: 20px;
+    padding: 0 16px;
+    color: white;
+    cursor: pointer;
+}
+
+/* ---------- КАЗНА ---------- */
+.clans-treasury-balance {
+    background-color: #1a1f2b;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #f1c40f;
+    margin-bottom: 16px;
+}
+.clans-donate-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.clans-donate-form input {
+    flex: 1;
+    padding: 10px;
+    background-color: #2a303c;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    color: white;
+}
+.clans-donate-form button {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 0 16px;
+    color: white;
+    cursor: pointer;
+}
+.clans-donate-form button:hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}
+
+/* ---------- ТАЛАНТЫ (ГРУППИРОВАННЫЕ КНОПКИ [+|-]) ---------- */
+.clans-talents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.clans-talent-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2a303c;
+    padding: 8px 12px;
+    border-radius: 12px;
+}
+.clans-talent-name {
+    font-weight: bold;
+    width: 100px;
+    color: white;
+}
+.clans-talent-value {
+    text-align: center;
+    min-width: 60px;
+    font-weight: bold;
+    color: #00aaff;
+    font-size: 16px;
+}
+.clans-talent-controls-group {
+    display: inline-flex;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #2f3542;
+}
+.talent-btn {
+    background-color: #2f3542;
+    border: none;
+    padding: 4px 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    transition: background-color 0.2s;
+    min-width: 36px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.talent-btn i {
+    font-size: 14px;
+    color: #aaa;
+}
+.talent-btn:hover {
+    background-color: #3a4050;
+}
+.talent-btn:hover i {
+    color: #00aaff;
+}
+.talent-minus {
+    border-right: 1px solid #aaa;
+    border-radius: 6px 0 0 6px;
+}
+.talent-plus {
+    border-left: 1px solid #aaa;
+    border-radius: 0 6px 6px 0;
+}
+
+/* ---------- ФОРМА УПРАВЛЕНИЯ (НАСТРОЙКИ) ---------- */
+.clans-form-group {
+    margin-bottom: 16px;
+}
+.clans-form-group label {
+    display: block;
+    color: white;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.clans-form-group input,
+.clans-form-group select,
+.clans-form-group textarea {
+    width: 100%;
+    padding: 10px;
+    background-color: #1a1f2b;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+.clans-form-group textarea {
+    resize: none;
+    font-family: inherit;
+}
+
+/* ---------- СПИСОК КЛАНОВ (ТАБЛИЦА) ---------- */
 .clans-title {
     text-align: center;
     font-size: 18px;
@@ -5313,8 +5641,6 @@ body {
     margin: 0;
     border-bottom: 1px solid #00aaff;
 }
-
-/* Панель фильтров */
 .clans-filters-panel {
     background-color: #2a303c;
     padding: 12px;
@@ -5349,7 +5675,8 @@ body {
     display: flex;
     gap: 10px;
 }
-.clans-reset-btn {
+.clans-reset-btn,
+.clans-apply-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
@@ -5357,24 +5684,18 @@ body {
     color: #aaa;
     font-size: 14px;
     cursor: pointer;
-    flex: 1;
 }
 .clans-apply-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    padding: 8px 24px;
-    color: #aaa;
-    font-size: 14px;
-    cursor: pointer;
     flex: 2;
 }
-.clans-reset-btn:hover, .clans-apply-btn:hover {
+.clans-reset-btn {
+    flex: 1;
+}
+.clans-reset-btn:hover,
+.clans-apply-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
 }
-
-/* Таблица кланов */
 .clans-table {
     width: 100%;
     border-collapse: collapse;
@@ -5434,30 +5755,27 @@ body {
     border-color: #00aaff;
     color: #00aaff;
 }
+.clans-create-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 30px;
+    padding: 8px 20px;
+    color: #aaa;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 12px;
+    display: inline-block;
+}
+.clans-create-btn:hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}
 
-/* Форма создания клана (модалка) */
+/* ---------- ФОРМА СОЗДАНИЯ КЛАНА (МОДАЛКА) ---------- */
 .clans-create-form {
     background-color: #2a303c;
     border-radius: 12px;
     padding: 16px;
-}
-.clans-form-group {
-    margin-bottom: 16px;
-}
-.clans-form-group label {
-    display: block;
-    color: white;
-    margin-bottom: 6px;
-    font-size: 14px;
-}
-.clans-form-group input, 
-.clans-form-group select {
-    width: 100%;
-    padding: 10px;
-    background-color: #1a1f2b;
-    border: 1px solid #aaa;
-    border-radius: 8px;
-    color: white;
 }
 .clans-icon-preview {
     display: flex;
@@ -5502,164 +5820,8 @@ body {
     gap: 6px;
     color: white;
 }
-.clans-submit-btn {
-    background-color: #00aaff;
-    border: none;
-    border-radius: 30px;
-    padding: 12px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    width: 100%;
-}
 
-/* Вкладки внутри "Мой клан" (Соратники, Чат, Казна, Таланты) */
-.clans-members-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.clans-members-table th,
-.clans-members-table td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #1a1f2b;
-}
-.clans-members-table th {
-    color: #00aaff;
-}
-.clans-role-badge {
-    font-size: 11px;
-    background-color: #1a1f2b;
-    padding: 2px 6px;
-    border-radius: 20px;
-    color: #aaa;
-}
-.clans-role-badge.leader { background-color: #f1c40f; color: #1a1f2b; }
-.clans-role-badge.officer { background-color: #2ecc71; color: #1a1f2b; }
-
-.clans-chat {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-.clans-chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    background-color: #1a1f2b;
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 8px;
-}
-.clans-chat-message {
-    margin-bottom: 8px;
-    font-size: 13px;
-}
-.clans-chat-message strong {
-    color: #00aaff;
-}
-.clans-chat-input {
-    display: flex;
-    gap: 8px;
-}
-.clans-chat-input input {
-    flex: 1;
-    padding: 10px;
-    background-color: #2a303c;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    color: white;
-}
-.clans-chat-input button {
-    background-color: #00aaff;
-    border: none;
-    border-radius: 20px;
-    padding: 0 16px;
-    color: white;
-    cursor: pointer;
-}
-
-.clans-treasury-balance {
-    background-color: #1a1f2b;
-    padding: 12px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    color: #f1c40f;
-    margin-bottom: 16px;
-}
-.clans-donate-form {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-.clans-donate-form input {
-    flex: 1;
-    padding: 10px;
-    background-color: #2a303c;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    color: white;
-}
-.clans-donate-form button {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    padding: 0 16px;
-    color: white;
-    cursor: pointer;
-}
-
-.clans-talents-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.clans-talent-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #2a303c;
-    padding: 10px;
-    border-radius: 12px;
-}
-.clans-talent-name {
-    font-weight: bold;
-}
-.clans-talent-value {
-    font-size: 16px;
-    font-weight: bold;
-    color: #00aaff;
-}
-.clans-talent-controls button {
-    background-color: #2f3542;
-    border: none;
-    border-radius: 20px;
-    padding: 4px 12px;
-    color: white;
-    cursor: pointer;
-}
-
-.clans-action-btn {
-    background-color: #2f3542;
-    border: 1px solid #aaa;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 11px;
-    cursor: pointer;
-    color: #aaa;
-    margin: 0 2px;
-}
-.clans-action-btn.danger {
-    border-color: #e74c3c;
-    color: #e74c3c;
-}
-.clans-action-btn:hover {
-    border-color: #00aaff;
-    color: #00aaff;
-}
-
-/* Модальное окно просмотра клана (детали) */
+/* ---------- МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА ---------- */
 .clan-details {
     max-height: 70vh;
     overflow-y: auto;
@@ -5718,329 +5880,3 @@ body {
     color: white;
     border: none;
 }
-
-
-/* ========== КЛАНЫ – НОВЫЕ ВКЛАДКИ 3×2 ========== */
-.clans-tab-grid {
-    background-color: #2a303c;
-    padding: 2px;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 12px;
-}
-.clans-tab-row {
-    display: flex;
-    gap: 2px;
-}
-.clans-tab-btn {
-    flex: 1;
-    background-color: #232833;
-    border: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 0;
-    gap: 4px;
-    cursor: pointer;
-    color: #aaa;
-    font-size: 11px;
-    font-weight: normal;
-    transition: none;
-}
-.clans-tab-btn:first-child {
-    border-radius: 10px 0 0 0;
-}
-.clans-tab-btn:last-child {
-    border-radius: 0 10px 0 0;
-}
-.clans-tab-row:first-child .clans-tab-btn:first-child {
-    border-top-left-radius: 12px;
-}
-.clans-tab-row:first-child .clans-tab-btn:last-child {
-    border-top-right-radius: 12px;
-}
-.clans-tab-row:last-child .clans-tab-btn:first-child {
-    border-bottom-left-radius: 12px;
-}
-.clans-tab-row:last-child .clans-tab-btn:last-child {
-    border-bottom-right-radius: 12px;
-}
-.clans-tab-btn i {
-    font-size: 20px;
-    color: #aaa;
-}
-.clans-tab-btn span {
-    font-size: 10px;
-    color: #aaa;
-}
-.clans-tab-btn.active {
-    background-color: #00aaff;
-}
-.clans-tab-btn.active i,
-.clans-tab-btn.active span {
-    color: white;
-}
-.clans-tab-btn.disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-.clans-tab-btn:not(.active):not(.disabled):hover {
-    background-color: #2f3542;
-}
-.clans-tab-btn:not(.active):not(.disabled):hover i,
-.clans-tab-btn:not(.active):not(.disabled):hover span {
-    color: #00aaff;
-}
-
-
-.clans-members-table thead tr {
-    background-color: #1a1f2b;
-}
-.clans-members-table thead th {
-    color: white;
-}
-
-/* Группированные кнопки + и - */
-.clans-talent-controls-group {
-    display: inline-flex;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #aaa;
-    background-color: #2f3542;
-}
-.talent-btn {
-    background-color: #2f3542;
-    border: none;
-    padding: 4px 12px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #aaa;
-    transition: background-color 0.2s;
-    min-width: 36px;
-    text-align: center;
-}
-.talent-btn:hover {
-    background-color: #3a4050;
-    color: #00aaff;
-}
-.talent-minus {
-    border-right: 1px solid #aaa;
-}
-.talent-plus {
-    border-left: 1px solid #aaa;
-}
-.clans-talent-value {
-    text-align: center;
-    min-width: 55px;
-    font-weight: bold;
-    color: #00aaff;
-}
-
-/* ========== КЛАНЫ – ДОПОЛНЕНИЯ / ИСПРАВЛЕНИЯ ========== */
-
-/* Шапка клана: значок слева, текст по центру */
-.clan-header {
-    position: relative;
-    background-color: #1a1f2b;
-    padding: 12px;
-    border-bottom: 1px solid #00aaff;
-    text-align: center;
-}
-
-.clan-header-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.clan-header-title {
-    text-align: center;
-}
-.clan-header-title h2 {
-    margin: 0;
-    color: white;
-    font-size: 1.3rem;
-}
-.clan-header-level {
-    font-size: 12px;
-    color: #aaa;
-}
-.clan-header-exp {
-    text-align: center;
-    margin-top: 6px;
-}
-.clan-header-exp .exp-bar-bg {
-    background-color: #2f3542;
-    height: 6px;
-    border-radius: 3px;
-    overflow: hidden;
-}
-.clan-header-exp .exp-bar-fill {
-    background-color: #00aaff;
-    height: 100%;
-    width: 0%;
-}
-.clan-header-exp .exp-label {
-    display: inline-block;
-    font-size: 10px;
-    color: white;
-    margin-right: 5px;
-}
-.clan-header-exp .exp-value {
-    display: inline-block;
-    font-size: 10px;
-    color: #00aaff;
-}
-.clan-header-exp .exp-bar-bg {
-    margin-top: 4px;
-    width: 100%;
-}
-
-
-
-
-/* Вкладки 3×2 – скругления только нижних углов у крайних кнопок */
-.clans-tab-grid {
-    background-color: #2a303c;
-    padding: 2px;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 8px;
-}
-.clans-tab-row {
-    display: flex;
-    gap: 1px;
-}
-.clans-tab-btn {
-    flex: 1;
-    background-color: #232833;
-    border: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 0;
-    gap: 4px;
-    cursor: pointer;
-    color: #aaa;
-    font-size: 11px;
-    font-weight: normal;
-    transition: none;
-    border-radius: 0 !important; /* убираем любые скругления по умолчанию */
-}
-/* Левый нижний угол первой кнопки в каждом ряду */
-.clans-tab-row:first-child .clans-tab-btn:first-child {
-    border-radius: 0 0 0 12px !important;
-}
-.clans-tab-row:last-child .clans-tab-btn:first-child {
-    border-radius: 0 0 0 12px !important;
-}
-/* Правый нижний угол последней кнопки в каждом ряду */
-.clans-tab-row:first-child .clans-tab-btn:last-child {
-    border-radius: 0 0 12px 0 !important;
-}
-.clans-tab-row:last-child .clans-tab-btn:last-child {
-    border-radius: 0 0 12px 0 !important;
-}
-/* Остальные кнопки без скруглений (уже border-radius:0) */
-.clans-tab-btn.active {
-    background-color: #00aaff;
-    color: white;
-}
-.clans-tab-btn i {
-    font-size: 18px;
-}
-.clans-tab-btn span {
-    font-size: 10px;
-}
-
-/* Форма управления – текстовые поля единого стиля */
-.clans-form-group input,
-.clans-form-group select,
-.clans-form-group textarea {
-    width: 100%;
-    padding: 10px;
-    background-color: #1a1f2b;
-    border: 1px solid #aaa;
-    border-radius: 8px;
-    color: white;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-
-/* Кнопки талантов: общий контур, иконки, скругления */
-.clans-talent-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #2a303c;
-    padding: 10px 12px;
-    border-radius: 12px;
-    margin-bottom: 6px;
-}
-.clans-talent-name {
-    font-weight: bold;
-    width: 100px;
-    color: white;
-}
-.clans-talent-value {
-    text-align: center;
-    min-width: 60px;
-    font-weight: bold;
-    color: #00aaff;
-    font-size: 16px;
-}
-.clans-talent-controls-group {
-    display: inline-flex;
-    border: 1px solid #aaa;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: #2f3542;
-}
-.talent-btn {
-    background-color: #2f3542;
-    border: none;
-    padding: 4px 12px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #aaa;
-    transition: background-color 0.2s;
-    min-width: 36px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.talent-btn i {
-    font-size: 14px;
-    color: #aaa;
-}
-.talent-btn:hover {
-    background-color: #3a4050;
-}
-.talent-btn:hover i {
-    color: #00aaff;
-}
-.talent-minus {
-    border-right: 1px solid #aaa;
-    border-radius: 6px 0 0 6px;
-}
-.talent-plus {
-    border-left: 1px solid #aaa;
-    border-radius: 0 6px 6px 0;
-}
-

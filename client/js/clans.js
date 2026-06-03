@@ -100,7 +100,7 @@ async function renderClans() {
         const res = await window.apiRequest('/clans/my');
         const data = await res.json();
         if (data.inClan) {
-            renderMyClan(data.clan, data.members, data.userRole);
+            renderMyClan(data.clan, data.members, data.userRole, data.checkedTodayList || []);
         } else {
             renderClansList();
         }
@@ -176,10 +176,10 @@ async function renderClansList() {
                 </tr>
             `;
         } else {
-            html += `<tr class="empty-row"><td colspan="5" style="text-align:center; color:#555;">—</td></tr>`;
+            html += `<tr class="empty-row"><td colspan="5" style="text-align:center; color:#555;">—</tr>`;
         }
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody></tr></div>`;
     content.innerHTML = html;
 
     if (!myClanData) document.getElementById('createClanBtn')?.addEventListener('click', () => showCreateClanModal());
@@ -349,34 +349,33 @@ function showCreateClanModal() {
     modal.style.display = 'flex';
 }
 
-// ------------------- МОЙ КЛАН (ВКЛАДКИ) -------------------
-function renderMyClan(clan, members, userRole) {
+// ------------------- МОЙ КЛАН (НОВАЯ ЦЕНТРИРОВАННАЯ ШАПКА + ВКЛАДКИ) -------------------
+function renderMyClan(clan, members, userRole, checkedTodayList = []) {
     const content = document.getElementById('content');
     const iconClass = ICON_MAP[clan.icon_id] || 'fa-users';
     const maxExp = getExpNeeded(clan.level);
     const expPercent = Math.min(100, (clan.exp / maxExp) * 100);
+    
     content.innerHTML = `
-       <div class="clans-container">
-    <div style="background-color: #1a1f2b; padding: 12px; text-align: center; border-bottom: 1px solid #00aaff;">
-        <div style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin-left: 12px;">
-            <div style="width: 48px; height: 48px; background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
-            </div>
-            <div>
-                <h2 style="margin:0;">${escapeHtml(clan.name)}</h2>
-                <div style="font-size: 12px; color: #aaa;">Уровень клана: ${clan.level}</div>
-                <div style="margin-top: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px;">
-                        <span style="color: white; margin-right: 8px;">Опыт клана:</span>
-                        <span style="color: #00aaff;">${clan.exp} / ${maxExp}</span>
-                    </div>
-                    <div style="background-color: #2f3542; height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 4px;"></div>
+        <div class="clans-container">
+            <!-- Центрированная шапка с иконкой слева -->
+            <div class="clan-header">
+                <div class="clan-header-icon" style="background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color};">
+                    <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
+                </div>
+                <div class="clan-header-title">
+                    <h2>${escapeHtml(clan.name)}</h2>
+                    <div class="clan-header-level">Уровень клана: ${clan.level}</div>
+                    <div class="clan-header-exp">
+                        <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                            <span style="color: white;">Опыт клана:</span>
+                            <span style="color: #00aaff;">${clan.exp} / ${maxExp}</span>
+                        </div>
+                        <div class="exp-bar-bg"><div class="exp-bar-fill" style="width: ${expPercent}%;"></div></div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+            <!-- Вкладки 3×2 (скругления только нижних углов) -->
             <div class="clans-tab-grid">
                 <div class="clans-tab-row">
                     <button class="clans-tab-btn ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info"><i class="fas fa-users"></i><span>Соратники</span></button>
@@ -399,10 +398,11 @@ function renderMyClan(clan, members, userRole) {
             </div>
         </div>
     `;
+    
     document.querySelectorAll('.clans-tab-btn:not([disabled])').forEach(btn => {
         btn.addEventListener('click', () => {
             currentClanTab = btn.dataset.tab;
-            renderMyClan(clan, members, userRole);
+            renderMyClan(clan, members, userRole, checkedTodayList);
         });
     });
     document.getElementById('backToClanListBtn')?.addEventListener('click', () => renderClansList());
@@ -414,8 +414,9 @@ function renderMyClan(clan, members, userRole) {
             else showToast(data.error,1500);
         }
     });
+    
     const tabContent = document.getElementById('clanTabContent');
-    if (currentClanTab === 'info') renderClanInfo(tabContent, clan, members, userRole);
+    if (currentClanTab === 'info') renderClanInfo(tabContent, clan, members, userRole, checkedTodayList);
     else if (currentClanTab === 'chat') renderClanChat(tabContent, clan);
     else if (currentClanTab === 'checkin') renderClanCheckin(tabContent, clan);
     else if (currentClanTab === 'treasury') renderClanTreasury(tabContent, clan);
@@ -423,7 +424,7 @@ function renderMyClan(clan, members, userRole) {
     else if (currentClanTab === 'settings' && userRole === 'leader') renderClanSettings(tabContent, clan);
 }
 
-// ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ МЕНЮ -------------------
+// ------------------- ВСПЛЫВАЮЩЕЕ МЕНЮ ДЛЯ УПРАВЛЕНИЯ УЧАСТНИКАМИ -------------------
 let activeMenu = null;
 
 function closeMemberMenus() {
@@ -514,18 +515,18 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
     });
 }
 
-// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ВЫПАДАЮЩИМ МЕНЮ) -------------------
-function renderClanInfo(container, clan, members, userRole) {
+// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОТМЕТКАМИ И МЕНЮ) -------------------
+function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
     const today = new Date().toLocaleDateString('ru-RU');
     const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
     
     let html = `<table class="clans-members-table" style="width:100%; table-layout:fixed; font-size:13px; border-collapse:collapse;">
         <thead>
             <tr style="background-color:#1a1f2b;">
-                <th style="color:white; width:40%; padding:8px 4px; font-size:12px;">Игрок</th>
-                <th style="color:white; width:20%; padding:8px 4px; font-size:12px;">Роль</th>
-                <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Статус</th>
-                <th style="color:white; width:15%; padding:8px 4px; font-size:12px;">Отметка</th>
+                <th style="color:white; width:40%; padding:8px 4px;">Игрок</th>
+                <th style="color:white; width:20%; padding:8px 4px;">Роль</th>
+                <th style="color:white; width:15%; padding:8px 4px;">Статус</th>
+                <th style="color:white; width:15%; padding:8px 4px;">Отметка</th>
             </tr>
         </thead>
         <tbody>`;
@@ -538,8 +539,7 @@ function renderClanInfo(container, clan, members, userRole) {
         if (m.id === userData.id) {
             checkinIcon = userCheckinStatus ? '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>' : '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
         } else {
-            // Для других участников заглушка (позже можно добавить из серверного ответа)
-            checkinIcon = '<span style="color:#555;">—</span>';
+            checkinIcon = checkedTodayList.includes(m.id) ? '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>' : '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
         }
         
         const displayName = m.username.length > 20 ? m.username.substring(0,18)+'…' : m.username;
@@ -554,7 +554,7 @@ function renderClanInfo(container, clan, members, userRole) {
                 <td style="padding:6px 4px;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
                 <td style="text-align:center; padding:6px 4px;">${statusIcon}</td>
                 <td style="text-align:center; padding:6px 4px;">${checkinIcon}</td>
-            </tr>
+             </tr>
         `;
     }
     html += `</tbody></table>`;
@@ -571,7 +571,7 @@ function renderClanInfo(container, clan, members, userRole) {
     });
 }
 
-// ------------------- ЧАТ С ПРОВЕРКОЙ МАТА -------------------
+// ------------------- ЧАТ -------------------
 async function renderClanChat(container, clan) {
     const res = await window.apiRequest('/clans/chat');
     const messages = await res.json();
@@ -600,7 +600,7 @@ async function renderClanChat(container, clan) {
     });
 }
 
-// ------------------- ОТМЕТКА (БЕЗ ОТОБРАЖЕНИЯ СТАТИСТИКИ) -------------------
+// ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
     const today = new Date().toLocaleDateString('ru-RU');
     const lastCheckin = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`);
@@ -652,7 +652,8 @@ async function renderClanCheckin(container, clan) {
         });
     }
 }
-// ------------------- ОСТАЛЬНЫЕ ФУНКЦИИ (КАЗНА, ТАЛАНТЫ, УПРАВЛЕНИЕ) -------------------
+
+// ------------------- КАЗНА -------------------
 async function renderClanTreasury(container, clan) {
     const res = await window.apiRequest('/clans/treasury');
     const treasury = await res.json();
@@ -668,6 +669,7 @@ async function renderClanTreasury(container, clan) {
     });
 }
 
+// ------------------- ТАЛАНТЫ (НОВЫЕ КНОПКИ [+|-] БЕЗ 0) -------------------
 async function renderClanTalents(container, clan) {
     const res = await window.apiRequest('/clans/bonuses');
     const bonuses = await res.json();
@@ -684,34 +686,79 @@ async function renderClanTalents(container, clan) {
     html += renderTalentRow('Вампиризм', bonuses.bonus_vampirism, 'vampirism');
     html += `</div>`;
     container.innerHTML = html;
+    
+    // Обработчики для кнопок +/-
+    container.querySelectorAll('.talent-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const stat = btn.dataset.stat;
+            const op = btn.dataset.op;
+            if (!stat || !op) return;
+            const row = btn.closest('.clans-talent-row');
+            const valueSpan = row.querySelector('.clans-talent-value');
+            let currentVal = parseInt(valueSpan.innerText.replace('+', ''));
+            let newVal = currentVal + (op === 'incr' ? 1 : -1);
+            if (newVal < 0) newVal = 0;
+            // Собираем текущие значения всех талантов
+            const allRows = container.querySelectorAll('.clans-talent-row');
+            const updates = {};
+            for (let r of allRows) {
+                const key = r.querySelector('.talent-btn').dataset.stat;
+                let val = parseInt(r.querySelector('.clans-talent-value').innerText.replace('+', ''));
+                if (r === row) val = newVal;
+                updates[`bonus_${key}`] = val;
+            }
+            try {
+                const redistRes = await window.apiRequest('/clans/redistribute', {
+                    method: 'POST',
+                    body: JSON.stringify(updates)
+                });
+                const data = await redistRes.json();
+                if (data.success) {
+                    valueSpan.innerText = `+${newVal}`;
+                    showToast('Распределение обновлено', 1000);
+                } else {
+                    showToast(data.error, 1500);
+                }
+            } catch (err) {
+                showToast('Ошибка сети', 1500);
+            }
+        });
+    });
 }
 
 function renderTalentRow(name, value, key) {
     return `
         <div class="clans-talent-row">
             <span class="clans-talent-name">${name}</span>
-            <span class="clans-talent-value" style="text-align:center; min-width:50px;">+${value}</span>
+            <span class="clans-talent-value">+${value}</span>
             <div class="clans-talent-controls-group">
-                <button class="talent-btn talent-minus" data-stat="${key}" data-op="decr">−</button>
-                <button class="talent-btn talent-plus" data-stat="${key}" data-op="incr">+</button>
+                <button class="talent-btn talent-minus" data-stat="${key}" data-op="decr"><i class="fas fa-minus"></i></button>
+                <button class="talent-btn talent-plus" data-stat="${key}" data-op="incr"><i class="fas fa-plus"></i></button>
             </div>
         </div>
     `;
 }
 
-function renderTalentRow(name, value, key) {
-    return `<div class="clans-talent-row"><span class="clans-talent-name">${name}</span><span class="clans-talent-value">+${value}</span><div class="clans-talent-controls"><button data-stat="${key}" data-op="decr">-</button><span>0</span><button data-stat="${key}" data-op="incr">+</button></div></div>`;
-}
-
+// ------------------- УПРАВЛЕНИЕ (С SELECT ТИПА ВСТУПЛЕНИЯ И TEXTAREA) -------------------
 function renderClanSettings(container, clan) {
     let currentIconId = clan.icon_id;
     let currentBgColor = clan.icon_bg_color;
     let currentBorderColor = clan.icon_border_color;
     let currentIconColor = clan.icon_color;
+    let currentJoinType = clan.join_type || 'open';
+    
     container.innerHTML = `
         <div style="padding: 12px;">
             <div class="clans-form-group"><label>Название клана</label><input type="text" id="editClanName" value="${escapeHtml(clan.name)}" maxlength="30"></div>
-            <div class="clans-form-group"><label>Описание клана</label><textarea id="editClanDescription" rows="3" placeholder="Описание">${escapeHtml(clan.description || '')}</textarea></div>
+            <div class="clans-form-group"><label>Описание клана</label><textarea id="editClanDescription" rows="3" maxlength="150" placeholder="Описание">${escapeHtml(clan.description || '')}</textarea></div>
+            <div class="clans-form-group">
+                <label>Вход в гильдию</label>
+                <select id="editJoinType">
+                    <option value="open" ${currentJoinType === 'open' ? 'selected' : ''}>Открытый (вступление без подтверждения)</option>
+                    <option value="application" ${currentJoinType === 'application' ? 'selected' : ''}>По заявкам (требуется одобрение)</option>
+                    <option value="invite_only" ${currentJoinType === 'invite_only' ? 'selected' : ''}>Закрытый (только по приглашениям)</option>
+                </select>
+            </div>
             <div class="clans-form-group">
                 <label>Иконка и цвета</label>
                 <div class="clans-icon-preview">
@@ -719,7 +766,8 @@ function renderClanSettings(container, clan) {
                     <div><div>Выберите иконку:</div><select id="editIconSelect">
                         <option value="1" ${currentIconId===1?'selected':''}>Кот</option><option value="2" ${currentIconId===2?'selected':''}>Пёс</option><option value="3" ${currentIconId===3?'selected':''}>Дракон</option>
                         <option value="4" ${currentIconId===4?'selected':''}>Корона</option><option value="5" ${currentIconId===5?'selected':''}>Череп</option><option value="6" ${currentIconId===6?'selected':''}>Маска</option>
-                        <option value="7" ${currentIconId===7?'selected':''}>Молния</option><option value="8" ${currentIconId===8?'selected':''}>Перо</option><option value="9" ${currentIconId===9?'selected':''}>Лапа</option><option value="10" ${currentIconId===10?'selected':''}>Кулак</option>
+                        <option value="7" ${currentIconId===7?'selected':''}>Молния</option><option value="8" ${currentIconId===8?'selected':''}>Перо</option>
+                        <option value="9" ${currentIconId===9?'selected':''}>Лапа</option><option value="10" ${currentIconId===10?'selected':''}>Кулак</option>
                     </select></div>
                 </div>
                 <div style="margin:12px 0;">Цвет фона:</div><div class="clans-color-palette" id="editBgColorPalette"></div>
@@ -730,6 +778,7 @@ function renderClanSettings(container, clan) {
             <hr style="margin:20px 0;"><button id="disbandClanBtn" class="clans-submit-btn" style="background-color:#e74c3c;">⚠️ Расформировать клан</button>
         </div>
     `;
+    
     function renderEditPalette(containerId, selectedColor, onChange) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -747,10 +796,12 @@ function renderClanSettings(container, clan) {
             container.appendChild(div);
         });
     }
+    
     let newBgColor = currentBgColor, newBorderColor = currentBorderColor, newIconColor = currentIconColor, newIconId = currentIconId;
     renderEditPalette('editBgColorPalette', newBgColor, (c) => { newBgColor = c; updateEditPreview(); });
     renderEditPalette('editBorderColorPalette', newBorderColor, (c) => { newBorderColor = c; updateEditPreview(); });
     renderEditPalette('editIconColorPalette', newIconColor, (c) => { newIconColor = c; updateEditPreview(); });
+    
     const editIconSelect = document.getElementById('editIconSelect');
     const editPreviewIcon = document.getElementById('editPreviewIcon');
     const editPreviewBox = document.getElementById('editIconPreview');
@@ -764,16 +815,23 @@ function renderClanSettings(container, clan) {
     }
     editIconSelect.addEventListener('change', updateEditPreview);
     updateEditPreview();
+    
     document.getElementById('saveClanSettingsBtn')?.addEventListener('click', async () => {
         const newName = document.getElementById('editClanName').value.trim();
         if (newName.length < 3 || newName.length > 30) { showToast('Название должно быть 3-30 символов',1500); return; }
         const newDesc = document.getElementById('editClanDescription').value;
-        const updateData = { name: newName, description: newDesc, icon_id: newIconId, icon_bg_color: newBgColor, icon_border_color: newBorderColor, icon_color: newIconColor };
+        const newJoinType = document.getElementById('editJoinType').value;
+        const updateData = {
+            name: newName, description: newDesc, join_type: newJoinType,
+            icon_id: newIconId, icon_bg_color: newBgColor,
+            icon_border_color: newBorderColor, icon_color: newIconColor
+        };
         const res = await window.apiRequest(`/clans/${clan.id}/settings`, { method: 'PUT', body: JSON.stringify(updateData) });
         const data = await res.json();
-        if (data.success) { showToast('Настройки клана сохранены!',1500); renderClans(); }
+        if (data.success) { showToast('Настройки сохранены!',1500); renderClans(); }
         else showToast(data.error,1500);
     });
+    
     document.getElementById('disbandClanBtn')?.addEventListener('click', async () => {
         if (confirm('ВНИМАНИЕ! Расформирование клана удалит всех участников и сам клан. Отменить нельзя. Продолжить?')) {
             const res = await window.apiRequest(`/clans/${clan.id}`, { method: 'DELETE' });

@@ -1,12 +1,12 @@
 const { pool } = require('../db');
 const dailyTasks = require('./dailyTasks');
-const { simulateBattle } = require('./battleSimulator'); // нужно создать этот файл (см. пояснение ниже)
-const { addExp } = require('./exp'); // нужно создать (или импортировать из battle.js)
+const { simulateBattle } = require('./battleSimulator');
+const { addExp } = require('./exp');
 const { updatePlayerPower } = require('./power');
 
-const TOURNAMENT_SIZE = 64;
+const TOURNAMENT_SIZE = 32; // Изменили с 64 на 32
 
-// ==================== СУЩЕСТВУЮЩИЕ ФУНКЦИИ (ВАШИ, БЕЗ ИЗМЕНЕНИЙ) ====================
+// ==================== СУЩЕСТВУЮЩИЕ ФУНКЦИИ ====================
 
 async function resetDailyTasks() {
     console.log('[SCHEDULER] Ежедневный сброс запущен');
@@ -71,7 +71,6 @@ async function resetDailyTasks() {
                 last_ad_date = NULL
         `);
 
-        // Очистка черновиков турнира
         await client.query('DELETE FROM tournament_draft');
 
         await client.query('COMMIT');
@@ -152,7 +151,6 @@ async function resetSeason() {
 // ==================== НОВЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ТУРНИРА ====================
 
 async function getPlayerTournamentStats(client, userId, className, subclassName) {
-    // Получаем данные класса (уровень, очки характеристик)
     const classData = await client.query(
         `SELECT * FROM user_classes 
          WHERE user_id = $1 AND class = $2`,
@@ -163,7 +161,6 @@ async function getPlayerTournamentStats(client, userId, className, subclassName)
     }
     const classRow = classData.rows[0];
 
-    // Получаем экипировку
     const inventory = await client.query(
         `SELECT i.*, it.* FROM inventory i
          JOIN items it ON i.item_id = it.id
@@ -171,7 +168,6 @@ async function getPlayerTournamentStats(client, userId, className, subclassName)
         [userId, className]
     );
 
-    // Вычисляем статы через вашу функцию calculateStats (из battleSimulator)
     const { calculateStats } = require('./battleSimulator');
     const stats = calculateStats(classRow, inventory.rows, subclassName);
     const usernameRes = await client.query('SELECT username FROM users WHERE id = $1', [userId]);
@@ -187,15 +183,15 @@ async function getPlayerTournamentStats(client, userId, className, subclassName)
 }
 
 async function awardTournamentRewards(client, userId, place, seasonId, chosenClass) {
+    // Награды для 32 участников (1-32)
     const rewardsMap = {
         1: { coins: 500, diamonds: 15, exp: 250, chest: 'rare', points: 20 },
         2: { coins: 400, diamonds: 10, exp: 200, chest: 'uncommon', points: 15 },
         3: { coins: 300, diamonds: 5, exp: 150, chest: 'uncommon', points: 12 },
         4: { coins: 250, diamonds: 0, exp: 120, chest: null, points: 10 },
-        5: { coins: 200, diamonds: 0, exp: 100, chest: null, points: 8 },  // 5-8
-        9: { coins: 150, diamonds: 0, exp: 75, chest: null, points: 6 },   // 9-16
-        17: { coins: 100, diamonds: 0, exp: 50, chest: null, points: 4 },  // 17-32
-        33: { coins: 50, diamonds: 0, exp: 15, chest: null, points: 2 }    // 33-64
+        5: { coins: 200, diamonds: 0, exp: 100, chest: null, points: 8 },   // 5-8
+        9: { coins: 150, diamonds: 0, exp: 75, chest: null, points: 6 },    // 9-16
+        17: { coins: 100, diamonds: 0, exp: 50, chest: null, points: 4 }    // 17-32
     };
 
     let reward;
@@ -205,10 +201,8 @@ async function awardTournamentRewards(client, userId, place, seasonId, chosenCla
     else if (place === 4) reward = rewardsMap[4];
     else if (place <= 8) reward = rewardsMap[5];
     else if (place <= 16) reward = rewardsMap[9];
-    else if (place <= 32) reward = rewardsMap[17];
-    else reward = rewardsMap[33];
+    else reward = rewardsMap[17];
 
-    // Начисляем
     if (reward.coins > 0) {
         await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward.coins, userId]);
     }
@@ -253,7 +247,6 @@ async function awardTournamentRewards(client, userId, place, seasonId, chosenCla
         );
     }
 
-    // Отправляем письмо
     const rewardTextParts = [];
     if (reward.coins > 0) rewardTextParts.push(`${reward.coins} монет`);
     if (reward.diamonds > 0) rewardTextParts.push(`${reward.diamonds} алмазов`);
@@ -290,15 +283,14 @@ async function getSeasonId(client) {
     return season.rows[0].id;
 }
 
-// ==================== ОСНОВНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА ====================
+// ==================== ОСНОВНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (32 участника, 5 раундов + матч за 3 место) ====================
 
 async function runTournament() {
-    console.log('[TOURNAMENT] Запуск ежедневного турнира');
+    console.log('[TOURNAMENT] Запуск ежедневного турнира (32 участника)');
     const client = await pool.connect();
     try {
         const todayDate = dailyTasks.getMoscowDate();
 
-        // Проверяем, не запущен ли турнир уже сегодня
         const existing = await client.query(
             'SELECT 1 FROM tournament_matches WHERE tournament_date = $1 LIMIT 1',
             [todayDate]
@@ -328,7 +320,7 @@ async function runTournament() {
             });
         }
 
-        // Добираем тенями, если меньше 64
+        // Добираем тенями до 32
         if (participants.length < TOURNAMENT_SIZE) {
             const needed = TOURNAMENT_SIZE - participants.length;
             const shadows = await client.query(
@@ -357,22 +349,23 @@ async function runTournament() {
             [participants[i], participants[j]] = [participants[j], participants[i]];
         }
 
-        // Симуляция турнира (сетка на вылет)
-        let currentRoundPlayers = participants;
-        let roundNum = 1;
+        // Симуляция турнира: сначала 1/16 (32 → 16), затем 1/8 (16 → 8), 1/4 (8 → 4), 1/2 (4 → 2), финал (2 → 1)
+        // Дополнительно: матч за 3-е место между проигравшими в полуфиналах.
+        let currentRoundPlayers = participants; // 32
+        let roundNum = 1; // 1/16
         const allMatches = [];
 
-        while (currentRoundPlayers.length > 1) {
+        // Раунды до полуфиналов (1/16, 1/8, 1/4)
+        while (currentRoundPlayers.length > 4) {
             const nextRound = [];
             for (let i = 0; i < currentRoundPlayers.length; i += 2) {
                 const p1 = currentRoundPlayers[i];
                 const p2 = currentRoundPlayers[i + 1];
                 if (!p2) {
-                    // Если нечётное количество (не должно быть при 64, но на всякий случай)
+                    // Не должно случиться при 32 участниках, но на всякий случай
                     nextRound.push(p1);
                     continue;
                 }
-                // Симуляция боя
                 const battleResult = simulateBattle(p1.stats, p2.stats, p1.class, p2.class, p1.username, p2.username, p1.subclass, p2.subclass);
                 const winner = battleResult.winner === 'player' ? p1 : p2;
                 const matchLog = {
@@ -382,26 +375,105 @@ async function runTournament() {
                     playerHpRemain: battleResult.playerHpRemain,
                     enemyHpRemain: battleResult.enemyHpRemain
                 };
-                // Сохраняем матч в БД
-                const matchRes = await client.query(
+                await client.query(
                     `INSERT INTO tournament_matches 
                      (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                     RETURNING id`,
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
                     [await getSeasonId(client), todayDate, roundNum, i / 2 + 1, p1.id, p2.id, winner.id, matchLog, p1.isShadow || p2.isShadow]
                 );
-                allMatches.push(matchRes.rows[0]);
                 nextRound.push(winner);
             }
             currentRoundPlayers = nextRound;
             roundNum++;
-            if (roundNum > 7) break; // 7 раундов максимум
         }
 
-        // Начисление наград после завершения всех матчей
+        // Теперь у нас 4 участника (полуфиналисты)
+        // Сохраняем их для дальнейшего использования
+        const semiFinalists = [...currentRoundPlayers]; // [a, b, c, d]
+
+        // Полуфиналы: первый матч (0 vs 1), второй матч (2 vs 3)
+        const semi1 = semiFinalists[0];
+        const semi2 = semiFinalists[1];
+        const semi3 = semiFinalists[2];
+        const semi4 = semiFinalists[3];
+
+        // Полуфинал 1
+        let battleResult1 = simulateBattle(semi1.stats, semi2.stats, semi1.class, semi2.class, semi1.username, semi2.username, semi1.subclass, semi2.subclass);
+        const winner1 = battleResult1.winner === 'player' ? semi1 : semi2;
+        const loser1 = winner1.id === semi1.id ? semi2 : semi1;
+        const matchLog1 = {
+            winner: winner1.id,
+            messages: battleResult1.messages,
+            states: battleResult1.states,
+            playerHpRemain: battleResult1.playerHpRemain,
+            enemyHpRemain: battleResult1.enemyHpRemain
+        };
+        await client.query(
+            `INSERT INTO tournament_matches 
+             (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [await getSeasonId(client), todayDate, 4, 1, semi1.id, semi2.id, winner1.id, matchLog1, semi1.isShadow || semi2.isShadow]
+        );
+
+        // Полуфинал 2
+        let battleResult2 = simulateBattle(semi3.stats, semi4.stats, semi3.class, semi4.class, semi3.username, semi4.username, semi3.subclass, semi4.subclass);
+        const winner2 = battleResult2.winner === 'player' ? semi3 : semi4;
+        const loser2 = winner2.id === semi3.id ? semi4 : semi3;
+        const matchLog2 = {
+            winner: winner2.id,
+            messages: battleResult2.messages,
+            states: battleResult2.states,
+            playerHpRemain: battleResult2.playerHpRemain,
+            enemyHpRemain: battleResult2.enemyHpRemain
+        };
+        await client.query(
+            `INSERT INTO tournament_matches 
+             (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [await getSeasonId(client), todayDate, 4, 2, semi3.id, semi4.id, winner2.id, matchLog2, semi3.isShadow || semi4.isShadow]
+        );
+
+        // Финал (победители полуфиналов)
+        const final1 = winner1;
+        const final2 = winner2;
+        let battleResultFinal = simulateBattle(final1.stats, final2.stats, final1.class, final2.class, final1.username, final2.username, final1.subclass, final2.subclass);
+        const champion = battleResultFinal.winner === 'player' ? final1 : final2;
+        const runnerUp = champion.id === final1.id ? final2 : final1;
+        const matchLogFinal = {
+            winner: champion.id,
+            messages: battleResultFinal.messages,
+            states: battleResultFinal.states,
+            playerHpRemain: battleResultFinal.playerHpRemain,
+            enemyHpRemain: battleResultFinal.enemyHpRemain
+        };
+        await client.query(
+            `INSERT INTO tournament_matches 
+             (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [await getSeasonId(client), todayDate, 5, 1, final1.id, final2.id, champion.id, matchLogFinal, final1.isShadow || final2.isShadow]
+        );
+
+        // Матч за 3-е место (проигравшие в полуфиналах)
+        const thirdPlaceMatch = simulateBattle(loser1.stats, loser2.stats, loser1.class, loser2.class, loser1.username, loser2.username, loser1.subclass, loser2.subclass);
+        const thirdPlaceWinner = thirdPlaceMatch.winner === 'player' ? loser1 : loser2;
+        const matchLogThird = {
+            winner: thirdPlaceWinner.id,
+            messages: thirdPlaceMatch.messages,
+            states: thirdPlaceMatch.states,
+            playerHpRemain: thirdPlaceMatch.playerHpRemain,
+            enemyHpRemain: thirdPlaceMatch.enemyHpRemain
+        };
+        await client.query(
+            `INSERT INTO tournament_matches 
+             (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [await getSeasonId(client), todayDate, 5, 2, loser1.id, loser2.id, thirdPlaceWinner.id, matchLogThird, loser1.isShadow || loser2.isShadow]
+        );
+
+        // Начисление наград
         const seasonId = await getSeasonId(client);
         for (const participant of participants) {
-            if (participant.isShadow) continue; // тени не получают наград
+            if (participant.isShadow) continue;
             const place = await getPlaceForUser(client, participant.id, todayDate);
             await awardTournamentRewards(client, participant.id, place, seasonId, participant.class);
         }
@@ -414,36 +486,47 @@ async function runTournament() {
     }
 }
 
-// Функция для определения места по матчам (должна быть объявлена до использования)
+// Функция для определения места (32 участника, с учётом матча за 3 место)
 async function getPlaceForUser(client, userId, tournamentDate) {
-    const res = await client.query(
-        `WITH user_matches AS (
-            SELECT 
-                CASE WHEN player1_id = $1 THEN player1_id ELSE player2_id END as user_id,
-                CASE WHEN winner_id = $1 THEN 1 ELSE 0 END as is_win,
-                round_number
-            FROM tournament_matches
-            WHERE tournament_date = $2 AND (player1_id = $1 OR player2_id = $1)
-        )
-        SELECT 
-            COUNT(CASE WHEN is_win = 1 THEN 1 END) as wins,
-            MAX(CASE WHEN is_win = 1 THEN round_number ELSE 0 END) as max_round
-        FROM user_matches`,
-        [userId, tournamentDate]
+    // Получаем все матчи пользователя за этот турнир
+    const matches = await client.query(
+        `SELECT round_number, winner_id, player1_id, player2_id
+         FROM tournament_matches
+         WHERE tournament_date = $1 AND (player1_id = $2 OR player2_id = $2)
+         ORDER BY round_number`,
+        [tournamentDate, userId]
     );
-    const wins = parseInt(res.rows[0]?.wins || 0);
-    const maxRound = parseInt(res.rows[0]?.max_round || 0);
 
-    if (maxRound === 7 && wins === 3) return 1;
-    if (maxRound === 7 && wins === 2) return 2;
-    if (maxRound === 6) return 3;
-    if (maxRound === 5) return 5;
-    if (maxRound === 4) return 9;
-    if (maxRound === 3) return 17;
+    if (matches.rows.length === 0) return 33; // не участвовал
+
+    let maxRound = 0;
+    let isWinner = false;
+    for (const m of matches.rows) {
+        if (m.round_number > maxRound) maxRound = m.round_number;
+        if (m.winner_id === userId) isWinner = true;
+    }
+
+    // Логика для 32 участников:
+    // round 1 = 1/16
+    // round 2 = 1/8
+    // round 3 = 1/4
+    // round 4 = 1/2 (полуфинал)
+    // round 5 = финал (match_index 1) или матч за 3-е место (match_index 2)
+    if (maxRound === 5) {
+        // Финальный раунд
+        const finalMatch = matches.rows.find(m => m.round_number === 5 && m.match_index === 1);
+        const thirdPlaceMatch = matches.rows.find(m => m.round_number === 5 && m.match_index === 2);
+        if (finalMatch && finalMatch.winner_id === userId) return 1;
+        if (finalMatch && finalMatch.winner_id !== userId && finalMatch.player1_id === userId || finalMatch.player2_id === userId) return 2;
+        if (thirdPlaceMatch && thirdPlaceMatch.winner_id === userId) return 3;
+        if (thirdPlaceMatch && thirdPlaceMatch.winner_id !== userId && (thirdPlaceMatch.player1_id === userId || thirdPlaceMatch.player2_id === userId)) return 4;
+    }
+    if (maxRound === 4) return 5;  // проиграл в полуфинале (5-8 место)
+    if (maxRound === 3) return 9;  // проиграл в 1/4
+    if (maxRound === 2) return 17; // проиграл в 1/8
+    if (maxRound === 1) return 25; // проиграл в 1/16 (25-32)
     return 33;
 }
-
-// ==================== ЭКСПОРТ ====================
 
 module.exports = {
     resetDailyTasks,

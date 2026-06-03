@@ -1250,4 +1250,114 @@ router.get('/vk/callback', async (req, res) => {
     }
 });
 
+// ========== VK Mini App авторизация через параметры запуска ==========
+router.post('/vk-launch', async (req, res) => {
+    const launchParams = req.body;
+    console.log('[VK Launch] Received params:', launchParams);
+    const vkAppSecret = process.env.VK_APP_SECRET;
+    if (!vkAppSecret) {
+        console.error('[VK Launch] VK_APP_SECRET not set');
+        return res.status(500).json({ error: 'Server misconfiguration' });
+    }
+    // Проверка подписи
+    function verifyVKSignature(params, secret) {
+        const sign = params.sign;
+        if (!sign) return false;
+        const paramsCopy = { ...params };
+        delete paramsCopy.sign;
+        const ordered = Object.keys(paramsCopy).sort().map(k => `${k}=${paramsCopy[k]}`).join('\n');
+        const hash = crypto.createHmac('sha256', secret).update(ordered).digest('hex');
+        return hash === sign;
+    }
+    if (!verifyVKSignature(launchParams, vkAppSecret)) {
+        console.error('[VK Launch] Invalid signature');
+        return res.status(403).json({ error: 'Invalid signature' });
+    }
+    const vkUserId = launchParams.vk_user_id;
+    if (!vkUserId) {
+        return res.status(400).json({ error: 'Missing vk_user_id' });
+    }
+    const client = await pool.connect();
+    try {
+        let userRes = await client.query('SELECT * FROM users WHERE vk_id = $1', [String(vkUserId)]);
+        let userData;
+        let needusername = false;
+        if (userRes.rows.length === 0) {
+            // Пытаемся найти по email, если есть
+            let email = launchParams.vk_email || null;
+            let existingUser = null;
+            if (email) {
+                const existing = await client.query('SELECT id, username FROM users WHERE email = $1', [email]);
+                if (existing.rows.length > 0) {
+                    existingUser = existing.rows[0];
+                }
+            }
+            if (existingUser) {
+                const userId = existingUser.id;
+                await client.query('UPDATE users SET vk_id = $1 WHERE id = $2', [String(vkUserId), userId]);
+                if (!existingUser.username && email) {
+                    let tempUsername = email.split('@')[0];
+                    await client.query('UPDATE users SET username = $1 WHERE id = $2', [tempUsername, userId]);
+                }
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'vk', $2, $3, $4)
+                     ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, email = $3, data = $4`,
+                    [userId, String(vkUserId), email, JSON.stringify(launchParams)]
+                );
+                userData = (await client.query('SELECT * FROM users WHERE id = $1', [userId])).rows[0];
+                needusername = !userData.username;
+            } else {
+                // Создаём нового пользователя
+                const referralCode = Math.random().toString(36).substring(2, 10);
+                let tempUsername = `user_${vkUserId}`;
+                const newUser = await client.query(
+                    `INSERT INTO users (vk_id, username, referral_code, avatar_id, coins, diamonds, rating, energy, last_energy, win_streak, sound_enabled, music_enabled, current_class)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'warrior') RETURNING *`,
+                    [String(vkUserId), tempUsername, referralCode, 1, 0, 0, 1000, 20, new Date(), 0, true, true]
+                );
+                userData = newUser.rows[0];
+                needusername = true;
+                const classes = ['warrior', 'assassin', 'mage'];
+                for (let cls of classes) {
+                    await client.query(
+                        `INSERT INTO user_classes (user_id, class, skill_points, level, exp)
+                         VALUES ($1, $2, 0, 1, 0)
+                         ON CONFLICT (user_id, class) DO NOTHING`,
+                        [userData.id, cls]
+                    );
+                }
+                await client.query(
+                    `INSERT INTO user_connections (user_id, provider, provider_id, email, data)
+                     VALUES ($1, 'vk', $2, $3, $4)`,
+                    [userData.id, String(vkUserId), null, JSON.stringify(launchParams)]
+                );
+                await createWelcomeMessage(client, userData.id);
+            }
+        } else {
+            userData = userRes.rows[0];
+            needusername = !userData.username;
+            if (!userData.current_class) {
+                await client.query('UPDATE users SET current_class = \'warrior\' WHERE id = $1', [userData.id]);
+                userData.current_class = 'warrior';
+            }
+            // Обновим user_connections
+            await client.query(
+                `INSERT INTO user_connections (user_id, provider, provider_id, data)
+                 VALUES ($1, 'vk', $2, $3)
+                 ON CONFLICT (user_id, provider) DO UPDATE SET provider_id = $2, data = $3`,
+                [userData.id, String(vkUserId), JSON.stringify(launchParams)]
+            );
+        }
+        const sessionToken = jwt.sign({ userId: userData.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        await client.query('UPDATE users SET session_token = $1 WHERE id = $2', [sessionToken, userData.id]);
+        res.json({ success: true, sessionToken, needusername, userId: userData.id });
+    } catch (err) {
+        console.error('[VK Launch] Error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

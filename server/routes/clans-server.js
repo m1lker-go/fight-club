@@ -158,7 +158,7 @@ router.post('/create', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 2. Получить информацию о своём клане (добавлено last_energy)
+// 2. Получить информацию о своём клане (с отметками)
 router.get('/my', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -173,6 +173,8 @@ router.get('/my', async (req, res) => {
             [clanId]
         );
         const clan = clanRes.rows[0];
+        
+        // Список участников с last_energy
         const membersRes = await client.query(
             `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at, u.last_energy
              FROM clan_members cm JOIN users u ON cm.user_id = u.id
@@ -180,7 +182,22 @@ router.get('/my', async (req, res) => {
              ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
             [clanId]
         );
-        res.json({ inClan: true, clan, members: membersRes.rows, userRole: memberRes.rows[0].role });
+        
+        // Кто сегодня отметился
+        const today = getMoscowDate();
+        const checkedRes = await client.query(
+            `SELECT user_id FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2`,
+            [clanId, today]
+        );
+        const checkedTodaySet = new Set(checkedRes.rows.map(r => r.user_id));
+        
+        res.json({
+            inClan: true,
+            clan,
+            members: membersRes.rows,
+            userRole: memberRes.rows[0].role,
+            checkedTodayList: Array.from(checkedTodaySet)
+        });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: e.message });

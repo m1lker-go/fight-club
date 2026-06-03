@@ -38,7 +38,14 @@ async function renderClansList() {
         html += `
             <div class="clan-card" data-clan-id="${clan.id}">
                 <div class="clan-icon" style="background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color}; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas ${clan.icon_class}" style="color: ${clan.icon_color}; font-size: 24px;"></i>
+                    // Маппинг icon_id (1-10) → Font Awesome класс
+const iconMap = {
+    1: 'fa-cat', 2: 'fa-dog', 3: 'fa-sword', 4: 'fa-axe',
+    5: 'fa-shield-halded', 6: 'fa-skull', 7: 'fa-mask',
+    8: 'fa-crown', 9: 'fa-bolt', 10: 'fa-dragon'
+};
+const iconClass = iconMap[clan.icon_id] || 'fa-users';
+<i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 24px;"></i>
                 </div>
                 <div class="clan-info">
                     <div class="clan-name">${escapeHtml(clan.name)}</div>
@@ -90,7 +97,9 @@ function renderMyClan(clan, members, userRole) {
             <div style="background-color: #1a1f2b; padding: 12px; text-align: center; border-bottom: 1px solid #00aaff;">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
                     <div style="width: 48px; height: 48px; background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas ${clan.icon_class}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
+                        const iconMap = {1:'fa-cat',2:'fa-dog',3:'fa-sword',4:'fa-axe',5:'fa-shield-halded',6:'fa-skull',7:'fa-mask',8:'fa-crown',9:'fa-bolt',10:'fa-dragon'};
+const iconClass = iconMap[clan.icon_id] || 'fa-users';
+<i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 28px;"></i>
                     </div>
                     <div>
                         <h2 style="margin:0;">${escapeHtml(clan.name)}</h2>

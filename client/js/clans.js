@@ -47,104 +47,83 @@ async function renderClans() {
 // ------------------- СПИСОК КЛАНОВ (ТАБЛИЦА) -------------------
 async function renderClansList() {
     const content = document.getElementById('content');
-    // Загружаем список кланов с фильтрами
-    const params = new URLSearchParams({
-        search: clanListSearch,
-        sort: clanListSort,
-        type: clanListType,
-        page: 1
-    });
-    const res = await window.apiRequest(`/clans/list?${params.toString()}`);
+    // Загружаем список кланов
+    const res = await window.apiRequest('/clans/list');
     const clans = await res.json();
     
-    // Фильтрация по типу вступления на клиенте (если сервер не поддерживает)
-    let filteredClans = clans;
-    if (clanListType !== 'all') {
-        filteredClans = clans.filter(c => c.join_type === clanListType);
-    }
-    // Сортировка
+    // Применяем фильтрацию и сортировку (на клиенте)
+    let filteredClans = clans.filter(c => {
+        if (clanListType !== 'all' && c.join_type !== clanListType) return false;
+        if (clanListSearch && !c.name.toLowerCase().includes(clanListSearch.toLowerCase())) return false;
+        return true;
+    });
     filteredClans.sort((a, b) => {
         if (clanListSort === 'level') return b.level - a.level;
         if (clanListSort === 'members') return (b.current_members || 0) - (a.current_members || 0);
         return a.name.localeCompare(b.name);
     });
     
-    // Определяем максимальное количество строк в таблице (например, 10)
     const maxRows = 10;
     const rowsToShow = Math.max(filteredClans.length, maxRows);
     
     let html = `
         <div class="clans-container">
-            <div style="padding: 12px;">
-                <button class="clans-submit-btn" id="createClanBtn">+ Создать клан</button>
-            </div>
-            <div class="clans-list-header">
-                <h3>ВСТУПИТЬ В КЛАН:</h3>
-                <div class="clans-filters">
-                    <input type="text" id="clanSearchInput" placeholder="Поиск по названию" value="${escapeHtml(clanListSearch)}">
-                    <select id="clanTypeSelect">
+            <button class="clans-create-btn" id="createClanBtn">+ Создать клан</button>
+            <div class="clans-title">Список кланов</div>
+            <div class="clans-filters-panel">
+                <div class="clans-filters-group">
+                    <input type="text" id="clanSearchInput" placeholder="Поиск по названию" value="${escapeHtml(clanListSearch)}" style="background:#2f3542; border:1px solid #aaa; border-radius:20px; padding:6px 12px; color:white;">
+                    <select id="clanTypeSelect" style="background:#2f3542; border:1px solid #aaa; border-radius:20px; padding:6px 12px; color:white;">
                         <option value="all" ${clanListType === 'all' ? 'selected' : ''}>Все кланы</option>
                         <option value="open" ${clanListType === 'open' ? 'selected' : ''}>Открытые</option>
                         <option value="application" ${clanListType === 'application' ? 'selected' : ''}>По заявкам</option>
                         <option value="invite_only" ${clanListType === 'invite_only' ? 'selected' : ''}>Закрытые</option>
                     </select>
-                    <select id="clanSortSelect">
+                    <select id="clanSortSelect" style="background:#2f3542; border:1px solid #aaa; border-radius:20px; padding:6px 12px; color:white;">
                         <option value="level" ${clanListSort === 'level' ? 'selected' : ''}>По уровню</option>
                         <option value="members" ${clanListSort === 'members' ? 'selected' : ''}>По участникам</option>
                         <option value="name" ${clanListSort === 'name' ? 'selected' : ''}>По названию</option>
                     </select>
                 </div>
+                <button id="clanApplyFiltersBtn" class="clans-apply-btn">Применить</button>
             </div>
             <table class="clans-table">
                 <thead>
                     <tr>
-                        <th style="width: 60px;">№</th>
-                        <th style="width: 70px;">Значок</th>
+                        <th style="width: 50px;">№</th>
+                        <th style="width: 60px;">Значок</th>
                         <th>Название (Уровень)</th>
                         <th style="width: 100px;">Участники</th>
                         <th style="width: 100px;">Действие</th>
                     </tr>
                 </thead>
-                <tbody id="clansTableBody">
+                <tbody>
     `;
     
     for (let i = 0; i < rowsToShow; i++) {
         const clan = filteredClans[i];
-        const rowClass = i % 2 === 0 ? 'even-row' : 'odd-row';
         if (clan) {
             const memberCount = clan.current_members || 0;
             const maxMembers = 10 + (clan.level - 1);
             const iconClass = ICON_MAP[clan.icon_id] || 'fa-users';
-            const joinTypeText = {
-                'open': 'Открыт',
-                'application': 'По заявкам',
-                'invite_only': 'Закрыт'
-            }[clan.join_type] || 'Открыт';
             html += `
-                <tr class="${rowClass} clan-row" data-clan-id="${clan.id}">
-                    <td class="clans-rank">${i+1}</td>
+                <tr class="clan-row" data-clan-id="${clan.id}">
+                    <td>${i+1}</td>
                     <td class="clans-icon-cell">
                         <div class="clan-icon-small" style="background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color};">
-                            <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 24px;"></i>
+                            <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 20px;"></i>
                         </div>
                     </td>
                     <td class="clans-name-cell">
                         <div class="clan-name">${escapeHtml(clan.name)}</div>
                         <div class="clan-level">Уровень ${clan.level}</div>
                     </td>
-                    <td class="clans-members-cell">${memberCount}/${maxMembers}</td>
-                    <td class="clans-action-cell">
-                        <button class="clans-view-btn" data-clan-id="${clan.id}">Просмотр</button>
-                    </td>
+                    <td>${memberCount}/${maxMembers}</td>
+                    <td><button class="clans-view-btn" data-clan-id="${clan.id}">Просмотр</button></td>
                 </tr>
             `;
         } else {
-            // Пустая строка
-            html += `
-                <tr class="${rowClass} empty-row">
-                    <td colspan="5" style="text-align: center; color: #aaa;">—</td>
-                </tr>
-            `;
+            html += `<tr class="empty-row"><td colspan="5" style="text-align:center; color:#555;">—</td></tr>`;
         }
     }
     
@@ -157,29 +136,21 @@ async function renderClansList() {
     
     // Обработчики
     document.getElementById('createClanBtn')?.addEventListener('click', () => showCreateClanModal());
-    document.getElementById('clanSearchInput')?.addEventListener('input', (e) => {
-        clanListSearch = e.target.value;
-        renderClansList();
-    });
-    document.getElementById('clanTypeSelect')?.addEventListener('change', (e) => {
-        clanListType = e.target.value;
-        renderClansList();
-    });
-    document.getElementById('clanSortSelect')?.addEventListener('change', (e) => {
-        clanListSort = e.target.value;
+    document.getElementById('clanApplyFiltersBtn')?.addEventListener('click', () => {
+        clanListSearch = document.getElementById('clanSearchInput').value;
+        clanListType = document.getElementById('clanTypeSelect').value;
+        clanListSort = document.getElementById('clanSortSelect').value;
         renderClansList();
     });
     document.querySelectorAll('.clans-view-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const clanId = btn.dataset.clanId;
-            showClanDetailsModal(clanId);
+            showClanDetailsModal(btn.dataset.clanId);
         });
     });
     document.querySelectorAll('.clan-row').forEach(row => {
         row.addEventListener('click', () => {
-            const clanId = row.dataset.clanId;
-            showClanDetailsModal(clanId);
+            showClanDetailsModal(row.dataset.clanId);
         });
     });
 }

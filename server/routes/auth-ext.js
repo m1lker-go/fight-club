@@ -11,6 +11,7 @@ const { sendTelegramNotification } = require('../utils/telegram');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,

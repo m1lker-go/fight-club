@@ -84,7 +84,7 @@ async function addClanExp(clanId, expGain, client) {
         const members = await client.query('SELECT user_id FROM clan_members WHERE clan_id = $1', [clanId]);
         for (const m of members.rows) {
             await client.query(
-                `INSERT INTO messages (user_id, from_text, subject, body, is_read, is_claimed)
+                `INSERT INTO user_messages (user_id, from_text, subject, body, is_read, is_claimed)
                  VALUES ($1, 'Система', 'Уровень клана повышен!', 
                  'Ваш клан достиг уровня ' || $2 || '! Открыты новые возможности.', false, false)`,
                 [m.user_id, level]

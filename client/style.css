@@ -5718,3 +5718,79 @@ body {
     color: white;
     border: none;
 }
+
+
+/* ========== КЛАНЫ – НОВЫЕ ВКЛАДКИ 3×2 ========== */
+.clans-tab-grid {
+    background-color: #2a303c;
+    padding: 2px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 12px;
+}
+.clans-tab-row {
+    display: flex;
+    gap: 2px;
+}
+.clans-tab-btn {
+    flex: 1;
+    background-color: #232833;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    gap: 4px;
+    cursor: pointer;
+    color: #aaa;
+    font-size: 11px;
+    font-weight: normal;
+    transition: none;
+}
+.clans-tab-btn:first-child {
+    border-radius: 10px 0 0 0;
+}
+.clans-tab-btn:last-child {
+    border-radius: 0 10px 0 0;
+}
+.clans-tab-row:first-child .clans-tab-btn:first-child {
+    border-top-left-radius: 12px;
+}
+.clans-tab-row:first-child .clans-tab-btn:last-child {
+    border-top-right-radius: 12px;
+}
+.clans-tab-row:last-child .clans-tab-btn:first-child {
+    border-bottom-left-radius: 12px;
+}
+.clans-tab-row:last-child .clans-tab-btn:last-child {
+    border-bottom-right-radius: 12px;
+}
+.clans-tab-btn i {
+    font-size: 20px;
+    color: #aaa;
+}
+.clans-tab-btn span {
+    font-size: 10px;
+    color: #aaa;
+}
+.clans-tab-btn.active {
+    background-color: #00aaff;
+}
+.clans-tab-btn.active i,
+.clans-tab-btn.active span {
+    color: white;
+}
+.clans-tab-btn.disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.clans-tab-btn:not(.active):not(.disabled):hover {
+    background-color: #2f3542;
+}
+.clans-tab-btn:not(.active):not(.disabled):hover i,
+.clans-tab-btn:not(.active):not(.disabled):hover span {
+    color: #00aaff;
+}

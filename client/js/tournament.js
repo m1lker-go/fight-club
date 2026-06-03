@@ -53,6 +53,12 @@ async function renderTournamentTab() {
         const tournamentActive = status.tournamentActive;
         const tournamentCompleted = status.tournamentCompleted;
 
+        // Восстанавливаем выбранные класс и подкласс из статуса (если есть)
+        if (!selectedTournamentClass && status.registeredClass) {
+            selectedTournamentClass = status.registeredClass;
+            selectedTournamentSubclass = status.registeredSubclass;
+        }
+
         if (tournamentCompleted && !tournamentActive) {
             await renderBracket();
             return;
@@ -88,7 +94,7 @@ async function renderTournamentTab() {
             }
 
             container.innerHTML = `
-                <div class="tournament-header" style="margin-bottom: 12px;">
+                <div class="tournament-header">
                     <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
                     <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
                 </div>
@@ -103,16 +109,24 @@ async function renderTournamentTab() {
                 </div>
             `;
 
-            // Обработчики выбора класса
+            document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
+
+            // Обработчики выбора класса (с автоматическим выбором первого подкласса)
             document.querySelectorAll('.class-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const className = btn.dataset.class;
                     if (className === selectedTournamentClass) return;
                     selectedTournamentClass = className;
-                    selectedTournamentSubclass = null;
+                    // Выбираем первый подкласс для нового класса
+                    const subclasses = getSubclassesForClass(className);
+                    selectedTournamentSubclass = subclasses[0];
                     await window.apiRequest('/tournament/select-class', {
                         method: 'POST',
                         body: JSON.stringify({ class: className })
+                    });
+                    await window.apiRequest('/tournament/select-subclass', {
+                        method: 'POST',
+                        body: JSON.stringify({ subclass: selectedTournamentSubclass })
                     });
                     renderTournamentTab();
                 });
@@ -128,7 +142,7 @@ async function renderTournamentTab() {
                         method: 'POST',
                         body: JSON.stringify({ subclass })
                     });
-                    renderTournamentTab();
+                    // Не перерисовываем всю страницу, чтобы не мигало
                 });
             }
 
@@ -253,7 +267,7 @@ async function renderLeadersTab() {
                         <tr><th>Место</th><th>Игрок</th><th>Очки</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="3" style="text-align:center; padding: 20px; color: #aaa;">Нет данных</td></tr>
+                        <td><td colspan="3" style="text-align:center; padding: 20px; color: #aaa;">Нет данных</td></tr>
                     </tbody>
                 </table>
             `;
@@ -264,7 +278,7 @@ async function renderLeadersTab() {
         leaders.forEach((item, idx) => {
             html += `<tr><td style="text-align:center;">${idx+1}</td><td>${escapeHtml(item.username)}</td><td style="text-align:center;">${item.tournament_points}</td></tr>`;
         });
-        html += '</tbody><tr>';
+        html += '</tbody></td>';
         tableContainer.innerHTML = html;
     } catch (err) {
         console.error(err);

@@ -14,18 +14,18 @@ const COLOR_PALETTE = [
     '#e67e22', '#27ae60', '#8e44ad', '#1abc9c'
 ];
 
-// ------------------- ПОЛНЫЙ СПИСОК ЗАПРЕЩЁННЫХ СЛОВ (ДЛЯ ЧАТА) -------------------
+// ------------------- ЗАПРЕЩЁННЫЕ СЛОВА ДЛЯ ЧАТА (ПОЛНЫЙ СПИСОК) -------------------
 const FORBIDDEN_WORDS = [
-    'мат', 'хуй', 'пизда', 'бля', 'ебать', 'писька', 'хер', 'залупа', 'мудак', 'говно', 'член',
+    'мат', 'хуй', 'пизда', 'бля', 'ебать', 'писька', 'хер', 'залупа', 'мудак', 'говно','член',
     'редиска', 'лох', 'сука', 'пидор', 'гнида', 'тварь', 'шлюха', 'блядина', 'еблан', 'долбоеб',
     'хуесос', 'чмо', 'мразь', 'ублюдок', 'дебил', 'идиот', 'кретин', 'придурок', 'тупица',
     'скотина', 'сволочь', 'паскуда', 'выблядок', 'курва', 'бздюх', 'пердун', 'срака', 'жопа',
     'мудила', 'пиздюк', 'хуйло', 'ебальник', 'ебарь', 'заебать', 'выебать', 'отъебаться',
     'ебашь', 'нахуй', 'охуеть', 'пиздец', 'ебанутый', 'хрен', 'хреново', 'пропиздон', 'распиздяй',
-    'манда', 'мандавошка', 'петух', 'гандон', 'пидор', 'пидорас', 'петушара', 'сучка', 'сучонок',
-    'блядун', 'блядюга', 'ебаклан', 'ебалыч', 'ебеня', 'ебитесь', 'ебошить', 'жополиз', 'засранец',
-    'обосраться', 'опизденеть', 'отпиздить', 'пиздабол', 'разъебать', 'съебаться', 'уебок', 'хуйня',
-    'хуйло', 'цицка', 'яйца', 'мудило', 'мудозвон', 'пердун', 'срач', 'срун', 'очко', 'шмар',
+    'манда', 'мандавошка', 'петух', 'гандон', 'пидорас', 'петушара', 'сучка', 'сучонок',
+    'блядки', 'блядство', 'блядовать', 'блядун', 'блядюга', 'блядюшка', 'бля', 'блин',
+    'жополиз', 'засранец', 'обосраться', 'опизденеть', 'отпиздить', 'пиздабол', 'разъебать', 'съебаться', 'уебок', 'хуйня',
+    'мудило', 'мудозвон', 'sрач', 'срун', 'очко', 'шмар',
     'fuck', 'shit', 'bitch', 'cunt', 'dick', 'asshole', 'bastard', 'damn', 'hell', 'piss', 'crap',
     'slut', 'whore', 'cock', 'pussy', 'twat', 'motherfucker', 'faggot', 'nigger', 'retard', 'wanker',
     'bloody', 'bugger', 'arse', 'arsehole', 'bollocks', 'cocksucker', 'dumbass', 'jackass', 'douchebag',
@@ -44,7 +44,6 @@ const FORBIDDEN_WORDS = [
     'ёпта', 'ёкарный', 'ёклмн', 'ёксель', 'ёпрст', 'ёшкин', 'йод', 'ху', 'хую', 'хуя', 'хуюшки',
     'хреновина', 'хрень', 'пизд', 'пизде', 'пиздю', 'пиздя', 'пизж', 'пизжен', 'пиздатый',
     'пиздануть', 'пиздануться', 'пиздеть', 'пиздишь', 'пиздюк', 'пиздюля', 'пиздюшник', 'пиздопроёбина',
-    'блядки', 'блядство', 'блядовать', 'бля', 'блин',
     'ёж', 'ёжкин', 'ёженька', 'ёпт', 'ёптить',
     'dipshit', 'dumbshit', 'fucktard', 'fucknugget', 'fuckwit', 'shitbag', 'shitbrick', 'shitcanoe',
     'shitdick', 'shitface', 'shitfuck', 'shitgibbon', 'shithouse', 'shitlord', 'shitmonger', 'shitpile',
@@ -65,6 +64,18 @@ function getExpNeeded(level) {
 }
 function getMaxMembers(level) {
     return 10 + Math.floor((level - 1) / 5);
+}
+
+// ------------------- СТАТУС ОНЛАЙН (ПО last_energy) -------------------
+function getStatusColor(lastEnergy) {
+    if (!lastEnergy) return '#aaa';
+    const now = new Date();
+    const lastDate = new Date(lastEnergy);
+    const diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return '#2ecc71';      // сегодня был
+    if (diffDays === 1) return '#f1c40f';      // вчера
+    if (diffDays <= 7) return '#aaa';          // на этой неделе
+    return '#e74c3c';                          // больше недели
 }
 
 // ------------------- ИНИЦИАЛИЗАЦИЯ ЗАКРЫТИЯ МОДАЛОК -------------------
@@ -101,7 +112,6 @@ async function renderClans() {
 // ------------------- СПИСОК КЛАНОВ (ТАБЛИЦА) -------------------
 async function renderClansList() {
     const content = document.getElementById('content');
-    // Проверяем, состоит ли игрок в клане (для кнопки "Моя гильдия" и скрытия "Создать клан")
     let myClanData = null;
     try {
         const myRes = await window.apiRequest('/clans/my');
@@ -383,8 +393,8 @@ function renderMyClan(clan, members, userRole) {
             </div>
             <div class="clans-tab-content" id="clanTabContent"></div>
             <div style="padding: 12px; display: flex; gap: 8px;">
-                <button id="backToClanListBtn" class="clans-submit-btn" style="background-color:#2f3542;">Список кланов</button>
-                <button id="leaveClanBtn" class="clans-submit-btn" style="background-color:#e74c3c;">Покинуть клан</button>
+                <button id="backToClanListBtn" class="clans-submit-btn" style="background-color:#2f3542; flex:1;">Список кланов</button>
+                <button id="leaveClanBtn" class="clans-submit-btn" style="background-color:#e74c3c; flex:1;">Покинуть клан</button>
             </div>
         </div>
     `;
@@ -412,42 +422,42 @@ function renderMyClan(clan, members, userRole) {
     else if (currentClanTab === 'settings' && userRole === 'leader') renderClanSettings(tabContent, clan);
 }
 
-// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ДОБАВЛЕНИЕМ СТОЛБЦА "ОТМЕТКА") -------------------
+// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОНЛАЙН-КРУЖКАМИ) -------------------
 function renderClanInfo(container, clan, members, userRole) {
     const maxMembers = getMaxMembers(clan.level);
     const today = new Date().toLocaleDateString('ru-RU');
     const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
     
-    let html = `<table class="clans-members-table"><thead><tr><th>Игрок</th><th>Роль</th><th>Статус</th><th>Отметка</th><th></th></tr></thead><tbody>`;
+    let html = `<table class="clans-members-table"><thead><tr style="background-color:#1a1f2b;"><th style="color:white;">Игрок</th><th style="color:white;">Роль</th><th style="color:white;">Статус</th><th style="color:white;">Отметка</th><th></th></tr></thead><tbody>`;
     for (const m of members) {
-        const isOnline = false;
+        const statusColor = getStatusColor(m.last_energy);
+        const statusIcon = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${statusColor}; margin:0 auto;"></span>`;
+        
         let checkinIcon = '';
         if (m.id === userData.id) {
-            // Текущий пользователь – статус из localStorage
             checkinIcon = userCheckinStatus ? '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>' : '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
         } else {
-            // Для других участников пока заглушка (в будущем можно добавить статус от сервера)
             checkinIcon = '<span style="color:#555;">—</span>';
         }
         html += `
             <tr>
                 <td>${escapeHtml(m.username)}</td>
                 <td><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
-                <td>${isOnline ? '🟢 Онлайн' : '⚫ Офлайн'}</td>
+                <td style="text-align:center;">${statusIcon}</td>
                 <td>${checkinIcon}</td>
                 <td>
                     ${userRole === 'leader' && m.role !== 'leader' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="kick">Исключить</button>` : ''}
                     ${userRole === 'leader' && m.role === 'member' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="promote">Назначить офицером</button>` : ''}
                     ${userRole === 'leader' && m.role === 'officer' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="demote">Снять офицера</button>` : ''}
                     ${userRole === 'leader' && m.role !== 'leader' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="transfer">Передать лидерство</button>` : ''}
-                 </td>
+                </td>
             </tr>
         `;
     }
     html += `</tbody></table>`;
     container.innerHTML = html;
     
-    // Обработчики кнопок (kick, promote, transfer) – без изменений
+    // Обработчики кнопок (без изменений)
     container.querySelectorAll('[data-action="kick"]').forEach(btn => {
         btn.addEventListener('click', async () => {
             const userId = btn.dataset.userId;
@@ -494,7 +504,6 @@ async function renderClanChat(container, clan) {
     sendBtn.addEventListener('click', async () => {
         let msg = input.value.trim();
         if (!msg) return;
-        // Проверка на мат
         if (containsForbiddenWords(msg)) {
             showToast('Не ругайся!', 2000);
             return;
@@ -559,7 +568,7 @@ async function renderClanCheckin(container, clan) {
     }
 }
 
-// ------------------- ОСТАЛЬНЫЕ ФУНКЦИИ (КАЗНА, ТАЛАНТЫ, УПРАВЛЕНИЕ) БЕЗ ИЗМЕНЕНИЙ -------------------
+// ------------------- ОСТАЛЬНЫЕ ФУНКЦИИ (КАЗНА, ТАЛАНТЫ, УПРАВЛЕНИЕ) -------------------
 async function renderClanTreasury(container, clan) {
     const res = await window.apiRequest('/clans/treasury');
     const treasury = await res.json();

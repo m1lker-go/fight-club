@@ -10,6 +10,7 @@ function getMoscowDate() {
     return msk.toISOString().split('T')[0];
 }
 
+
 function getMaxMembers(level) {
     return 10 + Math.floor((level - 1) / 5);
 }
@@ -400,13 +401,18 @@ router.get('/checkin/status', async (req, res) => {
         const memberRes = await client.query('SELECT clan_id, daily_checkin_date FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) return res.json({ error: 'Не в клане' });
         const today = getMoscowDate();
-        const alreadyChecked = memberRes.rows[0].daily_checkin_date === today;
+        // Приводим дату из БД к строке (если она не NULL)
+        const lastCheckinStr = memberRes.rows[0].daily_checkin_date ? memberRes.rows[0].daily_checkin_date.toISOString().slice(0,10) : null;
+        const alreadyChecked = (lastCheckinStr === today);
         const totalMembers = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [memberRes.rows[0].clan_id]);
-        const checkedToday = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2', [memberRes.rows[0].clan_id, today]);
+        const checkedToday = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date::date = $2', [memberRes.rows[0].clan_id, today]);
         res.json({ already_checked: alreadyChecked, checked_today: parseInt(checkedToday.rows[0].count), total_members: parseInt(totalMembers.rows[0].count) });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: e.message });
-    } finally { client.release(); }
+    } finally {
+        client.release();
+    }
 });
 
 router.post('/checkin', async (req, res) => {
@@ -415,24 +421,36 @@ router.post('/checkin', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const memberRes = await client.query('SELECT clan_id, daily_checkin_date FROM clan_members WHERE user_id = $1', [userId]);
+        const memberRes = await client.query('SELECT clan_id, daily_checkin_date FROM clan_members WHERE user_id = $1 FOR UPDATE', [userId]);
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         const clanId = memberRes.rows[0].clan_id;
         const today = getMoscowDate();
-        if (memberRes.rows[0].daily_checkin_date === today) throw new Error('Вы уже отметились сегодня');
-        const coinsReward = 50, coalReward = 5;
+        const lastCheckinStr = memberRes.rows[0].daily_checkin_date ? memberRes.rows[0].daily_checkin_date.toISOString().slice(0,10) : null;
+        if (lastCheckinStr === today) throw new Error('Вы уже отметились сегодня');
+        
+        const coinsReward = 50;
+        const coalReward = 5;
         await client.query('UPDATE users SET coins = coins + $1, coal = coal + $2 WHERE id = $3', [coinsReward, coalReward, userId]);
-        await client.query('UPDATE clan_members SET daily_checkin_date = $1 WHERE user_id = $2', [today, userId]);
+        
+        // Обновляем дату отметки (приводим к типу DATE)
+        await client.query('UPDATE clan_members SET daily_checkin_date = $1::date WHERE user_id = $2', [today, userId]);
+        
         await addClanExp(clanId, 10, client);
+        
         const totalMembers = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [clanId]);
-        const checkedToday = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2', [clanId, today]);
-        if (parseInt(checkedToday.rows[0].count) === parseInt(totalMembers.rows[0].count)) await addClanExp(clanId, 100, client);
+        const checkedToday = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date::date = $2', [clanId, today]);
+        if (parseInt(checkedToday.rows[0].count) === parseInt(totalMembers.rows[0].count)) {
+            await addClanExp(clanId, 100, client);
+        }
+        
         await client.query('COMMIT');
         res.json({ success: true, coins: coinsReward, coal: coalReward });
     } catch (e) {
         await client.query('ROLLBACK');
         res.status(400).json({ error: e.message });
-    } finally { client.release(); }
+    } finally {
+        client.release();
+    }
 });
 
 // 12. Клановая казна (получить)

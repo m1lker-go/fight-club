@@ -66,6 +66,16 @@ function isNameValid(name) {
     return true;
 }
 
+function isDescriptionValid(description) {
+    if (!description) return true; // пустое описание допустимо
+    if (description.length > 150) return false;
+    const lower = description.toLowerCase();
+    for (const word of forbiddenWords) {
+        if (lower.includes(word)) return false;
+    }
+    return true;
+}
+
 async function addClanExp(clanId, expGain, client) {
     const clanRes = await client.query('SELECT level, exp FROM clans WHERE id = $1', [clanId]);
     if (clanRes.rows.length === 0) return;

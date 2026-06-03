@@ -5802,3 +5802,40 @@ body {
 .clans-members-table thead th {
     color: white;
 }
+
+/* Группированные кнопки + и - */
+.clans-talent-controls-group {
+    display: inline-flex;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #aaa;
+    background-color: #2f3542;
+}
+.talent-btn {
+    background-color: #2f3542;
+    border: none;
+    padding: 4px 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+    transition: background-color 0.2s;
+    min-width: 36px;
+    text-align: center;
+}
+.talent-btn:hover {
+    background-color: #3a4050;
+    color: #00aaff;
+}
+.talent-minus {
+    border-right: 1px solid #aaa;
+}
+.talent-plus {
+    border-left: 1px solid #aaa;
+}
+.clans-talent-value {
+    text-align: center;
+    min-width: 55px;
+    font-weight: bold;
+    color: #00aaff;
+}

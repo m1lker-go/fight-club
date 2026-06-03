@@ -405,7 +405,12 @@ router.post('/buy-scroll', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { scroll_id } = req.body;
-    if (![1037, 1038, 1039].includes(scroll_id)) return res.status(400).json({ error: 'Invalid scroll' });
+    
+    // Преобразуем строку в число для корректного сравнения
+    const scrollIdNum = parseInt(scroll_id, 10);
+    if (![1037, 1038, 1039].includes(scrollIdNum)) {
+        return res.status(400).json({ error: 'Invalid scroll' });
+    }
 
     const client = await pool.connect();
     try {
@@ -415,14 +420,14 @@ router.post('/buy-scroll', async (req, res) => {
         const user = userRes.rows[0];
 
         let price, currency;
-        if (scroll_id === 1037) { price = 500; currency = 'coins'; }
-        else if (scroll_id === 1038) { price = 50; currency = 'diamonds'; }
-        else if (scroll_id === 1039) { price = 150; currency = 'diamonds'; }
+        if (scrollIdNum === 1037) { price = 500; currency = 'coins'; }
+        else if (scrollIdNum === 1038) { price = 50; currency = 'diamonds'; }
+        else if (scrollIdNum === 1039) { price = 150; currency = 'diamonds'; }
 
         if (currency === 'coins' && user.coins < price) throw new Error('Not enough coins');
         if (currency === 'diamonds' && user.diamonds < price) throw new Error('Not enough diamonds');
 
-        const itemRes = await client.query('SELECT * FROM items WHERE id = $1', [scroll_id]);
+        const itemRes = await client.query('SELECT * FROM items WHERE id = $1', [scrollIdNum]);
         if (itemRes.rows.length === 0) throw new Error('Scroll item not found');
         const scroll = itemRes.rows[0];
 
@@ -435,7 +440,7 @@ router.post('/buy-scroll', async (req, res) => {
         await client.query(
             `INSERT INTO inventory (user_id, item_id, equipped, in_forge, name, type, rarity, class_restriction, owner_class, atk_bonus, def_bonus, hp_bonus, spd_bonus, crit_bonus, crit_dmg_bonus, agi_bonus, int_bonus, vamp_bonus, reflect_bonus)
              VALUES ($1, $2, false, false, $3, $4, $5, 'any', $6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)`,
-            [userId, scroll_id, scroll.name, scroll.type, scroll.rarity, scroll.owner_class]
+            [userId, scrollIdNum, scroll.name, scroll.type, scroll.rarity, scroll.owner_class]
         );
 
         await client.query('COMMIT');

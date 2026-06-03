@@ -1322,7 +1322,7 @@ router.post('/vk-launch', async (req, res) => {
             userData = userRes.rows[0];
             needusername = !userData.username;
             if (!userData.current_class) {
-                await client.query('UPDATE users SET current_class = 'warrior' WHERE id = $1', [userData.id]);
+               await client.query(`UPDATE users SET current_class = 'warrior' WHERE id = $1`, [userData.id]);
                 userData.current_class = 'warrior';
             }
             await client.query(

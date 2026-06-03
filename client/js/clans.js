@@ -419,14 +419,42 @@ function renderMyClan(clan, members, userRole) {
                     </div>
                 </div>
             </div>
-            <div class="clans-tabs">
-                <button class="clans-tab ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info">Соратники</button>
-                <button class="clans-tab ${currentClanTab === 'chat' ? 'active' : ''}" data-tab="chat">Чат</button>
-                <button class="clans-tab ${currentClanTab === 'checkin' ? 'active' : ''}" data-tab="checkin">Отметка</button>
-                <button class="clans-tab ${currentClanTab === 'treasury' ? 'active' : ''}" data-tab="treasury">Казна</button>
-                <button class="clans-tab ${currentClanTab === 'talents' ? 'active' : ''}" data-tab="talents">Таланты</button>
-                ${userRole === 'leader' ? `<button class="clans-tab ${currentClanTab === 'settings' ? 'active' : ''}" data-tab="settings">Управление</button>` : ''}
-            </div>
+            <div class="clans-tab-grid">
+    <div class="clans-tab-row">
+        <button class="clans-tab-btn ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info">
+            <i class="fas fa-users"></i>
+            <span>Соратники</span>
+        </button>
+        <button class="clans-tab-btn ${currentClanTab === 'chat' ? 'active' : ''}" data-tab="chat">
+            <i class="fas fa-comments"></i>
+            <span>Чат</span>
+        </button>
+        <button class="clans-tab-btn ${currentClanTab === 'checkin' ? 'active' : ''}" data-tab="checkin">
+            <i class="fas fa-calendar-check"></i>
+            <span>Отметка</span>
+        </button>
+    </div>
+    <div class="clans-tab-row">
+        <button class="clans-tab-btn ${currentClanTab === 'treasury' ? 'active' : ''}" data-tab="treasury">
+            <i class="fas fa-coins"></i>
+            <span>Казна</span>
+        </button>
+        <button class="clans-tab-btn ${currentClanTab === 'talents' ? 'active' : ''}" data-tab="talents">
+            <i class="fas fa-chart-line"></i>
+            <span>Таланты</span>
+        </button>
+        ${userRole === 'leader' ? 
+            `<button class="clans-tab-btn ${currentClanTab === 'settings' ? 'active' : ''}" data-tab="settings">
+                <i class="fas fa-cog"></i>
+                <span>Управление</span>
+            </button>` : 
+            `<button class="clans-tab-btn disabled" disabled>
+                <i class="fas fa-lock"></i>
+                <span>Управление</span>
+            </button>`
+        }
+    </div>
+</div>
             <div class="clans-tab-content" id="clanTabContent"></div>
             <div style="padding: 12px; margin-top: 8px;">
                 <button id="leaveClanBtn" class="clans-submit-btn" style="background-color:#e74c3c;">Покинуть клан</button>

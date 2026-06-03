@@ -2,6 +2,7 @@
 let currentClanTab = 'info';
 let clanListSearch = '';
 let clanListType = 'all';
+let activeMenuUserId = null;
 
 const ICON_MAP = {
     1: 'fa-cat', 2: 'fa-dog', 3: 'fa-dragon', 4: 'fa-crown', 5: 'fa-skull',
@@ -14,7 +15,7 @@ const COLOR_PALETTE = [
     '#e67e22', '#27ae60', '#8e44ad', '#1abc9c'
 ];
 
-// ------------------- ЗАПРЕЩЁННЫЕ СЛОВА ДЛЯ ЧАТА (ПОЛНЫЙ СПИСОК) -------------------
+// ------------------- ЗАПРЕЩЁННЫЕ СЛОВА (ПОЛНЫЙ СПИСОК) -------------------
 const FORBIDDEN_WORDS = [
     'мат', 'хуй', 'пизда', 'бля', 'ебать', 'писька', 'хер', 'залупа', 'мудак', 'говно','член',
     'редиска', 'лох', 'сука', 'пидор', 'гнида', 'тварь', 'шлюха', 'блядина', 'еблан', 'долбоеб',
@@ -25,7 +26,7 @@ const FORBIDDEN_WORDS = [
     'манда', 'мандавошка', 'петух', 'гандон', 'пидорас', 'петушара', 'сучка', 'сучонок',
     'блядки', 'блядство', 'блядовать', 'блядун', 'блядюга', 'блядюшка', 'бля', 'блин',
     'жополиз', 'засранец', 'обосраться', 'опизденеть', 'отпиздить', 'пиздабол', 'разъебать', 'съебаться', 'уебок', 'хуйня',
-    'мудило', 'мудозвон', 'sрач', 'срун', 'очко', 'шмар',
+    'мудило', 'мудозвон', 'срач', 'срун', 'очко', 'шмар',
     'fuck', 'shit', 'bitch', 'cunt', 'dick', 'asshole', 'bastard', 'damn', 'hell', 'piss', 'crap',
     'slut', 'whore', 'cock', 'pussy', 'twat', 'motherfucker', 'faggot', 'nigger', 'retard', 'wanker',
     'bloody', 'bugger', 'arse', 'arsehole', 'bollocks', 'cocksucker', 'dumbass', 'jackass', 'douchebag',
@@ -66,16 +67,108 @@ function getMaxMembers(level) {
     return 10 + Math.floor((level - 1) / 5);
 }
 
-// ------------------- СТАТУС ОНЛАЙН (ПО last_energy) -------------------
+// ------------------- СТАТУС ОНЛАЙН -------------------
 function getStatusColor(lastEnergy) {
     if (!lastEnergy) return '#aaa';
     const now = new Date();
     const lastDate = new Date(lastEnergy);
     const diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return '#2ecc71';      // сегодня был
-    if (diffDays === 1) return '#f1c40f';      // вчера
-    if (diffDays <= 7) return '#aaa';          // на этой неделе
-    return '#e74c3c';                          // больше недели
+    if (diffDays === 0) return '#2ecc71';
+    if (diffDays === 1) return '#f1c40f';
+    if (diffDays <= 7) return '#aaa';
+    return '#e74c3c';
+}
+
+// ------------------- ВЫПАДАЮЩЕЕ МЕНЮ ДЛЯ УПРАВЛЕНИЯ -------------------
+function closeAllMenus() {
+    document.querySelectorAll('.clan-member-menu').forEach(menu => menu.remove());
+    activeMenuUserId = null;
+}
+function showMemberMenu(userId, username, role, targetElement) {
+    closeAllMenus();
+    const rect = targetElement.getBoundingClientRect();
+    const menuDiv = document.createElement('div');
+    menuDiv.className = 'clan-member-menu';
+    menuDiv.style.cssText = `
+        position: fixed;
+        top: ${rect.bottom + 5}px;
+        left: ${rect.left - 20}px;
+        background: #2a303c;
+        border: 1px solid #00aaff;
+        border-radius: 8px;
+        padding: 5px 0;
+        z-index: 10000;
+        min-width: 150px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    `;
+    let actionsHtml = '';
+    if (userRole === 'leader') {
+        if (role !== 'leader') {
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
+            if (role === 'member') {
+                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="promote">⭐ Назначить офицером</div>`;
+            } else if (role === 'officer') {
+                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="demote">⬇️ Снять офицера</div>`;
+            }
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="transfer">👑 Передать лидерство</div>`;
+        }
+    } else if (userRole === 'officer') {
+        if (role !== 'leader' && role !== 'officer') {
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
+        }
+    }
+    if (actionsHtml === '') {
+        actionsHtml = `<div class="menu-item-action disabled">Нет доступных действий</div>`;
+    }
+    menuDiv.innerHTML = actionsHtml;
+    document.body.appendChild(menuDiv);
+    const clickHandler = (e) => {
+        if (!menuDiv.contains(e.target) && !targetElement.contains(e.target)) {
+            menuDiv.remove();
+            document.removeEventListener('click', clickHandler);
+            if (activeMenuUserId === userId) activeMenuUserId = null;
+        }
+    };
+    setTimeout(() => document.addEventListener('click', clickHandler), 0);
+    menuDiv.querySelectorAll('.menu-item-action[data-action]').forEach(item => {
+        item.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const action = item.dataset.action;
+            const targetUserId = item.dataset.userId;
+            menuDiv.remove();
+            if (action === 'kick') {
+                const res = await window.apiRequest('/clans/kick', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                const data = await res.json();
+                if (data.success) { showToast('Игрок исключён', 1500); renderClans(); }
+                else showToast(data.error, 1500);
+            } else if (action === 'promote') {
+                const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                const data = await res.json();
+                if (data.success) { showToast('Назначен офицером', 1500); renderClans(); }
+                else showToast(data.error, 1500);
+            } else if (action === 'demote') {
+                const res = await window.apiRequest('/clans/demote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                if (!res.ok) {
+                    const fallbackRes = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId, role: 'member' }) });
+                    const data = await fallbackRes.json();
+                    if (data.success) showToast('Офицер снят', 1500);
+                    else showToast(data.error, 1500);
+                } else {
+                    const data = await res.json();
+                    if (data.success) showToast('Офицер снят', 1500);
+                    else showToast(data.error, 1500);
+                }
+                renderClans();
+            } else if (action === 'transfer') {
+                if (confirm(`Передать лидерство игроку ${username}?`)) {
+                    const res = await window.apiRequest('/clans/transfer', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
+                    const data = await res.json();
+                    if (data.success) { showToast('Лидерство передано', 1500); renderClans(); }
+                    else showToast(data.error, 1500);
+                }
+            }
+        });
+    });
 }
 
 // ------------------- ИНИЦИАЛИЗАЦИЯ ЗАКРЫТИЯ МОДАЛОК -------------------
@@ -99,7 +192,7 @@ async function renderClans() {
         const res = await window.apiRequest('/clans/my');
         const data = await res.json();
         if (data.inClan) {
-            renderMyClan(data.clan, data.members, data.userRole);
+            renderMyClan(data.clan, data.members, data.userRole, data.checkedTodayList || []);
         } else {
             renderClansList();
         }
@@ -175,7 +268,7 @@ async function renderClansList() {
                 </tr>
             `;
         } else {
-            html += `<tr class="empty-row"><td colspan="5" style="text-align:center; color:#555;">—</td></tr>`;
+            html += `<tr class="empty-row"><td colspan="5" style="text-align:center; color:#555;">—</tr>`;
         }
     }
     html += `</tbody></table></div>`;
@@ -349,7 +442,7 @@ function showCreateClanModal() {
 }
 
 // ------------------- МОЙ КЛАН (ВКЛАДКИ) -------------------
-function renderMyClan(clan, members, userRole) {
+function renderMyClan(clan, members, userRole, checkedTodayList = []) {
     const content = document.getElementById('content');
     const iconClass = ICON_MAP[clan.icon_id] || 'fa-users';
     const maxExp = getExpNeeded(clan.level);
@@ -401,7 +494,7 @@ function renderMyClan(clan, members, userRole) {
     document.querySelectorAll('.clans-tab-btn:not([disabled])').forEach(btn => {
         btn.addEventListener('click', () => {
             currentClanTab = btn.dataset.tab;
-            renderMyClan(clan, members, userRole);
+            renderMyClan(clan, members, userRole, checkedTodayList);
         });
     });
     document.getElementById('backToClanListBtn')?.addEventListener('click', () => renderClansList());
@@ -414,7 +507,7 @@ function renderMyClan(clan, members, userRole) {
         }
     });
     const tabContent = document.getElementById('clanTabContent');
-    if (currentClanTab === 'info') renderClanInfo(tabContent, clan, members, userRole);
+    if (currentClanTab === 'info') renderClanInfo(tabContent, clan, members, userRole, checkedTodayList);
     else if (currentClanTab === 'chat') renderClanChat(tabContent, clan);
     else if (currentClanTab === 'checkin') renderClanCheckin(tabContent, clan);
     else if (currentClanTab === 'treasury') renderClanTreasury(tabContent, clan);
@@ -422,69 +515,52 @@ function renderMyClan(clan, members, userRole) {
     else if (currentClanTab === 'settings' && userRole === 'leader') renderClanSettings(tabContent, clan);
 }
 
-// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОНЛАЙН-КРУЖКАМИ) -------------------
-function renderClanInfo(container, clan, members, userRole) {
+// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ВЫПАДАЮЩИМ МЕНЮ И ОТМЕТКАМИ) -------------------
+function renderClanInfo(container, clan, members, userRole, checkedTodayList = []) {
     const maxMembers = getMaxMembers(clan.level);
     const today = new Date().toLocaleDateString('ru-RU');
-    const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
+    const checkedSet = new Set(checkedTodayList);
     
-    let html = `<table class="clans-members-table"><thead><tr style="background-color:#1a1f2b;"><th style="color:white;">Игрок</th><th style="color:white;">Роль</th><th style="color:white;">Статус</th><th style="color:white;">Отметка</th><th></th></tr></thead><tbody>`;
+    let html = `<table class="clans-members-table"><thead><tr style="background-color:#1a1f2b;"><th style="color:white; width:35%;">Игрок</th><th style="color:white; width:15%;">Роль</th><th style="color:white; width:15%;">Статус</th><th style="color:white; width:15%;">Отметка</th><th style="width:20%;"></th></tr></thead><tbody>`;
     for (const m of members) {
         const statusColor = getStatusColor(m.last_energy);
         const statusIcon = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${statusColor}; margin:0 auto;"></span>`;
         
         let checkinIcon = '';
-        if (m.id === userData.id) {
-            checkinIcon = userCheckinStatus ? '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>' : '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
+        if (checkedSet.has(m.id)) {
+            checkinIcon = '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>';
+        } else if (m.id === userData.id && localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today) {
+            checkinIcon = '<i class="fas fa-check-circle" style="color:#2ecc71;"></i>';
         } else {
-            checkinIcon = '<span style="color:#555;">—</span>';
+            checkinIcon = '<i class="fas fa-times-circle" style="color:#aaa;"></i>';
         }
+        
+        const showMenuButton = (userRole === 'leader' && m.role !== 'leader') || (userRole === 'officer' && m.role === 'member');
+        const menuIcon = showMenuButton ? `<i class="fas fa-chevron-down clan-menu-trigger" data-user-id="${m.id}" data-username="${escapeHtml(m.username)}" data-role="${m.role}" style="color:#00aaff; cursor:pointer; margin-left:8px;"></i>` : '';
+        
         html += `
             <tr>
-                <td>${escapeHtml(m.username)}</td>
+                <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;">
+                    ${escapeHtml(m.username)}${menuIcon}
+                </td>
                 <td><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
                 <td style="text-align:center;">${statusIcon}</td>
-                <td>${checkinIcon}</td>
-                <td>
-                    ${userRole === 'leader' && m.role !== 'leader' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="kick">Исключить</button>` : ''}
-                    ${userRole === 'leader' && m.role === 'member' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="promote">Назначить офицером</button>` : ''}
-                    ${userRole === 'leader' && m.role === 'officer' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="demote">Снять офицера</button>` : ''}
-                    ${userRole === 'leader' && m.role !== 'leader' ? `<button class="clans-action-btn" data-user-id="${m.id}" data-action="transfer">Передать лидерство</button>` : ''}
-                </td>
+                <td style="text-align:center;">${checkinIcon}</td>
+                <td></td>
             </tr>
         `;
     }
-    html += `</tbody></table>`;
+    html += `</tbody><table>`;
     container.innerHTML = html;
     
-    // Обработчики кнопок (без изменений)
-    container.querySelectorAll('[data-action="kick"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = btn.dataset.userId;
-            const res = await window.apiRequest('/clans/kick', { method: 'POST', body: JSON.stringify({ target_user_id: userId }) });
-            const data = await res.json();
-            if (data.success) { showToast('Игрок исключён', 1500); renderClans(); }
-            else showToast(data.error, 1500);
-        });
-    });
-    container.querySelectorAll('[data-action="promote"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const userId = btn.dataset.userId;
-            const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: userId }) });
-            const data = await res.json();
-            if (data.success) { showToast('Назначен офицером', 1500); renderClans(); }
-            else showToast(data.error, 1500);
-        });
-    });
-    container.querySelectorAll('[data-action="transfer"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            if (confirm('Передать лидерство этому игроку?')) {
-                const userId = btn.dataset.userId;
-                const res = await window.apiRequest('/clans/transfer', { method: 'POST', body: JSON.stringify({ target_user_id: userId }) });
-                const data = await res.json();
-                if (data.success) { showToast('Лидерство передано', 1500); renderClans(); }
-                else showToast(data.error, 1500);
-            }
+    // Обработчики для стрелок выпадающего меню
+    document.querySelectorAll('.clan-menu-trigger').forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const userId = parseInt(trigger.dataset.userId);
+            const username = trigger.dataset.username;
+            const role = trigger.dataset.role;
+            showMemberMenu(userId, username, role, trigger);
         });
     });
 }
@@ -518,7 +594,7 @@ async function renderClanChat(container, clan) {
     });
 }
 
-// ------------------- ОТМЕТКА (БЕЗ ОТОБРАЖЕНИЯ СТАТИСТИКИ) -------------------
+// ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
     const today = new Date().toLocaleDateString('ru-RU');
     const lastCheckin = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`);
@@ -568,7 +644,7 @@ async function renderClanCheckin(container, clan) {
     }
 }
 
-// ------------------- ОСТАЛЬНЫЕ ФУНКЦИИ (КАЗНА, ТАЛАНТЫ, УПРАВЛЕНИЕ) -------------------
+// ------------------- КАЗНА -------------------
 async function renderClanTreasury(container, clan) {
     const res = await window.apiRequest('/clans/treasury');
     const treasury = await res.json();
@@ -584,6 +660,7 @@ async function renderClanTreasury(container, clan) {
     });
 }
 
+// ------------------- ТАЛАНТЫ -------------------
 async function renderClanTalents(container, clan) {
     const res = await window.apiRequest('/clans/bonuses');
     const bonuses = await res.json();
@@ -597,6 +674,7 @@ function renderTalentRow(name, value, key) {
     return `<div class="clans-talent-row"><span class="clans-talent-name">${name}</span><span class="clans-talent-value">+${value}</span><div class="clans-talent-controls"><button data-stat="${key}" data-op="decr">-</button><span>0</span><button data-stat="${key}" data-op="incr">+</button></div></div>`;
 }
 
+// ------------------- УПРАВЛЕНИЕ (РЕДАКТИРОВАНИЕ) -------------------
 function renderClanSettings(container, clan) {
     let currentIconId = clan.icon_id;
     let currentBgColor = clan.icon_bg_color;

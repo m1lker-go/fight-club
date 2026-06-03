@@ -461,12 +461,12 @@ function renderMyClan(clan, members, userRole) {
             </div>
         </div>
     `;
-    document.querySelectorAll('.clans-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            currentClanTab = tab.dataset.tab;
-            renderMyClan(clan, members, userRole);
-        });
+    document.querySelectorAll('.clans-tab-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => {
+        currentClanTab = btn.dataset.tab;
+        renderMyClan(clan, members, userRole);
     });
+});
     document.getElementById('leaveClanBtn')?.addEventListener('click', async () => {
         if (confirm('Вы уверены, что хотите покинуть клан?')) {
             const res = await window.apiRequest('/clans/leave', { method: 'POST' });

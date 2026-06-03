@@ -888,4 +888,70 @@ router.delete('/:id', async (req, res) => {
     } finally { client.release(); }
 });
 
+// 25. Изменить один клановый талант (+1 / -1)
+router.post('/adjust-talent', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { stat, delta } = req.body; // stat: 'hp','attack','defense','agility','crit_damage','vampirism'; delta: +1 или -1
+    if (!stat || (delta !== 1 && delta !== -1)) {
+        return res.status(400).json({ error: 'Неверные параметры' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const roleInfo = await getUserRoleInClan(userId, client);
+        if (!roleInfo || roleInfo.role !== 'leader') {
+            throw new Error('Только лидер может распределять таланты');
+        }
+        const clanId = roleInfo.clanId;
+
+        // Получаем текущие бонусы и total_points
+        const bonusesRes = await client.query('SELECT * FROM clan_bonuses WHERE clan_id = $1', [clanId]);
+        if (bonusesRes.rows.length === 0) {
+            await client.query('INSERT INTO clan_bonuses (clan_id) VALUES ($1)', [clanId]);
+            return res.json({ success: true });
+        }
+        const bonuses = bonusesRes.rows[0];
+        const totalPoints = bonuses.total_points;
+
+        // Определяем, какой бонус меняем
+        const fieldMap = {
+            'hp': 'bonus_hp',
+            'attack': 'bonus_attack',
+            'defense': 'bonus_defense',
+            'agility': 'bonus_agility',
+            'crit_damage': 'bonus_crit_damage',
+            'vampirism': 'bonus_vampirism'
+        };
+        const field = fieldMap[stat];
+        if (!field) throw new Error('Неверная характеристика');
+
+        const currentVal = bonuses[field] || 0;
+        let newVal = currentVal + delta;
+        if (newVal < 0) throw new Error('Значение не может быть отрицательным');
+
+        // Вычисляем новую сумму бонусов
+        let sum = 0;
+        for (const f of Object.values(fieldMap)) {
+            if (f === field) sum += newVal;
+            else sum += (bonuses[f] || 0);
+        }
+        if (sum > totalPoints) {
+            throw new Error('Нельзя распределить больше очков, чем куплено');
+        }
+
+        // Обновляем бонус
+        await client.query(`UPDATE clan_bonuses SET ${field} = $1 WHERE clan_id = $2`, [newVal, clanId]);
+
+        await client.query('COMMIT');
+        res.json({ success: true, newValue: newVal });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

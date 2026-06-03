@@ -600,4 +600,53 @@ router.post('/redistribute', async (req, res) => {
     }
 });
 
+
+// 17. Получить публичную информацию о клане (для просмотра)
+router.get('/:id', async (req, res) => {
+    const clanId = parseInt(req.params.id);
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    const userId = req.userId;
+    const client = await pool.connect();
+    try {
+        // Основная информация
+        const clanRes = await client.query(
+            `SELECT c.*, 
+                    (SELECT COUNT(*) FROM clan_members WHERE clan_id = c.id) as member_count
+             FROM clans c WHERE c.id = $1`,
+            [clanId]
+        );
+        if (clanRes.rows.length === 0) return res.status(404).json({ error: 'Клан не найден' });
+        const clan = clanRes.rows[0];
+        
+        // Список участников с их силой (через player_stats)
+        const membersRes = await client.query(
+            `SELECT u.id, u.username, u.avatar_id, cm.role, cm.joined_at,
+                    COALESCE(ps.power, 0) as power
+             FROM clan_members cm
+             JOIN users u ON cm.user_id = u.id
+             LEFT JOIN player_stats ps ON ps.user_id = u.id AND ps.class = u.current_class
+             WHERE cm.clan_id = $1
+             ORDER BY cm.role = 'leader' DESC, ps.power DESC`,
+            [clanId]
+        );
+        
+        // Определяем, состоит ли текущий пользователь в этом клане
+        let userMembership = null;
+        if (userId) {
+            const userMember = await client.query(
+                'SELECT role FROM clan_members WHERE user_id = $1 AND clan_id = $2',
+                [userId, clanId]
+            );
+            if (userMember.rows.length) userMembership = userMember.rows[0].role;
+        }
+        
+        res.json({ clan, members: membersRes.rows, userMembership });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

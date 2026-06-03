@@ -752,25 +752,14 @@ function showScreen(screen) {
         case 'tournament':
             renderTournament();
             break;
-       case 'clans':
-    if (typeof renderClans === 'undefined') {
-        const script = document.createElement('script');
-        script.src = '/js/clans.js';
-        script.onload = () => {
-            if (typeof renderClans === 'function') {
-                renderClans();
-            } else {
-                content.innerHTML = '<p style="color:#aaa;">Ошибка загрузки кланов</p>';
-            }
-        };
-        script.onerror = () => {
-            content.innerHTML = '<p style="color:#aaa;">Не удалось загрузить кланы</p>';
-        };
-        document.head.appendChild(script);
-    } else {
+      case 'clans':
+    if (typeof renderClans === 'function') {
         renderClans();
+    } else {
+        content.innerHTML = '<p style="color:#aaa;">Ошибка: модуль кланов не загружен</p>';
     }
     break;
+            
         default: renderMain();
     }
 

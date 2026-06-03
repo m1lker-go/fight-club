@@ -5318,35 +5318,61 @@ body {
 /* Панель фильтров */
 .clans-filters-panel {
     background-color: #2a303c;
-    padding: 12px;
+    padding: 8px 12px;
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
 }
 .clans-filters-group {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    width: 100%;
 }
-.clans-filter-input, .clans-filter-select {
+.clans-filter-input {
+    flex: 2;
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 6px 12px;
+    padding: 8px 12px;
     color: white;
-    font-size: 12px;
+    font-size: 14px;
+}
+.clans-filter-select {
+    flex: 1;
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 14px;
+}
+.clans-filters-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+.clans-reset-btn {
+    background-color: #2f3542;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: #aaa;
+    font-size: 14px;
+    cursor: pointer;
+    flex: 1;
+    max-width: 100px;
 }
 .clans-apply-btn {
     background-color: #2f3542;
     border: 1px solid #aaa;
     border-radius: 20px;
-    padding: 6px 20px;
+    padding: 6px 24px;
     color: #aaa;
+    font-size: 14px;
     cursor: pointer;
+    flex: 2;
 }
-.clans-apply-btn:hover {
+.clans-reset-btn:hover, .clans-apply-btn:hover {
     border-color: #00aaff;
     color: #00aaff;
 }

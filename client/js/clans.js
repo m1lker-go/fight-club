@@ -309,17 +309,17 @@ function showCreateClanModal() {
                     <div>
                         <div>Выберите иконку:</div>
                         <select id="iconSelect">
-                            <option value="1">Кот</option>
-                            <option value="2">Пёс</option>
-                            <option value="3">Меч</option>
-                            <option value="4">Топор</option>
-                            <option value="5">Щит</option>
-                            <option value="6">Череп</option>
-                            <option value="7">Маска</option>
-                            <option value="8">Корона</option>
-                            <option value="9">Молния</option>
-                            <option value="10">Дракон</option>
-                        </select>
+    <option value="1">Кот</option>
+    <option value="2">Пёс</option>
+    <option value="3">Дракон</option>
+    <option value="4">Корона</option>
+    <option value="5">Череп</option>
+    <option value="6">Маска</option>
+    <option value="7">Молния</option>
+    <option value="8">Перо</option>
+    <option value="9">Лапа</option>
+    <option value="10">Кулак</option>
+</select>
                     </div>
                 </div>
                 <div style="margin:12px 0;">Цвет фона:</div>

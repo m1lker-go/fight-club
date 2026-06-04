@@ -296,25 +296,27 @@ async function loadDailyTasks() {
                     '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + clampedProgress + '/' + task.target_value + '</div>' +
                 '</div>';
 
-            let isReadyToClaim = false;
+           let isReadyToClaim = false;
 
-            if (task.id !== 9) {
-                isReadyToClaim = (task.progress >= task.target_value);
-            }
-
-            if (task.id === 9) {
-                const championTarget = 10;
-                const championProgress = completedTasksCount;
-                const championPercent = Math.min(100, (championProgress / championTarget) * 100);
-                progressHtml = 
-                    '<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">' +
-                        '<div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">' +
-                            '<div style="background-color: #00aaff; width: ' + championPercent + '%; height: 100%; border-radius: 3px;"></div>' +
-                        '</div>' +
-                        '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + championProgress + '/' + championTarget + '</div>' +
-                    '</div>';
-                isReadyToClaim = championProgress >= championTarget;
-            }
+// Если задание уже завершено (completed = true), то кнопка неактивна
+if (!task.completed) {
+    if (task.id !== 9) {
+        isReadyToClaim = (task.progress >= task.target_value);
+    }
+    if (task.id === 9) {
+        const championTarget = 10;
+        const championProgress = completedTasksCount;
+        const championPercent = Math.min(100, (championProgress / championTarget) * 100);
+        progressHtml = 
+            '<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px;">' +
+                '<div style="flex: 1; background-color: #2f3542; height: 6px; border-radius: 3px;">' +
+                    '<div style="background-color: #00aaff; width: ' + championPercent + '%; height: 100%; border-radius: 3px;"></div>' +
+                '</div>' +
+                '<div style="font-size: 10px; color: #aaa; min-width: 35px;">' + championProgress + '/' + championTarget + '</div>' +
+            '</div>';
+        isReadyToClaim = championProgress >= championTarget;
+    }
+}
 
             const taskCard = document.createElement('div');
             taskCard.className = 'task-card';
@@ -327,26 +329,27 @@ async function loadDailyTasks() {
             taskCard.style.boxSizing = 'border-box';
             taskCard.style.backgroundColor = index % 2 === 0 ? '#2a303c' : '#232833';
 
-            taskCard.innerHTML = 
-                '<div style="flex: 2; min-width: 0;">' +
-                    '<div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + displayName + '</div>' +
-                    '<div style="font-size: 11px; color: #aaa; margin-top: 2px;">' + displayDesc + '</div>' +
-                    altDesc +
-                    progressHtml +
-                    altProgressHtml +
-                '</div>' +
-                '<div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">' +
-                    '<span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">' + rewardHtml + '</span>' +
-                '</div>' +
-                '<div style="flex: 0 0 50px; text-align: right;">' +
-                    '<button class="claim-task-btn ' + (isReadyToClaim ? 'active' : '') + '" ' +
-                            'data-task-id="' + task.id + '" ' +
-                            'data-reward-type="' + task.reward_type + '" ' +
-                            'data-reward-amount="' + task.reward_amount + '" ' +
-                            'style="padding: 8px; width: 100%; font-size: 14px;">' +
-                            '<i class="fas ' + (isReadyToClaim ? 'fa-check' : (task.id === 11 || task.id === 12 ? 'fa-play' : 'fa-times')) + '"></i>' +
-                    '</button>' +
-                '</div>';
+           taskCard.innerHTML = 
+    '<div style="flex: 2; min-width: 0;">' +
+        '<div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + displayName + '</div>' +
+        '<div style="font-size: 11px; color: #aaa; margin-top: 2px;">' + displayDesc + '</div>' +
+        altDesc +
+        progressHtml +
+        altProgressHtml +
+    '</div>' +
+    '<div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 10px;">' +
+        '<span style="font-weight: bold; color: white; font-size: 14px; white-space: nowrap;">' + rewardHtml + '</span>' +
+    '</div>' +
+    '<div style="flex: 0 0 50px; text-align: right;">' +
+        '<button class="claim-task-btn ' + (isReadyToClaim ? 'active' : '') + '" ' +
+                'data-task-id="' + task.id + '" ' +
+                'data-reward-type="' + task.reward_type + '" ' +
+                'data-reward-amount="' + task.reward_amount + '" ' +
+                (task.completed ? 'disabled' : '') + ' ' +
+                'style="padding: 8px; width: 100%; font-size: 14px;">' +
+                '<i class="fas ' + (task.completed ? 'fa-check' : (isReadyToClaim ? 'fa-check' : (task.id === 11 || task.id === 12 ? 'fa-play' : 'fa-times'))) + '"></i>' +
+        '</button>' +
+    '</div>';
             tasksList.appendChild(taskCard);
         });
 

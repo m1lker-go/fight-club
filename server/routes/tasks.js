@@ -386,6 +386,11 @@ router.post('/daily/update/profile', async (req, res) => {
 router.post('/daily/update/ads', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { task_id } = req.body;
+    // Проверяем, что передан корректный task_id (11 или 12)
+    if (!task_id || (task_id !== 11 && task_id !== 12)) {
+        return res.status(400).json({ error: 'Invalid task_id' });
+    }
     const client = await pool.connect();
     try {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
@@ -395,8 +400,8 @@ router.post('/daily/update/ads', async (req, res) => {
         const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
 
         if (subscriptionActive) {
+            // Для подписчиков — автоначисление, но обновляем только одно задание
             await client.query('BEGIN');
-
             const userRow = await client.query(
                 'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
                 [userId]
@@ -404,45 +409,45 @@ router.post('/daily/update/ads', async (req, res) => {
             let progress = dailyTasks.parseProgress(userRow.rows[0].daily_tasks_progress);
             let mask = userRow.rows[0].daily_tasks_mask;
 
-            const adTaskIds = [11, 12];
+            if (mask & (1 << (task_id - 1))) {
+                await client.query('ROLLBACK');
+                return res.json({ success: true, autoCompleted: false, alreadyCompleted: true });
+            }
 
-            for (const taskId of adTaskIds) {
-                if (mask & (1 << (taskId - 1))) continue;
+            progress[task_id] = (progress[task_id] || 0) + 1;
 
-                progress[taskId] = (progress[taskId] || 0) + 1;
+            const taskRes = await client.query(
+                'SELECT target_value, reward_type, reward_amount FROM daily_tasks WHERE id = $1',
+                [task_id]
+            );
+            if (taskRes.rows.length === 0) throw new Error('Task not found');
+            const target = taskRes.rows[0].target_value;
 
-                const taskRes = await client.query(
-                    'SELECT target_value, reward_type, reward_amount FROM daily_tasks WHERE id = $1',
-                    [taskId]
-                );
-                if (taskRes.rows.length === 0) continue;
-
-                const target = taskRes.rows[0].target_value;
-
-                if (progress[taskId] >= target) {
-                    mask |= (1 << (taskId - 1));
-                    const { reward_type, reward_amount } = taskRes.rows[0];
-                    if (reward_type === 'coins') {
-                        await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, userId]);
-                    } else if (reward_type === 'diamonds') {
-                        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [reward_amount, userId]);
-                    } else if (reward_type === 'coal') {
-                        await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, userId]);
-                    }
-                    progress[taskId] = target;
+            let autoCompleted = false;
+            if (progress[task_id] >= target) {
+                mask |= (1 << (task_id - 1));
+                const { reward_type, reward_amount } = taskRes.rows[0];
+                if (reward_type === 'coins') {
+                    await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward_amount, userId]);
+                } else if (reward_type === 'diamonds') {
+                    await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [reward_amount, userId]);
+                } else if (reward_type === 'coal') {
+                    await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [reward_amount, userId]);
                 }
+                progress[task_id] = target;
+                autoCompleted = true;
             }
 
             await client.query(
                 'UPDATE users SET daily_tasks_progress = $1, daily_tasks_mask = $2 WHERE id = $3',
                 [JSON.stringify(progress), mask, userId]
             );
-
             await client.query('COMMIT');
-            res.json({ success: true, autoCompleted: true });
+            res.json({ success: true, autoCompleted });
         } else {
-            await dailyTasks.updateWatchAdsProgress(userId);
-            res.json({ success: true });
+            // Для обычных пользователей — увеличиваем прогресс только для переданного задания
+            await dailyTasks.updateTaskProgress(userId, task_id, 1);
+            res.json({ success: true, autoCompleted: false });
         }
     } catch (e) {
         await client.query('ROLLBACK');

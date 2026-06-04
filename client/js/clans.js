@@ -550,7 +550,7 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
 
 // ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОТМЕТКАМИ И МЕНЮ) -------------------
 function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
-    const today = new Date().toLocaleDateString('ru-RU');
+    const today = window.getMoscowDate();
     const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
     
     let html = `<table class="clans-members-table" style="width:100%; table-layout:fixed; font-size:13px; border-collapse:collapse;">
@@ -635,7 +635,7 @@ async function renderClanChat(container, clan) {
 
 // ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
-    const today = new Date().toLocaleDateString('ru-RU');
+    const today = window.getMoscowDate();
     const lastCheckin = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`);
     const alreadyCheckedLocally = (lastCheckin === today);
     

@@ -6,8 +6,15 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { containsForbiddenWords } = require('../utils/forbiddenWords');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Вспомогательная функция для проверки имени пользователя
+function isUsernameValid(username) {
+    if (!username || username.length < 3 || username.length > 30) return false;
+    return !containsForbiddenWords(username);
+}
 
 // ========== ПРОФИЛЬ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ ==========
 router.get('/profile', async (req, res) => {
@@ -60,14 +67,17 @@ router.get('/profile', async (req, res) => {
     }
 });
 
-// ========== ОБНОВЛЕНИЕ НАСТРОЕК ==========
+// ========== ОБНОВЛЕНИЕ НАСТРОЕК (с проверкой имени) ==========
 router.post('/update-settings', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { sound_enabled, music_enabled, username } = req.body;
     const client = await pool.connect();
     try {
-        if (username) {
+        if (username !== undefined) {
+            if (!isUsernameValid(username)) {
+                return res.status(400).json({ error: 'Некорректное имя (3-30 символов, без мата)' });
+            }
             const nickCheck = await client.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
             if (nickCheck.rows.length > 0) return res.status(400).json({ error: 'username already taken' });
             await client.query('UPDATE users SET username = $1 WHERE id = $2', [username, userId]);
@@ -93,6 +103,9 @@ router.post('/update-username', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'No username' });
+    if (!isUsernameValid(username)) {
+        return res.status(400).json({ error: 'Некорректное имя (3-30 символов, без мата)' });
+    }
     const client = await pool.connect();
     try {
         const existing = await client.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
@@ -105,7 +118,7 @@ router.post('/update-username', async (req, res) => {
     } finally { client.release(); }
 });
 
-// ========== ПРИВЯЗКА АККАУНТОВ ==========
+// ========== ПРИВЯЗКА АККАУНТОВ (без изменений, но с импортом containsForbiddenWords) ==========
 router.post('/link', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -281,7 +294,7 @@ router.post('/refresh', async (req, res) => {
     }
 });
 
-// ========== СООБЩЕНИЯ (расширенные) ==========
+// ========== СООБЩЕНИЯ ==========
 router.get('/messages', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -355,19 +368,16 @@ router.post('/messages/claim', async (req, res) => {
 
         const rewards = [];
 
-        // Монеты
         if (msg.reward_coins > 0) {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [msg.reward_coins, userId]);
             rewards.push(`${msg.reward_coins} монет`);
         }
-        // Алмазы
         if (msg.reward_diamonds > 0) {
             await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [msg.reward_diamonds, userId]);
             rewards.push(`${msg.reward_diamonds} алмазов`);
         }
-        // Опыт (используем функцию addExp, которая должна быть определена)
         if (msg.reward_exp > 0 && msg.reward_exp_class) {
-            const { addExp } = require('../utils/exp'); // путь к вашей функции
+            const { addExp } = require('../utils/exp');
             const leveledUp = await addExp(client, userId, msg.reward_exp_class, msg.reward_exp);
             if (leveledUp) {
                 const { updatePlayerPower } = require('../utils/power');
@@ -375,7 +385,6 @@ router.post('/messages/claim', async (req, res) => {
             }
             rewards.push(`${msg.reward_exp} опыта для класса ${msg.reward_exp_class}`);
         }
-        // Сундук (генерируем предмет)
         if (msg.reward_chest) {
             const { generateItemByRarity } = require('../utils/botGenerator');
             const chestCount = msg.reward_chest_amount || 1;
@@ -415,7 +424,6 @@ router.post('/messages/claim', async (req, res) => {
     }
 });
 
-// ========== ВЫБОР КЛАССА ДЛЯ НАГРАДЫ (очки навыков) ==========
 router.post('/claim-class-reward', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -450,7 +458,6 @@ router.post('/claim-class-reward', async (req, res) => {
     }
 });
 
-// ========== СМЕНА ТЕКУЩЕГО КЛАССА ==========
 router.post('/change-class', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -476,7 +483,6 @@ router.post('/change-class', async (req, res) => {
     }
 });
 
-// ========== СМЕНА ПАРОЛЯ (требует авторизации) ==========
 router.put('/change-password', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });

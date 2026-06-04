@@ -22,6 +22,7 @@ const {
     selfDamagePhrase,
     ultPhrases
 } = require('../data/battlePhrases');
+const { rechargeEnergy } = require('../utils/energy');
 
 const subclassOptions = {
     warrior: ['guardian', 'berserker', 'knight'],

@@ -1,4 +1,3 @@
-```javascript
 // settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша, очистка
 
 window.telegramLinkingInProgress = false;
@@ -638,4 +637,3 @@ function linkGoogle() {
 }
 
 window.renderSettings = renderSettings;
-```

@@ -488,43 +488,38 @@ async function runTournament() {
 
 // Функция для определения места (32 участника, с учётом матча за 3 место)
 async function getPlaceForUser(client, userId, tournamentDate) {
-    // Получаем все матчи пользователя за этот турнир
     const matches = await client.query(
-        `SELECT round_number, winner_id, player1_id, player2_id
+        `SELECT round_number, match_index, winner_id, player1_id, player2_id
          FROM tournament_matches
          WHERE tournament_date = $1 AND (player1_id = $2 OR player2_id = $2)
          ORDER BY round_number`,
         [tournamentDate, userId]
     );
 
-    if (matches.rows.length === 0) return 33; // не участвовал
+    if (matches.rows.length === 0) return 33;
 
     let maxRound = 0;
-    let isWinner = false;
+    let finalMatch = null;
+    let thirdPlaceMatch = null;
+
     for (const m of matches.rows) {
+        // Пропускаем записи с отсутствующими ID (защита от ошибок)
+        if (!m.player1_id || !m.player2_id) continue;
         if (m.round_number > maxRound) maxRound = m.round_number;
-        if (m.winner_id === userId) isWinner = true;
+        if (m.round_number === 5 && m.match_index === 1) finalMatch = m;
+        if (m.round_number === 5 && m.match_index === 2) thirdPlaceMatch = m;
     }
 
-    // Логика для 32 участников:
-    // round 1 = 1/16
-    // round 2 = 1/8
-    // round 3 = 1/4
-    // round 4 = 1/2 (полуфинал)
-    // round 5 = финал (match_index 1) или матч за 3-е место (match_index 2)
     if (maxRound === 5) {
-        // Финальный раунд
-        const finalMatch = matches.rows.find(m => m.round_number === 5 && m.match_index === 1);
-        const thirdPlaceMatch = matches.rows.find(m => m.round_number === 5 && m.match_index === 2);
         if (finalMatch && finalMatch.winner_id === userId) return 1;
-        if (finalMatch && finalMatch.winner_id !== userId && finalMatch.player1_id === userId || finalMatch.player2_id === userId) return 2;
+        if (finalMatch && finalMatch.winner_id !== userId && (finalMatch.player1_id === userId || finalMatch.player2_id === userId)) return 2;
         if (thirdPlaceMatch && thirdPlaceMatch.winner_id === userId) return 3;
         if (thirdPlaceMatch && thirdPlaceMatch.winner_id !== userId && (thirdPlaceMatch.player1_id === userId || thirdPlaceMatch.player2_id === userId)) return 4;
     }
-    if (maxRound === 4) return 5;  // проиграл в полуфинале (5-8 место)
-    if (maxRound === 3) return 9;  // проиграл в 1/4
-    if (maxRound === 2) return 17; // проиграл в 1/8
-    if (maxRound === 1) return 25; // проиграл в 1/16 (25-32)
+    if (maxRound === 4) return 5;   // 5-8
+    if (maxRound === 3) return 9;   // 9-16
+    if (maxRound === 2) return 17;  // 17-24
+    if (maxRound === 1) return 25;  // 25-32
     return 33;
 }
 

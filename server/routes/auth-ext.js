@@ -11,7 +11,6 @@ const { sendTelegramNotification } = require('../utils/telegram');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
@@ -21,6 +20,31 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS,
     },
 });
+
+// Ограничение частоты отправки кода (в памяти, но можно и в БД)
+const codeRequestLimits = new Map(); // key: email, value: { count, firstRequestTime }
+
+function canRequestCode(email) {
+    const now = Date.now();
+    const limit = codeRequestLimits.get(email);
+    if (!limit) return true;
+    if (now - limit.firstRequestTime > 60 * 60 * 1000) {
+        codeRequestLimits.delete(email);
+        return true;
+    }
+    return limit.count < 3; // не более 3 запросов в час
+}
+
+function recordCodeRequest(email) {
+    const now = Date.now();
+    const limit = codeRequestLimits.get(email);
+    if (!limit) {
+        codeRequestLimits.set(email, { count: 1, firstRequestTime: now });
+    } else {
+        limit.count++;
+        codeRequestLimits.set(email, limit);
+    }
+}
 
 async function sendVerificationEmail(email, code) {
     await transporter.sendMail({
@@ -47,6 +71,12 @@ async function handleTelegramLogin(initData, referralCode, client) {
     const urlParams = new URLSearchParams(initData);
     const hash = urlParams.get('hash');
     urlParams.delete('hash');
+
+    // Проверяем auth_date (должен быть не старше 24 часов)
+    const authDate = parseInt(urlParams.get('auth_date'));
+    if (!authDate || (Date.now() / 1000 - authDate) > 86400) {
+        throw new Error('Telegram data expired (auth_date too old)');
+    }
 
     const dataCheckString = Array.from(urlParams.entries())
         .sort(([a], [b]) => a.localeCompare(b))
@@ -150,6 +180,10 @@ router.post('/init', async (req, res) => {
     const { method, email } = req.body;
     if (method === 'email') {
         if (!email) return res.status(400).json({ error: 'Email required' });
+        // Ограничение частоты отправки кода
+        if (!canRequestCode(email)) {
+            return res.status(429).json({ error: 'Too many code requests. Please try again later.' });
+        }
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const client = await pool.connect();
         try {
@@ -159,6 +193,7 @@ router.post('/init', async (req, res) => {
                 [email, code]
             );
             await sendVerificationEmail(email, code);
+            recordCodeRequest(email);
             res.json({ message: 'Code sent' });
         } catch (err) {
             console.error(err);
@@ -517,8 +552,6 @@ router.post('/vk-lowcode', async (req, res) => {
         client.release();
     }
 });
-
-
 
 router.post('/google', async (req, res) => {
     const { idToken } = req.body;

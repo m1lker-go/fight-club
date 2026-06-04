@@ -1,4 +1,3 @@
-//index.js
 process.env.TZ = 'Europe/Moscow';
 
 const express = require('express');
@@ -24,7 +23,7 @@ app.use(express.static('client'));
 // ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));
 app.use('/payment', require('./routes/robokassa'));
-app.use('/vk-payment-callback', require('./routes/vk-payment-callback')); // добавлен
+app.use('/vk-payment-callback', require('./routes/vk-payment-callback'));
 // app.use('/vk-pay', require('./routes/vk-pay')); // отключён
 // app.use('/', require('./routes/vk-callback')); // удалён или закомментирован
 // app.use('/api/vk', authMiddleware, require('./routes/vk-payment-url')); // можно удалить, если не используется
@@ -45,7 +44,6 @@ app.use('/subscription', authMiddleware, require('./routes/subscription'));
 app.use('/user', authMiddleware, require('./routes/user'));
 app.use('/tournament', authMiddleware, require('./routes/tournament-server'));
 app.use('/clans', authMiddleware, require('./routes/clans-server'));
-
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {
@@ -107,8 +105,22 @@ app.post('/webhook', async (req, res) => {
     res.sendStatus(200);
 });
 
-// ========== АДМИНСКИЕ ЭНДПОИНТЫ ==========
-app.get('/admin/update-items', async (req, res) => {
+// ========== АДМИНСКИЕ ЭНДПОИНТЫ (с авторизацией) ==========
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'changeme';
+
+function adminAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = authHeader.split(' ')[1];
+    if (token !== ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+}
+
+app.get('/admin/update-items', adminAuth, async (req, res) => {
     const client = await pool.connect();
     try {
         const fixedBonuses = {
@@ -197,7 +209,7 @@ app.get('/admin/update-items', async (req, res) => {
     }
 });
 
-app.get('/admin/recalc-power', async (req, res) => {
+app.get('/admin/recalc-power', adminAuth, async (req, res) => {
     const client = await pool.connect();
     try {
         const users = await client.query('SELECT id FROM users');

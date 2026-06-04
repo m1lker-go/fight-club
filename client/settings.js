@@ -81,7 +81,9 @@ async function renderSettings() {
         const connections = data.connections || [];
 
         const hasPassword = !!user.password_hash;
-        const avatarFilename = getAvatarFilenameById(user.avatar_id || 1);
+         const avatarFilename = typeof getAvatarFilenameById === 'function' 
+            ? getAvatarFilenameById(user.avatar_id || 1) 
+            : 'cat_heroweb.png';
 
         let musicVolumePercent = 60;
         let sfxVolumePercent = 70;
@@ -153,7 +155,7 @@ async function renderSettings() {
             <div class="settings-container">
                 <div class="settings-profile-row">
                     <img src="/assets/${avatarFilename}" class="settings-avatar">
-                    <span class="settings-username">${escapeHtml(user.username || user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
+                    <span class="settings-username">${escapeHtml(user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
                     ${!hideEditName ? `<button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>` : ''}
                 </div>
 

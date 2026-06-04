@@ -348,76 +348,83 @@ async function loadDailyTasks() {
             tasksList.appendChild(taskCard);
         });
 
-        document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
-            if (!btn.dataset.taskId) return;
+document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
+    if (!btn.dataset.taskId) return;
 
-            btn.addEventListener('click', async (e) => {
-                const taskId = parseInt(btn.dataset.taskId);
-                const rewardType = btn.dataset.rewardType;
-                const rewardAmount = parseInt(btn.dataset.rewardAmount);
+    btn.addEventListener('click', async (e) => {
+        // Блокируем кнопку, чтобы избежать повторных кликов
+        if (btn.disabled) return;
+        btn.disabled = true;
 
-                const currentTask = activeTasks.find(t => t.id === taskId);
-                const isReady = currentTask ? currentTask.progress >= currentTask.target_value : false;
+        const taskId = parseInt(btn.dataset.taskId);
+        const rewardType = btn.dataset.rewardType;
+        const rewardAmount = parseInt(btn.dataset.rewardAmount);
 
-                if ((taskId === 11 || taskId === 12) && !isReady) {
-                    const ready = await checkAdsReady();
-                    if (!ready) {
-                        showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
-                        return;
-                    }
-                    const watched = await showRewardedAd();
-                    if (watched) {
-                        try {
-                            const updRes = await window.apiRequest('/tasks/daily/update/ads', {
-                                method: 'POST',
-                                body: JSON.stringify({})
-                            });
-                            const updData = await updRes.json();
-                            if (updData.success) {
-                                if (updData.autoCompleted) {
-                                    showToast('Награда за рекламу получена!', 1500);
-                                } else {
-                                    showToast('Прогресс рекламы обновлён!', 1500);
-                                }
-                                if (typeof loadDailyTasks === 'function') loadDailyTasks();
-                                if (typeof refreshData === 'function') refreshData();
-                            } else {
-                                showToast('Ошибка обновления прогресса', 1500);
-                            }
-                        } catch (err) {
-                            console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
-                            showToast('Ошибка соединения', 1500);
-                        }
-                    } else {
-                        showToast('Вы не досмотрели рекламу до конца.', 2000);
-                    }
-                    return;
-                }
+        const currentTask = activeTasks.find(t => t.id === taskId);
+        const isReady = currentTask ? currentTask.progress >= currentTask.target_value : false;
 
-                if (rewardType === 'exp') {
-                    claimDailyExp(taskId, rewardAmount);
-                } else {
-                    const res = await window.apiRequest('/tasks/daily/claim', {
+        if ((taskId === 11 || taskId === 12) && !isReady) {
+            const ready = await checkAdsReady();
+            if (!ready) {
+                showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
+                btn.disabled = false;
+                return;
+            }
+            const watched = await showRewardedAd();
+            if (watched) {
+                try {
+                    const updRes = await window.apiRequest('/tasks/daily/update/ads', {
                         method: 'POST',
-                        body: JSON.stringify({ task_id: taskId })
+                        body: JSON.stringify({ task_id: taskId }) // ← передаём ID задания
                     });
-                    const data = await res.json();
-                    if (data.error) {
-                        showToast(data.error, 1500);
-                    } else {
-                        if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
-                        if (rewardType === 'coal') {
-                            showRewardToast('+' + rewardAmount + ' угля', 'fa-cube');
+                    const updData = await updRes.json();
+                    if (updData.success) {
+                        if (updData.autoCompleted) {
+                            showToast('Награда за рекламу получена!', 1500);
                         } else {
-                            showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+                            showToast('Прогресс рекламы обновлён!', 1500);
                         }
-                        loadDailyTasks();
-                        refreshData();
+                        if (typeof loadDailyTasks === 'function') loadDailyTasks();
+                        if (typeof refreshData === 'function') refreshData();
+                    } else {
+                        showToast('Ошибка обновления прогресса', 1500);
                     }
+                } catch (err) {
+                    console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
+                    showToast('Ошибка соединения', 1500);
                 }
-            });
-        });
+            } else {
+                showToast('Вы не досмотрели рекламу до конца.', 2000);
+            }
+            btn.disabled = false;
+            return;
+        }
 
+        if (rewardType === 'exp') {
+            await claimDailyExp(taskId, rewardAmount);
+        } else {
+            const res = await window.apiRequest('/tasks/daily/claim', {
+                method: 'POST',
+                body: JSON.stringify({ task_id: taskId })
+            });
+            const data = await res.json();
+            if (data.error) {
+                showToast(data.error, 1500);
+            } else {
+                if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
+                if (rewardType === 'coal') {
+                    showRewardToast('+' + rewardAmount + ' угля', 'fa-cube');
+                } else {
+                    showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+                }
+                loadDailyTasks();
+                refreshData();
+            }
+        }
+        btn.disabled = false;
+    });
+});
+        
         const allCompleted = completedTasksCount >= totalTasksCount;
         if (countdownContainer) {
             if (allCompleted) {

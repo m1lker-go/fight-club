@@ -259,7 +259,7 @@ async function renderBracket() {
                 }
             });
         });
-        document.getElementById('closeBracketBtn')?.addEventListener('click', () => renderTournamentTab());
+       document.getElementById('closeBracketBtn')?.addEventListener('click', () => showScreen('main'));
     } catch (err) {
         console.error(err);
         container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки сетки турнира</p>';

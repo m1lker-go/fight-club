@@ -241,7 +241,9 @@ async function loadDailyTasks() {
             return;
         }
 
-        const activeTasks = tasksData.filter(task => !task.completed);
+        const activeTasks = tasksData.filter(task => {
+       return !task.completed || (task.progress >= task.target_value);
+});
         activeTasks.sort((a, b) => {
             const aReady = a.progress >= a.target_value;
             const bReady = b.progress >= b.target_value;

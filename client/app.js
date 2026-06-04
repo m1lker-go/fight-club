@@ -80,15 +80,28 @@ window.isVKMiniApp = (function() {
 })();
 
 if (window.isVKMiniApp) {
-    console.log('[App] VK Mini App detected, applying horizontal CSS');
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
+    console.log('[App] VK Mini App detected, applying styles');
+    // Добавляем класс на body для CSS-правил
+    document.body.classList.add('vk-mini-app');
+    
+    // Применяем отступ для верхней панели (чтобы системные кнопки VK не перекрывали интерфейс)
+    setTimeout(() => {
+        const topBar = document.querySelector('.top-bar');
+        if (topBar) {
+            topBar.style.paddingTop = '44px';
+            topBar.style.transition = 'padding-top 0.2s';
+            console.log('[VK] Added top padding to .top-bar');
+        }
+    }, 100);
+    
+    // Опционально: если нужен горизонтальный CSS (был закомментирован)
+    // const link = document.createElement('link');
+    // link.rel = 'stylesheet';
     // link.href = '/css/vk-horizontal.css';
-    document.head.appendChild(link);
+    // document.head.appendChild(link);
 } else {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
-
 // ========== VK MINI APP АВТОРИЗАЦИЯ ЧЕРЕЗ ПАРАМЕТРЫ ЗАПУСКА ==========
 async function autoLoginVKLaunch() {
     const launchParams = getVKLaunchParams();

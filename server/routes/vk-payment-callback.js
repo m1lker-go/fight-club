@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { pool } = require('../db');
 
 // Информация о товарах (itemdefid -> название, цена в голосах, картинка)
@@ -13,7 +14,30 @@ const itemsCatalog = {
     7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
-// Вспомогательная функция начисления товара
+/**
+ * Проверяет подпись VK для уведомления
+ * @param {Object} body - тело запроса (все поля)
+ * @param {string} secret - секретный ключ приложения VK
+ * @returns {boolean}
+ */
+function verifyVKSignature(body, secret) {
+    const params = { ...body };
+    const receivedSign = params.sign;
+    if (!receivedSign) return false;
+    delete params.sign;
+    
+    const sortedKeys = Object.keys(params).sort();
+    let stringToSign = '';
+    for (const key of sortedKeys) {
+        const value = params[key];
+        if (value !== undefined && value !== null) {
+            stringToSign += `${key}=${value}`;
+        }
+    }
+    const calculatedSign = crypto.createHmac('sha256', secret).update(stringToSign).digest('hex');
+    return calculatedSign === receivedSign;
+}
+
 async function grantItem(userId, itemId) {
     const client = await pool.connect();
     try {
@@ -41,7 +65,14 @@ async function grantItem(userId, itemId) {
 
 router.post('/', async (req, res) => {
     console.log('[Payment Callback] Received:', JSON.stringify(req.body));
-    const { notification_type, order_id, item_id, user_id, status } = req.body;
+    const { notification_type, order_id, item_id, user_id, status, sign } = req.body;
+
+    // Проверяем подпись, если задан секретный ключ
+    const appSecret = process.env.VK_APP_SECRET;
+    if (appSecret && !verifyVKSignature(req.body, appSecret)) {
+        console.error('[Payment] Invalid signature');
+        return res.status(403).json({ error: 'Invalid signature' });
+    }
 
     // Обработка get_item и get_item_test
     if (notification_type === 'get_item' || notification_type === 'get_item_test') {

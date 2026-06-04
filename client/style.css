@@ -5880,3 +5880,14 @@ body {
     color: white;
     border: none;
 }
+
+/* Отступ для системных кнопок VK Mini App */
+body {
+    padding-top: constant(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top);
+}
+
+.top-bar {
+    padding-top: max(15px, constant(safe-area-inset-top));
+    padding-top: max(15px, env(safe-area-inset-top));
+}

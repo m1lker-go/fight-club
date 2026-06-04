@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const dailyTasks = require('../utils/dailyTasks');
+const { rechargeEnergy } = require('../utils/energy');
 
 const getMoscowDate = () => dailyTasks.getMoscowDate();
 
@@ -28,33 +29,6 @@ router.get('/test', async (req, res) => {
     }
 });
 
-async function rechargeEnergy(client, userId) {
-    const user = await client.query('SELECT energy, last_energy FROM users WHERE id = $1', [userId]);
-    if (user.rows.length === 0) return;
-    
-    let last = user.rows[0].last_energy;
-    let currentEnergy = user.rows[0].energy;
-    
-    if (!last) {
-        if (currentEnergy < 20) {
-            await client.query('UPDATE users SET energy = 20, last_energy = NOW() WHERE id = $1', [userId]);
-        }
-        return;
-    }
-    
-    const lastDate = new Date(last);
-    const now = new Date();
-    const diffMinutes = Math.floor((now - lastDate) / (1000 * 60));
-    const intervals = Math.floor(diffMinutes / 15);
-    
-    if (intervals > 0) {
-        const newEnergy = Math.min(20, currentEnergy + intervals);
-        await client.query(
-            'UPDATE users SET energy = $1, last_energy = $2 WHERE id = $3',
-            [newEnergy, now, userId]
-        );
-    }
-}
 
 // ========== ПОЛУЧИТЬ ПРОФИЛЬ ==========
 router.get('/profile', async (req, res) => {

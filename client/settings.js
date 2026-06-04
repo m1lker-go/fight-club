@@ -1,9 +1,26 @@
-// settings.js – исправлено: аватар + кнопка сброса кэша + полная очистка + переход на /user
-// + адаптация для VK Mini App (скрытие привязок, выхода, редактирования имени)
+```javascript
+// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша, очистка
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
+
+// Определяем хранилище токена в зависимости от окружения
+function getStorage() {
+    return window.isVKMiniApp === true ? sessionStorage : localStorage;
+}
+
+function getSessionToken() {
+    return getStorage().getItem('sessionToken');
+}
+
+function setSessionToken(token) {
+    getStorage().setItem('sessionToken', token);
+}
+
+function removeSessionToken() {
+    getStorage().removeItem('sessionToken');
+}
 
 function showLogoutConfirmModal(onConfirm) {
     const modal = document.getElementById('roleModal');
@@ -36,9 +53,9 @@ function showLogoutConfirmModal(onConfirm) {
 }
 
 function clearCacheAndReload() {
-    const sessionToken = localStorage.getItem('sessionToken');
-    localStorage.clear();
-    if (sessionToken) localStorage.setItem('sessionToken', sessionToken);
+    const sessionToken = getSessionToken();
+    getStorage().clear();
+    if (sessionToken) setSessionToken(sessionToken);
     sessionStorage.clear();
     document.cookie.split(";").forEach(function(c) {
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
@@ -64,7 +81,7 @@ function clearCacheAndReload() {
 }
 
 async function renderSettings() {
-    const token = localStorage.getItem('sessionToken');
+    const token = getSessionToken();
     if (!token) {
         if (typeof showToast === 'function') showToast('Сессия не найдена', 1500);
         if (typeof showScreen === 'function') showScreen('main');
@@ -81,7 +98,7 @@ async function renderSettings() {
         const connections = data.connections || [];
 
         const hasPassword = !!user.password_hash;
-         const avatarFilename = typeof getAvatarFilenameById === 'function' 
+        const avatarFilename = typeof getAvatarFilenameById === 'function' 
             ? getAvatarFilenameById(user.avatar_id || 1) 
             : 'cat_heroweb.png';
 
@@ -93,13 +110,11 @@ async function renderSettings() {
         }
 
         const isVK = window.isVKMiniApp === true;
-
         const content = document.getElementById('content');
         if (!content) return;
 
         let connectionsHtml = '';
         if (!isVK) {
-            // Полный блок привязок для обычного режима
             connectionsHtml = `
                 <div class="settings-connected-header">ПРИВЯЗАННЫЕ АККАУНТЫ</div>
                 <div class="connections-list">
@@ -132,7 +147,6 @@ async function renderSettings() {
                 </div>
             `;
         } else {
-            // В VK Mini App – только пояснение
             connectionsHtml = `
                 <div class="settings-connected-header">АККАУНТ VK</div>
                 <div class="connections-list">
@@ -146,10 +160,9 @@ async function renderSettings() {
             `;
         }
 
-        // Определяем, нужно ли показывать кнопку выхода (скрываем в VK Mini App и Telegram WebApp)
         const isTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
         const hideLogout = isVK || isTelegramWebApp;
-        const hideEditName = isVK; // в VK запрещаем редактирование имени
+        const hideEditName = isVK;
 
         content.innerHTML = `
             <div class="settings-container">
@@ -196,7 +209,6 @@ async function renderSettings() {
             </div>
         `;
 
-        // Инициализация ползунков
         function setupSlider(containerId, fillId, thumbId, percentId, isMusic) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -272,18 +284,16 @@ async function renderSettings() {
         setupSlider('musicSliderContainer', 'musicFill', 'musicThumb', 'musicPercent', true);
         setupSlider('sfxSliderContainer', 'sfxFill', 'sfxThumb', 'sfxPercent', false);
 
-        // Обработчики (только если кнопки существуют)
         if (!hideEditName) {
             const editusernameBtn = document.getElementById('editusernameBtn');
             if (editusernameBtn) {
                 editusernameBtn.addEventListener('click', () => {
-                    showusernameEditModal(user.username || user.username || '');
+                    showusernameEditModal(user.username || '');
                 });
             }
         }
 
         if (!isVK) {
-            // Обработчики привязок (только для не-VK режима)
             document.querySelectorAll('.link-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const provider = btn.dataset.provider;
@@ -319,7 +329,7 @@ async function renderSettings() {
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', () => {
                     showLogoutConfirmModal(() => {
-                        localStorage.removeItem('sessionToken');
+                        removeSessionToken();
                         localStorage.removeItem('telegram_link_state');
                         localStorage.removeItem('telegram_code_verifier');
                         sessionStorage.clear();
@@ -445,7 +455,7 @@ function showChangePasswordModal() {
             showToast('Новые пароли не совпадают', 1500);
             return;
         }
-        const token = localStorage.getItem('sessionToken');
+        const token = getSessionToken();
         try {
             const res = await fetch(`${window.API_BASE}/user/change-password`, {
                 method: 'PUT',
@@ -489,7 +499,7 @@ function linkTelegram() {
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const stateObj = {
         mode: 'link',
-        token: localStorage.getItem('sessionToken'),
+        token: getSessionToken(),
         verifier: codeVerifier,
         random: Math.random().toString(36).substring(2)
     };
@@ -624,3 +634,4 @@ function linkGoogle() {
 }
 
 window.renderSettings = renderSettings;
+```

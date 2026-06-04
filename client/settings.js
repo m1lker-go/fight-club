@@ -81,6 +81,10 @@ function clearCacheAndReload() {
 }
 
 async function renderSettings() {
+    console.log('Token in sessionStorage:', sessionStorage.getItem('sessionToken'));
+    console.log('Token in localStorage:', localStorage.getItem('sessionToken'));
+    console.log('window.isVKMiniApp:', window.isVKMiniApp);
+  
     const token = getSessionToken();
     if (!token) {
         if (typeof showToast === 'function') showToast('Сессия не найдена', 1500);

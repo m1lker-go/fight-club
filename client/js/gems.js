@@ -76,7 +76,7 @@ async function renderGems(container) {
     ];
 
     const packs = isVK ? packsVK : packsRub;
-    const currencySymbol = isVK ? '🎫' : '₽';
+    const currencySymbol = isVK ? 'голосов' : '₽';
 
     let html = `
         <div class="gems-page">
@@ -229,10 +229,17 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 </button>`;
         }
     } else {
-        mainButtonHtml = `
-            <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
-                Оформить за 599 ₽/мес
-            </button>`;
+        if (isVK) {
+            mainButtonHtml = `
+                <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
+                    Оформить за 86 голосов
+                </button>`;
+        } else {
+            mainButtonHtml = `
+                <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
+                    Оформить за 599 ₽/мес
+                </button>`;
+        }
     }
 
     modalBody.innerHTML = `

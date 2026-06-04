@@ -32,7 +32,6 @@ async function renderTournament() {
         });
     });
 
-    // Автообновление каждые 30 секунд для отображения актуального статуса турнира
     if (tournamentRefreshInterval) clearInterval(tournamentRefreshInterval);
     tournamentRefreshInterval = setInterval(() => {
         const activeTab = document.querySelector('.tournament-tab.active')?.dataset.tab;
@@ -65,8 +64,6 @@ async function renderTournamentTab() {
         let tournamentActive = status.tournamentActive;
         const tournamentCompleted = status.tournamentCompleted;
 
-        // Дополнительная проверка: если турнир завершён, то регистрация невозможна,
-        // даже если canRegister вернул true (на случай рассинхрона)
         if (tournamentCompleted) {
             canRegister = false;
             tournamentActive = false;
@@ -77,42 +74,15 @@ async function renderTournamentTab() {
             selectedTournamentSubclass = status.registeredSubclass;
         }
 
-        // 1. Если турнир активен (идёт) и не завершён – показываем сетку
+        // 1. Если турнир активен и не завершён – показываем сетку
         if (tournamentActive && !tournamentCompleted) {
             await renderBracket();
             return;
         }
 
-        // 2. Если турнир завершён – показываем сообщение о завершении,
-        //    а также кнопку отмены регистрации (если пользователь всё ещё числится зарегистрированным)
+        // 2. Если турнир завершён – сразу показываем результаты (сетку)
         if (tournamentCompleted) {
-            container.innerHTML = `
-                <div class="tournament-header">
-                    <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
-                    <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
-                </div>
-                <div style="text-align: center; padding: 20px; color: #aaa;">
-                    <i class="fas fa-trophy" style="font-size: 48px; color: #f1c40f;"></i>
-                    <p style="margin-top: 15px;">Турнир завершён. Следующий турнир начнётся завтра в 20:00 МСК.</p>
-                    <p>Регистрация откроется завтра в 00:00 МСК.</p>
-                    ${status.isRegistered ? `<button id="forceUnregisterBtn" class="tournament-action-btn secondary" style="margin-top: 10px;">Отменить мою регистрацию</button>` : ''}
-                    <button id="refreshTournamentBtn" class="tournament-action-btn" style="margin-top: 10px;">Обновить</button>
-                </div>
-            `;
-            document.getElementById('tournamentHelpBtn')?.addEventListener('click', showTournamentRulesModal);
-            document.getElementById('refreshTournamentBtn')?.addEventListener('click', () => renderTournamentTab());
-            const unregBtn = document.getElementById('forceUnregisterBtn');
-            if (unregBtn) {
-                unregBtn.addEventListener('click', async () => {
-                    const res = await window.apiRequest('/tournament/unregister', { method: 'POST' });
-                    if (res.ok) {
-                        showToast('Регистрация отменена', 1500);
-                        renderTournamentTab();
-                    } else {
-                        showToast('Ошибка отмены', 1500);
-                    }
-                });
-            }
+            await renderBracket();
             return;
         }
 
@@ -224,7 +194,7 @@ async function renderTournamentTab() {
             return;
         }
 
-        // 4. Иное (например, регистрация ещё не открыта, но и турнир не начат)
+        // 4. Иное (регистрация ещё не открыта)
         container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не начался. Загляните позже.</p>';
     } catch (err) {
         console.error(err);
@@ -239,7 +209,13 @@ async function renderBracket() {
         const bracketRes = await window.apiRequest('/tournament/bracket');
         const bracket = await bracketRes.json();
         if (!bracket.matches || bracket.matches.length === 0) {
-            container.innerHTML = '<p style="color:#aaa; text-align:center;">Турнир ещё не завершён, результаты скоро появятся.</p>';
+            container.innerHTML = `
+                <p style="color:#aaa; text-align:center;">Матчи турнира ещё не загружены. Попробуйте обновить позже.</p>
+                <div style="text-align:center; margin-top:20px;">
+                    <button id="refreshBracketBtn" class="tournament-action-btn">Обновить</button>
+                </div>
+            `;
+            document.getElementById('refreshBracketBtn')?.addEventListener('click', () => renderTournamentTab());
             return;
         }
 

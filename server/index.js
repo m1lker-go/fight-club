@@ -1,3 +1,6 @@
+//index.js
+process.env.TZ = 'Europe/Moscow';
+
 const express = require('express');
 const cron = require('node-cron');
 const { pool, initDB } = require('./db');

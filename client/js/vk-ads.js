@@ -13,8 +13,9 @@ async function checkAdsReady() {
         return false;
     }
     try {
-        const data = await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' });
-        return data.result;
+        const data = await vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'rewarded' });
+        // data.result === true – реклама готова к показу
+        return data.result === true;
     } catch (error) {
         console.error('[VK-Ads] Ошибка при проверке готовности рекламы:', error);
         return false;
@@ -31,9 +32,9 @@ async function showRewardedAd() {
         return false;
     }
     try {
-        const data = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' });
-        // data.result === true – видео было показано полностью, награда честно заработана
-        return !!data.result;
+        const data = await vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'rewarded' });
+        // data.result === true – видео показано полностью, награда заработана
+        return data.result === true;
     } catch (error) {
         console.error('[VK-Ads] Ошибка при показе рекламы:', error);
         return false;

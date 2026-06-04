@@ -39,6 +39,13 @@ window.API_BASE = 'https://api.cat-fight.ru';
 window.BOT_USERNAME = 'CatFightingBot';
 window.GOOGLE_CLIENT_ID = '777033220750-o667o0cfaa2tb9qnnaj95pph70mv20ob.apps.googleusercontent.com';
 
+// ========== ЕДИНАЯ ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ МОСКОВСКОЙ ДАТЫ ==========
+window.getMoscowDate = function() {
+    const now = new Date();
+    const msk = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    return msk.toISOString().split('T')[0];
+};
+
 // ========== УНИВЕРСАЛЬНОЕ ПОЛУЧЕНИЕ ПАРАМЕТРОВ VK (search или hash) ==========
 function getVKLaunchParams() {
     // Извлекаем параметры из search

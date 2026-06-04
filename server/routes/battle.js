@@ -1047,32 +1047,6 @@ async function addExp(client, userId, className, expGain) {
 function getCoinReward(streak) { return streak >= 25 ? 20 : streak >= 10 ? 10 : streak >= 5 ? 7 : 5; }
 function getRatingChange(streak) { return streak >= 20 ? 30 : streak >= 10 ? 25 : streak >= 5 ? 20 : 15; }
 
-async function rechargeEnergy(client, userId) {
-    try {
-        const res = await client.query('SELECT energy, last_energy_update FROM users WHERE id = $1', [userId]);
-        if (res.rows.length === 0) return;
-
-        let { energy, last_energy_update } = res.rows[0];
-        if (!last_energy_update) last_energy_update = new Date().toISOString();
-
-        const now = new Date();
-        const lastUpdate = new Date(last_energy_update);
-        const diffMs = now - lastUpdate;
-        const diffMinutes = Math.floor(diffMs / 60000);
-        const energyToAdd = Math.floor(diffMinutes / 15);
-
-        if (energyToAdd > 0) {
-            const newEnergy = Math.min(20, energy + energyToAdd);
-            await client.query(
-                'UPDATE users SET energy = $1, last_energy_update = NOW() WHERE id = $2',
-                [newEnergy, userId]
-            );
-            console.log(`[Energy] User ${userId} recharged ${energyToAdd} energy. New total: ${newEnergy}`);
-        }
-    } catch (e) {
-        console.error('Ошибка восстановления энергии:', e);
-    }
-}
 
 async function selectPvPOpponent(client, currentUserId, currentLevel) {
     const ratingRes = await client.query('SELECT id, rating FROM users WHERE rating > 0 ORDER BY rating DESC');

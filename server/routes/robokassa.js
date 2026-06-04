@@ -1,4 +1,4 @@
-// routes/robokassa.js – исправлено (без getUserByIdentifier, прямой запрос)
+// routes/robokassa.js – исправлено (проверка суммы, добавлено expected_amount)
 
 require('dotenv').config({ path: '/var/www/fight-club/server/.env' });
 const express = require('express');
@@ -53,13 +53,25 @@ router.post('/create', async (req, res) => {
         const invId = Date.now() * 10000 + userId;
 
         if (metadata?.type === 'diamonds_pack') {
+            const expectedAmount = parseFloat(amount); // сумма, которую мы ожидаем
             const client = await pool.connect();
             try {
+                // Создаём таблицу, если её нет, с полем expected_amount
+                await client.query(`
+                    CREATE TABLE IF NOT EXISTS pending_robokassa_payments (
+                        inv_id VARCHAR(50) PRIMARY KEY,
+                        user_id INTEGER,
+                        diamonds INTEGER,
+                        bonus BOOLEAN,
+                        pack_id INTEGER,
+                        expected_amount DECIMAL(10,2)
+                    )
+                `);
                 await client.query(
-                    `INSERT INTO pending_robokassa_payments (inv_id, user_id, diamonds, bonus, pack_id)
-                     VALUES ($1, $2, $3, $4, $5)
+                    `INSERT INTO pending_robokassa_payments (inv_id, user_id, diamonds, bonus, pack_id, expected_amount)
+                     VALUES ($1, $2, $3, $4, $5, $6)
                      ON CONFLICT (inv_id) DO NOTHING`,
-                    [String(invId), userId, metadata.diamonds, metadata.bonus || false, metadata.packId]
+                    [String(invId), userId, metadata.diamonds, metadata.bonus || false, metadata.packId, expectedAmount]
                 );
             } finally { client.release(); }
         }
@@ -109,22 +121,31 @@ async function createRewardMessage(client, userId, subject, body, rewardType, re
 async function handleDiamondsPayment(userId, outSum, invId, shpParams) {
     const client = await pool.connect();
     try {
-        // Проверка существования пользователя
+        // Проверяем существование пользователя
         const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
         if (userCheck.rows.length === 0) {
             console.error(`[Robokassa] User ${userId} not found for diamonds payment`);
             return false;
         }
 
+        // Получаем данные о платеже
         const pending = await client.query(
-            'SELECT diamonds, bonus, pack_id FROM pending_robokassa_payments WHERE inv_id = $1',
+            'SELECT diamonds, bonus, pack_id, expected_amount FROM pending_robokassa_payments WHERE inv_id = $1',
             [String(invId)]
         );
         if (pending.rows.length === 0) {
             console.warn(`[Robokassa] Нет данных для invId ${invId}`);
-            return true; // Уже обработано?
+            return true; // Уже обработано или не найден
         }
-        const { diamonds, bonus, pack_id } = pending.rows[0];
+        const { diamonds, bonus, pack_id, expected_amount } = pending.rows[0];
+        
+        // Проверяем сумму
+        const receivedSum = parseFloat(outSum);
+        if (Math.abs(receivedSum - expected_amount) > 0.01) {
+            console.error(`[Robokassa] Сумма не совпадает: ожидалось ${expected_amount}, получено ${receivedSum}`);
+            return false;
+        }
+
         let diamondsToAdd = parseInt(diamonds) || 0;
         if (bonus && diamondsToAdd > 0) {
             const check = await client.query(
@@ -173,6 +194,15 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
             return false;
         }
         const user = userRes.rows[0];
+
+        // Проверяем, что сумма соответствует подписке (599 ₽)
+        const expectedAmount = 599;
+        const receivedSum = parseFloat(outSum);
+        if (Math.abs(receivedSum - expectedAmount) > 0.01) {
+            console.error(`[Robokassa] Сумма подписки не совпадает: ожидалось ${expectedAmount}, получено ${receivedSum}`);
+            await client.query('ROLLBACK');
+            return false;
+        }
 
         const existing = await client.query(
             'SELECT 1 FROM subscription_activations WHERE inv_id = $1',
@@ -226,7 +256,7 @@ async function handleSubscriptionPayment(userId, outSum, invId) {
     } finally { client.release(); }
 }
 
-// ========== ВЕБХУК (с правильной подписью) ==========
+// ========== ВЕБХУК (с правильной подписью и проверкой суммы) ==========
 router.post('/result', async (req, res) => {
     console.log('=== ROBOKASSA RESULT ===', req.body);
     try {

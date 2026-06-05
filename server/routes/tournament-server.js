@@ -1,5 +1,3 @@
-//server/routes/tournament-server.js
-
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
@@ -10,6 +8,7 @@ const { getMoscowDate } = require('../utils/dailyTasks');
 
 // Константы
 const TOURNAMENT_SIZE = 32;  // изменено с 64 на 32
+const REGISTRATION_START_HOUR = 10;   // 10:00 МСК — начало регистрации
 const REGISTRATION_DEADLINE_HOUR = 19; // 19:50 МСК
 const TOURNAMENT_START_HOUR = 20;
 
@@ -46,8 +45,11 @@ router.get('/status', async (req, res) => {
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const currentHour = mskTime.getHours();
         const currentMinute = mskTime.getMinutes();
-        const canRegister = (currentHour < REGISTRATION_DEADLINE_HOUR) || 
-                            (currentHour === REGISTRATION_DEADLINE_HOUR && currentMinute <= 50);
+        
+        // Регистрация доступна с 10:00 до 19:50
+        const canRegister = (currentHour > REGISTRATION_START_HOUR || (currentHour === REGISTRATION_START_HOUR && currentMinute >= 0)) &&
+                            (currentHour < REGISTRATION_DEADLINE_HOUR || (currentHour === REGISTRATION_DEADLINE_HOUR && currentMinute <= 50));
+        
         const tournamentActive = (currentHour >= TOURNAMENT_START_HOUR);
         const todayDate = getMoscowDate();
         
@@ -89,8 +91,6 @@ router.post('/select-class', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { class: className } = req.body;
     if (!className) return res.status(400).json({ error: 'Class required' });
-    // Сохраняем временно в сессию или в отдельную таблицу user_tournament_draft
-    // Для простоты сохраним в redis или просто в памяти. Но лучше создать таблицу user_tournament_draft
     const client = await pool.connect();
     try {
         await client.query(
@@ -135,7 +135,6 @@ router.post('/register', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        // Получаем выбранные класс и подкласс из черновика
         const draft = await client.query(
             'SELECT class_choice, subclass_choice FROM tournament_draft WHERE user_id = $1',
             [userId]
@@ -146,7 +145,6 @@ router.post('/register', async (req, res) => {
         const { class_choice, subclass_choice } = draft.rows[0];
         const seasonId = await getCurrentSeason(client);
         const todayDate = getMoscowDate();
-        // Проверяем, не зарегистрирован ли уже
         const existing = await client.query(
             'SELECT id FROM tournament_registrations WHERE user_id = $1 AND registered_at::DATE = $2',
             [userId, todayDate]

@@ -177,11 +177,6 @@ function showWaitingScreen(container, secondsLeft) {
     }, 1000);
 }
 
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
 
 function renderRegistrationScreen(container, isRegistered) {
     const classesHtml = `

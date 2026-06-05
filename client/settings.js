@@ -52,13 +52,18 @@ function showLogoutConfirmModal(onConfirm) {
 }
 
 function clearCacheAndReload() {
+    // Сохраняем токен, если нужно (обычно при сбросе кэша токен тоже теряется, но вы хотите сохранить)
     const sessionToken = getSessionToken();
     getStorage().clear();
     if (sessionToken) setSessionToken(sessionToken);
     sessionStorage.clear();
+    
+    // Очищаем cookies
     document.cookie.split(";").forEach(function(c) {
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
+    
+    // Очищаем IndexedDB
     if (window.indexedDB) {
         if (indexedDB.databases) {
             indexedDB.databases().then(dbs => {
@@ -69,15 +74,21 @@ function clearCacheAndReload() {
             knownDBs.forEach(dbName => indexedDB.deleteDatabase(dbName));
         }
     }
+    
+    // Очищаем кэш Service Worker
     if ('caches' in window) {
         caches.keys().then(names => {
             names.forEach(name => caches.delete(name));
         }).catch(e => console.warn('Cache API error:', e));
     }
+    
+    // ★ ГЛАВНОЕ ИСПРАВЛЕНИЕ ★
+    // Используем replace() вместо href, чтобы остаться в том же окне
     const url = new URL(window.location.href);
     url.searchParams.set('force', Date.now());
-    window.location.href = url.toString();
+    window.location.replace(url.toString());
 }
+
 
 async function renderSettings() {
     console.log('Token in sessionStorage:', sessionStorage.getItem('sessionToken'));

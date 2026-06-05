@@ -7,14 +7,14 @@ const { updatePlayerPower } = require('../utils/power');
 const { getMoscowDate } = require('../utils/dailyTasks');
 
 // Константы
-const TOURNAMENT_SIZE = 32;  // изменено с 64 на 32
+const TOURNAMENT_SIZE = 32;
 const REGISTRATION_START_HOUR = 10;   // 10:00 МСК — начало регистрации
 const REGISTRATION_DEADLINE_HOUR = 19; // 19:50 МСК
 const TOURNAMENT_START_HOUR = 20;
 
 // Вспомогательная функция: получить или создать текущий сезон
 async function getCurrentSeason(client) {
-    const todayStr = getMoscowDate(); // строка 'YYYY-MM-DD'
+    const todayStr = getMoscowDate();
     const today = new Date(todayStr);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -46,14 +46,12 @@ router.get('/status', async (req, res) => {
         const currentHour = mskTime.getHours();
         const currentMinute = mskTime.getMinutes();
         
-        // Регистрация доступна с 10:00 до 19:50
         const canRegister = (currentHour > REGISTRATION_START_HOUR || (currentHour === REGISTRATION_START_HOUR && currentMinute >= 0)) &&
                             (currentHour < REGISTRATION_DEADLINE_HOUR || (currentHour === REGISTRATION_DEADLINE_HOUR && currentMinute <= 50));
         
         const tournamentActive = (currentHour >= TOURNAMENT_START_HOUR);
         const todayDate = getMoscowDate();
         
-        // Проверяем, зарегистрирован ли пользователь на сегодня
         const regRes = await client.query(
             `SELECT class_choice, subclass_choice FROM tournament_registrations 
              WHERE user_id = $1 AND registered_at::DATE = $2`,
@@ -63,7 +61,6 @@ router.get('/status', async (req, res) => {
         const registeredClass = isRegistered ? regRes.rows[0].class_choice : null;
         const registeredSubclass = isRegistered ? regRes.rows[0].subclass_choice : null;
         
-        // Проверяем, завершён ли уже турнир сегодня (есть ли записи в tournament_matches за сегодня)
         const matchesRes = await client.query(
             'SELECT 1 FROM tournament_matches WHERE tournament_date = $1 LIMIT 1',
             [todayDate]
@@ -195,7 +192,8 @@ router.get('/bracket', async (req, res) => {
             `SELECT m.id, m.round_number as round, m.match_index, 
                     m.player1_id, u1.username as player1_name,
                     m.player2_id, u2.username as player2_name,
-                    m.winner_id, m.match_log
+                    m.winner_id, m.match_log,
+                    m.player1_wins, m.player2_wins
              FROM tournament_matches m
              LEFT JOIN users u1 ON m.player1_id = u1.id
              LEFT JOIN users u2 ON m.player2_id = u2.id

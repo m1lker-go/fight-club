@@ -283,8 +283,52 @@ async function getSeasonId(client) {
     return season.rows[0].id;
 }
 
-// ==================== ОСНОВНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (32 участника, 5 раундов + матч за 3 место) ====================
+// ==================== ИСПРАВЛЕННАЯ ФУНКЦИЯ getPlaceForUser ====================
+async function getPlaceForUser(client, userId, tournamentDate) {
+    const matches = await client.query(
+        `SELECT round_number, match_index, winner_id, player1_id, player2_id
+         FROM tournament_matches
+         WHERE tournament_date = $1 AND (player1_id = $2 OR player2_id = $2)
+         ORDER BY round_number DESC`,
+        [tournamentDate, userId]
+    );
 
+    if (matches.rows.length === 0) return 33;
+
+    const maxRound = matches.rows[0].round_number;
+    let finalMatch = null, thirdPlaceMatch = null;
+
+    for (const m of matches.rows) {
+        if (m.round_number === 5 && m.match_index === 1) finalMatch = m;
+        if (m.round_number === 5 && m.match_index === 2) thirdPlaceMatch = m;
+    }
+
+    if (maxRound === 5) {
+        if (finalMatch && finalMatch.winner_id === userId) return 1;
+        if (finalMatch && finalMatch.winner_id !== userId && (finalMatch.player1_id === userId || finalMatch.player2_id === userId)) return 2;
+        if (thirdPlaceMatch && thirdPlaceMatch.winner_id === userId) return 3;
+        if (thirdPlaceMatch && thirdPlaceMatch.winner_id !== userId && (thirdPlaceMatch.player1_id === userId || thirdPlaceMatch.player2_id === userId)) return 4;
+        return 5;
+    }
+    // Исправленные соответствия мест
+    if (maxRound === 3) return 5;   // 5–8 места
+    if (maxRound === 2) return 9;   // 9–16 места
+    if (maxRound === 1) return 17;  // 17–32 места
+    if (maxRound === 4) return 4;   // случай полуфиналов без финала
+    return 33;
+}
+
+// ==================== ФУНКЦИЯ ДЛЯ ПОДКЛАССА ПО УМОЛЧАНИЮ ====================
+function getDefaultSubclass(className) {
+    switch (className) {
+        case 'warrior': return 'guardian';
+        case 'assassin': return 'assassin';
+        case 'mage': return 'pyromancer';
+        default: return 'guardian';
+    }
+}
+
+// ==================== ОСНОВНАЯ ФУНКЦИЯ ЗАПУСКА ТУРНИРА (ИСПРАВЛЕНА) ====================
 async function runTournament() {
     console.log('[TOURNAMENT] Запуск ежедневного турнира (32 участника)');
     const client = await pool.connect();
@@ -331,12 +375,13 @@ async function runTournament() {
                 [todayDate, needed]
             );
             for (const shadow of shadows.rows) {
-                const stats = await getPlayerTournamentStats(client, shadow.id, shadow.current_class, shadow.subclass || 'guardian');
+                const userSubclass = shadow.subclass || getDefaultSubclass(shadow.current_class);
+                const stats = await getPlayerTournamentStats(client, shadow.id, shadow.current_class, userSubclass);
                 participants.push({
                     id: shadow.id,
                     username: stats.username,
                     class: shadow.current_class,
-                    subclass: shadow.subclass || 'guardian',
+                    subclass: userSubclass,
                     stats: stats.stats,
                     isShadow: true
                 });
@@ -349,8 +394,9 @@ async function runTournament() {
             [participants[i], participants[j]] = [participants[j], participants[i]];
         }
 
-        // Симуляция турнира: сначала 1/16 (32 → 16), затем 1/8 (16 → 8), 1/4 (8 → 4), 1/2 (4 → 2), финал (2 → 1)
-        // Дополнительно: матч за 3-е место между проигравшими в полуфиналах.
+        // Оптимизация: получаем seasonId один раз
+        const seasonId = await getSeasonId(client);
+
         let currentRoundPlayers = participants; // 32
         let roundNum = 1; // 1/16
         const allMatches = [];
@@ -362,7 +408,6 @@ async function runTournament() {
                 const p1 = currentRoundPlayers[i];
                 const p2 = currentRoundPlayers[i + 1];
                 if (!p2) {
-                    // Не должно случиться при 32 участниках, но на всякий случай
                     nextRound.push(p1);
                     continue;
                 }
@@ -379,7 +424,7 @@ async function runTournament() {
                     `INSERT INTO tournament_matches 
                      (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-                    [await getSeasonId(client), todayDate, roundNum, i / 2 + 1, p1.id, p2.id, winner.id, matchLog, p1.isShadow || p2.isShadow]
+                    [seasonId, todayDate, roundNum, i / 2 + 1, p1.id, p2.id, winner.id, matchLog, p1.isShadow || p2.isShadow]
                 );
                 nextRound.push(winner);
             }
@@ -387,11 +432,9 @@ async function runTournament() {
             roundNum++;
         }
 
-        // Теперь у нас 4 участника (полуфиналисты)
-        // Сохраняем их для дальнейшего использования
-        const semiFinalists = [...currentRoundPlayers]; // [a, b, c, d]
+        const semiFinalists = [...currentRoundPlayers]; // 4 участника
 
-        // Полуфиналы: первый матч (0 vs 1), второй матч (2 vs 3)
+        // Полуфиналы
         const semi1 = semiFinalists[0];
         const semi2 = semiFinalists[1];
         const semi3 = semiFinalists[2];
@@ -401,77 +444,71 @@ async function runTournament() {
         let battleResult1 = simulateBattle(semi1.stats, semi2.stats, semi1.class, semi2.class, semi1.username, semi2.username, semi1.subclass, semi2.subclass);
         const winner1 = battleResult1.winner === 'player' ? semi1 : semi2;
         const loser1 = winner1.id === semi1.id ? semi2 : semi1;
-        const matchLog1 = {
-            winner: winner1.id,
-            messages: battleResult1.messages,
-            states: battleResult1.states,
-            playerHpRemain: battleResult1.playerHpRemain,
-            enemyHpRemain: battleResult1.enemyHpRemain
-        };
         await client.query(
             `INSERT INTO tournament_matches 
              (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [await getSeasonId(client), todayDate, 4, 1, semi1.id, semi2.id, winner1.id, matchLog1, semi1.isShadow || semi2.isShadow]
+            [seasonId, todayDate, 4, 1, semi1.id, semi2.id, winner1.id, {
+                winner: winner1.id,
+                messages: battleResult1.messages,
+                states: battleResult1.states,
+                playerHpRemain: battleResult1.playerHpRemain,
+                enemyHpRemain: battleResult1.enemyHpRemain
+            }, semi1.isShadow || semi2.isShadow]
         );
 
         // Полуфинал 2
         let battleResult2 = simulateBattle(semi3.stats, semi4.stats, semi3.class, semi4.class, semi3.username, semi4.username, semi3.subclass, semi4.subclass);
         const winner2 = battleResult2.winner === 'player' ? semi3 : semi4;
         const loser2 = winner2.id === semi3.id ? semi4 : semi3;
-        const matchLog2 = {
-            winner: winner2.id,
-            messages: battleResult2.messages,
-            states: battleResult2.states,
-            playerHpRemain: battleResult2.playerHpRemain,
-            enemyHpRemain: battleResult2.enemyHpRemain
-        };
         await client.query(
             `INSERT INTO tournament_matches 
              (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [await getSeasonId(client), todayDate, 4, 2, semi3.id, semi4.id, winner2.id, matchLog2, semi3.isShadow || semi4.isShadow]
+            [seasonId, todayDate, 4, 2, semi3.id, semi4.id, winner2.id, {
+                winner: winner2.id,
+                messages: battleResult2.messages,
+                states: battleResult2.states,
+                playerHpRemain: battleResult2.playerHpRemain,
+                enemyHpRemain: battleResult2.enemyHpRemain
+            }, semi3.isShadow || semi4.isShadow]
         );
 
-        // Финал (победители полуфиналов)
+        // Финал
         const final1 = winner1;
         const final2 = winner2;
         let battleResultFinal = simulateBattle(final1.stats, final2.stats, final1.class, final2.class, final1.username, final2.username, final1.subclass, final2.subclass);
         const champion = battleResultFinal.winner === 'player' ? final1 : final2;
-        const runnerUp = champion.id === final1.id ? final2 : final1;
-        const matchLogFinal = {
-            winner: champion.id,
-            messages: battleResultFinal.messages,
-            states: battleResultFinal.states,
-            playerHpRemain: battleResultFinal.playerHpRemain,
-            enemyHpRemain: battleResultFinal.enemyHpRemain
-        };
         await client.query(
             `INSERT INTO tournament_matches 
              (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [await getSeasonId(client), todayDate, 5, 1, final1.id, final2.id, champion.id, matchLogFinal, final1.isShadow || final2.isShadow]
+            [seasonId, todayDate, 5, 1, final1.id, final2.id, champion.id, {
+                winner: champion.id,
+                messages: battleResultFinal.messages,
+                states: battleResultFinal.states,
+                playerHpRemain: battleResultFinal.playerHpRemain,
+                enemyHpRemain: battleResultFinal.enemyHpRemain
+            }, final1.isShadow || final2.isShadow]
         );
 
-        // Матч за 3-е место (проигравшие в полуфиналах)
+        // Матч за 3-е место
         const thirdPlaceMatch = simulateBattle(loser1.stats, loser2.stats, loser1.class, loser2.class, loser1.username, loser2.username, loser1.subclass, loser2.subclass);
         const thirdPlaceWinner = thirdPlaceMatch.winner === 'player' ? loser1 : loser2;
-        const matchLogThird = {
-            winner: thirdPlaceWinner.id,
-            messages: thirdPlaceMatch.messages,
-            states: thirdPlaceMatch.states,
-            playerHpRemain: thirdPlaceMatch.playerHpRemain,
-            enemyHpRemain: thirdPlaceMatch.enemyHpRemain
-        };
         await client.query(
             `INSERT INTO tournament_matches 
              (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, match_log, is_shadow)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [await getSeasonId(client), todayDate, 5, 2, loser1.id, loser2.id, thirdPlaceWinner.id, matchLogThird, loser1.isShadow || loser2.isShadow]
+            [seasonId, todayDate, 5, 2, loser1.id, loser2.id, thirdPlaceWinner.id, {
+                winner: thirdPlaceWinner.id,
+                messages: thirdPlaceMatch.messages,
+                states: thirdPlaceMatch.states,
+                playerHpRemain: thirdPlaceMatch.playerHpRemain,
+                enemyHpRemain: thirdPlaceMatch.enemyHpRemain
+            }, loser1.isShadow || loser2.isShadow]
         );
 
         // Начисление наград
-        const seasonId = await getSeasonId(client);
         for (const participant of participants) {
             if (participant.isShadow) continue;
             const place = await getPlaceForUser(client, participant.id, todayDate);
@@ -484,43 +521,6 @@ async function runTournament() {
     } finally {
         client.release();
     }
-}
-
-// Функция для определения места (32 участника, с учётом матча за 3 место)
-async function getPlaceForUser(client, userId, tournamentDate) {
-    const matches = await client.query(
-        `SELECT round_number, match_index, winner_id, player1_id, player2_id
-         FROM tournament_matches
-         WHERE tournament_date = $1 AND (player1_id = $2 OR player2_id = $2)
-         ORDER BY round_number`,
-        [tournamentDate, userId]
-    );
-
-    if (matches.rows.length === 0) return 33;
-
-    let maxRound = 0;
-    let finalMatch = null;
-    let thirdPlaceMatch = null;
-
-    for (const m of matches.rows) {
-        // Пропускаем записи с отсутствующими ID (защита от ошибок)
-        if (!m.player1_id || !m.player2_id) continue;
-        if (m.round_number > maxRound) maxRound = m.round_number;
-        if (m.round_number === 5 && m.match_index === 1) finalMatch = m;
-        if (m.round_number === 5 && m.match_index === 2) thirdPlaceMatch = m;
-    }
-
-    if (maxRound === 5) {
-        if (finalMatch && finalMatch.winner_id === userId) return 1;
-        if (finalMatch && finalMatch.winner_id !== userId && (finalMatch.player1_id === userId || finalMatch.player2_id === userId)) return 2;
-        if (thirdPlaceMatch && thirdPlaceMatch.winner_id === userId) return 3;
-        if (thirdPlaceMatch && thirdPlaceMatch.winner_id !== userId && (thirdPlaceMatch.player1_id === userId || thirdPlaceMatch.player2_id === userId)) return 4;
-    }
-    if (maxRound === 4) return 5;   // 5-8
-    if (maxRound === 3) return 9;   // 9-16
-    if (maxRound === 2) return 17;  // 17-24
-    if (maxRound === 1) return 25;  // 25-32
-    return 33;
 }
 
 module.exports = {

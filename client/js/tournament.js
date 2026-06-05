@@ -125,29 +125,54 @@ async function renderTournamentTab() {
     }
 }
 
+
 function showWaitingScreen(container, secondsLeft) {
     if (waitingTimerInterval) clearInterval(waitingTimerInterval);
-    
+
     container.innerHTML = `
         <div class="tournament-waiting">
             <div class="tournament-waiting-icon">⚔️</div>
             <div class="tournament-waiting-title">Турнир "Золотой Коготь"</div>
             <div class="tournament-waiting-message">Турнир проводится. Ожидайте результатов...</div>
-            <div class="tournament-timer" id="tournamentWaitTimer">${formatTime(secondsLeft)}</div>
+            <div class="tournament-timer-digits" id="tournamentWaitTimerDigits">
+                <!-- сюда будет вставлен таймер в стиле digit-box -->
+            </div>
             <div class="tournament-waiting-note">Страница обновится автоматически</div>
         </div>
     `;
 
-    const timerElement = document.getElementById('tournamentWaitTimer');
+    function updateTimerDisplay(remaining) {
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const minsStr = mins.toString().padStart(2, '0');
+        const secsStr = secs.toString().padStart(2, '0');
+        const timerHtml = `
+            <div class="countdown-digits">
+                <div class="digit-box">
+                    <div class="digit-value">${minsStr}</div>
+                    <div class="digit-unit">минут</div>
+                </div>
+                <div class="colon">:</div>
+                <div class="digit-box">
+                    <div class="digit-value">${secsStr}</div>
+                    <div class="digit-unit">секунд</div>
+                </div>
+            </div>
+        `;
+        const timerContainer = document.getElementById('tournamentWaitTimerDigits');
+        if (timerContainer) timerContainer.innerHTML = timerHtml;
+    }
+
     let remaining = secondsLeft;
-    
+    updateTimerDisplay(remaining);
+
     waitingTimerInterval = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
             clearInterval(waitingTimerInterval);
             window.location.reload(); // перезагружаем страницу, чтобы показать результаты
         } else {
-            if (timerElement) timerElement.innerText = formatTime(remaining);
+            updateTimerDisplay(remaining);
         }
     }, 1000);
 }

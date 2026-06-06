@@ -93,12 +93,16 @@ function showAuthModal() {
     alert('showAuthModal called');
     const initData = getTelegramInitData();
     alert('initData = ' + (initData ? 'YES' : 'NO'));
-    if (initData) {
-        alert('calling autoLoginTelegram');
+  if (initData) {
+    alert('initData = YES, about to call autoLoginTelegram');
+    if (typeof autoLoginTelegram === 'function') {
+        alert('autoLoginTelegram is a function, calling now');
         autoLoginTelegram(initData).catch(console.error);
-        return;
+    } else {
+        alert('autoLoginTelegram is NOT a function');
     }
-
+    return;
+}
     // VK Mini App — тоже автоматически
     if (window.isVKMiniApp === true) {
         console.log('[AuthModal] VK Mini App: skipping modal, auto-login should handle auth');

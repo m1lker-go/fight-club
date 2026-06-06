@@ -21,36 +21,27 @@ function isWebView() {
 }
 
 function showAuthModal() {
-    // Прямая проверка на Telegram Web App (даже если флаг не установлен)
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-        console.log('[AuthModal] Telegram Web App detected by direct check, skipping modal');
-        // Попробуем авторизоваться, если ещё не авторизованы
+    // Telegram Mini App — авторизация автоматически
+    if (window.Telegram?.WebApp?.initData) {
+        console.log('[AuthModal] Telegram Mini App detected, auto-login...');
         if (typeof autoLoginTelegram === 'function') {
             autoLoginTelegram().catch(console.error);
         }
         return;
     }
 
-    // Не показываем модальное окно для VK Mini App
+    // VK Mini App — тоже автоматически (модалку не показываем)
     if (window.isVKMiniApp === true) {
         console.log('[AuthModal] VK Mini App: skipping modal, auto-login should handle auth');
         return;
     }
-    // Не показываем модальное окно для Telegram Web App (по флагу)
-    if (window.isTelegramWebApp === true) {
-        console.log('[AuthModal] Telegram Web App: skipping modal, auto-login should handle auth');
-        if (typeof autoLoginTelegram === 'function') {
-            autoLoginTelegram().catch(console.error);
-        }
-        return;
-    }
 
+    // Для всех остальных окружений – показываем модальное окно с кнопками
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Вход в игру';
 
-    // Для всех остальных окружений (браузер, APK) – полный набор кнопок
     const authMethodsHtml = `
         <div class="auth-methods">
             <button class="auth-btn telegram-btn" id="telegramAuthBtn">
@@ -95,8 +86,7 @@ function showAuthModal() {
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // --- Обработчики для остальных окружений ---
-    // Telegram
+    // --- Обработчики для остальных окружений (те же, что были) ---
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
         telegramBtn.addEventListener('click', () => {
@@ -109,7 +99,6 @@ function showAuthModal() {
         });
     }
 
-    // VK (браузерный low‑code)
     const vkBtn = document.getElementById('vkAuthBtn');
     if (vkBtn) {
         vkBtn.addEventListener('click', () => {
@@ -118,7 +107,6 @@ function showAuthModal() {
         });
     }
 
-    // Google
     const googleBtn = document.getElementById('googleAuthBtn');
     if (googleBtn) {
         googleBtn.addEventListener('click', () => {
@@ -130,7 +118,6 @@ function showAuthModal() {
         });
     }
 
-    // Email / пароль
     const credBtn = document.getElementById('loginCredentialsBtn');
     if (credBtn) {
         credBtn.addEventListener('click', () => {
@@ -139,6 +126,23 @@ function showAuthModal() {
             setAuthMode('login');
         });
     }
+
+    const toggleLogin = document.getElementById('toggleLogin');
+    const toggleRegister = document.getElementById('toggleRegister');
+    if (toggleLogin) toggleLogin.addEventListener('click', () => setAuthMode('login'));
+    if (toggleRegister) toggleRegister.addEventListener('click', () => setAuthMode('register'));
+
+    const submitBtn = document.getElementById('credentialsSubmitBtn');
+    if (submitBtn) submitBtn.addEventListener('click', handleCredentialsSubmit);
+
+    const forgotLink = document.getElementById('forgotPasswordLink');
+    if (forgotLink) forgotLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showForgotPasswordModal();
+    });
+
+    setAuthMode('login');
+}
 
     const toggleLogin = document.getElementById('toggleLogin');
     const toggleRegister = document.getElementById('toggleRegister');
@@ -414,6 +418,13 @@ async function autoLoginTelegram() {
             storage.setItem('sessionToken', data.sessionToken);
             if (typeof window.loadUserDataByToken === 'function') {
                 await window.loadUserDataByToken(data.sessionToken);
+            }
+            // Закрываем модалку, если вдруг она открыта
+            const modal = document.getElementById('roleModal');
+            if (modal) modal.style.display = 'none';
+            // Переходим на главный экран
+            if (typeof window.showScreen === 'function') {
+                window.showScreen('main');
             }
             return true;
         }

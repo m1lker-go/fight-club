@@ -635,60 +635,63 @@ async function renderClanChat(container, clan) {
 
 // ------------------- ОТМЕТКА -------------------
 
-// ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
-    // Запрос статуса с параметром времени для обхода кэша
-    const statusRes = await window.apiRequest(`/clans/checkin/status?_t=${Date.now()}`);
-    const statusData = await statusRes.json();
-    let alreadyChecked = statusData.already_checked;
+    // Получаем текущий статус с обходом кэша
+    let alreadyChecked = false;
+    try {
+        const statusRes = await window.apiRequest(`/clans/checkin/status?_t=${Date.now()}`);
+        const statusData = await statusRes.json();
+        alreadyChecked = statusData.already_checked;
+    } catch(e) {
+        console.error('Ошибка получения статуса отметки', e);
+    }
 
+    // Функция отрисовки (принимает boolean - отметился или нет)
     function renderUI(checked) {
-        let html = `<div style="text-align:center;">`;
-        if (!checked) {
-            html += `<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>`;
-        } else {
-            html += `<p>✅ Вы уже отметились сегодня!</p>`;
-        }
-        html += `<div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
+        container.innerHTML = `
+            <div style="text-align:center;">
+                ${!checked 
+                    ? '<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>' 
+                    : '<p>✅ Вы уже отметились сегодня!</p>'}
+                <div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
                     За отметку: +50 монет, +5 угля, +10 опыта клану<br>
                     Если все отметятся: +100 опыта клану
-                 </div>`;
-        html += `</div>`;
-        container.innerHTML = html;
+                </div>
+            </div>
+        `;
 
-        const checkinBtn = document.getElementById('checkinBtn');
-        if (checkinBtn && !checked) {
-            checkinBtn.addEventListener('click', async () => {
-                checkinBtn.disabled = true;
-                checkinBtn.innerText = '⏳';
+        const btn = document.getElementById('checkinBtn');
+        if (btn && !checked) {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                btn.innerText = '⏳';
                 try {
                     const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
                     const data = await res.json();
                     if (data.success) {
-                        // Обновляем данные пользователя
+                        // ✅ МГНОВЕННО меняем интерфейс на "уже отметился"
+                        renderUI(true);
+                        // Обновляем данные пользователя (монеты, уголь) в фоне
                         if (typeof refreshData === 'function') refreshData();
-                        // Повторно запрашиваем статус (обход кэша)
-                        const newStatusRes = await window.apiRequest(`/clans/checkin/status?_t=${Date.now()}`);
-                        const newStatusData = await newStatusRes.json();
-                        // Перерисовываем вкладку с новым статусом
-                        renderUI(newStatusData.already_checked);
-                        // Обновляем данные клана для других вкладок (таблица соратников)
+                        // Обновляем данные клана для синхронизации галочек в таблице "Соратники"
                         const myRes = await window.apiRequest('/clans/my');
                         const myData = await myRes.json();
                         if (myData.inClan) {
-                            // Полностью перерисовываем клан (сохраняя текущую вкладку)
+                            const savedTab = currentClanTab;
                             renderMyClan(myData.clan, myData.members, myData.userRole, myData.checkedTodayList || []);
+                            currentClanTab = savedTab;
+                            // Если текущая вкладка была "checkin" – перерисовываем её (но UI уже обновлён, можно не делать)
                         }
                         showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
                     } else {
                         showToast(data.error, 1500);
-                        checkinBtn.disabled = false;
-                        checkinBtn.innerText = 'Отметиться';
+                        btn.disabled = false;
+                        btn.innerText = 'Отметиться';
                     }
                 } catch (err) {
                     showToast('Ошибка сети', 1500);
-                    checkinBtn.disabled = false;
-                    checkinBtn.innerText = 'Отметиться';
+                    btn.disabled = false;
+                    btn.innerText = 'Отметиться';
                 }
             });
         }

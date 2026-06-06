@@ -86,7 +86,7 @@ function showAuthModal() {
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // --- Обработчики для остальных окружений (те же, что были) ---
+    // --- Обработчики для остальных окружений ---
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
         telegramBtn.addEventListener('click', () => {
@@ -126,23 +126,6 @@ function showAuthModal() {
             setAuthMode('login');
         });
     }
-
-    const toggleLogin = document.getElementById('toggleLogin');
-    const toggleRegister = document.getElementById('toggleRegister');
-    if (toggleLogin) toggleLogin.addEventListener('click', () => setAuthMode('login'));
-    if (toggleRegister) toggleRegister.addEventListener('click', () => setAuthMode('register'));
-
-    const submitBtn = document.getElementById('credentialsSubmitBtn');
-    if (submitBtn) submitBtn.addEventListener('click', handleCredentialsSubmit);
-
-    const forgotLink = document.getElementById('forgotPasswordLink');
-    if (forgotLink) forgotLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        showForgotPasswordModal();
-    });
-
-    setAuthMode('login');
-}
 
     const toggleLogin = document.getElementById('toggleLogin');
     const toggleRegister = document.getElementById('toggleRegister');

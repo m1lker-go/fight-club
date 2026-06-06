@@ -48,13 +48,11 @@ window.getMoscowDate = function() {
 
 // ========== УНИВЕРСАЛЬНОЕ ПОЛУЧЕНИЕ ПАРАМЕТРОВ VK (search или hash) ==========
 function getVKLaunchParams() {
-    // Извлекаем параметры из search
     const searchParams = new URLSearchParams(window.location.search);
     const result = {};
     for (const [key, value] of searchParams.entries()) {
         result[key] = value;
     }
-    // Дополняем параметрами из hash
     if (window.location.hash) {
         const hash = window.location.hash.substring(1);
         const hashParams = new URLSearchParams(hash);
@@ -65,13 +63,12 @@ function getVKLaunchParams() {
     console.log('[VK] getVKLaunchParams result:', result);
     return result;
 }
+
 // ========== ОПРЕДЕЛЕНИЕ ОКРУЖЕНИЯ VK MINI APP ==========
 window.isVKMiniApp = (function() {
     if (typeof window.vkBridge === 'undefined') return false;
-    // Проверяем наличие параметров VK
     const params = getVKLaunchParams();
     if (params.vk_user_id && params.sign) return true;
-    // Альтернативные признаки
     const ua = navigator.userAgent.toLowerCase();
     if (ua.includes('vk')) return true;
     if (window.location.search.includes('vk_access_token_settings')) return true;
@@ -98,28 +95,12 @@ function detectTelegramWebApp() {
     return false;
 }
 
-// Пробуем определить сразу и через 500 мс
 detectTelegramWebApp();
 setTimeout(detectTelegramWebApp, 500);
 
-// ========== ОПРЕДЕЛЕНИЕ TELEGRAM WEB APP ==========
-window.isTelegramWebApp = (function() {
-    if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp && window.Telegram.WebApp.initData) return true;
-    const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes('telegram')) return true;
-    return false;
-})();
-if (window.isTelegramWebApp) {
-    console.log('[App] Telegram Web App detected');
-    document.body.classList.add('telegram-webapp');
-}
-
 if (window.isVKMiniApp) {
     console.log('[App] VK Mini App detected, applying styles');
-    // Добавляем класс на body для CSS-правил
     document.body.classList.add('vk-mini-app');
-    
-    // Применяем отступ для верхней панели (чтобы системные кнопки VK не перекрывали интерфейс)
     setTimeout(() => {
         const topBar = document.querySelector('.top-bar');
         if (topBar) {
@@ -128,15 +109,10 @@ if (window.isVKMiniApp) {
             console.log('[VK] Added top padding to .top-bar');
         }
     }, 100);
-    
-    // Опционально: если нужен горизонтальный CSS (был закомментирован)
-    // const link = document.createElement('link');
-    // link.rel = 'stylesheet';
-    // link.href = '/css/vk-horizontal.css';
-    // document.head.appendChild(link);
 } else {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
+
 // ========== VK MINI APP АВТОРИЗАЦИЯ ЧЕРЕЗ ПАРАМЕТРЫ ЗАПУСКА ==========
 async function autoLoginVKLaunch() {
     const launchParams = getVKLaunchParams();
@@ -157,43 +133,42 @@ async function autoLoginVKLaunch() {
             sessionStorage.setItem('sessionToken', data.sessionToken);
             await loadUserDataByToken(data.sessionToken);
             
-// --- ОБНОВЛЕНИЕ ИМЕНИ ИЗ VK (с подробными логами) ---
-console.log('[VK] DEBUG: window.isVKMiniApp =', window.isVKMiniApp);
-console.log('[VK] DEBUG: typeof vkBridge =', typeof vkBridge);
-console.log('[VK] DEBUG: userData =', userData);
-console.log('[VK] DEBUG: username =', userData?.username);
-console.log('[VK] DEBUG: startsWith user_?', userData?.username?.startsWith('user_'));
-
-if (window.isVKMiniApp && typeof vkBridge !== 'undefined' && userData && userData.username && userData.username.startsWith('user_')) {
-    console.log('[VK] DEBUG: Condition passed, trying to update username');
-    try {
-        const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
-        const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
-        console.log('[VK] DEBUG: fullName from VK =', fullName);
-        if (fullName) {
-            const updRes = await window.apiRequest('/user/update-username', {
-                method: 'POST',
-                body: JSON.stringify({ username: fullName })
-            });
-            const updData = await updRes.json();
-            console.log('[VK] DEBUG: update response =', updData);
-            if (updRes.ok) {
-                userData.username = fullName;
-                updateTopBar();
-                console.log('[VK] Username updated to', fullName);
+            // Обновление имени из VK
+            console.log('[VK] DEBUG: window.isVKMiniApp =', window.isVKMiniApp);
+            console.log('[VK] DEBUG: typeof vkBridge =', typeof vkBridge);
+            console.log('[VK] DEBUG: userData =', userData);
+            console.log('[VK] DEBUG: username =', userData?.username);
+            console.log('[VK] DEBUG: startsWith user_?', userData?.username?.startsWith('user_'));
+            
+            if (window.isVKMiniApp && typeof vkBridge !== 'undefined' && userData && userData.username && userData.username.startsWith('user_')) {
+                console.log('[VK] DEBUG: Condition passed, trying to update username');
+                try {
+                    const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                    const fullName = `${userInfo.first_name} ${userInfo.last_name}`.trim();
+                    console.log('[VK] DEBUG: fullName from VK =', fullName);
+                    if (fullName) {
+                        const updRes = await window.apiRequest('/user/update-username', {
+                            method: 'POST',
+                            body: JSON.stringify({ username: fullName })
+                        });
+                        const updData = await updRes.json();
+                        console.log('[VK] DEBUG: update response =', updData);
+                        if (updRes.ok) {
+                            userData.username = fullName;
+                            updateTopBar();
+                            console.log('[VK] Username updated to', fullName);
+                        } else {
+                            console.error('[VK] Failed to update username:', updData.error);
+                        }
+                    } else {
+                        console.warn('[VK] fullName is empty');
+                    }
+                } catch (err) {
+                    console.error('[VK] Could not update username', err);
+                }
             } else {
-                console.error('[VK] Failed to update username:', updData.error);
+                console.log('[VK] DEBUG: Condition failed, skip username update');
             }
-        } else {
-            console.warn('[VK] fullName is empty');
-        }
-    } catch (err) {
-        console.error('[VK] Could not update username', err);
-    }
-} else {
-    console.log('[VK] DEBUG: Condition failed, skip username update');
-}
-            // ---------------------------------------------------------
             
             if (data.needusername && typeof showusernameModal === 'function') {
                 showusernameModal(data.userId);
@@ -234,7 +209,7 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
         .catch(e => console.error('[VK Bridge] init error:', e));
 }
 
-// ========== Универсальный apiRequest с Bearer-токеном (условное хранилище) ==========
+// ========== Универсальный apiRequest с Bearer-токеном ==========
 window.apiRequest = async function(endpoint, options = {}) {
     console.log('[apiRequest]', endpoint, options);
     const url = endpoint.startsWith('http') ? endpoint : window.API_BASE + endpoint;
@@ -261,7 +236,6 @@ window.apiRequest = async function(endpoint, options = {}) {
         }
     };
     
-    // Определяем хранилище токена
     const storage = window.isVKMiniApp ? sessionStorage : localStorage;
     const token = storage.getItem('sessionToken');
     if (token && !endpoint.startsWith('/auth') && !endpoint.includes('/auth/')) {
@@ -468,7 +442,6 @@ if (window.isVKMiniApp) {
 }
 
 async function checkAuth() {
-    // Повторно проверяем Telegram (на случай, если флаг не успел установиться)
     detectTelegramWebApp();
 
     console.log('checkAuth: sessionToken =', sessionToken);
@@ -525,23 +498,6 @@ async function checkAuth() {
     }
 
     // Если не удалось – показываем модалку
-    hideSplashScreen();
-    if (typeof showAuthModal === 'function') {
-        showAuthModal();
-    } else {
-        console.error('showAuthModal not defined');
-        showErrorSplash();
-    }
-    return false;
-}
-
-    // Telegram Web App – автологин
-    if (window.isTelegramWebApp) {
-        console.log('checkAuth: trying auto login via Telegram');
-        const autoLogged = await autoLoginTelegram();
-        if (autoLogged) return true;
-    }
-
     hideSplashScreen();
     if (typeof showAuthModal === 'function') {
         showAuthModal();
@@ -673,15 +629,12 @@ async function refreshData() {
             if (window.refreshTasksData) window.refreshTasksData();
             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
 
-            // +++ НОВЫЙ БЛОК: ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ НАВЫКОВ И УРОВНЯ +++
-            // Если открыт профиль и активна вкладка "Улучшить" – перерисовываем навыки
             if (currentScreen === 'profile' && typeof profileTab !== 'undefined' && profileTab === 'upgrade') {
                 const profileContent = document.getElementById('profileContent');
                 if (profileContent && typeof renderSkills === 'function') {
                     renderSkills(profileContent);
                 }
             }
-            // Если открыт главный экран – обновляем отображение уровня и опыта
             if (currentScreen === 'main') {
                 const classData = getCurrentClassData();
                 const levelSpan = document.querySelector('.level-display');
@@ -697,7 +650,6 @@ async function refreshData() {
                     }
                 }
             }
-            // +++ КОНЕЦ БЛОКА +++
         }
     } catch (e) {
         console.error('Refresh error:', e);
@@ -761,7 +713,6 @@ function showScreen(screen) {
             .catch(e => console.warn('Не удалось обновить задание профиля:', e));
     }
 
-    // Динамическая загрузка task-up.js для экрана заданий
     if (screen === 'tasks' && typeof renderTasks === 'undefined') {
         const script = document.createElement('script');
         script.src = '/js/task-up.js';
@@ -781,7 +732,6 @@ function showScreen(screen) {
         return;
     }
 
-    // Динамическая загрузка tournament.js для экрана турнира
     if (screen === 'tournament' && typeof renderTournament === 'undefined') {
         const script = document.createElement('script');
         script.src = '/js/tournament.js';
@@ -828,39 +778,38 @@ function showScreen(screen) {
                 document.head.appendChild(script);
             }
             break;
-       case 'settings':
-    if (typeof renderSettings === 'function') {
-        renderSettings();
-    } else {
-        const script = document.createElement('script');
-        script.src = '/js/settings.js';
-        script.onload = () => {
+        case 'settings':
             if (typeof renderSettings === 'function') {
                 renderSettings();
             } else {
-                content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
+                const script = document.createElement('script');
+                script.src = '/js/settings.js';
+                script.onload = () => {
+                    if (typeof renderSettings === 'function') {
+                        renderSettings();
+                    } else {
+                        content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
+                    }
+                };
+                script.onerror = () => {
+                    content.innerHTML = '<p style="text-align:center; color:#aaa;">Ошибка загрузки настроек</p>';
+                };
+                document.head.appendChild(script);
             }
-        };
-        script.onerror = () => {
-            content.innerHTML = '<p style="text-align:center; color:#aaa;">Ошибка загрузки настроек</p>';
-        };
-        document.head.appendChild(script);
-    }
-    break;
+            break;
         case 'market': renderMarket(); break;
         case 'fortune': renderFortune(); break;
         case 'alchemy': renderAlchemy(); break;
         case 'tournament':
             renderTournament();
             break;
-      case 'clans':
-    if (typeof renderClans === 'function') {
-        renderClans();
-    } else {
-        content.innerHTML = '<p style="color:#aaa;">Ошибка: модуль кланов не загружен</p>';
-    }
-    break;
-            
+        case 'clans':
+            if (typeof renderClans === 'function') {
+                renderClans();
+            } else {
+                content.innerHTML = '<p style="color:#aaa;">Ошибка: модуль кланов не загружен</p>';
+            }
+            break;
         default: renderMain();
     }
 
@@ -938,7 +887,7 @@ window.renderProfileBonuses = renderProfileBonuses;
 window.renderFortune = renderFortune;
 window.renderAlchemy = renderAlchemy;
 
-// ========== Обработка внешней авторизации (Google/VK/Telegram) без перезагрузки ==========
+// ========== Обработка внешней авторизации ==========
 function handleExternalAuth() {
     const urlParams = new URLSearchParams(window.location.search);
     let handled = false;
@@ -971,7 +920,6 @@ function handleExternalAuth() {
         return true;
     }
 
-    // Google OAuth
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -981,7 +929,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // VK OAuth (браузерный, не для мини-аппа)
     const vkAuth = urlParams.get('vk_auth');
     if (vkAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -991,7 +938,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // Telegram OAuth
     const telegramAuth = urlParams.get('telegram_auth');
     if (telegramAuth === 'success') {
         const sessionToken = urlParams.get('sessionToken');
@@ -1001,7 +947,6 @@ function handleExternalAuth() {
         handled = true;
     }
 
-    // Привязка аккаунтов (опционально)
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
         if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
@@ -1047,11 +992,7 @@ const unlockHandler = () => {
 document.addEventListener('click', unlockHandler);
 document.addEventListener('touchstart', unlockHandler);
 
-
-
-//debug кнопка
-
-// ========== ДЕБАГ-КНОПКА ДЛЯ ID 1 И 2 (плавающая шестерёнка) ==========
+// ========== ДЕБАГ-КНОПКА ДЛЯ ID 1 И 2 ==========
 (function() {
     let debugButtonAdded = false;
 
@@ -1060,11 +1001,9 @@ document.addEventListener('touchstart', unlockHandler);
         if (!userData || (userData.id !== 1 && userData.id !== 2)) return;
         debugButtonAdded = true;
 
-        // Контейнер для логов
         const logs = [];
         const maxLogs = 200;
 
-        // Перехватываем console
         const originalLog = console.log;
         const originalError = console.error;
         const originalWarn = console.warn;
@@ -1086,7 +1025,6 @@ document.addEventListener('touchstart', unlockHandler);
             addLog('ERROR', [e.message, 'at', e.filename, 'line', e.lineno]);
         });
 
-        // Кнопка
         const btn = document.createElement('div');
         btn.innerHTML = '<i class="fas fa-cog"></i>';
         btn.style.cssText = `
@@ -1109,7 +1047,6 @@ document.addEventListener('touchstart', unlockHandler);
         btn.onmouseenter = () => btn.style.opacity = '1';
         btn.onmouseleave = () => btn.style.opacity = '0.7';
 
-        // Модальное окно
         const modal = document.createElement('div');
         modal.style.cssText = `
             position: fixed;
@@ -1167,7 +1104,6 @@ document.addEventListener('touchstart', unlockHandler);
         });
     }
 
-    // Ждём появления userData
     let checkInterval = setInterval(() => {
         if (typeof userData !== 'undefined' && userData && userData.id) {
             clearInterval(checkInterval);

@@ -634,6 +634,7 @@ async function renderClanChat(container, clan) {
 }
 
 // ------------------- ОТМЕТКА -------------------
+
 async function renderClanCheckin(container, clan) {
     // Получаем актуальный статус с сервера
     const statusRes = await window.apiRequest('/clans/checkin/status');

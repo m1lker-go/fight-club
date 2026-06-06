@@ -79,6 +79,29 @@ window.isVKMiniApp = (function() {
     return false;
 })();
 
+// ========== ОПРЕДЕЛЕНИЕ TELEGRAM WEB APP (НАДЁЖНОЕ) ==========
+window.isTelegramWebApp = false;
+
+function detectTelegramWebApp() {
+    if (window.isTelegramWebApp) return true;
+    const hasTelegramWebApp = typeof window.Telegram !== 'undefined' && 
+                              window.Telegram.WebApp && 
+                              window.Telegram.WebApp.initData;
+    const ua = navigator.userAgent.toLowerCase();
+    const isTelegram = hasTelegramWebApp || ua.includes('telegram');
+    if (isTelegram) {
+        window.isTelegramWebApp = true;
+        console.log('[App] Telegram Web App detected');
+        document.body.classList.add('telegram-webapp');
+        return true;
+    }
+    return false;
+}
+
+// Пробуем определить сразу и через 500 мс
+detectTelegramWebApp();
+setTimeout(detectTelegramWebApp, 500);
+
 // ========== ОПРЕДЕЛЕНИЕ TELEGRAM WEB APP ==========
 window.isTelegramWebApp = (function() {
     if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp && window.Telegram.WebApp.initData) return true;
@@ -445,6 +468,9 @@ if (window.isVKMiniApp) {
 }
 
 async function checkAuth() {
+    // Повторно проверяем Telegram (на случай, если флаг не успел установиться)
+    detectTelegramWebApp();
+
     console.log('checkAuth: sessionToken =', sessionToken);
     const storage = window.isVKMiniApp ? sessionStorage : localStorage;
     if (sessionToken) {
@@ -490,6 +516,24 @@ async function checkAuth() {
             return false;
         }
     }
+
+    // Telegram Web App – автологин
+    if (window.isTelegramWebApp) {
+        console.log('checkAuth: trying auto login via Telegram');
+        const autoLogged = await autoLoginTelegram();
+        if (autoLogged) return true;
+    }
+
+    // Если не удалось – показываем модалку
+    hideSplashScreen();
+    if (typeof showAuthModal === 'function') {
+        showAuthModal();
+    } else {
+        console.error('showAuthModal not defined');
+        showErrorSplash();
+    }
+    return false;
+}
 
     // Telegram Web App – автологин
     if (window.isTelegramWebApp) {

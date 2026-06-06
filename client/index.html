@@ -21,24 +21,32 @@
     
     <!-- Telegram WebApp SDK – загружаем сразу, если это Telegram (перед всеми скриптами) -->
     <script>
-        (function() {
-            function isTelegramWebApp() {
-                if (window.Telegram && window.Telegram.WebApp) return true;
-                var ua = navigator.userAgent.toLowerCase();
-                if (ua.includes('telegram')) return true;
-                if (window.location.search.includes('tgWebAppData')) return true;
-                return false;
-            }
-            if (isTelegramWebApp()) {
-                var script = document.createElement('script');
-                script.src = 'https://telegram.org/js/telegram-web-app.js';
-                script.async = false; // синхронно, чтобы гарантировать наличие
-                document.head.appendChild(script);
-                console.log('[Index] Загружен telegram-web-app.js (Telegram WebApp)');
-            } else {
-                console.log('[Index] Telegram WebApp не требуется, загрузка скрипта пропущена');
-            }
-        })();
+       (function() {
+    function isTelegramWebApp() {
+        // Проверяем URL parameters — они доступны сразу
+        var search = window.location.search.toLowerCase();
+        var hash = window.location.hash.toLowerCase();
+        
+        if (search.includes('tgwebappdata') || search.includes('tgauthtoken')) return true;
+        if (hash.includes('tgwebappdata') || hash.includes('tgauthtoken')) return true;
+        
+        // Проверяем userAgent
+        var ua = navigator.userAgent.toLowerCase();
+        if (ua.includes('telegram')) return true;
+        
+        return false;
+    }
+    
+    if (isTelegramWebApp()) {
+        var script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-web-app.js';
+        script.async = false;
+        document.head.appendChild(script);
+        console.log('[Index] Загружен telegram-web-app.js (Telegram WebApp)');
+    } else {
+        console.log('[Index] Telegram WebApp не требуется, загрузка скрипта пропущена');
+    }
+})();
     </script>
     
     <!-- Иконки сайта -->

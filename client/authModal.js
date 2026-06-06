@@ -37,11 +37,14 @@ function getTelegramInitData() {
     return null;
 }
 
+if (!window.API_BASE) window.API_BASE = 'https://api.cat-fight.ru';
+
 // Автологин в Telegram (точная копия рабочего кода из telegram-auth.js)
 async function autoLoginTelegram(initData) {
     if (!initData) return false;
+    const API_URL = window.API_BASE || 'https://api.cat-fight.ru';
     try {
-        const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
+        const response = await fetch(`${API_URL}/auth/telegram-auto`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData })

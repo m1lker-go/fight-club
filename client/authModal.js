@@ -405,26 +405,41 @@ window.showAuthModal = showAuthModal;
 window.showusernameModal = showusernameModal;
 
 // Вспомогательная функция для автологина в Telegram (принимает initData, либо получает сама)
+// Вспомогательная функция для автологина в Telegram (с подробными логами)
 async function autoLoginTelegram(initData) {
+    console.log('[autoLoginTelegram] Функция вызвана, initData аргумент:', initData ? 'передан' : 'не передан');
+    
     if (!initData) {
         initData = getTelegramInitData();
+        console.log('[autoLoginTelegram] После getTelegramInitData():', initData ? 'получен' : 'НЕ ПОЛУЧЕН');
     }
+    
     if (!initData) {
-        console.warn('No initData for Telegram autoLogin');
+        console.warn('[autoLoginTelegram] Нет initData, авторизация невозможна');
         return false;
     }
+    
+    console.log('[autoLoginTelegram] initData длина:', initData.length);
+    
     try {
+        console.log('[autoLoginTelegram] Отправка запроса на сервер... URL:', `${window.API_BASE}/auth/telegram-auto`);
         const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData })
         });
+        
+        console.log('[autoLoginTelegram] Статус ответа:', response.status);
         const data = await response.json();
+        console.log('[autoLoginTelegram] Данные ответа:', data);
+        
         if (data.sessionToken) {
+            console.log('[autoLoginTelegram] Получен sessionToken, сохраняем...');
             const storage = window.isVKMiniApp ? sessionStorage : localStorage;
             storage.setItem('sessionToken', data.sessionToken);
             if (typeof window.loadUserDataByToken === 'function') {
                 await window.loadUserDataByToken(data.sessionToken);
+                console.log('[autoLoginTelegram] Данные пользователя загружены');
             }
             // Закрываем модалку, если вдруг она открыта
             const modal = document.getElementById('roleModal');
@@ -432,11 +447,14 @@ async function autoLoginTelegram(initData) {
             // Переходим на главный экран
             if (typeof window.showScreen === 'function') {
                 window.showScreen('main');
+                console.log('[autoLoginTelegram] Переход на главный экран');
             }
             return true;
+        } else {
+            console.error('[autoLoginTelegram] Сервер не вернул sessionToken:', data.error || 'неизвестная ошибка');
         }
     } catch (err) {
-        console.error('Telegram autoLogin error:', err);
+        console.error('[autoLoginTelegram] Ошибка при выполнении запроса:', err);
     }
     return false;
 }

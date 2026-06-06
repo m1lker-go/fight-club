@@ -635,51 +635,66 @@ async function renderClanChat(container, clan) {
 
 // ------------------- ОТМЕТКА -------------------
 
+// ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
-    const statusRes = await window.apiRequest('/clans/checkin/status');
+    // Запрос статуса с параметром времени для обхода кэша
+    const statusRes = await window.apiRequest(`/clans/checkin/status?_t=${Date.now()}`);
     const statusData = await statusRes.json();
-    const alreadyChecked = statusData.already_checked;
+    let alreadyChecked = statusData.already_checked;
 
-    console.log('[Clans] renderClanCheckin: alreadyChecked =', alreadyChecked);
+    function renderUI(checked) {
+        let html = `<div style="text-align:center;">`;
+        if (!checked) {
+            html += `<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>`;
+        } else {
+            html += `<p>✅ Вы уже отметились сегодня!</p>`;
+        }
+        html += `<div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
+                    За отметку: +50 монет, +5 угля, +10 опыта клану<br>
+                    Если все отметятся: +100 опыта клану
+                 </div>`;
+        html += `</div>`;
+        container.innerHTML = html;
 
-    let html = `<div style="text-align:center;">`;
-    if (!alreadyChecked) {
-        html += `<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>`;
-    } else {
-        html += `<p>✅ Вы уже отметились сегодня!</p>`;
-    }
-    html += `<div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
-                За отметку: +50 монет, +5 угля, +10 опыта клану<br>
-                Если все отметятся: +100 опыта клану
-             </div>`;
-    html += `</div>`;
-    container.innerHTML = html;
-
-    const checkinBtn = document.getElementById('checkinBtn');
-    if (checkinBtn) {
-        checkinBtn.addEventListener('click', async () => {
-            checkinBtn.disabled = true;
-            checkinBtn.innerText = '⏳';
-            try {
-                const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    if (typeof refreshData === 'function') refreshData();
-                    // Перезагружаем текущую вкладку, а не весь клан, чтобы не терять состояние
-                    await renderClans(); // полная перезагрузка
-                    showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
-                } else {
-                    showToast(data.error, 1500);
-                    checkinBtn.innerText = 'Отметиться';
+        const checkinBtn = document.getElementById('checkinBtn');
+        if (checkinBtn && !checked) {
+            checkinBtn.addEventListener('click', async () => {
+                checkinBtn.disabled = true;
+                checkinBtn.innerText = '⏳';
+                try {
+                    const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        // Обновляем данные пользователя
+                        if (typeof refreshData === 'function') refreshData();
+                        // Повторно запрашиваем статус (обход кэша)
+                        const newStatusRes = await window.apiRequest(`/clans/checkin/status?_t=${Date.now()}`);
+                        const newStatusData = await newStatusRes.json();
+                        // Перерисовываем вкладку с новым статусом
+                        renderUI(newStatusData.already_checked);
+                        // Обновляем данные клана для других вкладок (таблица соратников)
+                        const myRes = await window.apiRequest('/clans/my');
+                        const myData = await myRes.json();
+                        if (myData.inClan) {
+                            // Полностью перерисовываем клан (сохраняя текущую вкладку)
+                            renderMyClan(myData.clan, myData.members, myData.userRole, myData.checkedTodayList || []);
+                        }
+                        showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
+                    } else {
+                        showToast(data.error, 1500);
+                        checkinBtn.disabled = false;
+                        checkinBtn.innerText = 'Отметиться';
+                    }
+                } catch (err) {
+                    showToast('Ошибка сети', 1500);
                     checkinBtn.disabled = false;
+                    checkinBtn.innerText = 'Отметиться';
                 }
-            } catch (err) {
-                showToast('Ошибка сети', 1500);
-                checkinBtn.innerText = 'Отметиться';
-                checkinBtn.disabled = false;
-            }
-        });
+            });
+        }
     }
+
+    renderUI(alreadyChecked);
 }
 
 // ------------------- КАЗНА + ПОКУПКА ОЧКОВ НАВЫКОВ -------------------

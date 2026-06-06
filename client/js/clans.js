@@ -636,10 +636,11 @@ async function renderClanChat(container, clan) {
 // ------------------- ОТМЕТКА -------------------
 
 async function renderClanCheckin(container, clan) {
-    // Получаем актуальный статус с сервера
     const statusRes = await window.apiRequest('/clans/checkin/status');
     const statusData = await statusRes.json();
     const alreadyChecked = statusData.already_checked;
+
+    console.log('[Clans] renderClanCheckin: alreadyChecked =', alreadyChecked);
 
     let html = `<div style="text-align:center;">`;
     if (!alreadyChecked) {
@@ -656,34 +657,26 @@ async function renderClanCheckin(container, clan) {
 
     const checkinBtn = document.getElementById('checkinBtn');
     if (checkinBtn) {
-        let isProcessing = false;
         checkinBtn.addEventListener('click', async () => {
-            if (isProcessing) return;
-            isProcessing = true;
-            const btn = checkinBtn;
-            const originalText = btn.innerText;
-            btn.innerText = '⏳';
-            btn.disabled = true;
+            checkinBtn.disabled = true;
+            checkinBtn.innerText = '⏳';
             try {
                 const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
-                    // Обновляем данные пользователя (монеты, уголь)
                     if (typeof refreshData === 'function') refreshData();
-                    // Полностью перезагружаем раздел клана – обновятся все вкладки и список отметившихся
-                    await renderClans();
+                    // Перезагружаем текущую вкладку, а не весь клан, чтобы не терять состояние
+                    await renderClans(); // полная перезагрузка
                     showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
                 } else {
                     showToast(data.error, 1500);
-                    btn.innerText = originalText;
-                    btn.disabled = false;
+                    checkinBtn.innerText = 'Отметиться';
+                    checkinBtn.disabled = false;
                 }
             } catch (err) {
                 showToast('Ошибка сети', 1500);
-                btn.innerText = originalText;
-                btn.disabled = false;
-            } finally {
-                isProcessing = false;
+                checkinBtn.innerText = 'Отметиться';
+                checkinBtn.disabled = false;
             }
         });
     }

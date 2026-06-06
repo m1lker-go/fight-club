@@ -20,19 +20,16 @@ function isWebView() {
     return false;
 }
 
-// Вспомогательная функция для получения initData из URL (если Telegram SDK не загрузился)
+// Получение initData из разных источников
 function getTelegramInitData() {
-    // Пробуем получить из window.Telegram.WebApp.initData
     if (window.Telegram?.WebApp?.initData) {
         return window.Telegram.WebApp.initData;
     }
-    // Парсим из URL
     const urlParams = new URLSearchParams(window.location.search);
     let tgData = urlParams.get('tgWebAppData');
     if (tgData) {
         return decodeURIComponent(tgData);
     }
-    // Пробуем из hash
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const tgHashData = hashParams.get('tgWebAppData');
     if (tgHashData) {
@@ -41,18 +38,58 @@ function getTelegramInitData() {
     return null;
 }
 
+// Автологин в Telegram
+async function autoLoginTelegram(initData) {
+    console.log('[autoLoginTelegram] Вызвана, initData =', initData ? 'есть' : 'НЕТ');
+    if (!initData) {
+        initData = getTelegramInitData();
+        console.log('[autoLoginTelegram] После getTelegramInitData():', initData ? 'есть' : 'НЕТ');
+    }
+    if (!initData) {
+        console.warn('[autoLoginTelegram] Нет initData, авторизация невозможна');
+        return false;
+    }
+    try {
+        console.log('[autoLoginTelegram] Отправка запроса на', `${window.API_BASE}/auth/telegram-auto`);
+        const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData })
+        });
+        const data = await response.json();
+        console.log('[autoLoginTelegram] Статус ответа:', response.status, 'Данные:', data);
+        if (data.sessionToken) {
+            const storage = window.isVKMiniApp ? sessionStorage : localStorage;
+            storage.setItem('sessionToken', data.sessionToken);
+            if (typeof window.loadUserDataByToken === 'function') {
+                await window.loadUserDataByToken(data.sessionToken);
+            }
+            const modal = document.getElementById('roleModal');
+            if (modal) modal.style.display = 'none';
+            if (typeof window.showScreen === 'function') {
+                window.showScreen('main');
+            }
+            console.log('[autoLoginTelegram] Успешно!');
+            return true;
+        } else {
+            console.error('[autoLoginTelegram] Ошибка сервера:', data.error || 'Неизвестная ошибка');
+        }
+    } catch (err) {
+        console.error('[autoLoginTelegram] Исключение:', err);
+    }
+    return false;
+}
+
 function showAuthModal() {
-    // Telegram Mini App — авторизация автоматически (проверяем initData из любого источника)
+    // Telegram Mini App — авторизация автоматически
     const initData = getTelegramInitData();
     if (initData) {
-        console.log('[AuthModal] Telegram Mini App detected, auto-login...');
-        if (typeof autoLoginTelegram === 'function') {
-            autoLoginTelegram(initData).catch(console.error);
-        }
+        console.log('[AuthModal] Telegram Mini App detected, вызываем autoLoginTelegram');
+        autoLoginTelegram(initData).catch(console.error);
         return;
     }
 
-    // VK Mini App — тоже автоматически (модалку не показываем)
+    // VK Mini App — тоже автоматически
     if (window.isVKMiniApp === true) {
         console.log('[AuthModal] VK Mini App: skipping modal, auto-login should handle auth');
         return;
@@ -403,58 +440,3 @@ function showusernameModal(userId) {
 
 window.showAuthModal = showAuthModal;
 window.showusernameModal = showusernameModal;
-
-// Вспомогательная функция для автологина в Telegram (принимает initData, либо получает сама)
-// Вспомогательная функция для автологина в Telegram (с подробными логами)
-async function autoLoginTelegram(initData) {
-    console.log('[autoLoginTelegram] Функция вызвана, initData аргумент:', initData ? 'передан' : 'не передан');
-    
-    if (!initData) {
-        initData = getTelegramInitData();
-        console.log('[autoLoginTelegram] После getTelegramInitData():', initData ? 'получен' : 'НЕ ПОЛУЧЕН');
-    }
-    
-    if (!initData) {
-        console.warn('[autoLoginTelegram] Нет initData, авторизация невозможна');
-        return false;
-    }
-    
-    console.log('[autoLoginTelegram] initData длина:', initData.length);
-    
-    try {
-        console.log('[autoLoginTelegram] Отправка запроса на сервер... URL:', `${window.API_BASE}/auth/telegram-auto`);
-        const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData })
-        });
-        
-        console.log('[autoLoginTelegram] Статус ответа:', response.status);
-        const data = await response.json();
-        console.log('[autoLoginTelegram] Данные ответа:', data);
-        
-        if (data.sessionToken) {
-            console.log('[autoLoginTelegram] Получен sessionToken, сохраняем...');
-            const storage = window.isVKMiniApp ? sessionStorage : localStorage;
-            storage.setItem('sessionToken', data.sessionToken);
-            if (typeof window.loadUserDataByToken === 'function') {
-                await window.loadUserDataByToken(data.sessionToken);
-                console.log('[autoLoginTelegram] Данные пользователя загружены');
-            }
-            // Закрываем модалку, если вдруг она открыта
-            const modal = document.getElementById('roleModal');
-            if (modal) modal.style.display = 'none';
-            // Переходим на главный экран
-            if (typeof window.showScreen === 'function') {
-                window.showScreen('main');
-                console.log('[autoLoginTelegram] Переход на главный экран');
-            }
-            return true;
-        } else {
-            console.error('[autoLoginTelegram] Сервер не вернул sessionToken:', data.error || 'неизвестная ошибка');
-        }
-    } catch (err) {
-        console.error('[autoLoginTelegram] Ошибка при выполнении запроса:', err);
-    }
-    return false;
-}

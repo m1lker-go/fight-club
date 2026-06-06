@@ -72,6 +72,7 @@ async function resetDailyTasks() {
         `);
 
         await client.query('DELETE FROM tournament_draft');
+        await client.query('UPDATE clan_members SET daily_checkin_date = NULL');
 
         await client.query('COMMIT');
         console.log('[SCHEDULER] Ежедневный сброс выполнен успешно');

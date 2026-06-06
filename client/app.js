@@ -322,7 +322,15 @@ function loadAudioManager() {
 }
 
 async function autoLoginTelegram() {
-    if (!tg || !tg.initData) return false;
+    if (!window.isTelegramWebApp) return false;
+    let initData = null;
+    if (window.Telegram && window.Telegram.WebApp) {
+        initData = window.Telegram.WebApp.initData;
+    }
+    if (!initData) {
+        console.warn('No initData for Telegram');
+        return false;
+    }
     console.log('Auto login via Telegram initData...');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -332,7 +340,7 @@ async function autoLoginTelegram() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                initData: tg.initData,
+                initData: initData,
                 referral_code: referralCode
             }),
             signal: controller.signal
@@ -343,7 +351,7 @@ async function autoLoginTelegram() {
             const data = await response.json();
             if (data.sessionToken) {
                 localStorage.setItem('sessionToken', data.sessionToken);
-                if (data.need && typeof showusernameModal === 'function') {
+                if (data.needusername && typeof showusernameModal === 'function') {
                     showusernameModal(data.userId);
                     return true;
                 } else {
@@ -353,9 +361,11 @@ async function autoLoginTelegram() {
                     }
                 }
                 return true;
+            } else {
+                console.error('Auto login failed:', data.error);
             }
         } else {
-            console.error('Auto login failed:', await response.text());
+            console.error('Auto login HTTP error:', response.status);
         }
     } catch (e) {
         clearTimeout(timeoutId);

@@ -43,42 +43,48 @@ function getTelegramInitData() {
 
 // Автологин в Telegram
 async function autoLoginTelegram(initData) {
-    console.log('[autoLoginTelegram] Вызвана, initData =', initData ? 'есть' : 'НЕТ');
+    alert('[1] autoLoginTelegram started');
     if (!initData) {
         initData = getTelegramInitData();
-        console.log('[autoLoginTelegram] После getTelegramInitData():', initData ? 'есть' : 'НЕТ');
+        alert('[2] after getTelegramInitData: ' + (initData ? 'YES' : 'NO'));
     }
     if (!initData) {
-        console.warn('[autoLoginTelegram] Нет initData, авторизация невозможна');
+        alert('[3] No initData, return false');
         return false;
     }
     try {
-        console.log('[autoLoginTelegram] Отправка запроса на', `${window.API_BASE}/auth/telegram-auto`);
+        alert('[4] Sending fetch to /auth/telegram-auto');
         const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData })
         });
+        alert('[5] fetch response status: ' + response.status);
         const data = await response.json();
-        console.log('[autoLoginTelegram] Статус ответа:', response.status, 'Данные:', data);
+        alert('[6] response data: ' + JSON.stringify(data));
         if (data.sessionToken) {
+            alert('[7] sessionToken received, saving');
             const storage = window.isVKMiniApp ? sessionStorage : localStorage;
             storage.setItem('sessionToken', data.sessionToken);
             if (typeof window.loadUserDataByToken === 'function') {
+                alert('[8] calling loadUserDataByToken');
                 await window.loadUserDataByToken(data.sessionToken);
+                alert('[9] loadUserDataByToken finished');
             }
             const modal = document.getElementById('roleModal');
             if (modal) modal.style.display = 'none';
             if (typeof window.showScreen === 'function') {
+                alert('[10] calling showScreen main');
                 window.showScreen('main');
             }
-            console.log('[autoLoginTelegram] Успешно!');
+            alert('[11] autoLogin success');
             return true;
         } else {
-            console.error('[autoLoginTelegram] Ошибка сервера:', data.error || 'Неизвестная ошибка');
+            alert('[12] No sessionToken in response: ' + (data.error || 'unknown'));
         }
     } catch (err) {
-        console.error('[autoLoginTelegram] Исключение:', err);
+        alert('[13] Exception: ' + err.message);
+        console.error(err);
     }
     return false;
 }

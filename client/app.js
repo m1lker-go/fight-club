@@ -79,6 +79,18 @@ window.isVKMiniApp = (function() {
     return false;
 })();
 
+// ========== ОПРЕДЕЛЕНИЕ TELEGRAM WEB APP ==========
+window.isTelegramWebApp = (function() {
+    if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp && window.Telegram.WebApp.initData) return true;
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('telegram')) return true;
+    return false;
+})();
+if (window.isTelegramWebApp) {
+    console.log('[App] Telegram Web App detected');
+    document.body.classList.add('telegram-webapp');
+}
+
 if (window.isVKMiniApp) {
     console.log('[App] VK Mini App detected, applying styles');
     // Добавляем класс на body для CSS-правил

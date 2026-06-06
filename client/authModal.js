@@ -1,6 +1,9 @@
 // authModal.js – модальное окно входа для всех платформ, кроме VK Mini App и Telegram Web App
 // В VK Mini App авторизация происходит автоматически через параметры запуска, поэтому модалка не показывается.
 
+alert('authModal.js version 5 loaded');
+console.log('authModal.js version 5 loaded');
+
 let currentStep = 'method';
 let tempSessionToken = null;
 let tempUserId = null;

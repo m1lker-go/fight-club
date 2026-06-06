@@ -551,7 +551,7 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
 // ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОТМЕТКАМИ И МЕНЮ) -------------------
 function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
     const today = window.getMoscowDate();
-    const userCheckinStatus = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`) === today;
+    const userCheckinStatus = checkedTodayList.includes(userData.id);
     
     let html = `<table class="clans-members-table" style="width:100%; table-layout:fixed; font-size:13px; border-collapse:collapse;">
         <thead>

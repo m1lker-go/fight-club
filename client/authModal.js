@@ -1,8 +1,4 @@
-// authModal.js – модальное окно входа для всех платформ, кроме VK Mini App и Telegram Web App
-// В VK Mini App авторизация происходит автоматически через параметры запуска, поэтому модалка не показывается.
-
-alert('authModal.js version 5 loaded');
-console.log('authModal.js version 5 loaded');
+// authModal.js – модальное окно входа, но для Telegram Web App – автоматическая авторизация
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -23,7 +19,7 @@ function isWebView() {
     return false;
 }
 
-// Получение initData из разных источников
+// Получение initData из разных источников (как в telegram-auth.js)
 function getTelegramInitData() {
     if (window.Telegram?.WebApp?.initData) {
         return window.Telegram.WebApp.initData;
@@ -41,75 +37,52 @@ function getTelegramInitData() {
     return null;
 }
 
-// Автологин в Telegram
+// Автологин в Telegram (точная копия рабочего кода из telegram-auth.js)
 async function autoLoginTelegram(initData) {
-    alert('[1] autoLoginTelegram started');
-    if (!initData) {
-        initData = getTelegramInitData();
-        alert('[2] after getTelegramInitData: ' + (initData ? 'YES' : 'NO'));
-    }
-    if (!initData) {
-        alert('[3] No initData, return false');
-        return false;
-    }
+    if (!initData) return false;
     try {
-        alert('[4] Sending fetch to /auth/telegram-auto');
         const response = await fetch(`${window.API_BASE}/auth/telegram-auto`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData })
         });
-        alert('[5] fetch response status: ' + response.status);
         const data = await response.json();
-        alert('[6] response data: ' + JSON.stringify(data));
         if (data.sessionToken) {
-            alert('[7] sessionToken received, saving');
             const storage = window.isVKMiniApp ? sessionStorage : localStorage;
             storage.setItem('sessionToken', data.sessionToken);
             if (typeof window.loadUserDataByToken === 'function') {
-                alert('[8] calling loadUserDataByToken');
                 await window.loadUserDataByToken(data.sessionToken);
-                alert('[9] loadUserDataByToken finished');
             }
             const modal = document.getElementById('roleModal');
             if (modal) modal.style.display = 'none';
             if (typeof window.showScreen === 'function') {
-                alert('[10] calling showScreen main');
                 window.showScreen('main');
             }
-            alert('[11] autoLogin success');
             return true;
         } else {
-            alert('[12] No sessionToken in response: ' + (data.error || 'unknown'));
+            console.error('Telegram autoLogin error:', data.error);
         }
     } catch (err) {
-        alert('[13] Exception: ' + err.message);
-        console.error(err);
+        console.error('Telegram autoLogin exception:', err);
     }
     return false;
 }
 
 function showAuthModal() {
-    alert('showAuthModal called');
+    // Telegram Mini App – авторизация автоматически (как в telegram-auth.js)
     const initData = getTelegramInitData();
-    alert('initData = ' + (initData ? 'YES' : 'NO'));
-  if (initData) {
-    alert('initData = YES, about to call autoLoginTelegram');
-    if (typeof autoLoginTelegram === 'function') {
-        alert('autoLoginTelegram is a function, calling now');
+    if (initData) {
         autoLoginTelegram(initData).catch(console.error);
-    } else {
-        alert('autoLoginTelegram is NOT a function');
-    }
-    return;
-}
-    // VK Mini App — тоже автоматически
-    if (window.isVKMiniApp === true) {
-        console.log('[AuthModal] VK Mini App: skipping modal, auto-login should handle auth');
         return;
     }
 
-    // Для всех остальных окружений – показываем модальное окно с кнопками
+    // VK Mini App – тоже автоматически (не показываем модалку)
+    if (window.isVKMiniApp === true) {
+        console.log('[AuthModal] VK Mini App: skipping modal');
+        return;
+    }
+
+    // Для всех остальных – показываем модальное окно (код без изменений)
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -159,7 +132,7 @@ function showAuthModal() {
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // --- Обработчики для остальных окружений ---
+    // Обработчики (без изменений)
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
         telegramBtn.addEventListener('click', () => {

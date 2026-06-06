@@ -26,13 +26,18 @@ function showAuthModal() {
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Вход в игру';
 
-    // Если это VK Mini App – не показываем модалку, авторизация автоматическая
+    // Не показываем модальное окно для VK Mini App
     if (window.isVKMiniApp === true) {
         console.log('[AuthModal] VK Mini App: skipping modal, auto-login should handle auth');
         return;
     }
+    // Не показываем модальное окно для Telegram Web App
+    if (window.isTelegramWebApp === true) {
+        console.log('[AuthModal] Telegram Web App: skipping modal, auto-login should handle auth');
+        return;
+    }
 
-    // Для всех остальных окружений (Telegram, браузер, APK) – полный набор кнопок
+    // Для всех остальных окружений (браузер, APK) – полный набор кнопок
     const authMethodsHtml = `
         <div class="auth-methods">
             <button class="auth-btn telegram-btn" id="telegramAuthBtn">

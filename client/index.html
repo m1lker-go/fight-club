@@ -19,6 +19,28 @@
     <!-- VK ID SDK (старая стабильная версия) -->
     <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
     
+    <!-- Telegram WebApp SDK – загружаем сразу, если это Telegram (перед всеми скриптами) -->
+    <script>
+        (function() {
+            function isTelegramWebApp() {
+                if (window.Telegram && window.Telegram.WebApp) return true;
+                var ua = navigator.userAgent.toLowerCase();
+                if (ua.includes('telegram')) return true;
+                if (window.location.search.includes('tgWebAppData')) return true;
+                return false;
+            }
+            if (isTelegramWebApp()) {
+                var script = document.createElement('script');
+                script.src = 'https://telegram.org/js/telegram-web-app.js';
+                script.async = false; // синхронно, чтобы гарантировать наличие
+                document.head.appendChild(script);
+                console.log('[Index] Загружен telegram-web-app.js (Telegram WebApp)');
+            } else {
+                console.log('[Index] Telegram WebApp не требуется, загрузка скрипта пропущена');
+            }
+        })();
+    </script>
+    
     <!-- Иконки сайта -->
     <link rel="icon" type="image/png" href="/assets/favicon.png">
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -99,26 +121,26 @@
         </div>
     </div>
 
-   <!-- Скрипты приложения (порядок важен) -->
-<script src="js/constants.js?v=2"></script>
-<script src="js/helpers.js?v=2"></script>
-<script src="js/audioManager.js?v=2"></script>
-<script src="js/vk-ads.js?v=2"></script>
-<script src="/js/messages-ui.js?v=2"></script>
-<script src="js/screens.js?v=2"></script>
-<script src="authModal.js?v=2"></script>
-<script src="settings.js?v=2"></script>
-<script src="js/fortune.js?v=2"></script>
-<script src="/js/AnimationManager.js?v=2"></script>
-<script src="js/battleLog.js?v=2"></script>
-<script src="js/battleUI.js?v=2"></script>
-<script src="js/task-up.js?v=2"></script>
-<script src="js/forge.js?v=2"></script>
-<script src="js/tower.js?v=2"></script>
-<script src="js/mint.js?v=2"></script>
-<script src="js/gems.js?v=2"></script>
-<script src="app.js?v=2"></script>
-<script src="js/clans.js?v=2"></script>
+    <!-- Скрипты приложения (порядок важен) -->
+    <script src="js/constants.js?v=2"></script>
+    <script src="js/helpers.js?v=2"></script>
+    <script src="js/audioManager.js?v=2"></script>
+    <script src="js/vk-ads.js?v=2"></script>
+    <script src="/js/messages-ui.js?v=2"></script>
+    <script src="js/screens.js?v=2"></script>
+    <script src="authModal.js?v=2"></script>
+    <script src="settings.js?v=2"></script>
+    <script src="js/fortune.js?v=2"></script>
+    <script src="/js/AnimationManager.js?v=2"></script>
+    <script src="js/battleLog.js?v=2"></script>
+    <script src="js/battleUI.js?v=2"></script>
+    <script src="js/task-up.js?v=2"></script>
+    <script src="js/forge.js?v=2"></script>
+    <script src="js/tower.js?v=2"></script>
+    <script src="js/mint.js?v=2"></script>
+    <script src="js/gems.js?v=2"></script>
+    <script src="app.js?v=2"></script>
+    <script src="js/clans.js?v=2"></script>
 
     <!-- Дополнительный скрипт для VK в WebView (APK) -->
     <script>
@@ -139,33 +161,6 @@
                 script.src = '/js/vk-webview.js';
                 document.head.appendChild(script);
                 console.log('[Index] Загружен vk-webview.js для WebView');
-            }
-        })();
-    </script>
-
-    <!-- Условная загрузка Telegram WebApp SDK (только если это действительно Telegram) -->
-    <script>
-        (function() {
-            // Функция для определения, нужно ли загружать Telegram WebApp
-            function isTelegramWebApp() {
-                // Проверяем, открыто ли приложение в Telegram WebView
-                if (window.Telegram && window.Telegram.WebApp) return true;
-                var ua = navigator.userAgent.toLowerCase();
-                if (ua.includes('telegram')) return true;
-                // Проверяем наличие параметров запуска Telegram
-                if (window.location.search.includes('tgWebAppData')) return true;
-                return false;
-            }
-
-            // Если это не Telegram WebApp, не грузим скрипт (экономия времени загрузки)
-            if (isTelegramWebApp()) {
-                var script = document.createElement('script');
-                script.src = 'https://telegram.org/js/telegram-web-app.js';
-                script.async = true;
-                document.head.appendChild(script);
-                console.log('[Index] Загружен telegram-web-app.js (Telegram WebApp)');
-            } else {
-                console.log('[Index] Telegram WebApp не требуется, загрузка скрипта пропущена');
             }
         })();
     </script>

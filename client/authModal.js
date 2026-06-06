@@ -20,12 +20,34 @@ function isWebView() {
     return false;
 }
 
-function showAuthModal() {
-    // Telegram Mini App — авторизация автоматически
+// Вспомогательная функция для получения initData из URL (если Telegram SDK не загрузился)
+function getTelegramInitData() {
+    // Пробуем получить из window.Telegram.WebApp.initData
     if (window.Telegram?.WebApp?.initData) {
+        return window.Telegram.WebApp.initData;
+    }
+    // Парсим из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let tgData = urlParams.get('tgWebAppData');
+    if (tgData) {
+        return decodeURIComponent(tgData);
+    }
+    // Пробуем из hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const tgHashData = hashParams.get('tgWebAppData');
+    if (tgHashData) {
+        return decodeURIComponent(tgHashData);
+    }
+    return null;
+}
+
+function showAuthModal() {
+    // Telegram Mini App — авторизация автоматически (проверяем initData из любого источника)
+    const initData = getTelegramInitData();
+    if (initData) {
         console.log('[AuthModal] Telegram Mini App detected, auto-login...');
         if (typeof autoLoginTelegram === 'function') {
-            autoLoginTelegram().catch(console.error);
+            autoLoginTelegram(initData).catch(console.error);
         }
         return;
     }
@@ -382,9 +404,11 @@ function showusernameModal(userId) {
 window.showAuthModal = showAuthModal;
 window.showusernameModal = showusernameModal;
 
-// Вспомогательная функция для автологина в Telegram (исправленная)
-async function autoLoginTelegram() {
-    const initData = window.Telegram?.WebApp?.initData;
+// Вспомогательная функция для автологина в Telegram (принимает initData, либо получает сама)
+async function autoLoginTelegram(initData) {
+    if (!initData) {
+        initData = getTelegramInitData();
+    }
     if (!initData) {
         console.warn('No initData for Telegram autoLogin');
         return false;

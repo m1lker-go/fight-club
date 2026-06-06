@@ -481,8 +481,8 @@ async function checkAuth() {
         }
     }
 
-    const isTelegramWebApp = !!(tg && tg.initData);
-    if (isTelegramWebApp) {
+    // Telegram Web App – автологин
+    if (window.isTelegramWebApp) {
         console.log('checkAuth: trying auto login via Telegram');
         const autoLogged = await autoLoginTelegram();
         if (autoLogged) return true;

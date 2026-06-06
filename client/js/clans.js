@@ -635,12 +635,13 @@ async function renderClanChat(container, clan) {
 
 // ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
-    const today = window.getMoscowDate();
-    const lastCheckin = localStorage.getItem(`clan_checkin_${clan.id}_${userData.id}`);
-    const alreadyCheckedLocally = (lastCheckin === today);
-    
+    // Получаем актуальный статус с сервера
+    const statusRes = await window.apiRequest('/clans/checkin/status');
+    const statusData = await statusRes.json();
+    const alreadyChecked = statusData.already_checked;
+
     let html = `<div style="text-align:center;">`;
-    if (!alreadyCheckedLocally) {
+    if (!alreadyChecked) {
         html += `<button id="checkinBtn" class="clans-submit-btn">Отметиться</button>`;
     } else {
         html += `<p>✅ Вы уже отметились сегодня!</p>`;
@@ -651,7 +652,7 @@ async function renderClanCheckin(container, clan) {
              </div>`;
     html += `</div>`;
     container.innerHTML = html;
-    
+
     const checkinBtn = document.getElementById('checkinBtn');
     if (checkinBtn) {
         let isProcessing = false;
@@ -666,10 +667,11 @@ async function renderClanCheckin(container, clan) {
                 const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
-                    localStorage.setItem(`clan_checkin_${clan.id}_${userData.id}`, today);
-                    showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
-                    renderClanCheckin(container, clan);
+                    // Обновляем данные пользователя (монеты, уголь)
                     if (typeof refreshData === 'function') refreshData();
+                    // Полностью перезагружаем раздел клана – обновятся все вкладки и список отметившихся
+                    await renderClans();
+                    showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
                 } else {
                     showToast(data.error, 1500);
                     btn.innerText = originalText;

@@ -91,10 +91,10 @@ async function autoLoginTelegram(initData) {
 
 function showAuthModal() {
     alert('showAuthModal called');
-    // Telegram Mini App — авторизация автоматически
     const initData = getTelegramInitData();
+    alert('initData = ' + (initData ? 'YES' : 'NO'));
     if (initData) {
-        console.log('[AuthModal] Telegram Mini App detected, вызываем autoLoginTelegram');
+        alert('calling autoLoginTelegram');
         autoLoginTelegram(initData).catch(console.error);
         return;
     }

@@ -1,4 +1,4 @@
-// task-up.js – полностью исправленный (синтаксис и реферальная система)
+// task-up.js – полностью исправленный (синтаксис, реферальная система, адвент в модалке)
 
 let countdownInterval = null;
 let lastTasksData = null;
@@ -297,7 +297,6 @@ async function loadDailyTasks() {
 
            let isReadyToClaim = false;
 
-// Если задание уже завершено (completed = true), то кнопка неактивна
 if (!task.completed) {
     if (task.id !== 9) {
         isReadyToClaim = (task.progress >= task.target_value);
@@ -356,7 +355,6 @@ document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
     if (!btn.dataset.taskId) return;
 
     btn.addEventListener('click', async (e) => {
-        // Блокируем кнопку, чтобы избежать повторных кликов
         if (btn.disabled) return;
         btn.disabled = true;
 
@@ -379,7 +377,7 @@ document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
                 try {
                     const updRes = await window.apiRequest('/tasks/daily/update/ads', {
                         method: 'POST',
-                        body: JSON.stringify({ task_id: taskId }) // ← передаём ID задания
+                        body: JSON.stringify({ task_id: taskId })
                     });
                     const updData = await updRes.json();
                     if (updData.success) {
@@ -510,6 +508,7 @@ function stopCountdownTimer() {
     }
 }
 
+// Новая версия showAdventCalendar (открывает в модалке)
 function showAdventCalendar() {
     window.apiRequest('/tasks/advent', { method: 'GET' })
         .then(res => {
@@ -519,7 +518,7 @@ function showAdventCalendar() {
         .then(data => {
             console.log('[showAdventCalendar] data received', data);
             if (data.error) throw new Error(data.error);
-            renderAdventCalendar(data);
+            showAdventModal(data);
         })
         .catch(err => {
             console.error('Advent error:', err);
@@ -527,56 +526,9 @@ function showAdventCalendar() {
         });
 }
 
-function renderAdventCalendar(data) {
-    const currentDay = data.currentDay;
-    const daysInMonth = data.daysInMonth;
-    const nextAvailable = data.nextAvailable;
-    const lastClaimed = data.lastClaimed;
-    const content = document.getElementById('content');
-
-    let html = '<h3 style="text-align:center;">Адвент-календарь</h3><div class="advent-grid">';
-    for (let day = 1; day <= daysInMonth; day++) {
-        let className = 'advent-day';
-        if (day <= lastClaimed) {
-            className += ' claimed';
-        } else if (day === nextAvailable && nextAvailable !== null) {
-            className += ' available';
-        } else {
-            className += ' locked';
-        }
-
-        const reward = getAdventReward(day, daysInMonth);
-        let iconHtml = '';
-        if (reward.type === 'coins') {
-            iconHtml = '<i class="fas fa-coins" style="color: white;"></i>';
-        } else if (reward.type === 'exp') {
-            iconHtml = '<span style="font-weight:bold; color: white;">EXP</span>';
-        } else if (reward.type === 'item') {
-            let color = '#aaa';
-            if (reward.rarity === 'uncommon') color = '#2ecc71';
-            else if (reward.rarity === 'rare') color = '#2e86de';
-            else if (reward.rarity === 'epic') color = '#9b59b6';
-            else if (reward.rarity === 'legendary') color = '#f1c40f';
-            iconHtml = '<i class="fas fa-tshirt" style="color: ' + color + ';"></i>';
-        }
-
-        html += '<div class="' + className + '" data-day="' + day + '"><div class="advent-icon">' + iconHtml + '</div><div class="advent-day-number">' + day + '</div></div>';
-    }
-    html += '</div><button class="btn" id="backFromAdvent">Назад</button>';
-    content.innerHTML = html;
-
-    document.querySelectorAll('.advent-day.available').forEach(div => {
-        div.addEventListener('click', () => {
-            const day = parseInt(div.dataset.day);
-            claimAdventDay(day, daysInMonth);
-        });
-    });
-
-    document.getElementById('backFromAdvent').addEventListener('click', () => renderTasks());
-}
-
 let isClaiming = false;
 
+// Исправленная claimAdventDay (без вызова renderAdventCalendar)
 function claimAdventDay(day, daysInMonth) {
     if (isClaiming) {
         console.log('[ADVENT] Already claiming, ignoring');
@@ -611,18 +563,24 @@ function claimAdventDay(day, daysInMonth) {
             } else {
                 showToast('Вы получили: ' + data.reward, 2000);
             }
-            window.apiRequest('/tasks/advent', { method: 'GET' })
-                .then(res => res.json())
-                .then(updatedData => {
-                    renderAdventCalendar(updatedData);
-                    refreshData();
-                    isClaiming = false;
-                })
-                .catch(err => {
-                    console.error(err);
-                    showToast('Ошибка обновления календаря', 1500);
-                    isClaiming = false;
-                });
+            if (typeof refreshData === 'function') refreshData();
+            if (typeof loadDailyTasks === 'function') loadDailyTasks();
+            
+            // Обновляем модальное окно, если оно открыто
+            const modal = document.getElementById('roleModal');
+            if (modal && modal.style.display === 'flex') {
+                window.apiRequest('/tasks/advent', { method: 'GET' })
+                    .then(res => res.json())
+                    .then(updatedData => {
+                        const modalBody = document.getElementById('modalBody');
+                        if (modalBody) {
+                            modalBody.innerHTML = '';
+                            renderAdventCalendarInContainer(updatedData, modalBody);
+                        }
+                    })
+                    .catch(err => console.error('Error refreshing advent modal:', err));
+            }
+            isClaiming = false;
         }
     })
     .catch(err => {
@@ -667,9 +625,18 @@ function showClassChoiceModalForAdvent(expAmount) {
                 showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) showLevelUpModal(classChoice);
-                window.apiRequest('/tasks/advent', { method: 'GET' })
-                    .then(res => res.json())
-                    .then(updatedData => renderAdventCalendar(updatedData));
+                // Обновляем модальное окно календаря, если оно открыто
+                const modal = document.getElementById('roleModal');
+                if (modal && modal.style.display === 'flex') {
+                    const updatedData = await window.apiRequest('/tasks/advent', { method: 'GET' }).then(r => r.json());
+                    const modalBody = document.getElementById('modalBody');
+                    if (modalBody) {
+                        modalBody.innerHTML = '';
+                        renderAdventCalendarInContainer(updatedData, modalBody);
+                    }
+                } else {
+                    if (typeof loadDailyTasks === 'function') loadDailyTasks();
+                }
             }
         });
     });

@@ -16,25 +16,25 @@ window.AnimationManager = (function() {
     };
     
     const skinAnimations = {
-        12: {
-            attack: '/assets/skins/animations/attack_skin11.gif',
-            dodge: '/assets/skins/animations/dodge_skin11.gif',
-            victory: '/assets/skins/animations/victory_skin11.gif',
-            defeat: '/assets/skins/animations/defeat_skin11.gif'
-        },
-        13: {
-            attack: '/assets/skins/animations/attack_skin12.gif',
-            dodge: '/assets/skins/animations/dodge_skin12.gif',
-            victory: '/assets/skins/animations/victory_skin12.gif',
-            defeat: '/assets/skins/animations/defeat_skin12.gif'
-        },
-        14: {
-            attack: '/assets/skins/animations/attack_skin14.gif',
-            dodge: '/assets/skins/animations/dodge_skin14.gif',
-            victory: '/assets/skins/animations/victory_skin14.gif',
-            defeat: '/assets/skins/animations/defeat_skin14.gif'
-        }
-    };
+    12: {
+        attack: '/assets/skins/animations/attack_skin11.gif',
+        dodge: '/assets/skins/animations/dodge_skin11.gif',
+        victory: '/assets/skins/animations/win-skin11.gif',
+        defeat: '/assets/skins/animations/lose-skin11.gif'
+    },
+    13: {
+        attack: '/assets/skins/animations/attack_skin12.gif',
+        dodge: '/assets/skins/animations/dodge_skin12.gif',
+        victory: '/assets/skins/animations/win-skin12.gif',
+        defeat: '/assets/skins/animations/lose-skin12.gif'
+    },
+    14: {
+        attack: '/assets/skins/animations/attack_skin14.gif',
+        dodge: '/assets/skins/animations/dodge_skin14.gif',
+        victory: '/assets/skins/animations/win-skin14.gif',
+        defeat: '/assets/skins/animations/lose-skin14.gif'
+    }
+};
     
     function preloadImage(url) {
         return new Promise((resolve, reject) => {

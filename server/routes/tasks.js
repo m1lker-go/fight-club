@@ -66,7 +66,18 @@ router.get('/advent', async (req, res) => {
             );
         }
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        const lastClaimDateStr = lastClaimDate ? lastClaimDate.toISOString().slice(0,10) : null;
+        let lastClaimDateStr = null;
+        if (lastClaimDate) {
+            if (typeof lastClaimDate === 'string') {
+                lastClaimDateStr = lastClaimDate.slice(0,10);
+            } else if (lastClaimDate instanceof Date) {
+                lastClaimDateStr = lastClaimDate.toISOString().slice(0,10);
+            } else {
+                try {
+                    lastClaimDateStr = new Date(lastClaimDate).toISOString().slice(0,10);
+                } catch(e) {}
+            }
+        }
         let availableDay = null;
         if (lastClaimed < currentDay && (!lastClaimDate || lastClaimDateStr !== todayStr)) {
             availableDay = lastClaimed + 1;
@@ -99,7 +110,7 @@ router.post('/advent/claim', async (req, res) => {
         const currentMonth = mskTime.getMonth() + 1;
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
-        const todayStr = dailyTasks.getMoscowDate();
+        const todayStr = getMoscowDate();
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
             lastClaimDate = null;
@@ -110,7 +121,19 @@ router.post('/advent/claim', async (req, res) => {
         }
         const nextDay = lastClaimed + 1;
         if (nextDay > currentDay) throw new Error('This day is not available yet');
-        if (lastClaimDate && lastClaimDate === todayStr) throw new Error('You have already claimed today\'s reward');
+        let lastClaimDateStr = null;
+        if (lastClaimDate) {
+            if (typeof lastClaimDate === 'string') {
+                lastClaimDateStr = lastClaimDate.slice(0,10);
+            } else if (lastClaimDate instanceof Date) {
+                lastClaimDateStr = lastClaimDate.toISOString().slice(0,10);
+            } else {
+                try {
+                    lastClaimDateStr = new Date(lastClaimDate).toISOString().slice(0,10);
+                } catch(e) {}
+            }
+        }
+        if (lastClaimDateStr === todayStr) throw new Error('You have already claimed today\'s reward');
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const reward = getAdventReward(nextDay, daysInMonth);
         let rewardDescription = '';

@@ -4,6 +4,7 @@ const { pool } = require('../db');
 const dailyTasks = require('../utils/dailyTasks');
 const { generateItemByRarity } = require('../utils/botGenerator');
 const { itemNames, fixedBonuses } = require('../data/itemData');
+const { getMoscowDate } = require('../utils/dailyTasks');
 
 // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ АДВЕНТА ========================
 

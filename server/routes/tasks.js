@@ -43,20 +43,22 @@ router.get('/advent', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        const userRes = await client.query(
+            'SELECT advent_last_claimed_day, advent_last_claim_date, advent_month, advent_year FROM users WHERE id = $1',
+            [userId]
+        );
         if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-        const user = userRes.rows[0];
-        let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date;
-        let adventMonth = user.advent_month;
-        let adventYear = user.advent_year;
+        let { advent_last_claimed_day, advent_last_claim_date, advent_month, advent_year } = userRes.rows[0];
+        let lastClaimed = advent_last_claimed_day || 0;
+        let lastClaimDate = advent_last_claim_date;
         const now = new Date();
         const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
         const currentMonth = mskTime.getMonth() + 1;
         const currentYear = mskTime.getFullYear();
         const currentDay = mskTime.getDate();
-        const todayStr = dailyTasks.getMoscowDate();
-        if (adventMonth !== currentMonth || adventYear !== currentYear) {
+
+        // Сброс при смене месяца
+        if (advent_month !== currentMonth || advent_year !== currentYear) {
             lastClaimed = 0;
             lastClaimDate = null;
             await client.query(
@@ -64,14 +66,23 @@ router.get('/advent', async (req, res) => {
                 [currentMonth, currentYear, userId]
             );
         }
+
         const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        const nextDay = lastClaimed + 1;
-        let availableDay = null;
-        const lastMsk = lastClaimDate ? toMoscowDateString(lastClaimDate) : null;
-        if (nextDay <= currentDay && (!lastMsk || lastMsk !== todayStr)) {
-            availableDay = nextDay;
+        const todayStr = getMoscowDate();
+        
+        // Приводим lastClaimDate к московской дате
+        let lastClaimDateStr = null;
+        if (lastClaimDate) {
+            const mskDate = new Date(lastClaimDate.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+            lastClaimDateStr = mskDate.toISOString().split('T')[0];
         }
-        res.json({ currentDay, daysInMonth, nextAvailable: availableDay, lastClaimed, lastClaimDate });
+
+        let availableDay = null;
+        if (lastClaimed < currentDay && (!lastClaimDate || lastClaimDateStr !== todayStr)) {
+            availableDay = lastClaimed + 1;
+        }
+
+        res.json({ currentDay, daysInMonth, nextAvailable: availableDay, lastClaimed });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: e.message });

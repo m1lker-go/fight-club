@@ -1,6 +1,7 @@
 process.env.TZ = 'Europe/Moscow';
 
 const express = require('express');
+const cors = require('cors');
 const cron = require('node-cron');
 const { pool, initDB } = require('./db');
 const { updatePlayerPower } = require('./utils/power');
@@ -19,6 +20,26 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('client'));
+
+// ========== НАСТРОЙКА CORS (только через пакет) ==========
+const allowedOrigins = [
+    'https://cat-fight.ru',
+    'https://api.cat-fight.ru',
+    'https://vk.com',
+    'https://cat-fight.ru'
+];
+app.use(cors({
+    origin: function(origin, callback) {
+        // Разрешаем запросы без origin (например, из мобильных приложений)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 
 // ========== ПУБЛИЧНЫЕ РОУТЫ ==========
 app.use('/auth', require('./routes/auth-ext'));

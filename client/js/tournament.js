@@ -368,6 +368,7 @@ function truncateName(name, maxLen = 13) {
 }
 
 function showSeriesReplayModal(matchLog) {
+    console.log('matchLog.games[0]:', matchLog.games[0]);
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -377,6 +378,7 @@ function showSeriesReplayModal(matchLog) {
 
     let gamesHtml = '';
     if (matchLog && matchLog.games && Array.isArray(matchLog.games)) {
+        console.log('userData.id:', userData.id);
         matchLog.games.forEach((game, idx) => {
             // Определяем победу: сначала проверяем winnerId (новые турниры), затем winner (старые)
             let isPlayerWin;

@@ -1,8 +1,9 @@
+// server/utils/scheduler.js
 const { pool } = require('../db');
-const dailyTasks = require('./dailyTasks');
 const { simulateBattle } = require('./battleSimulator');
 const { addExp } = require('./exp');
 const { updatePlayerPower } = require('./power');
+const { getMoscowDateString, getCurrentMoscowDate, getCurrentMoscowMonth, getCurrentMoscowYear } = require('./ServerTime');
 
 const TOURNAMENT_SIZE = 32;
 
@@ -14,8 +15,11 @@ async function resetDailyTasks() {
     try {
         await client.query('BEGIN');
 
-        const today = dailyTasks.getMoscowDate();
-        const yesterday = new Date(today);
+        const today = getMoscowDateString();               // единая московская дата
+        const nowMoscow = getCurrentMoscowDate();
+        const currentMonth = getCurrentMoscowMonth();
+        const currentYear = getCurrentMoscowYear();
+        const yesterday = new Date(nowMoscow);
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
@@ -72,7 +76,18 @@ async function resetDailyTasks() {
         `);
         await client.query('UPDATE clan_members SET daily_checkin_date = NULL');
         await client.query('DELETE FROM tournament_draft');
-        
+
+        // ========== СБРОС АДВЕНТ-КАЛЕНДАРЯ ПРИ СМЕНЕ МЕСЯЦА ==========
+        await client.query(`
+            UPDATE users
+            SET advent_last_claimed_day = 0,
+                advent_last_claim_date = NULL,
+                advent_month = $1,
+                advent_year = $2
+            WHERE advent_month IS DISTINCT FROM $1
+               OR advent_year IS DISTINCT FROM $2
+        `, [currentMonth, currentYear]);
+
         await client.query('COMMIT');
         console.log('[SCHEDULER] Ежедневный сброс выполнен успешно');
     } catch (err) {
@@ -149,9 +164,6 @@ async function resetSeason() {
 }
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ТУРНИРА ====================
-
-// (опциональная задержка, пока закомментирована, чтобы не увеличивать время)
-// const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function getPlayerTournamentStats(client, userId, className, subclassName) {
     const classData = await client.query(
@@ -249,11 +261,6 @@ async function awardTournamentRewards(client, userId, place, seasonId, chosenCla
         );
     }
 
-    const rewardTextParts = [];
-    if (reward.coins > 0) rewardTextParts.push(`${reward.coins} монет`);
-    if (reward.diamonds > 0) rewardTextParts.push(`${reward.diamonds} алмазов`);
-    if (reward.exp > 0) rewardTextParts.push(`${reward.exp} опыта для класса ${chosenClass}`);
-    if (reward.chest) rewardTextParts.push(`${reward.chest === 'rare' ? 'Редкий' : 'Необычный'} сундук`);
     const subject = `Итоги турнира Золотого Когтя`;
     const body = `Поздравляю! Вы заняли ${place} место в ежедневном турнире! Получите свою награду.`;
     await client.query(
@@ -264,7 +271,7 @@ async function awardTournamentRewards(client, userId, place, seasonId, chosenCla
 }
 
 async function getSeasonId(client) {
-    const today = dailyTasks.getMoscowDate();
+    const today = getMoscowDateString();
     let season = await client.query(
         'SELECT id FROM tournament_seasons WHERE start_date <= $1 AND end_date >= $1',
         [today]
@@ -332,7 +339,7 @@ async function runTournament() {
     console.log('[TOURNAMENT] Запуск ежедневного турнира (32 участника, best-of-3)');
     const client = await pool.connect();
     try {
-        const todayDate = dailyTasks.getMoscowDate();
+        const todayDate = getMoscowDateString();
 
         const existing = await client.query(
             'SELECT 1 FROM tournament_matches WHERE tournament_date = $1 LIMIT 1',
@@ -404,8 +411,6 @@ async function runTournament() {
                 logs.push(battle);
                 if (battle.winner === 'player') wins1++;
                 else wins2++;
-                // если нужны задержки – раскомментировать:
-                // if (game < 3 && wins1 < 2 && wins2 < 2) await sleep(5000);
             }
             const winner = wins1 >= 2 ? p1 : p2;
             const matchLog = {
@@ -413,7 +418,6 @@ async function runTournament() {
                 games: logs.map(l => ({ winner: l.winner, messages: l.messages, states: l.states })),
                 finalScore: `${wins1}:${wins2}`
             };
-            // Сохраняем матч с количеством побед
             await client.query(
                 `INSERT INTO tournament_matches 
                  (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, 
@@ -438,7 +442,6 @@ async function runTournament() {
                 }
                 const winner = await playBestOfThree(p1, p2, roundNum, i/2 + 1);
                 nextRound.push(winner);
-                // задержка между матчами – при желании: await sleep(5000);
             }
             currentRoundPlayers = nextRound;
             roundNum++;

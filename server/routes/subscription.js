@@ -2,12 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const dailyTasks = require('../utils/dailyTasks');
-
-function toMoscowDateString(dbDate) {
-    if (!dbDate) return null;
-    const d = new Date(dbDate);
-    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
-}
+const { getMoscowDateString, toMoscowDateString } = require('../utils/ServerTime');
 
 // ========== СТАТУС ПОДПИСКИ (требует авторизацию) ==========
 router.get('/status', async (req, res) => {
@@ -25,7 +20,7 @@ router.get('/status', async (req, res) => {
         const row = result.rows[0];
         const hasSubscription = row.subscription_expiry ? new Date(row.subscription_expiry) > new Date() : false;
 
-        const todayMsk = dailyTasks.getMoscowDate();
+        const todayMsk = getMoscowDateString();
         const lastFreeMsk = toMoscowDateString(row.last_free_sub_coin);
         const freeCoinAvailable = (lastFreeMsk !== todayMsk);
 
@@ -62,7 +57,7 @@ router.post('/claim-free-coin', async (req, res) => {
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
 
-        const todayMsk = dailyTasks.getMoscowDate();
+        const todayMsk = getMoscowDateString();
         const lastFreeMsk = toMoscowDateString(user.last_free_sub_coin);
         if (lastFreeMsk === todayMsk) {
             throw new Error('Бесплатная монета уже получена сегодня');
@@ -100,7 +95,7 @@ router.post('/claim-daily-reward', async (req, res) => {
             throw new Error('Подписка не активна');
         }
 
-        const todayMsk = dailyTasks.getMoscowDate();
+        const todayMsk = getMoscowDateString();
         const lastRewardMsk = toMoscowDateString(user.last_daily_sub_reward);
         if (lastRewardMsk === todayMsk) {
             throw new Error('Ежедневная награда уже получена сегодня');

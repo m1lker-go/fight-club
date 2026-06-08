@@ -378,10 +378,9 @@ function showSeriesReplayModal(matchLog) {
     let gamesHtml = '';
     if (matchLog && matchLog.games && Array.isArray(matchLog.games)) {
         matchLog.games.forEach((game, idx) => {
-            const isPlayerWin = (game.winner === 'player');
+            const isPlayerWin = (game.winnerId === userData.id);
             const statusText = isPlayerWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
             const statusColor = isPlayerWin ? '#2ecc71' : '#e74c3c';
-            // Берём имена из game (добавлены на сервере) или подставляем fallback
             const playerName = game.playerName || userData?.username || 'Игрок';
             const enemyName = game.enemyName || 'Противник';
             gamesHtml += `

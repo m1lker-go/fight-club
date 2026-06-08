@@ -404,29 +404,35 @@ async function runTournament() {
 
         // Вспомогательная функция для проведения серии до 2 побед
         async function playBestOfThree(p1, p2, round, matchIdx) {
-            let wins1 = 0, wins2 = 0;
-            const logs = [];
-            for (let game = 1; game <= 3 && wins1 < 2 && wins2 < 2; game++) {
-                const battle = simulateBattle(p1.stats, p2.stats, p1.class, p2.class, p1.username, p2.username, p1.subclass, p2.subclass);
-                logs.push(battle);
-                if (battle.winner === 'player') wins1++;
-                else wins2++;
-            }
-            const winner = wins1 >= 2 ? p1 : p2;
-            const matchLog = {
-                winner: winner.id,
-                games: logs.map(l => ({ winner: l.winner, messages: l.messages, states: l.states })),
-                finalScore: `${wins1}:${wins2}`
-            };
-            await client.query(
-                `INSERT INTO tournament_matches 
-                 (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, 
-                  player1_wins, player2_wins, match_log, is_shadow)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-                [seasonId, todayDate, round, matchIdx, p1.id, p2.id, winner.id, wins1, wins2, matchLog, p1.isShadow || p2.isShadow]
-            );
-            return winner;
-        }
+    let wins1 = 0, wins2 = 0;
+    const logs = [];
+    for (let game = 1; game <= 3 && wins1 < 2 && wins2 < 2; game++) {
+        const battle = simulateBattle(p1.stats, p2.stats, p1.class, p2.class, p1.username, p2.username, p1.subclass, p2.subclass);
+        logs.push({
+            winner: battle.winner,           // 'player' или 'enemy'
+            messages: battle.messages,
+            states: battle.states,
+            playerName: p1.username,         // ← добавили
+            enemyName: p2.username           // ← добавили
+        });
+        if (battle.winner === 'player') wins1++;
+        else wins2++;
+    }
+    const winner = wins1 >= 2 ? p1 : p2;
+    const matchLog = {
+        winner: winner.id,
+        games: logs,
+        finalScore: `${wins1}:${wins2}`
+    };
+    await client.query(
+        `INSERT INTO tournament_matches 
+         (season_id, tournament_date, round_number, match_index, player1_id, player2_id, winner_id, 
+          player1_wins, player2_wins, match_log, is_shadow)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [seasonId, todayDate, round, matchIdx, p1.id, p2.id, winner.id, wins1, wins2, matchLog, p1.isShadow || p2.isShadow]
+    );
+    return winner;
+}
 
         // Раунды 1/16, 1/8, 1/4
         let currentRoundPlayers = participants;

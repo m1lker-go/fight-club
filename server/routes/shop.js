@@ -3,16 +3,9 @@ const router = express.Router();
 const { pool } = require('../db');
 const { itemNames, fixedBonuses } = require('../data/itemData');
 const dailyTasks = require('../utils/dailyTasks');
+const { getMoscowDateString, toMoscowDateString } = require('../utils/ServerTime');
 
-// Единая функция получения московской даты
-const getMoscowDate = () => dailyTasks.getMoscowDate();
-
-function toMoscowDateString(dbDate) {
-    if (!dbDate) return null;
-    const d = new Date(dbDate);
-    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
-}
-
+// Функция генерации предмета из сундука (без изменений)
 function generateItemFromChest(chestType) {
     const classes = ['warrior', 'assassin', 'mage'];
     const className = classes[Math.floor(Math.random() * classes.length)];
@@ -104,7 +97,7 @@ router.post('/buychest', async (req, res) => {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
 
         let priceCoins = 0;
         let priceDiamonds = 0;
@@ -213,7 +206,7 @@ router.get('/freecoal', async (req, res) => {
     try {
         const userRes = await client.query('SELECT last_free_coal_date FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         const lastFreeMsk = toMoscowDateString(userRes.rows[0].last_free_coal_date);
         const freeAvailable = lastFreeMsk !== today;
         res.json({ freeAvailable });
@@ -237,7 +230,7 @@ router.post('/buy-coal', async (req, res) => {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
 
         if (free) {
             const lastFreeMsk = toMoscowDateString(user.last_free_coal_date);
@@ -271,7 +264,6 @@ router.post('/buy-coal-coins', async (req, res) => {
     const { amount } = req.body;
     if (!amount) return res.status(400).json({ error: 'Missing amount' });
 
-    // Цены фиксированы и должны совпадать с клиентскими (mint.js)
     const priceMap = {
         10: 25,
         50: 100,
@@ -364,7 +356,7 @@ router.get('/subscription/free-coin-status', async (req, res) => {
     try {
         const userRes = await client.query('SELECT last_free_sub_coin FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         const lastMsk = toMoscowDateString(userRes.rows[0].last_free_sub_coin);
         const available = lastMsk !== today;
         res.json({ available });
@@ -385,7 +377,7 @@ router.post('/subscription/claim-free-coin', async (req, res) => {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         const lastMsk = toMoscowDateString(user.last_free_sub_coin);
         if (lastMsk === today) throw new Error('Already claimed today');
         await client.query('UPDATE users SET coins = coins + 20, last_free_sub_coin = $1 WHERE id = $2', [today, userId]);
@@ -406,7 +398,6 @@ router.post('/buy-scroll', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { scroll_id } = req.body;
     
-    // Преобразуем строку в число для корректного сравнения
     const scrollIdNum = parseInt(scroll_id, 10);
     if (![1037, 1038, 1039].includes(scrollIdNum)) {
         return res.status(400).json({ error: 'Invalid scroll' });

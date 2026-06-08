@@ -23,22 +23,18 @@ function getSecondsUntil(hour, minute) {
 }
 
 function getCurrentStage(status, now) {
-    // статус с сервера: canRegister, tournamentActive, tournamentCompleted
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
     if (status.tournamentCompleted) return 'results';
     if (status.canRegister) return 'registration';
     if (status.tournamentActive) {
-        // внутри интервала 20:00-20:09
         if ((currentHour === 20 && currentMinute < 10) || (currentHour === 19 && currentMinute >= 50)) {
             return 'active';
         }
-        // если прошло 10 минут, но турнир ещё не отмечен как завершённый – переключаем на результаты
         if (currentHour === 20 && currentMinute >= 10) return 'results';
         return 'active';
     }
-    // регистрация закрыта, но турнир ещё не активен – ожидание (19:50-19:59)
     if (currentHour === 19 && currentMinute >= 50) return 'waiting';
     return 'results';
 }
@@ -100,7 +96,7 @@ async function renderTournamentTab() {
         } else if (stage === 'active') {
             const secondsLeft = getSecondsUntil(20, 10);
             renderActiveStage(container, secondsLeft);
-        } else { // results
+        } else {
             await renderBracket(container);
         }
     } catch (err) {
@@ -241,7 +237,7 @@ function renderWaitingStage(container, secondsToStart) {
         remaining--;
         if (remaining <= 0) {
             clearInterval(waitingTimerInterval);
-            renderTournamentTab(); // переходим в активную стадию
+            renderTournamentTab();
         } else {
             updateTimerDisplay(remaining);
         }
@@ -282,7 +278,7 @@ function renderActiveStage(container, secondsLeft) {
         remaining--;
         if (remaining <= 0) {
             clearInterval(waitingTimerInterval);
-            renderTournamentTab(); // переходим к результатам
+            renderTournamentTab();
         } else {
             updateTimerDisplay(remaining);
         }
@@ -299,7 +295,6 @@ async function renderBracket(container) {
             return;
         }
 
-        // Группируем матчи по раундам
         const rounds = {};
         bracket.matches.forEach(m => {
             if (!rounds[m.round]) rounds[m.round] = [];
@@ -307,7 +302,6 @@ async function renderBracket(container) {
         });
 
         let html = '<div class="tournament-bracket">';
-        // Раунды 1-4
         for (let roundNum = 1; roundNum <= 4; roundNum++) {
             const roundMatches = rounds[roundNum] || [];
             if (roundMatches.length === 0 && roundNum === 4) break;
@@ -317,7 +311,6 @@ async function renderBracket(container) {
             });
             html += `</div>`;
         }
-        // Раунд 5: матч за 3-е место и финал
         const round5Matches = rounds[5] || [];
         const thirdPlaceMatch = round5Matches.find(m => m.match_index === 2);
         const finalMatch = round5Matches.find(m => m.match_index === 1);
@@ -330,7 +323,6 @@ async function renderBracket(container) {
         html += '</div><button id="closeBracketBtn" class="tournament-close-btn">Закрыть</button>';
         container.innerHTML = html;
 
-        // Обработчики кнопок просмотра (только для своих матчей)
         document.querySelectorAll('.tournament-replay-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const matchId = btn.dataset.matchId;
@@ -368,7 +360,13 @@ function renderMatchRow(match) {
     `;
 }
 
-// --- Модальное окно для просмотра серии матчей (best-of-3) ---
+// --- Модальное окно для просмотра серии матчей (best-of-3) с улучшенным дизайном ---
+function truncateName(name, maxLen = 13) {
+    if (!name) return '—';
+    if (name.length <= maxLen) return name;
+    return name.slice(0, maxLen) + '…';
+}
+
 function showSeriesReplayModal(matchLog) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -376,14 +374,37 @@ function showSeriesReplayModal(matchLog) {
     if (!modal || !modalTitle || !modalBody) return;
 
     modalTitle.innerText = 'Просмотр матчей серии';
-    modalBody.innerHTML = `
-        <div class="series-replay-list">
-            ${matchLog.games.map((game, idx) => `
-                <div class="series-game-item" data-game-index="${idx}">
-                    <span>Игра ${idx+1}</span>
-                    <button class="watch-game-btn" data-game-index="${idx}"><i class="fas fa-play"></i> Смотреть</button>
+
+    let gamesHtml = '';
+    if (matchLog && matchLog.games && Array.isArray(matchLog.games)) {
+        matchLog.games.forEach((game, idx) => {
+            const isPlayerWin = (game.winner === 'player');
+            const statusText = isPlayerWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
+            const statusColor = isPlayerWin ? '#2ecc71' : '#e74c3c';
+            // Берём имена из game (добавлены на сервере) или подставляем fallback
+            const playerName = game.playerName || userData?.username || 'Игрок';
+            const enemyName = game.enemyName || 'Противник';
+            gamesHtml += `
+                <div class="series-game-item" data-game-index="${idx}" style="display: flex; align-items: center; justify-content: space-between; background-color: #2a303c; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; border: 1px solid #00aaff;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; margin-bottom: 4px; color: #00aaff;">Сражение №${idx+1}</div>
+                        <div style="font-size: 14px;">
+                            ${truncateName(playerName)} : ${truncateName(enemyName)} - <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+                        </div>
+                    </div>
+                    <button class="watch-game-btn" data-game-index="${idx}" style="background-color: #2f3542; border: 1px solid #aaa; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #aaa;">
+                        <i class="fas fa-play"></i>
+                    </button>
                 </div>
-            `).join('')}
+            `;
+        });
+    } else {
+        gamesHtml = '<p style="color:#aaa;">Не удалось загрузить данные матчей</p>';
+    }
+
+    modalBody.innerHTML = `
+        <div class="series-replay-list" style="display: flex; flex-direction: column;">
+            ${gamesHtml}
         </div>
         <div id="gameReplayContainer" style="margin-top: 20px; display: none;">
             <div id="gameReplayLog" class="battle-log" style="height: 300px; overflow-y: auto;"></div>
@@ -435,7 +456,7 @@ function showSeriesReplayModal(matchLog) {
     window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 }
 
-// --- Лидеры (без изменений) ---
+// --- Лидеры ---
 async function renderLeadersTab() {
     const container = document.getElementById('tournamentContent');
     if (!container) return;

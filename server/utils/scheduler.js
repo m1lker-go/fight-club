@@ -403,17 +403,19 @@ async function runTournament() {
         const seasonId = await getSeasonId(client);
 
         // Вспомогательная функция для проведения серии до 2 побед
-        async function playBestOfThree(p1, p2, round, matchIdx) {
+       async function playBestOfThree(p1, p2, round, matchIdx) {
     let wins1 = 0, wins2 = 0;
     const logs = [];
     for (let game = 1; game <= 3 && wins1 < 2 && wins2 < 2; game++) {
         const battle = simulateBattle(p1.stats, p2.stats, p1.class, p2.class, p1.username, p2.username, p1.subclass, p2.subclass);
+        const winnerId = battle.winner === 'player' ? p1.id : p2.id;
         logs.push({
-            winner: battle.winner,           // 'player' или 'enemy'
+            winner: battle.winner,
+            winnerId: winnerId,
             messages: battle.messages,
             states: battle.states,
-            playerName: p1.username,         // ← добавили
-            enemyName: p2.username           // ← добавили
+            playerName: p1.username,
+            enemyName: p2.username
         });
         if (battle.winner === 'player') wins1++;
         else wins2++;

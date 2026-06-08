@@ -1,4 +1,5 @@
-process.env.TZ = 'Europe/Moscow';
+// server/index.js
+// Удалена строка process.env.TZ = 'Europe/Moscow'; – теперь время управляется через ServerTime.js
 
 const express = require('express');
 const cron = require('node-cron');
@@ -332,6 +333,7 @@ async function startServer() {
             console.log(`🚀 Server running on port ${PORT}`);
         });
         // ========== ПЛАНИРОВЩИК CRON ==========
+        // Все задачи используют timezone: 'Europe/Moscow', а внутренние функции используют ServerTime.js
         cron.schedule('0 0 * * *', resetDailyTasks, { timezone: 'Europe/Moscow' });
         cron.schedule('0 0 1 * *', resetSeason, { timezone: 'Europe/Moscow' });
         cron.schedule('0 20 * * *', runTournament, { timezone: 'Europe/Moscow' });
@@ -340,9 +342,10 @@ async function startServer() {
             console.log('[CRON] Checking expired subscriptions...');
             const client = await pool.connect();
             try {
+                // Используем CURRENT_DATE AT TIME ZONE 'Europe/Moscow' для надёжности
                 const expiredUsers = await client.query(`
                     SELECT id FROM users
-                    WHERE subscription_expiry < CURRENT_DATE
+                    WHERE subscription_expiry < (CURRENT_DATE AT TIME ZONE 'Europe/Moscow')
                       AND subscription_expiry IS NOT NULL
                       AND subscription_expiry_notified = FALSE
                 `);

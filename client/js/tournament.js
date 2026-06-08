@@ -360,7 +360,7 @@ function renderMatchRow(match) {
     `;
 }
 
-// --- Модальное окно для просмотра серии матчей (best-of-3) с улучшенным дизайном ---
+// --- Модальное окно для просмотра серии матчей (best-of-3) с корректным определением победителя ---
 function truncateName(name, maxLen = 13) {
     if (!name) return '—';
     if (name.length <= maxLen) return name;
@@ -368,7 +368,6 @@ function truncateName(name, maxLen = 13) {
 }
 
 function showSeriesReplayModal(matchLog) {
-    console.log('matchLog.games[0]:', matchLog.games[0]);
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -378,15 +377,29 @@ function showSeriesReplayModal(matchLog) {
 
     let gamesHtml = '';
     if (matchLog && matchLog.games && Array.isArray(matchLog.games)) {
-        console.log('userData.id:', userData.id);
         matchLog.games.forEach((game, idx) => {
-            // Определяем победу: сначала проверяем winnerId (новые турниры), затем winner (старые)
-            let isPlayerWin;
+            // Определяем, является ли текущий пользователь player1 или player2 в этой игре
+            const playerNameFromGame = game.playerName || '';
+            const enemyNameFromGame = game.enemyName || '';
+            const isUserPlayer1 = (playerNameFromGame === userData.username);
+            const isUserPlayer2 = (enemyNameFromGame === userData.username);
+            
+            let isPlayerWin = false;
             if (game.winnerId !== undefined) {
+                // Новые турниры (с winnerId)
                 isPlayerWin = (Number(game.winnerId) === Number(userData.id));
             } else {
-                isPlayerWin = (game.winner === 'player');
+                // Старые турниры – определяем по полю winner и имени
+                if (isUserPlayer1) {
+                    isPlayerWin = (game.winner === 'player');
+                } else if (isUserPlayer2) {
+                    isPlayerWin = (game.winner === 'enemy');
+                } else {
+                    // Fallback – если не удалось определить, считаем поражением
+                    isPlayerWin = false;
+                }
             }
+            
             const statusText = isPlayerWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
             const statusColor = isPlayerWin ? '#2ecc71' : '#e74c3c';
             const playerName = game.playerName || userData?.username || 'Игрок';

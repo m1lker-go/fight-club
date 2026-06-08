@@ -4,15 +4,9 @@ const { pool } = require('../db');
 const dailyTasks = require('../utils/dailyTasks');
 const { generateItemByRarity } = require('../utils/botGenerator');
 const { itemNames, fixedBonuses } = require('../data/itemData');
-const { getMoscowDate } = require('../utils/dailyTasks');
+const { getMoscowDateString, toMoscowDateString, getCurrentMoscowDate, getCurrentMoscowMonth, getCurrentMoscowYear, getCurrentMoscowDay } = require('../utils/ServerTime');
 
 // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ АДВЕНТА ========================
-
-const toMoscowDateString = (dbDate) => {
-    if (!dbDate) return null;
-    const d = new Date(dbDate);
-    return d.toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
-};
 
 function getAdventReward(day, daysInMonth) {
     const coinExpBase = [50, 50, 60, 60, 70, 70, 80, 80, 90, 90, 100, 100, 120, 120, 150, 150, 200, 200, 250, 250, 300, 300, 400, 400, 500, 500];
@@ -47,41 +41,33 @@ router.get('/advent', async (req, res) => {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) return res.status(404).json({ error: 'User not found' });
         const user = userRes.rows[0];
+        
         let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date;
         let adventMonth = user.advent_month;
         let adventYear = user.advent_year;
-        const now = new Date();
-        const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const currentMonth = mskTime.getMonth() + 1;
-        const currentYear = mskTime.getFullYear();
-        const currentDay = mskTime.getDate();
-        const todayStr = getMoscowDate();
+        
+        const currentMonth = getCurrentMoscowMonth();
+        const currentYear = getCurrentMoscowYear();
+        const currentDay = getCurrentMoscowDay();
+        const todayStr = getMoscowDateString();
+        
+        // Сброс месяца
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
-            lastClaimDate = null;
             await client.query(
                 `UPDATE users SET advent_last_claimed_day = 0, advent_last_claim_date = NULL, advent_month = $1, advent_year = $2 WHERE id = $3`,
                 [currentMonth, currentYear, userId]
             );
         }
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        let lastClaimDateStr = null;
-        if (lastClaimDate) {
-            if (typeof lastClaimDate === 'string') {
-                lastClaimDateStr = lastClaimDate.slice(0,10);
-            } else if (lastClaimDate instanceof Date) {
-                lastClaimDateStr = lastClaimDate.toISOString().slice(0,10);
-            } else {
-                try {
-                    lastClaimDateStr = new Date(lastClaimDate).toISOString().slice(0,10);
-                } catch(e) {}
-            }
-        }
+        
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getUTCDate();
+        const lastClaimDateStr = user.advent_last_claim_date ? toMoscowDateString(user.advent_last_claim_date) : null;
+        
         let availableDay = null;
-        if (lastClaimed < currentDay && (!lastClaimDate || lastClaimDateStr !== todayStr)) {
+        if (lastClaimed < currentDay && (!lastClaimDateStr || lastClaimDateStr !== todayStr)) {
             availableDay = lastClaimed + 1;
         }
+        
         res.json({ currentDay, daysInMonth, nextAvailable: availableDay, lastClaimed });
     } catch (e) {
         console.error(e);
@@ -98,47 +84,42 @@ router.post('/advent/claim', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
+        
+        const userRes = await client.query('SELECT * FROM users WHERE id = $1 FOR UPDATE', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
+        
         let lastClaimed = user.advent_last_claimed_day || 0;
-        let lastClaimDate = user.advent_last_claim_date;
         let adventMonth = user.advent_month;
         let adventYear = user.advent_year;
-        const now = new Date();
-        const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const currentMonth = mskTime.getMonth() + 1;
-        const currentYear = mskTime.getFullYear();
-        const currentDay = mskTime.getDate();
-        const todayStr = getMoscowDate();
+        
+        const currentMonth = getCurrentMoscowMonth();
+        const currentYear = getCurrentMoscowYear();
+        const currentDay = getCurrentMoscowDay();
+        const todayStr = getMoscowDateString();
+        
+        // Сброс месяца
         if (adventMonth !== currentMonth || adventYear !== currentYear) {
             lastClaimed = 0;
-            lastClaimDate = null;
             await client.query(
                 `UPDATE users SET advent_last_claimed_day = 0, advent_last_claim_date = NULL, advent_month = $1, advent_year = $2 WHERE id = $3`,
                 [currentMonth, currentYear, userId]
             );
         }
+        
         const nextDay = lastClaimed + 1;
         if (nextDay > currentDay) throw new Error('This day is not available yet');
-        let lastClaimDateStr = null;
-        if (lastClaimDate) {
-            if (typeof lastClaimDate === 'string') {
-                lastClaimDateStr = lastClaimDate.slice(0,10);
-            } else if (lastClaimDate instanceof Date) {
-                lastClaimDateStr = lastClaimDate.toISOString().slice(0,10);
-            } else {
-                try {
-                    lastClaimDateStr = new Date(lastClaimDate).toISOString().slice(0,10);
-                } catch(e) {}
-            }
-        }
+        
+        const lastClaimDateStr = user.advent_last_claim_date ? toMoscowDateString(user.advent_last_claim_date) : null;
         if (lastClaimDateStr === todayStr) throw new Error('You have already claimed today\'s reward');
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+        
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getUTCDate();
         const reward = getAdventReward(nextDay, daysInMonth);
+        
         let rewardDescription = '';
         let rewardItem = null;
         let leveledUp = false;
+        
         if (reward.type === 'coins') {
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [reward.amount, userId]);
             rewardDescription = `${reward.amount} монет`;
@@ -186,10 +167,12 @@ router.post('/advent/claim', async (req, res) => {
             rewardDescription = `Предмет: ${item.name} (${item.rarity})`;
             rewardItem = item;
         }
+        
         await client.query(
             `UPDATE users SET advent_last_claimed_day = $1, advent_last_claim_date = $2 WHERE id = $3`,
             [nextDay, todayStr, userId]
         );
+        
         await client.query('COMMIT');
         res.json({ success: true, reward: rewardDescription, nextAvailable: nextDay + 1, item: rewardItem, newLastClaimed: nextDay, leveledUp });
     } catch (e) {
@@ -410,7 +393,6 @@ router.post('/daily/update/ads', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { task_id } = req.body;
-    // Проверяем, что передан корректный task_id (11 или 12)
     if (!task_id || (task_id !== 11 && task_id !== 12)) {
         return res.status(400).json({ error: 'Invalid task_id' });
     }
@@ -423,7 +405,6 @@ router.post('/daily/update/ads', async (req, res) => {
         const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
 
         if (subscriptionActive) {
-            // Для подписчиков — автоначисление, но обновляем только одно задание
             await client.query('BEGIN');
             const userRow = await client.query(
                 'SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1 FOR UPDATE',
@@ -468,7 +449,6 @@ router.post('/daily/update/ads', async (req, res) => {
             await client.query('COMMIT');
             res.json({ success: true, autoCompleted });
         } else {
-            // Для обычных пользователей — увеличиваем прогресс только для переданного задания
             await dailyTasks.updateTaskProgress(userId, task_id, 1);
             res.json({ success: true, autoCompleted: false });
         }

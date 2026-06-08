@@ -3,9 +3,7 @@ const router = express.Router();
 const { pool } = require('../db');
 const { generateItemByRarity } = require('../utils/botGenerator');
 const dailyTasks = require('../utils/dailyTasks');
-
-// Единая функция получения московской даты (синхронизирована со сбросом)
-const getMoscowDate = () => dailyTasks.getMoscowDate();
+const { getMoscowDateString } = require('../utils/ServerTime');
 
 // Шансы выигрыша (сумма 100)
 const prizes = [
@@ -38,7 +36,7 @@ router.get('/status', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         await client.query(`
             INSERT INTO user_fortune (user_id, free_spins_left, purchased_today, last_reset_date)
             VALUES ($1, 3, 0, $2)
@@ -77,7 +75,7 @@ router.post('/buy-tickets', async (req, res) => {
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         // проверяем лимит покупок за день
         const fortuneRes = await client.query(
             'SELECT purchased_today FROM user_fortune WHERE user_id = $1',

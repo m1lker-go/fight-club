@@ -378,7 +378,13 @@ function showSeriesReplayModal(matchLog) {
     let gamesHtml = '';
     if (matchLog && matchLog.games && Array.isArray(matchLog.games)) {
         matchLog.games.forEach((game, idx) => {
-            const isPlayerWin = (game.winnerId === userData.id);
+            // Определяем победу: сначала проверяем winnerId (новые турниры), затем winner (старые)
+            let isPlayerWin;
+            if (game.winnerId !== undefined) {
+                isPlayerWin = (Number(game.winnerId) === Number(userData.id));
+            } else {
+                isPlayerWin = (game.winner === 'player');
+            }
             const statusText = isPlayerWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
             const statusColor = isPlayerWin ? '#2ecc71' : '#e74c3c';
             const playerName = game.playerName || userData?.username || 'Игрок';

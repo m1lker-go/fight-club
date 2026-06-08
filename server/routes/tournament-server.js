@@ -4,7 +4,7 @@ const { pool } = require('../db');
 const { simulateBattle } = require('../utils/battleSimulator');
 const { addExp } = require('../utils/exp');
 const { updatePlayerPower } = require('../utils/power');
-const { getMoscowDate } = require('../utils/dailyTasks');
+const { getMoscowDateString, getCurrentMoscowDate } = require('../utils/ServerTime');
 
 // Константы
 const TOURNAMENT_SIZE = 32;
@@ -14,7 +14,7 @@ const TOURNAMENT_START_HOUR = 20;
 
 // Вспомогательная функция: получить или создать текущий сезон
 async function getCurrentSeason(client) {
-    const todayStr = getMoscowDate();
+    const todayStr = getMoscowDateString();
     const today = new Date(todayStr);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -41,16 +41,15 @@ router.get('/status', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const now = new Date();
-        const mskTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-        const currentHour = mskTime.getHours();
-        const currentMinute = mskTime.getMinutes();
+        const mskNow = getCurrentMoscowDate();
+        const currentHour = mskNow.getUTCHours();
+        const currentMinute = mskNow.getUTCMinutes();
         
         const canRegister = (currentHour > REGISTRATION_START_HOUR || (currentHour === REGISTRATION_START_HOUR && currentMinute >= 0)) &&
                             (currentHour < REGISTRATION_DEADLINE_HOUR || (currentHour === REGISTRATION_DEADLINE_HOUR && currentMinute <= 50));
         
         const tournamentActive = (currentHour >= TOURNAMENT_START_HOUR);
-        const todayDate = getMoscowDate();
+        const todayDate = getMoscowDateString();
         
         const regRes = await client.query(
             `SELECT class_choice, subclass_choice FROM tournament_registrations 
@@ -141,7 +140,7 @@ router.post('/register', async (req, res) => {
         }
         const { class_choice, subclass_choice } = draft.rows[0];
         const seasonId = await getCurrentSeason(client);
-        const todayDate = getMoscowDate();
+        const todayDate = getMoscowDateString();
         const existing = await client.query(
             'SELECT id FROM tournament_registrations WHERE user_id = $1 AND registered_at::DATE = $2',
             [userId, todayDate]
@@ -168,7 +167,7 @@ router.post('/unregister', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const todayDate = getMoscowDate();
+        const todayDate = getMoscowDateString();
         await client.query(
             'DELETE FROM tournament_registrations WHERE user_id = $1 AND registered_at::DATE = $2',
             [userId, todayDate]
@@ -187,7 +186,7 @@ router.get('/bracket', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const client = await pool.connect();
     try {
-        const todayDate = getMoscowDate();
+        const todayDate = getMoscowDateString();
         const matches = await client.query(
             `SELECT m.id, m.round_number as round, m.match_index, 
                     m.player1_id, u1.username as player1_name,

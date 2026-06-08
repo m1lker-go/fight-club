@@ -1,14 +1,13 @@
+// server/utils/dailyTasks.js
 const { pool } = require('../db');
+const { getMoscowDateString, toMoscowDateString, getCurrentMoscowDate } = require('./ServerTime');
+
+// Алиас для обратной совместимости (чтобы не менять везде вызовы)
+const getMoscowDate = getMoscowDateString;
 
 function log(msg, data) {
     console.log(`[DAILY] ${msg}`);
     if (data) console.log(data);
-}
-
-function getMoscowDate() {
-    const d = new Date();
-    const msk = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-    return msk.toISOString().split('T')[0];
 }
 
 function parseProgress(p) {
@@ -118,7 +117,10 @@ async function updateCoalGainProgress(userId, amount) {
 }
 
 module.exports = {
-    getMoscowDate,
+    getMoscowDate,          // алиас на getMoscowDateString из ServerTime (для обратной совместимости)
+    getMoscowDateString,    // если где-то нужно явно
+    toMoscowDateString,
+    getCurrentMoscowDate,
     parseProgress,
     getTasksList,
     updateTaskProgress,

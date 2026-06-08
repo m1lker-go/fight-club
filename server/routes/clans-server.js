@@ -392,8 +392,7 @@ router.get('/checkin/status', async (req, res) => {
         if (memberRes.rows.length === 0) return res.json({ error: 'Не в клане' });
         const today = getMoscowDateString();
         const lastCheckin = memberRes.rows[0].daily_checkin_date;
-        // Сравниваем как строки (дата в БД может быть в формате DATE или TIMESTAMP)
-        const alreadyChecked = lastCheckin ? lastCheckin.toISOString().slice(0,10) === today : false;
+        const alreadyChecked = lastCheckin ? (toMoscowDateString(lastCheckin) === today) : false;
         const totalMembers = await client.query(`SELECT COUNT(*) FROM clan_members WHERE clan_id = $1`, [memberRes.rows[0].clan_id]);
         const checkedToday = await client.query(
             `SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2`,

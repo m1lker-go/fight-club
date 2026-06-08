@@ -1,15 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
-const { containsForbiddenWords } = require('../utils/forbiddenWords'); // импорт единого списка
+const { containsForbiddenWords } = require('../utils/forbiddenWords');
+const { getMoscowDateString } = require('../utils/ServerTime'); // единая функция времени
 
 // ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -------------------
-
-function getMoscowDate() {
-    const d = new Date();
-    const msk = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-    return msk.toISOString().split('T')[0];
-}
 
 function getMaxMembers(level) {
     return 10 + Math.floor((level - 1) / 5);
@@ -145,7 +140,7 @@ router.get('/my', async (req, res) => {
              ORDER BY cm.role = 'leader' DESC, cm.joined_at`,
             [clanId]
         );
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         const checkedRes = await client.query(
             `SELECT user_id FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2`,
             [clanId, today]
@@ -395,7 +390,7 @@ router.get('/checkin/status', async (req, res) => {
             [userId]
         );
         if (memberRes.rows.length === 0) return res.json({ error: 'Не в клане' });
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
         const lastCheckin = memberRes.rows[0].daily_checkin_date;
         // Сравниваем как строки (дата в БД может быть в формате DATE или TIMESTAMP)
         const alreadyChecked = lastCheckin ? lastCheckin.toISOString().slice(0,10) === today : false;
@@ -428,7 +423,7 @@ router.post('/checkin', async (req, res) => {
         const memberRes = await client.query('SELECT clan_id FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         const clanId = memberRes.rows[0].clan_id;
-        const today = getMoscowDate();
+        const today = getMoscowDateString();
 
         // 2. Атомарно обновляем дату, только если она ещё не равна сегодня
         const updateRes = await client.query(
@@ -465,7 +460,7 @@ router.post('/checkin', async (req, res) => {
     }
 });
 
-// 12. Клановая казна
+// 13. Клановая казна
 router.get('/treasury', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -481,7 +476,7 @@ router.get('/treasury', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 13. Пожертвовать монеты
+// 14. Пожертвовать монеты
 router.post('/donate', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -507,7 +502,7 @@ router.post('/donate', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 14. Клановые бонусы
+// 15. Клановые бонусы
 router.get('/bonuses', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -526,7 +521,7 @@ router.get('/bonuses', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 15. Купить очко навыка
+// 16. Купить очко навыка
 router.post('/buy-point', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -559,7 +554,7 @@ router.post('/buy-point', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 16. Перераспределить очки
+// 17. Перераспределить очки
 router.post('/redistribute', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -588,7 +583,7 @@ router.post('/redistribute', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Получить публичную информацию о клане
+// 18. Получить публичную информацию о клане
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
     if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
@@ -639,7 +634,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// 18. Редактирование настроек клана
+// 19. Редактирование настроек клана
 router.put('/:id/settings', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -683,7 +678,7 @@ router.put('/:id/settings', async (req, res) => {
     }
 });
 
-// 19. Расформировать клан
+// 20. Расформировать клан
 router.delete('/:id', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -711,7 +706,7 @@ router.delete('/:id', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 20. Подать заявку
+// 21. Подать заявку
 router.post('/apply', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -744,7 +739,7 @@ router.post('/apply', async (req, res) => {
     }
 });
 
-// 21. Отменить свою заявку
+// 22. Отменить свою заявку
 router.post('/cancel-application', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -764,7 +759,7 @@ router.post('/cancel-application', async (req, res) => {
     }
 });
 
-// 22. Получить список заявок для лидера
+// 23. Получить список заявок для лидера
 router.get('/applications', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -795,7 +790,7 @@ router.get('/applications', async (req, res) => {
     }
 });
 
-// 23. Принять заявку
+// 24. Принять заявку
 router.post('/accept-application', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -838,7 +833,7 @@ router.post('/accept-application', async (req, res) => {
     }
 });
 
-// 24. Отклонить заявку
+// 25. Отклонить заявку
 router.post('/reject-application', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -872,7 +867,7 @@ router.post('/reject-application', async (req, res) => {
     }
 });
 
-// 25. Изменить один клановый талант
+// 26. Изменить один клановый талант
 router.post('/adjust-talent', async (req, res) => {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });

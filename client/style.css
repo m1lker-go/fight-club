@@ -5948,8 +5948,61 @@ body {
     border: none;
 }
 
-/* Отступ для системных кнопок VK Mini App */
-
+/* VK Mini App: кастомные кнопки управления */
 body.vk-mini-app .top-bar {
-    padding-top: 44px !important;
+    padding: 8px 12px !important;        /* уменьшаем отступы, чтобы кнопки поместились */
+    font-size: 13px;
+}
+
+body.vk-mini-app .top-bar .power,
+body.vk-mini-app .top-bar .rating,
+body.vk-mini-app .top-bar .coins,
+body.vk-mini-app .top-bar .diamonds,
+body.vk-mini-app .top-bar .energy {
+    gap: 4px;
+}
+
+body.vk-mini-app .top-bar i {
+    font-size: 12px;
+}
+
+body.vk-mini-app .top-bar span {
+    font-size: 12px;
+}
+
+.vk-custom-buttons {
+    display: none;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    gap: 10px;
+    z-index: 100;
+}
+
+body.vk-mini-app .vk-custom-buttons {
+    display: flex;
+}
+
+.vk-custom-close,
+.vk-custom-menu {
+    background: rgba(35, 40, 51, 0.9);
+    border: 1px solid #00aaff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.vk-custom-close:hover,
+.vk-custom-menu:hover {
+    background: #00aaff;
+    color: #1a1f2b;
 }

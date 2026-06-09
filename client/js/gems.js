@@ -10,43 +10,37 @@ async function showLegalModal() {
     try {
         const response = await fetch('/legal.html');
         if (!response.ok) throw new Error('Ошибка загрузки страницы');
-        let html = await response.text();
+        const html = await response.text();
 
-        // Создаём временный DOM-элемент для парсинга HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // Удаляем заголовок h1 (чтобы не дублировать)
-        const h1 = doc.querySelector('h1');
-        if (h1) h1.remove();
-
-        // Получаем содержимое контейнера .container (или body)
-        let container = doc.querySelector('.container');
-        if (!container) container = doc.body;
-
-        // Вставляем содержимое в модальное окно
         const modal = document.getElementById('roleModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
 
         modalTitle.innerText = 'Реквизиты и оферта';
-        modalBody.innerHTML = `<div style="max-height: 60vh; overflow-y: auto; padding: 5px;">${container.innerHTML}</div>`;
+        modalBody.innerHTML = `<div style="max-height: 60vh; overflow-y: auto; padding: 5px;">${html}</div>`;
         modal.style.display = 'flex';
 
-        // Обработка кнопки "Магазин в игре"
-        const shopBtn = modalBody.querySelector('a[href="shop.html"]');
+        // Кнопка "Скачать PDF"
+        const downloadBtn = modalBody.querySelector('#legalDownloadBtn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', () => {
+                const link = document.createElement('a');
+                link.href = '/legal/terms.pdf';
+                link.download = 'terms.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        // Кнопка "Магазин в игре" – закрывает модалку и переключается на алмазную лавку
+        const shopBtn = modalBody.querySelector('#legalShopBtn');
         if (shopBtn) {
-            shopBtn.removeAttribute('href');
-            shopBtn.classList.add('btn');
-            shopBtn.addEventListener('click', (e) => {
-                e.preventDefault();
+            shopBtn.addEventListener('click', () => {
                 modal.style.display = 'none';
-                // Переключаемся на магазин (вкладка Алмазная лавка)
                 if (typeof showScreen === 'function') {
                     showScreen('trade');
-                    if (typeof window.setTradeSubtab === 'function') {
-                        window.setTradeSubtab('gems');
-                    } else if (typeof tradeSubtab !== 'undefined') {
+                    if (typeof tradeSubtab !== 'undefined') {
                         tradeSubtab = 'gems';
                         if (typeof renderTrade === 'function') renderTrade();
                     }
@@ -54,13 +48,6 @@ async function showLegalModal() {
             });
         }
 
-        // Обработка кнопки "Скачать PDF" (ссылка уже есть, но можно добавить атрибут download)
-        const downloadLink = modalBody.querySelector('a[href="/legal/terms.pdf"]');
-        if (downloadLink && !downloadLink.hasAttribute('download')) {
-            downloadLink.setAttribute('download', 'terms.pdf');
-        }
-
-        // Закрытие модального окна
         const closeBtn = modal.querySelector('.close');
         if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
         window.onclick = (event) => {

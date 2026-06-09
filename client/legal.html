@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Реквизиты и оферта – Cat Fighting</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #1a1f2b;
             color: #fff;
@@ -30,27 +26,12 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             border: 1px solid #00aaff;
         }
-        h1 {
-            color: #00aaff;
-            font-size: 24px;
-            margin-bottom: 16px;
-            text-align: center;
-        }
         h2 {
             color: #00aaff;
             margin: 20px 0 10px;
             font-size: 18px;
         }
-        p {
-            margin-bottom: 12px;
-        }
-        a {
-            color: #00aaff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+        p { margin-bottom: 12px; }
         .buttons {
             display: flex;
             gap: 16px;
@@ -68,22 +49,16 @@
             color: white;
             cursor: pointer;
             transition: all 0.2s;
-            text-align: center;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
-        .btn i {
-            font-size: 18px;
-            color: #00aaff;
-        }
+        .btn i { font-size: 18px; color: #00aaff; }
         .btn:hover {
             background-color: #00aaff;
             color: #1a1f2b;
         }
-        .btn:hover i {
-            color: #1a1f2b;
-        }
+        .btn:hover i { color: #1a1f2b; }
         .footer {
             margin-top: 24px;
             font-size: 12px;
@@ -95,25 +70,21 @@
 </head>
 <body>
 <div class="container">
-    <h1><i class="fas fa-file-contract"></i> Реквизиты и оферта</h1>
-
     <h2>Продавец</h2>
     <p><strong>Самозанятый:</strong> Лисовский Руслан Олегович</p>
     <p><strong>ИНН:</strong> 021904557375</p>
     <p><strong>Почта для связи:</strong> m1lker994@gmail.com</p>
 
     <h2>Договор-оферта</h2>
-    <p>
-        Все покупки регулируются условиями публичной оферты.
-    </p>
+    <p>Все покупки регулируются условиями публичной оферты.</p>
 
     <div class="buttons">
-        <a href="/legal/terms.pdf" download class="btn">
+        <button class="btn" id="legalDownloadBtn">
             <i class="fas fa-download"></i> Скачать PDF
-        </a>
-        <a href="shop.html" class="btn">
+        </button>
+        <button class="btn" id="legalShopBtn">
             <i class="fas fa-store"></i> Магазин в игре
-        </a>
+        </button>
     </div>
 
     <div class="footer">

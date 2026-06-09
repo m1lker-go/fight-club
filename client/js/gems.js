@@ -5,6 +5,28 @@ let pendingFreeCoin = false;
 
 console.log('[gems.js] loaded');
 
+// Функция показа модального окна с офертой
+async function showLegalModal() {
+    try {
+        const response = await fetch('/legal.html');
+        if (!response.ok) throw new Error('Ошибка загрузки оферты');
+        const html = await response.text();
+        const modal = document.getElementById('roleModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        if (!modal || !modalTitle || !modalBody) return;
+        modalTitle.innerText = 'Реквизиты и оферта';
+        modalBody.innerHTML = `<div style="max-height: 60vh; overflow-y: auto; padding: 5px;">${html}</div>`;
+        modal.style.display = 'flex';
+        const closeBtn = modal.querySelector('.close');
+        if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
+    } catch (err) {
+        console.error('Ошибка загрузки оферты', err);
+        if (typeof showToast === 'function') showToast('Не удалось загрузить оферту', 1500);
+    }
+}
+
 async function loadSubscriptionStatus() {
     console.log('[loadSubscriptionStatus] start');
     try {
@@ -115,11 +137,15 @@ async function renderGems(container) {
                 <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.
             </div>
             <div class="shop-note-new">
-                <i class="fas fa-file-contract"></i> <a href="https://cat-fight.ru/legal.html" target="_blank" style="color: #aaa; text-decoration: underline;">Реквизиты и оферта</a>
+                <i class="fas fa-file-contract"></i> <button id="showLegalBtn" class="legal-btn" style="background: none; border: none; color: #aaa; text-decoration: underline; cursor: pointer;">Реквизиты и оферта</button>
             </div>
         </div>
     `;
     container.innerHTML = html;
+
+    // Обработчик кнопки оферты
+    const legalBtn = document.getElementById('showLegalBtn');
+    if (legalBtn) legalBtn.addEventListener('click', showLegalModal);
 
     document.getElementById('viewSubscriptionBtn')?.addEventListener('click', () => {
         console.log('[gems] viewSubscriptionBtn clicked');
@@ -273,7 +299,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-    // Бесплатная монета (без изменений)
+    // Бесплатная монета
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -310,7 +336,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Ежедневная награда подписчика (без изменений)
+    // Ежедневная награда подписчика
     const dailyBtn = document.getElementById('dailyRewardBtn');
     if (dailyBtn && !dailyBtn.disabled) {
         dailyBtn.addEventListener('click', async () => {
@@ -342,7 +368,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Покупка подписки (исправлена для VK)
+    // Покупка подписки
     const buySubBtn = document.getElementById('buySubscriptionBtnNew');
     if (buySubBtn) {
         buySubBtn.addEventListener('click', async () => {

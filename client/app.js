@@ -108,8 +108,11 @@ if (window.isVKMiniApp) {
 }
 
 // ========== ДОБАВЛЕНИЕ КАСТОМНЫХ КНОПОК УПРАВЛЕНИЯ ДЛЯ VK MINI APP ==========
+let vkButtonsAdded = false;
+
 function addCustomVKButtons() {
     if (!window.isVKMiniApp) return;
+    if (vkButtonsAdded) return;
     const topBar = document.querySelector('.top-bar');
     if (!topBar) return;
     if (document.querySelector('.vk-custom-buttons')) return;
@@ -121,15 +124,15 @@ function addCustomVKButtons() {
         <button class="vk-custom-menu" title="Меню">⋮</button>
     `;
     topBar.appendChild(buttonsDiv);
+    vkButtonsAdded = true;
 
-    // Кнопка закрытия
+    // Обработчики остаются без изменений
     buttonsDiv.querySelector('.vk-custom-close').addEventListener('click', () => {
         if (typeof vkBridge !== 'undefined') {
             vkBridge.send('VKWebAppClose').catch(e => console.warn('[VK] close error', e));
         }
     });
 
-    // Кнопка меню (показывает action sheet с опциями)
     buttonsDiv.querySelector('.vk-custom-menu').addEventListener('click', () => {
         if (typeof vkBridge !== 'undefined') {
             vkBridge.send('VKWebAppShowActionSheet', {
@@ -230,10 +233,14 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
         .then(() => {
             console.log('[VK Bridge] init OK');
             
-            // Скрыть нативные кнопки навигации VK (если поддерживается)
-            vkBridge.send('VKWebAppSetViewSettings', {
-                navigation_bar: { visible: false }
-            }).catch(e => console.warn('[VK] Не удалось скрыть навиг. панель', e));
+           // Скрываем навигацию и статус‑бар, а также отключаем свайп назад
+Promise.all([
+    vkBridge.send('VKWebAppSetViewSettings', {
+        navigation_bar: { visible: false },
+        status_bar: { visible: false }
+    }),
+    vkBridge.send('VKWebAppDisableSwipeBack')
+]).catch(e => console.warn('[VK] Не удалось полностью скрыть нативную панель', e));
             
             // Добавить свои кнопки
             addCustomVKButtons();

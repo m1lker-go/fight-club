@@ -5,59 +5,76 @@ let pendingFreeCoin = false;
 
 console.log('[gems.js] loaded');
 
-// Функция показа модального окна с офертой
+// Функция показа модального окна с офертой (встроенная версия)
 async function showLegalModal() {
-    try {
-        const response = await fetch('/legal.html');
-        if (!response.ok) throw new Error('Ошибка загрузки страницы');
-        const html = await response.text();
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
 
-        const modal = document.getElementById('roleModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalBody = document.getElementById('modalBody');
+    modalTitle.innerText = 'Реквизиты и оферта';
 
-        modalTitle.innerText = 'Реквизиты и оферта';
-        modalBody.innerHTML = `<div style="max-height: 60vh; overflow-y: auto; padding: 5px;">${html}</div>`;
-        modal.style.display = 'flex';
+    // Встроенный HTML с реквизитами и кнопками
+    modalBody.innerHTML = `
+        <div style="max-height: 60vh; overflow-y: auto; padding: 5px;">
+            <h2 style="color: #00aaff; margin-top: 0;">Продавец</h2>
+            <p><strong>Самозанятый:</strong> Лисовский Руслан Олегович</p>
+            <p><strong>ИНН:</strong> 021904557375</p>
+            <p><strong>Почта для связи:</strong> m1lker994@gmail.com</p>
 
-        // Кнопка "Скачать PDF"
-        const downloadBtn = modalBody.querySelector('#legalDownloadBtn');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => {
-                const link = document.createElement('a');
-                link.href = '/legal/terms.pdf';
-                link.download = 'terms.pdf';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }
+            <h2 style="color: #00aaff;">Договор-оферта</h2>
+            <p>Все покупки регулируются условиями публичной оферты.</p>
 
-        // Кнопка "Магазин в игре" – закрывает модалку и переключается на алмазную лавку
-        const shopBtn = modalBody.querySelector('#legalShopBtn');
-        if (shopBtn) {
-            shopBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-                if (typeof showScreen === 'function') {
-                    showScreen('trade');
-                    if (typeof tradeSubtab !== 'undefined') {
-                        tradeSubtab = 'gems';
-                        if (typeof renderTrade === 'function') renderTrade();
-                    }
-                }
-            });
-        }
+            <div style="display: flex; gap: 16px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+                <button id="legalDownloadBtn" class="legal-modal-btn" style="background-color: #2f3542; border: 2px solid #00aaff; border-radius: 40px; padding: 12px 24px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-download"></i> Скачать PDF
+                </button>
+                <button id="legalShopBtn" class="legal-modal-btn" style="background-color: #2f3542; border: 2px solid #00aaff; border-radius: 40px; padding: 12px 24px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-store"></i> Магазин в игре
+                </button>
+            </div>
 
-        const closeBtn = modal.querySelector('.close');
-        if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-        window.onclick = (event) => {
-            if (event.target === modal) modal.style.display = 'none';
-        };
+            <div style="margin-top: 24px; font-size: 12px; color: #aaa; text-align: center;">
+                <i class="fas fa-gavel"></i> Возврат средств возможен только в соответствии с условиями оферты.
+            </div>
+        </div>
+    `;
 
-    } catch (err) {
-        console.error('Ошибка загрузки оферты', err);
-        if (typeof showToast === 'function') showToast('Не удалось загрузить оферту', 1500);
+    modal.style.display = 'flex';
+
+    // Кнопка "Скачать PDF"
+    const downloadBtn = document.getElementById('legalDownloadBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = '/legal/terms.pdf';
+            link.download = 'terms.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
     }
+
+    // Кнопка "Магазин в игре" – закрывает модалку и переключается на алмазную лавку
+    const shopBtn = document.getElementById('legalShopBtn');
+    if (shopBtn) {
+        shopBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            if (typeof showScreen === 'function') {
+                showScreen('trade');
+                if (typeof tradeSubtab !== 'undefined') {
+                    tradeSubtab = 'gems';
+                    if (typeof renderTrade === 'function') renderTrade();
+                }
+            }
+        });
+    }
+
+    // Закрытие по крестику и клику вне модалки
+    const closeBtn = modal.querySelector('.close');
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target === modal) modal.style.display = 'none';
+    };
 }
 
 async function loadSubscriptionStatus() {

@@ -3,7 +3,11 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool } = require('../db');
 
-// Информация о товарах (itemdefid -> название, цена в голосах, картинка)
+// Секретный ключ из настроек VK Mini App
+const VK_APP_SECRET = process.env.VK_APP_SECRET;
+const VK_PAY_SECRET = process.env.VK_PAY_SECRET; // может не понадобиться
+
+// Информация о товарах
 const itemsCatalog = {
     1: { title: '50 алмазов', price: 15, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_1.png' },
     2: { title: '150 алмазов', price: 57, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_2.png' },
@@ -14,12 +18,7 @@ const itemsCatalog = {
     7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
-/**
- * Проверяет подпись VK для уведомления
- * @param {Object} body - тело запроса (все поля)
- * @param {string} secret - секретный ключ приложения VK
- * @returns {boolean}
- */
+// Проверка подписи VK (MD5, как в документации)
 function verifyVKSignature(body, secret) {
     const params = { ...body };
     const receivedSign = params.sign;
@@ -27,23 +26,29 @@ function verifyVKSignature(body, secret) {
     delete params.sign;
     
     const sortedKeys = Object.keys(params).sort();
-    let stringToSign = '';
+    let signString = '';
     for (const key of sortedKeys) {
         const value = params[key];
-        if (value !== undefined && value !== null) {
-            stringToSign += `${key}=${value}`;
+        if (value !== undefined && value !== null && value !== '') {
+            signString += `${key}=${value}`;
         }
     }
-    const calculatedSign = crypto.createHmac('sha256', secret).update(stringToSign).digest('hex');
+    signString += secret;
+    const calculatedSign = crypto.createHash('md5').update(signString).digest('hex');
+    console.log('[VK Payment] Calculated sign:', calculatedSign);
+    console.log('[VK Payment] Received sign:', receivedSign);
     return calculatedSign === receivedSign;
 }
 
+// Начисление товара пользователю
 async function grantItem(userId, itemId) {
     const client = await pool.connect();
     try {
+        await client.query('BEGIN');
         if (itemId >= 1 && itemId <= 6) {
             const diamondsMap = { 1: 50, 2: 150, 3: 350, 4: 700, 5: 1150, 6: 1800 };
             let diamonds = diamondsMap[itemId];
+            // Проверка бонуса за первую покупку
             const bonusCheck = await client.query('SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [userId, itemId]);
             if (bonusCheck.rowCount === 0) {
                 diamonds = Math.floor(diamonds * 1.5);
@@ -58,28 +63,35 @@ async function grantItem(userId, itemId) {
         } else {
             throw new Error('Unknown itemId');
         }
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
     } finally {
         client.release();
     }
 }
 
 router.post('/', async (req, res) => {
-    console.log('[Payment Callback] Received:', JSON.stringify(req.body));
-    const { notification_type, order_id, item_id, user_id, status, sign } = req.body;
-
-    // Проверяем подпись, если задан секретный ключ
-    const appSecret = process.env.VK_APP_SECRET;
-    if (appSecret && !verifyVKSignature(req.body, appSecret)) {
-        console.error('[Payment] Invalid signature');
+    console.log('[VK Payment Callback] Received body:', JSON.stringify(req.body));
+    
+    const params = req.body;
+    const { notification_type, order_id, item_id, user_id, status } = params;
+    
+    // Проверяем подпись (если передан секрет)
+    if (VK_APP_SECRET && !verifyVKSignature(params, VK_APP_SECRET)) {
+        console.error('[VK Payment] Invalid signature');
         return res.status(403).json({ error: 'Invalid signature' });
     }
-
-    // Обработка get_item и get_item_test
+    
+    // Обработка запроса информации о товаре (тестовый и боевой)
     if (notification_type === 'get_item' || notification_type === 'get_item_test') {
         const item = itemsCatalog[item_id];
         if (!item) {
+            console.log('[VK Payment] Item not found:', item_id);
             return res.status(404).json({ error: 'Item not found' });
         }
+        console.log('[VK Payment] Returning item info:', item);
         return res.json({
             response: {
                 item_id: String(item_id),
@@ -89,45 +101,53 @@ router.post('/', async (req, res) => {
             }
         });
     }
-
-    // Обработка order_status_change и order_status_change_test
+    
+    // Обработка изменения статуса заказа
     if (notification_type === 'order_status_change' || notification_type === 'order_status_change_test') {
         if (status === 'chargeable') {
             const client = await pool.connect();
             try {
+                // Проверяем, не обработан ли уже заказ
                 const existing = await client.query('SELECT 1 FROM vk_payments WHERE order_id = $1', [order_id]);
-                if (existing.rowCount === 0) {
-                    const userRes = await client.query('SELECT id FROM users WHERE vk_id = $1', [String(user_id)]);
-                    if (userRes.rowCount === 0) {
-                        console.error(`User with vk_id ${user_id} not found`);
-                        return res.status(400).json({ error: 'User not found' });
-                    }
-                    const userId = userRes.rows[0].id;
-                    await grantItem(userId, item_id);
-                    await client.query(
-                        'INSERT INTO vk_payments (order_id, user_id, item_id, amount) VALUES ($1, $2, $3, $4)',
-                        [order_id, userId, item_id, itemsCatalog[item_id]?.price || 0]
-                    );
-                    console.log(`[Payment] Granted item ${item_id} to user ${userId} (vk_id ${user_id})`);
-                } else {
-                    console.log(`[Payment] Duplicate order_id ${order_id}, skipping`);
+                if (existing.rowCount > 0) {
+                    console.log(`[VK Payment] Order ${order_id} already processed, skipping`);
+                    return res.json({ response: { status: 'ok' } });
                 }
+                
+                // Ищем пользователя по vk_id
+                const userRes = await client.query('SELECT id FROM users WHERE vk_id = $1', [String(user_id)]);
+                if (userRes.rowCount === 0) {
+                    console.error(`[VK Payment] User with vk_id ${user_id} not found`);
+                    return res.status(400).json({ error: 'User not found' });
+                }
+                const dbUserId = userRes.rows[0].id;
+                
+                // Начисляем товар
+                await grantItem(dbUserId, item_id);
+                
+                // Сохраняем информацию о платеже
+                await client.query(
+                    'INSERT INTO vk_payments (order_id, user_id, item_id, amount) VALUES ($1, $2, $3, $4)',
+                    [order_id, dbUserId, item_id, itemsCatalog[item_id]?.price || 0]
+                );
+                console.log(`[VK Payment] Granted item ${item_id} to user ${dbUserId} (vk_id ${user_id})`);
                 res.json({ response: { status: 'ok' } });
             } catch (err) {
-                console.error('[Payment] Error processing order:', err);
+                console.error('[VK Payment] Error processing order:', err);
                 res.status(500).json({ error: 'Internal error' });
             } finally {
                 client.release();
             }
-        } else if (status === 'refunded') {
-            console.log(`[Payment] Order ${order_id} refunded`);
-            res.json({ response: { status: 'ok' } });
         } else {
+            // Другие статусы (refunded и т.п.) – просто подтверждаем
+            console.log(`[VK Payment] Order ${order_id} status: ${status}`);
             res.json({ response: { status: 'ok' } });
         }
         return;
     }
-
+    
+    // Неизвестный тип уведомления
+    console.log('[VK Payment] Unknown notification_type:', notification_type);
     res.status(400).json({ error: 'Unknown notification_type' });
 });
 

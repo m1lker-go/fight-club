@@ -218,9 +218,9 @@ async function renderGems(container) {
                 // VK Mini App: официальный метод VKWebAppShowOrderBox
                 try {
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
-    type: 'item',
-    item: String(packId) // demo не передаём
-    });
+                        type: 'item',
+                        item: String(packId)
+                    });
                     if (result) {
                         showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
                         setTimeout(async () => {
@@ -424,11 +424,10 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             console.log('[gems] buy subscription clicked');
             if (isVK) {
                 try {
-                   const result = await vkBridge.send('VKWebAppShowOrderBox', {
-    type: 'item',
-    item: '7'
-});
-                    
+                    const result = await vkBridge.send('VKWebAppShowOrderBox', {
+                        type: 'item',
+                        item: '7'
+                    });
                     if (result) {
                         showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);
                         setTimeout(async () => {

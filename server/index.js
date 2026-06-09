@@ -25,9 +25,6 @@ app.use(express.static('client'));
 app.use('/auth', require('./routes/auth-ext'));
 app.use('/payment', require('./routes/robokassa'));
 app.use('/vk-payment-callback', require('./routes/vk-payment-callback'));
-// app.use('/vk-pay', require('./routes/vk-pay')); // отключён
-// app.use('/', require('./routes/vk-callback')); // удалён или закомментирован
-// app.use('/api/vk', authMiddleware, require('./routes/vk-payment-url')); // можно удалить, если не используется
 
 // ========== ЗАЩИЩЁННЫЕ API ==========
 app.use('/player', authMiddleware, require('./routes/player'));

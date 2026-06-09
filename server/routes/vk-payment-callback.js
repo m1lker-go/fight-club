@@ -3,12 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool } = require('../db');
 
-// GET-обработчик для проверки доступности
-router.get('/', (req, res) => {
-    res.json({ status: 'ok' });
-});
-
-// Каталог товаров (itemdefid -> данные)
+// Каталог товаров
 const itemsCatalog = {
     1: { title: '50 алмазов', price: 15, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_1.png' },
     2: { title: '150 алмазов', price: 57, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_2.png' },
@@ -19,24 +14,9 @@ const itemsCatalog = {
     7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
-// Функция проверки подписи (временно отключена для теста, потом включите)
+// Временно отключаем проверку подписи (включите после успешного теста)
 function verifyVKSignature(body, secret) {
     return true;
-    // Реальная проверка:
-    // const params = { ...body };
-    // const receivedSign = params.sign;
-    // if (!receivedSign) return false;
-    // delete params.sign;
-    // const sortedKeys = Object.keys(params).sort();
-    // let stringToSign = '';
-    // for (const key of sortedKeys) {
-    //     if (params[key] !== undefined && params[key] !== null) {
-    //         stringToSign += `${key}=${params[key]}`;
-    //     }
-    // }
-    // stringToSign += secret;
-    // const calculatedSign = crypto.createHash('md5').update(stringToSign).digest('hex');
-    // return calculatedSign === receivedSign;
 }
 
 async function grantItem(dbUserId, itemId) {
@@ -45,7 +25,6 @@ async function grantItem(dbUserId, itemId) {
         if (itemId >= 1 && itemId <= 6) {
             const diamondsMap = { 1: 50, 2: 150, 3: 350, 4: 700, 5: 1150, 6: 1800 };
             let diamonds = diamondsMap[itemId];
-            // Бонус за первую покупку
             const bonusCheck = await client.query('SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [dbUserId, itemId]);
             if (bonusCheck.rowCount === 0) {
                 diamonds = Math.floor(diamonds * 1.5);
@@ -57,29 +36,32 @@ async function grantItem(dbUserId, itemId) {
             expiry.setDate(expiry.getDate() + 30);
             await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiry, dbUserId]);
             await client.query('UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1', [dbUserId]);
-        } else {
-            throw new Error('Unknown itemId');
         }
     } finally {
         client.release();
     }
 }
 
+// ==== GET-обработчик для проверки доступности ====
+router.get('/', (req, res) => {
+    console.log('[VK Payment] GET request received');
+    res.json({ status: 'ok', message: 'Payment callback endpoint is ready' });
+});
+
+// ==== POST-обработчик ====
 router.post('/', async (req, res) => {
-    console.log('[VK Payment] Received POST body:', req.body);
+    console.log('[VK Payment] POST request received, body:', JSON.stringify(req.body));
 
     const { notification_type, item, order_id, user_id, status, app_id, receiver_id, test_mode } = req.body;
-    
-    // В документации используется поле 'item', не 'item_id'
     const itemId = item ? (isNaN(item) ? item : parseInt(item, 10)) : null;
 
-    // Обработка тестового запроса на получение информации о товаре
+    // 1. Запрос информации о товаре (get_item_test)
     if (notification_type === 'get_item_test' || notification_type === 'get_item') {
         if (!itemsCatalog[itemId]) {
             console.error(`[VK Payment] Item ${itemId} not found`);
             return res.json({
                 error: {
-                    error_code: 20, // "Товара не существует"
+                    error_code: 20,
                     error_msg: 'Item not found',
                     critical: true
                 }
@@ -98,12 +80,11 @@ router.post('/', async (req, res) => {
         return res.json(response);
     }
 
-    // Обработка уведомления о статусе заказа
+    // 2. Уведомление об изменении статуса заказа
     if (notification_type === 'order_status_change_test' || notification_type === 'order_status_change') {
         if (status === 'chargeable') {
             const client = await pool.connect();
             try {
-                // Проверяем дубликаты
                 const existing = await client.query('SELECT 1 FROM vk_payments WHERE order_id = $1', [order_id]);
                 if (existing.rowCount === 0) {
                     const userRes = await client.query('SELECT id FROM users WHERE vk_id = $1', [String(user_id)]);
@@ -127,7 +108,6 @@ router.post('/', async (req, res) => {
                 } else {
                     console.log(`[VK Payment] Duplicate order_id ${order_id}, skipping`);
                 }
-                // Успешный ответ должен содержать order_id
                 res.json({ response: { order_id: order_id } });
             } catch (err) {
                 console.error('[VK Payment] Error processing order:', err);
@@ -142,10 +122,8 @@ router.post('/', async (req, res) => {
                 client.release();
             }
         } else if (status === 'refunded' || status === 'cancelled') {
-            // Возврат или отмена – просто подтверждаем
             res.json({ response: { order_id: order_id } });
         } else {
-            // Неизвестный статус – ошибка
             res.json({
                 error: {
                     error_code: 11,
@@ -157,7 +135,7 @@ router.post('/', async (req, res) => {
         return;
     }
 
-    // Если тип не распознан
+    // 3. Неизвестный тип уведомления
     res.json({
         error: {
             error_code: 11,

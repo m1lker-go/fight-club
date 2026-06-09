@@ -1,4 +1,4 @@
-// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша, очистка
+// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша с модальным окном, очистка
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -19,6 +19,45 @@ function setSessionToken(token) {
 
 function removeSessionToken() {
     getStorage().removeItem('sessionToken');
+}
+
+// ========== МОДАЛЬНОЕ ПОДТВЕРЖДЕНИЕ (ЗАМЕНА confirm) ==========
+function showConfirmModal(message, onConfirm, onCancel) {
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerText = 'Подтверждение';
+    modalBody.innerHTML = `
+        <div style="text-align:center;">
+            <p>${escapeHtml(message)}</p>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button class="btn confirm-yes" style="background-color: #00aaff;">Да</button>
+                <button class="btn confirm-no">Отмена</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+
+    const yesBtn = modalBody.querySelector('.confirm-yes');
+    const noBtn = modalBody.querySelector('.confirm-no');
+    const closeX = modal.querySelector('.close');
+
+    function closeModal() {
+        modal.style.display = 'none';
+        if (onCancel && typeof onCancel === 'function') onCancel();
+    }
+
+    yesBtn.onclick = () => {
+        modal.style.display = 'none';
+        if (onConfirm && typeof onConfirm === 'function') onConfirm();
+    };
+    noBtn.onclick = closeModal;
+    closeX.onclick = closeModal;
+    window.onclick = (event) => {
+        if (event.target === modal) closeModal();
+    };
 }
 
 function showLogoutConfirmModal(onConfirm) {
@@ -52,18 +91,15 @@ function showLogoutConfirmModal(onConfirm) {
 }
 
 function clearCacheAndReload() {
-    // Сохраняем токен, если нужно
     const sessionToken = getSessionToken();
     getStorage().clear();
     if (sessionToken) setSessionToken(sessionToken);
     sessionStorage.clear();
 
-    // Очищаем cookies
     document.cookie.split(";").forEach(function(c) {
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    // Очищаем IndexedDB
     if (window.indexedDB) {
         if (indexedDB.databases) {
             indexedDB.databases().then(dbs => {
@@ -75,26 +111,20 @@ function clearCacheAndReload() {
         }
     }
 
-    // Очищаем кэш Service Worker
     if ('caches' in window) {
         caches.keys().then(names => {
             names.forEach(name => caches.delete(name));
         }).catch(e => console.warn('Cache API error:', e));
     }
 
-    // ★ ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЛЯ VK MINI APP ★
     if (window.isVKMiniApp === true) {
-        // В VK Mini App просто перезагружаем страницу без изменения URL
-        // Это остаётся внутри текущего окна и не открывает новую вкладку
         location.reload();
     } else {
-        // Для обычного браузера используем replace с параметром, чтобы обойти кэш
         const url = new URL(window.location.href);
         url.searchParams.set('force', Date.now());
         window.location.replace(url.toString());
     }
 }
-
 
 async function renderSettings() {
     console.log('Token in sessionStorage:', sessionStorage.getItem('sessionToken'));
@@ -338,9 +368,12 @@ async function renderSettings() {
         const clearCacheBtn = document.getElementById('clearCacheBtn');
         if (clearCacheBtn) {
             clearCacheBtn.addEventListener('click', () => {
-                if (confirm('Это перезагрузит игру и очистит временные данные. Вы уверены?')) {
-                    clearCacheAndReload();
-                }
+                showConfirmModal(
+                    'Это перезагрузит игру и очистит временные данные. Вы уверены?',
+                    () => {
+                        clearCacheAndReload();
+                    }
+                );
             });
         }
 

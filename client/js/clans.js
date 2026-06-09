@@ -635,7 +635,6 @@ async function renderClanChat(container, clan) {
 
 // ------------------- ОТМЕТКА -------------------
 async function renderClanCheckin(container, clan) {
-    // Получаем статус с обходом кеша
     let alreadyChecked = false;
     try {
         const statusRes = await window.apiRequest(`/clans/checkin/status?_t=${Date.now()}`);
@@ -645,14 +644,12 @@ async function renderClanCheckin(container, clan) {
         console.error('Ошибка получения статуса отметки', e);
     }
 
-    // Рендерим интерфейс
     container.innerHTML = `
         <div style="text-align:center;">
             <button id="checkinBtn" class="clans-submit-btn" 
                 ${alreadyChecked ? 'disabled style="background-color:#555; cursor:not-allowed;"' : ''}>
-                ${alreadyChecked ? 'Уже отметились' : 'Отметиться'}
+                ${alreadyChecked ? '✅ Вы уже отметились сегодня!' : 'Отметиться'}
             </button>
-            ${alreadyChecked ? '<p style="margin-top:10px; color:#aaa;">✅ Вы уже отметились сегодня!</p>' : ''}
             <div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
                 За отметку: +50 монет, +5 угля, +10 опыта клану<br>
                 Если все отметятся: +100 опыта клану
@@ -669,19 +666,14 @@ async function renderClanCheckin(container, clan) {
                 const res = await window.apiRequest('/clans/checkin', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
-                    // Мгновенно меняем интерфейс на "уже отметился"
                     renderClanCheckin(container, clan);
-                    // Обновляем данные клана для синхронизации галочек в таблице "Соратники"
                     const myRes = await window.apiRequest('/clans/my');
                     const myData = await myRes.json();
                     if (myData.inClan) {
-                        // Перерисовываем всю страницу клана, сохранив текущую вкладку
                         const savedTab = currentClanTab;
                         renderMyClan(myData.clan, myData.members, myData.userRole, myData.checkedTodayList || []);
                         currentClanTab = savedTab;
-                        // Если вкладка осталась 'checkin', она уже перерисуется с новым статусом
                         if (currentClanTab === 'checkin') {
-                            // Дополнительно обновляем содержимое, чтобы сразу показать кнопку "Уже отметились"
                             const tabContent = document.getElementById('clanTabContent');
                             if (tabContent) renderClanCheckin(tabContent, myData.clan);
                         }

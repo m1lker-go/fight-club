@@ -221,7 +221,6 @@ async function renderGems(container) {
     type: 'item',
     item: String(packId) // demo не передаём
     });
-                    });
                     if (result) {
                         showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
                         setTimeout(async () => {

@@ -101,16 +101,53 @@ setTimeout(detectTelegramWebApp, 500);
 if (window.isVKMiniApp) {
     console.log('[App] VK Mini App detected, applying styles');
     document.body.classList.add('vk-mini-app');
-    setTimeout(() => {
-        const topBar = document.querySelector('.top-bar');
-        if (topBar) {
-            topBar.style.paddingTop = '44px';
-            topBar.style.transition = 'padding-top 0.2s';
-            console.log('[VK] Added top padding to .top-bar');
-        }
-    }, 100);
+    // Отступ больше не добавляем – кастомные кнопки будут внутри top-bar
+    console.log('[VK] VK Mini App detected, custom buttons will be added');
 } else {
     console.log('[App] Not VK Mini App, default vertical mode');
+}
+
+// ========== ДОБАВЛЕНИЕ КАСТОМНЫХ КНОПОК УПРАВЛЕНИЯ ДЛЯ VK MINI APP ==========
+function addCustomVKButtons() {
+    if (!window.isVKMiniApp) return;
+    const topBar = document.querySelector('.top-bar');
+    if (!topBar) return;
+    if (document.querySelector('.vk-custom-buttons')) return;
+
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.className = 'vk-custom-buttons';
+    buttonsDiv.innerHTML = `
+        <button class="vk-custom-close" title="Закрыть приложение">✕</button>
+        <button class="vk-custom-menu" title="Меню">⋮</button>
+    `;
+    topBar.appendChild(buttonsDiv);
+
+    // Кнопка закрытия
+    buttonsDiv.querySelector('.vk-custom-close').addEventListener('click', () => {
+        if (typeof vkBridge !== 'undefined') {
+            vkBridge.send('VKWebAppClose').catch(e => console.warn('[VK] close error', e));
+        }
+    });
+
+    // Кнопка меню (показывает action sheet с опциями)
+    buttonsDiv.querySelector('.vk-custom-menu').addEventListener('click', () => {
+        if (typeof vkBridge !== 'undefined') {
+            vkBridge.send('VKWebAppShowActionSheet', {
+                title: 'Меню',
+                buttons: [
+                    { title: 'Поделиться', id: 'share' },
+                    { title: 'Настройки', id: 'settings' },
+                    { title: 'Отмена', id: 'cancel' }
+                ]
+            }).then(res => {
+                if (res.result === 'share') {
+                    vkBridge.send('VKWebAppShare', { link: window.location.href });
+                } else if (res.result === 'settings') {
+                    if (typeof showScreen === 'function') showScreen('settings');
+                }
+            }).catch(e => console.warn('[VK] ActionSheet error', e));
+        }
+    });
 }
 
 // ========== VK MINI APP АВТОРИЗАЦИЯ ЧЕРЕЗ ПАРАМЕТРЫ ЗАПУСКА ==========
@@ -192,6 +229,15 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
         .then(() => {
             console.log('[VK Bridge] init OK');
+            
+            // Скрыть нативные кнопки навигации VK (если поддерживается)
+            vkBridge.send('VKWebAppSetViewSettings', {
+                navigation_bar: { visible: false }
+            }).catch(e => console.warn('[VK] Не удалось скрыть навиг. панель', e));
+            
+            // Добавить свои кнопки
+            addCustomVKButtons();
+            
             const params = getVKLaunchParams();
             console.log('[VK] params full:', JSON.stringify(params));
             console.log('[VK] vk_user_id:', params.vk_user_id, 'sign:', params.sign);

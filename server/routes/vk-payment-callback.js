@@ -42,6 +42,14 @@ async function grantItem(dbUserId, itemId) {
     }
 }
 
+// Логируем все входящие запросы
+router.use((req, res, next) => {
+    console.log('[VK Payment] Incoming request:', req.method, req.url);
+    console.log('[VK Payment] Headers:', req.headers);
+    console.log('[VK Payment] Body:', req.body);
+    next();
+});
+
 // ==== GET-обработчик для проверки доступности ====
 router.get('/', (req, res) => {
     console.log('[VK Payment] GET request received');

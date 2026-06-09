@@ -4016,7 +4016,6 @@ body {
     .battle-timer { width: 36px; height: 36px; line-height: 36px; font-size: 12px; }
     .speed-btn { width: 36px; height: 36px; }
     .negative-icon, .positive-icon, .rage-icon { width: 20px; height: 20px; }
-    .log-entry { font-size: 10px; padding: 6px 8px; }
     .stat-label { font-size: 12px; min-width: 80px; }
     .stat-value { font-size: 10px; }
     .bonuses-table th, .bonuses-table td { padding: 6px 4px; font-size: 11px; }

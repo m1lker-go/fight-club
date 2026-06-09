@@ -429,6 +429,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     type: 'item',
     item: '7'
 });
+                    
                     if (result) {
                         showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);
                         setTimeout(async () => {

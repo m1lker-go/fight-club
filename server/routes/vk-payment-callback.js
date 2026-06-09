@@ -3,18 +3,24 @@ const router = express.Router();
 const crypto = require('crypto');
 const { pool } = require('../db');
 
+// GET-обработчик для проверки доступности (чтобы не было 404)
+router.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'Payment callback endpoint is ready' });
+});
+
+// Каталог товаров
 const itemsCatalog = {
     1: { title: '50 алмазов', price: 15, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_1.png' },
     2: { title: '150 алмазов', price: 57, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_2.png' },
     3: { title: '350 алмазов', price: 129, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_3.png' },
-    4: { title: '700 алмазов', price: 229, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_4.png' },
-    5: { title: '1150 алмазов', price: 357, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_5.png' },
-    6: { title: '1800 алмазов', price: 572, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_6.png' },
-    7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
+    4: { title: '700 алмазов', price: 229, photo_url: 'https://api.cat-fight.ru/assets/diamond/buy_diamond_4.png' },
+    5: { title: '1150 алмазов', price: 357, photo_url: 'https://api.cat-fight.ru/assets/diamond/buy_diamond_5.png' },
+    6: { title: '1800 алмазов', price: 572, photo_url: 'https://api.cat-fight.ru/assets/diamond/buy_diamond_6.png' },
+    7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://api.cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
+// Временно отключаем проверку подписи
 function verifyVKSignature(body, secret) {
-    // Для теста временно отключаем проверку подписи
     return true;
 }
 
@@ -42,18 +48,15 @@ async function grantItem(dbUserId, itemId) {
 }
 
 router.post('/', async (req, res) => {
-    console.log('[VK Payment] Received headers:', req.headers);
-    console.log('[VK Payment] Received body:', req.body);
+    console.log('[VK Payment] Incoming body:', req.body);
     const { notification_type, item_id, order_id, user_id, status } = req.body;
 
-    // Преобразуем item_id в число
     const itemIdNum = parseInt(item_id, 10);
 
-    // Обработка get_item / get_item_test
     if (notification_type === 'get_item_test' || notification_type === 'get_item') {
         const item = itemsCatalog[itemIdNum];
         if (!item) {
-            console.error(`[VK Payment] Item ${item_id} not found in catalog`);
+            console.error(`[VK Payment] Item ${item_id} not found`);
             return res.status(404).json({ error: 'Item not found' });
         }
         const response = {
@@ -68,15 +71,12 @@ router.post('/', async (req, res) => {
         return res.json(response);
     }
 
-    // Обработка order_status_change / order_status_change_test
     if (notification_type === 'order_status_change_test' || notification_type === 'order_status_change') {
         if (status === 'chargeable') {
             const client = await pool.connect();
             try {
-                // Проверяем дубликат заказа
                 const existing = await client.query('SELECT 1 FROM vk_payments WHERE order_id = $1', [order_id]);
                 if (existing.rowCount === 0) {
-                    // Ищем пользователя по vk_id
                     const userRes = await client.query('SELECT id FROM users WHERE vk_id = $1', [String(user_id)]);
                     if (userRes.rowCount === 0) {
                         console.error(`[VK Payment] User with vk_id ${user_id} not found`);
@@ -92,19 +92,19 @@ router.post('/', async (req, res) => {
                 } else {
                     console.log(`[VK Payment] Duplicate order_id ${order_id}, skipping`);
                 }
-                return res.json({ response: { status: 'ok' } });
+                res.json({ response: { status: 'ok' } });
             } catch (err) {
-                console.error('[VK Payment] Error processing order:', err);
-                return res.status(500).json({ error: 'Internal error' });
+                console.error('[VK Payment] Error:', err);
+                res.status(500).json({ error: 'Internal error' });
             } finally {
                 client.release();
             }
         } else {
-            return res.json({ response: { status: 'ok' } });
+            res.json({ response: { status: 'ok' } });
         }
+        return;
     }
 
-    console.warn('[VK Payment] Unknown notification_type:', notification_type);
     res.status(400).json({ error: 'Unknown notification_type' });
 });
 

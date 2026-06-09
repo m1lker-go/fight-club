@@ -107,51 +107,6 @@ if (window.isVKMiniApp) {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
 
-// ========== ДОБАВЛЕНИЕ КАСТОМНЫХ КНОПОК УПРАВЛЕНИЯ ДЛЯ VK MINI APP ==========
-let vkButtonsAdded = false;
-
-function addCustomVKButtons() {
-    if (!window.isVKMiniApp) return;
-    if (vkButtonsAdded) return;
-    const topBar = document.querySelector('.top-bar');
-    if (!topBar) return;
-    if (document.querySelector('.vk-custom-buttons')) return;
-
-    const buttonsDiv = document.createElement('div');
-    buttonsDiv.className = 'vk-custom-buttons';
-    buttonsDiv.innerHTML = `
-        <button class="vk-custom-close" title="Закрыть приложение">✕</button>
-        <button class="vk-custom-menu" title="Меню">⋮</button>
-    `;
-    topBar.appendChild(buttonsDiv);
-    vkButtonsAdded = true;
-
-    // Обработчики остаются без изменений
-    buttonsDiv.querySelector('.vk-custom-close').addEventListener('click', () => {
-        if (typeof vkBridge !== 'undefined') {
-            vkBridge.send('VKWebAppClose').catch(e => console.warn('[VK] close error', e));
-        }
-    });
-
-    buttonsDiv.querySelector('.vk-custom-menu').addEventListener('click', () => {
-        if (typeof vkBridge !== 'undefined') {
-            vkBridge.send('VKWebAppShowActionSheet', {
-                title: 'Меню',
-                buttons: [
-                    { title: 'Поделиться', id: 'share' },
-                    { title: 'Настройки', id: 'settings' },
-                    { title: 'Отмена', id: 'cancel' }
-                ]
-            }).then(res => {
-                if (res.result === 'share') {
-                    vkBridge.send('VKWebAppShare', { link: window.location.href });
-                } else if (res.result === 'settings') {
-                    if (typeof showScreen === 'function') showScreen('settings');
-                }
-            }).catch(e => console.warn('[VK] ActionSheet error', e));
-        }
-    });
-}
 
 // ========== VK MINI APP АВТОРИЗАЦИЯ ЧЕРЕЗ ПАРАМЕТРЫ ЗАПУСКА ==========
 async function autoLoginVKLaunch() {
@@ -232,19 +187,6 @@ if (window.isVKMiniApp && typeof vkBridge !== 'undefined') {
     vkBridge.send('VKWebAppInit', {})
         .then(() => {
             console.log('[VK Bridge] init OK');
-            
-           // Скрываем навигацию и статус‑бар, а также отключаем свайп назад
-Promise.all([
-    vkBridge.send('VKWebAppSetViewSettings', {
-        navigation_bar: { visible: false },
-        status_bar: { visible: false }
-    }),
-    vkBridge.send('VKWebAppDisableSwipeBack')
-]).catch(e => console.warn('[VK] Не удалось полностью скрыть нативную панель', e));
-            
-            // Добавить свои кнопки
-            addCustomVKButtons();
-            
             const params = getVKLaunchParams();
             console.log('[VK] params full:', JSON.stringify(params));
             console.log('[VK] vk_user_id:', params.vk_user_id, 'sign:', params.sign);

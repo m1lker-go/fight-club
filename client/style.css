@@ -3765,6 +3765,7 @@ body {
 #wheelCanvas {
     width: 340px;
     height: 340px;
+    max-width: 100%;
     margin: 0 auto;
     display: block;
 }
@@ -3933,13 +3934,6 @@ body {
 .fortune-wheel-area {
     padding: 5px;
 }
-#wheelCanvas {
-    width: 100%;
-    max-width: 340px;
-    height: auto;
-    margin: 0 auto;
-    display: block;
-}
 /* Для современных браузеров с dynamic viewport */
 @supports (height: 100dvh) {
     body {
@@ -3961,12 +3955,7 @@ body {
 
 /* Уменьшаем размер колеса при низкой высоте экрана */
 @media (max-height: 700px) {
-    #wheelCanvas {
-        max-height: 35vh;
-        width: auto;
-        height: auto;
-        max-width: min(340px, 90vw);
-    }
+    /* Колесо не меняем – оставляем как есть (340px или max-width:100%) */
     .fortune-wheel-area {
         padding: 2px 5px;
     }

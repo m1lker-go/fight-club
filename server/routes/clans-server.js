@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { containsForbiddenWords } = require('../utils/forbiddenWords');
-const { getMoscowDateString } = require('../utils/ServerTime'); // единая функция времени
+const { getMoscowDateString, toMoscowDateString } = require('../utils/ServerTime');// единая функция времени
 
 // ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -------------------
 

@@ -13,7 +13,6 @@ async function showLegalModal() {
 
     modalTitle.innerText = 'Реквизиты и оферта';
 
-    // Встроенный HTML с реквизитами и кнопками
     modalBody.innerHTML = `
         <div style="max-height: 60vh; overflow-y: auto; padding: 5px;">
             <h2 style="color: #00aaff; margin-top: 0;">Продавец</h2>
@@ -41,7 +40,6 @@ async function showLegalModal() {
 
     modal.style.display = 'flex';
 
-    // Кнопка "Скачать PDF"
     const downloadBtn = document.getElementById('legalDownloadBtn');
     if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
@@ -54,7 +52,6 @@ async function showLegalModal() {
         });
     }
 
-    // Кнопка "Магазин в игре" – закрывает модалку и переключается на алмазную лавку
     const shopBtn = document.getElementById('legalShopBtn');
     if (shopBtn) {
         shopBtn.addEventListener('click', () => {
@@ -69,7 +66,6 @@ async function showLegalModal() {
         });
     }
 
-    // Закрытие по крестику и клику вне модалки
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (event) => {
@@ -127,7 +123,6 @@ async function renderGems(container) {
     const freeCoinAvailable = status?.freeCoinAvailable || false;
     const bonusBought = status?.bonusPacks || {};
 
-    // Пакеты для обычного режима (рубли)
     const packsRub = [
         { id: 1, diamonds: 50, price: 99, image: 'buy_diamond_1.png', bonus: true },
         { id: 2, diamonds: 150, price: 399, image: 'buy_diamond_2.png', bonus: true },
@@ -137,7 +132,6 @@ async function renderGems(container) {
         { id: 6, diamonds: 1800, price: 3999, image: 'buy_diamond_6.png', bonus: true }
     ];
 
-    // Пакеты для VK Mini App (голоса) – цены в голосах
     const packsVK = [
         { id: 1, diamonds: 50, price: 15, image: 'buy_diamond_1.png', bonus: true },
         { id: 2, diamonds: 150, price: 57, image: 'buy_diamond_2.png', bonus: true },
@@ -193,7 +187,6 @@ async function renderGems(container) {
     `;
     container.innerHTML = html;
 
-    // Обработчик кнопки оферты
     const legalBtn = document.getElementById('showLegalBtn');
     if (legalBtn) legalBtn.addEventListener('click', showLegalModal);
 
@@ -202,7 +195,6 @@ async function renderGems(container) {
         showSubscriptionModalNew(hasSubscription, freeCoinAvailable);
     });
 
-    // Обработчики покупки алмазных пакетов
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
         buyBtn?.addEventListener('click', async (e) => {
@@ -215,12 +207,12 @@ async function renderGems(container) {
             console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ${isVK ? 'голосов' : '₽'}`);
 
             if (isVK) {
-                // VK Mini App: официальный метод VKWebAppShowOrderBox
                 try {
+                    // ПРАВИЛЬНЫЙ ВЫЗОВ (без лишних скобок)
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
                         type: 'item',
                         item: String(packId),
-                         demo: true
+                        demo: true   // тестовый режим
                     });
                     if (result) {
                         showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
@@ -236,10 +228,10 @@ async function renderGems(container) {
                     }
                 } catch (err) {
                     console.error('[gems] VKWebAppShowOrderBox error:', err);
-                    showToast('Ошибка оплаты через VK Pay', 2000);
+                    showToast('Ошибка оплаты через VK Pay. Попробуйте позже.', 2000);
                 }
             } else {
-                // Robokassa (без изменений)
+                // Robokassa
                 try {
                     const res = await window.apiRequest('/payment/create', {
                         method: 'POST',
@@ -349,7 +341,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
 
     modal.style.display = 'flex';
 
-    // Бесплатная монета
     const freeBtn = document.getElementById('freeCoinBtnNew');
     if (freeBtn) {
         freeBtn.addEventListener('click', async () => {
@@ -386,7 +377,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Ежедневная награда подписчика
     const dailyBtn = document.getElementById('dailyRewardBtn');
     if (dailyBtn && !dailyBtn.disabled) {
         dailyBtn.addEventListener('click', async () => {
@@ -418,7 +408,6 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         });
     }
 
-    // Покупка подписки
     const buySubBtn = document.getElementById('buySubscriptionBtnNew');
     if (buySubBtn) {
         buySubBtn.addEventListener('click', async () => {
@@ -428,7 +417,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
                         type: 'item',
                         item: '7',
-                         demo: true
+                        demo: true
                     });
                     if (result) {
                         showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);

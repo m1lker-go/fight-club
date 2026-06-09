@@ -10,6 +10,7 @@ async function showLegalModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
 
     modalTitle.innerText = 'Реквизиты и оферта';
 
@@ -197,7 +198,8 @@ async function renderGems(container) {
 
     document.querySelectorAll('.pack-card-new').forEach(card => {
         const buyBtn = card.querySelector('.pack-buy-btn');
-        buyBtn?.addEventListener('click', async (e) => {
+        if (!buyBtn) return;
+        buyBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const diamonds = parseInt(card.dataset.diamonds);
             const price = parseInt(card.dataset.price);
@@ -207,12 +209,15 @@ async function renderGems(container) {
             console.log(`[gems] Покупка пакета: ${diamonds} алмазов за ${price} ${isVK ? 'голосов' : '₽'}`);
 
             if (isVK) {
+                if (typeof vkBridge === 'undefined') {
+                    showToast('VK Bridge не инициализирован', 2000);
+                    return;
+                }
                 try {
-                    // ПРАВИЛЬНЫЙ ВЫЗОВ (без лишних скобок)
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
                         type: 'item',
                         item: String(packId),
-                        demo: true   // тестовый режим
+                        demo: true
                     });
                     if (result) {
                         showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
@@ -231,7 +236,6 @@ async function renderGems(container) {
                     showToast('Ошибка оплаты через VK Pay. Попробуйте позже.', 2000);
                 }
             } else {
-                // Robokassa
                 try {
                     const res = await window.apiRequest('/payment/create', {
                         method: 'POST',
@@ -270,6 +274,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
 
     modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
 
@@ -413,6 +418,10 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         buySubBtn.addEventListener('click', async () => {
             console.log('[gems] buy subscription clicked');
             if (isVK) {
+                if (typeof vkBridge === 'undefined') {
+                    showToast('VK Bridge не инициализирован', 2000);
+                    return;
+                }
                 try {
                     const result = await vkBridge.send('VKWebAppShowOrderBox', {
                         type: 'item',

@@ -42,11 +42,15 @@ async function grantItem(dbUserId, itemId) {
     }
 }
 
-// Логируем все входящие запросы
+// Логирование абсолютно всех входящих запросов
 router.use((req, res, next) => {
-    console.log('[VK Payment] Incoming request:', req.method, req.url);
-    console.log('[VK Payment] Headers:', req.headers);
-    console.log('[VK Payment] Body:', req.body);
+    console.log('\n=========================================');
+    console.log(`[VK Callback] Время: ${new Date().toISOString()}`);
+    console.log(`[VK Callback] Метод: ${req.method}`);
+    console.log(`[VK Callback] URL: ${req.url}`);
+    console.log(`[VK Callback] Заголовки:`, req.headers);
+    console.log(`[VK Callback] Тело запроса (raw body):`, req.body);
+    console.log('=========================================\n');
     next();
 });
 

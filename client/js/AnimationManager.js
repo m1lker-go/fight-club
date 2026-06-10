@@ -15,7 +15,7 @@ window.AnimationManager = (function() {
         frozen: '/assets/fight/frozenx.gif'
     };
     
-    const skinAnimations = {
+   const skinAnimations = {
     1: {
         victory: '/assets/skins/animations/win-skin1.gif',
         defeat: '/assets/skins/animations/lose-skin1.gif'
@@ -38,9 +38,10 @@ window.AnimationManager = (function() {
         victory: '/assets/skins/animations/win-skin14.gif',
         defeat: '/assets/skins/animations/lose-skin14.gif'
     },
-        cybercat: {
+    cybercat: {
         victory: '/assets/skins/animations/win-cybercat-skin.gif',
         defeat: '/assets/skins/animations/lose-cybercat-skin.gif'
+    }
 };
     
     function preloadImage(url) {

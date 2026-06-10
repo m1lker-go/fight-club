@@ -27,6 +27,7 @@ const BattleLog = {
     playerRage: 0,
     enemyRage: 0,
     floatingSlots: { hero: [false, false, false], enemy: [false, false, false] },
+    
 
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;

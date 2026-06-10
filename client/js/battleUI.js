@@ -166,6 +166,7 @@ function showBattleScreen(battleData) {
     // Инициализация лога боя
     battleData.playerAvatarId = userData.avatar_id;
     battleData.enemyAvatarId = battleData.opponent.avatar_id;
+    battleData.enemyIsCybercat = battleData.opponent.is_cybercat || false;
 
     // Очищаем текст затемнения для нового боя
     document.querySelectorAll('.defeat-overlay').forEach(el => el.textContent = '');

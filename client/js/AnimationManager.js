@@ -33,7 +33,10 @@ window.AnimationManager = (function() {
         dodge: '/assets/skins/animations/dodge_skin14.gif',
         victory: '/assets/skins/animations/win-skin14.gif',
         defeat: '/assets/skins/animations/lose-skin14.gif'
-    }
+    },
+         999: {
+        victory: '/assets/skins/animations/win-cybercat-skin.gif',
+        defeat: '/assets/skins/animations/lose-cybercat-skin.gif'
 };
     
     function preloadImage(url) {

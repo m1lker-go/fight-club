@@ -16,6 +16,10 @@ window.AnimationManager = (function() {
     };
     
     const skinAnimations = {
+    1: {
+        victory: '/assets/skins/animations/win-skin1.gif',
+        defeat: '/assets/skins/animations/lose-skin1.gif'
+    },
     12: {
         attack: '/assets/skins/animations/attack_skin11.gif',
         dodge: '/assets/skins/animations/dodge_skin11.gif',
@@ -34,7 +38,7 @@ window.AnimationManager = (function() {
         victory: '/assets/skins/animations/win-skin14.gif',
         defeat: '/assets/skins/animations/lose-skin14.gif'
     },
-         999: {
+        cybercat: {
         victory: '/assets/skins/animations/win-cybercat-skin.gif',
         defeat: '/assets/skins/animations/lose-cybercat-skin.gif'
 };

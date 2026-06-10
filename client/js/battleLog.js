@@ -65,6 +65,7 @@ const BattleLog = {
         this.currentStateIndex = 0;
         this.logContainer = logContainer;
         this.battleData = battleData;
+        this.enemyIsCybercat = battleData.enemyIsCybercat || false;
         this.onFinish = onFinish;
         this.speed = 1;
 
@@ -601,7 +602,7 @@ finish() {
     const heroCard = document.querySelector('.hero-card');
     const enemyCard = document.querySelector('.enemy-card');
 
-    // Функция для анимации печати текста (оставляем как есть)
+    // Анимация печати текста (оставляем как есть)
     const animateTyping = (element, text, delay = 80) => {
         if (!element) return;
         element.textContent = '';
@@ -616,7 +617,20 @@ finish() {
         }, delay);
     };
 
-    // Показываем затемнение и запускаем анимации скинов
+    // Определяем ID скинов для анимаций
+    let playerSkinId = this.battleData.playerAvatarId;
+    let enemySkinId = this.battleData.enemyAvatarId;
+
+    // Для обычного кота (id=1) оставляем как есть, он уже есть в skinAnimations
+    if (playerSkinId === 1) playerSkinId = 1;
+    if (enemySkinId === 1) enemySkinId = 1;
+
+    // Если враг — киберкот, используем специальный ключ 'cybercat'
+    if (this.enemyIsCybercat) {
+        enemySkinId = 'cybercat';
+    }
+
+    // Показываем overlay "Проиграл"
     if (winner === 'player') {
         if (enemyCard) {
             enemyCard.classList.add('defeated');
@@ -624,16 +638,6 @@ finish() {
             if (overlay) animateTyping(overlay, 'Проиграл');
         }
         if (heroCard) heroCard.classList.remove('defeated');
-        // Анимация победы для игрока (если есть скин)
-        const playerSkinId = this.battleData.playerAvatarId;
-        if (window.AnimationManager && window.AnimationManager.hasSkinAnimation(playerSkinId)) {
-            window.AnimationManager.playAnimation('hero', 'victory', { skinId: playerSkinId });
-        }
-        // Анимация поражения для врага (если есть скин)
-        const enemySkinId = this.battleData.enemyAvatarId;
-        if (window.AnimationManager && window.AnimationManager.hasSkinAnimation(enemySkinId)) {
-            window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
-        }
     } else if (winner === 'enemy') {
         if (heroCard) {
             heroCard.classList.add('defeated');
@@ -641,31 +645,41 @@ finish() {
             if (overlay) animateTyping(overlay, 'Проиграл');
         }
         if (enemyCard) enemyCard.classList.remove('defeated');
-        // Анимация победы для врага (если есть скин)
-        const enemySkinId = this.battleData.enemyAvatarId;
-        if (window.AnimationManager && window.AnimationManager.hasSkinAnimation(enemySkinId)) {
-            window.AnimationManager.playAnimation('enemy', 'victory', { skinId: enemySkinId });
-        }
-        // Анимация поражения для игрока (если есть скин)
-        const playerSkinId = this.battleData.playerAvatarId;
-        if (window.AnimationManager && window.AnimationManager.hasSkinAnimation(playerSkinId)) {
-            window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
-        }
     } else {
-        // Ничья – оба поражение (опционально)
         if (heroCard) heroCard.classList.add('defeated');
         if (enemyCard) enemyCard.classList.add('defeated');
-        const playerSkinId = this.battleData.playerAvatarId;
-        if (window.AnimationManager && window.AnimationManager.hasSkinAnimation(playerSkinId)) {
-            window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
-        }
-        const enemySkinId = this.battleData.enemyAvatarId;
-        if (window.AnimationManager && window.AnimationManager.hasSkinAnimation(enemySkinId)) {
-            window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
+    }
+
+    // Анимации скинов
+    if (window.AnimationManager) {
+        if (winner === 'player') {
+            // Игрок победил
+            if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
+                window.AnimationManager.playAnimation('hero', 'victory', { skinId: playerSkinId });
+            }
+            if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
+                window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
+            }
+        } else if (winner === 'enemy') {
+            // Враг победил
+            if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
+                window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
+            }
+            if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
+                window.AnimationManager.playAnimation('enemy', 'victory', { skinId: enemySkinId });
+            }
+        } else {
+            // Ничья – оба проиграли
+            if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
+                window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
+            }
+            if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
+                window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
+            }
         }
     }
 
-    // Увеличиваем таймаут до 2500 мс, чтобы анимации успели проиграться
+    // Задержка перед вызовом onFinish
     setTimeout(() => {
         if (this.onFinish) this.onFinish(this.battleData);
     }, 2000);

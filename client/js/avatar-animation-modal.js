@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – финал 80x80 кнопки, аватар 240x160
+// avatar-animation-modal.js – центрирование, кнопки 60x60, аватар 160x240
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -73,22 +73,20 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         const cursor = isActiveBtn ? 'pointer' : 'default';
         const opacity = isActiveBtn ? '1' : '0.5';
         const background = isActiveBtn ? '#232833' : 'transparent';
-        const border = isActiveBtn ? 'none' : '2px solid #3a4050';
-        const content = `<i class="${btn.icon}" style="font-size:24px; color:#aaa;"></i><span style="font-size:10px; color:#aaa;">${btn.label}</span>`;
-        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="width: 80px; height: 80px; background-color: ${background}; border: ${border}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${cursor}; color: #aaa; font-size: 11px; padding: 0; margin: 0; box-sizing: border-box; ${borderRadius} opacity: ${opacity};">${content}</button>`;
+        const border = isActiveBtn ? 'none' : '1px solid #3a4050';
+        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="width: 60px; height: 60px; background-color: ${background}; border: ${border}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${cursor}; color: #aaa; font-size: 11px; padding: 0; margin: 0; box-sizing: border-box; ${borderRadius} opacity: ${opacity};"><i class="${btn.icon}" style="font-size:20px; color:#aaa;"></i><span style="font-size:10px; color:#aaa;">${btn.label}</span></button>`;
     }
 
     const leftCol = leftButtons.map((btn, i) => makeButton(btn, i, 'left')).join('');
     const rightCol = rightButtons.map((btn, i) => makeButton(btn, i, 'right')).join('');
 
     const html = `
-        <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; margin: 0 auto;">
-            <!-- Основной ряд -->
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
             <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 0; margin: 0; padding: 0;">
                 <div style="display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0;">
                     ${leftCol}
                 </div>
-                <div style="margin: 0 0px; padding: 0; width: 240px; height: 160px; position: relative;">
+                <div style="margin: 0; padding: 0; width: 160px; height: 240px; position: relative;">
                     <img src="/assets/${escapeHtml(avatarFilename)}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                     <div id="avatarAnimationOverlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; display:none; z-index:10;"></div>
                 </div>
@@ -96,8 +94,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
                     ${rightCol}
                 </div>
             </div>
-            <!-- Нижний блок -->
-            <div style="display: flex; flex-direction: column; align-items: center; margin-top: 16px; width: 100%;">
+            <div style="display: flex; flex-direction: column; align-items: center; margin-top: 16px;">
                 <div style="font-size: 18px; font-weight: bold; color: white;">${escapeHtml(avatarName)}</div>
                 ${priceHtml}
                 <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
@@ -149,7 +146,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
                     overlay.style.display = 'none';
                 }
             });
-        } else if (!btn.disabled) {
+        } else if (btn.disabled === false) {
             btn.addEventListener('click', () => {
                 if (animType) playAnimationInModal(animType);
             });

@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – центрирование, кнопки 60x60, аватар 160x240
+// avatar-animation-modal.js – финальная версия с корректным определением анимаций
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -19,13 +19,22 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    const numericAvatarId = Number(avatarId);
+    // Приводим avatarId к числу (важно!)
+    const numericAvatarId = parseInt(String(avatarId).trim(), 10);
+    if (isNaN(numericAvatarId)) {
+        console.error('Invalid avatarId:', avatarId);
+        return;
+    }
     const isActive = numericAvatarId === userData.avatar_id;
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
+    // Для киберкота используем строковый ключ 'cybercat'
     const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
+
+    // Отладка – убедимся, что анимации найдены
+    console.log(`[AvatarModal] skinId=${effectiveSkinId}`, skinAnim);
 
     const hasAttack   = !!skinAnim.attack;
     const hasDodge    = !!skinAnim.dodge;
@@ -87,7 +96,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
                     ${leftCol}
                 </div>
                 <div style="margin: 0; padding: 0; width: 160px; height: 240px; position: relative;">
-                    <img src="/assets/${escapeHtml(avatarFilename)}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                    <img id="avatarStaticImg" src="/assets/${escapeHtml(avatarFilename)}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                     <div id="avatarAnimationOverlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; display:none; z-index:10;"></div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0;">
@@ -111,12 +120,15 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
 
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
+        const staticImg = document.getElementById('avatarStaticImg');
         if (!overlay) return;
         overlay.innerHTML = '';
         overlay.style.display = 'block';
+        if (staticImg) staticImg.style.visibility = 'hidden'; // скрываем статику
         const animUrl = skinAnim[animType];
         if (!animUrl) {
             overlay.style.display = 'none';
+            if (staticImg) staticImg.style.visibility = 'visible';
             return;
         }
         const img = document.createElement('img');
@@ -133,6 +145,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         setTimeout(() => {
             overlay.innerHTML = '';
             overlay.style.display = 'none';
+            if (staticImg) staticImg.style.visibility = 'visible';
         }, duration);
     }
 
@@ -141,10 +154,12 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         if (animType === 'avatar') {
             btn.addEventListener('click', () => {
                 const overlay = document.getElementById('avatarAnimationOverlay');
+                const staticImg = document.getElementById('avatarStaticImg');
                 if (overlay) {
                     overlay.innerHTML = '';
                     overlay.style.display = 'none';
                 }
+                if (staticImg) staticImg.style.visibility = 'visible';
             });
         } else if (btn.disabled === false) {
             btn.addEventListener('click', () => {
@@ -153,6 +168,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }
     });
 
+    // Покупка/активация/закрытие (без изменений)
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) buyBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/avatars/buy', { method: 'POST', body: JSON.stringify({ avatar_id: numericAvatarId }) });

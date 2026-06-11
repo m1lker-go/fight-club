@@ -1,6 +1,8 @@
 // avatar-animation-modal.js – модальное окно аватара в стиле главной страницы
 
 window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avatarName, priceGold, priceDiamonds) {
+    console.log('Modal opened, leftButtons:', leftButtons);
+    console.log('Modal opened, rightButtons:', rightButtons);
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');

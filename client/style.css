@@ -3085,44 +3085,40 @@ body {
     color: #00aaff;
 }
 
-/* ========== ЭФФЕКТ ПРОИГРЫША ========== */
+/* ========== ПОЛОСКА ПОРАЖЕНИЯ ВНИЗУ АВАТАРА ========== */
 .defeat-overlay {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
     width: 100%;
-    height: 100%;
-    background: rgba(10, 15, 25, 0.75);
+    height: 28px;                  /* высота полоски */
+    background: rgba(231, 76, 60, 0.85); /* красноватое затемнение */
+    backdrop-filter: blur(2px);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ff4444;
+    color: white;
     font-weight: 700;
     font-size: 13px;
-    text-transform: none;
+    text-transform: uppercase;
     letter-spacing: 1px;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     opacity: 0;
-    transform: scale(0.95);
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-                transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: translateY(100%);  /* прячем внизу */
+    transition: opacity 0.3s ease, transform 0.3s ease;
     pointer-events: none;
     z-index: 25;
-    /* убираем скругления */
-    border-radius: 0;
-    backdrop-filter: blur(3px);
-    padding: 4px 6px;
-    box-sizing: border-box;
-    text-align: center;
-    line-height: 1.2;
-    word-break: break-word;
-    font-family: monospace; /* опционально: моноширинный шрифт */
+    border-radius: 0;             /* без скруглений */
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .hero-card.defeated .defeat-overlay,
 .enemy-card.defeated .defeat-overlay {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);     /* выезжает снизу */
 }
 
 

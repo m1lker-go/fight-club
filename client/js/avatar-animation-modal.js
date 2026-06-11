@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – модальное окно просмотра аватара с анимациями (оптимизированное)
+// avatar-animation-modal.js – модальное окно аватара в стиле главной страницы
 
 window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avatarName, priceGold, priceDiamonds) {
     const modal = document.getElementById('roleModal');
@@ -9,26 +9,33 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const isActive = avatarId === userData.avatar_id;
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
-    // Определяем наличие анимаций через AnimationManager
+    // Определяем наличие анимаций
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
     const effectiveSkinId = isCybercat ? 'cybercat' : avatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
 
+    // Проверяем наличие каждой анимации
     const hasVictory = !!skinAnim.victory;
     const hasDefeat  = !!skinAnim.defeat;
     const hasAttack  = !!skinAnim.attack;
     const hasDodge   = !!skinAnim.dodge;
 
+    // 4 кнопки слева: Победа, Атака, (две пустые)
     const leftButtons = [
         { type: 'victory', label: 'Победа', icon: 'fas fa-trophy', available: hasVictory },
-        { type: 'attack',  label: 'Атака',  icon: 'fas fa-fist-raised', available: hasAttack }
+        { type: 'attack',  label: 'Атака',  icon: 'fas fa-fist-raised', available: hasAttack },
+        { type: null,      label: '',       icon: '', available: false },
+        { type: null,      label: '',       icon: '', available: false }
     ];
+    // 4 кнопки справа: Поражение, Уворот, (две пустые)
     const rightButtons = [
         { type: 'defeat', label: 'Поражение', icon: 'fas fa-skull', available: hasDefeat },
-        { type: 'dodge',  label: 'Уворот',   icon: 'fas fa-running', available: hasDodge }
+        { type: 'dodge',  label: 'Уворот',    icon: 'fas fa-running', available: hasDodge },
+        { type: null,     label: '',          icon: '', available: false },
+        { type: null,     label: '',          icon: '', available: false }
     ];
 
-    // Формируем блок с ценой
+    // Формируем цену
     let priceHtml = '';
     if (!owned && !isActive) {
         let parts = [];
@@ -51,7 +58,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
                 `).join('')}
             </div>
             <div class="avatar-modal-center">
-                <div class="avatar-preview-container" id="avatarPreviewContainer">
+                <div class="avatar-preview-container">
                     <img src="/assets/${escapeHtml(avatarFilename)}" alt="avatar" class="avatar-preview-img">
                     <div id="avatarAnimationOverlay" class="avatar-animation-overlay"></div>
                 </div>
@@ -75,20 +82,17 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
 
     modal.style.display = 'flex';
 
-    // Функция воспроизведения анимации в модалке
+    // Воспроизведение анимации
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
         if (!overlay) return;
         overlay.innerHTML = '';
         overlay.style.display = 'block';
-
         const animUrl = skinAnim[animType];
         if (!animUrl) {
-            console.warn(`Анимация ${animType} для скина ${effectiveSkinId} не найдена`);
             overlay.style.display = 'none';
             return;
         }
-
         const img = document.createElement('img');
         img.src = animUrl;
         img.className = 'modal-skin-animation';
@@ -100,23 +104,19 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         img.style.objectFit = 'contain';
         img.style.pointerEvents = 'none';
         overlay.appendChild(img);
-
-        let duration = 1000;
-        if (animType === 'victory' || animType === 'defeat') duration = 2500;
-        else duration = 2000;
-
+        const duration = (animType === 'victory' || animType === 'defeat') ? 2500 : 2000;
         setTimeout(() => {
             overlay.innerHTML = '';
             overlay.style.display = 'none';
         }, duration);
     }
 
-    // Обработчики для активных кнопок анимаций
+    // Обработчики для кнопок анимаций
     document.querySelectorAll('.avatar-anim-btn:not(.inactive)').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
             if (btn.disabled) return;
             const animType = btn.dataset.anim;
-            playAnimationInModal(animType);
+            if (animType) playAnimationInModal(animType);
         });
     });
 

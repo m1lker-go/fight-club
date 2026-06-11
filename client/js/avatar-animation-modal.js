@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – ФИНАЛ (4+4, правильные названия)
+// avatar-animation-modal.js – ИСПРАВЛЕННЫЙ (прижатие к верху)
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -23,7 +23,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const isActive = numericAvatarId === userData.avatar_id;
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
-    // Проверка анимаций через AnimationManager
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
     const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
@@ -36,15 +35,13 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const hasCrit     = !!skinAnim.crit;
     const hasUltimate = !!skinAnim.ultimate;
 
-    // Левая колонка: Аватар, Атака, Уворот, Защита
     const leftButtons = [
-        { type: 'avatar', label: 'Аватар', icon: 'fas fa-user-circle', available: true, alwaysEnabled: true }, // всегда активна для сброса
+        { type: 'avatar', label: 'Аватар', icon: 'fas fa-user-circle', available: true, alwaysEnabled: true },
         { type: 'attack', label: 'Атака',  icon: 'fas fa-fist-raised', available: hasAttack },
         { type: 'dodge',  label: 'Уворот', icon: 'fas fa-running', available: hasDodge },
         { type: 'block',  label: 'Защита', icon: 'fas fa-shield-alt', available: hasBlock }
     ];
 
-    // Правая колонка: Победа, Поражение, Крит, Ультимейт
     const rightButtons = [
         { type: 'victory',  label: 'Победа',     icon: 'fas fa-trophy', available: hasVictory },
         { type: 'defeat',   label: 'Поражение',  icon: 'fas fa-skull', available: hasDefeat },
@@ -60,7 +57,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         priceHtml = parts.length ? `<div style="font-size:14px; color:#f1c40f; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px; display:inline-block; margin:8px 0;">${parts.join(' + ')}</div>` : '<div style="font-size:14px; color:#f1c40f; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px; display:inline-block; margin:8px 0;">Бесплатно</div>';
     }
 
-    // Функция генерации кнопки с учётом скруглений
     function renderButton(btn, idx, total, side) {
         const isFirst = idx === 0;
         const isLast = idx === total - 1;
@@ -75,9 +71,8 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         const isActiveButton = btn.alwaysEnabled || btn.available;
         const disabledAttr = !isActiveButton ? 'disabled' : '';
         const inactiveClass = (!isActiveButton && !btn.alwaysEnabled) ? 'inactive' : '';
-        // Для кнопки "Аватар" иконка и текст всегда показываются
         const content = `<i class="${btn.icon}" style="font-size:20px; color:#aaa;"></i><span style="font-size:10px; color:#aaa;">${btn.label}</span>`;
-        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="background-color: #232833; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${isActiveButton ? 'pointer' : 'default'}; width: 100%; min-height: 70px; color: #aaa; font-size: 11px; padding: 0; margin: 0; ${borderRadius}">${content}</button>`;
+        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="background-color: #232833; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${isActiveButton ? 'pointer' : 'default'}; flex: 1 1 0; min-height: 0; width: 100%; color: #aaa; font-size: 11px; padding: 0; margin: 0; ${borderRadius}">${content}</button>`;
     }
 
     const leftHtml = leftButtons.map((btn, idx) => renderButton(btn, idx, leftButtons.length, 'left')).join('');
@@ -87,7 +82,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         <style>
             .avatar-modal-layout {
                 display: flex !important;
-                align-items: center !important;
+                align-items: flex-start !important; /* ИСПРАВЛЕНО: прижатие к верху */
                 gap: 0 !important;
             }
             .avatar-modal-left, .avatar-modal-right {
@@ -95,8 +90,9 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
                 flex-shrink: 0 !important;
                 display: flex !important;
                 flex-direction: column !important;
-                justify-content: center !important;
+                justify-content: flex-start !important; /* ИСПРАВЛЕНО: прижатие к верху */
                 gap: 0 !important;
+                height: auto !important;
             }
             .avatar-modal-center {
                 flex: 1 !important;
@@ -104,7 +100,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
-                justify-content: center !important;
+                justify-content: flex-start !important; /* ИСПРАВЛЕНО: аватар прижат к верху */
             }
             .avatar-preview-container {
                 position: relative !important;
@@ -182,22 +178,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Подстройка высоты кнопок под 1/4 высоты аватара
-    const avatarContainer = document.querySelector('.avatar-preview-container');
-    const btns = document.querySelectorAll('.avatar-anim-btn');
-    if (avatarContainer && btns.length) {
-        setTimeout(() => {
-            const avatarHeight = avatarContainer.offsetHeight;
-            if (avatarHeight > 0) {
-                const btnHeight = Math.floor(avatarHeight / 4);
-                btns.forEach(btn => {
-                    btn.style.height = btnHeight + 'px';
-                    btn.style.minHeight = btnHeight + 'px';
-                });
-            }
-        }, 100);
-    }
-
+    // УДАЛЯЕМ БЛОК ПОДСТРОЙКИ ВЫСОТЫ КНОПОК – он больше не нужен, используем flex: 1
     // Воспроизведение анимации
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
@@ -226,11 +207,10 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
-    // Обработчики для кнопок (кроме кнопки "Аватар")
+    // Обработчики для кнопок
     document.querySelectorAll('.avatar-anim-btn').forEach(btn => {
         const animType = btn.dataset.anim;
         if (animType === 'avatar') {
-            // Кнопка "Аватар" – очищает анимацию
             btn.addEventListener('click', () => {
                 const overlay = document.getElementById('avatarAnimationOverlay');
                 if (overlay) {
@@ -245,7 +225,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }
     });
 
-    // Покупка / активация / закрытие
+    // Покупка / активация / закрытие (без изменений)
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) buyBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/avatars/buy', { method: 'POST', body: JSON.stringify({ avatar_id: numericAvatarId }) });

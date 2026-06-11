@@ -5885,75 +5885,90 @@ body {
     color: white;
 }
 
-/* ========== МОДАЛЬНОЕ ОКНО АВАТАРА – ТРЁХКОЛОНОЧНАЯ ТАБЛИЦА ========== */
+/* ========== МОДАЛЬНОЕ ОКНО АВАТАРА (ТОЛЬКО ЭТОТ БЛОК) ========== */
 .avatar-modal-layout {
-    display: table;
-    width: 100%;
-    border-collapse: collapse;
-}
-.avatar-modal-left,
-.avatar-modal-center,
-.avatar-modal-right {
-    display: table-cell;
-    vertical-align: top;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 0;
 }
 .avatar-modal-left,
 .avatar-modal-right {
     width: 80px;
-    background: transparent;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
 }
 .avatar-modal-center {
-    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
-.avatar-modal-left .avatar-anim-btn,
-.avatar-modal-right .avatar-anim-btn {
-    display: block;
+.avatar-preview-container {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+}
+.avatar-preview-img {
     width: 100%;
     height: auto;
-    aspect-ratio: 1 / 1; /* квадратные кнопки, как на главной */
+    display: block;
+}
+.avatar-anim-btn {
     background-color: #232833;
     border: none;
-    margin-bottom: 0;
-    cursor: pointer;
-    text-align: center;
-    padding: 0;
-}
-/* Активные кнопки */
-.avatar-anim-btn:not(.inactive) {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
     color: #aaa;
+    font-size: 11px;
+    font-weight: normal;
+    padding: 0;
+    border-radius: 0;
+    width: 100%;
+    min-height: 70px;
+    box-sizing: border-box;
 }
-.avatar-anim-btn:not(.inactive) i {
+.avatar-anim-btn i {
     font-size: 20px;
     color: #aaa;
 }
-.avatar-anim-btn:not(.inactive) span {
+.avatar-anim-btn span {
     font-size: 10px;
     color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
 }
 .avatar-anim-btn:not(.inactive):hover {
     background-color: #2f3542;
 }
-.avatar-anim-btn:not(.inactive):hover i,
-.avatar-anim-btn:not(.inactive):hover span {
+.avatar-anim-btn:not(.inactive):hover i {
     color: #00aaff;
 }
-/* Неактивные кнопки (пустые) */
+.avatar-anim-btn:not(.inactive):hover span {
+    color: white;
+}
 .avatar-anim-btn.inactive {
     background-color: transparent;
     border: 1px solid #3a4050;
-    opacity: 0.3;
     cursor: default;
+    opacity: 0.5;
 }
 .avatar-anim-btn.inactive i,
 .avatar-anim-btn.inactive span {
     display: none;
 }
-/* Блок под аватаром (название + кнопки) */
 .avatar-name {
     margin-top: 12px;
     font-size: 18px;

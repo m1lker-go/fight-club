@@ -5946,12 +5946,11 @@ body {
 }
 
 
-/* ========== КНОПКИ АНИМАЦИЙ В МОДАЛЬНОМ ОКНЕ ========== */
+/* ========== КНОПКИ АНИМАЦИЙ В МОДАЛЬНОМ ОКНЕ (стиль как на главной) ========== */
 .avatar-modal-layout {
     display: flex;
     align-items: stretch;
     gap: 0;
-    min-height: 320px;
 }
 .avatar-modal-left,
 .avatar-modal-right {
@@ -5959,12 +5958,11 @@ body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    justify-content: space-between; /* равномерное распределение кнопок */
     gap: 0;
-    background-color: transparent;
 }
 .avatar-modal-center {
     flex: 1;
-    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -5975,8 +5973,6 @@ body {
     width: 100%;
     max-width: 200px;
     margin: 0 auto;
-    background: transparent;
-    border: none;
 }
 .avatar-preview-img {
     width: 100%;
@@ -5984,13 +5980,14 @@ body {
     display: block;
 }
 .avatar-anim-btn {
+    flex: 1; /* каждая кнопка занимает равную долю */
     background-color: #232833;
     border: none;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
     cursor: pointer;
     transition: background-color 0.2s;
     color: #aaa;
@@ -5999,8 +5996,7 @@ body {
     padding: 0;
     border-radius: 0;
     width: 100%;
-    height: 80px; /* фиксированная высота, как на главной */
-    min-width: 0;
+    min-height: 60px; /* чтобы пустые кнопки не схлопывались */
     box-sizing: border-box;
 }
 .avatar-anim-btn i {
@@ -6024,18 +6020,14 @@ body {
 .avatar-anim-btn:not(.inactive):hover span {
     color: white;
 }
-/* Неактивные кнопки (без анимаций) – пустые, но занимают место */
+/* Неактивные кнопки – пустые, но занимают место */
 .avatar-anim-btn.inactive {
-    opacity: 0.3;
-    cursor: default;
     background-color: transparent;
     border: 1px solid #3a4050;
+    cursor: default;
+    opacity: 0.5;
 }
 .avatar-anim-btn.inactive i,
 .avatar-anim-btn.inactive span {
     display: none;
-}
-/* Гарантия, что кнопка занимает место даже пустая */
-.avatar-anim-btn.inactive {
-    visibility: visible;
 }

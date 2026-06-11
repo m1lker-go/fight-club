@@ -253,10 +253,11 @@ window.AnimationManager = (function() {
 }
     
     return {
-        preloadAllAnimations,
-        playAnimation,
-        hasSkinAnimation: function(skinId) {
-            return !!skinAnimations[skinId];
-        }
-    };
+    preloadAllAnimations,
+    playAnimation,
+    hasSkinAnimation: function(skinId) {
+        return !!skinAnimations[skinId];
+    },
+    skinAnimations: skinAnimations   // <-- добавить эту строку
+};
 })();

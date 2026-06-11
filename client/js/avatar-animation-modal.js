@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – таблица 4+1+4, фикс размеры
+// avatar-animation-modal.js – финал 80x80 кнопки, аватар 240x160
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -36,15 +36,15 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const hasUltimate = !!skinAnim.ultimate;
 
     const leftButtons = [
-        { type: 'avatar',  label: 'Аватар',   icon: 'fas fa-user-circle', active: true },
-        { type: 'attack',  label: 'Атака',    icon: 'fas fa-fist-raised', active: hasAttack },
-        { type: 'dodge',   label: 'Уворот',   icon: 'fas fa-running',     active: hasDodge },
-        { type: 'block',   label: 'Защита',   icon: 'fas fa-shield-alt',  active: hasBlock }
+        { type: 'avatar', label: 'Аватар', icon: 'fas fa-user-circle', active: true },
+        { type: 'attack', label: 'Атака',  icon: 'fas fa-fist-raised', active: hasAttack },
+        { type: 'dodge',  label: 'Уворот', icon: 'fas fa-running', active: hasDodge },
+        { type: 'block',  label: 'Защита', icon: 'fas fa-shield-alt', active: hasBlock }
     ];
     const rightButtons = [
         { type: 'victory',  label: 'Победа',     icon: 'fas fa-trophy', active: hasVictory },
-        { type: 'defeat',   label: 'Поражение',  icon: 'fas fa-skull',  active: hasDefeat },
-        { type: 'crit',     label: 'Крит',       icon: 'fas fa-bolt',   active: hasCrit },
+        { type: 'defeat',   label: 'Поражение',  icon: 'fas fa-skull', active: hasDefeat },
+        { type: 'crit',     label: 'Крит',       icon: 'fas fa-bolt', active: hasCrit },
         { type: 'ultimate', label: 'Ультимейт',  icon: 'fas fa-meteor', active: hasUltimate }
     ];
 
@@ -67,34 +67,40 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
             if (isFirst) borderRadius = 'border-radius: 0 12px 0 0;';
             else if (isLast) borderRadius = 'border-radius: 0 0 12px 0;';
         }
-        const active = btn.active;
-        const background = active ? '#232833' : 'transparent';
-        const border = active ? 'none' : '1px solid #3a4050';
-        const disabledAttr = active ? '' : 'disabled';
-        const opacity = active ? '1' : '0.6';
-        const cursor = active ? 'pointer' : 'default';
-        return `<button class="avatar-anim-btn" data-anim="${btn.type}" ${disabledAttr} style="width: 75px; height: 75px; background-color: ${background}; border: ${border}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${cursor}; color: #aaa; font-size: 11px; padding: 0; margin: 0; box-sizing: border-box; ${borderRadius} opacity: ${opacity};"><i class="${btn.icon}" style="font-size:20px; color:#aaa;"></i><span style="font-size:10px; color:#aaa;">${btn.label}</span></button>`;
+        const isActiveBtn = btn.active;
+        const disabledAttr = isActiveBtn ? '' : 'disabled';
+        const inactiveClass = isActiveBtn ? '' : 'inactive';
+        const cursor = isActiveBtn ? 'pointer' : 'default';
+        const opacity = isActiveBtn ? '1' : '0.5';
+        const background = isActiveBtn ? '#232833' : 'transparent';
+        const border = isActiveBtn ? 'none' : '2px solid #3a4050';
+        const content = `<i class="${btn.icon}" style="font-size:24px; color:#aaa;"></i><span style="font-size:10px; color:#aaa;">${btn.label}</span>`;
+        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="width: 80px; height: 80px; background-color: ${background}; border: ${border}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${cursor}; color: #aaa; font-size: 11px; padding: 0; margin: 0; box-sizing: border-box; ${borderRadius} opacity: ${opacity};">${content}</button>`;
     }
 
-    const leftCol = leftButtons.map((b, i) => makeButton(b, i, 'left')).join('');
-    const rightCol = rightButtons.map((b, i) => makeButton(b, i, 'right')).join('');
+    const leftCol = leftButtons.map((btn, i) => makeButton(btn, i, 'left')).join('');
+    const rightCol = rightButtons.map((btn, i) => makeButton(btn, i, 'right')).join('');
 
     const html = `
-        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <!-- Верхняя строка: левые кнопки, аватар, правые кнопки -->
-            <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 0;">
-                <div style="display: flex; flex-direction: column;">${leftCol}</div>
-                <div style="width: 200px; height: 300px; position: relative; margin: 0; padding: 0;">
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; margin: 0 auto;">
+            <!-- Основной ряд -->
+            <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 0; margin: 0; padding: 0;">
+                <div style="display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0;">
+                    ${leftCol}
+                </div>
+                <div style="margin: 0 0px; padding: 0; width: 240px; height: 160px; position: relative;">
                     <img src="/assets/${escapeHtml(avatarFilename)}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
                     <div id="avatarAnimationOverlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; display:none; z-index:10;"></div>
                 </div>
-                <div style="display: flex; flex-direction: column;">${rightCol}</div>
+                <div style="display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0;">
+                    ${rightCol}
+                </div>
             </div>
-            <!-- Нижний блок (на всю ширину) -->
+            <!-- Нижний блок -->
             <div style="display: flex; flex-direction: column; align-items: center; margin-top: 16px; width: 100%;">
                 <div style="font-size: 18px; font-weight: bold; color: white;">${escapeHtml(avatarName)}</div>
                 ${priceHtml}
-                <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
                     ${!owned && !isActive ? '<button class="btn" id="buyAvatarBtn" style="background-color: #2f3542; color: #aaa; border: none; padding: 8px 16px; border-radius: 30px; font-size: 14px; cursor: pointer;">Купить</button>' : ''}
                     ${owned && !isActive ? '<button class="btn" id="activateAvatarBtn" style="background-color: #2f3542; color: #aaa; border: none; padding: 8px 16px; border-radius: 30px; font-size: 14px; cursor: pointer;">Активировать</button>' : ''}
                     <button class="btn" id="closeAvatarModalBtn" style="background-color: #2f3542; color: #aaa; border: none; padding: 8px 16px; border-radius: 30px; font-size: 14px; cursor: pointer;">Закрыть</button>
@@ -138,10 +144,15 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         if (animType === 'avatar') {
             btn.addEventListener('click', () => {
                 const overlay = document.getElementById('avatarAnimationOverlay');
-                if (overlay) overlay.style.display = 'none';
+                if (overlay) {
+                    overlay.innerHTML = '';
+                    overlay.style.display = 'none';
+                }
             });
         } else if (!btn.disabled) {
-            btn.addEventListener('click', () => playAnimationInModal(animType));
+            btn.addEventListener('click', () => {
+                if (animType) playAnimationInModal(animType);
+            });
         }
     });
 

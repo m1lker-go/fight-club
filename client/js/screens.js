@@ -1075,6 +1075,7 @@ async function renderSkins(container) {
             const isOwned = ownedSet.has(avatar.id);
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
+            const avatarName = translateSkinName(avatar.filename) || avatar.name || 'Аватар';
 
             let priceHtml = '';
             if (!isOwned) {
@@ -1089,7 +1090,13 @@ async function renderSkins(container) {
             }
 
             html += `
-                <div style="position: relative; cursor: pointer;" data-avatar-id="${avatar.id}" data-avatar-filename="${avatar.filename}" data-owned="${isOwned}">
+                <div style="position: relative; cursor: pointer;" 
+                     data-avatar-id="${avatar.id}" 
+                     data-avatar-filename="${avatar.filename}" 
+                     data-owned="${isOwned}"
+                     data-name="${escapeHtml(avatarName)}"
+                     data-price-gold="${priceGold}"
+                     data-price-diamonds="${priceDiamonds}">
                     ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
                     <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
                     ${priceHtml}
@@ -1104,12 +1111,15 @@ async function renderSkins(container) {
                 const avatarId = parseInt(div.dataset.avatarId);
                 const avatarFilename = div.dataset.avatarFilename;
                 const owned = div.dataset.owned === 'true';
+                const avatarName = div.dataset.name;
+                const priceGold = parseInt(div.dataset.priceGold);
+                const priceDiamonds = parseInt(div.dataset.priceDiamonds);
+                
                 if (typeof window.showAvatarAnimationModal === 'function') {
-    window.showAvatarAnimationModal(avatarId, avatarFilename, owned);
-} else {
-    // fallback на старую функцию, если новый скрипт не загрузился
-    showSkinModal(avatarId, avatarFilename, owned);
-}
+                    window.showAvatarAnimationModal(avatarId, avatarFilename, owned, avatarName, priceGold, priceDiamonds);
+                } else {
+                    showSkinModal(avatarId, avatarFilename, owned);
+                }
             });
         });
     } catch (err) {

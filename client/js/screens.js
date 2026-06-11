@@ -1075,7 +1075,7 @@ async function renderSkins(container) {
             const isOwned = ownedSet.has(avatar.id);
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
-            const avatarName = translateSkinName(avatar.filename) || avatar.name || 'Аватар';
+            const avatarName = translateSkinName(avatar.name) || avatar.name || 'Аватар';
 
             let priceHtml = '';
             if (!isOwned) {

@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – ИСПРАВЛЕННЫЙ (прижатие к верху)
+// avatar-animation-modal.js – жёсткая сетка, фиксированные размеры
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -35,6 +35,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const hasCrit     = !!skinAnim.crit;
     const hasUltimate = !!skinAnim.ultimate;
 
+    // Левая колонка: Аватар, Атака, Уворот, Защита
     const leftButtons = [
         { type: 'avatar', label: 'Аватар', icon: 'fas fa-user-circle', available: true, alwaysEnabled: true },
         { type: 'attack', label: 'Атака',  icon: 'fas fa-fist-raised', available: hasAttack },
@@ -42,6 +43,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         { type: 'block',  label: 'Защита', icon: 'fas fa-shield-alt', available: hasBlock }
     ];
 
+    // Правая колонка: Победа, Поражение, Крит, Ультимейт
     const rightButtons = [
         { type: 'victory',  label: 'Победа',     icon: 'fas fa-trophy', available: hasVictory },
         { type: 'defeat',   label: 'Поражение',  icon: 'fas fa-skull', available: hasDefeat },
@@ -57,9 +59,9 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         priceHtml = parts.length ? `<div style="font-size:14px; color:#f1c40f; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px; display:inline-block; margin:8px 0;">${parts.join(' + ')}</div>` : '<div style="font-size:14px; color:#f1c40f; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px; display:inline-block; margin:8px 0;">Бесплатно</div>';
     }
 
-    function renderButton(btn, idx, total, side) {
+    function renderButton(btn, idx, side) {
         const isFirst = idx === 0;
-        const isLast = idx === total - 1;
+        const isLast = idx === 3;
         let borderRadius = '';
         if (side === 'left') {
             if (isFirst) borderRadius = 'border-radius: 12px 0 0 0;';
@@ -71,106 +73,44 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         const isActiveButton = btn.alwaysEnabled || btn.available;
         const disabledAttr = !isActiveButton ? 'disabled' : '';
         const inactiveClass = (!isActiveButton && !btn.alwaysEnabled) ? 'inactive' : '';
+        // Всегда показываем иконку и текст (для пустых не предусмотрено)
         const content = `<i class="${btn.icon}" style="font-size:20px; color:#aaa;"></i><span style="font-size:10px; color:#aaa;">${btn.label}</span>`;
-        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="background-color: #232833; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${isActiveButton ? 'pointer' : 'default'}; flex: 1 1 0; min-height: 0; width: 100%; color: #aaa; font-size: 11px; padding: 0; margin: 0; ${borderRadius}">${content}</button>`;
+        return `<button class="avatar-anim-btn ${inactiveClass}" data-anim="${btn.type}" ${disabledAttr} style="width: 75px; height: 75px; background-color: #232833; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: ${isActiveButton ? 'pointer' : 'default'}; color: #aaa; font-size: 11px; padding: 0; margin: 0; box-sizing: border-box; ${borderRadius}">${content}</button>`;
     }
 
-    const leftHtml = leftButtons.map((btn, idx) => renderButton(btn, idx, leftButtons.length, 'left')).join('');
-    const rightHtml = rightButtons.map((btn, idx) => renderButton(btn, idx, rightButtons.length, 'right')).join('');
+    // Генерируем ряды для левой и правой колонки
+    let leftColHtml = '';
+    for (let i = 0; i < leftButtons.length; i++) {
+        leftColHtml += renderButton(leftButtons[i], i, 'left');
+    }
+    let rightColHtml = '';
+    for (let i = 0; i < rightButtons.length; i++) {
+        rightColHtml += renderButton(rightButtons[i], i, 'right');
+    }
 
     const html = `
-        <style>
-            .avatar-modal-layout {
-                display: flex !important;
-                align-items: flex-start !important; /* ИСПРАВЛЕНО: прижатие к верху */
-                gap: 0 !important;
-            }
-            .avatar-modal-left, .avatar-modal-right {
-                width: 80px !important;
-                flex-shrink: 0 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: flex-start !important; /* ИСПРАВЛЕНО: прижатие к верху */
-                gap: 0 !important;
-                height: auto !important;
-            }
-            .avatar-modal-center {
-                flex: 1 !important;
-                text-align: center !important;
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: center !important;
-                justify-content: flex-start !important; /* ИСПРАВЛЕНО: аватар прижат к верху */
-            }
-            .avatar-preview-container {
-                position: relative !important;
-                width: 100% !important;
-                max-width: 200px !important;
-                margin: 0 auto !important;
-            }
-            .avatar-preview-img {
-                width: 100% !important;
-                height: auto !important;
-                display: block !important;
-            }
-            .avatar-anim-btn:not(.inactive):hover {
-                background-color: #2f3542 !important;
-            }
-            .avatar-anim-btn:not(.inactive):hover i,
-            .avatar-anim-btn:not(.inactive):hover span {
-                color: #00aaff !important;
-            }
-            .avatar-anim-btn.inactive {
-                background-color: transparent !important;
-                border: 1px solid #3a4050 !important;
-                opacity: 0.6 !important;
-                cursor: default !important;
-            }
-            .avatar-name {
-                margin-top: 12px !important;
-                font-size: 18px !important;
-                font-weight: bold !important;
-                color: white !important;
-            }
-            .avatar-modal-actions {
-                display: flex !important;
-                gap: 12px !important;
-                justify-content: center !important;
-                margin-top: 8px !important;
-            }
-            .avatar-modal-actions .btn {
-                background-color: #2f3542 !important;
-                color: #aaa !important;
-                border: none !important;
-                padding: 8px 16px !important;
-                border-radius: 30px !important;
-                font-size: 14px !important;
-                cursor: pointer !important;
-            }
-            .avatar-modal-actions .btn:hover {
-                background-color: #3a4050 !important;
-                color: #00aaff !important;
-            }
-        </style>
-        <div class="avatar-modal-layout">
-            <div class="avatar-modal-left">
-                ${leftHtml}
+        <div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 0; margin: 0; padding: 0;">
+            <!-- Левая колонка -->
+            <div style="display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0;">
+                ${leftColHtml}
             </div>
-            <div class="avatar-modal-center">
-                <div class="avatar-preview-container">
-                    <img src="/assets/${escapeHtml(avatarFilename)}" alt="avatar" class="avatar-preview-img">
+            <!-- Центр: аватар + название + кнопки -->
+            <div style="display: flex; flex-direction: column; align-items: center; margin: 0 10px; padding: 0;">
+                <div id="avatarPreviewContainer" style="position: relative; width: 300px; height: 300px; margin: 0; padding: 0;">
+                    <img src="/assets/${escapeHtml(avatarFilename)}" alt="avatar" style="width: 100%; height: 100%; object-fit: cover; display: block; margin: 0; padding: 0;">
                     <div id="avatarAnimationOverlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; display:none; z-index:10;"></div>
                 </div>
-                <div class="avatar-name">${escapeHtml(avatarName)}</div>
+                <div style="margin-top: 12px; font-size: 18px; font-weight: bold; color: white;">${escapeHtml(avatarName)}</div>
                 ${priceHtml}
-                <div class="avatar-modal-actions">
-                    ${!owned && !isActive ? '<button class="btn" id="buyAvatarBtn">Купить</button>' : ''}
-                    ${owned && !isActive ? '<button class="btn" id="activateAvatarBtn">Активировать</button>' : ''}
-                    <button class="btn" id="closeAvatarModalBtn">Закрыть</button>
+                <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
+                    ${!owned && !isActive ? '<button class="btn" id="buyAvatarBtn" style="background-color: #2f3542; color: #aaa; border: none; padding: 8px 16px; border-radius: 30px; font-size: 14px; cursor: pointer;">Купить</button>' : ''}
+                    ${owned && !isActive ? '<button class="btn" id="activateAvatarBtn" style="background-color: #2f3542; color: #aaa; border: none; padding: 8px 16px; border-radius: 30px; font-size: 14px; cursor: pointer;">Активировать</button>' : ''}
+                    <button class="btn" id="closeAvatarModalBtn" style="background-color: #2f3542; color: #aaa; border: none; padding: 8px 16px; border-radius: 30px; font-size: 14px; cursor: pointer;">Закрыть</button>
                 </div>
             </div>
-            <div class="avatar-modal-right">
-                ${rightHtml}
+            <!-- Правая колонка -->
+            <div style="display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0;">
+                ${rightColHtml}
             </div>
         </div>
     `;
@@ -178,7 +118,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // УДАЛЯЕМ БЛОК ПОДСТРОЙКИ ВЫСОТЫ КНОПОК – он больше не нужен, используем flex: 1
     // Воспроизведение анимации
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
@@ -207,7 +146,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
-    // Обработчики для кнопок
+    // Обработчики для всех кнопок анимаций
     document.querySelectorAll('.avatar-anim-btn').forEach(btn => {
         const animType = btn.dataset.anim;
         if (animType === 'avatar') {
@@ -225,7 +164,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }
     });
 
-    // Покупка / активация / закрытие (без изменений)
+    // Покупка/активация
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) buyBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/avatars/buy', { method: 'POST', body: JSON.stringify({ avatar_id: numericAvatarId }) });

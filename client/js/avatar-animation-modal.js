@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – финал (кнопки всегда с иконками и текстом)
+// avatar-animation-modal.js – финал, строгое расположение кнопок (слева: Атака, Уворот, Защита; справа: Победа, Поражение, Крит, Ультимейт)
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -24,25 +24,31 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
-    const effectiveSkinId = isCybercat ? 'cybercat' : String(numericAvatarId);
+    const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
 
-    const hasVictory = !!skinAnim.victory;
-    const hasDefeat  = !!skinAnim.defeat;
-    const hasAttack  = !!skinAnim.attack;
-    const hasDodge   = !!skinAnim.dodge;
+    // Наличие анимаций (для определения активности кнопок)
+    const hasAttack   = !!skinAnim.attack;
+    const hasDodge    = !!skinAnim.dodge;
+    const hasBlock    = !!skinAnim.block;   // защита
+    const hasVictory  = !!skinAnim.victory;
+    const hasDefeat   = !!skinAnim.defeat;
+    const hasCrit     = !!skinAnim.crit;
+    const hasUltimate = !!skinAnim.ultimate;
 
+    // Левая колонка (3 кнопки + 1 пустая, чтобы высота совпала)
     const leftButtons = [
-        { type: 'victory', label: 'Победа', icon: 'fas fa-trophy', available: hasVictory },
-        { type: 'attack',  label: 'Атака',  icon: 'fas fa-fist-raised', available: hasAttack },
-        { type: null,      label: '',       icon: '', available: false },
-        { type: null,      label: '',       icon: '', available: false }
+        { type: 'attack',   label: 'Атака',     icon: 'fas fa-fist-raised', available: hasAttack },
+        { type: 'dodge',    label: 'Уворот',    icon: 'fas fa-running',     available: hasDodge },
+        { type: 'block',    label: 'Защита',    icon: 'fas fa-shield-alt',  available: hasBlock },
+        { type: null,       label: '',          icon: '',                   available: false }
     ];
+    // Правая колонка (4 кнопки)
     const rightButtons = [
-        { type: 'defeat', label: 'Поражение', icon: 'fas fa-skull', available: hasDefeat },
-        { type: 'dodge',  label: 'Уворот',    icon: 'fas fa-running', available: hasDodge },
-        { type: null,     label: '',          icon: '', available: false },
-        { type: null,     label: '',          icon: '', available: false }
+        { type: 'victory',  label: 'Победа',    icon: 'fas fa-trophy',      available: hasVictory },
+        { type: 'defeat',   label: 'Поражение', icon: 'fas fa-skull',       available: hasDefeat },
+        { type: 'crit',     label: 'Крит',      icon: 'fas fa-bolt',        available: hasCrit },
+        { type: 'ultimate', label: 'Ультимейт', icon: 'fas fa-meteor',      available: hasUltimate }
     ];
 
     let priceHtml = '';
@@ -53,6 +59,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         priceHtml = parts.length ? `<div style="font-size:14px; color:#f1c40f; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px; display:inline-block; margin:8px 0;">${parts.join(' + ')}</div>` : '<div style="font-size:14px; color:#f1c40f; background:rgba(0,0,0,0.6); padding:4px 12px; border-radius:20px; display:inline-block; margin:8px 0;">Бесплатно</div>';
     }
 
+    // Функция рендера кнопки с учётом скруглений (первая и последняя)
     function renderButton(btn, idx, total, side) {
         const isFirst = idx === 0;
         const isLast = idx === total - 1;
@@ -174,7 +181,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Подстройка высоты кнопок под 1/4 высоты аватара
+    // Подстройка высоты кнопок под 1/4 высоты аватара (если нужно)
     const avatarContainer = document.querySelector('.avatar-preview-container');
     const btns = document.querySelectorAll('.avatar-anim-btn');
     if (avatarContainer && btns.length) {
@@ -190,6 +197,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, 100);
     }
 
+    // Воспроизведение анимации
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
         if (!overlay) return;
@@ -217,15 +225,18 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
+    // Навешиваем обработчики только на активные кнопки (которые не disabled и не inactive)
     document.querySelectorAll('.avatar-anim-btn').forEach(btn => {
-        if (!btn.disabled && !btn.classList.contains('inactive')) {
-            btn.addEventListener('click', () => {
+        if (!btn.disabled && !btn.classList.contains('inactive') && btn.dataset.anim) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const animType = btn.dataset.anim;
                 if (animType) playAnimationInModal(animType);
             });
         }
     });
 
+    // Покупка
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) buyBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/avatars/buy', { method: 'POST', body: JSON.stringify({ avatar_id: numericAvatarId }) });
@@ -237,6 +248,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         } else showToast('Ошибка: ' + data.error, 1500);
     });
 
+    // Активация
     const activateBtn = document.getElementById('activateAvatarBtn');
     if (activateBtn) activateBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/player/avatar', { method: 'POST', body: JSON.stringify({ avatar_id: numericAvatarId }) });
@@ -251,6 +263,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         } else showToast('Ошибка при смене аватара', 1500);
     });
 
+    // Закрытие
     const closeBtn = document.getElementById('closeAvatarModalBtn');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     const closeX = modal.querySelector('.close');

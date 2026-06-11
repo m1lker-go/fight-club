@@ -5944,3 +5944,127 @@ body {
     color: white;
     border: none;
 }
+
+
+/* ========== МОДАЛЬНОЕ ОКНО АВАТАРА С АНИМАЦИЯМИ ========== */
+.avatar-modal-layout {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 320px;
+}
+.avatar-modal-left,
+.avatar-modal-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    width: 70px;
+}
+.avatar-modal-center {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.avatar-preview-container {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+    background-color: #1a1f2b;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #00aaff;
+}
+.avatar-preview-img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.avatar-animation-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+}
+.modal-skin-animation {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.avatar-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+.avatar-price {
+    font-size: 14px;
+    color: #f1c40f;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
+.avatar-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.avatar-anim-btn {
+    width: 70px;
+    height: 70px;
+    background-color: #232833;
+    border: 2px solid #aaa;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #aaa;
+    font-size: 11px;
+}
+.avatar-anim-btn i {
+    font-size: 24px;
+    color: #aaa;
+}
+.avatar-anim-btn span {
+    font-size: 10px;
+    text-transform: uppercase;
+}
+.avatar-anim-btn:not(.disabled):hover {
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.avatar-anim-btn:not(.disabled):hover i {
+    color: #00aaff;
+}
+.avatar-anim-btn.disabled {
+    opacity: 0.4;
+    cursor: default;
+    filter: grayscale(0.3);
+}
+@media (max-width: 480px) {
+    .avatar-modal-left,
+    .avatar-modal-right {
+        width: 55px;
+    }
+    .avatar-anim-btn {
+        width: 55px;
+        height: 55px;
+    }
+    .avatar-anim-btn i {
+        font-size: 20px;
+    }
+}

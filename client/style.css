@@ -5946,30 +5946,29 @@ body {
 }
 
 
-/* ========== МОДАЛЬНОЕ ОКНО АВАТАРА В СТИЛЕ ГЛАВНОЙ ========== */
+/* ========== КНОПКИ АНИМАЦИЙ В МОДАЛЬНОМ ОКНЕ ========== */
 .avatar-modal-layout {
     display: flex;
     align-items: stretch;
-    justify-content: space-between;
     gap: 0;
     min-height: 320px;
 }
 .avatar-modal-left,
 .avatar-modal-right {
-    display: grid;
-    grid-template-rows: repeat(4, 1fr);
-    gap: 0;
     width: 80px;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background-color: transparent;
 }
 .avatar-modal-center {
     flex: 1;
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: none;
-    padding: 0;
 }
 .avatar-preview-container {
     position: relative;
@@ -5978,30 +5977,11 @@ body {
     margin: 0 auto;
     background: transparent;
     border: none;
-    border-radius: 0;
-    overflow: hidden;
 }
 .avatar-preview-img {
     width: 100%;
     height: auto;
     display: block;
-    border: none;
-    border-radius: 0;
-}
-.avatar-animation-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    display: none;
-    z-index: 10;
-}
-.modal-skin-animation {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
 }
 .avatar-anim-btn {
     background-color: #232833;
@@ -6010,7 +5990,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 2px;
     cursor: pointer;
     transition: background-color 0.2s;
     color: #aaa;
@@ -6019,7 +5999,7 @@ body {
     padding: 0;
     border-radius: 0;
     width: 100%;
-    height: 100%;
+    height: 80px; /* фиксированная высота, как на главной */
     min-width: 0;
     box-sizing: border-box;
 }
@@ -6044,55 +6024,18 @@ body {
 .avatar-anim-btn:not(.inactive):hover span {
     color: white;
 }
+/* Неактивные кнопки (без анимаций) – пустые, но занимают место */
 .avatar-anim-btn.inactive {
     opacity: 0.3;
     cursor: default;
     background-color: transparent;
+    border: 1px solid #3a4050;
 }
 .avatar-anim-btn.inactive i,
 .avatar-anim-btn.inactive span {
     display: none;
 }
-.avatar-name {
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-    margin-top: 8px;
-}
-.avatar-price {
-    font-size: 12px;
-    color: #f1c40f;
-    background: rgba(0,0,0,0.6);
-    padding: 4px 12px;
-    border-radius: 20px;
-    display: inline-block;
-    margin: 8px 0;
-}
-.avatar-modal-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-top: 8px;
-}
-.avatar-modal-actions .btn {
-    background-color: #2f3542;
-    color: #aaa;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 30px;
-    font-size: 14px;
-    cursor: pointer;
-}
-.avatar-modal-actions .btn:hover {
-    background-color: #3a4050;
-    color: #00aaff;
-}
-@media (max-width: 480px) {
-    .avatar-modal-left,
-    .avatar-modal-right {
-        width: 60px;
-    }
-    .avatar-anim-btn i {
-        font-size: 16px;
-    }
+/* Гарантия, что кнопка занимает место даже пустая */
+.avatar-anim-btn.inactive {
+    visibility: visible;
 }

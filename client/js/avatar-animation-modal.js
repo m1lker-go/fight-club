@@ -20,12 +20,14 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    const isActive = avatarId === userData.avatar_id;
+    // Приводим avatarId к числу (важно для поиска в skinAnimations)
+    const numericAvatarId = Number(avatarId);
+    const isActive = numericAvatarId === userData.avatar_id;
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
     // Определяем наличие анимаций
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
-    const effectiveSkinId = isCybercat ? 'cybercat' : avatarId;
+    const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
 
     // Проверяем наличие каждой анимации
@@ -48,13 +50,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         { type: null,     label: '',          icon: '', available: false },
         { type: null,     label: '',          icon: '', available: false }
     ];
-
-    console.log('=== AvatarModal DEBUG ===');
-    console.log('leftButtons:', leftButtons);
-    console.log('rightButtons:', rightButtons);
-    console.log('avatarName:', avatarName);
-    console.log('avatarFilename:', avatarFilename);
-    console.log('skinAnim:', skinAnim);
 
     // Формируем цену
     let priceHtml = '';
@@ -101,13 +96,70 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         </div>
     `;
 
-    console.log('Generated HTML length:', html.length);
-    console.log('HTML preview (first 200 chars):', html.substring(0, 200));
-
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Воспроизведение анимации
+    // Принудительно добавляем стили для гарантированной видимости (если их нет в CSS)
+    if (!document.getElementById('avatar-modal-extra-styles')) {
+        const style = document.createElement('style');
+        style.id = 'avatar-modal-extra-styles';
+        style.textContent = `
+            .avatar-modal-layout {
+                display: flex !important;
+                align-items: stretch !important;
+            }
+            .avatar-modal-left, .avatar-modal-right {
+                width: 80px !important;
+                flex-shrink: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                gap: 0 !important;
+            }
+            .avatar-modal-center {
+                flex: 1 !important;
+            }
+            .avatar-anim-btn {
+                width: 100% !important;
+                height: 80px !important;
+                background-color: #232833 !important;
+                border: 1px solid #3a4050 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 4px !important;
+                cursor: pointer !important;
+            }
+            .avatar-anim-btn i {
+                font-size: 20px !important;
+                color: #aaa !important;
+            }
+            .avatar-anim-btn span {
+                font-size: 10px !important;
+                color: #aaa !important;
+            }
+            .avatar-anim-btn.inactive {
+                opacity: 0.3 !important;
+                background-color: transparent !important;
+                border-color: #2a2f3a !important;
+            }
+            .avatar-anim-btn.inactive i,
+            .avatar-anim-btn.inactive span {
+                display: none !important;
+            }
+            .avatar-anim-btn:not(.inactive):hover {
+                background-color: #2f3542 !important;
+            }
+            .avatar-anim-btn:not(.inactive):hover i,
+            .avatar-anim-btn:not(.inactive):hover span {
+                color: white !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Воспроизведение анимации в модалке
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
         if (!overlay) return;
@@ -136,7 +188,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
-    // Обработчики для кнопок анимаций
+    // Обработчики для активных кнопок анимаций
     document.querySelectorAll('.avatar-anim-btn:not(.inactive)').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.disabled) return;
@@ -145,13 +197,13 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         });
     });
 
-    // Покупка аватара
+    // Кнопка покупки аватара
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
             const res = await window.apiRequest('/avatars/buy', {
                 method: 'POST',
-                body: JSON.stringify({ avatar_id: avatarId })
+                body: JSON.stringify({ avatar_id: numericAvatarId })
             });
             const data = await res.json();
             if (data.success) {
@@ -164,17 +216,17 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         });
     }
 
-    // Активация аватара
+    // Кнопка активации (если уже куплен)
     const activateBtn = document.getElementById('activateAvatarBtn');
     if (activateBtn) {
         activateBtn.addEventListener('click', async () => {
             const res = await window.apiRequest('/player/avatar', {
                 method: 'POST',
-                body: JSON.stringify({ avatar_id: avatarId })
+                body: JSON.stringify({ avatar_id: numericAvatarId })
             });
             const data = await res.json();
             if (data.success) {
-                userData.avatar_id = avatarId;
+                userData.avatar_id = numericAvatarId;
                 userData.avatar = avatarFilename;
                 modal.style.display = 'none';
                 renderProfileTab('skins');
@@ -186,10 +238,14 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         });
     }
 
-    // Закрытие
+    // Кнопка закрытия
     const closeBtn = document.getElementById('closeAvatarModalBtn');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
+
+    // Крестик в углу модального окна
     const closeX = modal.querySelector('.close');
     if (closeX) closeX.onclick = () => modal.style.display = 'none';
+
+    // Закрытие по клику вне окна
     window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 };

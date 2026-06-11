@@ -1104,7 +1104,12 @@ async function renderSkins(container) {
                 const avatarId = parseInt(div.dataset.avatarId);
                 const avatarFilename = div.dataset.avatarFilename;
                 const owned = div.dataset.owned === 'true';
-                showSkinModal(avatarId, avatarFilename, owned);
+                if (typeof window.showAvatarAnimationModal === 'function') {
+    window.showAvatarAnimationModal(avatarId, avatarFilename, owned);
+} else {
+    // fallback на старую функцию, если новый скрипт не загрузился
+    showSkinModal(avatarId, avatarFilename, owned);
+}
             });
         });
     } catch (err) {

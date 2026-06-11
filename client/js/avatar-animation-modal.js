@@ -1,8 +1,20 @@
 // avatar-animation-modal.js – модальное окно аватара в стиле главной страницы
 
+// Обеспечиваем наличие escapeHtml
+if (typeof escapeHtml === 'undefined') {
+    window.escapeHtml = function(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    };
+    var escapeHtml = window.escapeHtml;
+}
+
 window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avatarName, priceGold, priceDiamonds) {
-    console.log('Modal opened, leftButtons:', leftButtons);
-    console.log('Modal opened, rightButtons:', rightButtons);
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
@@ -37,6 +49,13 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         { type: null,     label: '',          icon: '', available: false }
     ];
 
+    console.log('=== AvatarModal DEBUG ===');
+    console.log('leftButtons:', leftButtons);
+    console.log('rightButtons:', rightButtons);
+    console.log('avatarName:', avatarName);
+    console.log('avatarFilename:', avatarFilename);
+    console.log('skinAnim:', skinAnim);
+
     // Формируем цену
     let priceHtml = '';
     if (!owned && !isActive) {
@@ -50,11 +69,11 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }
     }
 
-    modalBody.innerHTML = `
+    const html = `
         <div class="avatar-modal-layout">
             <div class="avatar-modal-left">
                 ${leftButtons.map(btn => `
-                    <button class="avatar-anim-btn ${btn.available ? '' : 'inactive'}" data-anim="${btn.type}" ${!btn.available ? 'disabled' : ''}>
+                    <button class="avatar-anim-btn ${btn.available ? '' : 'inactive'}" data-anim="${btn.type || ''}" ${!btn.available ? 'disabled' : ''}>
                         ${btn.available ? `<i class="${btn.icon}"></i><span>${btn.label}</span>` : ''}
                     </button>
                 `).join('')}
@@ -74,7 +93,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
             </div>
             <div class="avatar-modal-right">
                 ${rightButtons.map(btn => `
-                    <button class="avatar-anim-btn ${btn.available ? '' : 'inactive'}" data-anim="${btn.type}" ${!btn.available ? 'disabled' : ''}>
+                    <button class="avatar-anim-btn ${btn.available ? '' : 'inactive'}" data-anim="${btn.type || ''}" ${!btn.available ? 'disabled' : ''}>
                         ${btn.available ? `<i class="${btn.icon}"></i><span>${btn.label}</span>` : ''}
                     </button>
                 `).join('')}
@@ -82,6 +101,10 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         </div>
     `;
 
+    console.log('Generated HTML length:', html.length);
+    console.log('HTML preview (first 200 chars):', html.substring(0, 200));
+
+    modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
     // Воспроизведение анимации

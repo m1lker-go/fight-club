@@ -1,6 +1,6 @@
-// avatar-animation-modal.js – модальное окно аватара в стиле главной страницы
+// avatar-animation-modal.js – финальная версия с правильными стилями как на главной
 
-// Обеспечиваем наличие escapeHtml
+// Обеспечиваем escapeHtml
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
         if (!str) return '';
@@ -20,30 +20,28 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    // Приводим avatarId к числу (важно для поиска в skinAnimations)
+    // Приводим avatarId к числу
     const numericAvatarId = Number(avatarId);
     const isActive = numericAvatarId === userData.avatar_id;
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
-    // Определяем наличие анимаций
+    // Определяем наличие анимаций через AnimationManager
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
     const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
 
-    // Проверяем наличие каждой анимации
     const hasVictory = !!skinAnim.victory;
     const hasDefeat  = !!skinAnim.defeat;
     const hasAttack  = !!skinAnim.attack;
     const hasDodge   = !!skinAnim.dodge;
 
-    // 4 кнопки слева: Победа, Атака, (две пустые)
+    // 4 кнопки слева и справа (всегда 8 штук)
     const leftButtons = [
         { type: 'victory', label: 'Победа', icon: 'fas fa-trophy', available: hasVictory },
         { type: 'attack',  label: 'Атака',  icon: 'fas fa-fist-raised', available: hasAttack },
         { type: null,      label: '',       icon: '', available: false },
         { type: null,      label: '',       icon: '', available: false }
     ];
-    // 4 кнопки справа: Поражение, Уворот, (две пустые)
     const rightButtons = [
         { type: 'defeat', label: 'Поражение', icon: 'fas fa-skull', available: hasDefeat },
         { type: 'dodge',  label: 'Уворот',    icon: 'fas fa-running', available: hasDodge },
@@ -57,13 +55,145 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         let parts = [];
         if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins"></i>`);
         if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem"></i>`);
-        if (parts.length) {
-            priceHtml = `<div class="avatar-price">${parts.join(' + ')}</div>`;
-        } else {
-            priceHtml = `<div class="avatar-price">Бесплатно</div>`;
-        }
+        if (parts.length) priceHtml = `<div class="avatar-price">${parts.join(' + ')}</div>`;
+        else priceHtml = `<div class="avatar-price">Бесплатно</div>`;
     }
 
+    // Динамически добавляем стили, если их ещё нет (один раз)
+    if (!document.getElementById('avatar-modal-main-styles')) {
+        const style = document.createElement('style');
+        style.id = 'avatar-modal-main-styles';
+        style.textContent = `
+            /* Контейнер модального окна */
+            .avatar-modal-layout {
+                display: flex;
+                align-items: stretch;
+                gap: 0;
+                min-height: 320px;
+            }
+            /* Левая и правая колонки – фиксированная ширина, как у .main-buttons-col */
+            .avatar-modal-left,
+            .avatar-modal-right {
+                width: 80px;
+                flex-shrink: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+            /* Центр */
+            .avatar-modal-center {
+                flex: 1;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+            /* Контейнер аватара */
+            .avatar-preview-container {
+                position: relative;
+                width: 100%;
+                max-width: 200px;
+                margin: 0 auto;
+            }
+            .avatar-preview-img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+            /* Кнопки анимаций – точная копия .main-icon-btn */
+            .avatar-anim-btn {
+                background-color: #232833;
+                border: none;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                color: #aaa;
+                font-size: 11px;
+                font-weight: normal;
+                padding: 0;
+                border-radius: 0;
+                width: 100%;
+                height: 80px;
+                min-width: 0;
+                box-sizing: border-box;
+            }
+            .avatar-anim-btn i {
+                font-size: 20px;
+                color: #aaa;
+            }
+            .avatar-anim-btn span {
+                font-size: 10px;
+                color: #aaa;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 90%;
+            }
+            .avatar-anim-btn:not(.inactive):hover {
+                background-color: #2f3542;
+            }
+            .avatar-anim-btn:not(.inactive):hover i {
+                color: #00aaff;
+            }
+            .avatar-anim-btn:not(.inactive):hover span {
+                color: white;
+            }
+            /* Неактивная кнопка (без анимации) – пустая, но занимает место */
+            .avatar-anim-btn.inactive {
+                opacity: 0.3;
+                cursor: default;
+                background-color: transparent;
+                border: 1px solid #3a4050;
+            }
+            .avatar-anim-btn.inactive i,
+            .avatar-anim-btn.inactive span {
+                display: none;
+            }
+            /* Название аватара */
+            .avatar-name {
+                font-size: 18px;
+                font-weight: bold;
+                color: white;
+                margin-top: 12px;
+            }
+            .avatar-price {
+                font-size: 14px;
+                color: #f1c40f;
+                background: rgba(0,0,0,0.6);
+                padding: 4px 12px;
+                border-radius: 20px;
+                display: inline-block;
+                margin: 8px 0;
+            }
+            .avatar-modal-actions {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+                margin-top: 12px;
+            }
+            .avatar-modal-actions .btn {
+                background-color: #2f3542;
+                color: #aaa;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 30px;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .avatar-modal-actions .btn:hover {
+                background-color: #3a4050;
+                color: #00aaff;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Генерируем HTML
     const html = `
         <div class="avatar-modal-layout">
             <div class="avatar-modal-left">
@@ -99,67 +229,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Принудительно добавляем стили для гарантированной видимости (если их нет в CSS)
-    if (!document.getElementById('avatar-modal-extra-styles')) {
-        const style = document.createElement('style');
-        style.id = 'avatar-modal-extra-styles';
-        style.textContent = `
-            .avatar-modal-layout {
-                display: flex !important;
-                align-items: stretch !important;
-            }
-            .avatar-modal-left, .avatar-modal-right {
-                width: 80px !important;
-                flex-shrink: 0 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                gap: 0 !important;
-            }
-            .avatar-modal-center {
-                flex: 1 !important;
-            }
-            .avatar-anim-btn {
-                width: 100% !important;
-                height: 80px !important;
-                background-color: #232833 !important;
-                border: 1px solid #3a4050 !important;
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: center !important;
-                justify-content: center !important;
-                gap: 4px !important;
-                cursor: pointer !important;
-            }
-            .avatar-anim-btn i {
-                font-size: 20px !important;
-                color: #aaa !important;
-            }
-            .avatar-anim-btn span {
-                font-size: 10px !important;
-                color: #aaa !important;
-            }
-            .avatar-anim-btn.inactive {
-                opacity: 0.3 !important;
-                background-color: transparent !important;
-                border-color: #2a2f3a !important;
-            }
-            .avatar-anim-btn.inactive i,
-            .avatar-anim-btn.inactive span {
-                display: none !important;
-            }
-            .avatar-anim-btn:not(.inactive):hover {
-                background-color: #2f3542 !important;
-            }
-            .avatar-anim-btn:not(.inactive):hover i,
-            .avatar-anim-btn:not(.inactive):hover span {
-                color: white !important;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // Воспроизведение анимации в модалке
+    // Функция воспроизведения анимации
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
         if (!overlay) return;
@@ -172,7 +242,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }
         const img = document.createElement('img');
         img.src = animUrl;
-        img.className = 'modal-skin-animation';
         img.style.position = 'absolute';
         img.style.top = '0';
         img.style.left = '0';
@@ -188,7 +257,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
-    // Обработчики для активных кнопок анимаций
+    // Обработчики для активных кнопок
     document.querySelectorAll('.avatar-anim-btn:not(.inactive)').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.disabled) return;
@@ -197,7 +266,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         });
     });
 
-    // Кнопка покупки аватара
+    // Покупка
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) {
         buyBtn.addEventListener('click', async () => {
@@ -216,7 +285,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         });
     }
 
-    // Кнопка активации (если уже куплен)
+    // Активация
     const activateBtn = document.getElementById('activateAvatarBtn');
     if (activateBtn) {
         activateBtn.addEventListener('click', async () => {
@@ -238,14 +307,10 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         });
     }
 
-    // Кнопка закрытия
+    // Закрытие
     const closeBtn = document.getElementById('closeAvatarModalBtn');
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
-
-    // Крестик в углу модального окна
     const closeX = modal.querySelector('.close');
     if (closeX) closeX.onclick = () => modal.style.display = 'none';
-
-    // Закрытие по клику вне окна
     window.onclick = (event) => { if (event.target === modal) modal.style.display = 'none'; };
 };

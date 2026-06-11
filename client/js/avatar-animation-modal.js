@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – финальная версия с корректным отображением анимации атаки
+// avatar-animation-modal.js – финальная версия с правильным позиционированием анимации атаки
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -19,7 +19,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    // Приводим avatarId к числу
     const numericAvatarId = parseInt(String(avatarId).trim(), 10);
     if (isNaN(numericAvatarId)) {
         console.error('Invalid avatarId:', avatarId);
@@ -31,6 +30,9 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
     const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
+
+    // Для отладки (можно удалить)
+    console.log(`[AvatarModal] skinId=${effectiveSkinId}`, skinAnim);
 
     const hasAttack   = !!skinAnim.attack;
     const hasDodge    = !!skinAnim.dodge;
@@ -114,7 +116,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Универсальная функция воспроизведения анимации без трансформаций
+    // Воспроизведение анимации с особым позиционированием для атаки
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
         const staticImg = document.getElementById('avatarStaticImg');
@@ -132,16 +134,32 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
 
         const img = document.createElement('img');
         img.src = animUrl;
-        // Единый стиль для всех анимаций – заполняем контейнер, сохраняя пропорции
-        img.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-        `;
+
+        // Особая обработка для атаки
+        if (animType === 'attack') {
+            // Анимация атаки: занимает 100% высоты, ширина пропорциональна, прижата к правому краю
+            img.style.cssText = `
+                position: absolute;
+                top: 0;
+                right: 0;
+                height: 100%;
+                width: auto;
+                pointer-events: none;
+                /* Если нужно зеркалирование, можно добавить transform: scaleX(-1), но обычно не требуется */
+            `;
+        } else {
+            // Все остальные анимации – центрированы и вписаны в контейнер
+            img.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                pointer-events: none;
+            `;
+        }
+
         overlay.appendChild(img);
 
         const duration = (animType === 'victory' || animType === 'defeat') ? 2500 : 2000;
@@ -152,7 +170,6 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
-    // Обработчики кнопок
     document.querySelectorAll('.avatar-anim-btn').forEach(btn => {
         const animType = btn.dataset.anim;
         if (animType === 'avatar') {

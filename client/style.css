@@ -5885,68 +5885,7 @@ body {
     color: white;
 }
 
-/* ---------- МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА ---------- */
-.clan-details {
-    max-height: 70vh;
-    overflow-y: auto;
-}
-.clan-details-header {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-.clan-details-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.clan-details-info h2 {
-    margin: 0 0 5px 0;
-    color: white;
-}
-.clan-details-members h4 {
-    margin: 10px 0;
-    color: #00aaff;
-}
-.clan-details-members ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.clan-details-members li {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px solid #2a303c;
-}
-.clan-details-actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-.btn-danger {
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-}
-.btn-success {
-    background-color: #2ecc71;
-    color: white;
-    border: none;
-}
-.btn-primary {
-    background-color: #00aaff;
-    color: white;
-    border: none;
-}
-
-
-/* ========== КНОПКИ АНИМАЦИЙ В МОДАЛЬНОМ ОКНЕ (стиль как на главной) ========== */
+/* ========== МОДАЛЬНОЕ ОКНО АВАТАРА (ТОЧЬ-В-ТОЧЬ КАК НА ГЛАВНОЙ) ========== */
 .avatar-modal-layout {
     display: flex;
     align-items: stretch;
@@ -5958,7 +5897,7 @@ body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* равномерное распределение кнопок */
+    justify-content: space-between;
     gap: 0;
 }
 .avatar-modal-center {
@@ -5980,7 +5919,7 @@ body {
     display: block;
 }
 .avatar-anim-btn {
-    flex: 1; /* каждая кнопка занимает равную долю */
+    flex: 1;
     background-color: #232833;
     border: none;
     display: flex;
@@ -5996,7 +5935,7 @@ body {
     padding: 0;
     border-radius: 0;
     width: 100%;
-    min-height: 60px; /* чтобы пустые кнопки не схлопывались */
+    min-height: 60px;
     box-sizing: border-box;
 }
 .avatar-anim-btn i {
@@ -6020,7 +5959,6 @@ body {
 .avatar-anim-btn:not(.inactive):hover span {
     color: white;
 }
-/* Неактивные кнопки – пустые, но занимают место */
 .avatar-anim-btn.inactive {
     background-color: transparent;
     border: 1px solid #3a4050;
@@ -6030,4 +5968,38 @@ body {
 .avatar-anim-btn.inactive i,
 .avatar-anim-btn.inactive span {
     display: none;
+}
+.avatar-price {
+    font-size: 14px;
+    color: #f1c40f;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block;
+    margin: 8px 0;
+}
+.avatar-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
+}
+.avatar-modal-actions .btn {
+    background-color: #2f3542;
+    color: #aaa;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.avatar-modal-actions .btn:hover {
+    background-color: #3a4050;
+    color: #00aaff;
+}
+.avatar-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin: 8px 0;
 }

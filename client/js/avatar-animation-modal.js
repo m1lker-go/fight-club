@@ -1,4 +1,4 @@
-// avatar-animation-modal.js – финальная версия с корректным определением анимаций
+// avatar-animation-modal.js – финальная версия с корректным отображением анимации атаки
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -19,7 +19,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    // Приводим avatarId к числу (важно!)
+    // Приводим avatarId к числу
     const numericAvatarId = parseInt(String(avatarId).trim(), 10);
     if (isNaN(numericAvatarId)) {
         console.error('Invalid avatarId:', avatarId);
@@ -29,12 +29,8 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Просмотр аватара' : 'Купить аватар');
 
     const isCybercat = (avatarFilename === 'cybercat-skin.png');
-    // Для киберкота используем строковый ключ 'cybercat'
     const effectiveSkinId = isCybercat ? 'cybercat' : numericAvatarId;
     const skinAnim = window.AnimationManager?.skinAnimations?.[effectiveSkinId] || {};
-
-    // Отладка – убедимся, что анимации найдены
-    console.log(`[AvatarModal] skinId=${effectiveSkinId}`, skinAnim);
 
     const hasAttack   = !!skinAnim.attack;
     const hasDodge    = !!skinAnim.dodge;
@@ -118,29 +114,36 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
+    // Универсальная функция воспроизведения анимации без трансформаций
     function playAnimationInModal(animType) {
         const overlay = document.getElementById('avatarAnimationOverlay');
         const staticImg = document.getElementById('avatarStaticImg');
         if (!overlay) return;
         overlay.innerHTML = '';
         overlay.style.display = 'block';
-        if (staticImg) staticImg.style.visibility = 'hidden'; // скрываем статику
+        if (staticImg) staticImg.style.visibility = 'hidden';
+
         const animUrl = skinAnim[animType];
         if (!animUrl) {
             overlay.style.display = 'none';
             if (staticImg) staticImg.style.visibility = 'visible';
             return;
         }
+
         const img = document.createElement('img');
         img.src = animUrl;
-        img.style.position = 'absolute';
-        img.style.top = '0';
-        img.style.left = '0';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-        img.style.pointerEvents = 'none';
+        // Единый стиль для всех анимаций – заполняем контейнер, сохраняя пропорции
+        img.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        `;
         overlay.appendChild(img);
+
         const duration = (animType === 'victory' || animType === 'defeat') ? 2500 : 2000;
         setTimeout(() => {
             overlay.innerHTML = '';
@@ -149,6 +152,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }, duration);
     }
 
+    // Обработчики кнопок
     document.querySelectorAll('.avatar-anim-btn').forEach(btn => {
         const animType = btn.dataset.anim;
         if (animType === 'avatar') {
@@ -168,7 +172,7 @@ window.showAvatarAnimationModal = function(avatarId, avatarFilename, owned, avat
         }
     });
 
-    // Покупка/активация/закрытие (без изменений)
+    // Покупка / активация / закрытие
     const buyBtn = document.getElementById('buyAvatarBtn');
     if (buyBtn) buyBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/avatars/buy', { method: 'POST', body: JSON.stringify({ avatar_id: numericAvatarId }) });

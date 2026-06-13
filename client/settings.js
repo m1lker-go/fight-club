@@ -1,4 +1,4 @@
-// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша с модальным окном, очистка
+// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша с модальным окном, очистка, добавлена кнопка Достижения
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -244,6 +244,14 @@ async function renderSettings() {
                     </div>
                 </div>
 
+                <!-- Кнопка Достижения -->
+                <div class="settings-volume-row" id="achievementsRow" style="cursor: pointer;">
+                    <div class="volume-label">🏆 Достижения</div>
+                    <div style="flex: 1; text-align: right; color: #aaa;">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
                 ${connectionsHtml}
 
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -390,6 +398,14 @@ async function renderSettings() {
                     });
                 });
             }
+        }
+
+        // Обработчик для кнопки "Достижения"
+        const achievementsRow = document.getElementById('achievementsRow');
+        if (achievementsRow) {
+            achievementsRow.addEventListener('click', () => {
+                showAchievementsPage();
+            });
         }
     } catch (err) {
         console.error(err);
@@ -686,4 +702,36 @@ function linkGoogle() {
     document.head.appendChild(script);
 }
 
+// ========== СТРАНИЦА ДОСТИЖЕНИЙ ==========
+async function showAchievementsPage() {
+    const content = document.getElementById('content');
+    if (!content) return;
+
+    content.innerHTML = `
+        <div class="settings-container">
+            <div style="margin-bottom: 16px;">
+                <button id="backToSettingsBtn" class="btn" style="background-color: #2f3542; color: #aaa;">
+                    <i class="fas fa-arrow-left"></i> Назад в настройки
+                </button>
+            </div>
+            <div id="achievementsContainer"></div>
+        </div>
+    `;
+
+    const achievementsContainer = document.getElementById('achievementsContainer');
+    if (achievementsContainer && typeof renderAchievements === 'function') {
+        await renderAchievements(achievementsContainer);
+    } else {
+        achievementsContainer.innerHTML = '<p style="color:#aaa;">Ошибка загрузки достижений</p>';
+    }
+
+    const backBtn = document.getElementById('backToSettingsBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            renderSettings(); // возвращаемся к настройкам
+        });
+    }
+}
+
+// Экспорт
 window.renderSettings = renderSettings;

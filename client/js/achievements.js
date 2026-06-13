@@ -1,6 +1,5 @@
-// achievements.js – система достижений (ачивок)
+// achievements.js – система достижений (ачивок) с модальным окном
 
-// Обеспечиваем наличие escapeHtml
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
         if (!str) return '';
@@ -12,28 +11,27 @@ if (typeof escapeHtml === 'undefined') {
         });
     };
 }
-var escapeHtml = window.escapeHtml; // <-- важно! теперь escapeHtml доступна локально
+var escapeHtml = window.escapeHtml;
 
-// Показать уведомление о получении достижения (тост, исчезает через 3 сек)
+// Показать модальное окно достижения (автоматически исчезает через 3 секунды)
 function showAchievementToast(achievementName, achievementIcon) {
-    const safeName = escapeHtml(achievementName);
-    const safeIcon = escapeHtml(achievementIcon);
-    const toast = document.createElement('div');
-    toast.className = 'achievement-toast';
-    toast.innerHTML = `
-        <div class="achievement-toast-content">
-            <img src="${safeIcon}" alt="achievement" class="achievement-toast-icon">
-            <div>
-                <div class="achievement-toast-title">🏆 Новое достижение!</div>
-                <div class="achievement-toast-name">${safeName}</div>
-            </div>
+    const modal = document.getElementById('roleModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
+
+    modalTitle.innerText = '🏆 Новое достижение!';
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+            <img src="${escapeHtml(achievementIcon)}" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px;" onerror="this.src='/assets/icons/icon-new.png'">
+            <div style="font-size: 18px; font-weight: bold; color: #f1c40f; margin-bottom: 8px;">${escapeHtml(achievementName)}</div>
+            <div style="font-size: 14px; color: #ddd;">Вы получили новое достижение!</div>
         </div>
     `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 10);
+    modal.style.display = 'flex';
+
     setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
+        modal.style.display = 'none';
     }, 3000);
 }
 

@@ -42,6 +42,7 @@ app.use('/subscription', authMiddleware, require('./routes/subscription'));
 app.use('/user', authMiddleware, require('./routes/user'));
 app.use('/tournament', authMiddleware, require('./routes/tournament-server'));
 app.use('/clans', authMiddleware, require('./routes/clans-server'));
+app.use('/achievements', authMiddleware, require('./routes/achievements-server'));
 
 // ========== ОСТАЛЬНЫЕ ПУБЛИЧНЫЕ ОБРАБОТЧИКИ ==========
 app.post('/auth/vk/callback', (req, res) => {

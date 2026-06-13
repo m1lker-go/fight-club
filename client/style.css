@@ -5885,7 +5885,9 @@ body {
     color: white;
 }
 
-/* ========== ДОСТИЖЕНИЯ ========== */
+/* ========== ДОСТИЖЕНИЯ========== */
+
+/* Тост-уведомление (всплывающее окно) */
 .achievement-toast {
     position: fixed;
     top: 80px;
@@ -5926,45 +5928,70 @@ body {
     font-weight: bold;
     color: #f1c40f;
 }
-.achievements-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    padding: 10px;
+
+/* Контейнер списка достижений (вместо grid) */
+.achievements-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: #232833;
+    border-radius: 0 0 12px 12px;
 }
-.achievement-card {
-    background: #2a303c;
-    border-radius: 12px;
-    padding: 12px;
+
+/* Строка достижения */
+.achievement-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 16px;
+    border-bottom: 1px solid #1a1f2b;
+    width: 100%;
+    box-sizing: border-box;
+}
+.achievement-row.even {
+    background-color: #232833;
+}
+.achievement-row.odd {
+    background-color: #2a303c;
+}
+.achievement-row:last-child {
+    border-bottom: none;
+}
+
+/* Колонка с иконкой */
+.achievement-icon-col {
+    flex: 0 0 60px;
     text-align: center;
-    transition: transform 0.2s;
 }
-.achievement-card.earned {
-    border: 2px solid #f1c40f;
-}
-.achievement-card.locked {
-    opacity: 0.6;
-    filter: grayscale(0.3);
-}
-.achievement-icon {
-    width: 60px;
-    height: 60px;
+.achievement-list-icon {
+    width: 50px;
+    height: 50px;
     object-fit: contain;
-    margin-bottom: 8px;
+    transition: opacity 0.2s;
 }
-.achievement-name {
+
+/* Колонка с названием и описанием */
+.achievement-info-col {
+    flex: 1;
+    min-width: 0;
+}
+.achievement-list-name {
     font-weight: bold;
+    font-size: 16px;
     color: white;
     margin-bottom: 4px;
-    font-size: 14px;
 }
-.achievement-desc {
-    font-size: 11px;
+.achievement-list-desc {
+    font-size: 12px;
     color: #aaa;
-    margin-bottom: 8px;
+    line-height: 1.3;
 }
-.achievement-status {
-    font-size: 11px;
+
+/* Колонка со статусом */
+.achievement-status-col {
+    flex: 0 0 80px;
+    text-align: right;
+    font-size: 13px;
     font-weight: bold;
     color: #f1c40f;
 }

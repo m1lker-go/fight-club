@@ -58,7 +58,7 @@ async function checkFounderAchievement() {
     return false;
 }
 
-// Рендер вкладки "Достижения" в настройках
+// Рендер вкладки "Достижения" в настройках (табличный вид)
 async function renderAchievements(container) {
     if (!container) return;
     try {
@@ -70,16 +70,29 @@ async function renderAchievements(container) {
         const userAchievements = userRes.ok ? await userRes.json() : [];
         const userSet = new Set(userAchievements);
 
-        let html = '<div class="achievements-grid">';
-        for (const ach of allAchievements) {
+        let html = '<div class="achievements-list">';
+        for (let i = 0; i < allAchievements.length; i++) {
+            const ach = allAchievements[i];
             const earned = userSet.has(ach.id);
-            const icon = ach.icon || '/assets/icons/achievement_default.png';
+            // Иконка: путь /assets/achievement/название_файла (используем ach.icon или строим из name)
+            let iconPath = ach.icon || `/assets/achievement/${ach.id}.png`;
+            // Для достижения "Основатель" (id=1) используем founder.png
+            if (ach.id === 1) iconPath = '/assets/achievement/founder.png';
+            const rowClass = i % 2 === 0 ? 'achievement-row even' : 'achievement-row odd';
+            const iconStyle = earned ? 'opacity: 1;' : 'opacity: 0.3;';
+            const statusText = earned ? '✓ Получено' : '🔒 Не получено';
             html += `
-                <div class="achievement-card ${earned ? 'earned' : 'locked'}">
-                    <img src="${escapeHtml(icon)}" class="achievement-icon" alt="${escapeHtml(ach.name)}">
-                    <div class="achievement-name">${escapeHtml(ach.name)}</div>
-                    <div class="achievement-desc">${escapeHtml(ach.description)}</div>
-                    <div class="achievement-status">${earned ? '✓ Получено' : '🔒 Не получено'}</div>
+                <div class="${rowClass}">
+                    <div class="achievement-icon-col">
+                        <img src="${escapeHtml(iconPath)}" class="achievement-list-icon" style="${iconStyle}" onerror="this.src='/assets/icons/icon-new.png'">
+                    </div>
+                    <div class="achievement-info-col">
+                        <div class="achievement-list-name">${escapeHtml(ach.name)}</div>
+                        <div class="achievement-list-desc">${escapeHtml(ach.description)}</div>
+                    </div>
+                    <div class="achievement-status-col">
+                        ${statusText}
+                    </div>
                 </div>
             `;
         }

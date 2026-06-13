@@ -1,5 +1,6 @@
 // achievements.js – система достижений (ачивок)
 
+// Обеспечиваем наличие escapeHtml
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
         if (!str) return '';
@@ -11,17 +12,20 @@ if (typeof escapeHtml === 'undefined') {
         });
     };
 }
+var escapeHtml = window.escapeHtml; // <-- важно! теперь escapeHtml доступна локально
 
 // Показать уведомление о получении достижения (тост, исчезает через 3 сек)
 function showAchievementToast(achievementName, achievementIcon) {
+    const safeName = escapeHtml(achievementName);
+    const safeIcon = escapeHtml(achievementIcon);
     const toast = document.createElement('div');
     toast.className = 'achievement-toast';
     toast.innerHTML = `
         <div class="achievement-toast-content">
-            <img src="${achievementIcon}" alt="achievement" class="achievement-toast-icon">
+            <img src="${safeIcon}" alt="achievement" class="achievement-toast-icon">
             <div>
                 <div class="achievement-toast-title">🏆 Новое достижение!</div>
-                <div class="achievement-toast-name">${escapeHtml(achievementName)}</div>
+                <div class="achievement-toast-name">${safeName}</div>
             </div>
         </div>
     `;
@@ -41,14 +45,12 @@ async function checkFounderAchievement() {
         const data = await res.json();
         if (data.awarded) {
             showAchievementToast('Основатель', '/assets/icons/achievement_founder.png');
-            // Если страница настроек открыта и активна вкладка достижений – обновляем её
             if (window.currentScreen === 'settings' && window.activeSettingsTab === 'achievements') {
                 const container = document.getElementById('settingsContent');
                 if (container && typeof renderAchievements === 'function') {
                     renderAchievements(container);
                 }
             }
-            // Обновляем бейджи (например, иконка новых достижений в меню)
             if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
             return true;
         }
@@ -76,7 +78,7 @@ async function renderAchievements(container) {
             const icon = ach.icon || '/assets/icons/achievement_default.png';
             html += `
                 <div class="achievement-card ${earned ? 'earned' : 'locked'}">
-                    <img src="${icon}" class="achievement-icon" alt="${escapeHtml(ach.name)}">
+                    <img src="${escapeHtml(icon)}" class="achievement-icon" alt="${escapeHtml(ach.name)}">
                     <div class="achievement-name">${escapeHtml(ach.name)}</div>
                     <div class="achievement-desc">${escapeHtml(ach.description)}</div>
                     <div class="achievement-status">${earned ? '✓ Получено' : '🔒 Не получено'}</div>

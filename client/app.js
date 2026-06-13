@@ -412,6 +412,12 @@ async function loadUserDataByToken(token, retries = 3) {
                 }, 100);
 
                 console.log('loadUserDataByToken: success');
+
+                // ДОБАВЛЕНО ДЛЯ АЧИВОК
+                if (typeof checkFounderAchievement === 'function') {
+                    checkFounderAchievement();
+                }
+
                 return true;
             } else {
                 console.error(`Profile fetch failed: ${res.status}`);
@@ -470,6 +476,12 @@ async function checkAuth() {
                 if (typeof initIronSourceAds === 'function' && userData && userData.id) {
                     initIronSourceAds(userData.id);
                 }
+
+                // ДОБАВЛЕНО ДЛЯ АЧИВОК
+                if (typeof checkFounderAchievement === 'function') {
+                    checkFounderAchievement();
+                }
+
                 console.log('checkAuth: user logged in via existing token');
                 return true;
             } else {

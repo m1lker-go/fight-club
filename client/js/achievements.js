@@ -1,4 +1,4 @@
-// achievements.js – система достижений (ачивок) с табличным отображением и прогрессом
+// achievements.js – система достижений (ачивок) с группировкой серий
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -20,7 +20,7 @@ function showAchievementToast(achievementName, achievementIcon) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = '🏆 Новое достижение!';
+    modalTitle.innerText = 'Новое достижение!';
     modalBody.innerHTML = `
         <div style="text-align: center; padding: 10px;">
             <img src="${escapeHtml(achievementIcon)}" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px;" onerror="this.src='/assets/icons/icon-new.png'">
@@ -58,27 +58,86 @@ async function checkFounderAchievement() {
     return false;
 }
 
-// Рендер вкладки "Достижения" в настройках (табличный вид с прогрессом)
+// Рендер вкладки "Достижения" в настройках (группировка серий)
 async function renderAchievements(container) {
     if (!container) return;
     try {
         const res = await window.apiRequest('/achievements/user-progress', { method: 'GET' });
-        const achievements = res.ok ? await res.json() : [];
+        let achievements = res.ok ? await res.json() : [];
+        if (!Array.isArray(achievements)) achievements = [];
+
+        // Группируем достижения по типу 'wins' в одну строку
+        const winsAchievements = achievements.filter(a => a.target_type === 'wins').sort((a,b) => a.target_value - b.target_value);
+        const otherAchievements = achievements.filter(a => a.target_type !== 'wins');
+
+        let rows = [];
+
+        // Обработка серии побед
+        if (winsAchievements.length > 0) {
+            const currentWins = userData?.total_wins || 0;
+            let currentStage = null;
+            let nextStage = null;
+            for (let i = 0; i < winsAchievements.length; i++) {
+                const stage = winsAchievements[i];
+                if (currentWins >= stage.target_value) {
+                    currentStage = stage;
+                } else {
+                    nextStage = stage;
+                    break;
+                }
+            }
+            if (currentStage) {
+                // Если все этапы пройдены, показываем последний как полученный
+                if (!nextStage) {
+                    rows.push({
+                        id: currentStage.id,
+                        name: currentStage.name,
+                        description: currentStage.description,
+                        icon: currentStage.icon,
+                        earned: true,
+                        progress: null
+                    });
+                } else {
+                    // Текущий этап (не получен, следующий)
+                    rows.push({
+                        id: nextStage.id,
+                        name: nextStage.name,
+                        description: nextStage.description,
+                        icon: nextStage.icon,
+                        earned: false,
+                        progress: { current: currentWins, required: nextStage.target_value }
+                    });
+                }
+            } else if (nextStage) {
+                // Нет ни одного пройденного – показываем первый этап
+                rows.push({
+                    id: nextStage.id,
+                    name: nextStage.name,
+                    description: nextStage.description,
+                    icon: nextStage.icon,
+                    earned: false,
+                    progress: { current: currentWins, required: nextStage.target_value }
+                });
+            }
+        }
+
+        // Добавляем все остальные достижения (не связанные с победами)
+        rows.push(...otherAchievements);
+
         let html = '<div class="achievements-list">';
-        for (let i = 0; i < achievements.length; i++) {
-            const ach = achievements[i];
+        for (let i = 0; i < rows.length; i++) {
+            const ach = rows[i];
             const earned = ach.earned;
             let iconPath = ach.icon || '/assets/icons/icon-new.png';
-            // Для основателя (id=1) если icon не задан, используем founder.png
-            if (ach.id === 1 && !ach.icon) iconPath = '/assets/achievement/founder.png';
+            if (ach.id === 1 && !ach.icon) iconPath = '/assets/achievement/founder.png'; // для основателя
             const iconStyle = earned ? 'opacity: 1;' : 'opacity: 0.3;';
             let statusText = '';
             if (earned) {
-                statusText = '✓ Получено';
+                statusText = 'Получено';
             } else if (ach.progress) {
                 statusText = `${ach.progress.current}/${ach.progress.required}`;
             } else {
-                statusText = '🔒 Не получено';
+                statusText = 'Не получено';
             }
             const rowClass = i % 2 === 0 ? 'achievement-row even' : 'achievement-row odd';
             html += `

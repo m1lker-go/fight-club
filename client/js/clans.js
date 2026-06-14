@@ -204,13 +204,14 @@ async function renderClansList() {
     document.querySelectorAll('.clan-row').forEach(row => row.addEventListener('click', () => showClanDetailsModal(row.dataset.clanId)));
 }
 
-// ------------------- МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА (С ПРОВЕРКОЙ ЗАЯВКИ) -------------------
+
+// ========== МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА  ==========
 async function showClanDetailsModal(clanId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     if (!modal) return;
-    modalTitle.innerText = 'Загрузка...';
+    modalTitle.innerText = 'Инфо клана';
     modalBody.innerHTML = '<div style="text-align:center;"><i class="fas fa-spinner fa-pulse fa-2x"></i></div>';
     modal.style.display = 'flex';
     try {
@@ -230,60 +231,72 @@ async function showClanDetailsModal(clanId) {
             if (b.role === 'officer') return 1;
             return b.power - a.power;
         });
-
-        // Формируем таблицу участников с чередованием фона
-        let membersHtml = '<div class="clan-details-members" style="margin-top: 20px;"><div class="clan-details-members-header" style="background-color:#1a1f2b; padding:8px 12px; font-weight:bold; color:white;">Участники</div><table class="clans-members-table" style="width:100%; border-collapse:collapse;">';
-        for (let i = 0; i < sortedMembers.length; i++) {
-            const m = sortedMembers[i];
-            const rowClass = i % 2 === 0 ? 'even' : 'odd';
-            membersHtml += `
-                <tr class="${rowClass}" style="border-bottom:1px solid #2a303c;">
-                    <td style="padding:6px 12px;">${escapeHtml(m.username)}</td>
-                    <td style="padding:6px 12px; text-align:right;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
-                </tr>
-            `;
+        
+        // Построение таблицы участников с чередованием фона
+        let membersHtml = '';
+        if (sortedMembers.length > 0) {
+            membersHtml = '<div style="margin-top: 20px;"><div class="clans-section-header">Участники</div><table class="clans-members-table" style="width:100%; border-collapse: collapse;">';
+            for (let i = 0; i < sortedMembers.length; i++) {
+                const m = sortedMembers[i];
+                const rowClass = i % 2 === 0 ? 'even' : 'odd';
+                membersHtml += `
+                    <tr class="${rowClass}" style="border-bottom: 1px solid #2a303c;">
+                        <td style="padding: 8px 12px;">${escapeHtml(m.username)}</td>
+                        <td style="padding: 8px 12px;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
+                    </tr>
+                `;
+            }
+            membersHtml += '</table></div>';
+        } else {
+            membersHtml = '<div style="margin-top: 20px;"><div class="clans-section-header">Участники</div><div style="padding: 12px; color:#aaa;">Нет участников</div></div>';
         }
-        membersHtml += '</table></div>';
-
-        // Определяем кнопки действий
+        
+        // Определяем тип вступления
+        let joinTypeText = '';
+        if (clan.join_type === 'open') joinTypeText = 'Открытый';
+        else if (clan.join_type === 'application') joinTypeText = 'По заявкам';
+        else joinTypeText = 'Закрытый (по приглашениям)';
+        
+        // Кнопки действий
         let actionButtons = '';
         if (userMembership) {
-            actionButtons = `<button id="clanLeaveBtn" class="btn btn-danger">Покинуть клан</button>`;
+            actionButtons = `<button id="clanLeaveBtn" class="btn btn-danger" style="background-color:#e74c3c; color:white; border:none; border-radius:30px; padding:8px 16px;">Покинуть клан</button>`;
         } else if (clan.join_type === 'open') {
-            actionButtons = `<button id="clanJoinBtn" class="btn btn-success">Присоединиться</button>`;
+            actionButtons = `<button id="clanJoinBtn" class="btn btn-success" style="background-color:#2ecc71; color:white; border:none; border-radius:30px; padding:8px 16px;">Присоединиться</button>`;
         } else if (clan.join_type === 'application') {
             if (userApplicationStatus === 'pending') {
-                actionButtons = `<button class="btn btn-disabled" disabled>Заявка отправлена</button>`;
+                actionButtons = `<button class="btn btn-disabled" disabled style="background-color:#555; color:#aaa; border:none; border-radius:30px; padding:8px 16px;">Заявка отправлена</button>`;
             } else {
-                actionButtons = `<button id="clanApplyBtn" class="btn btn-primary">Подать заявку</button>`;
+                actionButtons = `<button id="clanApplyBtn" class="btn btn-primary" style="background-color:#00aaff; color:white; border:none; border-radius:30px; padding:8px 16px;">Подать заявку</button>`;
             }
         } else {
-            actionButtons = `<button class="btn btn-disabled" disabled>Закрыт</button>`;
+            actionButtons = `<button class="btn btn-disabled" disabled style="background-color:#555; color:#aaa; border:none; border-radius:30px; padding:8px 16px;">Закрыт</button>`;
         }
-
-        modalTitle.innerText = clan.name;
+        
         modalBody.innerHTML = `
             <div class="clan-details">
-                <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px;">
-                    <div class="clan-details-icon" style="width: 80px; height: 80px; background-color: ${clan.icon_bg_color}; border: 3px solid ${clan.icon_border_color}; border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 48px;"></i>
+                <div class="clan-details-header" style="display: flex; gap: 16px; margin-bottom: 20px;">
+                    <div class="clan-details-icon" style="width: 64px; height: 64px; background-color: ${clan.icon_bg_color}; border: 3px solid ${clan.icon_border_color}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size: 32px;"></i>
                     </div>
-                    <div>
-                        <h2 style="margin:0 0 4px 0; color:white;">${escapeHtml(clan.name)}</h2>
-                        <div style="font-size:14px; color:#aaa;">Уровень ${clan.level} (опыт: ${clan.exp})</div>
+                    <div class="clan-details-info" style="flex:1;">
+                        <h2 style="margin: 0 0 4px 0; font-size: 20px;">${escapeHtml(clan.name)}</h2>
+                        <div style="font-size: 12px; color: #aaa;">Уровень ${clan.level} (опыт: ${clan.exp})</div>
                     </div>
                 </div>
-                <div style="margin: 8px 0;"><strong>Участников:</strong> ${clan.member_count}/${maxMembers}</div>
-                <div style="margin: 8px 0;"><strong>Тип вступления:</strong> ${clan.join_type === 'open' ? 'Открытый' : (clan.join_type === 'application' ? 'По заявкам' : 'Закрытый (по приглашениям)')}</div>
-                ${clan.description ? `<div style="margin: 8px 0;"><strong>Описание:</strong> ${escapeHtml(clan.description)}</div>` : ''}
+                <div class="clan-details-stats" style="margin-bottom: 16px;">
+                    <div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">Участников:</span> ${clan.member_count}/${maxMembers}</div>
+                    <div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">Тип вступления:</span> ${joinTypeText}</div>
+                    ${clan.description ? `<div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">Описание:</span> ${escapeHtml(clan.description)}</div>` : ''}
+                </div>
                 ${membersHtml}
                 <div class="clan-details-actions" style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
                     ${actionButtons}
-                    <button id="closeModalBtn" class="btn">Закрыть</button>
+                    <button id="closeModalBtn" class="btn" style="background-color: #2f3542; color: #aaa; border: none; border-radius: 30px; padding: 8px 16px;">Закрыть</button>
                 </div>
             </div>
         `;
-
+        
         // Обработчики кнопок
         document.getElementById('closeModalBtn')?.addEventListener('click', () => modal.style.display = 'none');
         document.getElementById('clanJoinBtn')?.addEventListener('click', async () => {
@@ -311,7 +324,6 @@ async function showClanDetailsModal(clanId) {
         modalBody.innerHTML = `<div style="text-align:center; color:#ff4444;">Ошибка: ${err.message}</div>`;
     }
 }
-
 // ------------------- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КЛАНА -------------------
 function showCreateClanModal() {
     const modal = document.getElementById('roleModal');

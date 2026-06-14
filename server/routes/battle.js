@@ -1109,6 +1109,37 @@ async function selectPvPOpponent(client, currentUserId, currentLevel) {
     };
 }
 
+// ========== ДОСТИЖЕНИЯ ЗА ПОБЕДЫ ==========
+async function checkWinAchievements(client, userId) {
+    const userRes = await client.query('SELECT total_wins FROM users WHERE id = $1', [userId]);
+    const totalWins = userRes.rows[0].total_wins;
+    const achievements = await client.query(
+        'SELECT id, name, target_value FROM achievements WHERE target_type = $1 AND target_value IS NOT NULL ORDER BY target_value',
+        ['wins']
+    );
+    for (const ach of achievements.rows) {
+        if (totalWins >= ach.target_value) {
+            const existing = await client.query(
+                'SELECT 1 FROM user_achievements WHERE user_id = $1 AND achievement_id = $2',
+                [userId, ach.id]
+            );
+            if (existing.rowCount === 0) {
+                await client.query(
+                    'INSERT INTO user_achievements (user_id, achievement_id) VALUES ($1, $2)',
+                    [userId, ach.id]
+                );
+                await client.query(
+                    `INSERT INTO user_messages (user_id, from_text, subject, body) 
+                     VALUES ($1, 'Система', 'Новое достижение!', 
+                     'Вы получили достижение "${ach.name}"! Оно доступно в настройках в разделе Достижения.')`,
+                    [userId]
+                );
+                console.log(`[Achievement] User ${userId} earned achievement ${ach.id} (${ach.name})`);
+            }
+        }
+    }
+}
+
 router.post('/start', async (req, res) => {
     console.log('>>> BATTLE FINAL (all rewards, tasks after COMMIT) <<<');
     const client = await pool.connect();
@@ -1192,6 +1223,10 @@ if (user.last_streak_date) {
             }
 
             await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, user.id]);
+            // Увеличиваем общий счётчик побед
+await client.query('UPDATE users SET total_wins = total_wins + 1 WHERE id = $1', [user.id]);
+// Проверяем достижения за победы
+await checkWinAchievements(client, user.id);
         } else {
             newStreak = 0;
             await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);

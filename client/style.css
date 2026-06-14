@@ -5885,6 +5885,28 @@ body {
     color: white;
 }
 
+/* Для таблицы участников в модалке клана */
+.clans-members-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.clans-members-table tr.even {
+    background-color: #232833;
+}
+.clans-members-table tr.odd {
+    background-color: #2a303c;
+}
+.clans-members-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid #2a303c;
+}
+.clan-details-members-header {
+    background-color: #1a1f2b;
+    padding: 8px 12px;
+    font-weight: bold;
+    color: white;
+}
+
 /* ========== ДОСТИЖЕНИЯ – ТАБЛИЧНЫЙ ВИД ========== */
 
 /* Тост-уведомление */

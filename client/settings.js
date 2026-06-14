@@ -246,7 +246,7 @@ async function renderSettings() {
 
                 <!-- Кнопка Достижения -->
                 <div class="settings-volume-row" id="achievementsRow" style="cursor: pointer;">
-                    <div class="volume-label">🏆 Достижения</div>
+                    <div class="volume-label">Достижения</div>
                     <div style="flex: 1; text-align: right; color: #aaa;">
                         <i class="fas fa-chevron-right"></i>
                     </div>

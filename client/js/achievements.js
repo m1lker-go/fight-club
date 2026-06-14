@@ -1,4 +1,4 @@
-// achievements.js – система достижений (ачивок) с модальным окном
+// achievements.js – система достижений (ачивок) с табличным отображением и прогрессом
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -42,7 +42,7 @@ async function checkFounderAchievement() {
         const res = await window.apiRequest('/achievements/check-founder', { method: 'POST' });
         const data = await res.json();
         if (data.awarded) {
-            showAchievementToast('Основатель', '/assets/icons/achievement_founder.png');
+            showAchievementToast('Основатель', '/assets/achievement/founder.png');
             if (window.currentScreen === 'settings' && window.activeSettingsTab === 'achievements') {
                 const container = document.getElementById('settingsContent');
                 if (container && typeof renderAchievements === 'function') {
@@ -58,29 +58,29 @@ async function checkFounderAchievement() {
     return false;
 }
 
-// Рендер вкладки "Достижения" в настройках (табличный вид)
+// Рендер вкладки "Достижения" в настройках (табличный вид с прогрессом)
 async function renderAchievements(container) {
     if (!container) return;
     try {
-        const [allRes, userRes] = await Promise.all([
-            window.apiRequest('/achievements/list', { method: 'GET' }),
-            window.apiRequest('/achievements/user', { method: 'GET' })
-        ]);
-        const allAchievements = allRes.ok ? await allRes.json() : [];
-        const userAchievements = userRes.ok ? await userRes.json() : [];
-        const userSet = new Set(userAchievements);
-
+        const res = await window.apiRequest('/achievements/user-progress', { method: 'GET' });
+        const achievements = res.ok ? await res.json() : [];
         let html = '<div class="achievements-list">';
-        for (let i = 0; i < allAchievements.length; i++) {
-            const ach = allAchievements[i];
-            const earned = userSet.has(ach.id);
-            // Иконка: путь /assets/achievement/название_файла (используем ach.icon или строим из name)
-            let iconPath = ach.icon || `/assets/achievement/${ach.id}.png`;
-            // Для достижения "Основатель" (id=1) используем founder.png
-            if (ach.id === 1) iconPath = '/assets/achievement/founder.png';
-            const rowClass = i % 2 === 0 ? 'achievement-row even' : 'achievement-row odd';
+        for (let i = 0; i < achievements.length; i++) {
+            const ach = achievements[i];
+            const earned = ach.earned;
+            let iconPath = ach.icon || '/assets/icons/icon-new.png';
+            // Для основателя (id=1) если icon не задан, используем founder.png
+            if (ach.id === 1 && !ach.icon) iconPath = '/assets/achievement/founder.png';
             const iconStyle = earned ? 'opacity: 1;' : 'opacity: 0.3;';
-            const statusText = earned ? '✓ Получено' : '🔒 Не получено';
+            let statusText = '';
+            if (earned) {
+                statusText = '✓ Получено';
+            } else if (ach.progress) {
+                statusText = `${ach.progress.current}/${ach.progress.required}`;
+            } else {
+                statusText = '🔒 Не получено';
+            }
+            const rowClass = i % 2 === 0 ? 'achievement-row even' : 'achievement-row odd';
             html += `
                 <div class="${rowClass}">
                     <div class="achievement-icon-col">
@@ -91,7 +91,7 @@ async function renderAchievements(container) {
                         <div class="achievement-list-desc">${escapeHtml(ach.description)}</div>
                     </div>
                     <div class="achievement-status-col">
-                        ${statusText}
+                        ${escapeHtml(statusText)}
                     </div>
                 </div>
             `;

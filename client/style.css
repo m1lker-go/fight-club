@@ -2522,6 +2522,7 @@ body {
 .battle-result .stats-battle td {
     width: 33.33%;
     text-align: center;
+    white-space: nowrap;
 }
 .battle-result .stats-battle tbody tr:nth-child(odd) {
     background-color: #232833;

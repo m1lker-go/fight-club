@@ -506,10 +506,13 @@ async function showBattleResult(battleData, timeOut = false) {
         cellEnemy.innerText = enemyVal;
     }
     
-    // Очищаем контейнер и вставляем таблицу
-    resultContent.innerHTML = '';
+     resultContent.innerHTML = '';
     resultContent.appendChild(table);
-}, true);
+}, false);
+
+// Принудительно устанавливаем активное состояние
+tabLogBtn.classList.add('active');
+tabStatsBtn.classList.remove('active');
 
     buttonsGrid.appendChild(rematchBtn);
     buttonsGrid.appendChild(backBtn);

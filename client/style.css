@@ -6019,3 +6019,36 @@ body {
 }
 
 
+/* ПРИНУДИТЕЛЬНОЕ ВОССТАНОВЛЕНИЕ ТАБЛИЦЫ СТАТИСТИКИ БОЯ */
+.battle-result .stats-battle {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+}
+.battle-result .stats-battle thead {
+    display: table-header-group !important;
+}
+.battle-result .stats-battle tbody {
+    display: table-row-group !important;
+}
+.battle-result .stats-battle tr {
+    display: table-row !important;
+}
+.battle-result .stats-battle th,
+.battle-result .stats-battle td {
+    display: table-cell !important;
+    width: 33.33% !important;
+    text-align: center !important;
+    padding: 8px 4px !important;
+    border: none !important;
+}
+.battle-result .stats-battle .player-col {
+    color: #00aaff !important;
+    font-weight: bold !important;
+}
+.battle-result .stats-battle .enemy-col {
+    color: #e74c3c !important;
+    font-weight: bold !important;
+}
+

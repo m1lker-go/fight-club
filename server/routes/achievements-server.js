@@ -77,4 +77,35 @@ router.post('/check-founder', async (req, res) => {
     }
 });
 
+// Получить список достижений с прогрессом пользователя
+router.get('/user-progress', async (req, res) => {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const client = await pool.connect();
+    try {
+        const userRes = await client.query('SELECT total_wins FROM users WHERE id = $1', [userId]);
+        const totalWins = userRes.rows[0]?.total_wins || 0;
+        
+        const achievementsRes = await client.query('SELECT id, name, description, icon, target_type, target_value FROM achievements ORDER BY id');
+        const userAchRes = await client.query('SELECT achievement_id FROM user_achievements WHERE user_id = $1', [userId]);
+        const earnedSet = new Set(userAchRes.rows.map(r => r.achievement_id));
+
+        const result = achievementsRes.rows.map(ach => {
+            const earned = earnedSet.has(ach.id);
+            let progress = null;
+            if (ach.target_type === 'wins' && ach.target_value !== null) {
+                progress = { current: totalWins, required: ach.target_value };
+            }
+            return { ...ach, earned, progress };
+        });
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router;

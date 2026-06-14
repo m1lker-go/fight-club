@@ -462,26 +462,54 @@ async function showBattleResult(battleData, timeOut = false) {
         resultContent.innerHTML = logArray;
     }, true);
 
-    tabStatsBtn = createButton('Статистика', () => {
-        tabStatsBtn.classList.add('active');
-        tabLogBtn.classList.remove('active');
-        const statsHtml = `
-            <table class="stats-battle">
-                <thead>
-                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}<td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
-                </tbody>
-            </table>
-        `;
-        resultContent.innerHTML = statsHtml;
-    });
+   tabStatsBtn = createButton('Статистика', () => {
+    tabStatsBtn.classList.add('active');
+    tabLogBtn.classList.remove('active');
+    
+    // Создаём таблицу через DOM
+    const table = document.createElement('table');
+    table.className = 'stats-battle';
+    
+    // Заголовок
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    const th1 = document.createElement('th');
+    th1.innerText = 'Игрок';
+    const th2 = document.createElement('th');
+    th2.innerText = 'Параметр';
+    const th3 = document.createElement('th');
+    th3.innerText = 'Соперник';
+    headerRow.appendChild(th1);
+    headerRow.appendChild(th2);
+    headerRow.appendChild(th3);
+    
+    // Тело таблицы
+    const tbody = table.createTBody();
+    const rowsData = [
+        [playerStats.hits, 'Ударов', enemyStats.hits],
+        [playerStats.crits, 'Критов', enemyStats.crits],
+        [playerStats.dodges, 'Уклонений', enemyStats.dodges],
+        [playerStats.totalDamage, 'Урона', enemyStats.totalDamage],
+        [playerStats.heal, 'Исцелено', enemyStats.heal],
+        [playerStats.reflect, 'Отражено', enemyStats.reflect]
+    ];
+    
+    for (const [playerVal, param, enemyVal] of rowsData) {
+        const row = tbody.insertRow();
+        const cellPlayer = row.insertCell();
+        cellPlayer.className = 'player-col';
+        cellPlayer.innerText = playerVal;
+        const cellParam = row.insertCell();
+        cellParam.innerText = param;
+        const cellEnemy = row.insertCell();
+        cellEnemy.className = 'enemy-col';
+        cellEnemy.innerText = enemyVal;
+    }
+    
+    // Очищаем контейнер и вставляем таблицу
+    resultContent.innerHTML = '';
+    resultContent.appendChild(table);
+}, true);
 
     buttonsGrid.appendChild(rematchBtn);
     buttonsGrid.appendChild(backBtn);

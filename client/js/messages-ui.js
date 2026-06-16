@@ -168,17 +168,17 @@ async function renderMessageDetail(messageId) {
     `;
     
     document.getElementById('backToMessagesBtn').addEventListener('click', () => renderMessages());
-    document.getElementById('deleteMessageBtn').addEventListener('click', async () => {
-        if (confirm('Удалить сообщение?')) {
-            await window.apiRequest('/user/messages/delete', {
-                method: 'POST',
-                body: JSON.stringify({ message_id: messageId })
-            });
-            messagesList = messagesList.filter(m => m.id != messageId);
-            recalcUnprocessedCount();
-            renderMessages();
-        }
+    document.getElementById('deleteMessageBtn').addEventListener('click', () => {
+    showConfirmModal('Удалить сообщение?', async () => {
+        await window.apiRequest('/user/messages/delete', {
+            method: 'POST',
+            body: JSON.stringify({ message_id: messageId })
+        });
+        messagesList = messagesList.filter(m => m.id != messageId);
+        recalcUnprocessedCount();
+        renderMessages();
     });
+});
     
     if (document.getElementById('replyBtn')) {
         document.getElementById('replyBtn').addEventListener('click', () => {

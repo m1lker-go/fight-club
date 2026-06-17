@@ -6059,13 +6059,14 @@ body {
     align-items: flex-end !important;
     justify-content: flex-start !important;
     padding-bottom: 30px !important;
-    /* Фон всей страницы — картинка */
     background-image: url('/assets/back-in.png') !important;
-    background-size: cover !important;
+    background-size: cover !important; /* растягиваем по высоте, ширина подстраивается */
     background-position: center !important;
     background-repeat: no-repeat !important;
-    background-color: rgba(0, 0, 0, 0.2) !important; /* лёгкое затемнение, чтобы текст читался */
-    z-index: 9999 !important; /* поверх всего */
+    background-color: rgba(0,0,0,0.3) !important; /* лёгкое затемнение */
+    z-index: 9999 !important;
+    height: 100vh !important; /* гарантируем высоту экрана */
+    width: 100vw !important;
 }
 
 /* Скрываем верхнюю и нижнюю панели, пока модалка открыта */

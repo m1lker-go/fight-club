@@ -6054,90 +6054,93 @@ body {
 }
 
 
-/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН ПО ВЫСОТЕ, ОКНО УЖЕ) ========== */
+/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН ПО ВЫСОТЕ, ОКНО КОМПАКТНОЕ) ========== */
 .auth-modal {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
     align-items: flex-end !important;
-    justify-content: flex-start !important;
-    padding-bottom: 20px !important;  /* чуть меньше отступ снизу */
+    justify-content: center !important;
+    padding-bottom: 15px !important;
     background-image: url('/assets/back-in.png') !important;
-    background-size: auto 100% !important;   /* растягиваем по высоте, ширина пропорциональна */
+    background-size: auto 100% !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
-    background-color: rgba(0, 0, 0, 0.3) !important; /* затемнение, если картинка не заполняет */
+    background-color: rgba(0, 0, 0, 0.2) !important;
     z-index: 9999 !important;
-    height: 100vh !important;
-    width: 100vw !important;
+    overflow: hidden !important;
 }
 
-/* Сама модалка – ширина 340px, компактнее */
+/* Скрываем заголовок модалки (он уже есть в разметке) */
+.auth-modal .modal-header {
+    display: none !important;
+}
+
 .auth-modal .modal-content {
-    background: rgba(26, 31, 43, 0.85) !important;
+    background: rgba(26, 31, 43, 0.88) !important;
     border: 2px solid #00aaff !important;
-    border-radius: 20px 20px 0 0 !important;
+    border-radius: 16px 16px 0 0 !important;
     margin: 0 auto !important;
     max-width: 340px !important;
     width: 92% !important;
-    padding: 16px 16px 24px !important;  /* уменьшили отступы */
+    padding: 10px 14px 18px !important;
     box-shadow: 0 -4px 20px rgba(0, 170, 255, 0.3) !important;
     background-image: none !important;
-    backdrop-filter: blur(2px) !important; /* лёгкое размытие для читаемости */
+    backdrop-filter: blur(2px) !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
 }
 
-/* Заголовок – меньше */
-.auth-modal .modal-header h2 {
-    font-size: 1.1rem !important;
-    margin: 0 !important;
+.auth-modal .auth-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 6px !important;
+    padding: 0;
 }
 
-/* Кнопки входа – компактнее */
 .auth-modal .auth-btn {
-    font-size: 0.9rem !important;
-    padding: 10px 12px !important;
+    font-size: 0.78rem !important;
+    padding: 6px 10px !important;
     background-color: rgba(35, 40, 51, 0.9);
     border: 1px solid #00aaff;
     transition: background-color 0.2s;
+    border-radius: 10px !important;
 }
 
 .auth-modal .auth-btn i {
-    font-size: 1rem !important;
+    font-size: 0.85rem !important;
 }
 
 .auth-modal .auth-btn:hover {
     background-color: rgba(0, 170, 255, 0.3);
 }
 
-.auth-modal .auth-methods {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;  /* уменьшили промежуток */
-    padding: 0;
-}
-
-/* Крестик скрыт */
 .auth-modal .close {
     display: none !important;
 }
 
-/* Форма логина/регистрации – тоже компактнее */
 .auth-modal .auth-credentials-form {
     background: rgba(26, 31, 43, 0.6);
-    border-radius: 12px;
-    padding: 10px;
-    margin-top: 10px;
+    border-radius: 10px;
+    padding: 6px;
+    margin-top: 6px;
 }
 
 .auth-modal .auth-input {
-    padding: 8px 10px !important;
-    font-size: 0.9rem !important;
-    margin-bottom: 8px !important;
+    padding: 5px 8px !important;
+    font-size: 0.75rem !important;
+    margin-bottom: 5px !important;
 }
 
 .auth-modal .auth-submit-btn {
-    padding: 8px 12px !important;
-    font-size: 0.9rem !important;
+    padding: 5px 8px !important;
+    font-size: 0.75rem !important;
 }
 
 .auth-modal .auth-toggle-btn {
-    padding: 8px 0 !important;
-    font-size: 0.85rem !important;
+    padding: 5px 0 !important;
+    font-size: 0.7rem !important;
 }

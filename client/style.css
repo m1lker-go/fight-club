@@ -6054,69 +6054,90 @@ body {
 }
 
 
-/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН НА ВСЮ СТРАНИЦУ, МОДАЛКА ПОЛУПРОЗРАЧНАЯ) ========== */
+/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН ПО ВЫСОТЕ, ОКНО УЖЕ) ========== */
 .auth-modal {
     align-items: flex-end !important;
     justify-content: flex-start !important;
-    padding-bottom: 30px !important;
+    padding-bottom: 20px !important;  /* чуть меньше отступ снизу */
     background-image: url('/assets/back-in.png') !important;
-    background-size: cover !important; /* растягиваем по высоте, ширина подстраивается */
+    background-size: auto 100% !important;   /* растягиваем по высоте, ширина пропорциональна */
     background-position: center !important;
     background-repeat: no-repeat !important;
-    background-color: rgba(0,0,0,0.3) !important; /* лёгкое затемнение */
+    background-color: rgba(0, 0, 0, 0.3) !important; /* затемнение, если картинка не заполняет */
     z-index: 9999 !important;
-    height: 100vh !important; /* гарантируем высоту экрана */
+    height: 100vh !important;
     width: 100vw !important;
 }
 
-/* Скрываем верхнюю и нижнюю панели, пока модалка открыта */
-.auth-modal ~ .top-bar,
-.auth-modal ~ .bottom-menu {
-    display: none !important;
-}
-/* Альтернативно, если модалка — это отдельный элемент, можно скрыть через родителя */
-/* Но проще добавить в .auth-modal фоновый слой, который перекроет бары */
-
-/* Сама модалка — ширина 300px, тёмный фон с прозрачностью */
+/* Сама модалка – ширина 340px, компактнее */
 .auth-modal .modal-content {
-    background: rgba(26, 31, 43, 0.85) !important; /* стандартный тёмный, но чуть прозрачный */
+    background: rgba(26, 31, 43, 0.85) !important;
     border: 2px solid #00aaff !important;
     border-radius: 20px 20px 0 0 !important;
     margin: 0 auto !important;
-    max-width: 300px !important;
-    width: 90% !important;
-    padding: 20px 20px 30px !important;
+    max-width: 340px !important;
+    width: 92% !important;
+    padding: 16px 16px 24px !important;  /* уменьшили отступы */
     box-shadow: 0 -4px 20px rgba(0, 170, 255, 0.3) !important;
-    /* убираем картинку и размытие, чтобы был чистый фон */
     background-image: none !important;
-    backdrop-filter: none !important;
+    backdrop-filter: blur(2px) !important; /* лёгкое размытие для читаемости */
 }
 
-/* Кнопки и форма — без изменений */
-.auth-modal .auth-methods {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 0;
+/* Заголовок – меньше */
+.auth-modal .modal-header h2 {
+    font-size: 1.1rem !important;
+    margin: 0 !important;
 }
 
+/* Кнопки входа – компактнее */
 .auth-modal .auth-btn {
+    font-size: 0.9rem !important;
+    padding: 10px 12px !important;
     background-color: rgba(35, 40, 51, 0.9);
     border: 1px solid #00aaff;
     transition: background-color 0.2s;
+}
+
+.auth-modal .auth-btn i {
+    font-size: 1rem !important;
 }
 
 .auth-modal .auth-btn:hover {
     background-color: rgba(0, 170, 255, 0.3);
 }
 
+.auth-modal .auth-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;  /* уменьшили промежуток */
+    padding: 0;
+}
+
+/* Крестик скрыт */
 .auth-modal .close {
     display: none !important;
 }
 
+/* Форма логина/регистрации – тоже компактнее */
 .auth-modal .auth-credentials-form {
     background: rgba(26, 31, 43, 0.6);
     border-radius: 12px;
-    padding: 12px;
-    margin-top: 12px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.auth-modal .auth-input {
+    padding: 8px 10px !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 8px !important;
+}
+
+.auth-modal .auth-submit-btn {
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+}
+
+.auth-modal .auth-toggle-btn {
+    padding: 8px 0 !important;
+    font-size: 0.85rem !important;
 }

@@ -6054,32 +6054,44 @@ body {
 }
 
 
-
-/* ========== МЕНЮ АВТОРИЗАЦИИ: НОВЫЙ ФОН И СМЕЩЕНИЕ ВНИЗ ========== */
+/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН НА ВСЮ СТРАНИЦУ, МОДАЛКА ПОЛУПРОЗРАЧНАЯ) ========== */
 .auth-modal {
-    align-items: flex-end !important;      /* прижимаем содержимое к низу */
+    align-items: flex-end !important;
     justify-content: flex-start !important;
     padding-bottom: 30px !important;
-    background: none !important;
-    backdrop-filter: none !important;
-}
-
-.auth-modal .modal-content {
-    background: rgba(26, 31, 43, 0.7) !important;
+    /* Фон всей страницы — картинка */
     background-image: url('/assets/back-in.png') !important;
     background-size: cover !important;
     background-position: center !important;
-    background-blend-mode: overlay !important;
-    border: 2px solid #00aaff !important;
-    border-radius: 20px 20px 0 0 !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    padding: 20px 20px 30px !important;
-    box-shadow: 0 -4px 20px rgba(0, 170, 255, 0.3) !important;
-    backdrop-filter: blur(4px) !important;
+    background-repeat: no-repeat !important;
+    background-color: rgba(0, 0, 0, 0.2) !important; /* лёгкое затемнение, чтобы текст читался */
+    z-index: 9999 !important; /* поверх всего */
 }
 
+/* Скрываем верхнюю и нижнюю панели, пока модалка открыта */
+.auth-modal ~ .top-bar,
+.auth-modal ~ .bottom-menu {
+    display: none !important;
+}
+/* Альтернативно, если модалка — это отдельный элемент, можно скрыть через родителя */
+/* Но проще добавить в .auth-modal фоновый слой, который перекроет бары */
+
+/* Сама модалка — ширина 300px, тёмный фон с прозрачностью */
+.auth-modal .modal-content {
+    background: rgba(26, 31, 43, 0.85) !important; /* стандартный тёмный, но чуть прозрачный */
+    border: 2px solid #00aaff !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 auto !important;
+    max-width: 300px !important;
+    width: 90% !important;
+    padding: 20px 20px 30px !important;
+    box-shadow: 0 -4px 20px rgba(0, 170, 255, 0.3) !important;
+    /* убираем картинку и размытие, чтобы был чистый фон */
+    background-image: none !important;
+    backdrop-filter: none !important;
+}
+
+/* Кнопки и форма — без изменений */
 .auth-modal .auth-methods {
     display: flex;
     flex-direction: column;

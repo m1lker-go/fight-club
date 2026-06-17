@@ -451,4 +451,5 @@ function showusernameModal(userId) {
 }
 
 window.showAuthModal = showAuthModal;
+window.closeAuthModal = closeAuthModal;
 window.showusernameModal = showusernameModal;

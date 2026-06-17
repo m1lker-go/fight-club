@@ -6053,3 +6053,57 @@ body {
     font-weight: bold !important;
 }
 
+
+
+/* ========== МЕНЮ АВТОРИЗАЦИИ: НОВЫЙ ФОН И СМЕЩЕНИЕ ВНИЗ ========== */
+.auth-modal {
+    align-items: flex-end !important;      /* прижимаем содержимое к низу */
+    justify-content: flex-start !important;
+    padding-bottom: 30px !important;
+    background: none !important;
+    backdrop-filter: none !important;
+}
+
+.auth-modal .modal-content {
+    background: rgba(26, 31, 43, 0.7) !important;
+    background-image: url('/assets/back-in.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-blend-mode: overlay !important;
+    border: 2px solid #00aaff !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 20px 20px 30px !important;
+    box-shadow: 0 -4px 20px rgba(0, 170, 255, 0.3) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+.auth-modal .auth-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0;
+}
+
+.auth-modal .auth-btn {
+    background-color: rgba(35, 40, 51, 0.9);
+    border: 1px solid #00aaff;
+    transition: background-color 0.2s;
+}
+
+.auth-modal .auth-btn:hover {
+    background-color: rgba(0, 170, 255, 0.3);
+}
+
+.auth-modal .close {
+    display: none !important;
+}
+
+.auth-modal .auth-credentials-form {
+    background: rgba(26, 31, 43, 0.6);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 12px;
+}

@@ -6054,7 +6054,7 @@ body {
 }
 
 
-/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН ПО ВЫСОТЕ, ОКНО КОМПАКТНОЕ) ========== */
+/* ========== МЕНЮ АВТОРИЗАЦИИ (ФОН ПО ВЫСОТЕ, ОКНО СО СКРУГЛЕНИЕМ И ОТСТУПОМ) ========== */
 .auth-modal {
     position: fixed !important;
     top: 0;
@@ -6064,7 +6064,7 @@ body {
     display: flex !important;
     align-items: flex-end !important;
     justify-content: center !important;
-    padding-bottom: 15px !important;
+    padding-bottom: 80px !important;   /* отступ снизу */
     background-image: url('/assets/back-in.png') !important;
     background-size: auto 100% !important;
     background-position: center !important;
@@ -6074,7 +6074,7 @@ body {
     overflow: hidden !important;
 }
 
-/* Скрываем заголовок модалки (он уже есть в разметке) */
+/* Скрываем стандартный заголовок модалки */
 .auth-modal .modal-header {
     display: none !important;
 }
@@ -6082,7 +6082,7 @@ body {
 .auth-modal .modal-content {
     background: rgba(26, 31, 43, 0.88) !important;
     border: 2px solid #00aaff !important;
-    border-radius: 16px 16px 0 0 !important;
+    border-radius: 16px !important;   /* скруглены все углы */
     margin: 0 auto !important;
     max-width: 340px !important;
     width: 92% !important;
@@ -6094,6 +6094,7 @@ body {
     overflow-y: auto !important;
 }
 
+/* Кнопки и форма – уменьшенные (как вы хотели) */
 .auth-modal .auth-methods {
     display: flex;
     flex-direction: column;

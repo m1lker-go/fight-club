@@ -39,6 +39,18 @@ function getTelegramInitData() {
 
 if (!window.API_BASE) window.API_BASE = 'https://api.cat-fight.ru';
 
+// Закрытие модального окна авторизации (удаляем класс и скрываем)
+function closeAuthModal() {
+    const modal = document.getElementById('roleModal');
+    if (modal) {
+        modal.classList.remove('auth-modal');
+        modal.style.display = 'none';
+        modal.style.position = '';
+        modal.style.zIndex = '';
+        // удаляем инлайн-стили, чтобы не мешали другим модалкам
+    }
+}
+
 // Автологин в Telegram (точная копия рабочего кода из telegram-auth.js)
 async function autoLoginTelegram(initData) {
     if (!initData) return false;
@@ -56,8 +68,7 @@ async function autoLoginTelegram(initData) {
             if (typeof window.loadUserDataByToken === 'function') {
                 await window.loadUserDataByToken(data.sessionToken);
             }
-            const modal = document.getElementById('roleModal');
-            if (modal) modal.style.display = 'none';
+            closeAuthModal();
             if (typeof window.showScreen === 'function') {
                 window.showScreen('main');
             }
@@ -236,8 +247,7 @@ async function handleCredentialsSubmit() {
                 if (typeof window.loadUserDataByToken === 'function') {
                     await window.loadUserDataByToken(data.sessionToken);
                 }
-                const modal = document.getElementById('roleModal');
-                if (modal) modal.style.display = 'none';
+                closeAuthModal();
                 if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {
@@ -370,8 +380,7 @@ async function loginWithVK() {
                 if (typeof window.loadUserDataByToken === 'function') {
                     await window.loadUserDataByToken(data.sessionToken);
                 }
-                const modal = document.getElementById('roleModal');
-                if (modal) modal.style.display = 'none';
+                closeAuthModal();
                 if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {

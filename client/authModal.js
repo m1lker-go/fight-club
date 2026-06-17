@@ -87,6 +87,7 @@ function showAuthModal() {
 
     // Для всех остальных – показываем модальное окно (код без изменений)
     const modal = document.getElementById('roleModal');
+    modal.classList.add('auth-modal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     modalTitle.innerText = 'Вход в игру';

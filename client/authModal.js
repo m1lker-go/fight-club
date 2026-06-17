@@ -39,15 +39,27 @@ function getTelegramInitData() {
 
 if (!window.API_BASE) window.API_BASE = 'https://api.cat-fight.ru';
 
-// Закрытие модального окна авторизации (удаляем класс и скрываем)
+// Закрытие модального окна авторизации (полный сброс)
 function closeAuthModal() {
     const modal = document.getElementById('roleModal');
     if (modal) {
+        // Убираем класс
         modal.classList.remove('auth-modal');
+        // Сбрасываем display
         modal.style.display = 'none';
-        modal.style.position = '';
-        modal.style.zIndex = '';
-        // удаляем инлайн-стили, чтобы не мешали другим модалкам
+        // Убираем все инлайн-стили, которые могли быть добавлены
+        modal.removeAttribute('style');
+        // Возвращаем исходный класс (если он был)
+        modal.className = 'modal';
+        // Убираем класс из body, если он был добавлен
+        document.body.classList.remove('auth-modal-open');
+        // Принудительно перерисовываем
+        modal.offsetHeight; // trigger reflow
+    }
+    // Также сбрасываем инлайн-стили у modal-content, если они были
+    const content = document.getElementById('modalContent');
+    if (content) {
+        content.removeAttribute('style');
     }
 }
 

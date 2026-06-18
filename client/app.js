@@ -900,32 +900,38 @@ function handleExternalAuth() {
     let handled = false;
 
     async function handleOAuthSuccess(sessionToken, needusername, userId) {
-        if (!sessionToken) {
-            console.error('[OAuth] No sessionToken');
-            return false;
-        }
-        localStorage.setItem('sessionToken', sessionToken);
-        if (needusername && typeof showusernameModal === 'function') {
-            showusernameModal(userId);
-        } else {
-            const loaded = await loadUserDataByToken(sessionToken);
-            if (loaded) {
-                const modal = document.getElementById('roleModal');
-                if (modal) modal.style.display = 'none';
-                showScreen('main');
-                setTimeout(() => {
-                    if (currentScreen === 'main') {
-                        renderMain();
-                    }
-                }, 100);
-                window.history.replaceState({}, document.title, window.location.pathname);
-            } else {
-                console.error('[OAuth] Failed to load user data, reloading...');
-                window.location.reload();
-            }
-        }
-        return true;
+    if (!sessionToken) {
+        console.error('[OAuth] No sessionToken');
+        return false;
     }
+    localStorage.setItem('sessionToken', sessionToken);
+    if (needusername && typeof showusernameModal === 'function') {
+        showusernameModal(userId);
+    } else {
+        const loaded = await loadUserDataByToken(sessionToken);
+        if (loaded) {
+            const modal = document.getElementById('roleModal');
+            if (modal) {
+                if (typeof window.closeAuthModal === 'function') {
+                    window.closeAuthModal();
+                } else {
+                    modal.style.display = 'none';
+                }
+            }
+            showScreen('main');
+            setTimeout(() => {
+                if (currentScreen === 'main') {
+                    renderMain();
+                }
+            }, 100);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            console.error('[OAuth] Failed to load user data, reloading...');
+            window.location.reload();
+        }
+    }
+    return true;
+}
 
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {

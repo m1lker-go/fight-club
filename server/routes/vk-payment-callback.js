@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Каталог товаров
 const itemsCatalog = {
     1: { title: '50 алмазов', price: 15, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_1.png' },
     2: { title: '150 алмазов', price: 57, photo_url: 'https://cat-fight.ru/assets/diamond/buy_diamond_2.png' },
@@ -13,18 +12,28 @@ const itemsCatalog = {
     7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
-// Функция выдачи товара (использует переданный клиент)
-async function grantItem(client, dbUserId, itemId) {
+// ТОЧНО ТАКАЯ ЖЕ ФУНКЦИЯ, КАК В Robokassa
+async function createRewardMessage(client, userId, subject, body, rewardType, rewardAmount) {
+    await client.query(
+        `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+         VALUES ($1, 'Магазин Cat Fighting', $2, $3, $4, $5, false, false)`,
+        [userId, subject, body, rewardType, rewardAmount]
+    );
+}
+
+async function grantItem(client, dbUserId, itemId, orderId) {
     if (itemId >= 1 && itemId <= 6) {
         const diamondsMap = { 1: 50, 2: 150, 3: 350, 4: 700, 5: 1150, 6: 1800 };
         let diamonds = diamondsMap[itemId];
-        // Проверка бонуса
+        let bonusApplied = false;
+
         const bonusCheck = await client.query(
             'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2',
             [dbUserId, itemId]
         );
         if (bonusCheck.rowCount === 0) {
             diamonds = Math.floor(diamonds * 1.5);
+            bonusApplied = true;
             await client.query(
                 'INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)',
                 [dbUserId, itemId]
@@ -34,6 +43,12 @@ async function grantItem(client, dbUserId, itemId) {
             'UPDATE users SET diamonds = diamonds + $1 WHERE id = $2',
             [diamonds, dbUserId]
         );
+
+        // Сообщение в точности как в Robokassa
+        const subject = 'Пакет алмазов';
+        const body = `Вы приобрели ${diamonds} алмазов. Нажмите "Забрать награду", чтобы получить их.`;
+        await createRewardMessage(client, dbUserId, subject, body, 'diamonds', diamonds);
+
     } else if (itemId === 7) {
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
@@ -41,9 +56,30 @@ async function grantItem(client, dbUserId, itemId) {
             'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
             [expiry, dbUserId]
         );
+        // Бонусы за оформление (как в Robokassa)
         await client.query(
             'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
             [dbUserId]
+        );
+
+        // Первое письмо – уведомление об активации
+        await client.query(
+            `INSERT INTO user_messages (user_id, subject, body)
+             VALUES ($1, $2, $3)`,
+            [
+                dbUserId,
+                '🎉 Подписка VIP Silver активирована!',
+                'Поздравляю! Ваша подписка "VIP-SILVER" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.'
+            ]
+        );
+
+        // Второе письмо – награда за оформление (как в Robokassa)
+        await createRewardMessage(
+            client,
+            dbUserId,
+            'Награда за оформление подписки',
+            'Вы получили 1500 монет, 50 угля и 100 алмазов в подарок! Нажмите "Забрать награду", чтобы получить.',
+            'coins', 1500
         );
     }
 }
@@ -100,7 +136,7 @@ router.post('/', async (req, res) => {
             try {
                 await client.query('BEGIN');
 
-                // Проверяем дубликат по order_id
+                // Проверяем дубликат
                 const existing = await client.query(
                     'SELECT 1 FROM vk_payments WHERE order_id = $1',
                     [order_id]
@@ -129,10 +165,10 @@ router.post('/', async (req, res) => {
                 }
                 const dbUserId = userRes.rows[0].id;
 
-                // Выдаём товар
-                await grantItem(client, dbUserId, itemId);
+                // Выдаём товар и создаём сообщения
+                await grantItem(client, dbUserId, itemId, order_id);
 
-                // Сохраняем платёж в таблицу (с учётом структуры)
+                // Сохраняем платёж
                 await client.query(
                     `INSERT INTO vk_payments 
                      (transaction_id, user_id, itemdefid, order_id, amount, status, created_at)
@@ -158,7 +194,6 @@ router.post('/', async (req, res) => {
                 client.release();
             }
         } else if (status === 'refunded' || status === 'cancelled') {
-            // Отмена или возврат — просто подтверждаем
             res.json({ response: { order_id: order_id } });
         } else {
             res.json({
@@ -172,7 +207,7 @@ router.post('/', async (req, res) => {
         return;
     }
 
-    // 3. Неизвестный тип уведомления
+    // 3. Неизвестный тип
     res.json({
         error: {
             error_code: 11,

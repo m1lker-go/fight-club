@@ -12,12 +12,12 @@ const itemsCatalog = {
     7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
-// ТОЧНО ТАКАЯ ЖЕ ФУНКЦИЯ, КАК В Robokassa
-async function createRewardMessage(client, userId, subject, body, rewardType, rewardAmount) {
+// Функция для вставки сообщения с наградой (использует reward_diamonds)
+async function createRewardMessage(client, userId, subject, body, rewardDiamonds = 0, rewardCoins = 0) {
     await client.query(
-        `INSERT INTO user_messages (user_id, from_text, subject, body, reward_type, reward_amount, is_read, is_claimed)
+        `INSERT INTO user_messages (user_id, from_text, subject, body, reward_diamonds, reward_coins, is_read, is_claimed)
          VALUES ($1, 'Магазин Cat Fighting', $2, $3, $4, $5, false, false)`,
-        [userId, subject, body, rewardType, rewardAmount]
+        [userId, subject, body, rewardDiamonds, rewardCoins]
     );
 }
 
@@ -39,30 +39,28 @@ async function grantItem(client, dbUserId, itemId, orderId) {
                 [dbUserId, itemId]
             );
         }
-        await client.query(
-            'UPDATE users SET diamonds = diamonds + $1 WHERE id = $2',
-            [diamonds, dbUserId]
-        );
 
-        // Сообщение в точности как в Robokassa
+        // НЕ НАЧИСЛЯЕМ алмазы сразу, только создаём сообщение
         const subject = 'Пакет алмазов';
         const body = `Вы приобрели ${diamonds} алмазов. Нажмите "Забрать награду", чтобы получить их.`;
-        await createRewardMessage(client, dbUserId, subject, body, 'diamonds', diamonds);
+        await createRewardMessage(client, dbUserId, subject, body, diamonds, 0);
+
+        console.log(`[VK Payment] Created reward message for ${diamonds} diamonds, user ${dbUserId}`);
 
     } else if (itemId === 7) {
+        // Подписка – начисляем бонусы сразу и создаём два сообщения
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
         await client.query(
             'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
             [expiry, dbUserId]
         );
-        // Бонусы за оформление (как в Robokassa)
         await client.query(
             'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
             [dbUserId]
         );
 
-        // Первое письмо – уведомление об активации
+        // Сообщение об активации
         await client.query(
             `INSERT INTO user_messages (user_id, subject, body)
              VALUES ($1, $2, $3)`,
@@ -73,13 +71,14 @@ async function grantItem(client, dbUserId, itemId, orderId) {
             ]
         );
 
-        // Второе письмо – награда за оформление (как в Robokassa)
+        // Сообщение с наградой (монеты уже начислены, но создаём уведомление)
         await createRewardMessage(
             client,
             dbUserId,
             'Награда за оформление подписки',
-            'Вы получили 1500 монет, 50 угля и 100 алмазов в подарок! Нажмите "Забрать награду", чтобы получить.',
-            'coins', 1500
+            'Вы получили 1500 монет, 50 угля и 100 алмазов в подарок!',
+            100,   // алмазы (но они уже начислены, можно не передавать)
+            1500   // монеты (уже начислены, просто уведомление)
         );
     }
 }
@@ -165,10 +164,10 @@ router.post('/', async (req, res) => {
                 }
                 const dbUserId = userRes.rows[0].id;
 
-                // Выдаём товар и создаём сообщения
+                // Выдаём товар и создаём сообщения (без прямого начисления алмазов)
                 await grantItem(client, dbUserId, itemId, order_id);
 
-                // Сохраняем платёж
+                // Сохраняем платёж в историю
                 await client.query(
                     `INSERT INTO vk_payments 
                      (transaction_id, user_id, itemdefid, order_id, amount, status, created_at)

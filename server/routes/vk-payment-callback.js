@@ -13,33 +13,49 @@ const itemsCatalog = {
     7: { title: 'VIP Silver подписка', price: 86, photo_url: 'https://cat-fight.ru/assets/icons/vip_silver.png' }
 };
 
-// Функция выдачи товара (принимает клиент БД, чтобы использовать одну транзакцию)
+// Функция выдачи товара (использует переданный клиент)
 async function grantItem(client, dbUserId, itemId) {
     if (itemId >= 1 && itemId <= 6) {
         const diamondsMap = { 1: 50, 2: 150, 3: 350, 4: 700, 5: 1150, 6: 1800 };
         let diamonds = diamondsMap[itemId];
-        const bonusCheck = await client.query('SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2', [dbUserId, itemId]);
+        // Проверка бонуса
+        const bonusCheck = await client.query(
+            'SELECT 1 FROM bonus_purchases WHERE user_id = $1 AND pack_id = $2',
+            [dbUserId, itemId]
+        );
         if (bonusCheck.rowCount === 0) {
             diamonds = Math.floor(diamonds * 1.5);
-            await client.query('INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)', [dbUserId, itemId]);
+            await client.query(
+                'INSERT INTO bonus_purchases (user_id, pack_id) VALUES ($1, $2)',
+                [dbUserId, itemId]
+            );
         }
-        await client.query('UPDATE users SET diamonds = diamonds + $1 WHERE id = $2', [diamonds, dbUserId]);
+        await client.query(
+            'UPDATE users SET diamonds = diamonds + $1 WHERE id = $2',
+            [diamonds, dbUserId]
+        );
     } else if (itemId === 7) {
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 30);
-        await client.query('UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2', [expiry, dbUserId]);
-        await client.query('UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1', [dbUserId]);
+        await client.query(
+            'UPDATE users SET subscription_expiry = $1, subscription_expiry_notified = FALSE WHERE id = $2',
+            [expiry, dbUserId]
+        );
+        await client.query(
+            'UPDATE users SET coins = coins + 1500, coal = coal + 50, diamonds = diamonds + 100 WHERE id = $1',
+            [dbUserId]
+        );
     }
 }
 
-// Логирование всех запросов (оставляем как есть)
+// Логирование
 router.use((req, res, next) => {
     console.log('\n=========================================');
     console.log(`[VK Callback] Время: ${new Date().toISOString()}`);
     console.log(`[VK Callback] Метод: ${req.method}`);
     console.log(`[VK Callback] URL: ${req.url}`);
     console.log(`[VK Callback] Заголовки:`, req.headers);
-    console.log(`[VK Callback] Тело запроса (raw body):`, req.body);
+    console.log(`[VK Callback] Тело запроса:`, req.body);
     console.log('=========================================\n');
     next();
 });
@@ -51,11 +67,10 @@ router.get('/', (req, res) => {
 router.post('/', async (req, res) => {
     console.log('[VK Payment] POST request received, body:', JSON.stringify(req.body));
 
-    // Извлекаем параметры (VK присылает их как urlencoded, но мы уже распарсили через express.urlencoded)
     const { notification_type, item, order_id, user_id, status, app_id, receiver_id, test_mode } = req.body;
     const itemId = item ? (isNaN(item) ? item : parseInt(item, 10)) : null;
 
-    // 1. Запрос информации о товаре (get_item_test)
+    // 1. Запрос информации о товаре
     if (notification_type === 'get_item_test' || notification_type === 'get_item') {
         if (!itemsCatalog[itemId]) {
             console.error(`[VK Payment] Item ${itemId} not found`);
@@ -68,36 +83,39 @@ router.post('/', async (req, res) => {
             });
         }
         const product = itemsCatalog[itemId];
-        const response = {
+        return res.json({
             response: {
                 item_id: String(itemId),
                 title: product.title,
                 photo_url: product.photo_url,
                 price: product.price
             }
-        };
-        console.log('[VK Payment] Returning item info:', response);
-        return res.json(response);
+        });
     }
 
     // 2. Уведомление об изменении статуса заказа
     if (notification_type === 'order_status_change_test' || notification_type === 'order_status_change') {
-        // Обрабатываем только статус 'chargeable' (подтверждение оплаты)
         if (status === 'chargeable') {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
 
-                // Проверяем, не обработан ли уже этот заказ (защита от дублей)
-                const existing = await client.query('SELECT 1 FROM vk_payments WHERE order_id = $1', [order_id]);
+                // Проверяем дубликат по order_id
+                const existing = await client.query(
+                    'SELECT 1 FROM vk_payments WHERE order_id = $1',
+                    [order_id]
+                );
                 if (existing.rowCount > 0) {
                     console.log(`[VK Payment] Duplicate order_id ${order_id}, skipping`);
                     await client.query('COMMIT');
                     return res.json({ response: { order_id: order_id } });
                 }
 
-                // Ищем пользователя по vk_id (переданному от VK)
-                const userRes = await client.query('SELECT id FROM users WHERE vk_id = $1', [String(user_id)]);
+                // Ищем пользователя по vk_id
+                const userRes = await client.query(
+                    'SELECT id FROM users WHERE vk_id = $1',
+                    [String(user_id)]
+                );
                 if (userRes.rowCount === 0) {
                     console.error(`[VK Payment] User with vk_id ${user_id} not found`);
                     await client.query('ROLLBACK');
@@ -114,19 +132,21 @@ router.post('/', async (req, res) => {
                 // Выдаём товар
                 await grantItem(client, dbUserId, itemId);
 
-                // Сохраняем платёж в историю
+                // Сохраняем платёж в таблицу (с учётом структуры)
                 await client.query(
-                    'INSERT INTO vk_payments (order_id, user_id, item_id, amount) VALUES ($1, $2, $3, $4)',
-                    [order_id, dbUserId, itemId, itemsCatalog[itemId]?.price || 0]
+                    `INSERT INTO vk_payments 
+                     (transaction_id, user_id, itemdefid, order_id, amount, status, created_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                    [order_id, dbUserId, itemId, order_id, itemsCatalog[itemId]?.price || 0, 'chargeable']
                 );
-                console.log(`[VK Payment] Granted item ${itemId} to user ${dbUserId} (vk_id ${user_id})`);
 
+                console.log(`[VK Payment] Granted item ${itemId} to user ${dbUserId} (vk_id ${user_id})`);
                 await client.query('COMMIT');
                 res.json({ response: { order_id: order_id } });
+
             } catch (err) {
                 await client.query('ROLLBACK');
                 console.error('[VK Payment] Error processing order:', err);
-                // Возвращаем ошибку с кодом 10 (внутренняя ошибка сервера)
                 res.status(500).json({
                     error: {
                         error_code: 10,
@@ -141,7 +161,6 @@ router.post('/', async (req, res) => {
             // Отмена или возврат — просто подтверждаем
             res.json({ response: { order_id: order_id } });
         } else {
-            // Неизвестный статус
             res.json({
                 error: {
                     error_code: 11,

@@ -677,7 +677,7 @@ async function renderClanCheckin(container, clan) {
             </button>
             <div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
                 За отметку: +50 монет, +5 угля, +10 опыта клану<br>
-                Если все отметятся: +100 опыта клану
+                Если отметятся 10 соратников: +250 опыта клану
             </div>
         </div>
     `;
@@ -738,7 +738,7 @@ async function renderClanTreasury(container, clan) {
             <input type="number" id="donateAmount" placeholder="Сумма" min="1">
             <button id="donateBtn">Пожертвовать</button>
         </div>
-        <div style="font-size:12px; color:#aaa; margin-bottom:20px;">За каждые 100 пожертвованных монет клан получает +1 опыт.</div>
+        <div style="font-size:12px; color:#aaa; margin-bottom:20px;">За каждые 100 пожертвованных монет клан получает +10 опыт.</div>
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid #3a4050;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>

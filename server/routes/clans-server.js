@@ -437,7 +437,7 @@ router.post('/checkin', async (req, res) => {
 
         // 3. Начисляем награды
         await client.query('UPDATE users SET coins = coins + 50, coal = coal + 5 WHERE id = $1', [userId]);
-        await addClanExp(clanId, 10, client);
+        await addClanExp(clanId, 50, client);
 
         // 4. Бонус за полную отметку всего клана
         const total = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [clanId]);
@@ -446,7 +446,7 @@ router.post('/checkin', async (req, res) => {
             [clanId, today]
         );
         if (parseInt(checked.rows[0].count) === parseInt(total.rows[0].count)) {
-            await addClanExp(clanId, 100, client);
+            await addClanExp(clanId, 250, client);
         }
 
         await client.query('COMMIT');
@@ -491,7 +491,7 @@ router.post('/donate', async (req, res) => {
         if (userRes.rows[0].coins < amount) throw new Error('Недостаточно монет');
         await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [amount, userId]);
         await client.query('UPDATE clan_treasury SET coins = coins + $1 WHERE clan_id = $2', [amount, clanId]);
-        const expGain = Math.floor(amount / 100);
+        const expGain = Math.floor(amount / 100) * 10;
         if (expGain > 0) await addClanExp(clanId, expGain, client);
         await client.query('COMMIT');
         res.json({ success: true });

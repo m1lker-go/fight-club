@@ -440,14 +440,13 @@ router.post('/checkin', async (req, res) => {
         await addClanExp(clanId, 50, client);
 
         // 4. Бонус за полную отметку всего клана
-        const total = await client.query('SELECT COUNT(*) FROM clan_members WHERE clan_id = $1', [clanId]);
         const checked = await client.query(
-            'SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2',
-            [clanId, today]
-        );
-        if (parseInt(checked.rows[0].count) === parseInt(total.rows[0].count)) {
-            await addClanExp(clanId, 250, client);
-        }
+    'SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2',
+    [clanId, today]
+);
+if (parseInt(checked.rows[0].count) === 10) {
+    await addClanExp(clanId, 250, client);
+}
 
         await client.query('COMMIT');
         res.json({ success: true, coins: 50, coal: 5 });

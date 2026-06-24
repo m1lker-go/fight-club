@@ -1,5 +1,6 @@
 // battleLog.js – финальная версия с поддержкой AnimationManager и всплывающих чисел
 
+
 const BattleLog = {
     messages: [],
     states: [],

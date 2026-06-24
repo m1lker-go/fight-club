@@ -452,8 +452,8 @@ const BattleLog = {
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
             // Атака (обычная, крит, урон)
-            if (type === 'attack' || type === 'crit' || type === 'damage') {
-    // Замах только у игрока, если есть скиновая анимация
+          if (type === 'attack' || type === 'crit' || type === 'damage') {
+    // 1. Замах (скиновая анимация) – только для игрока, если есть скин с анимацией атаки
     if (attacker === 'player') {
         const attackerAvatarId = this.battleData.playerAvatarId;
         const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
@@ -462,7 +462,7 @@ const BattleLog = {
         }
     }
 
-    // Эффект попадания на цели (всегда)
+    // 2. Эффект попадания (вспышка) на цели – всегда
     const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
     setTimeout(() => {
         window.AnimationManager.playAnimation(defenderSide, 'attack');

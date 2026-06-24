@@ -449,59 +449,62 @@ const BattleLog = {
             }
         }
 
-        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+               const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
-            let animTarget = null;
-            let animType = null;
-            let options = {};
-
+            // Атака (обычная, крит, урон)
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-                // Враг атакует – анимация на игроке (hero)
-                if (attacker === 'enemy') {
-                    animTarget = 'hero';
-                    animType = 'attack';
+                const attackerSide = (attacker === 'player') ? 'hero' : 'enemy';
+                const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.enemyAvatarId;
+                const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
+
+                // Анимация атаки на атакующем
+                if (isSkinAttack) {
+                    window.AnimationManager.playAnimation(attackerSide, 'attack', { isSkinAttack: true, skinId: attackerAvatarId });
                 } else {
-                    // Игрок атакует – анимация на враге (enemy)
-                    const attackerAvatarId = this.battleData.playerAvatarId;
-                    const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
-                    if (isSkinAttack) {
-                        animTarget = 'enemy';
-                        animType = 'attack';
-                        options = { isSkinAttack: true, skinId: attackerAvatarId };
-                    } else {
-                        animTarget = 'enemy';
-                        animType = 'attack';
-                    }
+                    window.AnimationManager.playAnimation(attackerSide, 'attack');
                 }
-            } else if (type === 'dodge') {
+
+                // 🔥 Дополнительно: эффект попадания на цели (по желанию)
+                // Раскомментируйте, если хотите видеть вспышку на цели
+                /*
+                const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
+                setTimeout(() => {
+                    window.AnimationManager.playAnimation(defenderSide, 'attack');
+                }, 150);
+                */
+            }
+            // Уворот
+            else if (type === 'dodge') {
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';
-                animTarget = defender;
-                animType = 'dodge';
-                // Проверяем наличие скиновой анимации уворота у защитника
-                const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
+                const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.enemyAvatarId;
                 const isSkinDodge = window.AnimationManager && window.AnimationManager.hasSkinAnimation(defenderAvatarId);
                 if (isSkinDodge) {
-                    options = { isSkinAttack: true, skinId: defenderAvatarId, isDodge: true };
+                    window.AnimationManager.playAnimation(defender, 'dodge', { isSkinAttack: true, skinId: defenderAvatarId, isDodge: true });
+                } else {
+                    window.AnimationManager.playAnimation(defender, 'dodge');
                 }
-            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
+            }
+            // Ультимейты
+            else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+                const target = (attacker === 'player') ? 'enemy' : 'hero';
+                let animType = 'ultimate';
                 if (type === 'fire_ult') animType = 'fire_ult';
                 else if (type === 'ice_ult') animType = 'ice_ult';
                 else if (type === 'poison_ult') animType = 'poison_ult';
-                else animType = 'ultimate';
-            } else if (type === 'heal' || type === 'buff') {
-                animTarget = (attacker === 'player') ? 'hero' : 'enemy';
-                animType = (type === 'heal') ? 'heal' : 'buff';
-            } else if (type === 'frozen_enter' || type === 'frozen_end') {
-                animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                animType = 'frozen';
+                window.AnimationManager.playAnimation(target, animType);
             }
-
-            if (animTarget && animType) {
-                window.AnimationManager.playAnimation(animTarget, animType, options);
+            // Исцеление / бафф
+            else if (type === 'heal' || type === 'buff') {
+                const target = (attacker === 'player') ? 'hero' : 'enemy';
+                window.AnimationManager.playAnimation(target, type === 'heal' ? 'heal' : 'buff');
+            }
+            // Заморозка
+            else if (type === 'frozen_enter' || type === 'frozen_end') {
+                const target = (attacker === 'player') ? 'enemy' : 'hero';
+                window.AnimationManager.playAnimation(target, 'frozen');
             }
         }
-
+        
         this.parseAndShowFloatingNumber(entry);
         this.currentMsgIndex++;
 

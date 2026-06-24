@@ -465,14 +465,11 @@ const BattleLog = {
                     window.AnimationManager.playAnimation(attackerSide, 'attack');
                 }
 
-                // 🔥 Дополнительно: эффект попадания на цели (по желанию)
-                // Раскомментируйте, если хотите видеть вспышку на цели
-                /*
-                const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
-                setTimeout(() => {
-                    window.AnimationManager.playAnimation(defenderSide, 'attack');
-                }, 150);
-                */
+                // Эффект попадания на цель (вспышка)
+const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
+setTimeout(() => {
+    window.AnimationManager.playAnimation(defenderSide, 'attack');
+}, 150);
             }
             // Уворот
             else if (type === 'dodge') {

@@ -456,20 +456,28 @@ const BattleLog = {
             let options = {};
 
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-                const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
-                const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
-                if (isSkinAttack) {
-                    animTarget = (attacker === 'player') ? 'hero' : 'enemy';
+                // Враг атакует – анимация на игроке (hero)
+                if (attacker === 'enemy') {
+                    animTarget = 'hero';
                     animType = 'attack';
-                    options = { isSkinAttack: true, skinId: attackerAvatarId };
                 } else {
-                    animTarget = (attacker === 'player') ? 'enemy' : 'hero';
-                    animType = 'attack';
+                    // Игрок атакует – анимация на враге (enemy)
+                    const attackerAvatarId = this.battleData.playerAvatarId;
+                    const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
+                    if (isSkinAttack) {
+                        animTarget = 'enemy';
+                        animType = 'attack';
+                        options = { isSkinAttack: true, skinId: attackerAvatarId };
+                    } else {
+                        animTarget = 'enemy';
+                        animType = 'attack';
+                    }
                 }
             } else if (type === 'dodge') {
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';
                 animTarget = defender;
                 animType = 'dodge';
+                // Проверяем наличие скиновой анимации уворота у защитника
                 const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.opponent?.avatar_id;
                 const isSkinDodge = window.AnimationManager && window.AnimationManager.hasSkinAnimation(defenderAvatarId);
                 if (isSkinDodge) {

@@ -1,6 +1,5 @@
 // battleLog.js – финальная версия с поддержкой AnimationManager и всплывающих чисел
 
-
 const BattleLog = {
     messages: [],
     states: [],
@@ -450,7 +449,7 @@ const BattleLog = {
             }
         }
 
-               const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
+        const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
             // Атака (обычная, крит, урон)
             if (type === 'attack' || type === 'crit' || type === 'damage') {
@@ -458,18 +457,16 @@ const BattleLog = {
                 const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.enemyAvatarId;
                 const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
 
-                // Анимация атаки на атакующем
+                // Анимация атаки на атакующем только если есть скиновая анимация
                 if (isSkinAttack) {
                     window.AnimationManager.playAnimation(attackerSide, 'attack', { isSkinAttack: true, skinId: attackerAvatarId });
-                } else {
-                    window.AnimationManager.playAnimation(attackerSide, 'attack');
                 }
 
-                // Эффект попадания на цель (вспышка)
-const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
-setTimeout(() => {
-    window.AnimationManager.playAnimation(defenderSide, 'attack');
-}, 150);
+                // Эффект попадания на цель (вспышка) – всегда
+                const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
+                setTimeout(() => {
+                    window.AnimationManager.playAnimation(defenderSide, 'attack');
+                }, 150);
             }
             // Уворот
             else if (type === 'dodge') {
@@ -502,7 +499,7 @@ setTimeout(() => {
                 window.AnimationManager.playAnimation(target, 'frozen');
             }
         }
-        
+
         this.parseAndShowFloatingNumber(entry);
         this.currentMsgIndex++;
 
@@ -578,7 +575,7 @@ setTimeout(() => {
         }
     },
 
-     setSpeed(newSpeed) {
+    setSpeed(newSpeed) {
         this.speed = newSpeed;
         clearTimeout(this.interval);
         this.playNext();
@@ -601,97 +598,96 @@ setTimeout(() => {
         this.onFinish = null;
     },
 
+    finish() {
+        clearTimeout(this.interval);
+        if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
+        if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
+        this.hideAnimations();
 
-finish() {
-    clearTimeout(this.interval);
-    if (this.deathTimerHero) clearTimeout(this.deathTimerHero);
-    if (this.deathTimerEnemy) clearTimeout(this.deathTimerEnemy);
-    this.hideAnimations();
+        const winner = this.battleData.result.winner;
+        const heroCard = document.querySelector('.hero-card');
+        const enemyCard = document.querySelector('.enemy-card');
 
-    const winner = this.battleData.result.winner;
-    const heroCard = document.querySelector('.hero-card');
-    const enemyCard = document.querySelector('.enemy-card');
+        // Анимация печати текста (оставляем как есть)
+        const animateTyping = (element, text, delay = 80) => {
+            if (!element) return;
+            element.textContent = '';
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < text.length) {
+                    element.textContent += text[i];
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, delay);
+        };
 
-    // Анимация печати текста (оставляем как есть)
-    const animateTyping = (element, text, delay = 80) => {
-        if (!element) return;
-        element.textContent = '';
-        let i = 0;
-        const interval = setInterval(() => {
-            if (i < text.length) {
-                element.textContent += text[i];
-                i++;
-            } else {
-                clearInterval(interval);
-            }
-        }, delay);
-    };
+        // Определяем ID скинов для анимаций
+        let playerSkinId = this.battleData.playerAvatarId;
+        let enemySkinId = this.battleData.enemyAvatarId;
 
-    // Определяем ID скинов для анимаций
-    let playerSkinId = this.battleData.playerAvatarId;
-    let enemySkinId = this.battleData.enemyAvatarId;
+        // Для обычного кота (id=1) оставляем как есть, он уже есть в skinAnimations
+        if (playerSkinId === 1) playerSkinId = 1;
+        if (enemySkinId === 1) enemySkinId = 1;
 
-    // Для обычного кота (id=1) оставляем как есть, он уже есть в skinAnimations
-    if (playerSkinId === 1) playerSkinId = 1;
-    if (enemySkinId === 1) enemySkinId = 1;
-
-    // Если враг — киберкот, используем специальный ключ 'cybercat'
-    if (this.enemyIsCybercat) {
-        enemySkinId = 'cybercat';
-    }
-
-    // Показываем overlay "Проиграл"
-    if (winner === 'player') {
-        if (enemyCard) {
-            enemyCard.classList.add('defeated');
-            const overlay = enemyCard.querySelector('.defeat-overlay');
-            if (overlay) animateTyping(overlay, 'Проиграл');
+        // Если враг — киберкот, используем специальный ключ 'cybercat'
+        if (this.enemyIsCybercat) {
+            enemySkinId = 'cybercat';
         }
-        if (heroCard) heroCard.classList.remove('defeated');
-    } else if (winner === 'enemy') {
-        if (heroCard) {
-            heroCard.classList.add('defeated');
-            const overlay = heroCard.querySelector('.defeat-overlay');
-            if (overlay) animateTyping(overlay, 'Проиграл');
-        }
-        if (enemyCard) enemyCard.classList.remove('defeated');
-    } else {
-        if (heroCard) heroCard.classList.add('defeated');
-        if (enemyCard) enemyCard.classList.add('defeated');
-    }
 
-    // Анимации скинов
-    if (window.AnimationManager) {
+        // Показываем overlay "Проиграл"
         if (winner === 'player') {
-            // Игрок победил
-            if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
-                window.AnimationManager.playAnimation('hero', 'victory', { skinId: playerSkinId });
+            if (enemyCard) {
+                enemyCard.classList.add('defeated');
+                const overlay = enemyCard.querySelector('.defeat-overlay');
+                if (overlay) animateTyping(overlay, 'Проиграл');
             }
-            if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
-                window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
-            }
+            if (heroCard) heroCard.classList.remove('defeated');
         } else if (winner === 'enemy') {
-            // Враг победил
-            if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
-                window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
+            if (heroCard) {
+                heroCard.classList.add('defeated');
+                const overlay = heroCard.querySelector('.defeat-overlay');
+                if (overlay) animateTyping(overlay, 'Проиграл');
             }
-            if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
-                window.AnimationManager.playAnimation('enemy', 'victory', { skinId: enemySkinId });
-            }
+            if (enemyCard) enemyCard.classList.remove('defeated');
         } else {
-            // Ничья – оба проиграли
-            if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
-                window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
-            }
-            if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
-                window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
+            if (heroCard) heroCard.classList.add('defeated');
+            if (enemyCard) enemyCard.classList.add('defeated');
+        }
+
+        // Анимации скинов
+        if (window.AnimationManager) {
+            if (winner === 'player') {
+                // Игрок победил
+                if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
+                    window.AnimationManager.playAnimation('hero', 'victory', { skinId: playerSkinId });
+                }
+                if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
+                    window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
+                }
+            } else if (winner === 'enemy') {
+                // Враг победил
+                if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
+                    window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
+                }
+                if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
+                    window.AnimationManager.playAnimation('enemy', 'victory', { skinId: enemySkinId });
+                }
+            } else {
+                // Ничья – оба проиграли
+                if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
+                    window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
+                }
+                if (window.AnimationManager.hasSkinAnimation(enemySkinId)) {
+                    window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
+                }
             }
         }
-    }
 
-    // Задержка перед вызовом onFinish
-    setTimeout(() => {
-        if (this.onFinish) this.onFinish(this.battleData);
-    }, 2000);
-}
+        // Задержка перед вызовом onFinish
+        setTimeout(() => {
+            if (this.onFinish) this.onFinish(this.battleData);
+        }, 2000);
+    }
 };

@@ -453,21 +453,21 @@ const BattleLog = {
         if (!isStackMessage && window.AnimationManager) {
             // Атака (обычная, крит, урон)
             if (type === 'attack' || type === 'crit' || type === 'damage') {
-                const attackerSide = (attacker === 'player') ? 'hero' : 'enemy';
-                const attackerAvatarId = (attacker === 'player') ? this.battleData.playerAvatarId : this.battleData.enemyAvatarId;
-                const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
+    // Замах только у игрока, если есть скиновая анимация
+    if (attacker === 'player') {
+        const attackerAvatarId = this.battleData.playerAvatarId;
+        const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
+        if (isSkinAttack) {
+            window.AnimationManager.playAnimation('hero', 'attack', { isSkinAttack: true, skinId: attackerAvatarId });
+        }
+    }
 
-                // Анимация атаки на атакующем только если есть скиновая анимация
-                if (isSkinAttack) {
-                    window.AnimationManager.playAnimation(attackerSide, 'attack', { isSkinAttack: true, skinId: attackerAvatarId });
-                }
-
-                // Эффект попадания на цель (вспышка) – всегда
-                const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
-                setTimeout(() => {
-                    window.AnimationManager.playAnimation(defenderSide, 'attack');
-                }, 150);
-            }
+    // Эффект попадания на цели (всегда)
+    const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
+    setTimeout(() => {
+        window.AnimationManager.playAnimation(defenderSide, 'attack');
+    }, 150);
+}
             // Уворот
             else if (type === 'dodge') {
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';

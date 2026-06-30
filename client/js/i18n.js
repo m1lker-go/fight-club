@@ -131,10 +131,9 @@
             console.log('✅ i18next initialized, language:', i18next.language);
             
             // Глобальная функция с поддержкой fallback
-            window.__ = function(key, fallback) {
-                // key вида "namespace:key" или "key" (тогда используется defaultNS)
-                return i18next.t(key, { defaultValue: fallback || key });
-            };
+           window.__ = function(key, fallback) {
+    return fallback || key;   // всегда возвращаем русский текст из fallback
+};
             
             window.i18next = i18next;
             updateContent();

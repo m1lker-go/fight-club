@@ -1,4 +1,12 @@
-// forge.js – полностью исправленная версия (WebView + обновление интерфейса)
+// forge.js – полностью исправленная версия с поддержкой i18n
+
+// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
+const __ = window.__ || function(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+};
 
 let currentForgeTab = 'forge';
 let selectedScrollId = null;
@@ -15,7 +23,7 @@ const BASE_CRAFT_CHANCES = {
     legendary: 0.65
 };
 
-// Стоимость ковки для отображения на кнопке (дублирует серверную CRAFT_COST)
+// Стоимость ковки для отображения на кнопке
 const CRAFT_COST_CLIENT = {
     uncommon: { coins: 50, coal: 20 },
     rare: { coins: 350, coal: 50 },
@@ -29,18 +37,18 @@ async function renderForge() {
     content.innerHTML = `
         <div class="forge-container">
             <div class="forge-banner-wrapper">
-                <img src="/assets/banner_forge.png" alt="Кузница">
+                <img src="/assets/banner_forge.png" alt="${__('forge:title', 'Кузница')}">
                 <div id="forgeResources" class="forge-resources-overlay"></div>
             </div>
 
             <div class="forge-tabs">
-                <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">Ковать</button>
-                <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt">Расплавить</button>
+                <button class="btn forge-tab ${currentForgeTab === 'forge' ? 'active' : ''}" data-forge-tab="forge">${__('forge:forge', 'Ковать')}</button>
+                <button class="btn forge-tab ${currentForgeTab === 'smelt' ? 'active' : ''}" data-forge-tab="smelt">${__('forge:smelt', 'Расплавить')}</button>
                 <i class="fas fa-circle-question" id="forgeHelpBtn"></i>
             </div>
             <div id="forgeSlots" class="forge-slots-grid"></div>
-            <button class="btn" id="forgeActionBtn" disabled>${currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить'}</button>
-            <div class="forge-inventory-header">Доступные предметы</div>
+            <button class="btn" id="forgeActionBtn" disabled>${currentForgeTab === 'forge' ? __('forge:forge', 'Ковать') : __('forge:smelt', 'Расплавить')}</button>
+            <div class="forge-inventory-header">${__('forge:available_items', 'Доступные предметы')}</div>
             <div id="forgeInventory" class="inventory-grid"></div>
         </div>
     `;
@@ -58,7 +66,7 @@ async function renderForge() {
             document.querySelectorAll('.forge-tab').forEach(b => {
                 b.classList.toggle('active', b.dataset.forgeTab === currentForgeTab);
             });
-            document.getElementById('forgeActionBtn').innerText = currentForgeTab === 'forge' ? 'Ковать' : 'Расплавить';
+            document.getElementById('forgeActionBtn').innerText = currentForgeTab === 'forge' ? __('forge:forge', 'Ковать') : __('forge:smelt', 'Расплавить');
         });
     });
 
@@ -74,7 +82,7 @@ async function refreshForgeUI() {
     updateForgeActionButton();
 }
 
-// ========== РЕСУРСНАЯ ПАНЕЛЬ (6 строк) ==========
+// ========== РЕСУРСНАЯ ПАНЕЛЬ ==========
 function renderResourcePanel() {
     const panel = document.getElementById('forgeResources');
     if (!panel) return;
@@ -113,7 +121,6 @@ function renderResourcePanel() {
     `;
 }
 
-// Загрузка свитков с сервера (без изменений)
 async function loadScrolls() {
     if (!userData || !userData.id) {
         scrollsInventory = [];
@@ -137,15 +144,13 @@ async function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     if (!slotsContainer) return;
 
-    // Очищаем контейнер
     slotsContainer.innerHTML = '';
     slotsContainer.style.display = 'flex';
     slotsContainer.style.alignItems = 'center';
     slotsContainer.style.gap = '8px';
 
     if (currentForgeTab === 'forge') {
-        // ===== Вкладка "Ковать" (3 слота + свиток) =====
-        // Слот свитка (как было)
+        // Слот свитка
         const scrollSlot = document.createElement('div');
         scrollSlot.className = 'forge-slot scroll-slot';
         scrollSlot.style.width = '60px';
@@ -176,7 +181,7 @@ async function renderForgeSlots() {
         const totalChance = Math.min(1, baseChance + selectedScrollBonus);
         scrollSlot.innerHTML = `
             <img src="${scrollImg}" style="width: 28px; height: 28px; margin-bottom: 2px;">
-            <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>
+            <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">${__('forge:chance_label', 'ШАНС:')}<br>${Math.round(totalChance * 100)}%</span>
         `;
         scrollSlot.addEventListener('click', openScrollModal);
         slotsContainer.appendChild(scrollSlot);
@@ -193,7 +198,7 @@ async function renderForgeSlots() {
             slotDiv.style.height = '60px';
             slotDiv.innerHTML = item
                 ? `<img src="${getItemIconPath(item)}" title="${item.name}" style="max-width:100%;max-height:100%;">`
-                : '<span>Пусто</span>';
+                : `<span>${__('forge:empty', 'Пусто')}</span>`;
             slotDiv.addEventListener('click', () => {
                 const index = parseInt(slotDiv.dataset.slotIndex);
                 const id = window.forgeItems[index];
@@ -205,7 +210,7 @@ async function renderForgeSlots() {
             slotsContainer.appendChild(slotDiv);
         }
     } else {
-        // ===== Вкладка "Расплавить" (5 слотов с обработчиками) =====
+        // Вкладка "Расплавить" (5 слотов)
         for (let i = 0; i < 5; i++) {
             const itemId = window.forgeItems[i];
             const item = inventory.find(it => it.id === itemId);
@@ -217,8 +222,7 @@ async function renderForgeSlots() {
             slotDiv.style.height = '60px';
             slotDiv.innerHTML = item
                 ? `<img src="${getItemIconPath(item)}" title="${item.name}" style="max-width:100%;max-height:100%;">`
-                : '<span>Пусто</span>';
-            // Добавляем обработчик клика
+                : `<span>${__('forge:empty', 'Пусто')}</span>`;
             slotDiv.addEventListener('click', () => {
                 const index = parseInt(slotDiv.dataset.slotIndex);
                 const id = window.forgeItems[index];
@@ -245,19 +249,19 @@ function getResultRarity() {
     return order[idx + 1];
 }
 
-// ========== МОДАЛЬНОЕ ОКНО СВИТКОВ (3 в ряд) ==========
+// ========== МОДАЛЬНОЕ ОКНО СВИТКОВ ==========
 function openScrollModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Выберите свиток';
+    modalTitle.innerText = __('forge:select_scroll', 'Выберите свиток');
     let html = `<div class="packs-grid-new scroll-packs">`;
 
     const scrollDefs = [
-        { item_id: 1037, rarity: 'rare', name: 'Редкий<br>свиток', bonus: 0.10, price: '500 монет', priceType: 'coins' },
-        { item_id: 1038, rarity: 'epic', name: 'Эпический<br>свиток', bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
-        { item_id: 1039, rarity: 'legendary', name: 'Легендарный<br>свиток', bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
+        { item_id: 1037, rarity: 'rare', name: __('forge:rare_scroll', 'Редкий<br>свиток'), bonus: 0.10, price: '500 монет', priceType: 'coins' },
+        { item_id: 1038, rarity: 'epic', name: __('forge:epic_scroll', 'Эпический<br>свиток'), bonus: 0.20, price: '50 алмазов', priceType: 'diamonds' },
+        { item_id: 1039, rarity: 'legendary', name: __('forge:legendary_scroll', 'Легендарный<br>свиток'), bonus: 0.30, price: '150 алмазов', priceType: 'diamonds' }
     ];
 
     scrollDefs.forEach(def => {
@@ -269,25 +273,24 @@ function openScrollModal() {
             <div style="display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid #7f8c8d; background: #232833;">
                 <div class="scroll-card-body" style="padding: 12px 8px; text-align: center; display: flex; flex-direction: column; align-items: center;">
                     <div style="font-weight: bold; color: white; margin-bottom: 4px; font-size: 11px; line-height: 1.3;">${def.name}</div>
-                    <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">Шанс +${def.bonus * 100}%</div>
+                    <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">${__('forge:chance_bonus', 'Шанс +{bonus}%', { bonus: def.bonus * 100 })}</div>
                     <img src="/assets/equip/scrolls/scroll_${def.rarity}.png" style="width: 48px; height: 48px; margin-bottom: 8px; object-fit: contain;">
-                    <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">Количество: ${count}</div>
+                    <div style="font-size: 12px; color: #aaa; margin-bottom: 8px;">${__('forge:quantity', 'Количество: {count}', { count })}</div>
                 </div>
                 <div class="scroll-card-buttons" style="display: flex; flex-direction: column; width: 100%;">
-                    <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}">Купить</button>
-                    <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}">${isActive ? 'АКТИВНО' : 'Добавить'}</button>
+                    <button class="mint-buy-btn buy-scroll-btn" data-price-type="${def.priceType}">${__('forge:buy', 'Купить')}</button>
+                    <button class="mint-buy-btn add-scroll-btn ${isActive ? 'active' : ''}" data-item-id="${def.item_id}" data-count="${count}">${isActive ? __('forge:active', 'АКТИВНО') : __('forge:add', 'Добавить')}</button>
                 </div>
             </div>
         `;
     });
 
     html += `</div>
-        <button id="scrollModalOkBtn" class="btn" style="width: 100%; margin-top: 12px;">ОКЕЙ</button>
+        <button id="scrollModalOkBtn" class="btn" style="width: 100%; margin-top: 12px;">${__('forge:ok', 'ОКЕЙ')}</button>
     `;
     modalBody.innerHTML = html;
     modal.style.display = 'flex';
 
-    // Обработчики кнопок
     modalBody.querySelectorAll('.add-scroll-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const itemId = parseInt(btn.dataset.itemId);
@@ -307,17 +310,16 @@ function openScrollModal() {
                 const scroll = scrollsInventory.find(s => s.inv_id === currentInvId);
                 selectedScrollBonus = scroll ? scroll.bonus : 0;
             }
-            // обновить кнопки
             modalBody.querySelectorAll('.add-scroll-btn').forEach(b => {
                 const bid = parseInt(b.dataset.itemId);
                 const bcount = parseInt(b.dataset.count);
                 const ownList = scrollsInventory.filter(s => s.item_id === bid);
                 if (ownList.length > 0 && selectedScrollId === ownList[0].inv_id) {
                     b.classList.add('active');
-                    b.textContent = 'АКТИВНО';
+                    b.textContent = __('forge:active', 'АКТИВНО');
                 } else {
                     b.classList.remove('active');
-                    b.textContent = 'Добавить';
+                    b.textContent = __('forge:add', 'Добавить');
                 }
             });
         });
@@ -359,15 +361,15 @@ function updateForgeActionButton() {
     if (currentForgeTab === 'forge') {
         if (window.forgeItems && window.forgeItems.length === 3 && getResultRarity()) {
             const cost = getCraftCost();
-            actionBtn.innerHTML = `Ковать ${cost.coins} <i class="fas fa-coins"></i> ${cost.coal} <i class="fas fa-cube"></i>`;
+            actionBtn.innerHTML = `${__('forge:forge', 'Ковать')} ${cost.coins} <i class="fas fa-coins"></i> ${cost.coal} <i class="fas fa-cube"></i>`;
             actionBtn.disabled = false;
         } else {
-            actionBtn.innerText = 'Ковать';
+            actionBtn.innerText = __('forge:forge', 'Ковать');
             actionBtn.disabled = true;
         }
     } else {
         actionBtn.disabled = !window.forgeItems || window.forgeItems.length === 0;
-        actionBtn.innerText = 'Расплавить';
+        actionBtn.innerText = __('forge:smelt', 'Расплавить');
     }
     actionBtn.onclick = performForgeAction;
 }
@@ -379,7 +381,6 @@ async function loadCurrentForgeItems() {
         return;
     }
     try {
-        // Для GET-запроса параметры передаём через URL
         const url = `/forge/current?tab=${currentForgeTab}`;
         const res = await window.apiRequest(url, { method: 'GET' });
         if (res.ok) {
@@ -407,7 +408,7 @@ function renderForgeInventory(items) {
     items.forEach(item => {
         const statsArray = buildStatsArray(item);
         const statsString = statsArray.join(' • ');
-        const rarityName = rarityTranslations[item.rarity] || item.rarity;
+        const rarityName = __(`common:${item.rarity}`, item.rarity);
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
 
@@ -418,12 +419,12 @@ function renderForgeInventory(items) {
             <div class="item-icon" style="background-image: url('${iconPath}'); background-size: cover; background-position: center;"></div>
             <div class="item-content">
                 <div class="item-name" style="color: ${getRarityColor(item.rarity)}">
-                    ${itemNameTranslations[item.name] || item.name}
+                    ${__(`items:${item.name}`, itemNameTranslations[item.name] || item.name)}
                     <span class="rarity-badge">(${rarityName})</span>
                 </div>
                 <div class="item-stats">${statsString}</div>
             </div>
-            <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">Добавить</button>
+            <button class="inv-action-btn add-to-forge-btn" data-item-id="${item.id}">${__('forge:add', 'Добавить')}</button>
         `;
         itemDiv.querySelector('.add-to-forge-btn').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -454,16 +455,16 @@ function getRarityColor(rarity) {
 
 function buildStatsArray(item) {
     const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+    if (item.atk_bonus) stats.push(`${__('common:atk', 'АТК')}+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`${__('common:def', 'ЗАЩ')}+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`${__('common:hp', 'ЗДОР')}+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`${__('common:spd', 'СКОР')}+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`${__('common:crit', 'КРИТ')}+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`${__('common:crit_dmg', 'КР.УРОН')}+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`${__('common:agi', 'ЛОВ')}+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`${__('common:int', 'ИНТ')}+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`${__('common:vamp', 'ВАМП')}+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`${__('common:reflect', 'ОТР')}+${item.reflect_bonus}%`);
     return stats;
 }
 
@@ -471,11 +472,11 @@ function buildStatsArray(item) {
 async function addToForge(item) {
     const slotCount = currentForgeTab === 'forge' ? 3 : 5;
     if (window.forgeItems.length >= slotCount) {
-        showToast('Все слоты заняты', 1500);
+        showToast(__('forge:slots_full', 'Все слоты заняты'), 1500);
         return;
     }
     if (window.forgeItems.includes(item.id)) {
-        showToast('Предмет уже в кузнице', 1500);
+        showToast(__('forge:already_in_forge', 'Предмет уже в кузнице'), 1500);
         return;
     }
     try {
@@ -493,11 +494,11 @@ async function addToForge(item) {
                 await refreshForgeUI();
             }
         } else {
-            showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
+            showToast(__('forge:error') + (data.error || __('common:unknown_error', 'неизвестная')), 1500);
         }
     } catch (err) {
         console.error('[addToForge] error:', err);
-        showToast('Ошибка соединения', 1500);
+        showToast(__('forge:connection_error', 'Ошибка соединения'), 1500);
     }
 }
 
@@ -505,24 +506,24 @@ function showForgeItemDetails(item, source, slotIndex = null) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = item.name;
+    modalTitle.innerText = __(`items:${item.name}`, item.name);
     const stats = buildStatsArray(item);
-    const classDisplay = item.owner_class ? (item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')) : 'Неизвестный';
+    const classDisplay = item.owner_class ? (item.owner_class === 'warrior' ? __('common:warrior', 'Воин') : (item.owner_class === 'assassin' ? __('common:assassin', 'Ассасин') : __('common:mage', 'Маг'))) : __('forge:unknown', 'Неизвестный');
     let actionButton = '';
     if (source === 'inventory') {
-        actionButton = `<button class="btn" id="forgeAddBtn">Добавить в слот</button>`;
+        actionButton = `<button class="btn" id="forgeAddBtn">${__('forge:add_to_slot', 'Добавить в слот')}</button>`;
     } else if (source === 'slot') {
-        actionButton = `<button class="btn" id="forgeRemoveBtn">Убрать из слота</button>`;
+        actionButton = `<button class="btn" id="forgeRemoveBtn">${__('forge:remove_from_slot', 'Убрать из слота')}</button>`;
     }
     modalBody.innerHTML = `
         <div style="text-align: center;">
             <img src="${getItemIconPath(item)}" style="max-width: 100px; max-height: 100px; margin-bottom:10px;">
-            <div style="font-size:18px; font-weight:bold;">${itemNameTranslations[item.name] || item.name}</div>
-            <div class="item-rarity rarity-${item.rarity}" style="margin:5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color:#aaa;">Класс: ${classDisplay}</div>
+            <div style="font-size:18px; font-weight:bold;">${__(`items:${item.name}`, itemNameTranslations[item.name] || item.name)}</div>
+            <div class="item-rarity rarity-${item.rarity}" style="margin:5px;">${__(`common:${item.rarity}`, rarityTranslations[item.rarity] || item.rarity)}</div>
+            <div style="color:#aaa;">${__('forge:class')} ${classDisplay}</div>
             <div style="color:#aaa; font-size:12px; margin:5px 0;">${stats.join(' • ')}</div>
             ${actionButton}
-            <button class="btn" id="closeModal">Отмена</button>
+            <button class="btn" id="closeModal">${__('forge:cancel', 'Отмена')}</button>
         </div>
     `;
     modal.style.display = 'block';
@@ -542,7 +543,7 @@ function showForgeItemDetails(item, source, slotIndex = null) {
                 modal.style.display = 'none';
             } else {
                 const err = await res.json();
-                showToast('Ошибка: ' + err.error, 1500);
+                showToast(__('forge:error') + err.error, 1500);
             }
         });
     }
@@ -559,15 +560,15 @@ function showClassChoiceForCraft(itemIds) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Выберите класс';
+    modalTitle.innerText = __('forge:select_class', 'Выберите класс');
     modalBody.innerHTML = `
-        <p style="text-align:center;">Для какого класса создать предмет?</p>
+        <p style="text-align:center;">${__('forge:craft_for_class', 'Для какого класса создать предмет?')}</p>
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button class="btn class-choice" data-class="warrior">Воин</button>
-            <button class="btn class-choice" data-class="assassin">Ассасин</button>
-            <button class="btn class-choice" data-class="mage">Маг</button>
+            <button class="btn class-choice" data-class="warrior">${__('common:warrior', 'Воин')}</button>
+            <button class="btn class-choice" data-class="assassin">${__('common:assassin', 'Ассасин')}</button>
+            <button class="btn class-choice" data-class="mage">${__('common:mage', 'Маг')}</button>
         </div>
-        <p style="text-align:center; margin-top:15px;"><small>Если не выберете, класс будет случайным</small></p>
+        <p style="text-align:center; margin-top:15px;"><small>${__('forge:random_class_note', 'Если не выберете, класс будет случайным')}</small></p>
     `;
     modal.style.display = 'block';
     const classButtons = modalBody.querySelectorAll('.class-choice');
@@ -599,7 +600,7 @@ async function performCraft(itemIds, chosenClass) {
         const data = await res.json();
         if (data.success) {
             if (typeof AudioManager !== 'undefined') AudioManager.playSound('forge');
-            showToast(data.message || 'Предмет создан!', 2000);
+            showToast(data.message || __('forge:craft_success', 'Предмет создан!'), 2000);
             selectedScrollId = null;
             selectedScrollBonus = 0;
             await refreshData();
@@ -608,7 +609,7 @@ async function performCraft(itemIds, chosenClass) {
             }
             if (data.item) showChestResult(data.item);
         } else {
-            showToast(data.message || 'Неудача', 2000);
+            showToast(data.message || __('forge:craft_fail', 'Неудача'), 2000);
             selectedScrollId = null;
             selectedScrollBonus = 0;
             await refreshData();
@@ -618,7 +619,7 @@ async function performCraft(itemIds, chosenClass) {
         }
     } catch (err) {
         console.error('[performCraft] error:', err);
-        showToast('Ошибка соединения', 1500);
+        showToast(__('forge:connection_error', 'Ошибка соединения'), 1500);
     } finally {
         actionBtn.disabled = false;
     }
@@ -629,14 +630,14 @@ async function performForgeAction() {
     actionBtn.disabled = true;
     if (currentForgeTab === 'forge') {
         if (!window.forgeItems || window.forgeItems.length !== 3) {
-            showToast('Нужно ровно 3 предмета', 1500);
+            showToast(__('forge:need_3_items', 'Нужно ровно 3 предмета'), 1500);
             actionBtn.disabled = false;
             return;
         }
         const items = window.forgeItems.map(id => inventory.find(it => it.id === id));
         const rarities = items.map(it => it.rarity);
         if (!rarities.every(r => r === rarities[0])) {
-            showToast('Предметы должны быть одной редкости', 1500);
+            showToast(__('forge:same_rarity', 'Предметы должны быть одной редкости'), 1500);
             actionBtn.disabled = false;
             return;
         }
@@ -657,24 +658,24 @@ async function performForgeAction() {
             const data = await res.json();
             if (data.success) {
                 if (typeof AudioManager !== 'undefined') AudioManager.playSound('forge');
-                let msg = `Вы получили ${data.coins} монет`;
-                if (data.diamonds > 0) msg += `, ${data.diamonds} алмазов`;
-                if (data.steel > 0) msg += `, ${data.steel} стальных слитков`;
-                if (data.gold > 0) msg += `, ${data.gold} золотых слитков`;
-                if (data.rareScrolls > 0) msg += `, ${data.rareScrolls} редких свитков`;
-                if (data.epicScrolls > 0) msg += `, ${data.epicScrolls} эпических свитков`;
-                if (data.legendaryScrolls > 0) msg += `, ${data.legendaryScrolls} легендарных свитков`;
+                let msg = `${__('forge:you_received', 'Вы получили')} ${data.coins} ${__('common:coins', 'монет')}`;
+                if (data.diamonds > 0) msg += `, ${data.diamonds} ${__('common:diamonds', 'алмазов')}`;
+                if (data.steel > 0) msg += `, ${data.steel} ${__('forge:steel_ingots', 'стальных слитков')}`;
+                if (data.gold > 0) msg += `, ${data.gold} ${__('forge:gold_ingots', 'золотых слитков')}`;
+                if (data.rareScrolls > 0) msg += `, ${data.rareScrolls} ${__('forge:rare_scrolls', 'редких свитков')}`;
+                if (data.epicScrolls > 0) msg += `, ${data.epicScrolls} ${__('forge:epic_scrolls', 'эпических свитков')}`;
+                if (data.legendaryScrolls > 0) msg += `, ${data.legendaryScrolls} ${__('forge:legendary_scrolls', 'легендарных свитков')}`;
                 showToast(msg, 3000);
                 await refreshData();
                 if (currentScreen === 'forge') {
                     await refreshForgeUI();
                 }
             } else {
-                showToast('Ошибка: ' + data.error, 1500);
+                showToast(__('forge:error') + data.error, 1500);
             }
         } catch (err) {
             console.error('[performForgeAction] error:', err);
-            showToast('Ошибка соединения', 1500);
+            showToast(__('forge:connection_error', 'Ошибка соединения'), 1500);
         } finally {
             actionBtn.disabled = false;
         }
@@ -686,24 +687,24 @@ function showForgeHelp() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerHTML = `<i class="fas fa-hammer"></i> Кузница`;
+    modalTitle.innerHTML = `<i class="fas fa-hammer"></i> ${__('forge:title', 'Кузница')}`;
     modalBody.innerHTML = `
         <div style="text-align: left;">
             <div class="role-card">
-                <h3><i class="fas fa-anvil"></i> Ковка</h3>
-                <div class="skill-desc">Поместите <strong>три предмета одинаковой редкости</strong> в слоты и нажмите «Ковать». Вы получите один предмет следующей редкости (например, три обычных → один необычный).</div>
-                <div class="skill-desc" style="margin-top: 5px;">Стоимость ковки зависит от редкости результата и списывается монетами и углём.</div>
-                <div class="skill-desc" style="margin-top: 5px;">Вы можете добавить свиток, чтобы увеличить шанс успеха (редкий +10%, эпический +20%, легендарный +30%). Шанс успеха без свитка: необычный 95%, редкий 85%, эпический 75%, легендарный 65%.</div>
-                <div class="skill-desc" style="margin-top: 5px;">При неудаче все предметы и свиток теряются.</div>
+                <h3><i class="fas fa-anvil"></i> ${__('forge:forging', 'Ковка')}</h3>
+                <div class="skill-desc">${__('forge:help_forging', 'Поместите <strong>три предмета одинаковой редкости</strong> в слоты и нажмите «Ковать». Вы получите один предмет следующей редкости (например, три обычных → один необычный).')}</div>
+                <div class="skill-desc" style="margin-top: 5px;">${__('forge:help_forging_cost', 'Стоимость ковки зависит от редкости результата и списывается монетами и углём.')}</div>
+                <div class="skill-desc" style="margin-top: 5px;">${__('forge:help_scroll', 'Вы можете добавить свиток, чтобы увеличить шанс успеха (редкий +10%, эпический +20%, легендарный +30%). Шанс успеха без свитка: необычный 95%, редкий 85%, эпический 75%, легендарный 65%.')}</div>
+                <div class="skill-desc" style="margin-top: 5px;">${__('forge:help_fail', 'При неудаче все предметы и свиток теряются.')}</div>
             </div>
             <div class="role-card">
-                <h3><i class="fas fa-fire"></i> Плавка</h3>
-                <div class="skill-desc">Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Вы получите монеты, возможно алмазы, а также уголь в зависимости от редкости.</div>
-                <div class="skill-desc" style="margin-top: 5px;">Диапазоны угля: Обычное 1-5, Необычное 10-15, Редкое 25-45, Эпическое 75-150, Легендарное 350-550.</div>
+                <h3><i class="fas fa-fire"></i> ${__('forge:smelt', 'Плавка')}</h3>
+                <div class="skill-desc">${__('forge:help_smelting', 'Поместите от <strong>1 до 5 предметов</strong> в слоты и нажмите «Расплавить». Вы получите монеты, возможно алмазы, а также уголь в зависимости от редкости.')}</div>
+                <div class="skill-desc" style="margin-top: 5px;">${__('forge:help_coal_ranges', 'Диапазоны угля: Обычное 1-5, Необычное 10-15, Редкое 25-45, Эпическое 75-150, Легендарное 350-550.')}</div>
             </div>
             <div class="role-card">
-                <h3><i class="fas fa-boxes"></i> Инвентарь</h3>
-                <div class="skill-desc">Внизу отображаются доступные предметы. Нажмите «Добавить», чтобы поместить их в слоты.</div>
+                <h3><i class="fas fa-boxes"></i> ${__('forge:inventory', 'Инвентарь')}</h3>
+                <div class="skill-desc">${__('forge:help_inventory', 'Внизу отображаются доступные предметы. Нажмите «Добавить», чтобы поместить их в слоты.')}</div>
             </div>
         </div>
     `;

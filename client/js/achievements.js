@@ -1,4 +1,12 @@
-// achievements.js – система достижений (ачивок) с группировкой серий
+// achievements.js – система достижений с поддержкой i18n
+
+// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
+const __ = window.__ || function(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+};
 
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
@@ -20,12 +28,12 @@ function showAchievementToast(achievementName, achievementIcon) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Новое достижение!';
+    modalTitle.innerText = __('achievements:new', 'Новое достижение!');
     modalBody.innerHTML = `
         <div style="text-align: center; padding: 10px;">
             <img src="${escapeHtml(achievementIcon)}" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px;" onerror="this.src='/assets/icons/icon-new.png'">
             <div style="font-size: 18px; font-weight: bold; color: #f1c40f; margin-bottom: 8px;">${escapeHtml(achievementName)}</div>
-            <div style="font-size: 14px; color: #ddd;">Вы получили новое достижение!</div>
+            <div style="font-size: 14px; color: #ddd;">${__('achievements:toast_unlock', 'Вы получили новое достижение!')}</div>
         </div>
     `;
     modal.style.display = 'flex';
@@ -42,7 +50,7 @@ async function checkFounderAchievement() {
         const res = await window.apiRequest('/achievements/check-founder', { method: 'POST' });
         const data = await res.json();
         if (data.awarded) {
-            showAchievementToast('Основатель', '/assets/achievement/founder.png');
+            showAchievementToast(__('achievements:founder_name', 'Основатель'), '/assets/achievement/founder.png');
             if (window.currentScreen === 'settings' && window.activeSettingsTab === 'achievements') {
                 const container = document.getElementById('settingsContent');
                 if (container && typeof renderAchievements === 'function') {
@@ -133,11 +141,11 @@ async function renderAchievements(container) {
             const iconStyle = earned ? 'opacity: 1;' : 'opacity: 0.3;';
             let statusText = '';
             if (earned) {
-                statusText = 'Получено';
+                statusText = __('achievements:earned', 'Получено');
             } else if (ach.progress) {
                 statusText = `${ach.progress.current}/${ach.progress.required}`;
             } else {
-                statusText = 'Не получено';
+                statusText = __('achievements:not_earned', 'Не получено');
             }
             const rowClass = i % 2 === 0 ? 'achievement-row even' : 'achievement-row odd';
             html += `
@@ -159,7 +167,7 @@ async function renderAchievements(container) {
         container.innerHTML = html;
     } catch (err) {
         console.error('Error loading achievements:', err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки достижений</p>';
+        container.innerHTML = `<p style="color:#aaa;">${__('achievements:load_error', 'Ошибка загрузки достижений')}</p>`;
     }
 }
 

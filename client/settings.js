@@ -1,6 +1,6 @@
 console.log('✅ settings.js loaded');
 
-// ========== ЗАГЛУШКИ ДЛЯ ОТСУТСТВУЮЩИХ ФУНКЦИЙ ==========
+// ========== ЗАГЛУШКИ ==========
 if (typeof escapeHtml === 'undefined') {
     window.escapeHtml = function(str) {
         if (!str) return '';
@@ -20,11 +20,7 @@ function generateCodeChallenge(verifier) {
     return verifier; // временно
 }
 
-window.telegramLinkingInProgress = false;
-let vkLinkingInProgress = false;
-let googleLinkingInProgress = false;
-
-// ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (уникальные имена, чтобы не конфликтовать) ========
+// ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ========
 const SETTINGS_FLAG_URLS = {
     ru: 'https://flagcdn.com/24x18/ru.png',
     en: 'https://flagcdn.com/24x18/gb.png'
@@ -33,6 +29,13 @@ const SETTINGS_LANG_NAMES = {
     ru: 'Русский',
     en: 'English'
 };
+
+function __(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+}
 
 function setLanguage(lang) {
     if (window.i18next && typeof window.i18next.changeLanguage === 'function') {
@@ -56,7 +59,7 @@ function renderLanguageSelector(currentLang) {
 
     return `
         <div class="settings-language-row" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2f3542;">
-            <div class="volume-label" style="font-weight: bold; color: #aaa;">Язык</div>
+            <div class="volume-label" style="font-weight: bold; color: #aaa;">${__('settings:language')}</div>
             <div class="lang-switcher-wrapper-settings" style="position: relative; display: flex; align-items: center;">
                 <button class="lang-toggle-btn-settings" id="langToggleBtnSettings" style="background: transparent; border: 1px solid #555; border-radius: 20px; padding: 4px 12px 4px 4px; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px;">
                     <div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
@@ -150,13 +153,13 @@ function showConfirmModal(message, onConfirm, onCancel) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Подтверждение';
+    modalTitle.innerText = __('common:confirmation');
     modalBody.innerHTML = `
         <div style="text-align:center;">
             <p>${escapeHtml(message)}</p>
             <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-                <button class="btn confirm-yes" style="background-color: #00aaff;">Да</button>
-                <button class="btn confirm-no">Отмена</button>
+                <button class="btn confirm-yes" style="background-color: #00aaff;">${__('common:yes')}</button>
+                <button class="btn confirm-no">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -186,13 +189,13 @@ function showLogoutConfirmModal(onConfirm) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Выход из аккаунта';
+    modalTitle.innerText = __('settings:logout');
     modalBody.innerHTML = `
         <div style="text-align: center; padding: 10px;">
-            <div style="margin-bottom: 20px; font-size: 16px;">Вы уверены, что хотите выйти?</div>
+            <div style="margin-bottom: 20px; font-size: 16px;">${__('settings:logout_confirm')}</div>
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <button class="modal-btn confirm-yes" style="background-color: #e74c3c; color: white;">Выйти</button>
-                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Отмена</button>
+                <button class="modal-btn confirm-yes" style="background-color: #e74c3c; color: white;">${__('settings:logout')}</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542;">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -258,7 +261,7 @@ async function renderSettings() {
       
         const token = getSessionToken();
         if (!token) {
-            if (typeof showToast === 'function') showToast('Сессия не найдена', 1500);
+            if (typeof showToast === 'function') showToast(__('settings:session_not_found'), 1500);
             if (typeof showScreen === 'function') showScreen('main');
             return;
         }
@@ -298,45 +301,45 @@ async function renderSettings() {
         let connectionsHtml = '';
         if (!isVK) {
             connectionsHtml = `
-                <div class="settings-connected-header">ПРИВЯЗАННЫЕ АККАУНТЫ</div>
+                <div class="settings-connected-header">${__('settings:linked_accounts')}</div>
                 <div class="connections-list">
                     <div class="connection-row">
                         <span>Telegram</span>
-                        <span>${user.tg_id ? 'Подключён' : '—'}</span>
-                        <button class="link-btn" data-provider="telegram">${user.tg_id ? 'Сменить' : 'Привязать'}</button>
+                        <span>${user.tg_id ? __('settings:connected') : '—'}</span>
+                        <button class="link-btn" data-provider="telegram">${user.tg_id ? __('settings:change') : __('settings:link')}</button>
                     </div>
                     <div class="connection-row">
                         <span>Google</span>
                         <span>${connections.find(c => c.provider === 'google')?.email || '—'}</span>
-                        <button class="link-btn" data-provider="google">${connections.find(c => c.provider === 'google') ? 'Сменить' : 'Привязать'}</button>
+                        <button class="link-btn" data-provider="google">${connections.find(c => c.provider === 'google') ? __('settings:change') : __('settings:link')}</button>
                     </div>
                     <div class="connection-row">
                         <span>VK</span>
                         <span>${connections.find(c => c.provider === 'vk')?.email || '—'}</span>
-                        <button class="link-btn" data-provider="vk">${connections.find(c => c.provider === 'vk') ? 'Сменить' : 'Привязать'}</button>
+                        <button class="link-btn" data-provider="vk">${connections.find(c => c.provider === 'vk') ? __('settings:change') : __('settings:link')}</button>
                     </div>
                     <div class="connection-row">
                         <span>Email</span>
                         <span>${user.email || '—'}</span>
-                        <button class="link-btn" data-provider="email">${user.email ? 'Сменить' : 'Привязать'}</button>
+                        <button class="link-btn" data-provider="email">${user.email ? __('settings:change') : __('settings:link')}</button>
                     </div>
                     ${hasPassword ? `
                     <div class="connection-row">
-                        <span>Пароль</span>
+                        <span>${__('settings:password')}</span>
                         <span>••••••</span>
-                        <button class="link-btn" data-action="change-password">Изменить</button>
+                        <button class="link-btn" data-action="change-password">${__('settings:change')}</button>
                     </div>` : ''}
                 </div>
             `;
         } else {
             connectionsHtml = `
-                <div class="settings-connected-header">АККАУНТ VK</div>
+                <div class="settings-connected-header">${__('settings:vk_account')}</div>
                 <div class="connections-list">
                     <div class="connection-row" style="justify-content: center;">
-                        <span style="color: #aaa;">Авторизация через VK ID</span>
+                        <span style="color: #aaa;">${__('settings:via_vk_id')}</span>
                     </div>
                     <div class="connection-row" style="justify-content: center;">
-                        <span>${user.username || user.email || 'Пользователь VK'}</span>
+                        <span>${user.username || user.email || __('settings:vk_user')}</span>
                     </div>
                 </div>
             `;
@@ -354,12 +357,12 @@ async function renderSettings() {
             <div class="settings-container">
                 <div class="settings-profile-row">
                     <img src="/assets/${avatarFilename}" class="settings-avatar">
-                    <span class="settings-username">${escapeHtml(user.username || 'Игрок')}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
+                    <span class="settings-username">${escapeHtml(user.username || __('common:player'))}${user.subscription_expiry && new Date(user.subscription_expiry) > new Date() ? ' <i class="fas fa-crown" style="color:#c0c0c0; font-size:20px; vertical-align:middle;"></i>' : ''}</span>
                     ${!hideEditName ? `<button class="edit-username-btn" id="editusernameBtn"><i class="fas fa-pencil-alt"></i></button>` : ''}
                 </div>
 
                 <div class="settings-volume-row">
-                    <div class="volume-label">Музыка</div>
+                    <div class="volume-label">${__('settings:music')}</div>
                     <div class="slider-container" id="musicSliderContainer">
                         <div class="slider-track">
                             <div class="slider-fill" id="musicFill" style="width: ${musicVolumePercent}%;"></div>
@@ -370,7 +373,7 @@ async function renderSettings() {
                 </div>
 
                 <div class="settings-volume-row">
-                    <div class="volume-label">Звуки</div>
+                    <div class="volume-label">${__('settings:sound')}</div>
                     <div class="slider-container" id="sfxSliderContainer">
                         <div class="slider-track">
                             <div class="slider-fill" id="sfxFill" style="width: ${sfxVolumePercent}%;"></div>
@@ -385,7 +388,7 @@ async function renderSettings() {
 
                 <!-- Кнопка Достижения -->
                 <div class="settings-volume-row" id="achievementsRow" style="cursor: pointer;">
-                    <div class="volume-label">Достижения</div>
+                    <div class="volume-label">${__('settings:achievements')}</div>
                     <div style="flex: 1; text-align: right; color: #aaa;">
                         <i class="fas fa-chevron-right"></i>
                     </div>
@@ -399,7 +402,7 @@ async function renderSettings() {
                     </button>
                     ${!hideLogout ? `
                     <button class="logout-btn" id="logoutBtn" style="flex: 3; background-color: #e74c3c; color: white; border-radius: 30px; padding: 12px 0; font-size: 16px; font-weight: bold; border: none; cursor: pointer;">
-                        <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
+                        <i class="fas fa-sign-out-alt"></i> ${__('settings:logout')}
                     </button>
                     ` : ''}
                 </div>
@@ -508,9 +511,9 @@ async function renderSettings() {
                     } else if (provider === 'vk') {
                         linkVK();
                     } else if (provider === 'email') {
-                        showToast('Привязка email в разработке', 1500);
+                        showToast(__('settings:email_linking_development'), 1500);
                     } else {
-                        showToast(`Привязка ${provider} в разработке`, 1500);
+                        showToast(__('settings:linking_development', { provider }), 1500);
                     }
                 });
             });
@@ -520,7 +523,7 @@ async function renderSettings() {
         if (clearCacheBtn) {
             clearCacheBtn.addEventListener('click', () => {
                 showConfirmModal(
-                    'Это перезагрузит игру и очистит временные данные. Вы уверены?',
+                    __('settings:cache_confirm'),
                     () => {
                         clearCacheAndReload();
                     }
@@ -554,7 +557,7 @@ async function renderSettings() {
     } catch (err) {
         console.error('❌ Ошибка в renderSettings:', err);
         if (typeof showToast === 'function') {
-            showToast('Ошибка загрузки настроек: ' + err.message, 3000);
+            showToast(__('settings:load_error') + err.message, 3000);
         } else {
             alert('Ошибка загрузки настроек: ' + err.message);
         }
@@ -562,7 +565,7 @@ async function renderSettings() {
     }
 }
 
-// ========== ОСТАЛЬНЫЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 async function updateSettings(updates) {
     try {
         const res = await window.apiRequest('/user/update-settings', {
@@ -570,10 +573,10 @@ async function updateSettings(updates) {
             body: JSON.stringify(updates)
         });
         if (!res.ok) throw new Error('Failed to update');
-        if (typeof showToast === 'function') showToast('Настройки сохранены', 1000);
+        if (typeof showToast === 'function') showToast(__('settings:saved'), 1000);
     } catch (err) {
         console.error(err);
-        if (typeof showToast === 'function') showToast('Ошибка сохранения', 1500);
+        if (typeof showToast === 'function') showToast(__('settings:save_error'), 1500);
     }
 }
 
@@ -581,13 +584,13 @@ function showusernameEditModal(currentusername) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Изменить никнейм';
+    modalTitle.innerText = __('settings:change_nickname');
     modalBody.innerHTML = `
         <div style="text-align: center;">
-            <input type="text" id="editusernameInput" class="auth-input" placeholder="Новый никнейм (англ. буквы и цифры, подчёркивание)" value="${escapeHtml(currentusername)}" maxlength="20">
+            <input type="text" id="editusernameInput" class="auth-input" placeholder="${__('settings:new_nickname_placeholder')}" value="${escapeHtml(currentusername)}" maxlength="20">
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                <button class="modal-btn save-username-btn" style="background-color: #00aaff;">Сохранить</button>
-                <button class="modal-btn cancel-username-btn">Отмена</button>
+                <button class="modal-btn save-username-btn" style="background-color: #00aaff;">${__('common:save')}</button>
+                <button class="modal-btn cancel-username-btn">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -601,17 +604,17 @@ function showusernameEditModal(currentusername) {
     saveBtn.addEventListener('click', async () => {
         const newusername = input.value.trim();
         if (!newusername) {
-            showToast('Введите никнейм', 1500);
+            showToast(__('settings:enter_nickname'), 1500);
             return;
         }
         if (!/^[a-zA-Z0-9_]+$/.test(newusername)) {
-            showToast('Никнейм может содержать только английские буквы, цифры и подчёркивание', 1500);
+            showToast(__('settings:nickname_only_english'), 1500);
             return;
         }
         const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(newusername)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
-            showToast('Никнейм уже занят', 1500);
+            showToast(__('settings:nickname_taken'), 1500);
             return;
         }
         const res = await window.apiRequest('/user/update-settings', {
@@ -619,13 +622,13 @@ function showusernameEditModal(currentusername) {
             body: JSON.stringify({ username: newusername })
         });
         if (res.ok) {
-            showToast('Никнейм изменён', 1500);
+            showToast(__('settings:nickname_changed'), 1500);
             closeModal();
             renderSettings();
             if (currentScreen === 'main') renderMain();
         } else {
             const err = await res.json();
-            showToast('Ошибка: ' + (err.error || 'неизвестная'), 1500);
+            showToast(__('settings:nickname_change_error') + (err.error || __('common:unknown')), 1500);
         }
     });
     cancelBtn.addEventListener('click', closeModal);
@@ -639,15 +642,15 @@ function showChangePasswordModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Изменить пароль';
+    modalTitle.innerText = __('settings:change_password');
     modalBody.innerHTML = `
         <div style="text-align: center;">
-            <input type="password" id="oldPassword" class="auth-input" placeholder="Старый пароль">
-            <input type="password" id="newPassword1" class="auth-input" placeholder="Новый пароль (мин. 6 символов)">
-            <input type="password" id="newPassword2" class="auth-input" placeholder="Повторите новый пароль">
+            <input type="password" id="oldPassword" class="auth-input" placeholder="${__('settings:old_password')}">
+            <input type="password" id="newPassword1" class="auth-input" placeholder="${__('settings:new_password_placeholder')}">
+            <input type="password" id="newPassword2" class="auth-input" placeholder="${__('settings:confirm_password')}">
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                <button class="modal-btn" id="savePasswordBtn" style="background-color: #00aaff;">Сохранить</button>
-                <button class="modal-btn cancel-password-btn">Отмена</button>
+                <button class="modal-btn" id="savePasswordBtn" style="background-color: #00aaff;">${__('common:save')}</button>
+                <button class="modal-btn cancel-password-btn">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -662,15 +665,15 @@ function showChangePasswordModal() {
         const new1 = document.getElementById('newPassword1').value;
         const new2 = document.getElementById('newPassword2').value;
         if (!oldPwd || !new1 || !new2) {
-            showToast('Заполните все поля', 1500);
+            showToast(__('settings:fill_all_fields'), 1500);
             return;
         }
         if (new1.length < 6) {
-            showToast('Новый пароль должен быть не менее 6 символов', 1500);
+            showToast(__('settings:new_password_min_length'), 1500);
             return;
         }
         if (new1 !== new2) {
-            showToast('Новые пароли не совпадают', 1500);
+            showToast(__('settings:passwords_do_not_match'), 1500);
             return;
         }
         const token = getSessionToken();
@@ -685,15 +688,15 @@ function showChangePasswordModal() {
             });
             const data = await res.json();
             if (data.success) {
-                showToast('Пароль изменён', 1500);
+                showToast(__('settings:password_changed'), 1500);
                 closeModal();
                 renderSettings();
             } else {
-                showToast('Ошибка: ' + (data.error || 'неизвестная'), 1500);
+                showToast(__('settings:password_change_error') + (data.error || __('common:unknown')), 1500);
             }
         } catch (err) {
             console.error(err);
-            showToast('Ошибка соединения', 1500);
+            showToast(__('common:connection_error'), 1500);
         }
     });
 
@@ -706,7 +709,7 @@ function showChangePasswordModal() {
 
 function linkTelegram() {
     if (window.telegramLinkingInProgress) {
-        showToast('Привязка Telegram уже выполняется', 1500);
+        showToast(__('settings:telegram_linking_in_progress'), 1500);
         return;
     }
     window.telegramLinkingInProgress = true;
@@ -731,7 +734,7 @@ function linkTelegram() {
 
 function linkVK() {
     if (vkLinkingInProgress) {
-        showToast('Привязка VK уже выполняется', 1500);
+        showToast(__('settings:vk_linking_in_progress'), 1500);
         return;
     }
     vkLinkingInProgress = true;
@@ -739,19 +742,19 @@ function linkVK() {
     const timeoutId = setTimeout(() => {
         if (vkLinkingInProgress) {
             vkLinkingInProgress = false;
-            showToast('Привязка VK не удалась (таймаут). Попробуйте ещё раз.', 3000);
+            showToast(__('settings:vk_linking_timeout'), 3000);
         }
     }, 120000);
 
     if (!window.VKIDSDK) {
-        showToast('Загрузка VK SDK...', 1000);
+        showToast(__('settings:loading_vk_sdk'), 1000);
         setTimeout(() => {
             if (window.VKIDSDK) {
                 linkVK();
             } else {
                 clearTimeout(timeoutId);
                 vkLinkingInProgress = false;
-                showToast('Ошибка загрузки VK SDK', 1500);
+                showToast(__('settings:vk_sdk_load_error'), 1500);
             }
         }, 500);
         return;
@@ -786,14 +789,14 @@ function linkVK() {
                 const data = await res.json();
                 vkLinkingInProgress = false;
                 if (data.success) {
-                    showToast('VK аккаунт привязан', 1500);
+                    showToast(__('settings:vk_linked'), 1500);
                     renderSettings();
                 } else {
-                    showToast('Ошибка: ' + data.error, 1500);
+                    showToast(__('settings:vk_linking_error') + data.error, 1500);
                 }
             } catch (err) {
                 console.error('VK exchange error:', err);
-                showToast('Ошибка обмена токена', 1500);
+                showToast(__('settings:token_exchange_error'), 1500);
                 vkLinkingInProgress = false;
             }
         })
@@ -801,13 +804,13 @@ function linkVK() {
             clearTimeout(timeoutId);
             vkLinkingInProgress = false;
             console.error('VK login error:', error);
-            showToast('Ошибка авторизации VK: ' + (error.message || 'неизвестная'), 1500);
+            showToast(__('settings:vk_auth_error') + (error.message || __('common:unknown')), 1500);
         });
 }
 
 function linkGoogle() {
     if (googleLinkingInProgress) {
-        showToast('Привязка Google уже выполняется', 1500);
+        showToast(__('settings:google_linking_in_progress'), 1500);
         return;
     }
     googleLinkingInProgress = true;
@@ -815,7 +818,7 @@ function linkGoogle() {
     const timeoutId = setTimeout(() => {
         if (googleLinkingInProgress) {
             googleLinkingInProgress = false;
-            showToast('Привязка Google не удалась (таймаут). Попробуйте ещё раз.', 3000);
+            showToast(__('settings:google_linking_timeout'), 3000);
         }
     }, 30000);
 
@@ -834,10 +837,10 @@ function linkGoogle() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('Google аккаунт привязан', 1500);
+                    showToast(__('settings:google_linked'), 1500);
                     renderSettings();
                 } else {
-                    showToast('Ошибка: ' + data.error, 1500);
+                    showToast(__('settings:google_linking_error') + data.error, 1500);
                 }
             }
         });
@@ -846,7 +849,7 @@ function linkGoogle() {
     script.onerror = () => {
         clearTimeout(timeoutId);
         googleLinkingInProgress = false;
-        showToast('Ошибка загрузки Google API. Проверьте соединение.', 1500);
+        showToast(__('settings:google_api_load_error'), 1500);
     };
     document.head.appendChild(script);
 }
@@ -860,7 +863,7 @@ async function showAchievementsPage() {
         <div class="settings-container">
             <div style="margin-bottom: 16px;">
                 <button id="backToSettingsBtn" class="btn" style="background-color: #2f3542; color: #aaa;">
-                    <i class="fas fa-arrow-left"></i> Назад в настройки
+                    <i class="fas fa-arrow-left"></i> ${__('settings:back_to_settings')}
                 </button>
             </div>
             <div id="achievementsContainer"></div>
@@ -871,7 +874,7 @@ async function showAchievementsPage() {
     if (achievementsContainer && typeof renderAchievements === 'function') {
         await renderAchievements(achievementsContainer);
     } else {
-        achievementsContainer.innerHTML = '<p style="color:#aaa;">Ошибка загрузки достижений</p>';
+        achievementsContainer.innerHTML = `<p style="color:#aaa;">${__('settings:achievements_load_error')}</p>`;
     }
 
     const backBtn = document.getElementById('backToSettingsBtn');

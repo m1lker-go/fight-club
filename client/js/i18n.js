@@ -1,203 +1,168 @@
-// js/i18n.js – загрузка переводов через fetch с поддержкой множественных пространств имён
+// js/i18n.js – полный менеджер локализации с i18next и fallback
 
 (function() {
     console.log('🔄 i18n init started');
 
     const savedLang = localStorage.getItem('i18nextLng') || 'ru';
 
-    async function loadTranslations() {
+    // Функция загрузки одного файла перевода
+    async function loadTranslation(lang) {
+        const url = `/locales/${lang}.json`;
         try {
-            const [ruRes, enRes] = await Promise.all([
-                fetch('/locales/ru.json'),
-                fetch('/locales/en.json')
-            ]);
-            if (!ruRes.ok || !enRes.ok) {
-                throw new Error('Failed to load translation files');
-            }
-            const ru = await ruRes.json();
-            const en = await enRes.json();
-            return { ru, en };
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
         } catch (e) {
-            console.error('Error loading translations:', e);
-            return { ru: {}, en: {} };
+            console.error(`❌ Failed to load ${url}:`, e);
+            return null;
         }
     }
 
-    async function initI18next() {
-        if (typeof i18next === 'undefined') {
-            console.error('i18next not loaded');
-            return;
+    // ======== Глобальная функция перевода (временная, пока i18next не инициализирован) ========
+    window.__ = function(key, fallback) {
+        // Если i18next уже инициализирован, используем его
+        if (window.i18next && window.i18next.isInitialized) {
+            return window.i18next.t(key, { defaultValue: fallback || key });
         }
+        // Иначе возвращаем fallback (русский текст)
+        return fallback || key;
+    };
 
-        const translations = await loadTranslations();
-        // Строим ресурсы с пространствами имён
-        const resources = {
-            ru: {
-                common: translations.ru.common || {},
-                auth: translations.ru.auth || {},
-                settings: translations.ru.settings || {},
-                main: translations.ru.main || {},
-                equip: translations.ru.equip || {},
-                trade: translations.ru.trade || {},
-                market: translations.ru.market || {},
-                rating: translations.ru.rating || {},
-                profile: translations.ru.profile || {},
-                avatar: translations.ru.avatar || {},
-                alchemy: translations.ru.alchemy || {},
-                battle: translations.ru.battle || {},
-                modals: translations.ru.modals || {},
-                achievements: translations.ru.achievements || {},
-                clans: translations.ru.clans || {},
-                subclasses: translations.ru.subclasses || {},
-                items: translations.ru.items || {},
-                item_data: translations.ru.item_data || {},
-                forge: translations.ru.forge || {},
-                fortune: translations.ru.fortune || {},
-                gems: translations.ru.gems || {},
-                helpers: translations.ru.helpers || {},
-                messages: translations.ru.messages || {},
-                mint: translations.ru.mint || {},
-                tournament: translations.ru.tournament || {},
-                tower: translations.ru.tower || {},
-                telegram_bot: translations.ru.telegram_bot || {},
-                system: translations.ru.system || {},
-                bot_generator: translations.ru.bot_generator || {},
-                season: translations.ru.season || {},
-                email: translations.ru.email || {},
-                auth_errors: translations.ru.auth_errors || {},
-                shop: translations.ru.shop || {},
-                subscription: translations.ru.subscription || {},
-                tasks: translations.ru.tasks || {},
-                daily_tasks: translations.ru.daily_tasks || {},
-                skins: translations.ru.skins || {}
-            },
-            en: {
-                common: translations.en.common || {},
-                auth: translations.en.auth || {},
-                settings: translations.en.settings || {},
-                main: translations.en.main || {},
-                equip: translations.en.equip || {},
-                trade: translations.en.trade || {},
-                market: translations.en.market || {},
-                rating: translations.en.rating || {},
-                profile: translations.en.profile || {},
-                avatar: translations.en.avatar || {},
-                alchemy: translations.en.alchemy || {},
-                battle: translations.en.battle || {},
-                modals: translations.en.modals || {},
-                achievements: translations.en.achievements || {},
-                clans: translations.en.clans || {},
-                subclasses: translations.en.subclasses || {},
-                items: translations.en.items || {},
-                item_data: translations.en.item_data || {},
-                forge: translations.en.forge || {},
-                fortune: translations.en.fortune || {},
-                gems: translations.en.gems || {},
-                helpers: translations.en.helpers || {},
-                messages: translations.en.messages || {},
-                mint: translations.en.mint || {},
-                tournament: translations.en.tournament || {},
-                tower: translations.en.tower || {},
-                telegram_bot: translations.en.telegram_bot || {},
-                system: translations.en.system || {},
-                bot_generator: translations.en.bot_generator || {},
-                season: translations.en.season || {},
-                email: translations.en.email || {},
-                auth_errors: translations.en.auth_errors || {},
-                shop: translations.en.shop || {},
-                subscription: translations.en.subscription || {},
-                tasks: translations.en.tasks || {},
-                daily_tasks: translations.en.daily_tasks || {},
-                skins: translations.en.skins || {}
-            }
-        };
-
-        const nsList = Object.keys(resources.ru);
-
-        i18next.init({
-            lng: savedLang,
-            fallbackLng: 'ru',
-            resources: resources,
-            ns: nsList,
-            defaultNS: 'common',
-            interpolation: {
-                escapeValue: false
-            }
-        }, function(err, t) {
-            if (err) {
-                console.error('i18next init error:', err);
-                return;
-            }
-            console.log('✅ i18next initialized, language:', i18next.language);
-            
-            // Глобальная функция с поддержкой fallback
-           window.__ = function(key, fallback) {
-    return fallback || key;   // всегда возвращаем русский текст из fallback
-};
-            
-            window.i18next = i18next;
-            updateContent();
-            if (typeof window.updateUIAfterLanguageChange === 'function') {
-                window.updateUIAfterLanguageChange();
-            }
-        });
-    }
-
-    function updateContent() {
+    // ======== Функция обновления UI после смены языка ========
+    function updateUI() {
+        // Если есть элементы с data-i18n – обновляем их
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
-            const translation = i18next.t(key);
-            if (el.tagName === 'INPUT' && el.placeholder) {
-                el.placeholder = translation;
-            } else {
-                el.textContent = translation;
+            if (window.i18next) {
+                const translation = window.i18next.t(key);
+                if (el.tagName === 'INPUT' && el.placeholder) {
+                    el.placeholder = translation;
+                } else {
+                    el.textContent = translation;
+                }
             }
         });
+
+        // Перерисовываем текущий экран
+        const current = window.currentScreen || 'main';
+        switch (current) {
+            case 'main': if (window.renderMain) window.renderMain(); break;
+            case 'equip': if (window.renderEquip) window.renderEquip(); break;
+            case 'trade': if (window.renderTrade) window.renderTrade(); break;
+            case 'market': if (window.renderMarket) window.renderMarket(); break;
+            case 'profile': if (window.renderProfile) window.renderProfile(); break;
+            case 'rating': if (window.renderRating) window.renderRating(); break;
+            case 'settings': if (window.renderSettings) window.renderSettings(); break;
+            case 'forge': if (window.renderForge) window.renderForge(); else window.renderForgeFallback?.(); break;
+            case 'tournament': if (window.renderTournament) window.renderTournament(); break;
+            case 'clans': if (window.renderClans) window.renderClans(); break;
+            case 'tasks': if (window.renderTasks) window.renderTasks(); break;
+            case 'tower': if (window.loadTowerStatus) window.loadTowerStatus(); break;
+            case 'fortune': if (window.renderFortune) window.renderFortune(); break;
+            case 'alchemy': if (window.renderAlchemy) window.renderAlchemy(); break;
+            case 'messages': if (window.renderMessages) window.renderMessages(); break;
+            default: break;
+        }
+
+        // Обновляем бейджи и иконки
+        if (window.updateTradeBadges) window.updateTradeBadges();
+        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+        if (window.updateMessagesBadge) window.updateMessagesBadge();
     }
 
-    window.setLanguage = function(lang) {
-        if (window.i18next && typeof window.i18next.changeLanguage === 'function') {
-            window.i18next.changeLanguage(lang, () => {
-                localStorage.setItem('i18nextLng', lang);
-                updateContent();
-                if (document.querySelector('.settings-container')) {
-                    if (typeof window.renderSettings === 'function') {
-                        window.renderSettings();
-                    }
-                }
-                if (window.currentScreen === 'main' && typeof window.renderMain === 'function') {
-                    window.renderMain();
-                }
-                const modal = document.getElementById('roleModal');
-                if (modal && modal.style.display !== 'none') {
-                    const title = document.getElementById('modalTitle');
-                    if (title) {
-                        const key = title.getAttribute('data-i18n');
-                        if (key) title.textContent = i18next.t(key);
-                    }
-                }
-            });
-        } else {
-            localStorage.setItem('i18nextLng', lang);
-            location.reload();
-        }
-    };
+    // ======== Инициализация i18next ========
+    async function initI18next() {
+        try {
+            // Загружаем оба файла параллельно
+            const [ruData, enData] = await Promise.all([
+                loadTranslation('ru'),
+                loadTranslation('en')
+            ]);
 
-    window.updateUIAfterLanguageChange = function() {
-        updateContent();
-        if (document.querySelector('.settings-container')) {
-            if (typeof window.renderSettings === 'function') {
-                window.renderSettings();
+            if (!ruData) {
+                console.warn('⚠️ ru.json не загружен, буду использовать fallback-тексты');
             }
-        }
-        if (window.currentScreen === 'main' && typeof window.renderMain === 'function') {
-            window.renderMain();
-        }
-    };
+            if (!enData) {
+                console.warn('⚠️ en.json не загружен, английский временно недоступен');
+            }
 
+            // Если i18next не загружен – грузим его с CDN (но он уже должен быть в index.html)
+            if (typeof i18next === 'undefined') {
+                console.error('❌ i18next library not found!');
+                // В этом случае оставляем только fallback-функцию
+                window.__ = function(key, fallback) {
+                    return fallback || key;
+                };
+                return;
+            }
+
+            const resources = {
+                ru: { translation: ruData || {} },
+                en: { translation: enData || {} }
+            };
+
+            await i18next.init({
+                lng: savedLang,
+                fallbackLng: 'ru',
+                resources: resources,
+                defaultNS: 'translation',
+                interpolation: { escapeValue: false }
+            });
+
+            window.i18next = i18next;
+            console.log('✅ i18next initialized, language:', i18next.language);
+
+            // Переопределяем __, чтобы использовать i18next
+            window.__ = function(key, fallback) {
+                return i18next.t(key, { defaultValue: fallback || key });
+            };
+
+            // Применяем переводы к UI
+            updateUI();
+
+            // ======== Функция для смены языка ========
+            window.setLanguage = function(lang) {
+                if (!window.i18next || typeof window.i18next.changeLanguage !== 'function') {
+                    localStorage.setItem('i18nextLng', lang);
+                    location.reload();
+                    return;
+                }
+                window.i18next.changeLanguage(lang, (err) => {
+                    if (err) {
+                        console.error('❌ Error changing language:', err);
+                        return;
+                    }
+                    localStorage.setItem('i18nextLng', lang);
+                    console.log(`🌐 Language changed to ${lang}`);
+                    updateUI();
+                });
+            };
+
+            // Если есть переключатель языка в DOM – привязываем события
+            document.querySelectorAll('.lang-option').forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    const lang = opt.dataset.lang;
+                    if (lang) window.setLanguage(lang);
+                });
+            });
+
+        } catch (e) {
+            console.error('❌ i18next initialization failed:', e);
+            // Оставляем fallback-функцию
+            window.__ = function(key, fallback) {
+                return fallback || key;
+            };
+        }
+    }
+
+    // ======== Запуск ========
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initI18next);
     } else {
         initI18next();
     }
+
+    // Экспортируем updateUI для использования извне
+    window.updateUIAfterLanguageChange = updateUI;
+
 })();

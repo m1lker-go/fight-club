@@ -1,4 +1,4 @@
-// settings.js – исправлено: добавлена проверка escapeHtml, переключатель языка
+// settings.js – исправлено: добавлена подробная отладка
 
 // ========== УБЕДИМСЯ, ЧТО escapeHtml ОПРЕДЕЛЕНА ==========
 if (typeof escapeHtml === 'undefined') {
@@ -33,11 +33,9 @@ function setLanguage(lang) {
     if (window.i18next && typeof window.i18next.changeLanguage === 'function') {
         window.i18next.changeLanguage(lang);
         localStorage.setItem('i18nextLng', lang);
-        // Обновляем интерфейс, если есть функция обновления
         if (typeof updateUIAfterLanguageChange === 'function') {
             updateUIAfterLanguageChange();
         } else {
-            // fallback – перезагружаем страницу
             location.reload();
         }
     } else {
@@ -98,14 +96,11 @@ function initSettingsLanguageSwitcher() {
             const lang = opt.dataset.lang;
             setLanguage(lang);
             dropdown.style.display = 'none';
-            // Обновляем внешний вид кнопки
             updateSettingsLangButton(lang);
-            // Перерисовываем настройки для обновления текста
             renderSettings();
         });
     });
 
-    // Закрыть дропдаун по клику вне
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.lang-switcher-wrapper-settings')) {
             dropdown.style.display = 'none';
@@ -131,7 +126,6 @@ function updateSettingsLangButton(lang) {
 
 // ============================================================
 
-// Определяем хранилище токена в зависимости от окружения
 function getStorage() {
     return window.isVKMiniApp === true ? sessionStorage : localStorage;
 }
@@ -148,7 +142,7 @@ function removeSessionToken() {
     getStorage().removeItem('sessionToken');
 }
 
-// ========== МОДАЛЬНОЕ ПОДТВЕРЖДЕНИЕ (ЗАМЕНА confirm) ==========
+// ========== МОДАЛЬНОЕ ПОДТВЕРЖДЕНИЕ ==========
 function showConfirmModal(message, onConfirm, onCancel) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -253,32 +247,38 @@ function clearCacheAndReload() {
     }
 }
 
+// ========== ГЛАВНАЯ ФУНКЦИЯ С ОТЛАДКОЙ ==========
 async function renderSettings() {
-    console.log('Token in sessionStorage:', sessionStorage.getItem('sessionToken'));
-    console.log('Token in localStorage:', localStorage.getItem('sessionToken'));
-    console.log('window.isVKMiniApp:', window.isVKMiniApp);
-  
-    const token = getSessionToken();
-    if (!token) {
-        if (typeof showToast === 'function') showToast('Сессия не найдена', 1500);
-        if (typeof showScreen === 'function') showScreen('main');
-        return;
-    }
-
+    console.log('🟢 renderSettings started');
     try {
+        console.log('Token in sessionStorage:', sessionStorage.getItem('sessionToken'));
+        console.log('Token in localStorage:', localStorage.getItem('sessionToken'));
+        console.log('window.isVKMiniApp:', window.isVKMiniApp);
+      
+        const token = getSessionToken();
+        if (!token) {
+            if (typeof showToast === 'function') showToast('Сессия не найдена', 1500);
+            if (typeof showScreen === 'function') showScreen('main');
+            return;
+        }
+
+        console.log('🟢 Fetching profile...');
         const res = await window.apiRequest('/user/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to load profile');
         const data = await res.json();
+        console.log('🟢 Profile loaded');
         const user = data.user;
         const connections = data.connections || [];
 
         const hasPassword = !!user.password_hash;
+        console.log('🟢 Getting avatar filename...');
         const avatarFilename = typeof getAvatarFilenameById === 'function' 
             ? getAvatarFilenameById(user.avatar_id || 1) 
             : 'cat_heroweb.png';
 
+        console.log('🟢 Getting volume settings...');
         let musicVolumePercent = 60;
         let sfxVolumePercent = 70;
         if (typeof AudioManager !== 'undefined') {
@@ -288,8 +288,12 @@ async function renderSettings() {
 
         const isVK = window.isVKMiniApp === true;
         const content = document.getElementById('content');
-        if (!content) return;
+        if (!content) {
+            console.error('❌ content element not found');
+            return;
+        }
 
+        console.log('🟢 Building connections HTML...');
         let connectionsHtml = '';
         if (!isVK) {
             connectionsHtml = `
@@ -341,9 +345,10 @@ async function renderSettings() {
         const hideLogout = isVK || isTelegramWebApp;
         const hideEditName = isVK;
 
-        // Текущий язык для переключателя
         const currentLang = localStorage.getItem('i18nextLng') || 'ru';
+        console.log('🟢 Current language:', currentLang);
 
+        console.log('🟢 Rendering main HTML...');
         content.innerHTML = `
             <div class="settings-container">
                 <div class="settings-profile-row">
@@ -400,9 +405,10 @@ async function renderSettings() {
             </div>
         `;
 
-        // Инициализация переключателя языка в настройках
+        console.log('🟢 Initializing language switcher...');
         initSettingsLanguageSwitcher();
 
+        console.log('🟢 Setting up sliders...');
         function setupSlider(containerId, fillId, thumbId, percentId, isMusic) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -536,20 +542,26 @@ async function renderSettings() {
             }
         }
 
-        // Обработчик для кнопки "Достижения"
         const achievementsRow = document.getElementById('achievementsRow');
         if (achievementsRow) {
             achievementsRow.addEventListener('click', () => {
                 showAchievementsPage();
             });
         }
+
+        console.log('🟢 renderSettings completed successfully');
     } catch (err) {
-        console.error(err);
-        if (typeof showToast === 'function') showToast('Ошибка загрузки настроек', 1500);
+        console.error('❌ Ошибка в renderSettings:', err);
+        if (typeof showToast === 'function') {
+            showToast('Ошибка загрузки настроек: ' + err.message, 3000);
+        } else {
+            alert('Ошибка загрузки настроек: ' + err.message);
+        }
         if (typeof showScreen === 'function') showScreen('main');
     }
 }
 
+// ====== ОСТАЛЬНЫЕ ФУНКЦИИ (без изменений) ======
 async function updateSettings(updates) {
     try {
         const res = await window.apiRequest('/user/update-settings', {
@@ -864,10 +876,9 @@ async function showAchievementsPage() {
     const backBtn = document.getElementById('backToSettingsBtn');
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            renderSettings(); // возвращаемся к настройкам
+            renderSettings();
         });
     }
 }
 
-// Экспорт
 window.renderSettings = renderSettings;

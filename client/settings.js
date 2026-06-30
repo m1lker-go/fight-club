@@ -15,6 +15,9 @@ if (typeof escapeHtml === 'undefined') {
 }
 
 console.log('✅ settings.js loaded');
+console.log(typeof renderSettings);
+console.log(typeof setLanguage);
+console.log(typeof FLAG_URLS);
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;

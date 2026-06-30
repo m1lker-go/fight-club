@@ -1,4 +1,12 @@
-// app.js – основная логика приложения (исправлено: VK Mini App авторизация через параметры запуска и sessionStorage)
+// app.js – основная логика приложения с поддержкой i18n
+
+// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
+const __ = window.__ || function(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+};
 
 let tg = null;
 let user = null;
@@ -13,9 +21,9 @@ if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
 }
 
 if (user) {
-    window.playerName = user.username || user.first_name || 'Игрок';
+    window.playerName = user.username || user.first_name || __('common:player', 'Игрок');
 } else {
-    window.playerName = 'Игрок';
+    window.playerName = __('common:player', 'Игрок');
 }
 console.log('playerName:', window.playerName);
 
@@ -101,12 +109,10 @@ setTimeout(detectTelegramWebApp, 500);
 if (window.isVKMiniApp) {
     console.log('[App] VK Mini App detected, applying styles');
     document.body.classList.add('vk-mini-app');
-    // Отступ больше не добавляем – кастомные кнопки будут внутри top-bar
     console.log('[VK] VK Mini App detected, custom buttons will be added');
 } else {
     console.log('[App] Not VK Mini App, default vertical mode');
 }
-
 
 // ========== VK MINI APP АВТОРИЗАЦИЯ ЧЕРЕЗ ПАРАМЕТРЫ ЗАПУСКА ==========
 async function autoLoginVKLaunch() {
@@ -413,7 +419,6 @@ async function loadUserDataByToken(token, retries = 3) {
 
                 console.log('loadUserDataByToken: success');
 
-                // ДОБАВЛЕНО ДЛЯ АЧИВОК
                 if (typeof checkFounderAchievement === 'function') {
                     checkFounderAchievement();
                 }
@@ -477,7 +482,6 @@ async function checkAuth() {
                     initIronSourceAds(userData.id);
                 }
 
-                // ДОБАВЛЕНО ДЛЯ АЧИВОК
                 if (typeof checkFounderAchievement === 'function') {
                     checkFounderAchievement();
                 }
@@ -532,10 +536,10 @@ function showErrorSplash() {
         splash.style.display = 'flex';
         splash.innerHTML = `
             <div class="splash-content">
-                <h1 class="splash-title">Ошибка соединения</h1>
-                <p class="splash-subtitle">Не удалось подключиться к серверу.</p>
-                <p style="font-size:14px; margin-bottom:20px;">Попробуйте позже или нажмите "Повторить"</p>
-                <button class="btn" id="retryBtn" style="margin-top: 10px;">Повторить</button>
+                <h1 class="splash-title">${__('common:connection_error', 'Ошибка соединения')}</h1>
+                <p class="splash-subtitle">${__('common:server_connection_failed', 'Не удалось подключиться к серверу.')}</p>
+                <p style="font-size:14px; margin-bottom:20px;">${__('common:try_again_or_retry', 'Попробуйте позже или нажмите "Повторить"')}</p>
+                <button class="btn" id="retryBtn" style="margin-top: 10px;">${__('common:retry', 'Повторить')}</button>
             </div>
         `;
         const retryBtn = document.getElementById('retryBtn');
@@ -728,12 +732,12 @@ function showScreen(screen) {
                 renderTasks();
             } else {
                 console.error('renderTasks still not defined after load');
-                content.innerHTML = '<p style="color:#aaa;">Ошибка загрузки заданий. Попробуйте позже.</p>';
+                content.innerHTML = `<p style="color:#aaa;">${__('tasks:load_error', 'Ошибка загрузки заданий. Попробуйте позже.')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load task-up.js');
-            content.innerHTML = '<p style="color:#aaa;">Не удалось загрузить задания. Проверьте соединение.</p>';
+            content.innerHTML = `<p style="color:#aaa;">${__('tasks:load_error_connection', 'Не удалось загрузить задания. Проверьте соединение.')}</p>`;
         };
         document.head.appendChild(script);
         return;
@@ -747,12 +751,12 @@ function showScreen(screen) {
                 renderTournament();
             } else {
                 console.error('renderTournament still not defined after load');
-                content.innerHTML = '<p style="color:#aaa;">Ошибка загрузки турнира. Попробуйте позже.</p>';
+                content.innerHTML = `<p style="color:#aaa;">${__('tournament:load_error', 'Ошибка загрузки турнира. Попробуйте позже.')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load tournament.js');
-            content.innerHTML = '<p style="color:#aaa;">Не удалось загрузить турнир. Проверьте соединение.</p>';
+            content.innerHTML = `<p style="color:#aaa;">${__('tournament:load_error_connection', 'Не удалось загрузить турнир. Проверьте соединение.')}</p>`;
         };
         document.head.appendChild(script);
         return;
@@ -785,13 +789,13 @@ function showScreen(screen) {
                 document.head.appendChild(script);
             }
             break;
-       case 'settings':
-    if (typeof renderSettings === 'function') {
-        renderSettings();
-    } else {
-        content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
-    }
-    break;
+        case 'settings':
+            if (typeof renderSettings === 'function') {
+                renderSettings();
+            } else {
+                content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('settings:temporarily_unavailable', 'Настройки временно недоступны')}</p>`;
+            }
+            break;
         case 'market': renderMarket(); break;
         case 'fortune': renderFortune(); break;
         case 'alchemy': renderAlchemy(); break;
@@ -802,7 +806,7 @@ function showScreen(screen) {
             if (typeof renderClans === 'function') {
                 renderClans();
             } else {
-                content.innerHTML = '<p style="color:#aaa;">Ошибка: модуль кланов не загружен</p>';
+                content.innerHTML = `<p style="color:#aaa;">${__('clans:module_not_loaded', 'Ошибка: модуль кланов не загружен')}</p>`;
             }
             break;
         default: renderMain();
@@ -813,7 +817,7 @@ function showScreen(screen) {
 
 function renderForgeFallback() {
     const content = document.getElementById('content');
-    content.innerHTML = '<p style="text-align:center; color:#aaa;">Кузница временно недоступна</p>';
+    content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('forge:temporarily_unavailable', 'Кузница временно недоступна')}</p>`;
 }
 
 async function loadAvatars() {
@@ -888,38 +892,38 @@ function handleExternalAuth() {
     let handled = false;
 
     async function handleOAuthSuccess(sessionToken, needusername, userId) {
-    if (!sessionToken) {
-        console.error('[OAuth] No sessionToken');
-        return false;
-    }
-    localStorage.setItem('sessionToken', sessionToken);
-    if (needusername && typeof showusernameModal === 'function') {
-        showusernameModal(userId);
-    } else {
-        const loaded = await loadUserDataByToken(sessionToken);
-        if (loaded) {
-            const modal = document.getElementById('roleModal');
-            if (modal) {
-                if (typeof window.closeAuthModal === 'function') {
-                    window.closeAuthModal();
-                } else {
-                    modal.style.display = 'none';
-                }
-            }
-            showScreen('main');
-            setTimeout(() => {
-                if (currentScreen === 'main') {
-                    renderMain();
-                }
-            }, 100);
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            console.error('[OAuth] Failed to load user data, reloading...');
-            window.location.reload();
+        if (!sessionToken) {
+            console.error('[OAuth] No sessionToken');
+            return false;
         }
+        localStorage.setItem('sessionToken', sessionToken);
+        if (needusername && typeof showusernameModal === 'function') {
+            showusernameModal(userId);
+        } else {
+            const loaded = await loadUserDataByToken(sessionToken);
+            if (loaded) {
+                const modal = document.getElementById('roleModal');
+                if (modal) {
+                    if (typeof window.closeAuthModal === 'function') {
+                        window.closeAuthModal();
+                    } else {
+                        modal.style.display = 'none';
+                    }
+                }
+                showScreen('main');
+                setTimeout(() => {
+                    if (currentScreen === 'main') {
+                        renderMain();
+                    }
+                }, 100);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                console.error('[OAuth] Failed to load user data, reloading...');
+                window.location.reload();
+            }
+        }
+        return true;
     }
-    return true;
-}
 
     const googleAuth = urlParams.get('google_auth');
     if (googleAuth === 'success') {
@@ -950,19 +954,19 @@ function handleExternalAuth() {
 
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
-        if (typeof showToast === 'function') showToast('Google аккаунт привязан', 1500);
+        if (typeof showToast === 'function') showToast(__('common:google_account_linked', 'Google аккаунт привязан'), 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
-        if (typeof showToast === 'function') showToast('VK аккаунт привязан', 1500);
+        if (typeof showToast === 'function') showToast(__('common:vk_account_linked', 'VK аккаунт привязан'), 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
-        if (typeof showToast === 'function') showToast('Telegram аккаунт привязан', 1500);
+        if (typeof showToast === 'function') showToast(__('common:telegram_account_linked', 'Telegram аккаунт привязан'), 1500);
         if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
@@ -1065,13 +1069,13 @@ document.addEventListener('touchstart', unlockHandler);
         `;
         modal.innerHTML = `
             <div style="padding: 10px; background: #2a303c; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: white; font-weight: bold;">📋 Логи отладки</span>
+                <span style="color: white; font-weight: bold;">${__('debug:title', '📋 Логи отладки')}</span>
                 <button id="closeDebugBtn" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>
             </div>
             <textarea id="debugLogs" readonly style="flex: 1; background: #232833; color: #ddd; border: none; padding: 10px; font-family: monospace; font-size: 12px; resize: none;"></textarea>
             <div style="padding: 10px; display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="copyLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">Копировать</button>
-                <button id="clearLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">Очистить</button>
+                <button id="copyLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">${__('debug:copy', 'Копировать')}</button>
+                <button id="clearLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">${__('debug:clear', 'Очистить')}</button>
             </div>
         `;
         document.body.appendChild(btn);
@@ -1096,12 +1100,12 @@ document.addEventListener('touchstart', unlockHandler);
             const textarea = document.getElementById('debugLogs');
             textarea.select();
             document.execCommand('copy');
-            if (typeof showToast === 'function') showToast('Логи скопированы', 1500);
+            if (typeof showToast === 'function') showToast(__('debug:copied', 'Логи скопированы'), 1500);
         });
         document.getElementById('clearLogsBtn').addEventListener('click', () => {
             logs.length = 0;
             updateModal();
-            if (typeof showToast === 'function') showToast('Логи очищены', 1500);
+            if (typeof showToast === 'function') showToast(__('debug:cleared', 'Логи очищены'), 1500);
         });
     }
 

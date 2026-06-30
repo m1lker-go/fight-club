@@ -1,4 +1,12 @@
-// battleLog.js – финальная версия с поддержкой AnimationManager и всплывающих чисел
+// battleLog.js – финальная версия с поддержкой i18n
+
+// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
+const __ = window.__ || function(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+};
 
 const BattleLog = {
     messages: [],
@@ -608,7 +616,7 @@ const BattleLog = {
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
-        // Анимация печати текста (оставляем как есть)
+        // Анимация печати текста
         const animateTyping = (element, text, delay = 80) => {
             if (!element) return;
             element.textContent = '';
@@ -627,28 +635,28 @@ const BattleLog = {
         let playerSkinId = this.battleData.playerAvatarId;
         let enemySkinId = this.battleData.enemyAvatarId;
 
-        // Для обычного кота (id=1) оставляем как есть, он уже есть в skinAnimations
         if (playerSkinId === 1) playerSkinId = 1;
         if (enemySkinId === 1) enemySkinId = 1;
 
-        // Если враг — киберкот, используем специальный ключ 'cybercat'
         if (this.enemyIsCybercat) {
             enemySkinId = 'cybercat';
         }
 
         // Показываем overlay "Проиграл"
+        const defeatText = __('battle:defeat_overlay', 'Проиграл');
+
         if (winner === 'player') {
             if (enemyCard) {
                 enemyCard.classList.add('defeated');
                 const overlay = enemyCard.querySelector('.defeat-overlay');
-                if (overlay) animateTyping(overlay, 'Проиграл');
+                if (overlay) animateTyping(overlay, defeatText);
             }
             if (heroCard) heroCard.classList.remove('defeated');
         } else if (winner === 'enemy') {
             if (heroCard) {
                 heroCard.classList.add('defeated');
                 const overlay = heroCard.querySelector('.defeat-overlay');
-                if (overlay) animateTyping(overlay, 'Проиграл');
+                if (overlay) animateTyping(overlay, defeatText);
             }
             if (enemyCard) enemyCard.classList.remove('defeated');
         } else {
@@ -659,7 +667,6 @@ const BattleLog = {
         // Анимации скинов
         if (window.AnimationManager) {
             if (winner === 'player') {
-                // Игрок победил
                 if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
                     window.AnimationManager.playAnimation('hero', 'victory', { skinId: playerSkinId });
                 }
@@ -667,7 +674,6 @@ const BattleLog = {
                     window.AnimationManager.playAnimation('enemy', 'defeat', { skinId: enemySkinId });
                 }
             } else if (winner === 'enemy') {
-                // Враг победил
                 if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
                     window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
                 }
@@ -675,7 +681,6 @@ const BattleLog = {
                     window.AnimationManager.playAnimation('enemy', 'victory', { skinId: enemySkinId });
                 }
             } else {
-                // Ничья – оба проиграли
                 if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {
                     window.AnimationManager.playAnimation('hero', 'defeat', { skinId: playerSkinId });
                 }
@@ -685,7 +690,6 @@ const BattleLog = {
             }
         }
 
-        // Задержка перед вызовом onFinish
         setTimeout(() => {
             if (this.onFinish) this.onFinish(this.battleData);
         }, 2000);

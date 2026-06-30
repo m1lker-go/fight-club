@@ -30,7 +30,40 @@
 
     // ======== Функция обновления UI после смены языка ========
     function updateUI() {
-        // Если есть элементы с data-i18n – обновляем их
+        console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
+        // Если есть showScreen – используем её для перерисовки текущего экрана
+        if (typeof window.showScreen === 'function') {
+            const current = window.currentScreen || 'main';
+            window.showScreen(current);
+        } else {
+            // fallback: старый способ с switch
+            const current = window.currentScreen || 'main';
+            switch (current) {
+                case 'main': if (window.renderMain) window.renderMain(); break;
+                case 'equip': if (window.renderEquip) window.renderEquip(); break;
+                case 'trade': if (window.renderTrade) window.renderTrade(); break;
+                case 'market': if (window.renderMarket) window.renderMarket(); break;
+                case 'profile': if (window.renderProfile) window.renderProfile(); break;
+                case 'rating': if (window.renderRating) window.renderRating(); break;
+                case 'settings': if (window.renderSettings) window.renderSettings(); break;
+                case 'forge': if (window.renderForge) window.renderForge(); else if (window.renderForgeFallback) window.renderForgeFallback(); break;
+                case 'tournament': if (window.renderTournament) window.renderTournament(); break;
+                case 'clans': if (window.renderClans) window.renderClans(); break;
+                case 'tasks': if (window.renderTasks) window.renderTasks(); break;
+                case 'tower': if (window.loadTowerStatus) window.loadTowerStatus(); break;
+                case 'fortune': if (window.renderFortune) window.renderFortune(); break;
+                case 'alchemy': if (window.renderAlchemy) window.renderAlchemy(); break;
+                case 'messages': if (window.renderMessages) window.renderMessages(); break;
+                default: break;
+            }
+        }
+
+        // Обновляем бейджи и иконки
+        if (window.updateTradeBadges) window.updateTradeBadges();
+        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
+        if (window.updateMessagesBadge) window.updateMessagesBadge();
+
+        // Обновляем элементы с data-i18n (на случай, если они есть)
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (window.i18next) {
@@ -42,32 +75,6 @@
                 }
             }
         });
-
-        // Перерисовываем текущий экран
-        const current = window.currentScreen || 'main';
-        switch (current) {
-            case 'main': if (window.renderMain) window.renderMain(); break;
-            case 'equip': if (window.renderEquip) window.renderEquip(); break;
-            case 'trade': if (window.renderTrade) window.renderTrade(); break;
-            case 'market': if (window.renderMarket) window.renderMarket(); break;
-            case 'profile': if (window.renderProfile) window.renderProfile(); break;
-            case 'rating': if (window.renderRating) window.renderRating(); break;
-            case 'settings': if (window.renderSettings) window.renderSettings(); break;
-            case 'forge': if (window.renderForge) window.renderForge(); else if (window.renderForgeFallback) window.renderForgeFallback(); break;
-            case 'tournament': if (window.renderTournament) window.renderTournament(); break;
-            case 'clans': if (window.renderClans) window.renderClans(); break;
-            case 'tasks': if (window.renderTasks) window.renderTasks(); break;
-            case 'tower': if (window.loadTowerStatus) window.loadTowerStatus(); break;
-            case 'fortune': if (window.renderFortune) window.renderFortune(); break;
-            case 'alchemy': if (window.renderAlchemy) window.renderAlchemy(); break;
-            case 'messages': if (window.renderMessages) window.renderMessages(); break;
-            default: break;
-        }
-
-        // Обновляем бейджи и иконки
-        if (window.updateTradeBadges) window.updateTradeBadges();
-        if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
-        if (window.updateMessagesBadge) window.updateMessagesBadge();
     }
 
     // ======== Инициализация i18next ========
@@ -144,11 +151,20 @@
                 });
             };
 
+            // Подписываемся на событие смены языка (на случай, если язык изменится иначе)
+            i18next.on('languageChanged', (lng) => {
+                console.log(`🔄 languageChanged event: ${lng}`);
+                if (localStorage.getItem('i18nextLng') !== lng) {
+                    localStorage.setItem('i18nextLng', lng);
+                }
+                updateUI();
+            });
+
             // Если есть переключатель языка в DOM – привязываем события
-            document.querySelectorAll('.lang-option').forEach(opt => {
+            document.querySelectorAll('.lang-option, .lang-option-settings').forEach(opt => {
                 opt.addEventListener('click', (e) => {
                     const lang = opt.dataset.lang;
-                    if (lang) window.setLanguage(lang);
+                    if (lang && window.setLanguage) window.setLanguage(lang);
                 });
             });
 

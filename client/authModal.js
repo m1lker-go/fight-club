@@ -9,13 +9,6 @@ let googleLoginInProgress = false;
 let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
 
-// ======== ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ========
-function __(key, fallback) {
-    if (window.i18next && typeof window.i18next.t === 'function') {
-        return window.i18next.t(key);
-    }
-    return fallback || key;
-}
 
 function isWebView() {
     if (typeof window.Android !== 'undefined') return true;

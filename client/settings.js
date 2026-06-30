@@ -1,4 +1,18 @@
-// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша с модальным окном, очистка, добавлена кнопка Достижения и переключатель языка
+// settings.js – исправлено: добавлена проверка escapeHtml, переключатель языка
+
+// ========== УБЕДИМСЯ, ЧТО escapeHtml ОПРЕДЕЛЕНА ==========
+if (typeof escapeHtml === 'undefined') {
+    window.escapeHtml = function(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    };
+    var escapeHtml = window.escapeHtml;
+}
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
@@ -535,8 +549,6 @@ async function renderSettings() {
         if (typeof showScreen === 'function') showScreen('main');
     }
 }
-
-
 
 async function updateSettings(updates) {
     try {

@@ -17,19 +17,19 @@ function generateCodeVerifier() {
     return Math.random().toString(36).substring(2, 15);
 }
 function generateCodeChallenge(verifier) {
-    return verifier; // для простоты, но можно добавить SHA256
+    return verifier; // временно
 }
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
 
-// ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ========
-const FLAG_URLS = {
+// ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (уникальные имена, чтобы не конфликтовать) ========
+const SETTINGS_FLAG_URLS = {
     ru: 'https://flagcdn.com/24x18/ru.png',
     en: 'https://flagcdn.com/24x18/gb.png'
 };
-const LANG_NAMES = {
+const SETTINGS_LANG_NAMES = {
     ru: 'Русский',
     en: 'English'
 };
@@ -51,8 +51,8 @@ function setLanguage(lang) {
 window.setLanguage = setLanguage;
 
 function renderLanguageSelector(currentLang) {
-    const currentFlagUrl = FLAG_URLS[currentLang] || FLAG_URLS.ru;
-    const currentName = LANG_NAMES[currentLang] || currentLang;
+    const currentFlagUrl = SETTINGS_FLAG_URLS[currentLang] || SETTINGS_FLAG_URLS.ru;
+    const currentName = SETTINGS_LANG_NAMES[currentLang] || currentLang;
 
     return `
         <div class="settings-language-row" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2f3542;">
@@ -68,13 +68,13 @@ function renderLanguageSelector(currentLang) {
                 <div class="lang-dropdown-settings" id="langDropdownSettings" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: #2a303c; border: 1px solid #555; border-radius: 8px; min-width: 140px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 100;">
                     <div class="lang-option-settings" data-lang="ru" style="padding: 8px 16px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; ${currentLang === 'ru' ? 'background: #3a4050;' : ''}">
                         <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
-                            <img src="${FLAG_URLS.ru}" alt="ru" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="${SETTINGS_FLAG_URLS.ru}" alt="ru" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         Русский
                     </div>
                     <div class="lang-option-settings" data-lang="en" style="padding: 8px 16px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; ${currentLang === 'en' ? 'background: #3a4050;' : ''}">
                         <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
-                            <img src="${FLAG_URLS.en}" alt="en" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="${SETTINGS_FLAG_URLS.en}" alt="en" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         English
                     </div>
@@ -114,8 +114,8 @@ function initSettingsLanguageSwitcher() {
 function updateSettingsLangButton(lang) {
     const btn = document.getElementById('langToggleBtnSettings');
     if (!btn) return;
-    const flagUrl = FLAG_URLS[lang] || FLAG_URLS.ru;
-    const name = LANG_NAMES[lang] || lang;
+    const flagUrl = SETTINGS_FLAG_URLS[lang] || SETTINGS_FLAG_URLS.ru;
+    const name = SETTINGS_LANG_NAMES[lang] || lang;
     const img = btn.querySelector('img');
     if (img) {
         img.src = flagUrl;
@@ -127,7 +127,7 @@ function updateSettingsLangButton(lang) {
     }
 }
 
-// ====== ОСТАЛЬНЫЕ ФУНКЦИИ (сокращённо, только нужное для настроек) ======
+// ====== ОСТАЛЬНЫЕ ФУНКЦИИ ======
 function getStorage() {
     return window.isVKMiniApp === true ? sessionStorage : localStorage;
 }

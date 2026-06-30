@@ -14,6 +14,8 @@ if (typeof escapeHtml === 'undefined') {
     var escapeHtml = window.escapeHtml;
 }
 
+console.log('✅ settings.js loaded');
+
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;

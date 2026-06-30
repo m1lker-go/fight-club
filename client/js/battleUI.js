@@ -1,5 +1,6 @@
 // battleUI.js – экран боя с поддержкой i18n
 
+
 // Переопределяем getRoleNameRu для использования i18n
 const getRoleNameRu = (role) => {
     const key = `subclasses:${role}.name`;

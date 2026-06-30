@@ -13,9 +13,9 @@ if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
 }
 
 if (user) {
-    window.playerName = user.username || user.first_name || __('common:player', 'Игрок');
+    window.playerName = user.username || user.first_name || __('common:Игрок', 'Игрок');
 } else {
-    window.playerName = __('common:player', 'Игрок');
+    window.playerName = __('common:Игрок', 'Игрок');
 }
 console.log('playerName:', window.playerName);
 
@@ -528,10 +528,10 @@ function showErrorSplash() {
         splash.style.display = 'flex';
         splash.innerHTML = `
             <div class="splash-content">
-                <h1 class="splash-title">${__('common:connection_error', 'Ошибка соединения')}</h1>
-                <p class="splash-subtitle">${__('common:server_connection_failed', 'Не удалось подключиться к серверу.')}</p>
-                <p style="font-size:14px; margin-bottom:20px;">${__('common:try_again_or_retry', 'Попробуйте позже или нажмите "Повторить"')}</p>
-                <button class="btn" id="retryBtn" style="margin-top: 10px;">${__('common:retry', 'Повторить')}</button>
+                <h1 class="splash-title">${__('common:Ошибка соединения', 'Ошибка соединения')}</h1>
+                <p class="splash-subtitle">${__('common:Не удалось подключиться к серверу.', 'Не удалось подключиться к серверу.')}</p>
+                <p style="font-size:14px; margin-bottom:20px;">${__('common:Попробуйте позже или нажмите "Повторить"', 'Попробуйте позже или нажмите "Повторить"')}</p>
+                <button class="btn" id="retryBtn" style="margin-top: 10px;">${__('common:Повторить', 'Повторить')}</button>
             </div>
         `;
         const retryBtn = document.getElementById('retryBtn');
@@ -724,12 +724,12 @@ function showScreen(screen) {
                 renderTasks();
             } else {
                 console.error('renderTasks still not defined after load');
-                content.innerHTML = `<p style="color:#aaa;">${__('tasks:load_error', 'Ошибка загрузки заданий. Попробуйте позже.')}</p>`;
+                content.innerHTML = `<p style="color:#aaa;">${__('tasks:Ошибка загрузки заданий. Попробуйте позже.', 'Ошибка загрузки заданий. Попробуйте позже.')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load task-up.js');
-            content.innerHTML = `<p style="color:#aaa;">${__('tasks:load_error_connection', 'Не удалось загрузить задания. Проверьте соединение.')}</p>`;
+            content.innerHTML = `<p style="color:#aaa;">${__('tasks:Не удалось загрузить задания. Проверьте соединение.', 'Не удалось загрузить задания. Проверьте соединение.')}</p>`;
         };
         document.head.appendChild(script);
         return;
@@ -743,12 +743,12 @@ function showScreen(screen) {
                 renderTournament();
             } else {
                 console.error('renderTournament still not defined after load');
-                content.innerHTML = `<p style="color:#aaa;">${__('tournament:load_error', 'Ошибка загрузки турнира. Попробуйте позже.')}</p>`;
+                content.innerHTML = `<p style="color:#aaa;">${__('tournament:Ошибка загрузки турнира. Попробуйте позже.', 'Ошибка загрузки турнира. Попробуйте позже.')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load tournament.js');
-            content.innerHTML = `<p style="color:#aaa;">${__('tournament:load_error_connection', 'Не удалось загрузить турнир. Проверьте соединение.')}</p>`;
+            content.innerHTML = `<p style="color:#aaa;">${__('tournament:Не удалось загрузить турнир. Проверьте соединение.', 'Не удалось загрузить турнир. Проверьте соединение.')}</p>`;
         };
         document.head.appendChild(script);
         return;
@@ -785,7 +785,7 @@ function showScreen(screen) {
             if (typeof renderSettings === 'function') {
                 renderSettings();
             } else {
-                content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('settings:temporarily_unavailable', 'Настройки временно недоступны')}</p>`;
+                content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('settings:Настройки временно недоступны', 'Настройки временно недоступны')}</p>`;
             }
             break;
         case 'market': renderMarket(); break;
@@ -798,7 +798,7 @@ function showScreen(screen) {
             if (typeof renderClans === 'function') {
                 renderClans();
             } else {
-                content.innerHTML = `<p style="color:#aaa;">${__('clans:module_not_loaded', 'Ошибка: модуль кланов не загружен')}</p>`;
+                content.innerHTML = `<p style="color:#aaa;">${__('clans:Ошибка: модуль кланов не загружен', 'Ошибка: модуль кланов не загружен')}</p>`;
             }
             break;
         default: renderMain();
@@ -809,7 +809,7 @@ function showScreen(screen) {
 
 function renderForgeFallback() {
     const content = document.getElementById('content');
-    content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('forge:temporarily_unavailable', 'Кузница временно недоступна')}</p>`;
+    content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('forge:Кузница временно недоступна', 'Кузница временно недоступна')}</p>`;
 }
 
 async function loadAvatars() {
@@ -946,19 +946,19 @@ function handleExternalAuth() {
 
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
-        if (typeof showToast === 'function') showToast(__('common:google_account_linked', 'Google аккаунт привязан'), 1500);
+        if (typeof showToast === 'function') showToast(__('common:Google аккаунт привязан', 'Google аккаунт привязан'), 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
-        if (typeof showToast === 'function') showToast(__('common:vk_account_linked', 'VK аккаунт привязан'), 1500);
+        if (typeof showToast === 'function') showToast(__('common:VK аккаунт привязан', 'VK аккаунт привязан'), 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
-        if (typeof showToast === 'function') showToast(__('common:telegram_account_linked', 'Telegram аккаунт привязан'), 1500);
+        if (typeof showToast === 'function') showToast(__('common:Telegram аккаунт привязан', 'Telegram аккаунт привязан'), 1500);
         if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;

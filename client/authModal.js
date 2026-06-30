@@ -194,7 +194,7 @@ function showAuthModal() {
     const modalBody = document.getElementById('modalBody');
 
     modalTitle.innerHTML = `
-        <span>${__('auth:login_title', 'Вход в игру')}</span>
+        <span>${__('auth:Вход в игру', 'Вход в игру')}</span>
         ${renderLanguageSwitcher()}
     `;
     modalTitle.style.position = 'relative';
@@ -206,16 +206,16 @@ function showAuthModal() {
     const authMethodsHtml = `
         <div class="auth-methods">
             <button class="auth-btn telegram-btn" id="telegramAuthBtn">
-                <i class="fab fa-telegram-plane"></i> ${__('auth:login_telegram', 'Войти через Telegram')}
+                <i class="fab fa-telegram-plane"></i> ${__('auth:Войти через Telegram', 'Войти через Telegram')}
             </button>
             <button class="auth-btn google-btn" id="googleAuthBtn">
-                <i class="fab fa-google"></i> ${__('auth:login_google', 'Войти через Google')}
+                <i class="fab fa-google"></i> ${__('auth:Войти через Google', 'Войти через Google')}
             </button>
             <button class="auth-btn vk-btn" id="vkAuthBtn">
-                <i class="fab fa-vk"></i> ${__('auth:login_vk', 'Войти через VK')}
+                <i class="fab fa-vk"></i> ${__('auth:Войти через VK', 'Войти через VK')}
             </button>
             <button class="auth-btn credentials-btn" id="loginCredentialsBtn">
-                <i class="fas fa-key"></i> ${__('auth:login_credentials', 'Войти по логину и паролю')}
+                <i class="fas fa-key"></i> ${__('auth:Войти по логину и паролю', 'Войти по логину и паролю')}
             </button>
         </div>
     `;
@@ -225,14 +225,14 @@ function showAuthModal() {
             ${authMethodsHtml}
             <div class="auth-credentials-form" style="display:none; margin-top: 10px;">
                 <div class="auth-toggle-group">
-                    <button class="auth-toggle-btn top" id="toggleLogin">${__('auth:login', 'Вход')}</button>
-                    <button class="auth-toggle-btn bottom" id="toggleRegister">${__('auth:register', 'Регистрация')}</button>
+                    <button class="auth-toggle-btn top" id="toggleLogin">${__('auth:Вход', 'Вход')}</button>
+                    <button class="auth-toggle-btn bottom" id="toggleRegister">${__('auth:Регистрация', 'Регистрация')}</button>
                 </div>
-                <input type="email" id="credentialsEmail" placeholder="${__('auth:email', 'Email')}" class="auth-input">
-                <input type="password" id="credentialsPassword" placeholder="${__('auth:password', 'Пароль')}" class="auth-input">
-                <button class="auth-submit-btn" id="credentialsSubmitBtn">${__('auth:continue', 'Продолжить')}</button>
+                <input type="email" id="credentialsEmail" placeholder="${__('auth:Email', 'Email')}" class="auth-input">
+                <input type="password" id="credentialsPassword" placeholder="${__('auth:Пароль', 'Пароль')}" class="auth-input">
+                <button class="auth-submit-btn" id="credentialsSubmitBtn">${__('auth:Продолжить', 'Продолжить')}</button>
                 <div style="text-align:center; margin-top:5px;">
-                    <a href="#" id="forgotPasswordLink" style="color:#00aaff; font-size:14px;">${__('auth:forgot_password', 'Забыли пароль?')}</a>
+                    <a href="#" id="forgotPasswordLink" style="color:#00aaff; font-size:14px;">${__('auth:Забыли пароль?', 'Забыли пароль?')}</a>
                 </div>
                 <div id="authError" style="color:#e74c3c; margin-top:10px; display:none;"></div>
             </div>
@@ -256,7 +256,7 @@ function showAuthModal() {
                 autoLoginTelegram();
             } else {
                 window.open('https://t.me/CatFightingBot?start=webview_login', '_blank');
-                showToast(__('auth:telegram_after_login', 'После авторизации в Telegram вернитесь в игру'), 3000);
+                showToast(__('auth:После авторизации в Telegram вернитесь в игру', 'После авторизации в Telegram вернитесь в игру'), 3000);
             }
         });
     }
@@ -314,7 +314,7 @@ function setAuthMode(mode) {
     if (!loginBtn || !registerBtn || !submitBtn) return;
     loginBtn.classList.toggle('active', mode === 'login');
     registerBtn.classList.toggle('active', mode === 'register');
-    submitBtn.textContent = mode === 'login' ? __('auth:login', 'Войти') : __('auth:register', 'Зарегистрироваться');
+    submitBtn.textContent = mode === 'login' ? __('auth:Вход', 'Войти') : __('auth:Регистрация', 'Зарегистрироваться');
 }
 
 async function handleCredentialsSubmit() {
@@ -323,12 +323,12 @@ async function handleCredentialsSubmit() {
     const errorDiv = document.getElementById('authError');
     errorDiv.style.display = 'none';
     if (!email || !password) {
-        errorDiv.textContent = __('auth:fill_email_password', 'Заполните email и пароль');
+        errorDiv.textContent = __('auth:Заполните email и пароль', 'Заполните email и пароль');
         errorDiv.style.display = 'block';
         return;
     }
     if (password.length < 6) {
-        errorDiv.textContent = __('auth:password_min_length', 'Пароль должен быть не менее 6 символов');
+        errorDiv.textContent = __('auth:Пароль должен быть не менее 6 символов', 'Пароль должен быть не менее 6 символов');
         errorDiv.style.display = 'block';
         return;
     }
@@ -352,12 +352,12 @@ async function handleCredentialsSubmit() {
                 if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {
-            errorDiv.textContent = data.error || __('auth:error', 'Ошибка');
+            errorDiv.textContent = data.error || __('auth:Ошибка', 'Ошибка');
             errorDiv.style.display = 'block';
         }
     } catch (err) {
         console.error(err);
-        errorDiv.textContent = __('auth:connection_error', 'Ошибка соединения');
+        errorDiv.textContent = __('auth:Ошибка соединения', 'Ошибка соединения');
         errorDiv.style.display = 'block';
     }
 }
@@ -366,12 +366,12 @@ function showForgotPasswordModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = __('auth:forgot_password_title', 'Восстановление пароля');
+    modalTitle.innerText = __('auth:Восстановление пароля', 'Восстановление пароля');
     modalBody.innerHTML = `
         <div style="text-align:center;">
-            <p style="color:#aaa;">${__('auth:forgot_password_instruction', 'Введите email, указанный при регистрации')}</p>
-            <input type="email" id="forgotEmail" class="auth-input" placeholder="${__('auth:email', 'Email')}">
-            <button class="auth-submit-btn" id="sendResetBtn">${__('auth:send_instructions', 'Отправить инструкцию')}</button>
+            <p style="color:#aaa;">${__('auth:Введите email, указанный при регистрации', 'Введите email, указанный при регистрации')}</p>
+            <input type="email" id="forgotEmail" class="auth-input" placeholder="${__('auth:Email', 'Email')}">
+            <button class="auth-submit-btn" id="sendResetBtn">${__('auth:Отправить инструкцию', 'Отправить инструкцию')}</button>
             <div id="forgotMsg" style="margin-top:10px; display:none;"></div>
         </div>
     `;
@@ -380,7 +380,7 @@ function showForgotPasswordModal() {
         const email = document.getElementById('forgotEmail').value.trim();
         const msg = document.getElementById('forgotMsg');
         if (!email) {
-            msg.textContent = __('auth:enter_email', 'Введите email');
+            msg.textContent = __('auth:Введите email', 'Введите email');
             msg.style.display = 'block';
             return;
         }
@@ -391,11 +391,11 @@ function showForgotPasswordModal() {
                 body: JSON.stringify({ email })
             });
             const data = await res.json();
-            msg.textContent = data.message || (data.error || __('auth:instructions_sent', 'Инструкция отправлена'));
+            msg.textContent = data.message || (data.error || __('auth:Инструкция отправлена', 'Инструкция отправлена'));
             msg.style.display = 'block';
         } catch (err) {
             console.error(err);
-            msg.textContent = __('auth:connection_error', 'Ошибка соединения');
+            msg.textContent = __('auth:Ошибка соединения', 'Ошибка соединения');
             msg.style.display = 'block';
         }
     });
@@ -407,7 +407,7 @@ function showForgotPasswordModal() {
 
 function loginWithGoogle() {
     if (googleLoginInProgress) {
-        showToast(__('auth:google_login_in_progress', 'Вход через Google уже выполняется'), 1500);
+        showToast(__('auth:Вход через Google уже выполняется', 'Вход через Google уже выполняется'), 1500);
         return;
     }
     googleLoginInProgress = true;
@@ -439,14 +439,14 @@ function loadVKIDSDK() {
 
 async function loginWithVK() {
     if (vkLoginInProgress) {
-        showToast(__('auth:vk_login_in_progress', 'Вход через VK уже выполняется'), 1500);
+        showToast(__('auth:Вход через VK уже выполняется', 'Вход через VK уже выполняется'), 1500);
         return;
     }
     vkLoginInProgress = true;
     const timeoutId = setTimeout(() => {
         if (vkLoginInProgress) {
             vkLoginInProgress = false;
-            showToast(__('auth:vk_login_timeout', 'Вход через VK отменён (таймаут). Попробуйте ещё раз.'), 3000);
+            showToast(__('auth:Вход через VK отменён (таймаут). Попробуйте ещё раз.', 'Вход через VK отменён (таймаут). Попробуйте ещё раз.'), 3000);
         }
     }, 30000);
 
@@ -484,11 +484,11 @@ async function loginWithVK() {
                 if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {
-            showToast(data.error || __('auth:vk_login_error', 'Ошибка входа через VK'), 1500);
+            showToast(data.error || __('auth:Ошибка входа через VK', 'Ошибка входа через VK'), 1500);
         }
     } catch (err) {
         console.error('[VK] Ошибка:', err);
-        showToast(__('auth:vk_auth_error', 'Ошибка авторизации VK: ') + (err.message || __('common:unknown', 'неизвестная')), 1500);
+        showToast(__('auth:Ошибка авторизации VK: ', 'Ошибка авторизации VK: ') + (err.message || __('common:неизвестная', 'неизвестная')), 1500);
     } finally {
         vkLoginInProgress = false;
     }
@@ -498,11 +498,11 @@ function showusernameModal(userId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = __('auth:choose_nickname', 'Выберите никнейм');
+    modalTitle.innerText = __('auth:Выберите никнейм', 'Выберите никнейм');
     modalBody.innerHTML = `
         <div class="auth-username">
-            <input type="text" id="usernameInput" placeholder="${__('auth:english_letters_digits', 'Английские буквы и цифры')}" maxlength="20" class="auth-input">
-            <button class="auth-submit-btn" id="saveusernameBtn">${__('auth:save', 'Сохранить')}</button>
+            <input type="text" id="usernameInput" placeholder="${__('auth:Английские буквы и цифры', 'Английские буквы и цифры')}" maxlength="20" class="auth-input">
+            <button class="auth-submit-btn" id="saveusernameBtn">${__('auth:Сохранить', 'Сохранить')}</button>
         </div>
     `;
     modal.style.display = 'flex';
@@ -516,7 +516,7 @@ function showusernameModal(userId) {
         const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(username)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
-            showToast(__('auth:nickname_taken', 'Никнейм уже занят'), 1500);
+            showToast(__('auth:Никнейм уже занят', 'Никнейм уже занят'), 1500);
             return;
         }
 
@@ -533,7 +533,7 @@ function showusernameModal(userId) {
             else location.reload();
         } else {
             const err = await res.json();
-            showToast(err.error || __('auth:nickname_save_error', 'Ошибка сохранения никнейма'), 1500);
+            showToast(err.error || __('auth:Ошибка сохранения никнейма', 'Ошибка сохранения никнейма'), 1500);
         }
     });
 }

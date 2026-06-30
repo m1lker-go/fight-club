@@ -1,8 +1,121 @@
-// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша с модальным окном, очистка, добавлена кнопка Достижения
+// settings.js – исправлено: поддержка sessionStorage для VK Mini App, аватар, кнопка сброса кэша с модальным окном, очистка, добавлена кнопка Достижения и переключатель языка
 
 window.telegramLinkingInProgress = false;
 let vkLinkingInProgress = false;
 let googleLinkingInProgress = false;
+
+// ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА (константы и функции) ========
+const FLAG_URLS = {
+    ru: 'https://flagcdn.com/24x18/ru.png',
+    en: 'https://flagcdn.com/24x18/gb.png'
+};
+const LANG_NAMES = {
+    ru: 'Русский',
+    en: 'English'
+};
+
+// Вспомогательная функция для обновления языка (глобальная)
+function setLanguage(lang) {
+    if (window.i18next && typeof window.i18next.changeLanguage === 'function') {
+        window.i18next.changeLanguage(lang);
+        localStorage.setItem('i18nextLng', lang);
+        // Обновляем интерфейс, если есть функция обновления
+        if (typeof updateUIAfterLanguageChange === 'function') {
+            updateUIAfterLanguageChange();
+        } else {
+            // fallback – перезагружаем страницу
+            location.reload();
+        }
+    } else {
+        localStorage.setItem('i18nextLng', lang);
+        location.reload();
+    }
+}
+window.setLanguage = setLanguage;
+
+// Функция для рендера переключателя языка (используется в настройках)
+function renderLanguageSelector(currentLang) {
+    const currentFlagUrl = FLAG_URLS[currentLang] || FLAG_URLS.ru;
+    const currentName = LANG_NAMES[currentLang] || currentLang;
+
+    return `
+        <div class="settings-language-row" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2f3542;">
+            <div class="volume-label" style="font-weight: bold; color: #aaa;">Язык</div>
+            <div class="lang-switcher-wrapper-settings" style="position: relative; display: flex; align-items: center;">
+                <button class="lang-toggle-btn-settings" id="langToggleBtnSettings" style="background: transparent; border: 1px solid #555; border-radius: 20px; padding: 4px 12px 4px 4px; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
+                        <img src="${currentFlagUrl}" alt="${currentLang}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <span>${currentName}</span>
+                    <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+                </button>
+                <div class="lang-dropdown-settings" id="langDropdownSettings" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: #2a303c; border: 1px solid #555; border-radius: 8px; min-width: 140px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 100;">
+                    <div class="lang-option-settings" data-lang="ru" style="padding: 8px 16px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; ${currentLang === 'ru' ? 'background: #3a4050;' : ''}">
+                        <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
+                            <img src="${FLAG_URLS.ru}" alt="ru" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        Русский
+                    </div>
+                    <div class="lang-option-settings" data-lang="en" style="padding: 8px 16px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; ${currentLang === 'en' ? 'background: #3a4050;' : ''}">
+                        <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
+                            <img src="${FLAG_URLS.en}" alt="en" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        English
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Инициализация переключателя в настройках
+function initSettingsLanguageSwitcher() {
+    const toggleBtn = document.getElementById('langToggleBtnSettings');
+    const dropdown = document.getElementById('langDropdownSettings');
+    if (!toggleBtn || !dropdown) return;
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.lang-option-settings').forEach(opt => {
+        opt.addEventListener('click', (e) => {
+            const lang = opt.dataset.lang;
+            setLanguage(lang);
+            dropdown.style.display = 'none';
+            // Обновляем внешний вид кнопки
+            updateSettingsLangButton(lang);
+            // Перерисовываем настройки для обновления текста
+            renderSettings();
+        });
+    });
+
+    // Закрыть дропдаун по клику вне
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.lang-switcher-wrapper-settings')) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
+
+function updateSettingsLangButton(lang) {
+    const btn = document.getElementById('langToggleBtnSettings');
+    if (!btn) return;
+    const flagUrl = FLAG_URLS[lang] || FLAG_URLS.ru;
+    const name = LANG_NAMES[lang] || lang;
+    const img = btn.querySelector('img');
+    if (img) {
+        img.src = flagUrl;
+        img.alt = lang;
+    }
+    const textSpan = btn.querySelector('span:not(.fa)');
+    if (textSpan) {
+        textSpan.textContent = name;
+    }
+}
+
+// ============================================================
 
 // Определяем хранилище токена в зависимости от окружения
 function getStorage() {
@@ -214,6 +327,9 @@ async function renderSettings() {
         const hideLogout = isVK || isTelegramWebApp;
         const hideEditName = isVK;
 
+        // Текущий язык для переключателя
+        const currentLang = localStorage.getItem('i18nextLng') || 'ru';
+
         content.innerHTML = `
             <div class="settings-container">
                 <div class="settings-profile-row">
@@ -244,6 +360,9 @@ async function renderSettings() {
                     </div>
                 </div>
 
+                <!-- Переключатель языка -->
+                ${renderLanguageSelector(currentLang)}
+
                 <!-- Кнопка Достижения -->
                 <div class="settings-volume-row" id="achievementsRow" style="cursor: pointer;">
                     <div class="volume-label">Достижения</div>
@@ -266,6 +385,9 @@ async function renderSettings() {
                 </div>
             </div>
         `;
+
+        // Инициализация переключателя языка в настройках
+        initSettingsLanguageSwitcher();
 
         function setupSlider(containerId, fillId, thumbId, percentId, isMusic) {
             const container = document.getElementById(containerId);
@@ -413,6 +535,8 @@ async function renderSettings() {
         if (typeof showScreen === 'function') showScreen('main');
     }
 }
+
+
 
 async function updateSettings(updates) {
     try {

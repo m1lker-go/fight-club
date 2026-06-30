@@ -8,29 +8,27 @@
     <meta http-equiv="Expires" content="0">
     <title>Cat Fighting</title>
     <link rel="stylesheet" href="style.css">
-    <!-- CSS ресурсы – не блокируют загрузку, но можно оставить как есть -->
+    <!-- CSS ресурсы -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- VK Bridge (обязателен для модерации) – загружается всегда, но не блокирует -->
+    <!-- VK Bridge (обязателен для модерации) -->
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <!-- VK ID SDK (старая стабильная версия) -->
     <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
     
-    <!-- Telegram WebApp SDK – загружаем сразу, если это Telegram (перед всеми скриптами) -->
+    <!-- Telegram WebApp SDK -->
     <script>
        (function() {
     function isTelegramWebApp() {
-        // Проверяем URL parameters — они доступны сразу
         var search = window.location.search.toLowerCase();
         var hash = window.location.hash.toLowerCase();
         
         if (search.includes('tgwebappdata') || search.includes('tgauthtoken')) return true;
         if (hash.includes('tgwebappdata') || hash.includes('tgauthtoken')) return true;
         
-        // Проверяем userAgent
         var ua = navigator.userAgent.toLowerCase();
         if (ua.includes('telegram')) return true;
         
@@ -56,8 +54,8 @@
 <body>
     <div id="splash-screen">
         <div class="splash-content">
-            <h1 class="splash-title">Загрузка</h1>
-            <p class="splash-subtitle">Пожалуйста, подождите</p>
+            <h1 class="splash-title" data-i18n="common:loading">Загрузка</h1>
+            <p class="splash-subtitle" data-i18n="common:please_wait">Пожалуйста, подождите</p>
             <div class="spinner"></div>
         </div>
     </div>
@@ -85,7 +83,7 @@
     <div id="roleModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Роли класса</h2>
+                <h2 id="modalTitle" data-i18n="common:role_classes">Роли класса</h2>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body" id="modalBody"></div>
@@ -95,12 +93,12 @@
     <div id="chestResultModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Поздравляем!</h2>
+                <h2 data-i18n="common:congratulations">Поздравляем!</h2>
                 <span class="close" onclick="document.getElementById('chestResultModal').style.display='none'">&times;</span>
             </div>
             <div class="modal-body" id="chestResultBody"></div>
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn" onclick="document.getElementById('chestResultModal').style.display='none'">ОК</button>
+                <button class="btn" onclick="document.getElementById('chestResultModal').style.display='none'" data-i18n="common:ok">ОК</button>
             </div>
         </div>
     </div>
@@ -108,13 +106,13 @@
     <div id="levelUpModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Поздравляем!</h2>
+                <h2 data-i18n="common:congratulations">Поздравляем!</h2>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body" id="levelUpBody"></div>
             <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button class="btn" id="levelUpUpgradeBtn">Улучшить</button>
-                <button class="btn" id="levelUpLaterBtn">Потом</button>
+                <button class="btn" id="levelUpUpgradeBtn" data-i18n="common:upgrade">Улучшить</button>
+                <button class="btn" id="levelUpLaterBtn" data-i18n="common:later">Потом</button>
             </div>
         </div>
     </div>
@@ -122,12 +120,22 @@
     <div id="equipCompareModal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h2>Сравнение предметов</h2>
+                <h2 data-i18n="common:compare_items">Сравнение предметов</h2>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body" id="equipCompareBody" style="display: flex; gap: 20px; justify-content: center;"></div>
         </div>
     </div>
+
+    <!-- ============ ПОДКЛЮЧЕНИЕ i18next ============ -->
+    <!-- Загружаем i18next, HttpBackend, LanguageDetector -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/dist/umd/i18next.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend@2.4.2/dist/umd/i18nextHttpBackend.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/i18next-browser-languagedetector@7.1.0/dist/umd/i18nextBrowserLanguageDetector.min.js"></script>
+    
+    <!-- Наш скрипт инициализации i18next (создайте файл js/i18n.js) -->
+    <script src="js/i18n.js"></script>
+    <!-- ============================================ -->
 
     <!-- Скрипты приложения (порядок важен) -->
     <script src="js/constants.js?v=2"></script>
@@ -155,7 +163,6 @@
     <!-- Дополнительный скрипт для VK в WebView (APK) -->
     <script>
         (function() {
-            // Определяем WebView
             function isWebView() {
                 if (typeof window.Android !== 'undefined') return true;
                 if (window.isAppWebView === true) return true;

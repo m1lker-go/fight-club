@@ -137,13 +137,15 @@ async function renderForgeSlots() {
     const slotsContainer = document.getElementById('forgeSlots');
     if (!slotsContainer) return;
 
-    if (currentForgeTab === 'forge') {
-        slotsContainer.innerHTML = '';
-        slotsContainer.style.display = 'flex';
-        slotsContainer.style.alignItems = 'center';
-        slotsContainer.style.gap = '8px';
+    // Очищаем контейнер
+    slotsContainer.innerHTML = '';
+    slotsContainer.style.display = 'flex';
+    slotsContainer.style.alignItems = 'center';
+    slotsContainer.style.gap = '8px';
 
-        // Слот свитка
+    if (currentForgeTab === 'forge') {
+        // ===== Вкладка "Ковать" (3 слота + свиток) =====
+        // Слот свитка (как было)
         const scrollSlot = document.createElement('div');
         scrollSlot.className = 'forge-slot scroll-slot';
         scrollSlot.style.width = '60px';
@@ -160,7 +162,6 @@ async function renderForgeSlots() {
         scrollSlot.style.fontSize = '11px';
         scrollSlot.style.lineHeight = '1.2';
 
-        // Определяем, какую картинку показывать
         let scrollImg = '/assets/equip/scrolls/scroll_empty.png';
         if (selectedScrollId) {
             const selectedScroll = scrollsInventory.find(s => s.inv_id === selectedScrollId);
@@ -170,16 +171,13 @@ async function renderForgeSlots() {
                 else if (selectedScroll.rarity === 'legendary') scrollImg = '/assets/equip/scrolls/scroll_legendary.png';
             }
         }
-
         const resultRarity = getResultRarity();
         const baseChance = resultRarity ? (BASE_CRAFT_CHANCES[resultRarity] || 0) : 0;
         const totalChance = Math.min(1, baseChance + selectedScrollBonus);
-
         scrollSlot.innerHTML = `
             <img src="${scrollImg}" style="width: 28px; height: 28px; margin-bottom: 2px;">
             <span style="font-size:9px; text-align:center; line-height:1.2; display:flex; align-items:center; justify-content:center; width:100%;">ШАНС:<br>${Math.round(totalChance * 100)}%</span>
         `;
-
         scrollSlot.addEventListener('click', openScrollModal);
         slotsContainer.appendChild(scrollSlot);
 
@@ -207,17 +205,30 @@ async function renderForgeSlots() {
             slotsContainer.appendChild(slotDiv);
         }
     } else {
-        // smelt: 5 слотов
-        let html = '';
+        // ===== Вкладка "Расплавить" (5 слотов с обработчиками) =====
         for (let i = 0; i < 5; i++) {
             const itemId = window.forgeItems[i];
             const item = inventory.find(it => it.id === itemId);
-            html += `
-                <div class="forge-slot" data-slot-index="${i}" data-rarity="${item ? item.rarity : ''}">
-                    ${item ? `<img src="${getItemIconPath(item)}" title="${item.name}">` : '<span>Пусто</span>'}
-                </div>`;
+            const slotDiv = document.createElement('div');
+            slotDiv.className = 'forge-slot';
+            slotDiv.dataset.slotIndex = i;
+            slotDiv.dataset.rarity = item ? item.rarity : '';
+            slotDiv.style.width = '60px';
+            slotDiv.style.height = '60px';
+            slotDiv.innerHTML = item
+                ? `<img src="${getItemIconPath(item)}" title="${item.name}" style="max-width:100%;max-height:100%;">`
+                : '<span>Пусто</span>';
+            // Добавляем обработчик клика
+            slotDiv.addEventListener('click', () => {
+                const index = parseInt(slotDiv.dataset.slotIndex);
+                const id = window.forgeItems[index];
+                if (id) {
+                    const it = inventory.find(i => i.id === id);
+                    if (it) showForgeItemDetails(it, 'slot', index);
+                }
+            });
+            slotsContainer.appendChild(slotDiv);
         }
-        slotsContainer.innerHTML = html;
     }
 }
 

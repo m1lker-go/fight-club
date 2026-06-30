@@ -126,6 +126,7 @@ function updateSettingsLangButton(lang) {
 
 // ============================================================
 
+// Определяем хранилище токена в зависимости от окружения
 function getStorage() {
     return window.isVKMiniApp === true ? sessionStorage : localStorage;
 }
@@ -142,7 +143,7 @@ function removeSessionToken() {
     getStorage().removeItem('sessionToken');
 }
 
-// ========== МОДАЛЬНОЕ ПОДТВЕРЖДЕНИЕ ==========
+// ========== МОДАЛЬНОЕ ПОДТВЕРЖДЕНИЕ (ЗАМЕНА confirm) ==========
 function showConfirmModal(message, onConfirm, onCancel) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');

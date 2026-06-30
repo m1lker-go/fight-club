@@ -785,25 +785,13 @@ function showScreen(screen) {
                 document.head.appendChild(script);
             }
             break;
-        case 'settings':
-            if (typeof renderSettings === 'function') {
-                renderSettings();
-            } else {
-                const script = document.createElement('script');
-                script.src = '/js/settings.js';
-                script.onload = () => {
-                    if (typeof renderSettings === 'function') {
-                        renderSettings();
-                    } else {
-                        content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
-                    }
-                };
-                script.onerror = () => {
-                    content.innerHTML = '<p style="text-align:center; color:#aaa;">Ошибка загрузки настроек</p>';
-                };
-                document.head.appendChild(script);
-            }
-            break;
+       case 'settings':
+    if (typeof renderSettings === 'function') {
+        renderSettings();
+    } else {
+        content.innerHTML = '<p style="text-align:center; color:#aaa;">Настройки временно недоступны</p>';
+    }
+    break;
         case 'market': renderMarket(); break;
         case 'fortune': renderFortune(); break;
         case 'alchemy': renderAlchemy(); break;

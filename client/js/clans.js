@@ -1,4 +1,13 @@
-// ========== МОДУЛЬ КЛАНОВ (ПОЛНАЯ ВЕРСИЯ СО ВСЕМИ ПРАВКАМИ) ==========
+// ========== МОДУЛЬ КЛАНОВ (ПОЛНАЯ ВЕРСИЯ С ПОДДЕРЖКОЙ i18n) ==========
+
+// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
+const __ = window.__ || function(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+};
+
 let currentClanTab = 'info';
 let clanListSearch = '';
 let clanListType = 'all';
@@ -15,7 +24,7 @@ const COLOR_PALETTE = [
     '#e67e22', '#27ae60', '#8e44ad', '#1abc9c'
 ];
 
-// ------------------- ЗАПРЕЩЁННЫЕ СЛОВА (ПОЛНЫЙ СПИСОК) -------------------
+// ------------------- ЗАПРЕЩЁННЫЕ СЛОВА -------------------
 const FORBIDDEN_WORDS = [
     'мат', 'хуй', 'пизда', 'бля', 'ебать', 'писька', 'хер', 'залупа', 'мудак', 'говно','член',
     'редиска', 'лох', 'сука', 'пидор', 'гнида', 'тварь', 'шлюха', 'блядина', 'еблан', 'долбоеб',
@@ -79,10 +88,11 @@ function getStatusColor(lastEnergy) {
     return '#e74c3c';
 }
 
-// ------------------- ПЕРЕВОД КЛАССА -------------------
+// ------------------- ПЕРЕВОД КЛАССА (через i18n) -------------------
 function translateClass(classKey) {
-    const classes = { warrior: 'Воин', assassin: 'Ассасин', mage: 'Маг' };
-    return classes[classKey] || classKey || '—';
+    const key = `common:${classKey}`;
+    const fallback = classKey === 'warrior' ? 'Воин' : (classKey === 'assassin' ? 'Ассасин' : (classKey === 'mage' ? 'Маг' : classKey));
+    return __(key, fallback);
 }
 
 // ------------------- ИНИЦИАЛИЗАЦИЯ ЗАКРЫТИЯ МОДАЛОК -------------------
@@ -101,7 +111,7 @@ initModalClose();
 async function renderClans() {
     const content = document.getElementById('content');
     if (!content) return;
-    content.innerHTML = `<div class="clans-loading" style="text-align:center; padding:40px; color:#aaa;"><i class="fas fa-spinner fa-pulse fa-2x"></i><br>Загрузка кланов...</div>`;
+    content.innerHTML = `<div class="clans-loading" style="text-align:center; padding:40px; color:#aaa;"><i class="fas fa-spinner fa-pulse fa-2x"></i><br>${__('clans:loading', 'Загрузка кланов...')}</div>`;
     try {
         const res = await window.apiRequest('/clans/my');
         const data = await res.json();
@@ -112,7 +122,7 @@ async function renderClans() {
         }
     } catch (err) {
         console.error(err);
-        content.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">Ошибка загрузки. Попробуйте позже.</div>';
+        content.innerHTML = `<div style="text-align:center; padding:40px; color:#aaa;">${__('clans:error_loading', 'Ошибка загрузки. Попробуйте позже.')}</div>`;
     }
 }
 
@@ -142,28 +152,28 @@ async function renderClansList() {
     let html = `
         <div class="clans-container">
             <div style="display: flex; gap: 8px; padding: 12px;">
-                ${!myClanData ? `<button class="clans-create-btn" id="createClanBtn" style="flex:1;">+ Создать клан</button>` : ''}
-                ${myClanData ? `<button class="clans-create-btn" id="myGuildBtn" style="flex:1;">Моя гильдия</button>` : ''}
+                ${!myClanData ? `<button class="clans-create-btn" id="createClanBtn" style="flex:1;">+ ${__('clans:create_clan', 'Создать клан')}</button>` : ''}
+                ${myClanData ? `<button class="clans-create-btn" id="myGuildBtn" style="flex:1;">${__('clans:my_guild', 'Моя гильдия')}</button>` : ''}
             </div>
-            <div class="clans-title">Список кланов</div>
+            <div class="clans-title">${__('clans:list_title', 'Список кланов')}</div>
             <div class="clans-filters-panel">
                 <div class="clans-filters-group">
-                    <input type="text" id="clanSearchInput" placeholder="Поиск по названию" value="${escapeHtml(clanListSearch)}" class="clans-filter-input">
+                    <input type="text" id="clanSearchInput" placeholder="${__('clans:search_placeholder', 'Поиск по названию')}" value="${escapeHtml(clanListSearch)}" class="clans-filter-input">
                     <select id="clanTypeSelect" class="clans-filter-select">
-                        <option value="all" ${clanListType === 'all' ? 'selected' : ''}>Все кланы</option>
-                        <option value="open" ${clanListType === 'open' ? 'selected' : ''}>Открытые</option>
-                        <option value="application" ${clanListType === 'application' ? 'selected' : ''}>По заявкам</option>
-                        <option value="invite_only" ${clanListType === 'invite_only' ? 'selected' : ''}>Закрытые</option>
+                        <option value="all" ${clanListType === 'all' ? 'selected' : ''}>${__('clans:all', 'Все кланы')}</option>
+                        <option value="open" ${clanListType === 'open' ? 'selected' : ''}>${__('clans:open', 'Открытые')}</option>
+                        <option value="application" ${clanListType === 'application' ? 'selected' : ''}>${__('clans:application', 'По заявкам')}</option>
+                        <option value="invite_only" ${clanListType === 'invite_only' ? 'selected' : ''}>${__('clans:invite_only', 'Закрытые')}</option>
                     </select>
                 </div>
                 <div class="clans-filters-actions">
-                    <button id="clanResetFiltersBtn" class="clans-reset-btn">Сброс</button>
-                    <button id="clanApplyFiltersBtn" class="clans-apply-btn">Применить</button>
+                    <button id="clanResetFiltersBtn" class="clans-reset-btn">${__('clans:reset', 'Сброс')}</button>
+                    <button id="clanApplyFiltersBtn" class="clans-apply-btn">${__('clans:apply', 'Применить')}</button>
                 </div>
             </div>
             <table class="clans-table">
                 <thead>
-                    <tr><th style="width:50px;">№</th><th style="width:60px;">Значок</th><th>Название (Уровень)</th><th style="width:100px;">Участники</th><th style="width:100px;">Действие</th></tr></thead>
+                    <tr><th style="width:50px;">${__('clans:number', '№')}</th><th style="width:60px;">${__('clans:icon', 'Значок')}</th><th>${__('clans:name_level', 'Название (Уровень)')}</th><th style="width:100px;">${__('clans:members', 'Участники')}</th><th style="width:100px;">${__('clans:action', 'Действие')}</th></tr></thead>
                 <tbody>
     `;
     for (let i = 0; i < rowsToShow; i++) {
@@ -176,9 +186,9 @@ async function renderClansList() {
                 <tr class="clan-row" data-clan-id="${clan.id}">
                     <td>${i+1}</td>
                     <td class="clans-icon-cell"><div class="clan-icon-small" style="background-color: ${clan.icon_bg_color}; border: 2px solid ${clan.icon_border_color};"><i class="fas ${iconClass}" style="color: ${clan.icon_color}; font-size:20px;"></i></div></td>
-                    <td class="clans-name-cell"><div class="clan-name">${escapeHtml(clan.name)}</div><div class="clan-level">${clan.level} уровень</div></td>
+                    <td class="clans-name-cell"><div class="clan-name">${escapeHtml(clan.name)}</div><div class="clan-level">${clan.level} ${__('clans:level', 'уровень')}</div></td>
                     <td>${memberCount}/${maxMembers}</td>
-                    <td><button class="clans-view-btn" data-clan-id="${clan.id}">Просмотр</button></td>
+                    <td><button class="clans-view-btn" data-clan-id="${clan.id}">${__('clans:view', 'Просмотр')}</button></td>
                 </tr>
             `;
         } else {
@@ -204,20 +214,19 @@ async function renderClansList() {
     document.querySelectorAll('.clan-row').forEach(row => row.addEventListener('click', () => showClanDetailsModal(row.dataset.clanId)));
 }
 
-
-// ========== МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА  ==========
+// ========== МОДАЛЬНОЕ ОКНО ПРОСМОТРА КЛАНА ==========
 async function showClanDetailsModal(clanId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     if (!modal) return;
-    modalTitle.innerText = 'Инфо клана';
+    modalTitle.innerText = __('clans:info', 'Инфо клана');
     modalBody.innerHTML = '<div style="text-align:center;"><i class="fas fa-spinner fa-pulse fa-2x"></i></div>';
     modal.style.display = 'flex';
     try {
         const res = await window.apiRequest(`/clans/${clanId}`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Ошибка загрузки');
+        if (!res.ok) throw new Error(data.error || __('clans:load_error', 'Ошибка загрузки'));
         const clan = data.clan;
         const members = data.members || [];
         const userMembership = data.userMembership;
@@ -232,45 +241,43 @@ async function showClanDetailsModal(clanId) {
             return b.power - a.power;
         });
         
-        // Построение таблицы участников с чередованием фона
         let membersHtml = '';
         if (sortedMembers.length > 0) {
-            membersHtml = '<div style="margin-top: 20px;"><div class="clans-section-header">Участники</div><table class="clans-members-table" style="width:100%; border-collapse: collapse;">';
+            membersHtml = `<div style="margin-top: 20px;"><div class="clans-section-header">${__('clans:members', 'Участники')}</div><table class="clans-members-table" style="width:100%; border-collapse: collapse;">`;
             for (let i = 0; i < sortedMembers.length; i++) {
                 const m = sortedMembers[i];
                 const rowClass = i % 2 === 0 ? 'even' : 'odd';
+                let roleText = m.role === 'leader' ? __('clans:leader', 'Лидер') : (m.role === 'officer' ? __('clans:officer', 'Офицер') : __('clans:member', 'Участник'));
                 membersHtml += `
                     <tr class="${rowClass}" style="border-bottom: 1px solid #2a303c;">
                         <td style="padding: 8px 12px;">${escapeHtml(m.username)}</td>
-                        <td style="padding: 8px 12px;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
+                        <td style="padding: 8px 12px;"><span class="clans-role-badge ${m.role}">${roleText}</span></td>
                     </tr>
                 `;
             }
             membersHtml += '</table></div>';
         } else {
-            membersHtml = '<div style="margin-top: 20px;"><div class="clans-section-header">Участники</div><div style="padding: 12px; color:#aaa;">Нет участников</div></div>';
+            membersHtml = `<div style="margin-top: 20px;"><div class="clans-section-header">${__('clans:members', 'Участники')}</div><div style="padding: 12px; color:#aaa;">${__('clans:no_members', 'Нет участников')}</div></div>`;
         }
         
-        // Определяем тип вступления
         let joinTypeText = '';
-        if (clan.join_type === 'open') joinTypeText = 'Открытый';
-        else if (clan.join_type === 'application') joinTypeText = 'По заявкам';
-        else joinTypeText = 'Закрытый (по приглашениям)';
+        if (clan.join_type === 'open') joinTypeText = __('clans:open_type', 'Открытый');
+        else if (clan.join_type === 'application') joinTypeText = __('clans:application_type', 'По заявкам');
+        else joinTypeText = __('clans:invite_only_type', 'Закрытый (по приглашениям)');
         
-        // Кнопки действий
         let actionButtons = '';
         if (userMembership) {
-            actionButtons = `<button id="clanLeaveBtn" class="btn btn-danger" style="background-color:#e74c3c; color:white; border:none; border-radius:30px; padding:8px 16px;">Покинуть клан</button>`;
+            actionButtons = `<button id="clanLeaveBtn" class="btn btn-danger" style="background-color:#e74c3c; color:white; border:none; border-radius:30px; padding:8px 16px;">${__('clans:leave', 'Покинуть клан')}</button>`;
         } else if (clan.join_type === 'open') {
-            actionButtons = `<button id="clanJoinBtn" class="btn btn-success" style="background-color:#2ecc71; color:white; border:none; border-radius:30px; padding:8px 16px;">Присоединиться</button>`;
+            actionButtons = `<button id="clanJoinBtn" class="btn btn-success" style="background-color:#2ecc71; color:white; border:none; border-radius:30px; padding:8px 16px;">${__('clans:join', 'Присоединиться')}</button>`;
         } else if (clan.join_type === 'application') {
             if (userApplicationStatus === 'pending') {
-                actionButtons = `<button class="btn btn-disabled" disabled style="background-color:#555; color:#aaa; border:none; border-radius:30px; padding:8px 16px;">Заявка отправлена</button>`;
+                actionButtons = `<button class="btn btn-disabled" disabled style="background-color:#555; color:#aaa; border:none; border-radius:30px; padding:8px 16px;">${__('clans:application_sent', 'Заявка отправлена')}</button>`;
             } else {
-                actionButtons = `<button id="clanApplyBtn" class="btn btn-primary" style="background-color:#00aaff; color:white; border:none; border-radius:30px; padding:8px 16px;">Подать заявку</button>`;
+                actionButtons = `<button id="clanApplyBtn" class="btn btn-primary" style="background-color:#00aaff; color:white; border:none; border-radius:30px; padding:8px 16px;">${__('clans:apply_submit', 'Подать заявку')}</button>`;
             }
         } else {
-            actionButtons = `<button class="btn btn-disabled" disabled style="background-color:#555; color:#aaa; border:none; border-radius:30px; padding:8px 16px;">Закрыт</button>`;
+            actionButtons = `<button class="btn btn-disabled" disabled style="background-color:#555; color:#aaa; border:none; border-radius:30px; padding:8px 16px;">${__('clans:closed', 'Закрыт')}</button>`;
         }
         
         modalBody.innerHTML = `
@@ -281,75 +288,76 @@ async function showClanDetailsModal(clanId) {
                     </div>
                     <div class="clan-details-info" style="flex:1;">
                         <h2 style="margin: 0 0 4px 0; font-size: 20px;">${escapeHtml(clan.name)}</h2>
-                        <div style="font-size: 12px; color: #aaa;">Уровень ${clan.level} (опыт: ${clan.exp})</div>
+                        <div style="font-size: 12px; color: #aaa;">${__('clans:level', 'Уровень')} ${clan.level} (${__('clans:exp', 'опыт')}: ${clan.exp})</div>
                     </div>
                 </div>
                 <div class="clan-details-stats" style="margin-bottom: 16px;">
-                    <div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">Участников:</span> ${clan.member_count}/${maxMembers}</div>
-                    <div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">Тип вступления:</span> ${joinTypeText}</div>
-                    ${clan.description ? `<div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">Описание:</span> ${escapeHtml(clan.description)}</div>` : ''}
+                    <div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">${__('clans:members', 'Участников')}:</span> ${clan.member_count}/${maxMembers}</div>
+                    <div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">${__('clans:join_type', 'Тип вступления')}:</span> ${joinTypeText}</div>
+                    ${clan.description ? `<div class="clan-detail-row" style="margin-bottom: 8px;"><span style="color:#aaa;">${__('clans:description', 'Описание')}:</span> ${escapeHtml(clan.description)}</div>` : ''}
                 </div>
                 ${membersHtml}
                 <div class="clan-details-actions" style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
                     ${actionButtons}
-                    <button id="closeModalBtn" class="btn" style="background-color: #2f3542; color: #aaa; border: none; border-radius: 30px; padding: 8px 16px;">Закрыть</button>
+                    <button id="closeModalBtn" class="btn" style="background-color: #2f3542; color: #aaa; border: none; border-radius: 30px; padding: 8px 16px;">${__('clans:close', 'Закрыть')}</button>
                 </div>
             </div>
         `;
         
-        // Обработчики кнопок
         document.getElementById('closeModalBtn')?.addEventListener('click', () => modal.style.display = 'none');
         document.getElementById('clanJoinBtn')?.addEventListener('click', async () => {
             const res = await window.apiRequest('/clans/join', { method: 'POST', body: JSON.stringify({ clan_id: clanId }) });
             const data = await res.json();
-            if (data.success) { showToast('Вы вступили в клан!',1500); modal.style.display='none'; renderClans(); }
+            if (data.success) { showToast(__('clans:join_success', 'Вы вступили в клан!'),1500); modal.style.display='none'; renderClans(); }
             else showToast(data.error,1500);
         });
         document.getElementById('clanApplyBtn')?.addEventListener('click', async () => {
             const res = await window.apiRequest('/clans/apply', { method: 'POST', body: JSON.stringify({ clan_id: clanId }) });
             const data = await res.json();
-            if (data.success) { showToast('Заявка отправлена!',1500); modal.style.display='none'; renderClans(); }
+            if (data.success) { showToast(__('clans:apply_success', 'Заявка отправлена!'),1500); modal.style.display='none'; renderClans(); }
             else showToast(data.error,1500);
         });
         document.getElementById('clanLeaveBtn')?.addEventListener('click', async () => {
-            if (confirm('Вы уверены, что хотите покинуть клан?')) {
+            if (confirm(__('clans:leave_confirm', 'Вы уверены, что хотите покинуть клан?'))) {
                 const res = await window.apiRequest('/clans/leave', { method: 'POST' });
                 const data = await res.json();
-                if (data.success) { showToast('Вы покинули клан',1500); modal.style.display='none'; renderClans(); }
+                if (data.success) { showToast(__('clans:left', 'Вы покинули клан'),1500); modal.style.display='none'; renderClans(); }
                 else showToast(data.error,1500);
             }
         });
     } catch(err) {
         console.error(err);
-        modalBody.innerHTML = `<div style="text-align:center; color:#ff4444;">Ошибка: ${err.message}</div>`;
+        modalBody.innerHTML = `<div style="text-align:center; color:#ff4444;">${__('clans:load_error', 'Ошибка загрузки')}: ${err.message}</div>`;
     }
 }
+
 // ------------------- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КЛАНА -------------------
 function showCreateClanModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
     if (!modal) return;
-    modalTitle.innerText = 'Создание клана';
+    modalTitle.innerText = __('clans:create_title', 'Создание клана');
     modalBody.innerHTML = `
         <div class="clans-create-form">
-            <div class="clans-form-group"><label>Название клана</label><input type="text" id="clanName" maxlength="30" placeholder="3-30 символов"></div>
+            <div class="clans-form-group"><label>${__('clans:clan_name', 'Название клана')}</label><input type="text" id="clanName" maxlength="30" placeholder="${__('clans:name_placeholder', '3-30 символов')}"></div>
             <div class="clans-form-group">
-                <label>Иконка и цвета</label>
+                <label>${__('clans:icon_and_colors', 'Иконка и цвета')}</label>
                 <div class="clans-icon-preview">
                     <div id="iconPreview" class="clans-icon-box" style="background-color:#2c3e50; border:3px solid #f1c40f;"><i id="previewIcon" class="fas fa-cat" style="color:white;"></i></div>
-                    <div><div>Выберите иконку:</div><select id="iconSelect">
-                        <option value="1">Кот</option><option value="2">Пёс</option><option value="3">Дракон</option><option value="4">Корона</option>
-                        <option value="5">Череп</option><option value="6">Маска</option><option value="7">Молния</option><option value="8">Перо</option>
-                        <option value="9">Лапа</option><option value="10">Кулак</option>
+                    <div><div>${__('clans:icon_select', 'Выберите иконку:')}</div><select id="iconSelect">
+                        <option value="1">${__('clans:cat', 'Кот')}</option><option value="2">${__('clans:dog', 'Пёс')}</option><option value="3">${__('clans:dragon', 'Дракон')}</option>
+                        <option value="4">${__('clans:crown', 'Корона')}</option><option value="5">${__('clans:skull', 'Череп')}</option><option value="6">${__('clans:mask', 'Маска')}</option>
+                        <option value="7">${__('clans:bolt', 'Молния')}</option><option value="8">${__('clans:feather', 'Перо')}</option>
+                        <option value="9">${__('clans:paw', 'Лапа')}</option><option value="10">${__('clans:fist', 'Кулак')}</option>
                     </select></div>
                 </div>
-                <div style="margin:12px 0;">Цвет фона:</div><div class="clans-color-palette" id="bgColorPalette"></div>
-                <div style="margin:12px 0;">Цвет обводки:</div><div class="clans-color-palette" id="borderColorPalette"></div>
-                <div style="margin:12px 0;">Цвет иконки:</div><div class="clans-color-palette" id="iconColorPalette"></div>
+                <div style="margin:12px 0;">${__('clans:bg_color', 'Цвет фона:')}</div><div class="clans-color-palette" id="bgColorPalette"></div>
+                <div style="margin:12px 0;">${__('clans:border_color', 'Цвет обводки:')}</div><div class="clans-color-palette" id="borderColorPalette"></div>
+                <div style="margin:12px 0;">${__('clans:icon_color', 'Цвет иконки:')}</div><div class="clans-color-palette" id="iconColorPalette"></div>
             </div>
-            <div class="clans-payment-method"><label><input type="radio" name="payment" value="coins" checked> 2000 монет</label><label><input type="radio" name="payment" value="diamonds"> 150 алмазов</label></div>
-            <button id="confirmCreateClan" class="clans-submit-btn">Создать</button>
+            <div class="clans-payment-method"><label><input type="radio" name="payment" value="coins" checked> ${__('clans:coins_2000', '2000 монет')}</label><label><input type="radio" name="payment" value="diamonds"> ${__('clans:diamonds_150', '150 алмазов')}</label></div>
+            <button id="confirmCreateClan" class="clans-submit-btn">${__('clans:create', 'Создать')}</button>
         </div>
     `;
     function renderPalette(containerId, selectedColor, onChange) {
@@ -388,8 +396,8 @@ function showCreateClanModal() {
     updatePreview();
     document.getElementById('confirmCreateClan').addEventListener('click', async () => {
         const name = document.getElementById('clanName').value.trim();
-        if (name.length < 3 || name.length > 30) { showToast('Название должно быть 3-30 символов',1500); return; }
-        if (containsForbiddenWords(name)) { showToast('Название содержит запрещённые слова',1500); return; }
+        if (name.length < 3 || name.length > 30) { showToast(__('clans:name_length_error', 'Название должно быть 3-30 символов'),1500); return; }
+        if (containsForbiddenWords(name)) { showToast(__('clans:forbidden_words', 'Название содержит запрещённые слова'),1500); return; }
         const iconId = parseInt(iconSelect.value);
         const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
         const res = await window.apiRequest('/clans/create', {
@@ -401,13 +409,13 @@ function showCreateClanModal() {
             })
         });
         const data = await res.json();
-        if (data.success) { showToast('Клан создан!',1500); modal.style.display='none'; renderClans(); }
+        if (data.success) { showToast(__('clans:created', 'Клан создан!'),1500); modal.style.display='none'; renderClans(); }
         else showToast(data.error,1500);
     });
     modal.style.display = 'flex';
 }
 
-// ------------------- МОЙ КЛАН (С ЦЕНТРИРОВАННОЙ ШАПКОЙ И ВКЛАДКАМИ) -------------------
+// ------------------- МОЙ КЛАН -------------------
 function renderMyClan(clan, members, userRole, checkedTodayList = []) {
     const content = document.getElementById('content');
     const iconClass = ICON_MAP[clan.icon_id] || 'fa-users';
@@ -422,10 +430,10 @@ function renderMyClan(clan, members, userRole, checkedTodayList = []) {
                 </div>
                 <div class="clan-header-title">
                     <h2>${escapeHtml(clan.name)}</h2>
-                    <div class="clan-header-level">Уровень клана: ${clan.level}</div>
+                    <div class="clan-header-level">${__('clans:clan_level', 'Уровень клана:')} ${clan.level}</div>
                     <div class="clan-header-exp">
                         <div>
-                            <span class="exp-label">Опыт клана:</span>
+                            <span class="exp-label">${__('clans:clan_exp', 'Опыт клана:')}</span>
                             <span class="exp-value">${clan.exp} / ${maxExp}</span>
                         </div>
                         <div class="exp-bar-bg"><div class="exp-bar-fill" style="width: ${expPercent}%;"></div></div>
@@ -434,24 +442,24 @@ function renderMyClan(clan, members, userRole, checkedTodayList = []) {
             </div>
             <div class="clans-tab-grid">
                 <div class="clans-tab-row">
-                    <button class="clans-tab-btn ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info"><i class="fas fa-users"></i><span>Соратники</span></button>
-                    <button class="clans-tab-btn ${currentClanTab === 'chat' ? 'active' : ''}" data-tab="chat"><i class="fas fa-comments"></i><span>Чат</span></button>
-                    <button class="clans-tab-btn ${currentClanTab === 'checkin' ? 'active' : ''}" data-tab="checkin"><i class="fas fa-calendar-check"></i><span>Отметка</span></button>
+                    <button class="clans-tab-btn ${currentClanTab === 'info' ? 'active' : ''}" data-tab="info"><i class="fas fa-users"></i><span>${__('clans:comrades', 'Соратники')}</span></button>
+                    <button class="clans-tab-btn ${currentClanTab === 'chat' ? 'active' : ''}" data-tab="chat"><i class="fas fa-comments"></i><span>${__('clans:chat', 'Чат')}</span></button>
+                    <button class="clans-tab-btn ${currentClanTab === 'checkin' ? 'active' : ''}" data-tab="checkin"><i class="fas fa-calendar-check"></i><span>${__('clans:checkin', 'Отметка')}</span></button>
                 </div>
                 <div class="clans-tab-row">
-                    <button class="clans-tab-btn ${currentClanTab === 'treasury' ? 'active' : ''}" data-tab="treasury"><i class="fas fa-coins"></i><span>Казна</span></button>
-                    <button class="clans-tab-btn ${currentClanTab === 'talents' ? 'active' : ''}" data-tab="talents"><i class="fas fa-chart-line"></i><span>Таланты</span></button>
+                    <button class="clans-tab-btn ${currentClanTab === 'treasury' ? 'active' : ''}" data-tab="treasury"><i class="fas fa-coins"></i><span>${__('clans:treasury', 'Казна')}</span></button>
+                    <button class="clans-tab-btn ${currentClanTab === 'talents' ? 'active' : ''}" data-tab="talents"><i class="fas fa-chart-line"></i><span>${__('clans:talents', 'Таланты')}</span></button>
                     ${userRole === 'leader' ? 
-                        `<button class="clans-tab-btn ${currentClanTab === 'settings' ? 'active' : ''}" data-tab="settings"><i class="fas fa-cog"></i><span>Управление</span></button>
-                         <button class="clans-tab-btn ${currentClanTab === 'applications' ? 'active' : ''}" data-tab="applications"><i class="fas fa-envelope"></i><span>Заявки</span></button>` : 
-                        `<button class="clans-tab-btn disabled" disabled><i class="fas fa-lock"></i><span>Управление</span></button>`
+                        `<button class="clans-tab-btn ${currentClanTab === 'settings' ? 'active' : ''}" data-tab="settings"><i class="fas fa-cog"></i><span>${__('clans:management', 'Управление')}</span></button>
+                         <button class="clans-tab-btn ${currentClanTab === 'applications' ? 'active' : ''}" data-tab="applications"><i class="fas fa-envelope"></i><span>${__('clans:applications_tab', 'Заявки')}</span></button>` : 
+                        `<button class="clans-tab-btn disabled" disabled><i class="fas fa-lock"></i><span>${__('clans:management', 'Управление')}</span></button>`
                     }
                 </div>
             </div>
             <div class="clans-tab-content" id="clanTabContent"></div>
             <div style="padding: 12px; display: flex; gap: 8px;">
-                <button id="backToClanListBtn" class="clans-submit-btn" style="background-color:#2f3542; flex:1;">Список кланов</button>
-                <button id="leaveClanBtn" class="clans-submit-btn" style="background-color:#e74c3c; flex:1;">Покинуть клан</button>
+                <button id="backToClanListBtn" class="clans-submit-btn" style="background-color:#2f3542; flex:1;">${__('clans:list', 'Список кланов')}</button>
+                <button id="leaveClanBtn" class="clans-submit-btn" style="background-color:#e74c3c; flex:1;">${__('clans:leave', 'Покинуть клан')}</button>
             </div>
         </div>
     `;
@@ -464,10 +472,10 @@ function renderMyClan(clan, members, userRole, checkedTodayList = []) {
     });
     document.getElementById('backToClanListBtn')?.addEventListener('click', () => renderClansList());
     document.getElementById('leaveClanBtn')?.addEventListener('click', async () => {
-        if (confirm('Вы уверены, что хотите покинуть клан?')) {
+        if (confirm(__('clans:leave_confirm', 'Вы уверены, что хотите покинуть клан?'))) {
             const res = await window.apiRequest('/clans/leave', { method: 'POST' });
             const data = await res.json();
-            if (data.success) { showToast('Вы покинули клан',1500); renderClans(); }
+            if (data.success) { showToast(__('clans:left', 'Вы покинули клан'),1500); renderClans(); }
             else showToast(data.error,1500);
         }
     });
@@ -512,21 +520,21 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
     let actionsHtml = '';
     if (currentUserRole === 'leader') {
         if (role !== 'leader') {
-            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">${__('clans:kick', '🚫 Исключить из клана')}</div>`;
             if (role === 'member') {
-                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="promote">⭐ Назначить офицером</div>`;
+                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="promote">${__('clans:promote_officer', '⭐ Назначить офицером')}</div>`;
             } else if (role === 'officer') {
-                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="demote">⬇️ Снять офицера</div>`;
+                actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="demote">${__('clans:demote_officer', '⬇️ Снять офицера')}</div>`;
             }
-            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="transfer">👑 Передать лидерство</div>`;
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="transfer">${__('clans:transfer_leadership', '👑 Передать лидерство')}</div>`;
         }
     } else if (currentUserRole === 'officer') {
         if (role !== 'leader' && role !== 'officer') {
-            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">🚫 Исключить из клана</div>`;
+            actionsHtml += `<div class="menu-item-action" data-user-id="${userId}" data-action="kick">${__('clans:kick', '🚫 Исключить из клана')}</div>`;
         }
     }
     if (actionsHtml === '') {
-        actionsHtml = `<div class="menu-item-action disabled">Нет доступных действий</div>`;
+        actionsHtml = `<div class="menu-item-action disabled">${__('clans:no_actions', 'Нет доступных действий')}</div>`;
     }
     menuDiv.innerHTML = actionsHtml;
     document.body.appendChild(menuDiv);
@@ -549,23 +557,23 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
             if (action === 'kick') {
                 const res = await window.apiRequest('/clans/kick', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
                 const data = await res.json();
-                if (data.success) { showToast('Игрок исключён', 1500); renderClans(); }
+                if (data.success) { showToast(__('clans:kicked', 'Игрок исключён'), 1500); renderClans(); }
                 else showToast(data.error, 1500);
             } else if (action === 'promote') {
                 const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId, role: 'officer' }) });
                 const data = await res.json();
-                if (data.success) { showToast('Назначен офицером', 1500); renderClans(); }
+                if (data.success) { showToast(__('clans:promoted', 'Назначен офицером'), 1500); renderClans(); }
                 else showToast(data.error, 1500);
             } else if (action === 'demote') {
                 const res = await window.apiRequest('/clans/promote', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId, role: 'member' }) });
                 const data = await res.json();
-                if (data.success) { showToast('Офицер снят', 1500); renderClans(); }
+                if (data.success) { showToast(__('clans:demoted', 'Офицер снят'), 1500); renderClans(); }
                 else showToast(data.error, 1500);
             } else if (action === 'transfer') {
-                if (confirm(`Передать лидерство игроку ${username}?`)) {
+                if (confirm(__('clans:transfer_confirm', 'Передать лидерство игроку {username}?', { username }))) {
                     const res = await window.apiRequest('/clans/transfer', { method: 'POST', body: JSON.stringify({ target_user_id: targetUserId }) });
                     const data = await res.json();
-                    if (data.success) { showToast('Лидерство передано', 1500); renderClans(); }
+                    if (data.success) { showToast(__('clans:leadership_transferred', 'Лидерство передано'), 1500); renderClans(); }
                     else showToast(data.error, 1500);
                 }
             }
@@ -573,7 +581,7 @@ function showMemberMenu(userId, username, role, targetElement, currentUserRole) 
     });
 }
 
-// ------------------- ТАБЛИЦА СОРАТНИКОВ (С ОТМЕТКАМИ И МЕНЮ) -------------------
+// ------------------- ТАБЛИЦА СОРАТНИКОВ -------------------
 function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
     const today = window.getMoscowDate();
     const userCheckinStatus = checkedTodayList.includes(userData.id);
@@ -581,10 +589,10 @@ function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
     let html = `<table class="clans-members-table" style="width:100%; table-layout:fixed; font-size:13px; border-collapse:collapse;">
         <thead>
             <tr style="background-color:#1a1f2b;">
-                <th style="color:white; width:40%; padding:8px 4px;">Игрок</th>
-                <th style="color:white; width:20%; padding:8px 4px;">Роль</th>
-                <th style="color:white; width:15%; padding:8px 4px;">Статус</th>
-                <th style="color:white; width:15%; padding:8px 4px;">Отметка</th>
+                <th style="color:white; width:40%; padding:8px 4px;">${__('clans:player', 'Игрок')}</th>
+                <th style="color:white; width:20%; padding:8px 4px;">${__('clans:role', 'Роль')}</th>
+                <th style="color:white; width:15%; padding:8px 4px;">${__('clans:status', 'Статус')}</th>
+                <th style="color:white; width:15%; padding:8px 4px;">${__('clans:checkmark', 'Отметка')}</th>
             </tr>
         </thead>
         <tbody>`;
@@ -603,13 +611,13 @@ function renderClanInfo(container, clan, members, userRole, checkedTodayList) {
         const displayName = m.username.length > 20 ? m.username.substring(0,18)+'…' : m.username;
         const hasActions = (userRole === 'leader' && m.role !== 'leader') || (userRole === 'officer' && m.role === 'member');
         const menuTrigger = hasActions ? `<i class="fas fa-chevron-down clan-menu-trigger" data-user-id="${m.id}" data-username="${escapeHtml(m.username)}" data-role="${m.role}" style="color:#00aaff; cursor:pointer; margin-left:6px;"></i>` : '';
-        
+        let roleText = m.role === 'leader' ? __('clans:leader', 'Лидер') : (m.role === 'officer' ? __('clans:officer', 'Офицер') : __('clans:member', 'Участник'));
         html += `
             <tr style="border-bottom:1px solid #2a303c;">
                 <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding:6px 4px;">
                     ${escapeHtml(displayName)}${menuTrigger}
                 </td>
-                <td style="padding:6px 4px;"><span class="clans-role-badge ${m.role}">${m.role === 'leader' ? 'Лидер' : (m.role === 'officer' ? 'Офицер' : 'Участник')}</span></td>
+                <td style="padding:6px 4px;"><span class="clans-role-badge ${m.role}">${roleText}</span></td>
                 <td style="text-align:center; padding:6px 4px;">${statusIcon}</td>
                 <td style="text-align:center; padding:6px 4px;">${checkinIcon}</td>
             </tr>
@@ -637,7 +645,7 @@ async function renderClanChat(container, clan) {
     for (const msg of messages) {
         html += `<div class="clans-chat-message"><strong>${escapeHtml(msg.username)}</strong>: ${escapeHtml(msg.message)} <small style="color:#aaa;">${new Date(msg.created_at).toLocaleTimeString()}</small></div>`;
     }
-    html += `</div><div class="clans-chat-input"><input type="text" id="clanChatInput" placeholder="Введите сообщение..."><button id="clanChatSend">Отправить</button></div></div>`;
+    html += `</div><div class="clans-chat-input"><input type="text" id="clanChatInput" placeholder="${__('clans:enter_message', 'Введите сообщение...')}"><button id="clanChatSend">${__('clans:send', 'Отправить')}</button></div></div>`;
     container.innerHTML = html;
     const input = document.getElementById('clanChatInput');
     const sendBtn = document.getElementById('clanChatSend');
@@ -645,7 +653,7 @@ async function renderClanChat(container, clan) {
         let msg = input.value.trim();
         if (!msg) return;
         if (containsForbiddenWords(msg)) {
-            showToast('Не ругайся!', 2000);
+            showToast(__('clans:no_profanity', 'Не ругайся!'), 2000);
             return;
         }
         const res = await window.apiRequest('/clans/chat/send', { method: 'POST', body: JSON.stringify({ message: msg }) });
@@ -653,7 +661,7 @@ async function renderClanChat(container, clan) {
             input.value = '';
             renderClanChat(container, clan);
         } else {
-            showToast('Ошибка отправки', 1500);
+            showToast(__('clans:send_error', 'Ошибка отправки'), 1500);
         }
     });
 }
@@ -673,11 +681,11 @@ async function renderClanCheckin(container, clan) {
         <div style="text-align:center;">
             <button id="checkinBtn" class="clans-submit-btn" 
                 ${alreadyChecked ? 'disabled style="background-color:#555; cursor:not-allowed;"' : ''}>
-                ${alreadyChecked ? '✅ Вы уже отметились сегодня!' : 'Отметиться'}
+                ${alreadyChecked ? __('clans:already_checked', '✅ Вы уже отметились сегодня!') : __('clans:checkin_button', 'Отметиться')}
             </button>
             <div style="font-size:11px; color:#aaa; margin-top:12px; line-height:1.4;">
-                За отметку: +50 монет, +5 угля, +10 опыта клану<br>
-                Если отметятся 10 соратников: +250 опыта клану
+                ${__('clans:checkin_reward_info', 'За отметку: +50 монет, +5 угля, +10 опыта клану')}<br>
+                ${__('clans:checkin_bonus', 'Если отметятся 10 соратников: +250 опыта клану')}
             </div>
         </div>
     `;
@@ -703,16 +711,16 @@ async function renderClanCheckin(container, clan) {
                             if (tabContent) renderClanCheckin(tabContent, myData.clan);
                         }
                     }
-                    showToast(`Вы получили ${data.coins} монет и ${data.coal} угля!`, 2000);
+                    showToast(__('clans:checkin_received', 'Вы получили {coins} монет и {coal} угля!', { coins: data.coins, coal: data.coal }), 2000);
                 } else {
                     showToast(data.error, 1500);
                     btn.disabled = false;
-                    btn.innerText = 'Отметиться';
+                    btn.innerText = __('clans:checkin_button', 'Отметиться');
                 }
             } catch (err) {
-                showToast('Ошибка сети', 1500);
+                showToast(__('clans:network_error', 'Ошибка сети'), 1500);
                 btn.disabled = false;
-                btn.innerText = 'Отметиться';
+                btn.innerText = __('clans:checkin_button', 'Отметиться');
             }
         });
     }
@@ -733,33 +741,33 @@ async function renderClanTreasury(container, clan) {
     else if (totalPoints >= 20) cost = 6000;
     
     let html = `
-        <div class="clans-treasury-balance">💰 ${treasury.coins} монет в казне</div>
+        <div class="clans-treasury-balance">${__('clans:treasury_balance', '💰 {coins} монет в казне', { coins: treasury.coins })}</div>
         <div class="clans-donate-form">
-            <input type="number" id="donateAmount" placeholder="Сумма" min="1">
-            <button id="donateBtn">Пожертвовать</button>
+            <input type="number" id="donateAmount" placeholder="${__('clans:amount', 'Сумма')}" min="1">
+            <button id="donateBtn">${__('clans:donate', 'Пожертвовать')}</button>
         </div>
-        <div style="font-size:12px; color:#aaa; margin-bottom:20px;">За каждые 100 пожертвованных монет клан получает +10 опыт.</div>
+        <div style="font-size:12px; color:#aaa; margin-bottom:20px;">${__('clans:donate_info', 'За каждые 100 пожертвованных монет клан получает +10 опыт.')}</div>
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid #3a4050;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <strong>Клановые навыки</strong><br>
-                    <span style="font-size:12px;">Куплено очков: ${totalPoints} / ${maxPoints}</span>
+                    <strong>${__('clans:clan_skills', 'Клановые навыки')}</strong><br>
+                    <span style="font-size:12px;">${__('clans:points_bought', 'Куплено очков:')} ${totalPoints} / ${maxPoints}</span>
                 </div>
                 <button id="buySkillBtn" class="clans-submit-btn" style="width:auto; padding:6px 16px;">
-                    <i class="fas fa-coins"></i> ${cost} монет
+                    <i class="fas fa-coins"></i> ${cost} ${__('clans:coins', 'монет')}
                 </button>
             </div>
-            <div style="font-size:11px; color:#aaa; margin-top:6px;">Покупка очка увеличивает бонусы для всех участников в клановых битвах</div>
+            <div style="font-size:11px; color:#aaa; margin-top:6px;">${__('clans:skill_points_info', 'Покупка очка увеличивает бонусы для всех участников в клановых битвах')}</div>
         </div>
     `;
     container.innerHTML = html;
     
     document.getElementById('donateBtn')?.addEventListener('click', async () => {
         const amount = parseInt(document.getElementById('donateAmount').value);
-        if (isNaN(amount) || amount <= 0) { showToast('Введите корректную сумму', 1500); return; }
+        if (isNaN(amount) || amount <= 0) { showToast(__('clans:enter_valid_amount', 'Введите корректную сумму'), 1500); return; }
         const res = await window.apiRequest('/clans/donate', { method: 'POST', body: JSON.stringify({ amount }) });
         const data = await res.json();
-        if (data.success) { showToast(`Вы пожертвовали ${amount} монет!`, 1500); renderClanTreasury(container, clan); if (typeof refreshData === 'function') refreshData(); }
+        if (data.success) { showToast(__('clans:donated', 'Вы пожертвовали {amount} монет!', { amount }), 1500); renderClanTreasury(container, clan); if (typeof refreshData === 'function') refreshData(); }
         else showToast(data.error, 1500);
     });
     
@@ -767,7 +775,7 @@ async function renderClanTreasury(container, clan) {
         const res = await window.apiRequest('/clans/buy-point', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-            showToast(`Очко навыка куплено за ${data.cost} монет!`, 1500);
+            showToast(__('clans:skill_bought', 'Очко навыка куплено за {cost} монет!', { cost: data.cost }), 1500);
             renderClanTreasury(container, clan);
             if (typeof refreshData === 'function') refreshData();
         } else {
@@ -783,30 +791,28 @@ async function renderClanTalents(container, clan) {
     const totalPoints = bonuses.total_points;
     const maxPoints = clan.level * 5;
     
-    // Считаем распределённые очки
     const distributed = (bonuses.bonus_hp || 0) + (bonuses.bonus_attack || 0) + (bonuses.bonus_defense || 0) +
                         (bonuses.bonus_agility || 0) + (bonuses.bonus_crit_damage || 0) + (bonuses.bonus_vampirism || 0);
     const available = totalPoints - distributed;
     
     let html = `<div style="margin-bottom:12px;">
-                    Куплено очков: ${totalPoints} / ${maxPoints}<br>
-                    Доступно для распределения: ${available}
+                    ${__('clans:points_bought', 'Куплено очков:')} ${totalPoints} / ${maxPoints}<br>
+                    ${__('clans:available_points', 'Доступно для распределения:')} ${available}
                 </div>
                 <div class="clans-talents-list">`;
-    html += renderTalentRow('Здоровье', bonuses.bonus_hp, 'hp');
-    html += renderTalentRow('Атака', bonuses.bonus_attack, 'attack');
-    html += renderTalentRow('Защита', bonuses.bonus_defense, 'defense');
-    html += renderTalentRow('Ловкость', bonuses.bonus_agility, 'agility');
-    html += renderTalentRow('Крит. урон', bonuses.bonus_crit_damage, 'crit_damage');
-    html += renderTalentRow('Вампиризм', bonuses.bonus_vampirism, 'vampirism');
+    html += renderTalentRow(__('clans:health', 'Здоровье'), bonuses.bonus_hp, 'hp');
+    html += renderTalentRow(__('clans:attack', 'Атака'), bonuses.bonus_attack, 'attack');
+    html += renderTalentRow(__('clans:defense', 'Защита'), bonuses.bonus_defense, 'defense');
+    html += renderTalentRow(__('clans:agility', 'Ловкость'), bonuses.bonus_agility, 'agility');
+    html += renderTalentRow(__('clans:crit_damage', 'Крит. урон'), bonuses.bonus_crit_damage, 'crit_damage');
+    html += renderTalentRow(__('clans:vampirism', 'Вампиризм'), bonuses.bonus_vampirism, 'vampirism');
     html += `</div>`;
     container.innerHTML = html;
     
-    // Обработчики кнопок
     container.querySelectorAll('.talent-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const stat = btn.dataset.stat;
-            const op = btn.dataset.op; // 'incr' или 'decr'
+            const op = btn.dataset.op;
             const delta = op === 'incr' ? 1 : -1;
             
             btn.disabled = true;
@@ -817,27 +823,25 @@ async function renderClanTalents(container, clan) {
                 });
                 const data = await adjustRes.json();
                 if (data.success) {
-                    // Обновляем значение в интерфейсе
                     const row = btn.closest('.clans-talent-row');
                     const valueSpan = row.querySelector('.clans-talent-value');
                     let currentVal = parseInt(valueSpan.innerText.replace('+', ''));
                     valueSpan.innerText = `+${currentVal + delta}`;
                     
-                    // Обновляем доступные очки в заголовке
                     const infoDiv = container.querySelector('div[style*="margin-bottom:12px"]');
                     if (infoDiv) {
                         const allValues = [...container.querySelectorAll('.clans-talent-value')].map(span => parseInt(span.innerText.replace('+', '')));
                         const newDistributed = allValues.reduce((sum, v) => sum + v, 0);
                         const newAvailable = totalPoints - newDistributed;
-                        infoDiv.innerHTML = `Куплено очков: ${totalPoints} / ${maxPoints}<br>Доступно для распределения: ${newAvailable}`;
+                        infoDiv.innerHTML = `${__('clans:points_bought', 'Куплено очков:')} ${totalPoints} / ${maxPoints}<br>${__('clans:available_points', 'Доступно для распределения:')} ${newAvailable}`;
                     }
                     
-                    showToast('Распределение обновлено', 1000);
+                    showToast(__('clans:talents_updated', 'Распределение обновлено'), 1000);
                 } else {
                     showToast(data.error, 1500);
                 }
             } catch (err) {
-                showToast('Ошибка сети', 1500);
+                showToast(__('clans:network_error', 'Ошибка сети'), 1500);
             } finally {
                 btn.disabled = false;
             }
@@ -868,33 +872,33 @@ function renderClanSettings(container, clan) {
     
     container.innerHTML = `
         <div style="padding: 12px;">
-            <div class="clans-form-group"><label>Название клана</label><input type="text" id="editClanName" value="${escapeHtml(clan.name)}" maxlength="30"></div>
-            <div class="clans-form-group"><label>Описание клана</label><textarea id="editClanDescription" rows="3" maxlength="150" style="resize: none;" placeholder="Описание">${escapeHtml(clan.description || '')}</textarea></div>
+            <div class="clans-form-group"><label>${__('clans:clan_name', 'Название клана')}</label><input type="text" id="editClanName" value="${escapeHtml(clan.name)}" maxlength="30"></div>
+            <div class="clans-form-group"><label>${__('clans:clan_description', 'Описание клана')}</label><textarea id="editClanDescription" rows="3" maxlength="150" style="resize: none;" placeholder="${__('clans:description_placeholder', 'Описание')}">${escapeHtml(clan.description || '')}</textarea></div>
             <div class="clans-form-group">
-                <label>Вход в гильдию</label>
+                <label>${__('clans:join_type', 'Вход в гильдию')}</label>
                 <select id="editJoinType">
-                    <option value="open" ${currentJoinType === 'open' ? 'selected' : ''}>Открытый (вступление без подтверждения)</option>
-                    <option value="application" ${currentJoinType === 'application' ? 'selected' : ''}>По заявкам (требуется одобрение)</option>
-                    <option value="invite_only" ${currentJoinType === 'invite_only' ? 'selected' : ''}>Закрытый (только по приглашениям)</option>
+                    <option value="open" ${currentJoinType === 'open' ? 'selected' : ''}>${__('clans:open_description', 'Открытый (вступление без подтверждения)')}</option>
+                    <option value="application" ${currentJoinType === 'application' ? 'selected' : ''}>${__('clans:application_description', 'По заявкам (требуется одобрение)')}</option>
+                    <option value="invite_only" ${currentJoinType === 'invite_only' ? 'selected' : ''}>${__('clans:invite_only_description', 'Закрытый (только по приглашениям)')}</option>
                 </select>
             </div>
             <div class="clans-form-group">
-                <label>Иконка и цвета</label>
+                <label>${__('clans:icon_and_colors', 'Иконка и цвета')}</label>
                 <div class="clans-icon-preview">
                     <div id="editIconPreview" class="clans-icon-box" style="background-color: ${currentBgColor}; border: 3px solid ${currentBorderColor};"><i id="editPreviewIcon" class="fas ${ICON_MAP[currentIconId] || 'fa-cat'}" style="color: ${currentIconColor}; font-size:32px;"></i></div>
-                    <div><div>Выберите иконку:</div><select id="editIconSelect">
-                        <option value="1" ${currentIconId===1?'selected':''}>Кот</option><option value="2" ${currentIconId===2?'selected':''}>Пёс</option><option value="3" ${currentIconId===3?'selected':''}>Дракон</option>
-                        <option value="4" ${currentIconId===4?'selected':''}>Корона</option><option value="5" ${currentIconId===5?'selected':''}>Череп</option><option value="6" ${currentIconId===6?'selected':''}>Маска</option>
-                        <option value="7" ${currentIconId===7?'selected':''}>Молния</option><option value="8" ${currentIconId===8?'selected':''}>Перо</option>
-                        <option value="9" ${currentIconId===9?'selected':''}>Лапа</option><option value="10" ${currentIconId===10?'selected':''}>Кулак</option>
+                    <div><div>${__('clans:icon_select', 'Выберите иконку:')}</div><select id="editIconSelect">
+                        <option value="1" ${currentIconId===1?'selected':''}>${__('clans:cat', 'Кот')}</option><option value="2" ${currentIconId===2?'selected':''}>${__('clans:dog', 'Пёс')}</option><option value="3" ${currentIconId===3?'selected':''}>${__('clans:dragon', 'Дракон')}</option>
+                        <option value="4" ${currentIconId===4?'selected':''}>${__('clans:crown', 'Корона')}</option><option value="5" ${currentIconId===5?'selected':''}>${__('clans:skull', 'Череп')}</option><option value="6" ${currentIconId===6?'selected':''}>${__('clans:mask', 'Маска')}</option>
+                        <option value="7" ${currentIconId===7?'selected':''}>${__('clans:bolt', 'Молния')}</option><option value="8" ${currentIconId===8?'selected':''}>${__('clans:feather', 'Перо')}</option>
+                        <option value="9" ${currentIconId===9?'selected':''}>${__('clans:paw', 'Лапа')}</option><option value="10" ${currentIconId===10?'selected':''}>${__('clans:fist', 'Кулак')}</option>
                     </select></div>
                 </div>
-                <div style="margin:12px 0;">Цвет фона:</div><div class="clans-color-palette" id="editBgColorPalette"></div>
-                <div style="margin:12px 0;">Цвет обводки:</div><div class="clans-color-palette" id="editBorderColorPalette"></div>
-                <div style="margin:12px 0;">Цвет иконки:</div><div class="clans-color-palette" id="editIconColorPalette"></div>
+                <div style="margin:12px 0;">${__('clans:bg_color', 'Цвет фона:')}</div><div class="clans-color-palette" id="editBgColorPalette"></div>
+                <div style="margin:12px 0;">${__('clans:border_color', 'Цвет обводки:')}</div><div class="clans-color-palette" id="editBorderColorPalette"></div>
+                <div style="margin:12px 0;">${__('clans:icon_color', 'Цвет иконки:')}</div><div class="clans-color-palette" id="editIconColorPalette"></div>
             </div>
-            <button id="saveClanSettingsBtn" class="clans-submit-btn">Сохранить изменения</button>
-            <hr style="margin:20px 0;"><button id="disbandClanBtn" class="clans-submit-btn" style="background-color:#e74c3c;">⚠️ Расформировать клан</button>
+            <button id="saveClanSettingsBtn" class="clans-submit-btn">${__('clans:settings_save', 'Сохранить изменения')}</button>
+            <hr style="margin:20px 0;"><button id="disbandClanBtn" class="clans-submit-btn" style="background-color:#e74c3c;">${__('clans:disband', '⚠️ Расформировать клан')}</button>
         </div>
     `;
     
@@ -937,8 +941,8 @@ function renderClanSettings(container, clan) {
     
     document.getElementById('saveClanSettingsBtn')?.addEventListener('click', async () => {
         const newName = document.getElementById('editClanName').value.trim();
-        if (newName.length < 3 || newName.length > 30) { showToast('Название должно быть 3-30 символов',1500); return; }
-        if (containsForbiddenWords(newName)) { showToast('Название содержит запрещённые слова',1500); return; }
+        if (newName.length < 3 || newName.length > 30) { showToast(__('clans:name_length_error', 'Название должно быть 3-30 символов'),1500); return; }
+        if (containsForbiddenWords(newName)) { showToast(__('clans:forbidden_words', 'Название содержит запрещённые слова'),1500); return; }
         const newDesc = document.getElementById('editClanDescription').value;
         const newJoinType = document.getElementById('editJoinType').value;
         const updateData = {
@@ -948,21 +952,21 @@ function renderClanSettings(container, clan) {
         };
         const res = await window.apiRequest(`/clans/${clan.id}/settings`, { method: 'PUT', body: JSON.stringify(updateData) });
         const data = await res.json();
-        if (data.success) { showToast('Настройки сохранены!',1500); renderClans(); }
+        if (data.success) { showToast(__('clans:settings_saved', 'Настройки сохранены!'),1500); renderClans(); }
         else showToast(data.error,1500);
     });
     
     document.getElementById('disbandClanBtn')?.addEventListener('click', async () => {
-        if (confirm('ВНИМАНИЕ! Расформирование клана удалит всех участников и сам клан. Отменить нельзя. Продолжить?')) {
+        if (confirm(__('clans:disband_confirm', 'ВНИМАНИЕ! Расформирование клана удалит всех участников и сам клан. Отменить нельзя. Продолжить?'))) {
             const res = await window.apiRequest(`/clans/${clan.id}`, { method: 'DELETE' });
             const data = await res.json();
-            if (data.success) { showToast('Клан расформирован',1500); renderClans(); }
+            if (data.success) { showToast(__('clans:disbanded', 'Клан расформирован'),1500); renderClans(); }
             else showToast(data.error,1500);
         }
     });
 }
 
-// ------------------- ЗАЯВКИ (ДЛЯ ЛИДЕРА) – РАСШИРЕННАЯ ТАБЛИЦА -------------------
+// ------------------- ЗАЯВКИ (ДЛЯ ЛИДЕРА) -------------------
 async function renderClanApplications(container, clan) {
     const res = await window.apiRequest('/clans/applications');
     const applications = await res.json();
@@ -971,18 +975,18 @@ async function renderClanApplications(container, clan) {
         return;
     }
     if (applications.length === 0) {
-        container.innerHTML = '<div style="color:#aaa; text-align:center;">Нет заявок на вступление</div>';
+        container.innerHTML = `<div style="color:#aaa; text-align:center;">${__('clans:no_applications', 'Нет заявок на вступление')}</div>`;
         return;
     }
     let html = `
         <table class="clans-members-table" style="width:100%; font-size:13px;">
             <thead>
                 <tr>
-                    <th>Игрок</th>
-                    <th>Уровень</th>
-                    <th>Класс</th>
-                    <th>Сила</th>
-                    <th>Действия</th>
+                    <th>${__('clans:player', 'Игрок')}</th>
+                    <th>${__('clans:level', 'Уровень')}</th>
+                    <th>${__('clans:class', 'Класс')}</th>
+                    <th>${__('clans:power', 'Сила')}</th>
+                    <th>${__('clans:actions', 'Действия')}</th>
                 </tr>
             </thead>
             <tbody>
@@ -1014,7 +1018,7 @@ async function renderClanApplications(container, clan) {
             const res = await window.apiRequest('/clans/accept-application', { method: 'POST', body: JSON.stringify({ application_id: id }) });
             const data = await res.json();
             if (data.success) {
-                showToast('Заявка принята', 1000);
+                showToast(__('clans:application_accepted', 'Заявка принята'), 1000);
                 renderClanApplications(container, clan);
                 renderClans();
             } else showToast(data.error, 1500);
@@ -1026,7 +1030,7 @@ async function renderClanApplications(container, clan) {
             const res = await window.apiRequest('/clans/reject-application', { method: 'POST', body: JSON.stringify({ application_id: id }) });
             const data = await res.json();
             if (data.success) {
-                showToast('Заявка отклонена', 1000);
+                showToast(__('clans:application_rejected', 'Заявка отклонена'), 1000);
                 renderClanApplications(container, clan);
             } else showToast(data.error, 1500);
         });
@@ -1038,6 +1042,7 @@ function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;': m==='<'?'&lt;': m==='>'?'&gt;': m);
 }
+
 function showToast(msg, duration) {
     const toast = document.createElement('div');
     toast.className = 'market-toast';

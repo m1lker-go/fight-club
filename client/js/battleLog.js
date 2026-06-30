@@ -1,5 +1,6 @@
 // battleLog.js – финальная версия с поддержкой i18n
 
+
 const BattleLog = {
     messages: [],
     states: [],

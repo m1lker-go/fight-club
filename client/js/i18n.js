@@ -1,5 +1,4 @@
 // js/i18n.js – полный менеджер локализации с i18next и fallback
-
 (function() {
     console.log('🔄 i18n init started');
 
@@ -22,6 +21,7 @@
     window.__ = function(key, fallback) {
         // Если i18next уже инициализирован, используем его
         if (window.i18next && window.i18next.isInitialized) {
+            // key вида "namespace:key"
             return window.i18next.t(key, { defaultValue: fallback || key });
         }
         // Иначе возвращаем fallback (русский текст)
@@ -53,7 +53,7 @@
             case 'profile': if (window.renderProfile) window.renderProfile(); break;
             case 'rating': if (window.renderRating) window.renderRating(); break;
             case 'settings': if (window.renderSettings) window.renderSettings(); break;
-            case 'forge': if (window.renderForge) window.renderForge(); else window.renderForgeFallback?.(); break;
+            case 'forge': if (window.renderForge) window.renderForge(); else if (window.renderForgeFallback) window.renderForgeFallback(); break;
             case 'tournament': if (window.renderTournament) window.renderTournament(); break;
             case 'clans': if (window.renderClans) window.renderClans(); break;
             case 'tasks': if (window.renderTasks) window.renderTasks(); break;
@@ -96,16 +96,21 @@
                 return;
             }
 
+            // Строим ресурсы с пространствами имён (как в твоём ru.json)
             const resources = {
-                ru: { translation: ruData || {} },
-                en: { translation: enData || {} }
+                ru: ruData || {},
+                en: enData || {}
             };
+
+            // Получаем список всех пространств имён из ru.json (common, auth, main, ...)
+            const nsList = ruData ? Object.keys(ruData) : ['common'];
 
             await i18next.init({
                 lng: savedLang,
                 fallbackLng: 'ru',
                 resources: resources,
-                defaultNS: 'translation',
+                ns: nsList,                 // используем все namespace
+                defaultNS: 'common',        // если ключ без префикса, ищем в common
                 interpolation: { escapeValue: false }
             });
 
@@ -114,6 +119,7 @@
 
             // Переопределяем __, чтобы использовать i18next
             window.__ = function(key, fallback) {
+                // ключ вида "namespace:key" – i18next сам разберёт
                 return i18next.t(key, { defaultValue: fallback || key });
             };
 

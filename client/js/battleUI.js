@@ -1,13 +1,5 @@
 // battleUI.js – экран боя с поддержкой i18n
 
-// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
-const __ = window.__ || function(key, fallback) {
-    if (window.i18next && typeof window.i18next.t === 'function') {
-        return window.i18next.t(key);
-    }
-    return fallback || key;
-};
-
 // Переопределяем getRoleNameRu для использования i18n
 const getRoleNameRu = (role) => {
     const key = `subclasses:${role}.name`;

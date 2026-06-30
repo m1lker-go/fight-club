@@ -1,4 +1,4 @@
-// authModal.js – модальное окно входа, но для Telegram Web App – автоматическая авторизация
+// authModal.js – модальное окно входа с переключателем языка
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -8,6 +8,14 @@ let authMode = 'login';
 let googleLoginInProgress = false;
 let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
+
+// ======== ВРЕМЕННАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ========
+function __(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+}
 
 function isWebView() {
     if (typeof window.Android !== 'undefined') return true;
@@ -43,27 +51,20 @@ if (!window.API_BASE) window.API_BASE = 'https://api.cat-fight.ru';
 function closeAuthModal() {
     const modal = document.getElementById('roleModal');
     if (modal) {
-        // Убираем класс
         modal.classList.remove('auth-modal');
-        // Сбрасываем display
         modal.style.display = 'none';
-        // Убираем все инлайн-стили, которые могли быть добавлены
         modal.removeAttribute('style');
-        // Возвращаем исходный класс (если он был)
         modal.className = 'modal';
-        // Убираем класс из body, если он был добавлен
         document.body.classList.remove('auth-modal-open');
-        // Принудительно перерисовываем
-        modal.offsetHeight; // trigger reflow
+        modal.offsetHeight;
     }
-    // Также сбрасываем инлайн-стили у modal-content, если они были
     const content = document.getElementById('modalContent');
     if (content) {
         content.removeAttribute('style');
     }
 }
 
-// Автологин в Telegram (точная копия рабочего кода из telegram-auth.js)
+// Автологин в Telegram
 async function autoLoginTelegram(initData) {
     if (!initData) return false;
     const API_URL = window.API_BASE || 'https://api.cat-fight.ru';
@@ -94,40 +95,143 @@ async function autoLoginTelegram(initData) {
     return false;
 }
 
+// ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА С ФЛАГОМ В КРУГЕ ========
+
+// URL флагов (можно заменить на свои локальные файлы)
+const FLAG_URLS = {
+    ru: 'https://flagcdn.com/24x18/ru.png',
+    en: 'https://flagcdn.com/24x18/gb.png'
+};
+const LANG_NAMES = {
+    ru: 'Русский',
+    en: 'English'
+};
+
+function renderLanguageSwitcher() {
+    const currentLang = localStorage.getItem('i18nextLng') || 'ru';
+    const currentFlagUrl = FLAG_URLS[currentLang] || FLAG_URLS.ru;
+    const currentName = LANG_NAMES[currentLang] || currentLang;
+
+    return `
+        <div class="lang-switcher-wrapper" style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+            <button class="lang-toggle-btn" id="langToggleBtn" style="background: transparent; border: 1px solid #555; border-radius: 20px; padding: 4px 12px 4px 4px; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
+                    <img src="${currentFlagUrl}" alt="${currentLang}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <span>${currentName}</span>
+                <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+            </button>
+            <div class="lang-dropdown" id="langDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: #2a303c; border: 1px solid #555; border-radius: 8px; min-width: 140px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <div class="lang-option" data-lang="ru" style="padding: 8px 16px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; ${currentLang === 'ru' ? 'background: #3a4050;' : ''}">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
+                        <img src="${FLAG_URLS.ru}" alt="ru" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    Русский
+                </div>
+                <div class="lang-option" data-lang="en" style="padding: 8px 16px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; ${currentLang === 'en' ? 'background: #3a4050;' : ''}">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1a1f2b;">
+                        <img src="${FLAG_URLS.en}" alt="en" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    English
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateLangToggleButton(lang) {
+    const btn = document.getElementById('langToggleBtn');
+    if (!btn) return;
+    const flagUrl = FLAG_URLS[lang] || FLAG_URLS.ru;
+    const name = LANG_NAMES[lang] || lang;
+    const img = btn.querySelector('img');
+    if (img) {
+        img.src = flagUrl;
+        img.alt = lang;
+    }
+    const textSpan = btn.querySelector('span:not(.fa)');
+    if (textSpan) {
+        textSpan.textContent = name;
+    }
+}
+
+function initLanguageSwitcher() {
+    const toggleBtn = document.getElementById('langToggleBtn');
+    const dropdown = document.getElementById('langDropdown');
+    if (!toggleBtn || !dropdown) return;
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.lang-option').forEach(opt => {
+        opt.addEventListener('click', (e) => {
+            const lang = opt.dataset.lang;
+            if (typeof window.setLanguage === 'function') {
+                window.setLanguage(lang);
+            } else {
+                // fallback – просто сохраняем и перезагружаем страницу
+                localStorage.setItem('i18nextLng', lang);
+                location.reload();
+            }
+            dropdown.style.display = 'none';
+            updateLangToggleButton(lang);
+        });
+    });
+
+    // Закрыть дропдаун по клику вне
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.lang-switcher-wrapper')) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
+
+// ======== ПОКАЗ МОДАЛЬНОГО ОКНА ========
 function showAuthModal() {
-    // Telegram Mini App – авторизация автоматически (как в telegram-auth.js)
+    // Telegram Mini App – авторизация автоматически
     const initData = getTelegramInitData();
     if (initData) {
         autoLoginTelegram(initData).catch(console.error);
         return;
     }
 
-    // VK Mini App – тоже автоматически (не показываем модалку)
+    // VK Mini App – тоже автоматически
     if (window.isVKMiniApp === true) {
         console.log('[AuthModal] VK Mini App: skipping modal');
         return;
     }
 
-    // Для всех остальных – показываем модальное окно (код без изменений)
     const modal = document.getElementById('roleModal');
     modal.classList.add('auth-modal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Вход в игру';
+
+    // Заголовок с переключателем языка
+    modalTitle.innerHTML = `
+        <span>${__('auth:login_title', 'Вход в игру')}</span>
+        ${renderLanguageSwitcher()}
+    `;
+    modalTitle.style.position = 'relative';
+    modalTitle.style.display = 'flex';
+    modalTitle.style.alignItems = 'center';
+    modalTitle.style.justifyContent = 'space-between';
+    modalTitle.style.width = '100%';
 
     const authMethodsHtml = `
         <div class="auth-methods">
             <button class="auth-btn telegram-btn" id="telegramAuthBtn">
-                <i class="fab fa-telegram-plane"></i> Войти через Telegram
+                <i class="fab fa-telegram-plane"></i> ${__('auth:login_telegram', 'Войти через Telegram')}
             </button>
             <button class="auth-btn google-btn" id="googleAuthBtn">
-                <i class="fab fa-google"></i> Войти через Google
+                <i class="fab fa-google"></i> ${__('auth:login_google', 'Войти через Google')}
             </button>
             <button class="auth-btn vk-btn" id="vkAuthBtn">
-                <i class="fab fa-vk"></i> Войти через VK
+                <i class="fab fa-vk"></i> ${__('auth:login_vk', 'Войти через VK')}
             </button>
             <button class="auth-btn credentials-btn" id="loginCredentialsBtn">
-                <i class="fas fa-key"></i> Войти по логину и паролю
+                <i class="fas fa-key"></i> ${__('auth:login_credentials', 'Войти по логину и паролю')}
             </button>
         </div>
     `;
@@ -137,14 +241,14 @@ function showAuthModal() {
             ${authMethodsHtml}
             <div class="auth-credentials-form" style="display:none; margin-top: 10px;">
                 <div class="auth-toggle-group">
-                    <button class="auth-toggle-btn top" id="toggleLogin">Вход</button>
-                    <button class="auth-toggle-btn bottom" id="toggleRegister">Регистрация</button>
+                    <button class="auth-toggle-btn top" id="toggleLogin">${__('auth:login', 'Вход')}</button>
+                    <button class="auth-toggle-btn bottom" id="toggleRegister">${__('auth:register', 'Регистрация')}</button>
                 </div>
-                <input type="email" id="credentialsEmail" placeholder="Email" class="auth-input">
-                <input type="password" id="credentialsPassword" placeholder="Пароль" class="auth-input">
-                <button class="auth-submit-btn" id="credentialsSubmitBtn">Продолжить</button>
+                <input type="email" id="credentialsEmail" placeholder="${__('auth:email', 'Email')}" class="auth-input">
+                <input type="password" id="credentialsPassword" placeholder="${__('auth:password', 'Пароль')}" class="auth-input">
+                <button class="auth-submit-btn" id="credentialsSubmitBtn">${__('auth:continue', 'Продолжить')}</button>
                 <div style="text-align:center; margin-top:5px;">
-                    <a href="#" id="forgotPasswordLink" style="color:#00aaff; font-size:14px;">Забыли пароль?</a>
+                    <a href="#" id="forgotPasswordLink" style="color:#00aaff; font-size:14px;">${__('auth:forgot_password', 'Забыли пароль?')}</a>
                 </div>
                 <div id="authError" style="color:#e74c3c; margin-top:10px; display:none;"></div>
             </div>
@@ -156,10 +260,13 @@ function showAuthModal() {
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
 
+    // Инициализация переключателя языка
+    initLanguageSwitcher();
+
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // Обработчики (без изменений)
+    // Обработчики кнопок авторизации
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
         telegramBtn.addEventListener('click', () => {
@@ -167,7 +274,7 @@ function showAuthModal() {
                 autoLoginTelegram();
             } else {
                 window.open('https://t.me/CatFightingBot?start=webview_login', '_blank');
-                showToast('После авторизации в Telegram вернитесь в игру', 3000);
+                showToast(__('auth:telegram_after_login', 'После авторизации в Telegram вернитесь в игру'), 3000);
             }
         });
     }
@@ -216,6 +323,8 @@ function showAuthModal() {
 
     setAuthMode('login');
 }
+
+// ======== ОСТАЛЬНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ) ========
 
 function setAuthMode(mode) {
     authMode = mode;
@@ -328,7 +437,7 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== LOW‑CODE OAuth для браузера (не для VK Mini App) ==========
+// ========== LOW‑CODE OAuth для браузера ==========
 function loadVKIDSDK() {
     return new Promise((resolve, reject) => {
         if (window.VKIDSDK) {
@@ -450,6 +559,7 @@ function showusernameModal(userId) {
     });
 }
 
+// ======== ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ========
 window.showAuthModal = showAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.showusernameModal = showusernameModal;

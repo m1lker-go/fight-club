@@ -36,6 +36,8 @@ function renderMain() {
     const content = document.getElementById('content');
     if (!content) return;
 
+    const __ = window.__ || (key => key); // fallback
+
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
     const level = classData.level;
@@ -52,39 +54,39 @@ function renderMain() {
             <div class="main-top-inner">
                 <div class="main-buttons-col left">
                     <div class="btn-grid">
-                        <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>Почта</span></button>
-                        <button class="main-icon-btn" data-screen="clans"><i class="fas fa-users"></i><span>Кланы</span></button>
-                        <button class="main-icon-btn" data-screen="tournament"><i class="fas fa-trophy"></i><span>Турнир</span></button>
+                        <button class="main-icon-btn" id="mailBtn"><i class="fas fa-envelope"></i><span>${__('main:mail')}</span></button>
+                        <button class="main-icon-btn" data-screen="clans"><i class="fas fa-users"></i><span>${__('main:clans')}</span></button>
+                        <button class="main-icon-btn" data-screen="tournament"><i class="fas fa-trophy"></i><span>${__('main:tournament')}</span></button>
                         <button class="main-icon-btn empty-btn"></button>
-                        <button class="main-icon-btn" data-screen="settings"><i class="fas fa-cog"></i><span>Настройки</span></button>
+                        <button class="main-icon-btn" data-screen="settings"><i class="fas fa-cog"></i><span>${__('main:settings')}</span></button>
                         <button class="main-icon-btn empty-btn"></button>
                     </div>
                 </div>
                <div class="main-avatar-col">
-    <div class="hero-avatar" id="avatarClick" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
-        <img src="/assets/${escapeHtml(userData.avatar || 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">ПРОФИЛЬ</div>
-        ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 5;"></i>' : ''}
-    </div>
-</div>
+                    <div class="hero-avatar" id="avatarClick" style="position: relative; width: 100%; height: 100%; cursor: pointer;">
+                        <img src="/assets/${escapeHtml(userData.avatar || 'cat_heroweb.png')}" alt="hero" style="width:100%; height:100%; object-fit: cover;">
+                        <div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; text-align: center; font-weight: bold; padding: 4px 0; font-size: 14px; pointer-events: none;">${__('main:profile')}</div>
+                        ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 5;"></i>' : ''}
+                    </div>
+                </div>
                 <div class="main-buttons-col right">
                     <div class="btn-grid">
-                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>Торговля</span></button>
-                        <button class="main-icon-btn" data-screen="market"><i class="fas fa-exchange-alt"></i><span>Маркет</span></button>
-                        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-dice"></i><span>Фортуна</span></button>
-                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>Рюкзак</span></button>
-                        <button class="main-icon-btn" data-screen="alchemy"><i class="fas fa-flask"></i><span>Алхимик</span></button>
-                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>Кузница</span></button>
+                        <button class="main-icon-btn" data-screen="trade"><i class="fas fa-store"></i><span>${__('main:trade')}</span></button>
+                        <button class="main-icon-btn" data-screen="market"><i class="fas fa-exchange-alt"></i><span>${__('main:market')}</span></button>
+                        <button class="main-icon-btn" data-screen="fortune"><i class="fas fa-dice"></i><span>${__('main:fortune')}</span></button>
+                        <button class="main-icon-btn" data-screen="equip"><i class="fas fa-tshirt"></i><span>${__('main:backpack')}</span></button>
+                        <button class="main-icon-btn" data-screen="alchemy"><i class="fas fa-flask"></i><span>${__('main:alchemist')}</span></button>
+                        <button class="main-icon-btn" data-screen="forge"><i class="fas fa-hammer"></i><span>${__('main:forge')}</span></button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="main-username-header">${escapeHtml(userData.username || 'Игрок')}</div>
+        <div class="main-username-header">${escapeHtml(userData.username || __('common:player'))}</div>
         <div class="main-content-container">
             <div style="margin: 20px 20px 0 20px;">
                 <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                    <span>Уровень <span class="level-display">${level}</span></span>
-                    <span class="exp-display">${escapeHtml(exp)}/${escapeHtml(nextExp)} опыта</span>
+                    <span>${__('main:level')} <span class="level-display">${level}</span></span>
+                    <span class="exp-display">${escapeHtml(exp)}/${escapeHtml(nextExp)} ${__('main:exp')}</span>
                 </div>
                 <div style="background-color: #2f3542; height: 10px; border-radius: 5px; margin-top: 5px;">
                     <div class="exp-bar-fill" style="background-color: #00aaff; width: ${expPercent}%; height: 100%; border-radius: 5px;"></div>
@@ -92,27 +94,26 @@ function renderMain() {
             </div>
             <div style="margin: 20px;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <div style="width: 70px; text-align: left; font-weight: bold;">Класс</div>
+                    <div style="width: 70px; text-align: left; font-weight: bold;">${__('main:class')}</div>
                     <div class="class-selector" style="flex: 1; margin-left: 10px;">
-                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                        <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior">${__('common:warrior')}</button>
+                        <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin">${__('common:assassin')}</button>
+                        <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage">${__('common:mage')}</button>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 70px; text-align: left; font-weight: bold;">Роль</div>
+                    <div style="width: 70px; text-align: left; font-weight: bold;">${__('main:role')}</div>
                     <select id="subclassSelect" style="flex: 1; margin-left: 10px; background-color: #2f3542; color: white; border: 1px solid #00aaff; border-radius: 20px; padding: 8px 12px;"></select>
                     <i class="fas fa-circle-question" id="roleInfoBtn" style="color: #00aaff; font-size: 24px; margin-left: 10px; cursor: pointer;"></i>
                 </div>
             </div>
             <button id="fightBtn" style="margin: 0 20px 20px 20px; width: calc(100% - 40px); background: none; border: none; padding: 0; cursor: pointer;">
-                <img src="/assets/icons/pic-startbattle.png" alt="Начать бой" style="width:100%; height:auto; display:block;">
+                <img src="/assets/icons/pic-startbattle.png" alt="${__('main:start_battle')}" style="width:100%; height:auto; display:block;">
             </button>
         </div>
     `;
 
-    updateSubclasses(currentClass);
-      // Обработчики
+    // Обработчики (без изменений)
     const classSelector = document.querySelector('.class-selector');
     if (classSelector) {
         classSelector.addEventListener('click', async (e) => {
@@ -141,12 +142,11 @@ function renderMain() {
         });
     }
     document.getElementById('fightBtn')?.addEventListener('click', () => {
-        // Включаем боевую музыку перед стартом боя
         if (window.AudioManager) {
             if (typeof AudioManager.startFightMusic === 'function') {
                 AudioManager.startFightMusic();
             } else if (typeof AudioManager.onScreenChange === 'function') {
-                AudioManager.onScreenChange(); // fallback
+                AudioManager.onScreenChange();
             }
         }
         startBattle();
@@ -166,7 +166,6 @@ function renderMain() {
     if (typeof updateMessagesBadge === 'function') updateMessagesBadge();
     if (typeof loadMessagesSilent === 'function') loadMessagesSilent();
 
-    // Синхронизация музыки при показе главного экрана (включаем музыку меню)
     if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
         AudioManager.onScreenChange();
     }

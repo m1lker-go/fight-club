@@ -1,4 +1,4 @@
-// authModal.js – модальное окно входа с переключателем языка
+// authModal.js – модальное окно входа с поддержкой i18n
 
 let currentStep = 'method';
 let tempSessionToken = null;
@@ -9,7 +9,7 @@ let googleLoginInProgress = false;
 let telegramLoginInProgress = false;
 let vkLoginInProgress = false;
 
-// ======== ВРЕМЕННАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ========
+// ======== ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ========
 function __(key, fallback) {
     if (window.i18next && typeof window.i18next.t === 'function') {
         return window.i18next.t(key);
@@ -27,7 +27,6 @@ function isWebView() {
     return false;
 }
 
-// Получение initData из разных источников (как в telegram-auth.js)
 function getTelegramInitData() {
     if (window.Telegram?.WebApp?.initData) {
         return window.Telegram.WebApp.initData;
@@ -47,7 +46,6 @@ function getTelegramInitData() {
 
 if (!window.API_BASE) window.API_BASE = 'https://api.cat-fight.ru';
 
-// Закрытие модального окна авторизации (полный сброс)
 function closeAuthModal() {
     const modal = document.getElementById('roleModal');
     if (modal) {
@@ -64,7 +62,6 @@ function closeAuthModal() {
     }
 }
 
-// Автологин в Telegram
 async function autoLoginTelegram(initData) {
     if (!initData) return false;
     const API_URL = window.API_BASE || 'https://api.cat-fight.ru';
@@ -97,7 +94,6 @@ async function autoLoginTelegram(initData) {
 
 // ======== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА С ФЛАГОМ В КРУГЕ ========
 
-// URL флагов (можно заменить на свои локальные файлы)
 const FLAG_URLS = {
     ru: 'https://flagcdn.com/24x18/ru.png',
     en: 'https://flagcdn.com/24x18/gb.png'
@@ -171,7 +167,6 @@ function initLanguageSwitcher() {
             if (typeof window.setLanguage === 'function') {
                 window.setLanguage(lang);
             } else {
-                // fallback – просто сохраняем и перезагружаем страницу
                 localStorage.setItem('i18nextLng', lang);
                 location.reload();
             }
@@ -180,7 +175,6 @@ function initLanguageSwitcher() {
         });
     });
 
-    // Закрыть дропдаун по клику вне
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.lang-switcher-wrapper')) {
             dropdown.style.display = 'none';
@@ -190,14 +184,12 @@ function initLanguageSwitcher() {
 
 // ======== ПОКАЗ МОДАЛЬНОГО ОКНА ========
 function showAuthModal() {
-    // Telegram Mini App – авторизация автоматически
     const initData = getTelegramInitData();
     if (initData) {
         autoLoginTelegram(initData).catch(console.error);
         return;
     }
 
-    // VK Mini App – тоже автоматически
     if (window.isVKMiniApp === true) {
         console.log('[AuthModal] VK Mini App: skipping modal');
         return;
@@ -208,7 +200,6 @@ function showAuthModal() {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    // Заголовок с переключателем языка
     modalTitle.innerHTML = `
         <span>${__('auth:login_title', 'Вход в игру')}</span>
         ${renderLanguageSwitcher()}
@@ -260,13 +251,11 @@ function showAuthModal() {
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) closeBtn.style.display = 'none';
 
-    // Инициализация переключателя языка
     initLanguageSwitcher();
 
     const webView = isWebView();
     console.log('[AuthModal] WebView detected:', webView);
 
-    // Обработчики кнопок авторизации
     const telegramBtn = document.getElementById('telegramAuthBtn');
     if (telegramBtn) {
         telegramBtn.addEventListener('click', () => {
@@ -324,8 +313,6 @@ function showAuthModal() {
     setAuthMode('login');
 }
 
-// ======== ОСТАЛЬНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ) ========
-
 function setAuthMode(mode) {
     authMode = mode;
     const loginBtn = document.getElementById('toggleLogin');
@@ -334,7 +321,7 @@ function setAuthMode(mode) {
     if (!loginBtn || !registerBtn || !submitBtn) return;
     loginBtn.classList.toggle('active', mode === 'login');
     registerBtn.classList.toggle('active', mode === 'register');
-    submitBtn.textContent = mode === 'login' ? 'Войти' : 'Зарегистрироваться';
+    submitBtn.textContent = mode === 'login' ? __('auth:login', 'Войти') : __('auth:register', 'Зарегистрироваться');
 }
 
 async function handleCredentialsSubmit() {
@@ -343,12 +330,12 @@ async function handleCredentialsSubmit() {
     const errorDiv = document.getElementById('authError');
     errorDiv.style.display = 'none';
     if (!email || !password) {
-        errorDiv.textContent = 'Заполните email и пароль';
+        errorDiv.textContent = __('auth:fill_email_password', 'Заполните email и пароль');
         errorDiv.style.display = 'block';
         return;
     }
     if (password.length < 6) {
-        errorDiv.textContent = 'Пароль должен быть не менее 6 символов';
+        errorDiv.textContent = __('auth:password_min_length', 'Пароль должен быть не менее 6 символов');
         errorDiv.style.display = 'block';
         return;
     }
@@ -372,12 +359,12 @@ async function handleCredentialsSubmit() {
                 if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {
-            errorDiv.textContent = data.error || 'Ошибка';
+            errorDiv.textContent = data.error || __('auth:error', 'Ошибка');
             errorDiv.style.display = 'block';
         }
     } catch (err) {
         console.error(err);
-        errorDiv.textContent = 'Ошибка соединения';
+        errorDiv.textContent = __('auth:connection_error', 'Ошибка соединения');
         errorDiv.style.display = 'block';
     }
 }
@@ -386,12 +373,12 @@ function showForgotPasswordModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Восстановление пароля';
+    modalTitle.innerText = __('auth:forgot_password_title', 'Восстановление пароля');
     modalBody.innerHTML = `
         <div style="text-align:center;">
-            <p style="color:#aaa;">Введите email, указанный при регистрации</p>
-            <input type="email" id="forgotEmail" class="auth-input" placeholder="Email">
-            <button class="auth-submit-btn" id="sendResetBtn">Отправить инструкцию</button>
+            <p style="color:#aaa;">${__('auth:forgot_password_instruction', 'Введите email, указанный при регистрации')}</p>
+            <input type="email" id="forgotEmail" class="auth-input" placeholder="${__('auth:email', 'Email')}">
+            <button class="auth-submit-btn" id="sendResetBtn">${__('auth:send_instructions', 'Отправить инструкцию')}</button>
             <div id="forgotMsg" style="margin-top:10px; display:none;"></div>
         </div>
     `;
@@ -400,7 +387,7 @@ function showForgotPasswordModal() {
         const email = document.getElementById('forgotEmail').value.trim();
         const msg = document.getElementById('forgotMsg');
         if (!email) {
-            msg.textContent = 'Введите email';
+            msg.textContent = __('auth:enter_email', 'Введите email');
             msg.style.display = 'block';
             return;
         }
@@ -411,11 +398,11 @@ function showForgotPasswordModal() {
                 body: JSON.stringify({ email })
             });
             const data = await res.json();
-            msg.textContent = data.message || (data.error || 'Инструкция отправлена');
+            msg.textContent = data.message || (data.error || __('auth:instructions_sent', 'Инструкция отправлена'));
             msg.style.display = 'block';
         } catch (err) {
             console.error(err);
-            msg.textContent = 'Ошибка соединения';
+            msg.textContent = __('auth:connection_error', 'Ошибка соединения');
             msg.style.display = 'block';
         }
     });
@@ -427,7 +414,7 @@ function showForgotPasswordModal() {
 
 function loginWithGoogle() {
     if (googleLoginInProgress) {
-        showToast('Вход через Google уже выполняется', 1500);
+        showToast(__('auth:google_login_in_progress', 'Вход через Google уже выполняется'), 1500);
         return;
     }
     googleLoginInProgress = true;
@@ -437,7 +424,6 @@ function loginWithGoogle() {
     window.location.href = `${window.API_BASE}/auth/google-auth?mode=login`;
 }
 
-// ========== LOW‑CODE OAuth для браузера ==========
 function loadVKIDSDK() {
     return new Promise((resolve, reject) => {
         if (window.VKIDSDK) {
@@ -460,14 +446,14 @@ function loadVKIDSDK() {
 
 async function loginWithVK() {
     if (vkLoginInProgress) {
-        showToast('Вход через VK уже выполняется', 1500);
+        showToast(__('auth:vk_login_in_progress', 'Вход через VK уже выполняется'), 1500);
         return;
     }
     vkLoginInProgress = true;
     const timeoutId = setTimeout(() => {
         if (vkLoginInProgress) {
             vkLoginInProgress = false;
-            showToast('Вход через VK отменён (таймаут). Попробуйте ещё раз.', 3000);
+            showToast(__('auth:vk_login_timeout', 'Вход через VK отменён (таймаут). Попробуйте ещё раз.'), 3000);
         }
     }, 30000);
 
@@ -505,11 +491,11 @@ async function loginWithVK() {
                 if (typeof window.showScreen === 'function') window.showScreen('main');
             }
         } else {
-            showToast(data.error || 'Ошибка входа через VK', 1500);
+            showToast(data.error || __('auth:vk_login_error', 'Ошибка входа через VK'), 1500);
         }
     } catch (err) {
         console.error('[VK] Ошибка:', err);
-        showToast('Ошибка авторизации VK: ' + (err.message || 'неизвестная'), 1500);
+        showToast(__('auth:vk_auth_error', 'Ошибка авторизации VK: ') + (err.message || __('common:unknown', 'неизвестная')), 1500);
     } finally {
         vkLoginInProgress = false;
     }
@@ -519,11 +505,11 @@ function showusernameModal(userId) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerText = 'Выберите никнейм';
+    modalTitle.innerText = __('auth:choose_nickname', 'Выберите никнейм');
     modalBody.innerHTML = `
         <div class="auth-username">
-            <input type="text" id="usernameInput" placeholder="Английские буквы и цифры" maxlength="20" class="auth-input">
-            <button class="auth-submit-btn" id="saveusernameBtn">Сохранить</button>
+            <input type="text" id="usernameInput" placeholder="${__('auth:english_letters_digits', 'Английские буквы и цифры')}" maxlength="20" class="auth-input">
+            <button class="auth-submit-btn" id="saveusernameBtn">${__('auth:save', 'Сохранить')}</button>
         </div>
     `;
     modal.style.display = 'flex';
@@ -537,7 +523,7 @@ function showusernameModal(userId) {
         const checkRes = await window.apiRequest(`/auth/check-username?username=${encodeURIComponent(username)}`, { method: 'GET' });
         const { available } = await checkRes.json();
         if (!available) {
-            showToast('Никнейм уже занят', 1500);
+            showToast(__('auth:nickname_taken', 'Никнейм уже занят'), 1500);
             return;
         }
 
@@ -554,12 +540,11 @@ function showusernameModal(userId) {
             else location.reload();
         } else {
             const err = await res.json();
-            showToast(err.error || 'Ошибка сохранения никнейма', 1500);
+            showToast(err.error || __('auth:nickname_save_error', 'Ошибка сохранения никнейма'), 1500);
         }
     });
 }
 
-// ======== ЭКСПОРТ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ========
 window.showAuthModal = showAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.showusernameModal = showusernameModal;

@@ -1785,5 +1785,531 @@
   "system": {
     "sender_name": "Мастер кошачьих боёв"
   }
+},
+{
+  "achievements": {
+    "founder_message_subject": "Новое достижение!",
+    "founder_message_body": "Вы получили достижение \"Основатель\"! Оно доступно в настройках в разделе Достижения."
+  }
+},
+{
+  "email": {
+    "verification_subject": "Код подтверждения для входа",
+    "verification_body": "Ваш код подтверждения: {code}. Действителен 10 минут.",
+    "register_subject": "Подтверждение регистрации в Cat Fighting",
+    "register_body": "Ваш код подтверждения: {code}. Действителен 10 минут.",
+    "reset_subject": "Сброс пароля в Cat Fighting",
+    "reset_body": "Для сброса пароля перейдите по ссылке: {resetLink}\n\nСсылка действительна 1 час. Если вы не запрашивали сброс, просто проигнорируйте это письмо."
+  }
+},
+{
+  "auth_errors": {
+    "email_required": "Email required",
+    "code_too_many": "Too many code requests. Please try again later.",
+    "invalid_expired_code": "Invalid or expired code",
+    "missing_data": "Missing data",
+    "server_error": "Server error",
+    "no_initdata": "No initData",
+    "missing_access_token": "Missing access_token or user_id",
+    "no_idtoken": "No idToken",
+    "invalid_google_token": "Invalid Google token",
+    "invalid_credentials": "Неверный email или пароль",
+    "email_password_required": "Email и пароль обязательны",
+    "password_min_length": "Пароль должен быть не менее 6 символов",
+    "email_already_exists": "Пользователь с таким email уже существует",
+    "code_not_found": "Код не найден или истёк. Запросите регистрацию заново.",
+    "invalid_verification_code": "Неверный код подтверждения",
+    "code_expired": "Код истёк. Запросите регистрацию заново.",
+    "send_code_error": "Ошибка отправки кода",
+    "registration_error": "Ошибка регистрации",
+    "user_not_found_or_no_password": "Пользователь с таким email не найден или пароль не установлен",
+    "reset_instructions_sent": "Инструкция отправлена на email",
+    "reset_send_error": "Ошибка при отправке инструкции",
+    "invalid_reset_token": "Недействительный или устаревший токен",
+    "password_changed_success": "Пароль успешно изменён",
+    "password_reset_error": "Ошибка сброса пароля",
+    "old_password_required": "Old and new passwords required",
+    "new_password_min_length": "Новый пароль должен быть не менее 6 символов",
+    "invalid_session_token": "Invalid token",
+    "no_password_set": "У вас не установлен пароль",
+    "incorrect_old_password": "Неверный старый пароль",
+    "change_password_error": "Ошибка смены пароля",
+    "google_already_linked": "Google already linked to another user",
+    "no_session_token_linking": "No session token for linking",
+    "invalid_session_linking": "Invalid session"
+  }
+},
+{
+  "auth_errors": {
+    "email_required": "Email required",
+    "code_too_many": "Too many code requests. Please try again later.",
+    "invalid_expired_code": "Invalid or expired code",
+    "missing_data": "Missing data",
+    "server_error": "Server error",
+    "no_initdata": "No initData",
+    "missing_access_token": "Missing access_token or user_id",
+    "no_idtoken": "No idToken",
+    "invalid_google_token": "Invalid Google token",
+    "invalid_credentials": "Неверный email или пароль",
+    "email_password_required": "Email и пароль обязательны",
+    "password_min_length": "Пароль должен быть не менее 6 символов",
+    "email_already_exists": "Пользователь с таким email уже существует",
+    "code_not_found": "Код не найден или истёк. Запросите регистрацию заново.",
+    "invalid_verification_code": "Неверный код подтверждения",
+    "code_expired": "Код истёк. Запросите регистрацию заново.",
+    "send_code_error": "Ошибка отправки кода",
+    "registration_error": "Ошибка регистрации",
+    "user_not_found_or_no_password": "Пользователь с таким email не найден или пароль не установлен",
+    "reset_instructions_sent": "Инструкция отправлена на email",
+    "reset_send_error": "Ошибка при отправке инструкции",
+    "invalid_reset_token": "Недействительный или устаревший токен",
+    "password_changed_success": "Пароль успешно изменён",
+    "password_reset_error": "Ошибка сброса пароля",
+    "old_password_required": "Old and new passwords required",
+    "new_password_min_length": "Новый пароль должен быть не менее 6 символов",
+    "invalid_session_token": "Invalid token",
+    "no_password_set": "У вас не установлен пароль",
+    "incorrect_old_password": "Неверный старый пароль",
+    "change_password_error": "Ошибка смены пароля",
+    "google_already_linked": "Google already linked to another user",
+    "no_session_token_linking": "No session token for linking",
+    "invalid_session_linking": "Invalid session"
+  }
+},
+{
+  "system": {
+    "sender_name": "Мастер кошачьих боёв",
+    "welcome_subject": "Привет, разбойник!",
+    "welcome_body": "Я рад, что ты присоединился к игре! За это я дарю тебе очки навыков для твоего героя! Выбери класс, который получит дополнительно 5 очков навыков. НО запомни, выбрать можно один раз!",
+    "reward_skill_points_choice": "skill_points_choice"
+  }
+},
+{
+  "auth": {
+    "email_required": "Email required",
+    "code_too_many": "Too many code requests. Please try again later.",
+    "invalid_expired_code": "Invalid or expired code",
+    "missing_data": "Missing data",
+    "no_initdata": "No initData",
+    "no_idtoken": "No idToken",
+    "invalid_google_token": "Invalid Google token",
+    "invalid_credentials": "Неверный email или пароль",
+    "email_password_required": "Email и пароль обязательны",
+    "password_min_length": "Пароль должен быть не менее 6 символов",
+    "email_already_exists": "Пользователь с таким email уже существует",
+    "code_not_found": "Код не найден или истёк. Запросите регистрацию заново.",
+    "invalid_verification_code": "Неверный код подтверждения",
+    "code_expired": "Код истёк. Запросите регистрацию заново.",
+    "user_not_found_or_no_password": "Пользователь с таким email не найден или пароль не установлен",
+    "invalid_reset_token": "Недействительный или устаревший токен",
+    "password_changed_success": "Пароль успешно изменён",
+    "incorrect_old_password": "Неверный старый пароль",
+    "no_password_set": "У вас не установлен пароль"
+  }
+},
+{
+  "auth_errors": {
+    "not_enough_coins": "Недостаточно монет!",
+    "not_enough_diamonds": "Недостаточно алмазов!",
+    "already_owned": "Уже куплен",
+    "avatar_not_found": "Аватар не найден",
+    "user_not_found": "Пользователь не найден",
+    "missing_avatar_id": "Не указан ID аватара",
+    "unauthorized": "Не авторизован",
+    "database_error": "Ошибка базы данных"
+  }
+},
+{
+  "battle": {
+    "block_phrase": "<strong>{defender}</strong> полностью избежал урона - БЛОК",
+    "mana_steal_phrase": "{attacker} крадёт {amount} маны у {defender}.",
+    "poison_stack_phrase": "{defender} отравлен! Стаков: {stacks}/5 (урон стака {damage}).",
+    "burn_stack_phrase": "{defender} подожжён! Стаков: {stacks}/5 (урон стака {damage}).",
+    "freeze_stack_accumulate": "Лед накапливается {stacks}/3.",
+    "freeze_stack_full": "Лед накапливается 3/3. <strong>{target}</strong> замораживается и пропускает 1 ход.",
+    "mana_regen_disabled": "{name} не восстанавливает ману из-за последствий ультимейта.",
+    "mana_regen_halved": "{name} восстанавливает только {amount} маны из-за критического удара.",
+    "cannot_use_skill": "<strong>{name}</strong> не может использовать умение.",
+    "does_nothing": "{name} ничего не делает.",
+    "mouse_blade_ultimate": "<strong>{attacker}</strong> использует Уязвимость и наносит {damage} урона, игнорируя защиту!",
+    "mouse_antimag_ultimate": "<strong>{attacker}</strong> использует Антимагический удар и наносит {damage} урона (зависит от маны цели).",
+    "mouse_paladin_ultimate": "<strong>{attacker}</strong> становится неуязвимым на 2 хода!",
+    "mouse_alchemist_ultimate": "<strong>{attacker}</strong> использует Адский коктейль, нанося {damage} урона и отравляя цель на 2 хода!",
+    "mouse_shadow_ultimate": "<strong>{attacker}</strong> исчезает в тени! В конце хода последует сокрушительный удар.",
+    "mouse_necromancer_revive": "<strong>{name}</strong> воскресает, восстанавливая {hp} HP!",
+    "shadow_attack": "<strong>{attacker}</strong> выходит из тени и наносит {damage} урона, игнорируя защиту!",
+    "miss_mana_effect": "{attacker} промахивается и теряет 10 маны. {defender} восстанавливает 5 маны.",
+    "stunned_mana_effect": "{name} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.",
+    "victory_phrases": [
+      "🎉 Это была невероятная схватка! Вы одержали <span style=\"color:#2ecc71;\">ПОБЕДУ</span>!",
+      "⚔️ С последним ударом враг повержен. <span style=\"color:#2ecc71;\">ПОБЕДА</span>!",
+      "🏆 Вы оказались сильнее! <span style=\"color:#2ecc71;\">ПОБЕДА</span>!",
+      "✨ Невероятная битва! <span style=\"color:#2ecc71;\">ПОБЕДА</span> за вами!"
+    ],
+    "defeat_phrases": [
+      "💔 В этой напряжённой схватке враг был сильнее. <span style=\"color:#e74c3c;\">ПОРАЖЕНИЕ</span>",
+      "😵 Ваши силы иссякли... <span style=\"color:#e74c3c;\">ПОРАЖЕНИЕ</span>",
+      "😢 Увы, победа не ваша. <span style=\"color:#e74c3c;\">ПОРАЖЕНИЕ</span>",
+      "⚰️ Соперник оказался сильнее. <span style=\"color:#e74c3c;\">ПОРАЖЕНИЕ</span>"
+    ],
+    "draw_phrases": [
+      "🤝 Оба бойца падают одновременно. Ничья!",
+      "💥 Взаимный удар – никто не выжил. Ничья."
+    ],
+    "ultimate_not_ready": "Ультимейт ещё не готов",
+    "not_enough_energy": "Недостаточно энергии",
+    "battle_error": "Ошибка боя"
+  }
+},
+{
+  "achievements": {
+    "unlock_subject": "Новое достижение!",
+    "unlock_body": "Вы получили достижение \"{name}\"! Оно доступно в настройках в разделе Достижения."
+  }
+},
+{
+  "auth_errors": {
+    "user_not_authorized": "User not authorized",
+    "user_not_found": "User not found",
+    "class_not_found": "Class not found",
+    "not_enough_energy": "Недостаточно энергии",
+    "server_error": "Ошибка сервера"
+  }
+},
+{
+  "clans": {
+    "errors": {
+      "invalid_name": "Некорректное название (3-30 символов, без мата)",
+      "invalid_icon_id": "Неверный ID иконки",
+      "invalid_color_format": "Неверный формат цвета",
+      "already_in_clan": "Вы уже состоите в клане",
+      "invalid_payment": "Неверный способ оплаты",
+      "name_taken": "Клан с таким названием уже существует",
+      "creation_error": "Ошибка создания клана",
+      "not_in_clan": "Вы не в клане",
+      "leader_must_transfer": "Лидер должен передать руководство перед выходом",
+      "insufficient_permissions": "Недостаточно прав",
+      "user_not_in_clan": "Пользователь не в клане",
+      "cannot_kick_leader": "Нельзя исключить лидера",
+      "only_leader_can_promote": "Только лидер может изменять роли",
+      "cannot_change_leader_role": "Нельзя изменить роль лидера",
+      "already_officer": "Пользователь уже офицер",
+      "already_member": "Пользователь уже участник",
+      "invalid_role": "Некорректная роль",
+      "only_leader_can_transfer": "Только лидер может передать руководство",
+      "user_not_in_your_clan": "Пользователь не в вашем клане",
+      "message_empty_or_too_long": "Сообщение не может быть пустым или длиннее 200 символов",
+      "not_in_any_clan": "Вы не состоите в клане",
+      "invalid_amount": "Неверная сумма",
+      "not_enough_coins": "Недостаточно монет",
+      "not_enough_coins_in_treasury": "Недостаточно монет в казне",
+      "only_leader_can_buy_points": "Только лидер может покупать очки",
+      "max_points_reached": "Достигнут максимум очков для этого уровня",
+      "only_leader_can_distribute": "Только лидер может распределять очки",
+      "sum_not_equal_points": "Сумма распределённых очков не равна купленным",
+      "invalid_join_type": "Неверный тип вступления",
+      "only_leader_can_edit": "Только лидер может редактировать клан",
+      "only_leader_can_disband": "Только лидер может расформировать клан",
+      "clan_not_accepting_applications": "Этот клан не принимает заявки",
+      "already_applied": "Вы уже подали заявку в этот клан",
+      "application_not_found": "Заявка не найдена",
+      "only_leader_can_view_applications": "Только лидер может просматривать заявки",
+      "only_leader_can_accept": "Только лидер может принимать заявки",
+      "only_leader_can_reject": "Только лидер может отклонять заявки",
+      "invalid_parameters": "Неверные параметры",
+      "invalid_stat": "Неверная характеристика",
+      "value_cannot_be_negative": "Значение не может быть отрицательным",
+      "cannot_distribute_more_than_bought": "Нельзя распределить больше очков, чем куплено"
+    },
+    "system_messages": {
+      "clan_level_up_title": "Уровень клана повышен!",
+      "clan_level_up_body": "Ваш клан достиг уровня {level}! Открыты новые возможности.",
+      "application_accepted_title": "Заявка принята",
+      "application_accepted_body": "Ваша заявка на вступление в клан \"{clanName}\" принята!",
+      "application_rejected_title": "Заявка отклонена",
+      "application_rejected_body": "Ваша заявка на вступление в клан отклонена лидером."
+    },
+    "chat_messages": {
+      "user_joined": "{username} вступил в клан!",
+      "user_left": "{username} покинул клан",
+      "user_kicked": "{username} был исключён из клана"
+    }
+  }
+},
+{
+  "system": {
+    "system_sender": "Система"
+  }
+},
+{
+  "forge": {
+    "craft_success": "Ковка успешна!",
+    "craft_fail": "Ковка провалилась. Предметы и свиток потеряны.",
+    "smelt_result": "Вы получили {coins} монет, {diamonds} алмазов, {steel} стальных слитков, {gold} золотых слитков, {rareScrolls} редких свитков, {epicScrolls} эпических свитков, {legendaryScrolls} легендарных свитков",
+    "smelt_result_minimal": "Вы получили {coins} монет"
+  }
+},
+{
+  "auth_errors": {
+    "invalid_tab": "Invalid tab",
+    "item_not_found": "Item not found",
+    "item_equipped": "Item is equipped",
+    "item_on_sale": "Item is on sale",
+    "item_already_in_forge": "Item already in forge",
+    "item_not_in_forge": "Item not in forge",
+    "missing_item_id": "Missing item_id",
+    "need_exactly_3_items": "Need exactly 3 items",
+    "items_same_rarity_required": "Items must have the same rarity",
+    "cannot_upgrade_this_rarity": "Cannot upgrade this rarity",
+    "scroll_not_found": "Scroll not found",
+    "not_a_scroll": "Not a scroll",
+    "invalid_craft_rarity": "Invalid craft rarity",
+    "not_enough_coins": "Not enough coins",
+    "not_enough_coal": "Not enough coal",
+    "need_1_to_5_items": "Need 1 to 5 items",
+    "user_not_found": "User not found"
+  }
+},
+{
+  "fortune": {
+    "prizes": {
+      "legendary_chest": "Легендарное снаряжение",
+      "free_spin": "Билет лотереи",
+      "coal_10": "10 угля",
+      "coins_100": "100 монет",
+      "exp_20": "20 опыта",
+      "coins_300": "300 монет",
+      "exp_50": "50 опыта",
+      "coal_50": "50 угля",
+      "coins_1000": "1000 монет",
+      "exp_250": "250 опыта"
+    },
+    "buy_success": "Вы купили {count} билетов",
+    "tickets_left": "Билетов: {free} бесплатных, {paid} платных",
+    "no_tickets": "Нет билетов! Купите билеты или дождитесь завтра.",
+    "spin_result": "Вы выиграли: {prizeName}"
+  }
+},
+{
+  "auth_errors": {
+    "invalid_count": "Invalid count",
+    "user_not_found": "User not found",
+    "max_tickets_per_day": "You can buy no more than 100 tickets per day",
+    "not_enough_diamonds": "Not enough diamonds",
+    "no_tickets_left": "No tickets left",
+    "exp_and_class_required": "exp and class required",
+    "class_not_found": "Class not found",
+    "unauthorized": "Unauthorized"
+  }
+},
+{
+  "equip": {
+    "item_not_available": "Предмет недоступен",
+    "item_class_mismatch": "Класс предмета не соответствует",
+    "item_not_equipped": "Предмет не надет",
+    "item_not_on_sale": "Предмет не выставлен на продажу",
+    "invalid_price": "Некорректная цена"
+  }
+},
+{
+  "auth_errors": {
+    "missing_parameters": "Missing parameters",
+    "missing_item_id": "Missing item_id"
+  }
+},
+{
+  "market": {
+    "buyer_not_found": "Покупатель не найден",
+    "item_not_found_or_not_for_sale": "Предмет не найден или не выставлен на продажу",
+    "cannot_buy_own_item": "Нельзя купить свой собственный предмет",
+    "not_enough_coins": "Недостаточно монет",
+    "item_not_found_or_not_yours": "Предмет не найден или не принадлежит вам",
+    "invalid_price_or_missing_params": "Некорректная цена или отсутствуют параметры",
+    "missing_item_id": "Не указан ID предмета",
+    "market_error": "Ошибка загрузки маркета"
+  }
+},
+{
+  "auth_errors": {
+    "unauthorized": "Не авторизован",
+    "missing_item_id": "Не указан ID предмета",
+    "buyer_not_found": "Покупатель не найден"
+      "user_not_found": "Пользователь не найден",
+    "class_not_found": "Класс не найден",
+    "not_enough_skill_points": "Недостаточно очков навыков",
+    "missing_avatar_id": "Не указан ID аватара",
+    "avatar_not_owned": "Аватар не куплен",
+    "database_error": "Ошибка базы данных",
+     "rating_load_error": "Ошибка получения рейтинга",
+    "power_load_error": "Ошибка получения силы",
+    "tower_load_error": "Ошибка получения рейтинга башни"
+  }
+},
+{
+  "system": {
+    "payment_sender": "Магазин Cat Fighting",
+    "diamonds_pack_subject": "Пакет алмазов",
+    "diamonds_pack_body": "Вы приобрели {amount} алмазов. Нажмите \"Забрать награду\", чтобы получить их.",
+    "subscription_success_subject": "🎉 Подписка VIP Silver активирована!",
+    "subscription_success_body": "Поздравляю! Ваша подписка \"VIP-SILVER\" активирована на 30 дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам.",
+    "subscription_reward_subject": "Награда за оформление подписки",
+    "subscription_reward_body": "Вы получили 1500 монет, 50 угля и 100 алмазов в подарок! Нажмите \"Забрать награду\", чтобы получить."
+  }
+},
+{
+  "auth_errors": {
+    "missing_fields": "Missing fields",
+    "payment_creation_error": "Ошибка создания платежа",
+    "payment_processing_error": "Ошибка обработки платежа"
+  }
+},
+{
+  "shop": {
+    "invalid_chest_type": "Неверный тип сундука",
+    "free_coal_already_claimed": "Бесплатный уголь уже получен сегодня",
+    "daily_limit_exceeded": "Дневной лимит превышен (максимум {maxDaily} угля)",
+    "invalid_amount": "Неверное количество",
+    "missing_coins_or_price": "Не указаны монеты или цена",
+    "scroll_bought": "{scrollName} куплен"
+  }
+},
+{
+  "auth_errors": {
+    "missing_fields": "Отсутствуют обязательные поля",
+    "invalid_chest_type": "Неверный тип сундука",
+    "invalid_amount": "Неверное количество",
+    "missing_amount": "Отсутствует количество",
+    "scroll_not_found": "Свиток не найден"
+  }
+},{
+  "subscription": {
+    "free_coin_already_claimed": "Бесплатная монета уже получена сегодня",
+    "subscription_not_active": "Подписка не активна",
+    "daily_reward_already_claimed": "Ежедневная награда уже получена сегодня",
+    "admin_activation_subject": "🎉 Подписка VIP Silver активирована!",
+    "admin_activation_body": "Поздравляю! Ваша подписка \"VIP-SILVER\" активирована на {days} дней.\nСпасибо за покупку.\nКоты с благодарностью мяукают Вам."
+  }
 }
+,{
+  "auth_errors": {
+    "forbidden": "Доступ запрещён"
+  }
+},
+{
+  "tasks": {
+    "advent": {
+      "day_not_available": "Этот день ещё не доступен",
+      "already_claimed_today": "Вы уже забрали сегодняшнюю награду",
+      "class_choice_required": "Для получения опыта выберите класс",
+      "class_not_found": "Класс не найден",
+      "reward_description_coins": "{amount} монет",
+      "reward_description_exp": "{amount} опыта для класса {class}",
+      "reward_description_item": "Предмет: {name} ({rarity})",
+      "item_reward": "{rarity} предмет"
+    },
+    "daily": {
+      "task_already_claimed": "Задание уже выполнено",
+      "task_not_found": "Задание не найдено",
+      "task_not_completed": "Задание не выполнено",
+      "class_choice_required": "Для получения опыта выберите класс",
+      "class_not_found": "Класс не найден",
+      "invalid_task_id": "Неверный ID задания"
+    }
+  }
+},
+{
+  "auth_errors": {
+    "task_already_claimed": "Задание уже выполнено",
+    "task_not_found": "Задание не найдено",
+    "task_not_completed": "Задание не выполнено",
+    "invalid_task_id": "Неверный ID задания",
+    "day_not_available": "Этот день ещё не доступен",
+    "already_claimed_today": "Вы уже забрали сегодняшнюю награду",
+    "user_not_found": "Пользователь не найден",
+    "database_error": "Ошибка базы данных"
+  }
+},
+{
+  "common": {
+    "coins": "монет",
+    "exp": "опыта",
+    "item": "Предмет"
+  }
+},
+{
+  "tournament": {
+    "select_class_and_role": "Выберите класс и роль",
+    "already_registered": "Вы уже зарегистрированы"
+  }
+},
+{
+  "season": {
+    "prefix": "Сезон"
+  }
+},
+{
+  "auth_errors": {
+    "already_registered": "Вы уже зарегистрированы",
+    "select_class_and_role": "Выберите класс и роль"
+  }
+},{
+  "tower": {
+    "class_not_selected": "Класс не выбран для Башни. Сначала выберите класс.",
+    "no_tickets_left": "Билеты на сегодня закончились",
+    "tower_reward_coins": "Вы достигли {floor} этажа и получили {reward} монет!",
+    "tower_reward_avatar": "Вы достигли {floor} этажа и получили новый скин!",
+    "tower_battle_victory": "Победа на этаже {floor}!",
+    "tower_battle_defeat": "Поражение на этаже {floor}."
+  }
+},
+{
+  "auth_errors": {
+    "class_not_selected_tower": "Класс не выбран для Башни. Сначала выберите класс.",
+    "no_tickets_left_today": "Билеты на сегодня закончились",
+    "class_not_available": "Класс недоступен",
+    "missing_class_or_subclass": "Отсутствует класс или роль"
+  }
+},
+{
+  "auth_errors": {
+    "invalid_username_format": "Некорректное имя (3-30 символов, без мата)",
+    "username_taken": "username already taken",
+    "email_already_registered": "Этот email уже зарегистрирован у другого пользователя",
+    "google_account_linked": "This Google account is already linked to another user",
+    "telegram_account_linked": "This Telegram account is already linked to another user",
+    "vk_account_linked": "Этот VK аккаунт уже привязан к другому пользователю",
+    "invalid_provider_or_data": "Invalid provider or missing data",
+    "old_and_new_password_required": "Old and new passwords required",
+    "no_password_set": "У вас не установлен пароль",
+    "incorrect_old_password": "Неверный старый пароль",
+    "class_not_found_for_user": "Class not found for this user",
+    "class_required": "Class name required",
+    "invalid_class": "Invalid class",
+    "message_not_found": "Message not found",
+    "reward_already_claimed": "Reward already claimed",
+    "invalid_reward_type": "Invalid reward type",
+    "class_choice_required": "class_choice required for exp reward",
+    "skill_points_choice_missing": "Invalid reward type"
+  }
+},
+{
+  "system": {
+    "reward_coins": "{amount} монет",
+    "reward_diamonds": "{amount} алмазов",
+    "reward_exp": "{amount} опыта для класса {class}",
+    "chest_reward": "{chestName} сундук{pluralSuffix}"
+  }
+},
+{
+  "items": {
+    "chest_names": {
+      "common": "Обычный",
+      "uncommon": "Необычный",
+      "rare": "Редкий",
+      "epic": "Эпический",
+      "legendary": "Легендарный"
+    }
+  }
+}
+
 

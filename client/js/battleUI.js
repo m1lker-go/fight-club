@@ -1,12 +1,22 @@
 // battleUI.js – экран боя с поддержкой i18n
 
-
 // Переопределяем getRoleNameRu для использования i18n
 const getRoleNameRu = (role) => {
     const key = `subclasses:${role}.name`;
     return __(key, role);
 };
 
+// Определяем getClassNameRu через i18n, если она ещё не определена
+if (typeof getClassNameRu === 'undefined') {
+    window.getClassNameRu = function(classKey) {
+        const map = {
+            warrior: __('common:Воин', 'Воин'),
+            assassin: __('common:Ассасин', 'Ассасин'),
+            mage: __('common:Маг', 'Маг')
+        };
+        return map[classKey] || classKey;
+    };
+}
 
 async function startBattle() {
     // Включаем боевую музыку
@@ -41,9 +51,9 @@ async function startBattle() {
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
             if (data.error === 'Недостаточно энергии') {
-                showToast(__('battle:not_enough_energy', 'Недостаточно энергии!'), 1500);
+                showToast(__('battle:Недостаточно энергии!', 'Недостаточно энергии!'), 1500);
             } else {
-                showToast(__('battle:server_error') + (data.error || __('common:unknown_error', 'Неизвестная ошибка')), 2000);
+                showToast(__('battle:Ошибка сервера: ', 'Ошибка сервера: ') + (data.error || __('common:Неизвестная ошибка', 'Неизвестная ошибка')), 2000);
             }
             unlockMenu();
             return;
@@ -53,7 +63,7 @@ async function startBattle() {
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);
-        showToast(__('battle:connection_error', 'Ошибка соединения с сервером'), 2000);
+        showToast(__('battle:Ошибка соединения с сервером', 'Ошибка соединения с сервером'), 2000);
         unlockMenu();
     }
 }
@@ -97,7 +107,7 @@ function showBattleScreen(battleData) {
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">${__('battle:defeat_overlay', 'Проиграл')}</div>
+                        <div class="defeat-overlay">${__('battle:Проиграл', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div id="hero-animation" class="animation-container"></div>
@@ -122,7 +132,7 @@ function showBattleScreen(battleData) {
                 <div class="battle-center">
                     <div class="battle-timer" id="battleTimer">45</div>
                     <div class="speed-wrapper">
-                        <div class="speed-label">${__('battle:speed', 'Скорость:')}</div>
+                        <div class="speed-label">${__('battle:Скорость:', 'Скорость:')}</div>
                         <button id="singleSpeedBtn" class="speed-btn">x1</button>
                     </div>
                 </div>
@@ -140,7 +150,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">${__('battle:defeat_overlay', 'Проиграл')}</div>
+                        <div class="defeat-overlay">${__('battle:Проиграл', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div id="enemy-animation" class="animation-container"></div>
@@ -156,7 +166,7 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-log-container">
-                <div class="log-header">${__('battle:log_header', 'Лог боя')}</div>
+                <div class="log-header">${__('battle:Лог боя', 'Лог боя')}</div>
                 <div id="battleLog" class="battle-log"></div>
             </div>
         </div>
@@ -217,7 +227,7 @@ async function showBattleResult(battleData, timeOut = false) {
 
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
-    const resultText = isVictory ? __('battle:victory', 'ПОБЕДА') : (winner === 'draw' ? __('battle:draw', 'НИЧЬЯ') : __('battle:defeat', 'ПОРАЖЕНИЕ'));
+    const resultText = isVictory ? __('battle:ПОБЕДА', 'ПОБЕДА') : (winner === 'draw' ? __('battle:НИЧЬЯ', 'НИЧЬЯ') : __('battle:ПОРАЖЕНИЕ', 'ПОРАЖЕНИЕ'));
     const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
     if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
@@ -382,20 +392,20 @@ async function showBattleResult(battleData, timeOut = false) {
     };
 
     const baseItems = [
-        addRewardItem(__('battle:reward_exp', 'Опыт'), `+${expGain}`, 'fas fa-star'),
-        addRewardItem(__('battle:reward_coins', 'Монеты'), `+${coinGain}`, 'fas fa-coins'),
-        addRewardItem(__('battle:reward_rating', 'Рейтинг'), `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
-        addRewardItem(__('battle:reward_streak', 'Серия'), `${newStreak}`, 'fas fa-shield-alt')
+        addRewardItem(__('battle:Опыт', 'Опыт'), `+${expGain}`, 'fas fa-star'),
+        addRewardItem(__('battle:Монеты', 'Монеты'), `+${coinGain}`, 'fas fa-coins'),
+        addRewardItem(__('battle:Рейтинг', 'Рейтинг'), `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
+        addRewardItem(__('battle:Серия', 'Серия'), `${newStreak}`, 'fas fa-shield-alt')
     ];
     baseItems.forEach(item => rewardsGrid.appendChild(item));
 
     if (battleData.coalGain && battleData.coalGain > 0) {
-        const coalItem = addRewardItem(__('battle:reward_coal', 'Уголь'), `+${battleData.coalGain}`, 'fas fa-cube');
+        const coalItem = addRewardItem(__('battle:Уголь', 'Уголь'), `+${battleData.coalGain}`, 'fas fa-cube');
         coalItem.querySelector('i').style.color = '#00aaff';
         rewardsGrid.appendChild(coalItem);
     }
     if (battleData.scrollGain) {
-        const scrollItem = addRewardItem(__('battle:reward_scroll', 'Свиток'), __('common:rare', 'Редкий'), 'fas fa-scroll');
+        const scrollItem = addRewardItem(__('battle:Свиток', 'Свиток'), __('common:Редкое', 'Редкое'), 'fas fa-scroll');
         scrollItem.querySelector('i').style.color = '#00aaff';
         rewardsGrid.appendChild(scrollItem);
     }
@@ -413,14 +423,14 @@ async function showBattleResult(battleData, timeOut = false) {
         return btn;
     };
 
-    const rematchBtn = createButton(__('battle:button_fight', 'В бой'), async () => {
+    const rematchBtn = createButton(__('battle:В бой', 'В бой'), async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         await refreshData();
         startBattle();
     });
 
-    const backBtn = createButton(__('battle:button_back', 'Назад'), async () => {
+    const backBtn = createButton(__('common:Назад', 'Назад'), async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
@@ -438,13 +448,13 @@ async function showBattleResult(battleData, timeOut = false) {
 
     let tabLogBtn, tabStatsBtn;
 
-    tabLogBtn = createButton(__('battle:tab_log', 'Лог боя'), () => {
+    tabLogBtn = createButton(__('battle:Лог боя', 'Лог боя'), () => {
         tabLogBtn.classList.add('active');
         tabStatsBtn.classList.remove('active');
         resultContent.innerHTML = logArray;
     }, true);
 
-    tabStatsBtn = createButton(__('battle:tab_stats', 'Статистика'), () => {
+    tabStatsBtn = createButton(__('battle:Статистика', 'Статистика'), () => {
         tabStatsBtn.classList.add('active');
         tabLogBtn.classList.remove('active');
         
@@ -454,23 +464,23 @@ async function showBattleResult(battleData, timeOut = false) {
         const thead = table.createTHead();
         const headerRow = thead.insertRow();
         const th1 = document.createElement('th');
-        th1.innerText = __('battle:stats_player', 'Игрок');
+        th1.innerText = __('battle:Игрок', 'Игрок');
         const th2 = document.createElement('th');
-        th2.innerText = __('battle:stats_param', 'Параметр');
+        th2.innerText = __('battle:Параметр', 'Параметр');
         const th3 = document.createElement('th');
-        th3.innerText = __('battle:stats_enemy', 'Соперник');
+        th3.innerText = __('battle:Соперник', 'Соперник');
         headerRow.appendChild(th1);
         headerRow.appendChild(th2);
         headerRow.appendChild(th3);
         
         const tbody = table.createTBody();
         const rowsData = [
-            [playerStats.hits, __('battle:stats_hits', 'Ударов'), enemyStats.hits],
-            [playerStats.crits, __('battle:stats_crits', 'Критов'), enemyStats.crits],
-            [playerStats.dodges, __('battle:stats_dodges', 'Уклонений'), enemyStats.dodges],
-            [playerStats.totalDamage, __('battle:stats_damage', 'Урона'), enemyStats.totalDamage],
-            [playerStats.heal, __('battle:stats_heal', 'Исцелено'), enemyStats.heal],
-            [playerStats.reflect, __('battle:stats_reflect', 'Отражено'), enemyStats.reflect]
+            [playerStats.hits, __('battle:Ударов', 'Ударов'), enemyStats.hits],
+            [playerStats.crits, __('battle:Критов', 'Критов'), enemyStats.crits],
+            [playerStats.dodges, __('battle:Уклонений', 'Уклонений'), enemyStats.dodges],
+            [playerStats.totalDamage, __('battle:Урона', 'Урона'), enemyStats.totalDamage],
+            [playerStats.heal, __('battle:Исцелено', 'Исцелено'), enemyStats.heal],
+            [playerStats.reflect, __('battle:Отражено', 'Отражено'), enemyStats.reflect]
         ];
         
         for (const [playerVal, param, enemyVal] of rowsData) {

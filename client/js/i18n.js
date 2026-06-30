@@ -1,4 +1,4 @@
-// js/i18n.js – загрузка переводов через fetch (без HTTP-бекенда)
+// js/i18n.js – загрузка переводов через fetch с поддержкой fallback
 
 (function() {
     console.log('🔄 i18n init started');
@@ -19,7 +19,6 @@
             return { ru, en };
         } catch (e) {
             console.error('Error loading translations:', e);
-            // fallback – пустые объекты, чтобы i18next не падал
             return { ru: {}, en: {} };
         }
     }
@@ -49,7 +48,12 @@
                 return;
             }
             console.log('✅ i18next initialized, language:', i18next.language);
-            window.__ = i18next.t.bind(i18next);
+            
+            // Глобальная функция с поддержкой fallback
+            window.__ = function(key, fallback) {
+                return i18next.t(key, { defaultValue: fallback || key });
+            };
+            
             window.i18next = i18next;
             updateContent();
             if (typeof window.updateUIAfterLanguageChange === 'function') {
@@ -70,17 +74,18 @@
         });
     }
 
-    // Глобальная функция смены языка
     window.setLanguage = function(lang) {
         if (window.i18next && typeof window.i18next.changeLanguage === 'function') {
             window.i18next.changeLanguage(lang, () => {
                 localStorage.setItem('i18nextLng', lang);
                 updateContent();
-                // Обновляем открытые экраны
                 if (document.querySelector('.settings-container')) {
                     if (typeof window.renderSettings === 'function') {
                         window.renderSettings();
                     }
+                }
+                if (window.currentScreen === 'main' && typeof window.renderMain === 'function') {
+                    window.renderMain();
                 }
                 const modal = document.getElementById('roleModal');
                 if (modal && modal.style.display !== 'none') {
@@ -104,9 +109,11 @@
                 window.renderSettings();
             }
         }
+        if (window.currentScreen === 'main' && typeof window.renderMain === 'function') {
+            window.renderMain();
+        }
     };
 
-    // Запуск после загрузки DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initI18next);
     } else {

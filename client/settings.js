@@ -30,12 +30,6 @@ const SETTINGS_LANG_NAMES = {
     en: 'English'
 };
 
-function __(key, fallback) {
-    if (window.i18next && typeof window.i18next.t === 'function') {
-        return window.i18next.t(key);
-    }
-    return fallback || key;
-}
 
 function setLanguage(lang) {
     if (window.i18next && typeof window.i18next.changeLanguage === 'function') {

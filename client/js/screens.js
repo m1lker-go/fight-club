@@ -1,4 +1,4 @@
-// screens.js – все функции рендеринга экранов
+// screens.js – все функции рендеринга экранов с поддержкой i18n
 // ==================== ГЛОБАЛЬНЫЕ НАСТРОЙКИ ====================
 
 let tradeSubtab = 'chests'; // 'chests', 'coins', 'gems'
@@ -25,9 +25,15 @@ if (typeof roleDescriptions === 'undefined') {
 
 function getRoleNameRu(role) {
     const roles = {
-        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
-        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
-        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
+        guardian: __('subclasses:guardian.name'),
+        berserker: __('subclasses:berserker.name'),
+        knight: __('subclasses:knight.name'),
+        assassin: __('subclasses:assassin.name'),
+        venom_blade: __('subclasses:venom_blade.name'),
+        blood_hunter: __('subclasses:blood_hunter.name'),
+        pyromancer: __('subclasses:pyromancer.name'),
+        cryomancer: __('subclasses:cryomancer.name'),
+        illusionist: __('subclasses:illusionist.name')
     };
     return roles[role] || role;
 }
@@ -37,8 +43,6 @@ function getRoleNameRu(role) {
 function renderMain() {
     const content = document.getElementById('content');
     if (!content) return;
-
-    const __ = window.__ || (key => key); // fallback
 
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
@@ -187,7 +191,7 @@ function updateMainScreen() {
     const expSpan = document.querySelector('.exp-display');
     const expBarFill = document.querySelector('.exp-bar-fill');
     if (levelSpan) levelSpan.innerText = level;
-    if (expSpan) expSpan.innerText = `${exp}/${nextExp} опыта`;
+    if (expSpan) expSpan.innerText = `${exp}/${nextExp} ${__('main:exp')}`;
     if (expBarFill) expBarFill.style.width = expPercent + '%';
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.class === currentClass);
@@ -304,37 +308,37 @@ function renderEquip() {
         unequipped.forEach(item => {
             const rarityClass = `rarity-${item.rarity}`;
             const stats = [];
-            if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-            if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-            if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-            if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-            if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-            if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-            if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-            if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-            if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-            if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+            if (item.atk_bonus) stats.push(__('common:atk') + `+${item.atk_bonus}`);
+            if (item.def_bonus) stats.push(__('common:def') + `+${item.def_bonus}`);
+            if (item.hp_bonus) stats.push(__('common:hp') + `+${item.hp_bonus}`);
+            if (item.spd_bonus) stats.push(__('common:spd') + `+${item.spd_bonus}`);
+            if (item.crit_bonus) stats.push(__('common:crit') + `+${item.crit_bonus}%`);
+            if (item.crit_dmg_bonus) stats.push(__('common:crit_dmg') + `+${item.crit_dmg_bonus}%`);
+            if (item.agi_bonus) stats.push(__('common:agi') + `+${item.agi_bonus}%`);
+            if (item.int_bonus) stats.push(__('common:int') + `+${item.int_bonus}%`);
+            if (item.vamp_bonus) stats.push(__('common:vamp') + `+${item.vamp_bonus}%`);
+            if (item.reflect_bonus) stats.push(__('common:reflect') + `+${item.reflect_bonus}%`);
 
             const itemIcon = getItemIconPath(item) || '';
-            const classNameRu = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
+            const classNameRu = item.owner_class === 'warrior' ? __('common:warrior') : (item.owner_class === 'assassin' ? __('common:assassin') : __('common:mage'));
 
             const isForSale = item.for_sale === true;
             let actionButtonsHtml = '';
             if (isForSale) {
                 actionButtonsHtml = `
-                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">Снять с<br>продажи</button>
-                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">Изменить<br>цену</button>
+                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">${__('equip:remove_from_sale')}</button>
+                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">${__('equip:change_price')}</button>
                 `;
             } else {
                 actionButtonsHtml = `
-                    <button class="inv-action-btn equip-btn" data-item-id="${item.id}" data-action="equip">Надеть</button>
-                    <button class="inv-action-btn sell-btn" data-item-id="${item.id}" data-action="sell">Продать</button>
+                    <button class="inv-action-btn equip-btn" data-item-id="${item.id}" data-action="equip">${__('equip:equip')}</button>
+                    <button class="inv-action-btn sell-btn" data-item-id="${item.id}" data-action="sell">${__('equip:sell')}</button>
                 `;
             }
 
             let iconHtml = `<div class="inv-icon-img" style="background-image: url('${itemIcon}');"></div>`;
             if (isForSale) {
-                iconHtml += `<div class="sale-overlay">На продаже</div>`;
+                iconHtml += `<div class="sale-overlay">${__('equip:on_sale')}</div>`;
             }
 
             itemsHtml += `
@@ -383,15 +387,15 @@ function renderEquip() {
     content.innerHTML = `
         <div class="equip-container">
             <div class="class-selector">
-                <button class="class-btn ${selectedClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                <button class="class-btn ${selectedClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                <button class="class-btn ${selectedClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                <button class="class-btn ${selectedClass === 'warrior' ? 'active' : ''}" data-class="warrior">${__('common:warrior')}</button>
+                <button class="class-btn ${selectedClass === 'assassin' ? 'active' : ''}" data-class="assassin">${__('common:assassin')}</button>
+                <button class="class-btn ${selectedClass === 'mage' ? 'active' : ''}" data-class="mage">${__('common:mage')}</button>
             </div>
             <div class="equip-top">
                 ${renderTopBar(selectedClass)}
             </div>
             <div class="inventory-section">
-                <div class="inventory-header">РЮКЗАК</div>
+                <div class="inventory-header">${__('equip:backpack')}</div>
                 <div class="inventory-list">
                     ${renderInventoryList(selectedClass)}
                 </div>
@@ -399,7 +403,7 @@ function renderEquip() {
         </div>
     `;
 
-    // Обработчики
+    // Обработчики (без изменений)
     document.querySelectorAll('.class-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const newClass = e.currentTarget.dataset.class;
@@ -424,10 +428,10 @@ function renderEquip() {
                         await refreshData();
                         renderEquip();
                     } else {
-                        showToast('Ошибка при снятии', 1500);
+                        showToast(__('equip:unequip_error'), 1500);
                     }
                 } catch (e) {
-                    showToast('Сеть недоступна', 1500);
+                    showToast(__('common:network_unavailable'), 1500);
                 }
             });
         });
@@ -461,7 +465,7 @@ function renderEquip() {
                         renderEquip();
                     } else {
                         const err = await res.json();
-                        showToast('Ошибка: ' + err.error, 1500);
+                        showToast(__('equip:equip_error') + err.error, 1500);
                     }
                 }
             } else if (action === 'sell') {
@@ -469,7 +473,7 @@ function renderEquip() {
                 const item = inventory.find(i => i.id == Number(itemId));
                 if (!item) return;
                 if (item.owner_class !== currentClass) {
-                    showToast('Этот предмет не принадлежит текущему классу!', 1500);
+                    showToast(__('equip:not_current_class'), 1500);
                     return;
                 }
                 showPriceInputModal(null, async (price) => {
@@ -482,25 +486,25 @@ function renderEquip() {
                     });
                     const data = await res.json();
                     if (data.success) {
-                        showToast('Предмет выставлен на маркет', 1500);
+                        showToast(__('equip:item_listed'), 1500);
                         await refreshData();
                         renderEquip();
                     } else {
-                        showToast('Ошибка: ' + data.error, 1500);
+                        showToast(__('equip:sell_error') + data.error, 1500);
                     }
                 });
             } else if (action === 'unsell') {
-                showConfirmModal('Снять предмет с продажи?', async () => {
+                showConfirmModal(__('equip:unsell_confirm'), async () => {
                     const res = await window.apiRequest('/inventory/unsell', {
                         method: 'POST',
                         body: JSON.stringify({ item_id: itemId })
                     });
                     if (res.ok) {
-                        showToast('Предмет снят с продажи', 1500);
+                        showToast(__('equip:item_unlisted'), 1500);
                         await refreshData();
                         renderEquip();
                     } else {
-                        showToast('Ошибка при снятии с продажи', 1500);
+                        showToast(__('equip:unsell_error'), 1500);
                     }
                 });
             } else if (action === 'editPrice') {
@@ -512,12 +516,12 @@ function renderEquip() {
                         body: JSON.stringify({ item_id: itemId, new_price: newPrice })
                     });
                     if (res.ok) {
-                        showToast('Цена изменена', 1500);
+                        showToast(__('equip:price_changed'), 1500);
                         await refreshData();
                         renderEquip();
                     } else {
                         const err = await res.json();
-                        showToast('Ошибка: ' + err.error, 1500);
+                        showToast(__('equip:price_change_error') + err.error, 1500);
                     }
                 });
             }
@@ -532,9 +536,9 @@ function renderTrade() {
     if (!content) return;
     content.innerHTML = `
         <div class="trade-tabs-container">
-            <button class="trade-tab ${tradeSubtab === 'chests' ? 'active' : ''}" data-subtab="chests">Сундуки</button>
-            <button class="trade-tab ${tradeSubtab === 'coins' ? 'active' : ''}" data-subtab="coins">Монетный двор</button>
-            <button class="trade-tab ${tradeSubtab === 'gems' ? 'active' : ''}" data-subtab="gems">Алмазная лавка</button>
+            <button class="trade-tab ${tradeSubtab === 'chests' ? 'active' : ''}" data-subtab="chests">${__('trade:chests')}</button>
+            <button class="trade-tab ${tradeSubtab === 'coins' ? 'active' : ''}" data-subtab="coins">${__('trade:mint')}</button>
+            <button class="trade-tab ${tradeSubtab === 'gems' ? 'active' : ''}" data-subtab="gems">${__('trade:gems_shop')}</button>
         </div>
         <div id="tradeSubContent" class="trade-content"></div>
     `;
@@ -549,43 +553,41 @@ function renderTrade() {
     else if (tradeSubtab === 'coins') renderCoinMint(subContent);
     else if (tradeSubtab === 'gems') renderGemsShop(subContent);
 
-    // Обновляем бейджи на табах (после отрисовки)
     if (typeof updateTradeBadges === 'function') {
         updateTradeBadges();
     }
 }
 
 // Вкладка "Сундуки"
-
 async function renderChestsTab(container) {
     if (!container) return;
     container.innerHTML = `
         <div class="chest-table">
             <div class="chest-row" data-chest="common">
-                <div class="chest-icon-col"><img src="/assets/common-chess.png" alt="Обычный сундук"></div>
-                <div class="chest-info-col"><div class="chest-name">Обычный сундук</div><div class="chest-desc">Обычное 85%<br>Необычное 15%</div></div>
+                <div class="chest-icon-col"><img src="/assets/common-chess.png" alt="${__('trade:common_chest')}"></div>
+                <div class="chest-info-col"><div class="chest-name">${__('trade:common_chest')}</div><div class="chest-desc">${__('trade:common_chest_desc')}</div></div>
                 <div class="chest-price-col"><button class="chest-buy-btn" data-chest="common"><span class="chest-price" id="commonChestPrice">?</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="uncommon">
-                <div class="chest-icon-col"><img src="/assets/uncommon-chess.png" alt="Необычный сундук"></div>
-                <div class="chest-info-col"><div class="chest-name">Необычный сундук</div><div class="chest-desc">Обычное 25%<br>Необычное 65%<br>Редкое 10%</div></div>
+                <div class="chest-icon-col"><img src="/assets/uncommon-chess.png" alt="${__('trade:uncommon_chest')}"></div>
+                <div class="chest-info-col"><div class="chest-name">${__('trade:uncommon_chest')}</div><div class="chest-desc">${__('trade:uncommon_chest_desc')}</div></div>
                 <div class="chest-price-col"><button class="chest-buy-btn" data-chest="uncommon"><span class="chest-price">500</span><i class="fas fa-coins"></i></button></div>
             </div>
             <div class="chest-row" data-chest="rare">
-                <div class="chest-icon-col"><img src="/assets/rare-chess.png" alt="Редкий сундук"></div>
-                <div class="chest-info-col"><div class="chest-name">Редкий сундук</div><div class="chest-desc">Редкое 65%<br>Необычное 25%<br>Эпическое 10%</div></div>
+                <div class="chest-icon-col"><img src="/assets/rare-chess.png" alt="${__('trade:rare_chest')}"></div>
+                <div class="chest-info-col"><div class="chest-name">${__('trade:rare_chest')}</div><div class="chest-desc">${__('trade:rare_chest_desc')}</div></div>
                 <div class="chest-price-col"><button class="chest-buy-btn" data-chest="rare"><span class="chest-price">1500</span><i class="fas fa-coins"></i></button></div>
             </div>
-         <div class="chest-row" data-chest="epic">
-    <div class="chest-icon-col"><img src="/assets/epic-chess.png" alt="Эпический сундук"></div>
-    <div class="chest-info-col"><div class="chest-name">Эпический сундук</div><div class="chest-desc">Эпическое 65%<br>Редкое 25%<br>Легендарное 10%</div></div>
-    <div class="chest-price-col"><button class="chest-buy-btn" data-chest="epic"><span class="chest-price">300</span><i class="fas fa-gem"></i></button></div>
-</div>
-<div class="chest-row" data-chest="legendary">
-    <div class="chest-icon-col"><img src="/assets/leg-chess.png" alt="Легендарный сундук"></div>
-    <div class="chest-info-col"><div class="chest-name">Легендарный сундук</div><div class="chest-desc">Легендарное 70%<br>Эпическое 30%</div></div>
-    <div class="chest-price-col"><button class="chest-buy-btn" data-chest="legendary"><span class="chest-price">1000</span><i class="fas fa-gem"></i></button></div>
-</div>
+            <div class="chest-row" data-chest="epic">
+                <div class="chest-icon-col"><img src="/assets/epic-chess.png" alt="${__('trade:epic_chest')}"></div>
+                <div class="chest-info-col"><div class="chest-name">${__('trade:epic_chest')}</div><div class="chest-desc">${__('trade:epic_chest_desc')}</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="epic"><span class="chest-price">300</span><i class="fas fa-gem"></i></button></div>
+            </div>
+            <div class="chest-row" data-chest="legendary">
+                <div class="chest-icon-col"><img src="/assets/leg-chess.png" alt="${__('trade:legendary_chest')}"></div>
+                <div class="chest-info-col"><div class="chest-name">${__('trade:legendary_chest')}</div><div class="chest-desc">${__('trade:legendary_chest_desc')}</div></div>
+                <div class="chest-price-col"><button class="chest-buy-btn" data-chest="legendary"><span class="chest-price">1000</span><i class="fas fa-gem"></i></button></div>
+            </div>
         </div>
     `;
 
@@ -596,22 +598,21 @@ async function renderChestsTab(container) {
             const priceSpan = container.querySelector('[data-chest="common"] .chest-price');
             const coinIcon = container.querySelector('[data-chest="common"] i');
             if (data.freeAvailable) {
-                priceSpan.innerText = 'FREE';
+                priceSpan.innerText = __('common:free');
                 coinIcon.style.display = 'none';
             } else {
                 priceSpan.innerText = '100';
                 coinIcon.style.display = 'inline-block';
             }
-           if (window.updateShopTabIcon) window.updateShopTabIcon();
-           if (window.updateTradeBadges) window.updateTradeBadges();
-                   } catch (e) {
+            if (window.updateShopTabIcon) window.updateShopTabIcon();
+            if (window.updateTradeBadges) window.updateTradeBadges();
+        } catch (e) {
             console.error('Failed to fetch free chest status', e);
         }
     }
 
     updateCommonChestPrice();
 
-    // Привязываем обработчики к кнопкам внутри container
     const buyButtons = container.querySelectorAll('.chest-buy-btn');
     for (const btn of buyButtons) {
         btn.addEventListener('click', async (e) => {
@@ -622,16 +623,15 @@ async function renderChestsTab(container) {
             try {
                 data = await res.json();
             } catch {
-                showToast('Ошибка ответа сервера', 1500);
+                showToast(__('common:server_response_error'), 1500);
                 return;
             }
             if (data.item) {
                 showChestResult(data.item);
                 await refreshData();
                 if (typeof refreshTasksData === 'function') await refreshTasksData();
-               if (window.updateTradeBadges) window.updateTradeBadges();
+                if (window.updateTradeBadges) window.updateTradeBadges();
                 if (chest === 'common') updateCommonChestPrice();
-                // Обновляем задание "Счастливчик"
                 try {
                     await window.apiRequest('/tasks/daily/update/chest', {
                         method: 'POST',
@@ -641,8 +641,8 @@ async function renderChestsTab(container) {
                     console.error('Failed to update chest task', err);
                 }
             } else {
-                if (data.error === 'Not enough coins') showToast('Недостаточно средств!', 1500);
-                else showToast('Ошибка: ' + data.error, 1500);
+                if (data.error === 'Not enough coins') showToast(__('common:not_enough_funds'), 1500);
+                else showToast(__('common:error') + ': ' + data.error, 1500);
             }
         });
     }
@@ -650,7 +650,6 @@ async function renderChestsTab(container) {
 
 // Вкладка "Монетный двор"
 function renderCoinMint(container) {
-    // Динамически загружаем mint.js, если ещё не загружен
     if (typeof renderMint === 'undefined') {
         const script = document.createElement('script');
         script.src = '/js/mint.js';
@@ -659,12 +658,12 @@ function renderCoinMint(container) {
                 renderMint(container);
             } else {
                 console.error('renderMint not found after loading mint.js');
-                container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Монетного двора</p>';
+                container.innerHTML = `<p style="color:#aaa;">${__('trade:mint_load_error')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load mint.js');
-            container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Монетного двора</p>';
+            container.innerHTML = `<p style="color:#aaa;">${__('trade:mint_load_error')}</p>`;
         };
         document.head.appendChild(script);
     } else {
@@ -681,11 +680,11 @@ function renderGemsShop(container) {
             if (typeof renderGems === 'function') {
                 renderGems(container);
             } else {
-                container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Алмазной лавки</p>';
+                container.innerHTML = `<p style="color:#aaa;">${__('trade:gems_shop_load_error')}</p>`;
             }
         };
         script.onerror = () => {
-            container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки Алмазной лавки</p>';
+            container.innerHTML = `<p style="color:#aaa;">${__('trade:gems_shop_load_error')}</p>`;
         };
         document.head.appendChild(script);
     } else {
@@ -702,13 +701,13 @@ async function renderMarket(target = null) {
         <div class="market-page">
             <div class="market-filters-panel">
                 <div class="filters-row">
-                    <div class="filter-group" id="filter-class-group"><button class="filter-button" id="classFilterBtn"><span id="classFilterText">Класс</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="classPanel" style="display: none;"><div class="filter-option" data-value="any">Любой класс</div><div class="filter-option" data-value="warrior">Воин</div><div class="filter-option" data-value="assassin">Ассасин</div><div class="filter-option" data-value="mage">Маг</div></div></div>
-                    <div class="filter-group" id="filter-rarity-group"><button class="filter-button" id="rarityFilterBtn"><span id="rarityFilterText">Редкость</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="rarityPanel" style="display: none;"><div class="filter-option" data-value="any">Любая редкость</div><div class="filter-option" data-value="common">Обычное</div><div class="filter-option" data-value="uncommon">Необычное</div><div class="filter-option" data-value="rare">Редкое</div><div class="filter-option" data-value="epic">Эпическое</div><div class="filter-option" data-value="legendary">Легендарное</div></div></div>
-                    <div class="filter-group" id="filter-stat-group"><button class="filter-button" id="statFilterBtn"><span id="statFilterText">Характеристика</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="statPanel" style="display: none;"><div class="filter-option" data-value="any">Любая характеристика</div><div class="filter-option" data-value="atk_bonus">АТК</div><div class="filter-option" data-value="def_bonus">ЗАЩ</div><div class="filter-option" data-value="hp_bonus">ЗДОР</div><div class="filter-option" data-value="spd_bonus">СКОР</div><div class="filter-option" data-value="crit_bonus">КРИТ</div><div class="filter-option" data-value="crit_dmg_bonus">КР.УРОН</div><div class="filter-option" data-value="agi_bonus">ЛОВ</div><div class="filter-option" data-value="int_bonus">ИНТ</div><div class="filter-option" data-value="vamp_bonus">ВАМП</div><div class="filter-option" data-value="reflect_bonus">ОТР</div></div></div>
+                    <div class="filter-group" id="filter-class-group"><button class="filter-button" id="classFilterBtn"><span id="classFilterText">${__('market:class')}</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="classPanel" style="display: none;"><div class="filter-option" data-value="any">${__('market:any_class')}</div><div class="filter-option" data-value="warrior">${__('common:warrior')}</div><div class="filter-option" data-value="assassin">${__('common:assassin')}</div><div class="filter-option" data-value="mage">${__('common:mage')}</div></div></div>
+                    <div class="filter-group" id="filter-rarity-group"><button class="filter-button" id="rarityFilterBtn"><span id="rarityFilterText">${__('market:rarity')}</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="rarityPanel" style="display: none;"><div class="filter-option" data-value="any">${__('market:any_rarity')}</div><div class="filter-option" data-value="common">${__('common:common')}</div><div class="filter-option" data-value="uncommon">${__('common:uncommon')}</div><div class="filter-option" data-value="rare">${__('common:rare')}</div><div class="filter-option" data-value="epic">${__('common:epic')}</div><div class="filter-option" data-value="legendary">${__('common:legendary')}</div></div></div>
+                    <div class="filter-group" id="filter-stat-group"><button class="filter-button" id="statFilterBtn"><span id="statFilterText">${__('market:stat')}</span><i class="fas fa-chevron-down"></i></button><div class="filter-panel" id="statPanel" style="display: none;"><div class="filter-option" data-value="any">${__('market:any_stat')}</div><div class="filter-option" data-value="atk_bonus">${__('common:atk')}</div><div class="filter-option" data-value="def_bonus">${__('common:def')}</div><div class="filter-option" data-value="hp_bonus">${__('common:hp')}</div><div class="filter-option" data-value="spd_bonus">${__('common:spd')}</div><div class="filter-option" data-value="crit_bonus">${__('common:crit')}</div><div class="filter-option" data-value="crit_dmg_bonus">${__('common:crit_dmg')}</div><div class="filter-option" data-value="agi_bonus">${__('common:agi')}</div><div class="filter-option" data-value="int_bonus">${__('common:int')}</div><div class="filter-option" data-value="vamp_bonus">${__('common:vamp')}</div><div class="filter-option" data-value="reflect_bonus">${__('common:reflect')}</div></div></div>
                 </div>
-                <div class="apply-button-container"><button class="apply-filters-btn" id="applyFiltersBtn">Применить</button></div>
+                <div class="apply-button-container"><button class="apply-filters-btn" id="applyFiltersBtn">${__('market:apply')}</button></div>
             </div>
-            <div class="market-items-header">Список снаряжения</div>
+            <div class="market-items-header">${__('market:items_list')}</div>
             <div class="market-items-container" id="marketItemsContainer"><div id="marketItemsList" class="market-items-list"></div></div>
         </div>
     `;
@@ -724,9 +723,9 @@ async function renderMarket(target = null) {
             const value = e.currentTarget.dataset.value;
             const panelId = e.currentTarget.closest('.filter-panel').id;
             const optionText = e.currentTarget.innerText;
-            if (panelId === 'classPanel') { currentClass = value; document.getElementById('classFilterText').innerText = value === 'any' ? 'Класс' : optionText; }
-            else if (panelId === 'rarityPanel') { currentRarity = value; document.getElementById('rarityFilterText').innerText = value === 'any' ? 'Редкость' : optionText; }
-            else if (panelId === 'statPanel') { currentStat = value; document.getElementById('statFilterText').innerText = value === 'any' ? 'Характеристика' : optionText; }
+            if (panelId === 'classPanel') { currentClass = value; document.getElementById('classFilterText').innerText = value === 'any' ? __('market:class') : optionText; }
+            else if (panelId === 'rarityPanel') { currentRarity = value; document.getElementById('rarityFilterText').innerText = value === 'any' ? __('market:rarity') : optionText; }
+            else if (panelId === 'statPanel') { currentStat = value; document.getElementById('statFilterText').innerText = value === 'any' ? __('market:stat') : optionText; }
             closeAllPanels();
         });
     });
@@ -740,26 +739,26 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
     if (statFilter !== 'any') params.stat = statFilter;
     const res = await window.apiRequest('/market', { method: 'GET', body: params });
     let items;
-    try { items = await res.json(); } catch { showToast('Ошибка загрузки маркета', 1500); return; }
+    try { items = await res.json(); } catch { showToast(__('market:load_error'), 1500); return; }
     const marketList = document.getElementById('marketItemsList');
     if (!marketList) return;
     marketList.innerHTML = '';
-    if (!Array.isArray(items)) { marketList.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки маркета</p>'; return; }
+    if (!Array.isArray(items)) { marketList.innerHTML = `<p style="color:#aaa; text-align:center;">${__('market:load_error')}</p>`; return; }
     const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
     const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
     function getItemIconPath(item) { if (!item) return ''; const folder = classFolderMap[item.owner_class]; const fileType = typeFileMap[item.type]; if (!folder || !fileType) return ''; return `/assets/equip/${folder}/${folder}-${fileType}-001.png`; }
     for (const item of items) {
         const stats = [];
-        if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-        if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-        if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-        if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-        if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-        if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-        if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-        if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-        if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-        if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+        if (item.atk_bonus) stats.push(__('common:atk') + `+${item.atk_bonus}`);
+        if (item.def_bonus) stats.push(__('common:def') + `+${item.def_bonus}`);
+        if (item.hp_bonus) stats.push(__('common:hp') + `+${item.hp_bonus}`);
+        if (item.spd_bonus) stats.push(__('common:spd') + `+${item.spd_bonus}`);
+        if (item.crit_bonus) stats.push(__('common:crit') + `+${item.crit_bonus}%`);
+        if (item.crit_dmg_bonus) stats.push(__('common:crit_dmg') + `+${item.crit_dmg_bonus}%`);
+        if (item.agi_bonus) stats.push(__('common:agi') + `+${item.agi_bonus}%`);
+        if (item.int_bonus) stats.push(__('common:int') + `+${item.int_bonus}%`);
+        if (item.vamp_bonus) stats.push(__('common:vamp') + `+${item.vamp_bonus}%`);
+        if (item.reflect_bonus) stats.push(__('common:reflect') + `+${item.reflect_bonus}%`);
         const rarityClass = `rarity-${item.rarity}`;
         const iconPath = getItemIconPath(item);
         const isOwn = item.seller_id === userData.id;
@@ -769,18 +768,18 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
         const iconDiv = document.createElement('div'); iconDiv.className = 'market-item-icon'; const iconImg = document.createElement('div'); iconImg.className = 'item-icon-img'; iconImg.style.backgroundImage = `url('${iconPath}')`; iconDiv.appendChild(iconImg);
         const infoDiv = document.createElement('div'); infoDiv.className = 'market-item-info';
         const nameSpan = document.createElement('div'); nameSpan.className = 'market-item-name';
-        const classNameRu = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
+        const classNameRu = item.owner_class === 'warrior' ? __('common:warrior') : (item.owner_class === 'assassin' ? __('common:assassin') : __('common:mage'));
         nameSpan.innerHTML = `${escapeHtml(itemNameTranslations[item.name] || item.name)} <span class="item-class">(${escapeHtml(classNameRu)})</span>`;
         const statsDiv = document.createElement('div'); statsDiv.className = 'market-item-stats'; statsDiv.innerText = stats.join(' • ');
         infoDiv.appendChild(nameSpan); infoDiv.appendChild(statsDiv);
         const priceDiv = document.createElement('div'); priceDiv.className = 'market-item-price'; priceDiv.innerHTML = `${item.price} <i class="fas fa-coins"></i>`;
         const actionsDiv = document.createElement('div'); actionsDiv.className = 'market-item-actions';
         if (isOwn) {
-            const editBtn = document.createElement('button'); editBtn.className = 'market-action-btn edit-price-btn'; editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>'; editBtn.title = 'Изменить цену'; editBtn.addEventListener('click', (e) => { e.stopPropagation(); showEditPriceModal(item); });
-            const removeBtn = document.createElement('button'); removeBtn.className = 'market-action-btn remove-from-market-btn'; removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>'; removeBtn.title = 'Снять с продажи'; removeBtn.addEventListener('click', async (e) => { e.stopPropagation(); showConfirmModal('Снять этот предмет с продажи?', async () => { const res = await window.apiRequest('/market/remove', { method: 'POST', body: JSON.stringify({ item_id: item.id }) }); const data = await res.json(); if (data.success) { showToast('Предмет снят с продажи', 1500); await refreshData(); loadMarketItems(statFilter, classFilter, rarityFilter); } else { showToast('Ошибка: ' + data.error, 1500); } }); });
+            const editBtn = document.createElement('button'); editBtn.className = 'market-action-btn edit-price-btn'; editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>'; editBtn.title = __('market:change_price'); editBtn.addEventListener('click', (e) => { e.stopPropagation(); showEditPriceModal(item); });
+            const removeBtn = document.createElement('button'); removeBtn.className = 'market-action-btn remove-from-market-btn'; removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>'; removeBtn.title = __('market:remove_from_sale'); removeBtn.addEventListener('click', async (e) => { e.stopPropagation(); showConfirmModal(__('market:remove_confirm'), async () => { const res = await window.apiRequest('/market/remove', { method: 'POST', body: JSON.stringify({ item_id: item.id }) }); const data = await res.json(); if (data.success) { showToast(__('market:removed'), 1500); await refreshData(); loadMarketItems(statFilter, classFilter, rarityFilter); } else { showToast(__('market:remove_error') + data.error, 1500); } }); });
             actionsDiv.appendChild(editBtn); actionsDiv.appendChild(removeBtn);
         } else {
-            const viewBtn = document.createElement('button'); viewBtn.className = 'market-action-btn view-btn'; viewBtn.innerHTML = '<i class="fas fa-eye"></i>'; viewBtn.title = 'Просмотр'; viewBtn.addEventListener('click', (e) => { e.stopPropagation(); showItemDetailsModal(item); });
+            const viewBtn = document.createElement('button'); viewBtn.className = 'market-action-btn view-btn'; viewBtn.innerHTML = '<i class="fas fa-eye"></i>'; viewBtn.title = __('market:view'); viewBtn.addEventListener('click', (e) => { e.stopPropagation(); showItemDetailsModal(item); });
             actionsDiv.appendChild(viewBtn);
         }
         row.appendChild(iconDiv); row.appendChild(infoDiv); row.appendChild(priceDiv); row.appendChild(actionsDiv);
@@ -796,9 +795,9 @@ function renderRating() {
     content.innerHTML = `
         <div class="rating-page">
             <div class="rating-tabs-container">
-                <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn">РЕЙТИНГ</button>
-                <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn">СИЛА</button>
-                <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn">БАШНЯ</button>
+                <button class="rating-tab ${ratingTab === 'rating' ? 'active' : ''}" id="ratingTabBtn">${__('rating:rating')}</button>
+                <button class="rating-tab ${ratingTab === 'power' ? 'active' : ''}" id="powerTabBtn">${__('rating:power')}</button>
+                <button class="rating-tab ${ratingTab === 'tower' ? 'active' : ''}" id="towerTabBtn">${__('rating:tower')}</button>
             </div>
             <div class="rating-content-container" id="ratingContentContainer"><div id="ratingContent"></div></div>
         </div>
@@ -812,22 +811,22 @@ function renderRating() {
 async function loadRatingData(type) {
     const container = document.getElementById('ratingContent');
     if (!container) return;
-    container.innerHTML = '<p style="text-align:center;">Загрузка...</p>';
+    container.innerHTML = `<p style="text-align:center;">${__('common:loading')}</p>`;
     try {
         const res = await window.apiRequest(`/rank/${type}`, { method: 'GET' });
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error('Invalid data');
-        let html = '<table class="stats-table"><thead><tr><th>Место</th><th>Имя</th>';
-        if (type === 'rating' || type === 'power') html += '<th>Класс</th><th>Очки</th>';
-        else if (type === 'tower') html += '<th>Класс</th><th>Роль</th><th>Этаж</th>';
+        let html = `<table class="stats-table"><thead><tr><th>${__('rating:rank')}</th><th>${__('rating:name')}</th>`;
+        if (type === 'rating' || type === 'power') html += `<th>${__('rating:class')}</th><th>${__('rating:points')}</th>`;
+        else if (type === 'tower') html += `<th>${__('rating:class')}</th><th>${__('rating:role')}</th><th>${__('rating:floor')}</th>`;
         html += '</tr></thead><tbody>';
         data.forEach((item, index) => {
             html += `<tr><td style="text-align:center;">${index + 1} </td><td>${escapeHtml(item.username)}</td>`;
             if (type === 'rating') {
-                const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
+                const className = item.class === 'warrior' ? __('common:warrior') : (item.class === 'assassin' ? __('common:assassin') : __('common:mage'));
                 html += `<td>${className}</td><td style="text-align:center;">${item.rating}</td>`;
             } else if (type === 'power') {
-                const className = item.class === 'warrior' ? 'Воин' : (item.class === 'assassin' ? 'Ассасин' : 'Маг');
+                const className = item.class === 'warrior' ? __('common:warrior') : (item.class === 'assassin' ? __('common:assassin') : __('common:mage'));
                 html += `<td>${className}</td><td style="text-align:center;">${item.power}</td>`;
             } else if (type === 'tower') {
                 const className = window.getClassNameRu ? getClassNameRu(item.chosen_class) : item.chosen_class;
@@ -838,7 +837,7 @@ async function loadRatingData(type) {
         });
         html += '</tbody></table>';
         container.innerHTML = html;
-    } catch (e) { console.error('Error loading rating:', e); container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки</p>'; }
+    } catch (e) { console.error('Error loading rating:', e); container.innerHTML = `<p style="color:#aaa; text-align:center;">${__('rating:load_error')}</p>`; }
 }
 
 // ==================== ПРОФИЛЬ ====================
@@ -850,9 +849,9 @@ function renderProfile() {
     const hasSkillPoints = hasAnyUnspentSkillPoints();
     content.innerHTML = `
         <div class="profile-tabs-container">
-            <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">Скины</button>
-            <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">Бонусы</button>
-            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade" style="position: relative;">Улучшить${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="upgrade-tab-icon" alt="">' : ''}</button>
+            <button class="btn profile-tab ${profileTab === 'skins' ? 'active' : ''}" data-tab="skins">${__('profile:skins')}</button>
+            <button class="btn profile-tab ${profileTab === 'bonuses' ? 'active' : ''}" data-tab="bonuses">${__('profile:bonuses')}</button>
+            <button class="btn profile-tab ${profileTab === 'upgrade' ? 'active' : ''}" data-tab="upgrade" style="position: relative;">${__('profile:upgrade')}${hasSkillPoints ? '<img src="/assets/icons/icon-new.png" class="upgrade-tab-icon" alt="">' : ''}</button>
         </div>
         <div id="profileContent"></div>
     `;
@@ -886,36 +885,36 @@ function renderProfileBonuses(container) {
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
             <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior" style="position: relative;">
-                Воин
+                ${__('common:warrior')}
                 ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
             <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin" style="position: relative;">
-                Ассасин
+                ${__('common:assassin')}
                 ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
             <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage" style="position: relative;">
-                Маг
+                ${__('common:mage')}
                 ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
         </div>
 
         <div class="stats-block">
             <div class="stat-row">
-                <span class="stat-label">Уровень</span>
+                <span class="stat-label">${__('profile:level')}</span>
                 <div class="stat-bar-container">
                     <div class="stat-bar-fill" style="width: ${levelProgress}%;"></div>
                     <span class="stat-value">${classData.level}/${maxLevel}</span>
                 </div>
             </div>
             <div class="stat-row">
-                <span class="stat-label">Опыт</span>
+                <span class="stat-label">${__('profile:exp')}</span>
                 <div class="stat-bar-container">
                     <div class="stat-bar-fill" style="width: ${expProgress}%;"></div>
                     <span class="stat-value">${classData.exp}/${expNeeded}</span>
                 </div>
             </div>
             <div class="stat-row">
-                <span class="stat-label">Очки навыков</span>
+                <span class="stat-label">${__('profile:skill_points')}</span>
                 <div class="stat-bar-container">
                     <div class="stat-bar-fill" style="width: ${skillPointsProgress}%;"></div>
                     <span class="stat-value">${skillPoints}</span>
@@ -925,19 +924,19 @@ function renderProfileBonuses(container) {
 
         <table class="stats-table bonuses-table">
             <thead>
-                <tr><th>Параметр</th><th>База</th><th>+Инв.</th><th>+Особ.</th><th>Итого</th>  </tr>
+                <tr><th>${__('profile:param')}</th><th>${__('profile:base')}</th><th>${__('profile:gear')}</th><th>${__('profile:class_bonus')}</th><th>${__('profile:total')}</th></tr>
             </thead>
             <tbody>
-                ${renderStatRow('Здоровье (HP)', stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
-                ${renderStatRow('Атака (ATK)', stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
-                ${renderStatRow('Защита (DEF)', stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
-                ${renderStatRow('Ловкость (AGI)', stats.base.agi + '%', stats.gear.agi + '%', stats.classBonus?.agi ? stats.classBonus.agi + '%' : '', stats.final.agi + '%')}
-                ${renderStatRow('Интеллект (INT)', stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
-                ${renderStatRow('Скорость (SPD)', stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
-                ${renderStatRow('Шанс крита (CRIT)', stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
-               ${renderStatRow('Крит. урон (CRIT DMG)', (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
-                ${renderStatRow('Вампиризм (VAMP)', stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
-                ${renderStatRow('Отражение (REFLECT)', stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
+                ${renderStatRow(__('profile:hp'), stats.base.hp, stats.gear.hp, stats.classBonus?.hp || 0, stats.final.hp)}
+                ${renderStatRow(__('profile:atk'), stats.base.atk, stats.gear.atk, stats.classBonus?.atk || 0, stats.final.atk)}
+                ${renderStatRow(__('profile:def'), stats.base.def + '%', stats.gear.def + '%', stats.classBonus?.def ? stats.classBonus.def + '%' : '', stats.final.def + '%')}
+                ${renderStatRow(__('profile:agi'), stats.base.agi + '%', stats.gear.agi + '%', stats.classBonus?.agi ? stats.classBonus.agi + '%' : '', stats.final.agi + '%')}
+                ${renderStatRow(__('profile:int'), stats.base.int + '%', stats.gear.int + '%', stats.classBonus?.int ? stats.classBonus.int + '%' : '', stats.final.int + '%')}
+                ${renderStatRow(__('profile:spd'), stats.base.spd, stats.gear.spd, stats.classBonus?.spd || 0, stats.final.spd)}
+                ${renderStatRow(__('profile:crit'), stats.base.crit + '%', stats.gear.crit + '%', stats.classBonus?.crit ? stats.classBonus.crit + '%' : '', stats.final.crit + '%')}
+                ${renderStatRow(__('profile:crit_dmg'), (stats.base.critDmg*100).toFixed(1) + '%', (stats.gear.critDmg*100).toFixed(1) + '%', stats.classBonus?.critDmg ? (stats.classBonus.critDmg*100).toFixed(1) + '%' : '', (stats.final.critDmg*100).toFixed(1) + '%')}
+                ${renderStatRow(__('profile:vamp'), stats.base.vamp + '%', stats.gear.vamp + '%', stats.classBonus?.vamp ? stats.classBonus.vamp + '%' : '', stats.final.vamp + '%')}
+                ${renderStatRow(__('profile:reflect'), stats.base.reflect + '%', stats.gear.reflect + '%', stats.classBonus?.reflect ? stats.classBonus.reflect + '%' : '', stats.final.reflect + '%')}
             </tbody>
         </table>
     `;
@@ -971,34 +970,34 @@ function renderSkills(container) {
     container.innerHTML = `
         <div class="class-selector" style="margin-bottom: 15px;">
             <button class="class-btn ${currentClass === 'warrior' ? 'active' : ''}" data-class="warrior" style="position: relative;">
-                Воин
+                ${__('common:warrior')}
                 ${hasPointsForClass('warrior') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
             <button class="class-btn ${currentClass === 'assassin' ? 'active' : ''}" data-class="assassin" style="position: relative;">
-                Ассасин
+                ${__('common:assassin')}
                 ${hasPointsForClass('assassin') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
             <button class="class-btn ${currentClass === 'mage' ? 'active' : ''}" data-class="mage" style="position: relative;">
-                Маг
+                ${__('common:mage')}
                 ${hasPointsForClass('mage') ? '<img src="/assets/icons/icon-new.png" class="class-icon" alt="">' : ''}
             </button>
         </div>
 
         <div class="skills-header">
-            Доступно очков навыков: <strong>${skillPoints}</strong>
+            ${__('profile:skill_points_available')} <strong>${skillPoints}</strong>
         </div>
 
         <div class="skills-list">
-            ${renderSkillItem('hp_points', 'Здоровье', 'Здоровье +5 единиц', base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
-            ${renderSkillItem('atk_points', 'Атака', 'Атака +1 единица', base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
-            ${renderSkillItem('def_points', 'Защита', 'Входящий физ.урон -1% <br>(макс. 70%)', base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
-            ${renderSkillItem('dodge_points', 'Ловкость', 'Шанс уворота +1% <br> (макс. 70%)', base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
-            ${renderSkillItem('int_points', 'Интеллект', 'Сила магии +1%', base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
-            ${renderSkillItem('spd_points', 'Скорость', 'Влияет на очерёдность хода', base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
-            ${renderSkillItem('crit_points', 'Шанс крита', 'Шанс критического удара + 1% <br>(макс. 100%)', base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
-            ${renderSkillItem('crit_dmg_points', 'Крит. урон', 'Критический урон +2% <br>(макс. 450%)', ((classData.crit_dmg_points || 0)*2) + '%', classData.crit_dmg_points || 0, skillPoints)}
-            ${renderSkillItem('vamp_points', 'Вампиризм', 'Восстанавливает % <br>от нанесённого урона', base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
-            ${renderSkillItem('reflect_points', 'Отражение', 'Возвращает % <br>от полученного урона', base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
+            ${renderSkillItem('hp_points', __('profile:hp'), __('profile:hp_desc'), base.hp + (classData.hp_points || 0) * 5, classData.hp_points || 0, skillPoints)}
+            ${renderSkillItem('atk_points', __('profile:atk'), __('profile:atk_desc'), base.atk + (classData.atk_points || 0), classData.atk_points || 0, skillPoints)}
+            ${renderSkillItem('def_points', __('profile:def'), __('profile:def_desc'), base.def + (classData.def_points || 0), classData.def_points || 0, skillPoints)}
+            ${renderSkillItem('dodge_points', __('profile:agi'), __('profile:agi_desc'), base.agi + (classData.dodge_points || 0), classData.dodge_points || 0, skillPoints)}
+            ${renderSkillItem('int_points', __('profile:int'), __('profile:int_desc'), base.int + (classData.int_points || 0), classData.int_points || 0, skillPoints)}
+            ${renderSkillItem('spd_points', __('profile:spd'), __('profile:spd_desc'), base.spd + (classData.spd_points || 0), classData.spd_points || 0, skillPoints)}
+            ${renderSkillItem('crit_points', __('profile:crit'), __('profile:crit_desc'), base.crit + (classData.crit_points || 0), classData.crit_points || 0, skillPoints)}
+            ${renderSkillItem('crit_dmg_points', __('profile:crit_dmg'), __('profile:crit_dmg_desc'), ((classData.crit_dmg_points || 0)*2) + '%', classData.crit_dmg_points || 0, skillPoints)}
+            ${renderSkillItem('vamp_points', __('profile:vamp'), __('profile:vamp_desc'), base.vamp + (classData.vamp_points || 0), classData.vamp_points || 0, skillPoints)}
+            ${renderSkillItem('reflect_points', __('profile:reflect'), __('profile:reflect_desc'), base.reflect + (classData.reflect_points || 0), classData.reflect_points || 0, skillPoints)}
         </div>
     `;
 
@@ -1031,7 +1030,7 @@ function renderSkills(container) {
                 await refreshData();
                 renderSkills(container);
             } else {
-                showToast('Ошибка: ' + data.error, 1500);
+                showToast(__('profile:upgrade_error') + data.error, 1500);
             }
         });
     });
@@ -1061,7 +1060,7 @@ async function renderSkins(container) {
         const allAvatars = allAvatarsRes.ok ? await allAvatarsRes.json() : [];
         const ownedIds = ownedAvatarsRes.ok ? await ownedAvatarsRes.json() : [];
         const ownedSet = new Set(ownedIds);
-        ownedSet.add(1); // базовый аватар всегда считается купленным
+        ownedSet.add(1);
         const activeAvatarId = userData.avatar_id || 1;
 
         const sortedAvatars = [...allAvatars].sort((a, b) => {
@@ -1076,7 +1075,7 @@ async function renderSkins(container) {
             const isOwned = ownedSet.has(avatar.id);
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
-            const avatarName = translateSkinName(avatar.name) || avatar.name || 'Аватар';
+            const avatarName = translateSkinName(avatar.name) || avatar.name || __('avatar:avatar');
 
             let priceHtml = '';
             if (!isOwned) {
@@ -1086,7 +1085,7 @@ async function renderSkins(container) {
                 if (parts.length > 0) {
                     priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">${parts.join(' + ')}</div>`;
                 } else {
-                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">Бесплатно</div>`;
+                    priceHtml = `<div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 12px; pointer-events: none; z-index: 1;">${__('common:free')}</div>`;
                 }
             }
 
@@ -1098,7 +1097,7 @@ async function renderSkins(container) {
                      data-name="${escapeHtml(avatarName)}"
                      data-price-gold="${priceGold}"
                      data-price-diamonds="${priceDiamonds}">
-                    ${isActive ? '<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">АКТИВНЫЙ</div>' : ''}
+                    ${isActive ? `<div style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; font-weight: bold; z-index: 1; pointer-events: none;">${__('avatar:active')}</div>` : ''}
                     <img src="/assets/${avatar.filename}" style="width: 100%; height: auto; border: ${isActive ? '3px solid #00aaff' : '1px solid #2f3542'}; border-radius: 8px; box-sizing: border-box;">
                     ${priceHtml}
                 </div>
@@ -1125,7 +1124,7 @@ async function renderSkins(container) {
         });
     } catch (err) {
         console.error('Error loading avatars:', err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки аватаров. Проверьте консоль.</p>';
+        container.innerHTML = `<p style="color:#aaa;">${__('avatar:load_error')}</p>`;
     }
 }
 
@@ -1141,12 +1140,12 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         .then(avatarsList => {
             const avatar = avatarsList.find(a => a.id === avatarId);
             if (!avatar) {
-                showToast('Аватар не найден', 1500);
+                showToast(__('avatar:not_found'), 1500);
                 return;
             }
 
             const isActive = avatarId === userData.avatar_id;
-            modalTitle.innerText = isActive ? 'Текущий аватар' : (owned ? 'Выберите аватар' : 'Купить аватар');
+            modalTitle.innerText = isActive ? __('avatar:current') : (owned ? __('avatar:select') : __('avatar:buy'));
 
             const priceGold = parseInt(avatar.price_gold, 10) || 0;
             const priceDiamonds = parseInt(avatar.price_diamonds, 10) || 0;
@@ -1157,9 +1156,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                 if (priceGold > 0) parts.push(`${priceGold} <i class="fas fa-coins" style="color:white;"></i>`);
                 if (priceDiamonds > 0) parts.push(`${priceDiamonds} <i class="fas fa-gem" style="color:white;"></i>`);
                 if (parts.length > 0) {
-                    priceHtml = `<p style="color:white;">Цена: ${parts.join(' + ')}</p>`;
+                    priceHtml = `<p style="color:white;">${__('avatar:price')} ${parts.join(' + ')}</p>`;
                 } else {
-                    priceHtml = `<p style="color:white;">Бесплатно</p>`;
+                    priceHtml = `<p style="color:white;">${__('common:free')}</p>`;
                 }
             }
 
@@ -1169,9 +1168,9 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                     <div style="font-size: 24px; font-weight: bold; color: white; margin: 15px 0 5px;">${escapeHtml(translateSkinName(avatar.name))}</div>
                     ${priceHtml}
                     <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                        ${!owned && !isActive ? '<button class="btn" id="buySkin">Купить</button>' : ''}
-                        ${owned && !isActive ? '<button class="btn" id="activateSkin">Активировать</button>' : ''}
-                        <button class="btn" id="closeSkinModal">Назад</button>
+                        ${!owned && !isActive ? `<button class="btn" id="buySkin">${__('common:buy')}</button>` : ''}
+                        ${owned && !isActive ? `<button class="btn" id="activateSkin">${__('avatar:activate')}</button>` : ''}
+                        <button class="btn" id="closeSkinModal">${__('common:back')}</button>
                     </div>
                 </div>
             `;
@@ -1190,7 +1189,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                         modal.style.display = 'none';
                         renderProfileTab('skins');
                     } else {
-                        showToast('Ошибка: ' + data.error, 1500);
+                        showToast(__('common:error') + ': ' + data.error, 1500);
                     }
                 });
             }
@@ -1210,7 +1209,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
                         if (currentScreen === 'main') renderMain();
                         if (currentScreen === 'equip') renderEquip();
                     } else {
-                        showToast('Ошибка при смене аватара', 1500);
+                        showToast(__('avatar:activate_error'), 1500);
                     }
                 });
             }
@@ -1224,7 +1223,7 @@ function showSkinModal(avatarId, avatarFilename, owned) {
         })
         .catch(err => {
             console.error('Error loading avatar details:', err);
-            showToast('Ошибка загрузки данных аватара', 1500);
+            showToast(__('avatar:load_error'), 1500);
         });
 }
 
@@ -1232,7 +1231,13 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 // ==================== АЛХИМИЯ (заглушка) ====================
 function renderAlchemy() {
     const content = document.getElementById('content');
-    content.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fas fa-flask" style="font-size:48px; color:#00aaff;"></i><h2 style="color:white;">Алхимик</h2><p style="color:#aaa;">Превращаем ресурсы в ценности! 🧪</p></div>`;
+    content.innerHTML = `
+        <div style="text-align:center; padding:20px;">
+            <i class="fas fa-flask" style="font-size:48px; color:#00aaff;"></i>
+            <h2 style="color:white;">${__('alchemy:title')}</h2>
+            <p style="color:#aaa;">${__('alchemy:subtitle')}</p>
+        </div>
+    `;
 }
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ МОДАЛЬНЫЕ ФУНКЦИИ ====================
@@ -1243,19 +1248,19 @@ async function showItemDetailsModal(item) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Осмотр снаряжения';
+    modalTitle.innerText = __('modals:inspect_gear');
 
     const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+    if (item.atk_bonus) stats.push(__('common:atk') + `+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(__('common:def') + `+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(__('common:hp') + `+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(__('common:spd') + `+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(__('common:crit') + `+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(__('common:crit_dmg') + `+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(__('common:agi') + `+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(__('common:int') + `+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(__('common:vamp') + `+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(__('common:reflect') + `+${item.reflect_bonus}%`);
 
     const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
     const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
@@ -1269,12 +1274,12 @@ async function showItemDetailsModal(item) {
                 <div class="item-icon" style="background-image: url('${iconPath}');"></div>
             </div>
             <div class="item-modal-name ${item.rarity}">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
-            <div class="item-modal-class">${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
+            <div class="item-modal-class">${item.owner_class === 'warrior' ? __('common:warrior') : (item.owner_class === 'assassin' ? __('common:assassin') : __('common:mage'))}</div>
             <div class="item-modal-stats">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
             <div class="item-modal-price">${item.price} <i class="fas fa-coins"></i></div>
             <div class="item-modal-buttons">
-                <button class="item-modal-btn buy-item-btn">Купить</button>
-                <button class="item-modal-btn close-modal-btn">Отмена</button>
+                <button class="item-modal-btn buy-item-btn">${__('common:buy')}</button>
+                <button class="item-modal-btn close-modal-btn">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -1288,37 +1293,37 @@ async function showItemDetailsModal(item) {
     buyBtn.addEventListener('click', async () => {
         const res = await window.apiRequest('/market/buy', { method: 'POST', body: JSON.stringify({ item_id: item.id }) });
         let data;
-        try { data = await res.json(); } catch { showToast('Ошибка ответа сервера', 1500); return; }
+        try { data = await res.json(); } catch { showToast(__('common:server_response_error'), 1500); return; }
         if (data.success) {
             modal.style.display = 'none';
-            showToast(`Вы купили "${escapeHtml(itemNameTranslations[item.name] || item.name)}" за ${item.price} монет`, 1500);
+            showToast(__('modals:bought_item', { name: itemNameTranslations[item.name] || item.name, price: item.price }), 1500);
             await refreshData();
-            const classFilter = document.getElementById('classFilterText')?.innerText === 'Класс' ? 'any' : 
-                (document.getElementById('classFilterText')?.innerText === 'Воин' ? 'warrior' : 
-                (document.getElementById('classFilterText')?.innerText === 'Ассасин' ? 'assassin' : 
-                (document.getElementById('classFilterText')?.innerText === 'Маг' ? 'mage' : 'any')));
-            const rarityFilter = document.getElementById('rarityFilterText')?.innerText === 'Редкость' ? 'any' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Обычное' ? 'common' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Необычное' ? 'uncommon' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Редкое' ? 'rare' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Эпическое' ? 'epic' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Легендарное' ? 'legendary' : 'any')))));
-            const statFilter = document.getElementById('statFilterText')?.innerText === 'Характеристика' ? 'any' : 
-                (document.getElementById('statFilterText')?.innerText === 'АТК' ? 'atk_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ЗАЩ' ? 'def_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ЗДОР' ? 'hp_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'СКОР' ? 'spd_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'КРИТ' ? 'crit_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'КР.УРОН' ? 'crit_dmg_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ЛОВ' ? 'agi_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ИНТ' ? 'int_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ВАМП' ? 'vamp_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
+            const classFilter = document.getElementById('classFilterText')?.innerText === __('market:class') ? 'any' : 
+                (document.getElementById('classFilterText')?.innerText === __('common:warrior') ? 'warrior' : 
+                (document.getElementById('classFilterText')?.innerText === __('common:assassin') ? 'assassin' : 
+                (document.getElementById('classFilterText')?.innerText === __('common:mage') ? 'mage' : 'any')));
+            const rarityFilter = document.getElementById('rarityFilterText')?.innerText === __('market:rarity') ? 'any' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:common') ? 'common' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:uncommon') ? 'uncommon' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:rare') ? 'rare' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:epic') ? 'epic' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:legendary') ? 'legendary' : 'any')))));
+            const statFilter = document.getElementById('statFilterText')?.innerText === __('market:stat') ? 'any' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:atk') ? 'atk_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:def') ? 'def_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:hp') ? 'hp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:spd') ? 'spd_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:crit') ? 'crit_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:crit_dmg') ? 'crit_dmg_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:agi') ? 'agi_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:int') ? 'int_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:vamp') ? 'vamp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:reflect') ? 'reflect_bonus' : 'any'))))))))));
             loadMarketItems(statFilter, classFilter, rarityFilter);
         } else {
             modal.style.display = 'none';
-            if (data.error === 'Not enough coins') showToast('Недостаточно средств!', 1500);
-            else showToast('Ошибка: ' + data.error, 1500);
+            if (data.error === 'Not enough coins') showToast(__('common:not_enough_funds'), 1500);
+            else showToast(__('common:error') + ': ' + data.error, 1500);
         }
     });
 
@@ -1334,15 +1339,15 @@ function showPriceInputModal(currentPrice, onConfirm) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Введите цену';
+    modalTitle.innerText = __('modals:enter_price');
 
     modalBody.innerHTML = `
         <div class="edit-price-modal">
-            <div class="item-name">Цена продажи</div>
-            <input type="number" id="priceInput" class="price-input" placeholder="Цена в монетах" value="${currentPrice || ''}">
+            <div class="item-name">${__('modals:selling_price')}</div>
+            <input type="number" id="priceInput" class="price-input" placeholder="${__('modals:price_in_coins')}" value="${currentPrice || ''}">
             <div class="modal-buttons">
-                <button class="modal-btn save-price-btn">Продать</button>
-                <button class="modal-btn cancel-price-btn">Отмена</button>
+                <button class="modal-btn save-price-btn">${__('modals:sell')}</button>
+                <button class="modal-btn cancel-price-btn">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -1358,7 +1363,7 @@ function showPriceInputModal(currentPrice, onConfirm) {
     saveBtn.addEventListener('click', () => {
         const price = parseInt(document.getElementById('priceInput').value);
         if (isNaN(price) || price <= 0) {
-            showToast('Введите корректную цену', 1500);
+            showToast(__('modals:enter_valid_price'), 1500);
             return;
         }
         closeModal();
@@ -1376,14 +1381,14 @@ function showConfirmModal(message, onConfirm, onCancel) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Подтверждение';
+    modalTitle.innerText = __('common:confirmation');
 
     modalBody.innerHTML = `
         <div style="text-align: center; padding: 10px;">
             <div style="margin-bottom: 20px; font-size: 16px;">${escapeHtml(message)}</div>
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <button class="modal-btn confirm-yes" style="background-color: #00aaff; color: white;">Да</button>
-                <button class="modal-btn confirm-no" style="background-color: #2f3542;">Нет</button>
+                <button class="modal-btn confirm-yes" style="background-color: #00aaff; color: white;">${__('common:yes')}</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542;">${__('common:no')}</button>
             </div>
         </div>
     `;
@@ -1414,19 +1419,19 @@ function showUnequipConfirmModal(item, onConfirm) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Снять предмет?';
+    modalTitle.innerText = __('equip:unequip_confirm_title');
 
     const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+    if (item.atk_bonus) stats.push(__('common:atk') + `+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(__('common:def') + `+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(__('common:hp') + `+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(__('common:spd') + `+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(__('common:crit') + `+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(__('common:crit_dmg') + `+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(__('common:agi') + `+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(__('common:int') + `+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(__('common:vamp') + `+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(__('common:reflect') + `+${item.reflect_bonus}%`);
 
     const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
     const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
@@ -1444,11 +1449,11 @@ function showUnequipConfirmModal(item, onConfirm) {
             </div>
             <div style="font-weight: bold; margin-top: 10px; font-size: 18px; color: ${borderColor};">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
             <div class="rarity-${item.rarity}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: white; font-size: 14px; margin-bottom: 5px;">Класс: ${item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг')}</div>
+            <div style="color: white; font-size: 14px; margin-bottom: 5px;">${__('equip:class')} ${item.owner_class === 'warrior' ? __('common:warrior') : (item.owner_class === 'assassin' ? __('common:assassin') : __('common:mage'))}</div>
             <div style="color: white; font-size: 14px; margin-bottom: 15px;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="modal-btn confirm-yes" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Снять</button>
-                <button class="modal-btn confirm-no" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">Отмена</button>
+                <button class="modal-btn confirm-yes" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">${__('equip:unequip')}</button>
+                <button class="modal-btn confirm-no" style="background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 24px;">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -1477,16 +1482,16 @@ function showEditPriceModal(item) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Изменить цену';
+    modalTitle.innerText = __('market:change_price');
 
     modalBody.innerHTML = `
         <div class="edit-price-modal">
             <div class="item-name">${escapeHtml(itemNameTranslations[item.name] || item.name)}</div>
-            <div class="current-price">Текущая цена: ${item.price} <i class="fas fa-coins"></i></div>
-            <input type="number" id="newPriceInput" class="price-input" placeholder="Новая цена" value="${item.price}">
+            <div class="current-price">${__('market:current_price')} ${item.price} <i class="fas fa-coins"></i></div>
+            <input type="number" id="newPriceInput" class="price-input" placeholder="${__('market:new_price')}" value="${item.price}">
             <div class="modal-buttons">
-                <button class="modal-btn save-price-btn">Сохранить</button>
-                <button class="modal-btn cancel-price-btn">Отмена</button>
+                <button class="modal-btn save-price-btn">${__('common:save')}</button>
+                <button class="modal-btn cancel-price-btn">${__('common:cancel')}</button>
             </div>
         </div>
     `;
@@ -1499,38 +1504,38 @@ function showEditPriceModal(item) {
 
     saveBtn.addEventListener('click', async () => {
         const newPrice = parseInt(document.getElementById('newPriceInput').value);
-        if (isNaN(newPrice) || newPrice <= 0) { showToast('Введите корректную цену', 1500); return; }
+        if (isNaN(newPrice) || newPrice <= 0) { showToast(__('modals:enter_valid_price'), 1500); return; }
         const res = await window.apiRequest('/market/update-price', { method: 'POST', body: JSON.stringify({ item_id: item.id, new_price: newPrice }) });
         let data;
-        try { data = await res.json(); } catch { showToast('Ошибка ответа сервера', 1500); return; }
+        try { data = await res.json(); } catch { showToast(__('common:server_response_error'), 1500); return; }
         if (data.success) {
             modal.style.display = 'none';
-            showToast('Цена изменена!', 1000);
+            showToast(__('market:price_updated'), 1000);
             await refreshData();
-            const classFilter = document.getElementById('classFilterText')?.innerText === 'Класс' ? 'any' : 
-                (document.getElementById('classFilterText')?.innerText === 'Воин' ? 'warrior' : 
-                (document.getElementById('classFilterText')?.innerText === 'Ассасин' ? 'assassin' : 
-                (document.getElementById('classFilterText')?.innerText === 'Маг' ? 'mage' : 'any')));
-            const rarityFilter = document.getElementById('rarityFilterText')?.innerText === 'Редкость' ? 'any' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Обычное' ? 'common' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Необычное' ? 'uncommon' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Редкое' ? 'rare' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Эпическое' ? 'epic' : 
-                (document.getElementById('rarityFilterText')?.innerText === 'Легендарное' ? 'legendary' : 'any')))));
-            const statFilter = document.getElementById('statFilterText')?.innerText === 'Характеристика' ? 'any' : 
-                (document.getElementById('statFilterText')?.innerText === 'АТК' ? 'atk_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ЗАЩ' ? 'def_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ЗДОР' ? 'hp_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'СКОР' ? 'spd_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'КРИТ' ? 'crit_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'КР.УРОН' ? 'crit_dmg_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ЛОВ' ? 'agi_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ИНТ' ? 'int_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ВАМП' ? 'vamp_bonus' : 
-                (document.getElementById('statFilterText')?.innerText === 'ОТР' ? 'reflect_bonus' : 'any'))))))))));
+            const classFilter = document.getElementById('classFilterText')?.innerText === __('market:class') ? 'any' : 
+                (document.getElementById('classFilterText')?.innerText === __('common:warrior') ? 'warrior' : 
+                (document.getElementById('classFilterText')?.innerText === __('common:assassin') ? 'assassin' : 
+                (document.getElementById('classFilterText')?.innerText === __('common:mage') ? 'mage' : 'any')));
+            const rarityFilter = document.getElementById('rarityFilterText')?.innerText === __('market:rarity') ? 'any' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:common') ? 'common' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:uncommon') ? 'uncommon' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:rare') ? 'rare' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:epic') ? 'epic' : 
+                (document.getElementById('rarityFilterText')?.innerText === __('common:legendary') ? 'legendary' : 'any')))));
+            const statFilter = document.getElementById('statFilterText')?.innerText === __('market:stat') ? 'any' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:atk') ? 'atk_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:def') ? 'def_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:hp') ? 'hp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:spd') ? 'spd_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:crit') ? 'crit_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:crit_dmg') ? 'crit_dmg_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:agi') ? 'agi_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:int') ? 'int_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:vamp') ? 'vamp_bonus' : 
+                (document.getElementById('statFilterText')?.innerText === __('common:reflect') ? 'reflect_bonus' : 'any'))))))))));
             loadMarketItems(statFilter, classFilter, rarityFilter);
         } else {
-            showToast('Ошибка: ' + data.error, 1500);
+            showToast(__('market:update_price_error') + data.error, 1500);
         }
     });
 
@@ -1562,13 +1567,11 @@ window.loadMessagesSilent = loadMessagesSilent;
 
 // ==================== УНИВЕРСАЛЬНОЕ ОБНОВЛЕНИЕ БЕЙДЖЕЙ ТОРГОВЛИ ====================
 async function updateTradeBadges() {
-    // Проверяем, что userData загружен и содержит id
     if (!userData || !userData.id) {
         console.log('updateTradeBadges: userData not ready, skipping');
         return;
     }
     try {
-        // Запрашиваем все статусы параллельно
         const [freeChestRes, freeCoalRes, freeCoinRes] = await Promise.all([
             window.apiRequest('/player/freechest', { method: 'GET' }),
             window.apiRequest('/player/freecoal', { method: 'GET' }),
@@ -1581,7 +1584,6 @@ async function updateTradeBadges() {
         
         const hasAnyFree = freeChest || freeCoal || freeCoin20;
         
-        // 1. Обновляем бейдж на главной кнопке "Торговля"
         const tradeBtn = document.querySelector('.main-icon-btn[data-screen="trade"]');
         if (tradeBtn) {
             let badge = tradeBtn.querySelector('.trade-badge');
@@ -1597,7 +1599,6 @@ async function updateTradeBadges() {
             }
         }
         
-        // 2. Обновляем бейджи на табах внутри Торговли (если страница открыта)
         const chestsTab = document.querySelector('.trade-tab[data-subtab="chests"]');
         const coinsTab = document.querySelector('.trade-tab[data-subtab="coins"]');
         const gemsTab = document.querySelector('.trade-tab[data-subtab="gems"]');
@@ -1606,7 +1607,6 @@ async function updateTradeBadges() {
         updateTabBadge(coinsTab, freeCoal);
         updateTabBadge(gemsTab, freeCoin20);
         
-        // Сохраняем статусы в глобальные переменные для использования во вкладках
         window.freeChestAvailable = freeChest;
         window.freeCoalAvailable = freeCoal;
         window.freeCoin20Available = freeCoin20;
@@ -1631,5 +1631,4 @@ function updateTabBadge(tab, hasFree) {
     }
 }
 
-// Вызываем обновление при загрузке страницы и после любых действий, меняющих статусы
 window.updateTradeBadges = updateTradeBadges;

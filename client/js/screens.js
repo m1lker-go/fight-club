@@ -5,6 +5,8 @@ let tradeSubtab = 'chests'; // 'chests', 'coins', 'gems'
 let profileTab = 'bonuses';
 let ratingTab = 'rating';
 
+const __ = window.__ || (key => key);
+
 // Экранирование HTML
 function escapeHtml(str) {
     if (!str) return '';

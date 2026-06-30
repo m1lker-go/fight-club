@@ -1,12 +1,5 @@
 // battleLog.js – финальная версия с поддержкой i18n
 
-// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
-const __ = window.__ || function(key, fallback) {
-    if (window.i18next && typeof window.i18next.t === 'function') {
-        return window.i18next.t(key);
-    }
-    return fallback || key;
-};
 
 const BattleLog = {
     messages: [],

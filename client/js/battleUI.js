@@ -1,15 +1,29 @@
-// battleUI.js
+// battleUI.js – экран боя с поддержкой i18n
+
+// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ ПЕРЕВОДОВ ==========
+const __ = window.__ || function(key, fallback) {
+    if (window.i18next && typeof window.i18next.t === 'function') {
+        return window.i18next.t(key);
+    }
+    return fallback || key;
+};
+
+// Переопределяем getRoleNameRu для использования i18n
+const getRoleNameRu = (role) => {
+    const key = `subclasses:${role}.name`;
+    return __(key, role);
+};
 
 async function startBattle() {
     // Включаем боевую музыку
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
     } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
-        AudioManager.onScreenChange(); // fallback
+        AudioManager.onScreenChange();
     }
     if (!userData || !userData.id) {
         console.error('user_id не определён!');
-        showToast('Ошибка: не удалось идентифицировать пользователя', 2000);
+        showToast(__('battle:user_id_error', 'Ошибка: не удалось идентифицировать пользователя'), 2000);
         unlockMenu();
         return;
     }
@@ -33,9 +47,9 @@ async function startBattle() {
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
             if (data.error === 'Недостаточно энергии') {
-                showToast('Недостаточно энергии!', 1500);
+                showToast(__('battle:not_enough_energy', 'Недостаточно энергии!'), 1500);
             } else {
-                showToast('Ошибка сервера: ' + (data.error || 'Неизвестная ошибка'), 2000);
+                showToast(__('battle:server_error') + (data.error || __('common:unknown_error', 'Неизвестная ошибка')), 2000);
             }
             unlockMenu();
             return;
@@ -45,7 +59,7 @@ async function startBattle() {
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);
-        showToast('Ошибка соединения с сервером', 2000);
+        showToast(__('battle:connection_error', 'Ошибка соединения с сервером'), 2000);
         unlockMenu();
     }
 }
@@ -68,15 +82,6 @@ function showBattleScreen(battleData) {
     battleData.playerSubclass = userData.subclass;
     battleData.enemySubclass = battleData.opponent.subclass;
 
-    const getRoleNameRu = (role) => {
-        const roles = {
-            guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
-            assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
-            pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
-        };
-        return roles[role] || role;
-    };
-
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="battle-screen">
@@ -98,7 +103,7 @@ function showBattleScreen(battleData) {
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">Проиграл</div>
+                        <div class="defeat-overlay">${__('battle:defeat_overlay', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div id="hero-animation" class="animation-container"></div>
@@ -123,7 +128,7 @@ function showBattleScreen(battleData) {
                 <div class="battle-center">
                     <div class="battle-timer" id="battleTimer">45</div>
                     <div class="speed-wrapper">
-                        <div class="speed-label">Скорость:</div>
+                        <div class="speed-label">${__('battle:speed', 'Скорость:')}</div>
                         <button id="singleSpeedBtn" class="speed-btn">x1</button>
                     </div>
                 </div>
@@ -141,7 +146,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">Проиграл</div>
+                        <div class="defeat-overlay">${__('battle:defeat_overlay', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div id="enemy-animation" class="animation-container"></div>
@@ -157,7 +162,7 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-log-container">
-                <div class="log-header">Лог боя</div>
+                <div class="log-header">${__('battle:log_header', 'Лог боя')}</div>
                 <div id="battleLog" class="battle-log"></div>
             </div>
         </div>
@@ -168,12 +173,10 @@ function showBattleScreen(battleData) {
     battleData.enemyAvatarId = battleData.opponent.avatar_id;
     battleData.enemyIsCybercat = battleData.opponent.is_cybercat || false;
 
-    // Очищаем текст затемнения для нового боя
     document.querySelectorAll('.defeat-overlay').forEach(el => el.textContent = '');
 
     BattleLog.init(battleData, document.getElementById('battleLog'), (finishedData) => showBattleResult(finishedData));
 
-    // Обработчик скорости
     const speedBtn = document.getElementById('singleSpeedBtn');
     speedBtn.addEventListener('click', () => {
         const newSpeed = BattleLog.speed === 1 ? 2 : 1;
@@ -181,7 +184,6 @@ function showBattleScreen(battleData) {
         BattleLog.setSpeed(newSpeed);
     });
 
-    // Таймер боя
     let timeLeft = 45;
     const timerEl = document.getElementById('battleTimer');
     window.battleTimer = setInterval(() => {
@@ -198,7 +200,6 @@ function showBattleScreen(battleData) {
         }
     }, 1000);
 
-    // Музыка
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
     }
@@ -222,15 +223,14 @@ async function showBattleResult(battleData, timeOut = false) {
 
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
-    const resultText = isVictory ? 'ПОБЕДА' : (winner === 'draw' ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ');
+    const resultText = isVictory ? __('battle:victory', 'ПОБЕДА') : (winner === 'draw' ? __('battle:draw', 'НИЧЬЯ') : __('battle:defeat', 'ПОРАЖЕНИЕ'));
     const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
-    // +++ ЗВУК ОКОНЧАНИЯ БОЯ +++
     if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         if (isVictory) {
             AudioManager.playSound('victory');
         } else if (winner === 'draw') {
-            // можно ничего или нейтральный звук (по желанию)
+            // ничего
         } else {
             AudioManager.playSound('defeat');
         }
@@ -241,7 +241,6 @@ async function showBattleResult(battleData, timeOut = false) {
     const ratingChange = battleData.ratingChange || 0;
     const newStreak = battleData.reward?.newStreak || 0;
 
-    // 1. Сначала обновляем задания, чтобы не зависеть от refreshData
     console.log('battleUI: отправляю update/battle...');
     try {
         await window.apiRequest('/tasks/daily/update/battle', {
@@ -277,32 +276,28 @@ async function showBattleResult(battleData, timeOut = false) {
         console.log('battleUI: refreshTasksData выполнен');
     }
 
-    // 2. Проверка повышения уровня
-   if (battleData.reward?.leveledUp) {
-    try {
-        await refreshData();
-        // Принудительно обновляем вкладку "Улучшить" в профиле, если она открыта
-        if (currentScreen === 'profile' && profileTab === 'upgrade') {
-            renderSkills(document.getElementById('profileContent'));
-        }
-        // Если на главном экране – обновляем отображение уровня
-        if (currentScreen === 'main') {
-            const levelSpan = document.querySelector('.level-display');
-            const expSpan = document.querySelector('.exp-display');
-            if (levelSpan && expSpan && userData) {
-                const classData = getCurrentClassData();
-                const nextExp = Math.floor(80 * Math.pow(classData.level, 1.5));
-                levelSpan.innerText = classData.level;
-                expSpan.innerText = `${classData.exp}/${nextExp}`;
-                const expBarFill = document.querySelector('.exp-bar-fill');
-                if (expBarFill) expBarFill.style.width = ((classData.exp / nextExp) * 100) + '%';
+    if (battleData.reward?.leveledUp) {
+        try {
+            await refreshData();
+            if (currentScreen === 'profile' && profileTab === 'upgrade') {
+                renderSkills(document.getElementById('profileContent'));
             }
-        }
-    } catch(e) { console.error('refreshData ошибка:', e); }
-    showLevelUpModal(userData.current_class);
-}
+            if (currentScreen === 'main') {
+                const levelSpan = document.querySelector('.level-display');
+                const expSpan = document.querySelector('.exp-display');
+                if (levelSpan && expSpan && userData) {
+                    const classData = getCurrentClassData();
+                    const nextExp = Math.floor(80 * Math.pow(classData.level, 1.5));
+                    levelSpan.innerText = classData.level;
+                    expSpan.innerText = `${classData.exp}/${nextExp}`;
+                    const expBarFill = document.querySelector('.exp-bar-fill');
+                    if (expBarFill) expBarFill.style.width = ((classData.exp / nextExp) * 100) + '%';
+                }
+            }
+        } catch(e) { console.error('refreshData ошибка:', e); }
+        showLevelUpModal(userData.current_class);
+    }
 
-    // Подсчёт статистики
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
 
@@ -352,7 +347,6 @@ async function showBattleResult(battleData, timeOut = false) {
         }
     });
 
-    // Формируем лог боя
     const logArray = battleData.result.messages.map(m => {
         const text = m.text || JSON.stringify(m);
         const formattedText = typeof BattleLog.formatLogText === 'function' ? BattleLog.formatLogText(text) : text;
@@ -366,7 +360,6 @@ async function showBattleResult(battleData, timeOut = false) {
         return `<div class="${entryClass}">${formattedText}</div>`;
     }).join('');
 
-    // Создаём контейнер результата
     const content = document.getElementById('content');
     content.innerHTML = '';
 
@@ -379,7 +372,6 @@ async function showBattleResult(battleData, timeOut = false) {
     header.innerText = resultText;
     container.appendChild(header);
 
-    // Блок наград (2 колонки)
     const rewardsGrid = document.createElement('div');
     rewardsGrid.className = 'battle-result-stats-grid';
 
@@ -395,30 +387,27 @@ async function showBattleResult(battleData, timeOut = false) {
         return item;
     };
 
-    // Базовые награды
     const baseItems = [
-        addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'),
-        addRewardItem('Монеты', `+${coinGain}`, 'fas fa-coins'),
-        addRewardItem('Рейтинг', `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
-        addRewardItem('Серия', `${newStreak}`, 'fas fa-shield-alt')
+        addRewardItem(__('battle:reward_exp', 'Опыт'), `+${expGain}`, 'fas fa-star'),
+        addRewardItem(__('battle:reward_coins', 'Монеты'), `+${coinGain}`, 'fas fa-coins'),
+        addRewardItem(__('battle:reward_rating', 'Рейтинг'), `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
+        addRewardItem(__('battle:reward_streak', 'Серия'), `${newStreak}`, 'fas fa-shield-alt')
     ];
     baseItems.forEach(item => rewardsGrid.appendChild(item));
 
-    // Дополнительные награды (уголь, свиток)
     if (battleData.coalGain && battleData.coalGain > 0) {
-        const coalItem = addRewardItem('Уголь', `+${battleData.coalGain}`, 'fas fa-cube');
+        const coalItem = addRewardItem(__('battle:reward_coal', 'Уголь'), `+${battleData.coalGain}`, 'fas fa-cube');
         coalItem.querySelector('i').style.color = '#00aaff';
         rewardsGrid.appendChild(coalItem);
     }
     if (battleData.scrollGain) {
-        const scrollItem = addRewardItem('Свиток', 'Редкий', 'fas fa-scroll');
+        const scrollItem = addRewardItem(__('battle:reward_scroll', 'Свиток'), __('common:rare', 'Редкий'), 'fas fa-scroll');
         scrollItem.querySelector('i').style.color = '#00aaff';
         rewardsGrid.appendChild(scrollItem);
     }
 
     container.appendChild(rewardsGrid);
 
-    // Кнопки (сетка 2×2)
     const buttonsGrid = document.createElement('div');
     buttonsGrid.className = 'battle-result-buttons';
 
@@ -430,14 +419,14 @@ async function showBattleResult(battleData, timeOut = false) {
         return btn;
     };
 
-    const rematchBtn = createButton('В бой', async () => {
+    const rematchBtn = createButton(__('battle:button_fight', 'В бой'), async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         await refreshData();
         startBattle();
     });
 
-    const backBtn = createButton('Назад', async () => {
+    const backBtn = createButton(__('battle:button_back', 'Назад'), async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
@@ -445,7 +434,6 @@ async function showBattleResult(battleData, timeOut = false) {
             item.style.opacity = '1';
         });
         await refreshData();
-        // Возвращаем музыку меню
         if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
             AudioManager.startMenuMusic();
         } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
@@ -456,63 +444,59 @@ async function showBattleResult(battleData, timeOut = false) {
 
     let tabLogBtn, tabStatsBtn;
 
-    tabLogBtn = createButton('Лог боя', () => {
+    tabLogBtn = createButton(__('battle:tab_log', 'Лог боя'), () => {
         tabLogBtn.classList.add('active');
         tabStatsBtn.classList.remove('active');
         resultContent.innerHTML = logArray;
     }, true);
 
-   tabStatsBtn = createButton('Статистика', () => {
-    tabStatsBtn.classList.add('active');
-    tabLogBtn.classList.remove('active');
-    
-    // Создаём таблицу через DOM
-    const table = document.createElement('table');
-    table.className = 'stats-battle';
-    
-    // Заголовок
-    const thead = table.createTHead();
-    const headerRow = thead.insertRow();
-    const th1 = document.createElement('th');
-    th1.innerText = 'Игрок';
-    const th2 = document.createElement('th');
-    th2.innerText = 'Параметр';
-    const th3 = document.createElement('th');
-    th3.innerText = 'Соперник';
-    headerRow.appendChild(th1);
-    headerRow.appendChild(th2);
-    headerRow.appendChild(th3);
-    
-    // Тело таблицы
-    const tbody = table.createTBody();
-    const rowsData = [
-        [playerStats.hits, 'Ударов', enemyStats.hits],
-        [playerStats.crits, 'Критов', enemyStats.crits],
-        [playerStats.dodges, 'Уклонений', enemyStats.dodges],
-        [playerStats.totalDamage, 'Урона', enemyStats.totalDamage],
-        [playerStats.heal, 'Исцелено', enemyStats.heal],
-        [playerStats.reflect, 'Отражено', enemyStats.reflect]
-    ];
-    
-    for (const [playerVal, param, enemyVal] of rowsData) {
-        const row = tbody.insertRow();
-        const cellPlayer = row.insertCell();
-        cellPlayer.className = 'player-col';
-        cellPlayer.innerText = playerVal;
-        const cellParam = row.insertCell();
-        cellParam.innerText = param;
-        const cellEnemy = row.insertCell();
-        cellEnemy.className = 'enemy-col';
-        cellEnemy.innerText = enemyVal;
-    }
-    
-     resultContent.innerHTML = '';
-    resultContent.appendChild(table);
-}, false);
+    tabStatsBtn = createButton(__('battle:tab_stats', 'Статистика'), () => {
+        tabStatsBtn.classList.add('active');
+        tabLogBtn.classList.remove('active');
+        
+        const table = document.createElement('table');
+        table.className = 'stats-battle';
+        
+        const thead = table.createTHead();
+        const headerRow = thead.insertRow();
+        const th1 = document.createElement('th');
+        th1.innerText = __('battle:stats_player', 'Игрок');
+        const th2 = document.createElement('th');
+        th2.innerText = __('battle:stats_param', 'Параметр');
+        const th3 = document.createElement('th');
+        th3.innerText = __('battle:stats_enemy', 'Соперник');
+        headerRow.appendChild(th1);
+        headerRow.appendChild(th2);
+        headerRow.appendChild(th3);
+        
+        const tbody = table.createTBody();
+        const rowsData = [
+            [playerStats.hits, __('battle:stats_hits', 'Ударов'), enemyStats.hits],
+            [playerStats.crits, __('battle:stats_crits', 'Критов'), enemyStats.crits],
+            [playerStats.dodges, __('battle:stats_dodges', 'Уклонений'), enemyStats.dodges],
+            [playerStats.totalDamage, __('battle:stats_damage', 'Урона'), enemyStats.totalDamage],
+            [playerStats.heal, __('battle:stats_heal', 'Исцелено'), enemyStats.heal],
+            [playerStats.reflect, __('battle:stats_reflect', 'Отражено'), enemyStats.reflect]
+        ];
+        
+        for (const [playerVal, param, enemyVal] of rowsData) {
+            const row = tbody.insertRow();
+            const cellPlayer = row.insertCell();
+            cellPlayer.className = 'player-col';
+            cellPlayer.innerText = playerVal;
+            const cellParam = row.insertCell();
+            cellParam.innerText = param;
+            const cellEnemy = row.insertCell();
+            cellEnemy.className = 'enemy-col';
+            cellEnemy.innerText = enemyVal;
+        }
+        
+        resultContent.innerHTML = '';
+        resultContent.appendChild(table);
+    }, false);
 
-// Принудительно устанавливаем активное состояние
-tabLogBtn.classList.add('active');
-tabStatsBtn.classList.remove('active');
+    tabLogBtn.classList.add('active');
+    tabStatsBtn.classList.remove('active');
 
     buttonsGrid.appendChild(rematchBtn);
     buttonsGrid.appendChild(backBtn);

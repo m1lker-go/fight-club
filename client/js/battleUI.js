@@ -7,6 +7,7 @@ const getRoleNameRu = (role) => {
     return __(key, role);
 };
 
+
 async function startBattle() {
     // Включаем боевую музыку
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {

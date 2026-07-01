@@ -4,7 +4,6 @@
 
     const savedLang = localStorage.getItem('i18nextLng') || 'ru';
 
-    // Функция загрузки одного файла перевода
     async function loadTranslation(lang) {
         const url = `/locales/${lang}.json`;
         try {
@@ -17,13 +16,16 @@
         }
     }
 
-    // ======== Глобальная функция перевода (временная, пока i18next не инициализирован) ========
-    // Определяем её сразу, но она будет переопределена после инициализации i18next
+    // ======== Временная функция перевода (fallback) ========
+    // Определяем window.__ как fallback (возвращает второй аргумент)
+    // Это нужно для тех мест, где ещё не успела загрузиться новая функция
     window.__ = function(key, fallback) {
         return fallback || key;
     };
 
-    // ======== Функция обновления UI после смены языка ========
+    // Сразу создаём $t как алиас к __ (пока fallback)
+    window.$t = window.__;
+
     function updateUI() {
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
         const current = window.currentScreen || 'main';
@@ -31,7 +33,6 @@
         if (typeof window.showScreen === 'function') {
             window.showScreen(current);
         } else {
-            // fallback: старый способ с switch
             switch (current) {
                 case 'main': if (window.renderMain) window.renderMain(); break;
                 case 'equip': if (window.renderEquip) window.renderEquip(); break;
@@ -52,12 +53,10 @@
             }
         }
 
-        // Обновляем бейджи и иконки
         if (window.updateTradeBadges) window.updateTradeBadges();
         if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
         if (window.updateMessagesBadge) window.updateMessagesBadge();
 
-        // Обновляем элементы с data-i18n (на случай, если они есть)
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (window.i18next) {
@@ -71,7 +70,6 @@
         });
     }
 
-    // ======== Инициализация i18next ========
     async function initI18next() {
         try {
             const [ruData, enData] = await Promise.all([
@@ -88,21 +86,17 @@
 
             if (typeof i18next === 'undefined') {
                 console.error('❌ i18next library not found!');
-                window.__ = function(key, fallback) {
-                    return fallback || key;
-                };
+                window.__ = function(key, fallback) { return fallback || key; };
+                window.$t = window.__;
                 return;
             }
 
-            // Строим ресурсы с пространствами имён (как в твоём ru.json)
             const resources = {
                 ru: ruData || {},
                 en: enData || {}
             };
 
-            // Получаем список всех пространств имён из ru.json (common, auth, main, ...)
             const nsList = ruData ? Object.keys(ruData) : ['common'];
-            // Гарантируем, что clans есть (на случай, если он отсутствует в ruData)
             if (!nsList.includes('clans')) nsList.push('clans');
 
             await i18next.init({
@@ -118,15 +112,13 @@
             console.log('✅ i18next initialized, language:', i18next.language);
 
             // ======== ОСНОВНАЯ ФУНКЦИЯ ПЕРЕВОДА ========
-            // Переопределяем window.__ с использованием i18next
-            // И ЗАЩИЩАЕМ её от перезаписи
-            Object.defineProperty(window, '__', {
-                configurable: false,
-                writable: false,
-                value: function(key, fallback) {
-                    return i18next.t(key, { defaultValue: fallback || key });
-                }
-            });
+            // Теперь переопределяем window.$t, чтобы она использовала i18next
+            window.$t = function(key, fallback) {
+                return i18next.t(key, { defaultValue: fallback || key });
+            };
+
+            // window.__ оставляем как fallback (на случай, если где-то ещё используется в старом коде)
+            // Но лучше в коде использовать $t
 
             // Применяем переводы к UI
             updateUI();
@@ -149,7 +141,6 @@
                 });
             };
 
-            // Подписываемся на событие смены языка (на случай, если язык изменится иначе)
             i18next.on('languageChanged', (lng) => {
                 console.log(`🔄 languageChanged event: ${lng}`);
                 if (localStorage.getItem('i18nextLng') !== lng) {
@@ -158,7 +149,6 @@
                 updateUI();
             });
 
-            // Если есть переключатель языка в DOM – привязываем события
             document.querySelectorAll('.lang-option, .lang-option-settings').forEach(opt => {
                 opt.addEventListener('click', (e) => {
                     const lang = opt.dataset.lang;
@@ -168,21 +158,17 @@
 
         } catch (e) {
             console.error('❌ i18next initialization failed:', e);
-            // Оставляем fallback-функцию
-            window.__ = function(key, fallback) {
-                return fallback || key;
-            };
+            window.__ = function(key, fallback) { return fallback || key; };
+            window.$t = window.__;
         }
     }
 
-    // ======== Запуск ========
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initI18next);
     } else {
         initI18next();
     }
 
-    // Экспортируем updateUI для использования извне
     window.updateUIAfterLanguageChange = updateUI;
 
 })();

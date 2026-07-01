@@ -1,4 +1,4 @@
-// js/i18n.js – полный менеджер локализации с i18next и fallback
+// js/i18n.js – финальная версия с защитой и гарантированным fallback
 (function() {
     console.log('🔄 i18n init started');
 
@@ -16,45 +16,35 @@
         }
     }
 
-    // Временная fallback-функция (до инициализации i18next) – используем $t
+    // Временные fallback-функции до инициализации i18next
     window.$t = function(key, fallback) {
         return fallback || key;
     };
-
-    // Оставляем старую __ для совместимости, но она будет перезаписана позже
     window.__ = window.$t;
 
     function updateUI() {
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
-        const current = window.currentScreen || 'main';
-
+        // Если есть showScreen – используем её для перерисовки
         if (typeof window.showScreen === 'function') {
-            window.showScreen(current);
-        } else {
-            switch (current) {
-                case 'main': if (window.renderMain) window.renderMain(); break;
-                case 'equip': if (window.renderEquip) window.renderEquip(); break;
-                case 'trade': if (window.renderTrade) window.renderTrade(); break;
-                case 'market': if (window.renderMarket) window.renderMarket(); break;
-                case 'profile': if (window.renderProfile) window.renderProfile(); break;
-                case 'rating': if (window.renderRating) window.renderRating(); break;
-                case 'settings': if (window.renderSettings) window.renderSettings(); break;
-                case 'forge': if (window.renderForge) window.renderForge(); else if (window.renderForgeFallback) window.renderForgeFallback(); break;
-                case 'tournament': if (window.renderTournament) window.renderTournament(); break;
-                case 'clans': if (window.renderClans) window.renderClans(); break;
-                case 'tasks': if (window.renderTasks) window.renderTasks(); break;
-                case 'tower': if (window.loadTowerStatus) window.loadTowerStatus(); break;
-                case 'fortune': if (window.renderFortune) window.renderFortune(); break;
-                case 'alchemy': if (window.renderAlchemy) window.renderAlchemy(); break;
-                case 'messages': if (window.renderMessages) window.renderMessages(); break;
-                default: break;
+            const current = window.currentScreen || 'main';
+            // Проверяем, загружены ли данные, чтобы избежать ошибок
+            if (typeof userData !== 'undefined' && userData && userData.id) {
+                window.showScreen(current);
+            } else {
+                console.warn('updateUI: userData not ready, skipping redraw');
             }
+        } else {
+            // fallback – перезагружаем страницу
+            console.warn('showScreen not defined, reloading');
+            location.reload();
         }
 
+        // Обновляем бейджи и иконки
         if (window.updateTradeBadges) window.updateTradeBadges();
         if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
         if (window.updateMessagesBadge) window.updateMessagesBadge();
 
+        // Обновляем элементы с data-i18n (если есть)
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (window.i18next) {
@@ -75,8 +65,12 @@
                 loadTranslation('en')
             ]);
 
-            if (!ruData) console.warn('⚠️ ru.json не загружен');
-            if (!enData) console.warn('⚠️ en.json не загружен');
+            if (!ruData && !enData) {
+                console.warn('⚠️ No translation files loaded, using fallback only');
+                window.$t = function(key, fallback) { return fallback || key; };
+                window.__ = window.$t;
+                return;
+            }
 
             if (typeof i18next === 'undefined') {
                 console.error('❌ i18next library not found!');
@@ -91,6 +85,7 @@
             };
 
             const nsList = ruData ? Object.keys(ruData) : ['common'];
+            // Гарантируем, что clans есть
             if (!nsList.includes('clans')) nsList.push('clans');
 
             await i18next.init({
@@ -105,16 +100,28 @@
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
 
-            // ====== НОВАЯ ФУНКЦИЯ $t ======
+            // Основные функции перевода
             window.$t = function(key, fallback) {
                 return i18next.t(key, { defaultValue: fallback || key });
             };
-            // Обновляем __ для совместимости (но теперь она тоже использует i18next)
             window.__ = window.$t;
-            // =================================
 
-            updateUI();
+            // Если userData уже загружена – обновляем UI
+            if (typeof userData !== 'undefined' && userData && userData.id) {
+                updateUI();
+            } else {
+                console.log('⏳ userData not loaded yet, UI will be updated after login');
+                // Подписываемся на событие загрузки userData (можно через MutationObserver, но проще через setInterval)
+                const waitForUser = setInterval(() => {
+                    if (typeof userData !== 'undefined' && userData && userData.id) {
+                        clearInterval(waitForUser);
+                        console.log('✅ userData loaded, updating UI');
+                        updateUI();
+                    }
+                }, 100);
+            }
 
+            // Функция смены языка
             window.setLanguage = function(lang) {
                 if (!window.i18next || typeof window.i18next.changeLanguage !== 'function') {
                     localStorage.setItem('i18nextLng', lang);
@@ -132,14 +139,15 @@
                 });
             };
 
+            // Подписываемся на событие смены языка
             i18next.on('languageChanged', (lng) => {
-                console.log(`🔄 languageChanged event: ${lng}`);
                 if (localStorage.getItem('i18nextLng') !== lng) {
                     localStorage.setItem('i18nextLng', lng);
                 }
                 updateUI();
             });
 
+            // Привязываем переключатели языка в DOM
             document.querySelectorAll('.lang-option, .lang-option-settings').forEach(opt => {
                 opt.addEventListener('click', (e) => {
                     const lang = opt.dataset.lang;

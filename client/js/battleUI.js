@@ -42,11 +42,12 @@ async function startBattle() {
 
     try {
         const response = await window.apiRequest('/battle/start', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                playerName: window.playerName || userData.username || 'Player'
-            })
-        });
+    method: 'POST',
+    body: JSON.stringify({ 
+        playerName: window.playerName || userData.username || 'Player',
+        lang: window.currentLanguage || 'ru'   // <-- обязательно
+    })
+});
         console.log('[startBattle] response status:', response.status);
         const data = await response.json();
         console.log('[startBattle] response data:', data);

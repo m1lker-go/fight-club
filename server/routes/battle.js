@@ -216,7 +216,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         const newHpPercent = (attackerState.hp / attackerStats.hp) * 100;
         const newRage = getBerserkerRage(newHpPercent);
         
-        if (newRage.bonus > 0) {
+        if (newRage.bonus > 0) {БД
             damage = attackerStats.atk + Math.ceil(attackerStats.atk * newRage.bonus / 100);
         } else {
             damage = attackerStats.atk;
@@ -1157,13 +1157,19 @@ router.post('/start', async (req, res) => {
         const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
 
-        const rand = Math.random();
-        let opponentData;
-        if (rand < 0.3) opponentData = await selectPvPOpponent(client, user.id, classData.rows[0].level);
-        else if (rand < 0.8) opponentData = generateBot(classData.rows[0].level, false);
-        else opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
-        if (!opponentData?.stats) opponentData = generateBot(classData.rows[0].level, false);
-
+const rand = Math.random();
+let opponentData;
+if (rand < 0.3) {
+    opponentData = await selectPvPOpponent(client, user.id, classData.rows[0].level);
+} else if (rand < 0.8) {
+    opponentData = generateBot(classData.rows[0].level, false, null, null, lang);
+} else {
+    opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true, null, null, lang);
+}
+if (!opponentData?.stats) {
+    opponentData = generateBot(classData.rows[0].level, false, null, null, lang);
+}
+        
         const battleResult = simulateBattle(
             playerStats, opponentData.stats,
             user.current_class, opponentData.class,

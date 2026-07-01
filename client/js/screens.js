@@ -41,6 +41,10 @@ function getRoleNameRu(role) {
 // ==================== ГЛАВНЫЙ ЭКРАН ====================
 
 function renderMain() {
+    if (!userData) {
+        console.warn('renderMain: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
 
@@ -178,6 +182,10 @@ function renderMain() {
 }
 
 function updateMainScreen() {
+    if (!userData) {
+        console.warn('updateMainScreen: userData not ready, skipping');
+        return;
+    }
     const classData = getCurrentClassData();
     const currentClass = userData.current_class;
     const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
@@ -218,6 +226,10 @@ function updateSubclasses(className) {
 // ==================== ЭКИПИРОВКА ====================
 
 function renderEquip() {
+    if (!userData) {
+        console.warn('renderEquip: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
     if (!Array.isArray(inventory)) return;
@@ -532,6 +544,10 @@ function renderEquip() {
 // ==================== ТОРГОВЛЯ (три вкладки) ====================
 
 function renderTrade() {
+    if (!userData) {
+        console.warn('renderTrade: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
     content.innerHTML = `
@@ -695,6 +711,10 @@ function renderGemsShop(container) {
 // ==================== МАРКЕТ ====================
 
 async function renderMarket(target = null) {
+    if (!userData) {
+        console.warn('renderMarket: userData not ready, skipping');
+        return;
+    }
     const container = target || document.getElementById('content');
     if (!container) return;
     container.innerHTML = `
@@ -790,6 +810,10 @@ async function loadMarketItems(statFilter = 'any', classFilter = 'any', rarityFi
 // ==================== РЕЙТИНГ ====================
 
 function renderRating() {
+    if (!userData) {
+        console.warn('renderRating: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
     content.innerHTML = `
@@ -843,6 +867,10 @@ async function loadRatingData(type) {
 // ==================== ПРОФИЛЬ ====================
 
 function renderProfile() {
+    if (!userData) {
+        console.warn('renderProfile: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
     window.apiRequest('/tasks/daily/update/profile', { method: 'POST' }).then(() => { if (window.refreshTasksData) window.refreshTasksData(); if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons(); }).catch(err => console.error('Failed to update profile task', err));
@@ -869,6 +897,10 @@ function renderProfileTab(tab) {
 
 function renderProfileBonuses(container) {
     if (!container) return;
+    if (!userData) {
+        console.warn('renderProfileBonuses: userData not ready, skipping');
+        return;
+    }
     const currentClass = userData.current_class;
     const classData = getCurrentClassData();
     const stats = calculateClassStats(currentClass, classData, inventory, userData.subclass);
@@ -960,6 +992,10 @@ function renderProfileBonuses(container) {
 
 function renderSkills(container) {
     if (!container) return;
+    if (!userData) {
+        console.warn('renderSkills: userData not ready, skipping');
+        return;
+    }
     const classData = getCurrentClassData();
     const skillPoints = classData.skill_points;
     const currentClass = userData.current_class;
@@ -1052,6 +1088,10 @@ function renderStatRow(label, baseValue, gearValue, classBonusValue, finalValue)
 
 async function renderSkins(container) {
     if (!container) return;
+    if (!userData) {
+        console.warn('renderSkins: userData not ready, skipping');
+        return;
+    }
     try {
         const [allAvatarsRes, ownedAvatarsRes] = await Promise.all([
             window.apiRequest('/avatars', { method: 'GET' }),
@@ -1230,6 +1270,10 @@ function showSkinModal(avatarId, avatarFilename, owned) {
 
 // ==================== АЛХИМИЯ (заглушка) ====================
 function renderAlchemy() {
+    if (!userData) {
+        console.warn('renderAlchemy: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     content.innerHTML = `
         <div style="text-align:center; padding:20px;">

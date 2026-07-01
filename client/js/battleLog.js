@@ -1,6 +1,5 @@
 // battleLog.js – финальная версия с поддержкой i18n
 
-
 const BattleLog = {
     messages: [],
     states: [],
@@ -636,7 +635,7 @@ const BattleLog = {
         }
 
         // Показываем overlay "Проиграл"
-        const defeatText = __('battle:defeat_overlay', 'Проиграл');
+        const defeatText = window.$t('battle:Проиграл', 'Проиграл');
 
         if (winner === 'player') {
             if (enemyCard) {

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { containsForbiddenWords } = require('../utils/forbiddenWords');
-const { getMoscowDateString, toMoscowDateString } = require('../utils/ServerTime');// единая функция времени
+const { getMoscowDateString, toMoscowDateString } = require('../utils/ServerTime');
 
 // ------------------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -------------------
 
@@ -69,7 +69,7 @@ async function isLeaderOrOfficer(userId, clanId, client) {
 // 1. Создание клана
 router.post('/create', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { name, icon_id, icon_bg_color, icon_border_color, icon_color, payment_method } = req.body;
     
     if (!isValidClanName(name)) return res.status(400).json({ error: 'Некорректное название (3-30 символов, без мата)' });
@@ -88,12 +88,12 @@ router.post('/create', async (req, res) => {
         if (payment_method === 'coins') {
             coinsCost = 2000;
             const user = await client.query('SELECT coins FROM users WHERE id = $1', [userId]);
-            if (user.rows[0].coins < coinsCost) throw new Error('Not enough coins');
+            if (user.rows[0].coins < coinsCost) throw new Error('Недостаточно монет');
             await client.query('UPDATE users SET coins = coins - $1 WHERE id = $2', [coinsCost, userId]);
         } else if (payment_method === 'diamonds') {
             diamondsCost = 150;
             const user = await client.query('SELECT diamonds FROM users WHERE id = $1', [userId]);
-            if (user.rows[0].diamonds < diamondsCost) throw new Error('Not enough diamonds');
+            if (user.rows[0].diamonds < diamondsCost) throw new Error('Недостаточно алмазов');
             await client.query('UPDATE users SET diamonds = diamonds - $1 WHERE id = $2', [diamondsCost, userId]);
         } else return res.status(400).json({ error: 'Неверный способ оплаты' });
         
@@ -111,8 +111,8 @@ router.post('/create', async (req, res) => {
     } catch (e) {
         await client.query('ROLLBACK');
         console.error('Create clan error:', e);
-        if (e.message === 'Not enough coins') res.status(400).json({ error: 'Недостаточно монет' });
-        else if (e.message === 'Not enough diamonds') res.status(400).json({ error: 'Недостаточно алмазов' });
+        if (e.message === 'Недостаточно монет') res.status(400).json({ error: 'Недостаточно монет' });
+        else if (e.message === 'Недостаточно алмазов') res.status(400).json({ error: 'Недостаточно алмазов' });
         else if (e.code === '23505') res.status(400).json({ error: 'Клан с таким названием уже существует' });
         else res.status(500).json({ error: 'Ошибка создания клана' });
     } finally { client.release(); }
@@ -121,7 +121,7 @@ router.post('/create', async (req, res) => {
 // 2. Получить информацию о своём клане
 router.get('/my', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
@@ -187,7 +187,7 @@ router.get('/list', async (req, res) => {
 // 4. Вступление в клан
 router.post('/join', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { clan_id } = req.body;
     const client = await pool.connect();
     try {
@@ -223,7 +223,7 @@ router.post('/join', async (req, res) => {
 // 5. Выход из клана
 router.post('/leave', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -249,7 +249,7 @@ router.post('/leave', async (req, res) => {
 // 6. Исключение участника
 router.post('/kick', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { target_user_id } = req.body;
     const client = await pool.connect();
     try {
@@ -279,7 +279,7 @@ router.post('/kick', async (req, res) => {
 // 7. Изменение роли
 router.post('/promote', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { target_user_id, role } = req.body;
     const client = await pool.connect();
     try {
@@ -317,7 +317,7 @@ router.post('/promote', async (req, res) => {
 // 8. Передать лидерство
 router.post('/transfer', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { target_user_id } = req.body;
     const client = await pool.connect();
     try {
@@ -342,7 +342,7 @@ router.post('/transfer', async (req, res) => {
 // 9. Чат: отправить сообщение
 router.post('/chat/send', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { message } = req.body;
     if (!message || message.length > 200) return res.status(400).json({ error: 'Сообщение не может быть пустым или длиннее 200 символов' });
     const client = await pool.connect();
@@ -360,7 +360,7 @@ router.post('/chat/send', async (req, res) => {
 // 10. Чат: получить сообщения
 router.get('/chat', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         const memberRes = await client.query('SELECT clan_id FROM clan_members WHERE user_id = $1', [userId]);
@@ -382,7 +382,7 @@ router.get('/chat', async (req, res) => {
 // 11. Ежедневная отметка - статус
 router.get('/checkin/status', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         const memberRes = await client.query(
@@ -414,17 +414,15 @@ router.get('/checkin/status', async (req, res) => {
 // 12. Ежедневная отметка - выполнение (атомарный UPDATE)
 router.post('/checkin', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // 1. Получаем clan_id (пользователь может быть только в одном клане)
         const memberRes = await client.query('SELECT clan_id FROM clan_members WHERE user_id = $1', [userId]);
         if (memberRes.rows.length === 0) throw new Error('Вы не в клане');
         const clanId = memberRes.rows[0].clan_id;
         const today = getMoscowDateString();
 
-        // 2. Атомарно обновляем дату, только если она ещё не равна сегодня
         const updateRes = await client.query(
             `UPDATE clan_members 
              SET daily_checkin_date = $1 
@@ -435,18 +433,16 @@ router.post('/checkin', async (req, res) => {
             throw new Error('Вы уже отметились сегодня');
         }
 
-        // 3. Начисляем награды
         await client.query('UPDATE users SET coins = coins + 50, coal = coal + 5 WHERE id = $1', [userId]);
         await addClanExp(clanId, 50, client);
 
-        // 4. Бонус за полную отметку всего клана
         const checked = await client.query(
-    'SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2',
-    [clanId, today]
-);
-if (parseInt(checked.rows[0].count) === 10) {
-    await addClanExp(clanId, 250, client);
-}
+            'SELECT COUNT(*) FROM clan_members WHERE clan_id = $1 AND daily_checkin_date = $2',
+            [clanId, today]
+        );
+        if (parseInt(checked.rows[0].count) === 10) {
+            await addClanExp(clanId, 250, client);
+        }
 
         await client.query('COMMIT');
         res.json({ success: true, coins: 50, coal: 5 });
@@ -461,7 +457,7 @@ if (parseInt(checked.rows[0].count) === 10) {
 // 13. Клановая казна
 router.get('/treasury', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         const memberRes = await client.query('SELECT clan_id FROM clan_members WHERE user_id = $1', [userId]);
@@ -477,7 +473,7 @@ router.get('/treasury', async (req, res) => {
 // 14. Пожертвовать монеты
 router.post('/donate', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { amount } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ error: 'Неверная сумма' });
     const client = await pool.connect();
@@ -503,7 +499,7 @@ router.post('/donate', async (req, res) => {
 // 15. Клановые бонусы
 router.get('/bonuses', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         const memberRes = await client.query('SELECT clan_id FROM clan_members WHERE user_id = $1', [userId]);
@@ -522,7 +518,7 @@ router.get('/bonuses', async (req, res) => {
 // 16. Купить очко навыка
 router.post('/buy-point', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -552,10 +548,10 @@ router.post('/buy-point', async (req, res) => {
     } finally { client.release(); }
 });
 
-// 17. Перераспределить очки
+// 17. Перераспределить очки (заменено на adjust-talent, но этот эндпоинт пока оставлен для совместимости)
 router.post('/redistribute', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { bonus_hp, bonus_attack, bonus_defense, bonus_agility, bonus_crit_damage, bonus_vampirism } = req.body;
     const client = await pool.connect();
     try {
@@ -584,7 +580,7 @@ router.post('/redistribute', async (req, res) => {
 // 18. Получить публичную информацию о клане
 router.get('/:id', async (req, res) => {
     const clanId = parseInt(req.params.id);
-    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Неверный ID клана' });
     const userId = req.userId;
     const client = await pool.connect();
     try {
@@ -635,9 +631,9 @@ router.get('/:id', async (req, res) => {
 // 19. Редактирование настроек клана
 router.put('/:id/settings', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const clanId = parseInt(req.params.id);
-    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Неверный ID клана' });
     const { name, description, icon_id, icon_bg_color, icon_border_color, icon_color, join_type } = req.body;
     const client = await pool.connect();
     try {
@@ -679,9 +675,9 @@ router.put('/:id/settings', async (req, res) => {
 // 20. Расформировать клан
 router.delete('/:id', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const clanId = parseInt(req.params.id);
-    if (isNaN(clanId)) return res.status(400).json({ error: 'Invalid clan ID' });
+    if (isNaN(clanId)) return res.status(400).json({ error: 'Неверный ID клана' });
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -707,7 +703,7 @@ router.delete('/:id', async (req, res) => {
 // 21. Подать заявку
 router.post('/apply', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { clan_id } = req.body;
     const client = await pool.connect();
     try {
@@ -740,7 +736,7 @@ router.post('/apply', async (req, res) => {
 // 22. Отменить свою заявку
 router.post('/cancel-application', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { clan_id } = req.body;
     const client = await pool.connect();
     try {
@@ -760,7 +756,7 @@ router.post('/cancel-application', async (req, res) => {
 // 23. Получить список заявок для лидера
 router.get('/applications', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const client = await pool.connect();
     try {
         const memberRes = await client.query('SELECT clan_id, role FROM clan_members WHERE user_id = $1', [userId]);
@@ -791,7 +787,7 @@ router.get('/applications', async (req, res) => {
 // 24. Принять заявку
 router.post('/accept-application', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { application_id } = req.body;
     const client = await pool.connect();
     try {
@@ -834,7 +830,7 @@ router.post('/accept-application', async (req, res) => {
 // 25. Отклонить заявку
 router.post('/reject-application', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { application_id } = req.body;
     const client = await pool.connect();
     try {
@@ -868,7 +864,7 @@ router.post('/reject-application', async (req, res) => {
 // 26. Изменить один клановый талант
 router.post('/adjust-talent', async (req, res) => {
     const userId = req.userId;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    if (!userId) return res.status(401).json({ error: 'Не авторизован' });
     const { stat, delta } = req.body;
     if (!stat || (delta !== 1 && delta !== -1)) {
         return res.status(400).json({ error: 'Неверные параметры' });

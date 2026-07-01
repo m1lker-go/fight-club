@@ -16,15 +16,10 @@
         }
     }
 
-    // ======== Временная функция перевода (fallback) ========
-    // Определяем window.__ как fallback (возвращает второй аргумент)
-    // Это нужно для тех мест, где ещё не успела загрузиться новая функция
+    // Временная fallback-функция (до инициализации i18next)
     window.__ = function(key, fallback) {
         return fallback || key;
     };
-
-    // Сразу создаём $t как алиас к __ (пока fallback)
-    window.$t = window.__;
 
     function updateUI() {
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
@@ -77,17 +72,11 @@
                 loadTranslation('en')
             ]);
 
-            if (!ruData) {
-                console.warn('⚠️ ru.json не загружен, буду использовать fallback-тексты');
-            }
-            if (!enData) {
-                console.warn('⚠️ en.json не загружен, английский временно недоступен');
-            }
+            if (!ruData) console.warn('⚠️ ru.json не загружен');
+            if (!enData) console.warn('⚠️ en.json не загружен');
 
             if (typeof i18next === 'undefined') {
                 console.error('❌ i18next library not found!');
-                window.__ = function(key, fallback) { return fallback || key; };
-                window.$t = window.__;
                 return;
             }
 
@@ -111,19 +100,16 @@
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
 
-            // ======== ОСНОВНАЯ ФУНКЦИЯ ПЕРЕВОДА ========
-            // Теперь переопределяем window.$t, чтобы она использовала i18next
-            window.$t = function(key, fallback) {
+            // ====== ГЛАВНОЕ ИСПРАВЛЕНИЕ ======
+            // Удаляем старую window.__ и создаём новую, использующую i18next
+            delete window.__;
+            window.__ = function(key, fallback) {
                 return i18next.t(key, { defaultValue: fallback || key });
             };
+            // =================================
 
-            // window.__ оставляем как fallback (на случай, если где-то ещё используется в старом коде)
-            // Но лучше в коде использовать $t
-
-            // Применяем переводы к UI
             updateUI();
 
-            // ======== Функция для смены языка ========
             window.setLanguage = function(lang) {
                 if (!window.i18next || typeof window.i18next.changeLanguage !== 'function') {
                     localStorage.setItem('i18nextLng', lang);
@@ -158,8 +144,10 @@
 
         } catch (e) {
             console.error('❌ i18next initialization failed:', e);
-            window.__ = function(key, fallback) { return fallback || key; };
-            window.$t = window.__;
+            // Если ошибка, оставляем fallback-функцию
+            window.__ = function(key, fallback) {
+                return fallback || key;
+            };
         }
     }
 

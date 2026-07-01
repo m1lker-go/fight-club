@@ -1,4 +1,4 @@
-// battleLog.js – финальная версия с поддержкой i18n (регулярки адаптированы под EN/RU)
+// battleLog.js – финальная версия с поддержкой i18n и двуязычными летающими числами
 
 const BattleLog = {
     messages: [],
@@ -27,6 +27,7 @@ const BattleLog = {
     playerRage: 0,
     enemyRage: 0,
     floatingSlots: { hero: [false, false, false], enemy: [false, false, false] },
+    
 
     getRageLevelFromPercent(percent) {
         if (percent < 20) return 5;
@@ -246,32 +247,24 @@ const BattleLog = {
         if (effects.length > 0) console.log(`[BattleLog] Rendered ${effects.length} icons for ${side}`);
     },
 
-    // ========== formatLogText: поддержка русского и английского ==========
+    // ========== ДВУЯЗЫЧНОЕ ФОРМАТИРОВАНИЕ ТЕКСТА ЛОГА ==========
     formatLogText(text) {
-        // Урон / Damage
         text = text.replace(/((?:Урон|Damage) -)(\d+)/gi, '$1<span class="damage-number">$2</span>');
-        // Крит. урон / Critical damage
         text = text.replace(/((?:Крит\. урон|Critical damage) -)(\d+)/gi, '$1<span class="damage-number">$2</span>');
-        // Урон от огня / Fire damage
         text = text.replace(/((?:Урон от огня|Fire damage) -)(\d+)/gi, '$1<span class="damage-number">$2</span>');
-        // Урон от яда / Poison damage
         text = text.replace(/((?:Урон от яда|Poison damage) -)(\d+)/gi, '$1<span class="damage-number">$2</span>');
-        // Отражение / Reflect
         text = text.replace(/((?:Отражение|Reflect) -)(\d+)/gi, '$1<span class="damage-number">$2</span>');
-        // Вампиризм / Lifesteal
         text = text.replace(/((?:Вампиризм|Lifesteal) \+)(\d+)/gi, '$1<span class="heal-number">$2</span>');
-        // Здоровье / Health
         text = text.replace(/((?:Здоровье|Health) \+)(\d+)/gi, '$1<span class="heal-number">$2</span>');
-        // Ледовые фразы (можно оставить русские шаблоны, т.к. они редко встречаются в английском, но для надёжности)
-        text = text.replace(/(Лед накапливается\. Уровень \d+\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ освобождается ото льда\.)/g, '<span class="ice-text">$1</span>');
-        text = text.replace(/([^\s]+ уже заморожен\.)/g, '<span class="ice-text">$1</span>');
+        text = text.replace(/((?:Лед накапливается|Frost builds up)\. Уровень \d+\.)/gi, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ застывает во льду! Заморозка\.)/gi, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ скован льдом ещё \d+ хода\.)/gi, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ освобождается ото льда\.)/gi, '<span class="ice-text">$1</span>');
+        text = text.replace(/([^\s]+ уже заморожен\.)/gi, '<span class="ice-text">$1</span>');
         return text;
     },
 
-    // ========== parseAndShowFloatingNumber: поддержка русского и английского ==========
+    // ========== ДВУЯЗЫЧНЫЙ ПАРСИНГ ЛЕТАЮЩИХ ЧИСЕЛ ==========
     parseAndShowFloatingNumber(entry) {
         const msgText = entry.text;
         const type = entry.type;
@@ -282,19 +275,8 @@ const BattleLog = {
         let colorClass = null;
         let numberTarget = null;
 
-        // Универсальные регулярки для урона/лечения
-        const damageRegex = /(?:Урон|Damage) -(\d+)/i;
-        const critDamageRegex = /(?:Крит\. урон|Critical damage) -(\d+)/i;
-        const fireDamageRegex = /(?:Урон от огня|Fire damage) -(\d+)/i;
-        const poisonDamageRegex = /(?:Урон от яда|Poison damage) -(\d+)/i;
-        const healRegex = /(?:Здоровье|Health) \+(\d+)/i;
-        const vampRegex = /(?:Вампиризм|Lifesteal) \+(\d+)/i;
-        const reflectRegex = /(?:Отражение|Reflect) -(\d+)/i;
-
         if (type === 'attack' || type === 'crit' || type === 'damage' || type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
-            let match = msgText.match(damageRegex) || msgText.match(critDamageRegex);
-            if (!match && type === 'fire_ult') match = msgText.match(fireDamageRegex);
-            if (!match && type === 'poison_ult') match = msgText.match(poisonDamageRegex);
+            const match = msgText.match(/(?:Урон|Damage) -(\d+)/i) || msgText.match(/(?:Крит\. урон|Critical damage) -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
                 if (type === 'fire_ult') icon = '🔥';
@@ -305,7 +287,7 @@ const BattleLog = {
                 numberTarget = (attacker === 'player') ? 'enemy' : 'hero';
             }
         } else if (type === 'damage_self') {
-            const match = msgText.match(damageRegex);
+            const match = msgText.match(/(?:Урон|Damage) -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
                 icon = '⚔️';
@@ -313,7 +295,7 @@ const BattleLog = {
                 numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
             }
         } else if (type === 'poison_dot') {
-            const match = msgText.match(poisonDamageRegex);
+            const match = msgText.match(/(?:Урон от яда|Poison damage) -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
                 icon = '💧';
@@ -321,7 +303,7 @@ const BattleLog = {
                 numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
             }
         } else if (type === 'burn_dot') {
-            const match = msgText.match(fireDamageRegex);
+            const match = msgText.match(/(?:Урон от огня|Fire damage) -(\d+)/i);
             if (match) {
                 numberValue = -parseInt(match[1]);
                 icon = '🔥';
@@ -329,7 +311,7 @@ const BattleLog = {
                 numberTarget = (attacker === 'player') ? 'hero' : 'enemy';
             }
         } else if (type === 'heal') {
-            const match = msgText.match(healRegex);
+            const match = msgText.match(/(?:Здоровье|Health) \+(\d+)/i);
             if (match) {
                 numberValue = parseInt(match[1]);
                 icon = '❤️';
@@ -339,12 +321,12 @@ const BattleLog = {
         }
 
         if (type === 'attack' || type === 'crit') {
-            const vampMatch = msgText.match(vampRegex);
+            const vampMatch = msgText.match(/(?:Вампиризм|Lifesteal) \+(\d+)/i);
             if (vampMatch) {
                 const vampValue = parseInt(vampMatch[1]);
                 this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', vampValue, '❤️', 'green');
             }
-            const reflectMatch = msgText.match(reflectRegex);
+            const reflectMatch = msgText.match(/(?:Отражение|Reflect) -(\d+)/i);
             if (reflectMatch) {
                 const reflectValue = -parseInt(reflectMatch[1]);
                 this.showFloatingNumber(attacker === 'player' ? 'hero' : 'enemy', reflectValue, '🛡️', 'red');
@@ -420,8 +402,7 @@ const BattleLog = {
                             (attacker === 'enemy' && this.battleData.enemySubclass === 'berserker');
 
         if (isBerserker && type === 'damage_self') {
-            // Используем универсальную регулярку
-            const selfMatch = msgText.match(/(?:Урон|Damage) -(\d+)/i);
+            const selfMatch = msgText.match(/(?:Урон|Damage) -(\d+)/);
             if (selfMatch) {
                 const selfDamage = parseInt(selfMatch[1]);
                 const currentState = this.states[this.currentStateIndex - 1] || this.states[0];
@@ -472,19 +453,25 @@ const BattleLog = {
 
         const isStackMessage = type === 'poison_stack' || type === 'burn_stack' || type === 'freeze_stack' || type === 'frozen_already' || type === 'poison_dot' || type === 'burn_dot';
         if (!isStackMessage && window.AnimationManager) {
-            if (type === 'attack' || type === 'crit' || type === 'damage') {
-                if (attacker === 'player') {
-                    const attackerAvatarId = this.battleData.playerAvatarId;
-                    const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
-                    if (isSkinAttack) {
-                        window.AnimationManager.playAnimation('hero', 'attack', { isSkinAttack: true, skinId: attackerAvatarId });
-                    }
-                }
-                const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
-                setTimeout(() => {
-                    window.AnimationManager.playAnimation(defenderSide, 'attack');
-                }, 150);
-            } else if (type === 'dodge') {
+            // Атака (обычная, крит, урон)
+          if (type === 'attack' || type === 'crit' || type === 'damage') {
+    // 1. Замах (скиновая анимация) – только для игрока, если есть скин с анимацией атаки
+    if (attacker === 'player') {
+        const attackerAvatarId = this.battleData.playerAvatarId;
+        const isSkinAttack = window.AnimationManager && window.AnimationManager.hasSkinAnimation(attackerAvatarId);
+        if (isSkinAttack) {
+            window.AnimationManager.playAnimation('hero', 'attack', { isSkinAttack: true, skinId: attackerAvatarId });
+        }
+    }
+
+    // 2. Эффект попадания (вспышка) на цели – всегда
+    const defenderSide = (attacker === 'player') ? 'enemy' : 'hero';
+    setTimeout(() => {
+        window.AnimationManager.playAnimation(defenderSide, 'attack');
+    }, 150);
+}
+            // Уворот
+            else if (type === 'dodge') {
                 const defender = (attacker === 'player') ? 'enemy' : 'hero';
                 const defenderAvatarId = (defender === 'hero') ? this.battleData.playerAvatarId : this.battleData.enemyAvatarId;
                 const isSkinDodge = window.AnimationManager && window.AnimationManager.hasSkinAnimation(defenderAvatarId);
@@ -493,17 +480,23 @@ const BattleLog = {
                 } else {
                     window.AnimationManager.playAnimation(defender, 'dodge');
                 }
-            } else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
+            }
+            // Ультимейты
+            else if (type === 'ult' || type === 'fire_ult' || type === 'ice_ult' || type === 'poison_ult') {
                 const target = (attacker === 'player') ? 'enemy' : 'hero';
                 let animType = 'ultimate';
                 if (type === 'fire_ult') animType = 'fire_ult';
                 else if (type === 'ice_ult') animType = 'ice_ult';
                 else if (type === 'poison_ult') animType = 'poison_ult';
                 window.AnimationManager.playAnimation(target, animType);
-            } else if (type === 'heal' || type === 'buff') {
+            }
+            // Исцеление / бафф
+            else if (type === 'heal' || type === 'buff') {
                 const target = (attacker === 'player') ? 'hero' : 'enemy';
                 window.AnimationManager.playAnimation(target, type === 'heal' ? 'heal' : 'buff');
-            } else if (type === 'frozen_enter' || type === 'frozen_end') {
+            }
+            // Заморозка
+            else if (type === 'frozen_enter' || type === 'frozen_end') {
                 const target = (attacker === 'player') ? 'enemy' : 'hero';
                 window.AnimationManager.playAnimation(target, 'frozen');
             }
@@ -528,7 +521,7 @@ const BattleLog = {
         this.interval = setTimeout(() => this.playNext(), 2000 / this.speed);
     },
 
-    // ========== processBerserkerAttack: поддержка русского и английского ==========
+    // ========== ОБРАБОТКА АТАКИ БЕРСЕРКА (ДВУЯЗЫЧНЫЙ ПАРСИНГ) ==========
     processBerserkerAttack(attacker) {
         let attackMsg = null;
         for (let i = this.currentMsgIndex; i < this.messages.length; i++) {
@@ -541,7 +534,7 @@ const BattleLog = {
         if (!attackMsg) return;
 
         const msgText = attackMsg.text;
-        const damageMatch = msgText.match(/(?:Урон|Damage) -(\d+)/i);
+        const damageMatch = msgText.match(/(?:Урон|Damage) -(\d+)/);
         const vampMatch = msgText.match(/(?:Вампиризм|Lifesteal) \+(\d+)/i);
         const reflectMatch = msgText.match(/(?:Отражение|Reflect) -(\d+)/i);
         if (!damageMatch) return;
@@ -618,6 +611,7 @@ const BattleLog = {
         const heroCard = document.querySelector('.hero-card');
         const enemyCard = document.querySelector('.enemy-card');
 
+        // Анимация печати текста
         const animateTyping = (element, text, delay = 80) => {
             if (!element) return;
             element.textContent = '';
@@ -632,6 +626,7 @@ const BattleLog = {
             }, delay);
         };
 
+        // Определяем ID скинов для анимаций
         let playerSkinId = this.battleData.playerAvatarId;
         let enemySkinId = this.battleData.enemyAvatarId;
 
@@ -642,6 +637,7 @@ const BattleLog = {
             enemySkinId = 'cybercat';
         }
 
+        // Показываем overlay "Проиграл"
         const defeatText = window.$t('battle:Проиграл', 'Проиграл');
 
         if (winner === 'player') {
@@ -663,6 +659,7 @@ const BattleLog = {
             if (enemyCard) enemyCard.classList.add('defeated');
         }
 
+        // Анимации скинов
         if (window.AnimationManager) {
             if (winner === 'player') {
                 if (window.AnimationManager.hasSkinAnimation(playerSkinId)) {

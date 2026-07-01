@@ -57,6 +57,8 @@
     "Изменить": "Change",
     "Снять с продажи": "Remove from sale",
     "Недостаточно средств!": "Insufficient funds!",
+    "Недостаточно алмазов!": "Not enough gems!",
+    "Недостаточно монет!": "Not enough coins!",
     "Ошибка: ": "Error: ",
     "неизвестная": "unknown",
     "Ошибка загрузки": "Loading error",
@@ -68,8 +70,96 @@
     "Надеть": "Equip",
     "coins": "coins",
     "exp": "exp",
-    "item": "Item"
+    "item": "Item",
+    "Здоровье": "Health",
+    "Атака": "Attack",
+    "Защита": "Defense",
+    "Ловкость": "Agility",
+    "Интеллект": "Intellect",
+    "Скорость": "Speed",
+    "Шанс крита": "Critical Chance",
+    "Крит. урон": "Critical Damage",
+    "Вампиризм": "Lifesteal",
+    "Отражение": "Reflect",
+    "Ударов": "Hits",
+    "Критов": "Crits",
+    "Уклонений": "Dodges",
+    "Урона": "Damage",
+    "Исцелено": "Healed",
+    "Отражено": "Reflected",
+    "Опыт": "Experience",
+    "Монеты": "Coins",
+    "Рейтинг": "Rating",
+    "Серия": "Streak",
+    "Уголь": "Coal",
+    "Свиток": "Scroll",
+    "Статистика": "Statistics",
+    "Игрок": "Player",
+    "Параметр": "Stat",
+    "Соперник": "Opponent",
+    "Лог боя": "Battle Log",
+    "Проиграл": "Defeated",
+    "ПОБЕДА": "VICTORY",
+    "НИЧЬЯ": "DRAW",
+    "ПОРАЖЕНИЕ": "DEFEAT",
+    "Скорость:": "Speed:",
+    "Класс:": "Class:",
+    "Роль:": "Role:",
+    "Этаж": "Floor",
+    "Награда": "Reward",
+    "Следующий этаж": "Next Floor",
+    "Повторить": "Retry",
+    "Нет билетов": "No tickets",
+    "Билеты закончились": "Tickets are over",
+    "Ошибка данных боя": "Battle data error",
+    "Закрыть": "Close",
+    "Сообщения": "Messages",
+    "ПУСТО": "EMPTY",
+    "Читать": "Read",
+    "Удалить": "Delete",
+    "Ответить": "Reply",
+    "Забрать награду": "Claim Reward",
+    "Функция ответа в разработке": "Reply feature in development",
+    "Удалить сообщение?": "Delete this message?",
+    "монет": "coins",
+    "алмазов": "gems",
+    "опыта": "exp",
+    "сундук": "chest",
+    "сундуки": "chests",
+    "Награда: ": "Reward: ",
+    "Вы получили: ": "You received: ",
+    "Редкий свиток": "Rare Scroll",
+    "Эпический свиток": "Epic Scroll",
+    "Легендарный свиток": "Legendary Scroll",
+    "Колесо Фортуны": "Wheel of Fortune",
+    "Правила": "Rules",
+    "Билеты лотереи:": "Lottery Tickets:",
+    "Испытать удачу": "Try Your Luck",
+    "Покупка билетов": "Buy Tickets",
+    "Количество": "Quantity",
+    "Max": "Max",
+    "Нет билетов! Купите билеты или дождитесь завтра.": "No tickets! Buy tickets or wait until tomorrow.",
+    "Ошибка покупки": "Purchase error",
+    "Вы выиграли: {prizeName}": "You won: {prizeName}",
+    "Выберите класс": "Choose Class",
+    "Опыт добавлен классу {className}": "Experience added to {className}",
+    "Ошибка начисления опыта": "Error granting experience",
+    "Награда": "Reward",
+    "Шанс": "Chance",
+    "Легендарное снаряжение": "Legendary Gear",
+    "Билет лотереи": "Lottery Ticket",
+    "100 монет": "100 coins",
+    "300 монет": "300 coins",
+    "1000 монет": "1000 coins",
+    "20 опыта": "20 exp",
+    "50 опыта": "50 exp",
+    "250 опыта": "250 exp",
+    "10 угля": "10 coal",
+    "50 угля": "50 coal",
+    "Снаряжение": "Gear",
+    "Билет": "Ticket"
   },
+
   "auth": {
     "Вход в игру": "Sign In",
     "Войти через Telegram": "Sign in with Telegram",
@@ -113,6 +203,7 @@
     "Пароль успешно изменён! Можете войти в игру.": "Password changed successfully! You can now log in.",
     "Ошибка соединения с сервером": "Server connection error"
   },
+
   "settings": {
     "Подтверждение": "Confirmation",
     "Да": "Yes",
@@ -167,6 +258,7 @@
     "Ошибка загрузки достижений": "Failed to load achievements",
     "Привязка email в разработке": "Email linking in development"
   },
+
   "main": {
     "Почта": "Mail",
     "Кланы": "Guilds",
@@ -184,13 +276,13 @@
     "Класс": "Class",
     "Роль": "Role",
     "Начать бой": "Start Battle",
-     "mail": "Mail",
+    "mail": "Mail",
     "clans": "Guilds",
     "tournament": "Tournament",
     "settings": "Settings",
     "trade": "Trade",
     "market": "Market",
-    "fortune": "Fortune Wheel",
+    "fortune": "Fortune",
     "backpack": "Backpack",
     "alchemist": "Alchemist",
     "forge": "Forge",
@@ -201,6 +293,7 @@
     "role": "Role",
     "start_battle": "Start Battle"
   },
+
   "equip": {
     "РЮКЗАК": "BACKPACK",
     "Этот предмет не принадлежит текущему классу!": "This item does not belong to your current class!",
@@ -214,6 +307,7 @@
     "item_not_on_sale": "Item not on sale",
     "invalid_price": "Invalid price"
   },
+
   "trade": {
     "Сундуки": "Chests",
     "Монетный двор": "Mint",
@@ -231,6 +325,7 @@
     "Ошибка загрузки Монетного двора": "Failed to load Mint",
     "Ошибка загрузки Алмазной лавки": "Failed to load Gem Shop"
   },
+
   "market": {
     "Редкость": "Rarity",
     "Характеристика": "Stat",
@@ -248,6 +343,7 @@
     "missing_item_id": "Missing item ID",
     "market_error": "Market error"
   },
+
   "rating": {
     "РЕЙТИНГ": "RATING",
     "СИЛА": "POWER",
@@ -257,6 +353,7 @@
     "Очки": "Points",
     "Этаж": "Floor"
   },
+
   "profile": {
     "Скины": "Skins",
     "Бонусы": "Bonuses",
@@ -278,15 +375,6 @@
     "Вампиризм (VAMP)": "Lifesteal (VAMP)",
     "Отражение (REFLECT)": "Reflect (REFL)",
     "Доступно очков навыков:": "Skill Points available:",
-    "Здоровье": "Health",
-    "Атака": "Attack",
-    "Защита": "Defense",
-    "Интеллект": "Intellect",
-    "Скорость": "Speed",
-    "Шанс крита": "Critical Chance",
-    "Крит. урон": "Critical Damage",
-    "Вампиризм": "Lifesteal",
-    "Отражение": "Reflect",
     "Здоровье +5 единиц": "Health +5",
     "Атака +1 единица": "Attack +1",
     "Входящий физ.урон -1% <br>(макс. 70%)": "Incoming physical damage -1% <br>(max 70%)",
@@ -307,6 +395,7 @@
     "Ошибка загрузки аватаров": "Failed to load avatars",
     "Ошибка при смене аватара": "Error changing avatar"
   },
+
   "avatar": {
     "Текущий аватар": "Current Avatar",
     "Просмотр аватара": "View Avatar",
@@ -321,49 +410,17 @@
     "Ультимейт": "Ultimate",
     "Закрыть": "Close"
   },
+
   "alchemy": {
     "Превращаем ресурсы в ценности! 🧪": "Turning resources into valuables! 🧪"
   },
+
   "battle": {
-    "Проиграл": "Defeated",
-    "Урон -": "Damage -",
-    "Крит. урон -": "Critical Damage -",
-    "Урон от огня -": "Fire Damage -",
-    "Урон от яда -": "Poison Damage -",
-    "Отражение -": "Reflect -",
-    "Вампиризм +": "Lifesteal +",
-    "Здоровье +": "Health +",
-    "Лед накапливается. Уровень {num}.": "Frost builds up. Level {num}.",
-    "{name} застывает во льду! Заморозка.": "{name} is frozen solid! Frozen.",
-    "{name} скован льдом ещё {num} хода.": "{name} is encased in ice for {num} more turns.",
-    "{name} освобождается ото льда.": "{name} breaks free from the ice.",
-    "{name} уже заморожен.": "{name} is already frozen.",
     "Недостаточно энергии!": "Not enough energy!",
     "Ошибка сервера: ": "Server error: ",
     "Неизвестная ошибка": "Unknown error",
     "Ошибка: не удалось идентифицировать пользователя": "Error: could not identify user",
-    "Скорость:": "Speed:",
-    "Лог боя": "Battle Log",
-    "ПОБЕДА": "VICTORY",
-    "НИЧЬЯ": "DRAW",
-    "ПОРАЖЕНИЕ": "DEFEAT",
     "В бой": "Fight",
-    "Статистика": "Statistics",
-    "Игрок": "Player",
-    "Параметр": "Stat",
-    "Соперник": "Opponent",
-    "Ударов": "Hits",
-    "Критов": "Crits",
-    "Уклонений": "Dodges",
-    "Урона": "Damage",
-    "Исцелено": "Healed",
-    "Отражено": "Reflected",
-    "Опыт": "Experience",
-    "Монеты": "Coins",
-    "Рейтинг": "Rating",
-    "Серия": "Streak",
-    "Уголь": "Coal",
-    "Свиток": "Scroll",
     "attackPhrases": {
       "warrior": [
         "%s smashes %s with a shield bash! -%d damage.",
@@ -467,6 +524,7 @@
     "ultimate_not_ready": "Ultimate not ready",
     "battle_error": "Battle error"
   },
+
   "modals": {
     "Осмотр снаряжения": "Inspect Equipment",
     "Введите цену": "Enter Price",
@@ -475,6 +533,7 @@
     "Продать": "Sell",
     "Снять предмет?": "Unequip item?"
   },
+
   "achievements": {
     "Новое достижение!": "New Achievement!",
     "Вы получили новое достижение!": "You earned a new achievement!",
@@ -486,7 +545,8 @@
     "unlock_subject": "New Achievement!",
     "unlock_body": "You earned the \"{name}\" achievement! It is available in Settings > Achievements."
   },
-"clans": {
+
+  "clans": {
     "Загрузка кланов...": "Loading guilds...",
     "Ошибка загрузки. Попробуйте позже.": "Loading error. Please try again later.",
     "Список кланов": "Guilds List",
@@ -496,13 +556,11 @@
     "По заявкам": "By application",
     "Закрытые": "Closed",
     "Сброс": "Reset",
-    "Применить": "Apply",
     "№": "#",
     "Значок": "Icon",
     "Название (Уровень)": "Name (Level)",
     "Участники": "Members",
     "Действие": "Action",
-    "Просмотр": "View",
     "Инфо клана": "Guild Info",
     "Нет участников": "No members",
     "Открытый": "Open",
@@ -512,7 +570,6 @@
     "Заявка отправлена": "Application sent",
     "Подать заявку": "Submit application",
     "Закрыт": "Closed",
-    "Закрыть": "Close",
     "Вы уверены, что хотите покинуть клан?": "Are you sure you want to leave the guild?",
     "Вы вступили в клан!": "You joined the guild!",
     "Заявка отправлена!": "Application sent!",
@@ -555,7 +612,6 @@
     "Таланты": "Talents",
     "Управление": "Management",
     "Заявки": "Applications",
-    "Игрок": "Player",
     "Роль": "Role",
     "Статус": "Status",
     "Отметка": "Check-in",
@@ -579,12 +635,6 @@
     "Куплено очков:": "Points bought:",
     "Доступно для распределения:": "Available to distribute:",
     "Покупка очка увеличивает бонусы для всех участников в клановых битвах": "Buying a point increases bonuses for all members in guild battles",
-    "Здоровье": "Health",
-    "Атака": "Attack",
-    "Защита": "Defense",
-    "Ловкость": "Agility",
-    "Крит. урон": "Crit. Damage",
-    "Вампиризм": "Lifesteal",
     "Описание клана": "Guild Description",
     "Вход в гильдию": "Guild access",
     "Открытый (вступление без подтверждения)": "Open (join without approval)",
@@ -609,63 +659,63 @@
     "Список кланов": "Guilds list",
     "Клан достиг {level} уровня! Максимум участников увеличен до {maxMembers}.": "Guild reached level {level}! Max members increased to {maxMembers}.",
     "errors": {
-        "Некорректное название (3-30 символов, без мата)": "Invalid name (3-30 characters, no profanity)",
-        "Неверный ID иконки": "Invalid icon ID",
-        "Неверный формат цвета": "Invalid color format",
-        "Вы уже состоите в клане": "You are already in a guild",
-        "Неверный способ оплаты": "Invalid payment method",
-        "Клан с таким названием уже существует": "A guild with that name already exists",
-        "Ошибка создания клана": "Guild creation error",
-        "Вы не в клане": "You are not in a guild",
-        "Лидер должен передать руководство перед выходом": "The leader must transfer leadership before leaving",
-        "Недостаточно прав": "Insufficient permissions",
-        "Пользователь не в клане": "User is not in the guild",
-        "Нельзя исключить лидера": "Cannot kick the leader",
-        "Только лидер может изменять роли": "Only the leader can change roles",
-        "Нельзя изменить роль лидера": "Cannot change the leader's role",
-        "Пользователь уже офицер": "User is already an officer",
-        "Пользователь уже участник": "User is already a member",
-        "Некорректная роль": "Invalid role",
-        "Только лидер может передать руководство": "Only the leader can transfer leadership",
-        "Пользователь не в вашем клане": "User is not in your guild",
-        "Сообщение не может быть пустым или длиннее 200 символов": "Message cannot be empty or exceed 200 characters",
-        "Вы не состоите в клане": "You are not in any guild",
-        "Неверная сумма": "Invalid amount",
-        "Недостаточно монет": "Insufficient coins",
-        "Недостаточно монет в казне": "Insufficient coins in treasury",
-        "Только лидер может покупать очки": "Only the leader can buy skill points",
-        "Достигнут максимум очков для этого уровня": "Maximum skill points reached for this level",
-        "Только лидер может распределять очки": "Only the leader can distribute points",
-        "Сумма распределённых очков не равна купленным": "The sum of distributed points does not match purchased points",
-        "Неверный тип вступления": "Invalid join type",
-        "Только лидер может редактировать клан": "Only the leader can edit guild settings",
-        "Только лидер может расформировать клан": "Only the leader can disband the guild",
-        "Этот клан не принимает заявки": "This guild does not accept applications",
-        "Вы уже подали заявку в этот клан": "You already have a pending application to this guild",
-        "Заявка не найдена": "Application not found",
-        "Только лидер может просматривать заявки": "Only the leader can view applications",
-        "Только лидер может принимать заявки": "Only the leader can accept applications",
-        "Только лидер может отклонять заявки": "Only the leader can reject applications",
-        "Неверные параметры": "Invalid parameters",
-        "Неверная характеристика": "Invalid stat",
-        "Значение не может быть отрицательным": "Value cannot be negative",
-        "Нельзя распределить больше очков, чем куплено": "Cannot distribute more points than bought"
+      "Некорректное название (3-30 символов, без мата)": "Invalid name (3-30 characters, no profanity)",
+      "Неверный ID иконки": "Invalid icon ID",
+      "Неверный формат цвета": "Invalid color format",
+      "Вы уже состоите в клане": "You are already in a guild",
+      "Неверный способ оплаты": "Invalid payment method",
+      "Клан с таким названием уже существует": "A guild with that name already exists",
+      "Ошибка создания клана": "Guild creation error",
+      "Вы не в клане": "You are not in a guild",
+      "Лидер должен передать руководство перед выходом": "The leader must transfer leadership before leaving",
+      "Недостаточно прав": "Insufficient permissions",
+      "Пользователь не в клане": "User is not in the guild",
+      "Нельзя исключить лидера": "Cannot kick the leader",
+      "Только лидер может изменять роли": "Only the leader can change roles",
+      "Нельзя изменить роль лидера": "Cannot change the leader's role",
+      "Пользователь уже офицер": "User is already an officer",
+      "Пользователь уже участник": "User is already a member",
+      "Некорректная роль": "Invalid role",
+      "Только лидер может передать руководство": "Only the leader can transfer leadership",
+      "Пользователь не в вашем клане": "User is not in your guild",
+      "Сообщение не может быть пустым или длиннее 200 символов": "Message cannot be empty or exceed 200 characters",
+      "Вы не состоите в клане": "You are not in any guild",
+      "Неверная сумма": "Invalid amount",
+      "Недостаточно монет": "Insufficient coins",
+      "Недостаточно монет в казне": "Insufficient coins in treasury",
+      "Только лидер может покупать очки": "Only the leader can buy skill points",
+      "Достигнут максимум очков для этого уровня": "Maximum skill points reached for this level",
+      "Только лидер может распределять очки": "Only the leader can distribute points",
+      "Сумма распределённых очков не равна купленным": "The sum of distributed points does not match purchased points",
+      "Неверный тип вступления": "Invalid join type",
+      "Только лидер может редактировать клан": "Only the leader can edit guild settings",
+      "Только лидер может расформировать клан": "Only the leader can disband the guild",
+      "Этот клан не принимает заявки": "This guild does not accept applications",
+      "Вы уже подали заявку в этот клан": "You already have a pending application to this guild",
+      "Заявка не найдена": "Application not found",
+      "Только лидер может просматривать заявки": "Only the leader can view applications",
+      "Только лидер может принимать заявки": "Only the leader can accept applications",
+      "Только лидер может отклонять заявки": "Only the leader can reject applications",
+      "Неверные параметры": "Invalid parameters",
+      "Неверная характеристика": "Invalid stat",
+      "Значение не может быть отрицательным": "Value cannot be negative",
+      "Нельзя распределить больше очков, чем куплено": "Cannot distribute more points than bought"
     },
     "system_messages": {
-        "Уровень клана повышен!": "Guild Level Up!",
-        "Ваш клан достиг уровня {level}! Открыты новые возможности.": "Your guild reached level {level}! New perks unlocked.",
-        "Заявка принята": "Application Accepted",
-        "Ваша заявка на вступление в клан \"{clanName}\" принята!": "Your application to join \"{clanName}\" has been accepted!",
-        "Заявка отклонена": "Application Rejected",
-        "Ваша заявка на вступление в клан отклонена лидером.": "Your application to join the guild was declined by the leader."
+      "Уровень клана повышен!": "Guild Level Up!",
+      "Ваш клан достиг уровня {level}! Открыты новые возможности.": "Your guild reached level {level}! New perks unlocked.",
+      "Заявка принята": "Application Accepted",
+      "Ваша заявка на вступление в клан \"{clanName}\" принята!": "Your application to join \"{clanName}\" has been accepted!",
+      "Заявка отклонена": "Application Rejected",
+      "Ваша заявка на вступление в клан отклонена лидером.": "Your application to join the guild was declined by the leader."
     },
     "chat_messages": {
-        "{username} вступил в клан!": "{username} joined the guild!",
-        "{username} покинул клан": "{username} left the guild",
-        "{username} был исключён из клана": "{username} was kicked from the guild"
+      "{username} вступил в клан!": "{username} joined the guild!",
+      "{username} покинул клан": "{username} left the guild",
+      "{username} был исключён из клана": "{username} was kicked from the guild"
     }
-},
-  
+  },
+
   "subclasses": {
     "guardian": {
       "name": "Guardian",
@@ -713,6 +763,7 @@
       "active": "Mirror Image – The enemy attacks itself. Damage = its attack × 2 × (1 + Int/100), minimum 12."
     }
   },
+
   "items": {
     "Rusty Sword": "Rusty Sword",
     "Wooden Shield": "Wooden Shield",
@@ -803,6 +854,7 @@
       "legendary": "Legendary"
     }
   },
+
   "item_data": {
     "warrior": {
       "weapon": {
@@ -937,15 +989,13 @@
       }
     }
   },
+
   "forge": {
     "Ковать": "Forge",
     "Расплавить": "Smelt",
     "Доступные предметы": "Available Items",
     "Пусто": "Empty",
     "Выберите свиток": "Select a Scroll",
-    "Редкий свиток": "Rare Scroll",
-    "Эпический свиток": "Epic Scroll",
-    "Легендарный свиток": "Legendary Scroll",
     "Шанс +{bonus}%": "Chance +{bonus}%",
     "Количество: {count}": "Quantity: {count}",
     "Добавить": "Add",
@@ -975,7 +1025,6 @@
     "Предметы должны быть одной редкости": "Items must be of the same rarity",
     "Предмет создан!": "Item crafted!",
     "Неудача": "Failure",
-    "Ошибка соединения": "Connection error",
     "Вы получили {coins} монет": "You received {coins} coins",
     "Вы получили {coins} монет, {diamonds} алмазов": "You received {coins} coins and {diamonds} gems",
     "Вы получили {coins} монет, {diamonds} алмазов, {steel} стальных слитков": "You received {coins} coins, {diamonds} gems, and {steel} steel ingots",
@@ -986,43 +1035,13 @@
     "craft_success": "Forging successful!",
     "craft_fail": "Forging failed. Items and scroll lost."
   },
+
   "fortune": {
-    "Колесо Фортуны": "Wheel of Fortune",
-    "Правила": "Rules",
-    "Билеты лотереи:": "Lottery Tickets:",
-    "Испытать удачу": "Try Your Luck",
-    "Покупка билетов": "Buy Tickets",
-    "Количество": "Quantity",
-    "Max": "Max",
-    "Нет билетов! Купите билеты или дождитесь завтра.": "No tickets! Buy tickets or wait until tomorrow.",
     "Вы уверены, что хотите купить {count} лотерейных билетов за {totalDiamonds} алмазов?": "Are you sure you want to buy {count} lottery tickets for {totalDiamonds} gems?",
     "Вы получили {count} лотерейных билетов!": "You received {count} lottery tickets!",
-    "Ошибка покупки": "Purchase error",
-    "Вы выиграли: {prizeName}": "You won: {prizeName}",
-    "Выберите класс": "Choose Class",
     "Вы получили {expAmount} опыта. Какому классу хотите его вручить?": "You gained {expAmount} experience. Which class should receive it?",
-    "Опыт добавлен классу {className}": "Experience added to {className}",
-    "Ошибка начисления опыта": "Error granting experience",
     "Каждый день даётся <strong>3 бесплатных билета</strong>.": "You receive <strong>3 free tickets</strong> each day.",
     "Дополнительные билеты можно купить за <strong>10 алмазов</strong> (максимум 100 билетов в день).": "Additional tickets can be bought for <strong>10 gems</strong> each (max 100 tickets per day).",
-    "Награда": "Reward",
-    "Шанс": "Chance",
-    "Легендарное снаряжение": "Legendary Gear",
-    "Билет лотереи": "Lottery Ticket",
-    "100 монет": "100 coins",
-    "300 монет": "300 coins",
-    "1000 монет": "1000 coins",
-    "20 опыта": "20 exp",
-    "50 опыта": "50 exp",
-    "250 опыта": "250 exp",
-    "10 угля": "10 coal",
-    "50 угля": "50 coal",
-    "Монеты": "Coins",
-    "Опыт": "Experience",
-    "Уголь": "Coal",
-    "Сундук": "Chest",
-    "Билет": "Ticket",
-    "Снаряжение": "Gear",
     "prizes": {
       "legendary_chest": "Legendary Gear",
       "free_spin": "Lottery Ticket",
@@ -1040,6 +1059,7 @@
     "no_tickets": "No tickets! Buy tickets or wait until tomorrow.",
     "spin_result": "You won: {prizeName}"
   },
+
   "gems": {
     "Реквизиты и оферта": "Details and Offer",
     "Продавец": "Seller",
@@ -1065,8 +1085,6 @@
     "Сетевая ошибка. Попробуйте позже.": "Network error. Please try again later.",
     "Бесплатная монета уже получена сегодня": "Free coin already claimed today",
     "+20 монет!": "+20 coins!",
-    "Ошибка": "Error",
-    "Ошибка соединения": "Connection error",
     "+{coins} монет, +{coal} угля!": "+{coins} coins, +{coal} coal!",
     "Подписка активирована! (зачисление через несколько секунд)": "Subscription activated! (credited in a few seconds)",
     "Ошибка оплаты подписки": "Subscription payment error",
@@ -1079,46 +1097,24 @@
     "Награда уже получена": "Reward already claimed",
     "VK Bridge не инициализирован": "VK Bridge not initialized"
   },
+
   "helpers": {
     "Особенность класса": "Class Feature",
     "Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.": "Fortitude: Gain +5 maximum health per 5 Defense. Increases maximum health by 10%.",
     "Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.": "Swiftness: Gain +1 Speed per 5 Agility.",
     "Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.": "Arcane Power: Gain +1 Agility and +2 Mana regeneration per 5 Intellect.",
     "Ваш {className} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.": "Your {className} has reached a new level!<br>New attribute points are available.",
-    "Класс: ": "Class: ",
     "Класс: {classDisplay}": "Class: {classDisplay}",
     "пусто": "empty"
   },
-  "messages": {
-    "Сообщения": "Messages",
-    "ПУСТО": "EMPTY",
-    "Читать": "Read",
-    "Удалить": "Delete",
-    "Ответить": "Reply",
-    "Забрать награду": "Claim Reward",
-    "Функция ответа в разработке": "Reply feature in development",
-    "Удалить сообщение?": "Delete this message?",
-    "монет": "coins",
-    "алмазов": "gems",
-    "опыта": "exp",
-    "Обычный": "Common",
-    "Необычный": "Uncommon",
-    "Редкий": "Rare",
-    "Эпический": "Epic",
-    "Легендарный": "Legendary",
-    "сундук": "chest",
-    "сундуки": "chests",
-    "Награда: ": "Reward: ",
-    "Вы получили: ": "You received: "
-  },
+
+  "messages": {},
+
   "mint": {
     "Уголь за алмазы": "Coal for Gems",
     "Уголь за монеты": "Coal for Coins",
     "Золото за алмазы": "Gold for Gems",
     "Свитки": "Scrolls",
-    "Редкий Свиток": "Rare Scroll",
-    "Эпический Свиток": "Epic Scroll",
-    "Легендарный Свиток": "Legendary Scroll",
     "FREE": "FREE",
     "Недостаточно алмазов!": "Not enough gems!",
     "Недостаточно монет!": "Not enough coins!",
@@ -1129,6 +1125,7 @@
     "+{amount} монет!": "+{amount} coins!",
     "+1 {scrollName}": "+1 {scrollName}"
   },
+
   "tournament": {
     "Турнир": "Tournament",
     "Лидеры": "Leaders",
@@ -1152,7 +1149,6 @@
     "Матчи турнира ещё не загружены. Попробуйте позже.": "Tournament matches not loaded yet. Please try again later.",
     "Матч за 3-е место": "Bronze Match",
     "Финал": "Final",
-    "Закрыть": "Close",
     "Просмотр матчей серии": "View Series Matches",
     "Сражение №{num}": "Match #{num}",
     "Не удалось загрузить данные матчей": "Could not load match data",
@@ -1178,39 +1174,16 @@
     "reward_subject": "Golden Claw Tournament Results",
     "reward_body": "Congratulations! You placed {place} in the daily tournament! Claim your reward."
   },
+
   "tower": {
     "Этаж:": "Floor:",
     "Билеты:": "Tickets:",
-    "Класс:": "Class:",
-    "Роль:": "Role:",
     "этаж": "floor",
     "СТАРТ": "START",
     "У вас не осталось билетов на сегодня": "You have no tickets left for today",
     "Билеты закончились": "Tickets are over",
     "Ошибка данных боя": "Battle data error",
-    "Скорость:": "Speed:",
-    "Лог боя": "Battle Log",
-    "Проиграл": "Defeated",
-    "ПОБЕДА": "VICTORY",
-    "ПОРАЖЕНИЕ": "DEFEAT",
-    "Этаж": "Floor",
-    "Награда": "Reward",
     "Новый скин ": "New Skin ",
-    "Опыт": "Experience",
-    "Следующий этаж": "Next Floor",
-    "Повторить": "Retry",
-    "Нет билетов": "No tickets",
-    "Статистика": "Statistics",
-    "Игрок": "Player",
-    "Параметр": "Stat",
-    "Соперник": "Opponent",
-    "Ударов": "Hits",
-    "Критов": "Crits",
-    "Уклонений": "Dodges",
-    "Урона": "Damage",
-    "Исцелено": "Healed",
-    "Отражено": "Reflected",
-    "Башня испытаний": "Tower of Trials",
     "О башне": "About the Tower",
     "Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.": "Each season you choose one hero to climb the tower. You can only change the hero's class with a special class change ticket.",
     "Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.": "You receive <strong>10 tickets</strong> for battles each day. The ticket count resets daily.",
@@ -1250,10 +1223,12 @@
     "tower_battle_victory": "Victory on floor {floor}!",
     "tower_battle_defeat": "Defeat on floor {floor}."
   },
+
   "telegram_bot": {
     "welcome": "😺 **MEOW! Welcome to Cat Fighting!**\n\nYou have entered a world where brave cats battle for the title of champion. Here you can:\n\n⚔️ **Choose a class** – Warrior, Assassin, or Mage, each with unique abilities.\n🛡️ **Equip your hero** – find and equip awesome gear.\n🏆 **Fight other players** – climb the ranks and become a legend.\n🔨 **Upgrade items at the Forge** – turn common items into legendary ones.\n🎁 **Open chests** – earn rare treasures and bonuses.\n\nReady to begin? Hit the button below and show the world what your cat can do! 😼",
     "start_button": "⚔️ Start Game"
   },
+
   "system": {
     "subscription_expired_title": "⏰ VIP Silver subscription expired",
     "subscription_expired_body": "Unfortunately, your monthly \"VIP-SILVER\" subscription has ended.\nRenew it in the Gem Shop.",
@@ -1284,6 +1259,7 @@
     "reward_exp": "{amount} exp for {class}",
     "chest_reward": "{chestName} chest{pluralSuffix}"
   },
+
   "bot_generator": {
     "botNames": {
       "wooden_dummy": "Wooden Dummy",
@@ -1300,6 +1276,7 @@
     },
     "cybercat": "Cybercat"
   },
+
   "season": {
     "reward_subject": "🏆 Season Reward!",
     "reward_body": "Congratulations! You survived this season, fighting like a tiger! You placed {place} in the rankings.\n\nYou received: {rewards}.",
@@ -1313,6 +1290,7 @@
     "season_name_prefix": "Season",
     "prefix": "Season"
   },
+
   "email": {
     "verification_subject": "Verification Code for Login",
     "verification_body": "Your verification code: {code}. Valid for 10 minutes.",
@@ -1321,6 +1299,7 @@
     "reset_subject": "Password Reset for Cat Fighting",
     "reset_body": "To reset your password, follow this link: {resetLink}\n\nThe link is valid for 1 hour. If you did not request this, please ignore this email."
   },
+
   "auth_errors": {
     "email_required": "Email required",
     "code_too_many": "Too many code requests. Please try again later.",
@@ -1427,6 +1406,7 @@
     "class_choice_required": "class_choice required for exp reward",
     "skill_points_choice_missing": "Invalid reward type"
   },
+
   "shop": {
     "invalid_chest_type": "Invalid chest type",
     "free_coal_already_claimed": "Free coal already claimed today",
@@ -1435,6 +1415,7 @@
     "missing_coins_or_price": "Missing coins or price",
     "scroll_bought": "{scrollName} purchased"
   },
+
   "subscription": {
     "free_coin_already_claimed": "Free coin already claimed today",
     "subscription_not_active": "Subscription is not active",
@@ -1442,6 +1423,7 @@
     "admin_activation_subject": "🎉 VIP Silver subscription activated!",
     "admin_activation_body": "Congratulations! Your \"VIP-SILVER\" subscription has been activated for {days} days.\nThank you for your purchase.\nThe cats purr with gratitude."
   },
+
   "tasks": {
     "advent": {
       "day_not_available": "This day is not available yet",
@@ -1462,6 +1444,7 @@
       "invalid_task_id": "Invalid task ID"
     }
   },
+
   "daily_tasks": {
     "Warrior Winner": {
       "name": "Warrior",
@@ -1504,6 +1487,7 @@
       "description": "Complete 10 daily quests"
     }
   },
+
   "skins": {
     "skin1": "Underdog",
     "skin3": "Hawk Eye",

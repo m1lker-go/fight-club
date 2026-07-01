@@ -1,4 +1,4 @@
-// js/tower.js – полностью адаптирован под AnimationManager
+// js/tower.js – полностью адаптирован под AnimationManager с полной локализацией
 
 let towerStatus = null;
 let selectedClass = null;
@@ -10,7 +10,6 @@ async function loadTowerStatus() {
         return;
     }
     try {
-        // Предзагрузка анимаций (если ещё не сделана)
         if (window.AnimationManager && typeof AnimationManager.preloadAllAnimations === 'function') {
             AnimationManager.preloadAllAnimations().catch(e => console.warn('Предзагрузка анимаций:', e));
         }
@@ -21,7 +20,7 @@ async function loadTowerStatus() {
 
         if (typeof getClassNameRu !== 'function') {
             console.warn('getClassNameRu not defined, using fallback');
-            window.getClassNameRu = (cls) => cls === 'warrior' ? 'Воин' : (cls === 'assassin' ? 'Ассасин' : 'Маг');
+            window.getClassNameRu = (cls) => cls === 'warrior' ? window.$t('common:Воин', 'Воин') : (cls === 'assassin' ? window.$t('common:Ассасин', 'Ассасин') : window.$t('common:Маг', 'Маг'));
         }
         if (typeof getRoleNameRu !== 'function') {
             console.warn('getRoleNameRu not defined, using fallback');
@@ -35,13 +34,13 @@ async function loadTowerStatus() {
         }
     } catch (e) {
         console.error('Ошибка загрузки башни:', e);
-        showToast('Ошибка загрузки башни', 2000);
+        showToast(window.$t('common:Ошибка загрузки', 'Ошибка загрузки башни'), 2000);
     }
 }
 
 function getFloorRewardInfo(floor) {
     if (floor % 20 === 0) {
-        return { type: 'skin', icon: 'fas fa-square', label: 'скин' };
+        return { type: 'skin', icon: 'fas fa-tshirt', label: window.$t('tower:Новый скин ', 'Новый скин ') };
     }
     let amount;
     if (floor <= 5) amount = 30;
@@ -51,15 +50,19 @@ function getFloorRewardInfo(floor) {
     else if (floor <= 80) amount = 250;
     else if (floor <= 99) amount = 500;
     else amount = 2000;
-    return { type: 'coins', amount: amount, icon: 'fas fa-coins', label: 'монет' };
+    return { type: 'coins', amount: amount, icon: 'fas fa-coins', label: window.$t('tower:tower_reward_coins', 'монет') };
 }
 
 function renderTower() {
+    if (!userData) {
+        console.warn('renderTower: userData not ready, skipping');
+        return;
+    }
     const className = towerStatus.chosenClass
-        ? (typeof getClassNameRu === 'function' ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
+        ? getClassNameRu(towerStatus.chosenClass)
         : '—';
     const subclassName = towerStatus.chosenSubclass
-        ? (typeof getRoleNameRu === 'function' ? getRoleNameRu(towerStatus.chosenSubclass) : towerStatus.chosenSubclass)
+        ? getRoleNameRu(towerStatus.chosenSubclass)
         : '—';
 
     const content = document.getElementById('content');
@@ -70,22 +73,22 @@ function renderTower() {
                     <div class="header-grid" style="flex: 1;">
                         <div class="grid-left">
                             <div class="grid-item">
-                                <span class="header-label">Этаж:</span>
+                                <span class="header-label">${window.$t('tower:Этаж:', 'Этаж:')}</span>
                                 <span class="header-value">${towerStatus.currentFloor}</span>
                             </div>
                             <div class="grid-item">
-                                <span class="header-label">Билеты:</span>
+                                <span class="header-label">${window.$t('tower:Билеты:', 'Билеты:')}</span>
                                 <span class="header-value">${towerStatus.attemptsLeft}</span>
-                                <img src="/assets/icons/icon-ticket.png" alt="билет" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle; display: inline-block;">
+                                <img src="/assets/icons/icon-ticket.png" alt="${window.$t('common:билет', 'билет')}" style="width: 24px; height: auto; margin-left: 5px; vertical-align: middle; display: inline-block;">
                             </div>
                         </div>
                         <div class="grid-right">
                             <div class="grid-item">
-                                <span class="header-label">Класс:</span>
+                                <span class="header-label">${window.$t('tower:Класс:', 'Класс:')}</span>
                                 <span class="header-value">${escapeHtml(className)}</span>
                             </div>
                             <div class="grid-item">
-                                <span class="header-label">Роль:</span>
+                                <span class="header-label">${window.$t('tower:Роль:', 'Роль:')}</span>
                                 <span class="header-value">${escapeHtml(subclassName)}</span>
                             </div>
                         </div>
@@ -143,7 +146,7 @@ function renderTower() {
             ? `
                 <div class="floor-center start-floor">
                     <img src="${iconSrc}" alt="floor ${i}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#2f3542';">
-                    <span class="start-label">СТАРТ</span>
+                    <span class="start-label">${window.$t('tower:СТАРТ', 'СТАРТ')}</span>
                 </div>
             `
             : `
@@ -155,7 +158,7 @@ function renderTower() {
         floorDiv.innerHTML = `
             <div class="floor-left">
                 <span class="${floorNumberClass}">${i}</span>
-                <span class="floor-text">этаж</span>
+                <span class="floor-text">${window.$t('tower:этаж', 'этаж')}</span>
             </div>
             ${centerContent}
             <div class="floor-right">
@@ -183,7 +186,6 @@ function renderTower() {
 }
 
 async function startTowerBattle() {
-    // Включаем боевую музыку
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
     } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
@@ -191,7 +193,7 @@ async function startTowerBattle() {
     }
 
     if (towerStatus.attemptsLeft <= 0) {
-        showToast('У вас не осталось билетов на сегодня', 1500);
+        showToast(window.$t('tower:У вас не осталось билетов на сегодня', 'У вас не осталось билетов на сегодня'), 1500);
         return;
     }
 
@@ -203,25 +205,26 @@ async function startTowerBattle() {
         const data = await res.json();
         if (!res.ok) {
             if (data.error === 'No tickets left today') {
-                showToast('Билеты закончились', 1500);
+                showToast(window.$t('tower:Билеты закончились', 'Билеты закончились'), 1500);
             } else {
-                showToast('Ошибка: ' + data.error, 2000);
+                showToast(window.$t('common:Ошибка: ') + data.error, 2000);
             }
             return;
         }
         if (!data.result) {
             console.error('Ответ сервера не содержит result:', data);
-            showToast('Ошибка данных боя', 2000);
+            showToast(window.$t('tower:Ошибка данных боя', 'Ошибка данных боя'), 2000);
             return;
         }
         showTowerBattleScreen(data);
     } catch (e) {
         console.error('Ошибка при старте боя:', e);
-        showToast('Ошибка соединения', 2000);
+        showToast(window.$t('common:Ошибка соединения', 'Ошибка соединения'), 2000);
     }
 }
 
 async function showTowerBattleScreen(battleData) {
+    if (!userData) return;
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';
@@ -240,12 +243,8 @@ async function showTowerBattleScreen(battleData) {
         battleData.opponent.avatar_id = 1;
     }
 
-    const playerDisplayClass = towerStatus.chosenClass
-        ? (typeof getClassNameRu === 'function' ? getClassNameRu(towerStatus.chosenClass) : towerStatus.chosenClass)
-        : getClassNameRu(userData.current_class);
-    const playerDisplaySubclass = towerStatus.chosenSubclass
-        ? (typeof getRoleNameRu === 'function' ? getRoleNameRu(towerStatus.chosenSubclass) : towerStatus.chosenSubclass)
-        : getRoleNameRu(userData.subclass);
+    const playerDisplayClass = getClassNameRu(playerClassForBattle);
+    const playerDisplaySubclass = getRoleNameRu(playerSubclassForBattle);
 
     let enemyAvatarSrc = '';
     if (battleData.opponent.is_mouse && battleData.opponent.avatar_filename) {
@@ -279,7 +278,7 @@ async function showTowerBattleScreen(battleData) {
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">Проиграл</div>
+                        <div class="defeat-overlay">${window.$t('common:Проиграл', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div id="hero-animation" class="animation-container"></div>
@@ -304,7 +303,7 @@ async function showTowerBattleScreen(battleData) {
                 <div class="battle-center">
                     <div class="battle-timer" id="battleTimer">∞</div>
                     <div class="speed-wrapper">
-                        <div class="speed-label">Скорость:</div>
+                        <div class="speed-label">${window.$t('common:Скорость:', 'Скорость:')}</div>
                         <button id="singleSpeedBtn" class="speed-btn">x1</button>
                     </div>
                 </div>
@@ -322,7 +321,7 @@ async function showTowerBattleScreen(battleData) {
                     <div style="position: relative; margin: 0 auto;">
                         <img src="${enemyAvatarSrc}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">Проиграл</div>
+                        <div class="defeat-overlay">${window.$t('common:Проиграл', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div id="enemy-animation" class="animation-container"></div>
@@ -338,21 +337,17 @@ async function showTowerBattleScreen(battleData) {
             </div>
 
             <div class="battle-log-container">
-                <div class="log-header">Лог боя</div>
+                <div class="log-header">${window.$t('common:Лог боя', 'Лог боя')}</div>
                 <div id="battleLog" class="battle-log"></div>
             </div>
         </div>
     `;
 
-    // РАЗБЛОКИРОВКА ЗВУКА (ВАЖНО ДЛЯ WEBVIEW)
     if (window.AudioManager && typeof AudioManager.unlockAudio === 'function') {
         AudioManager.unlockAudio();
     }
 
-    // ДОБАВЛЕНО: ID аватара врага для скиновых анимаций
     battleData.enemyAvatarId = battleData.opponent.avatar_id;
-
-    // ДОБАВЛЕНО: очистка текста затемнения для нового боя
     document.querySelectorAll('.defeat-overlay').forEach(el => el.textContent = '');
 
     BattleLog.init(battleData, document.getElementById('battleLog'), () => {
@@ -387,7 +382,6 @@ async function handleTowerBattleEnd(battleData) {
     towerStatus.currentFloor = battleData.newFloor;
     towerStatus.attemptsLeft = battleData.attemptsLeft;
 
-    // Обновляем задания
     if (typeof refreshTasksData === 'function') {
         await refreshTasksData();
     }
@@ -402,12 +396,11 @@ async function handleTowerBattleEnd(battleData) {
 
 function showTowerResultScreen(battleData) {
     const { result, victory, reward, newFloor, floor } = battleData;
-    const resultText = victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
+    const resultText = victory ? window.$t('common:ПОБЕДА', 'ПОБЕДА') : window.$t('common:ПОРАЖЕНИЕ', 'ПОРАЖЕНИЕ');
     const resultColor = victory ? '#2ecc71' : '#e74c3c';
     const passedFloor = floor;
     const expGain = battleData.expGain || 0;
 
-    // Звук окончания боя
     if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
         if (victory) AudioManager.playSound('victory');
         else AudioManager.playSound('defeat');
@@ -453,18 +446,18 @@ function showTowerResultScreen(battleData) {
         return item;
     };
 
-    rewardsGrid.appendChild(addRewardItem('Этаж', `${passedFloor}`, 'fas fa-chess-rook'));
+    rewardsGrid.appendChild(addRewardItem(window.$t('tower:Этаж', 'Этаж'), `${passedFloor}`, 'fas fa-chess-rook'));
 
     if (reward) {
         if (reward.type === 'coins') {
-            rewardsGrid.appendChild(addRewardItem('Награда', `${reward.amount}`, 'fas fa-coins'));
+            rewardsGrid.appendChild(addRewardItem(window.$t('tower:Награда', 'Награда'), `${reward.amount}`, 'fas fa-coins'));
         } else if (reward.type === 'avatar') {
             const avatarItem = document.createElement('div');
             avatarItem.className = 'reward-item';
             const icon = document.createElement('i');
             icon.className = 'fas fa-tshirt';
             const span = document.createElement('span');
-            span.innerHTML = 'Новый скин ';
+            span.innerHTML = window.$t('tower:Новый скин ', 'Новый скин ');
             const eyeBtn = document.createElement('i');
             eyeBtn.className = 'fas fa-eye';
             eyeBtn.style.cssText = 'margin-left: 8px; cursor: pointer; color: #00aaff;';
@@ -483,7 +476,7 @@ function showTowerResultScreen(battleData) {
     }
 
     if (victory) {
-        rewardsGrid.appendChild(addRewardItem('Опыт', `+${expGain}`, 'fas fa-star'));
+        rewardsGrid.appendChild(addRewardItem(window.$t('tower:Опыт', 'Опыт'), `+${expGain}`, 'fas fa-star'));
     }
 
     container.appendChild(rewardsGrid);
@@ -501,19 +494,19 @@ function showTowerResultScreen(battleData) {
 
     let actionBtn;
     if (victory) {
-        actionBtn = createButton('Следующий этаж', () => startTowerBattle());
+        actionBtn = createButton(window.$t('tower:Следующий этаж', 'Следующий этаж'), () => startTowerBattle());
     } else {
         if (towerStatus.attemptsLeft > 0) {
-            actionBtn = createButton('Повторить', () => startTowerBattle());
+            actionBtn = createButton(window.$t('tower:Повторить', 'Повторить'), () => startTowerBattle());
         } else {
-            actionBtn = createButton('Нет билетов', null);
+            actionBtn = createButton(window.$t('tower:Нет билетов', 'Нет билетов'), null);
             actionBtn.disabled = true;
             actionBtn.style.opacity = '0.5';
             actionBtn.style.cursor = 'not-allowed';
         }
     }
 
-    const backBtn = createButton('Назад', () => {
+    const backBtn = createButton(window.$t('common:Назад', 'Назад'), () => {
         if (window.AudioManager && typeof AudioManager.startMenuMusic === 'function') {
             AudioManager.startMenuMusic();
         } else if (window.AudioManager && typeof AudioManager.onScreenChange === 'function') {
@@ -524,27 +517,27 @@ function showTowerResultScreen(battleData) {
 
     let tabLogBtn, tabStatsBtn;
 
-    tabLogBtn = createButton('Лог боя', () => {
+    tabLogBtn = createButton(window.$t('common:Лог боя', 'Лог боя'), () => {
         tabLogBtn.classList.add('active');
         tabStatsBtn.classList.remove('active');
         resultContent.innerHTML = logArray;
     }, true);
 
-    tabStatsBtn = createButton('Статистика', () => {
+    tabStatsBtn = createButton(window.$t('common:Статистика', 'Статистика'), () => {
         tabStatsBtn.classList.add('active');
         tabLogBtn.classList.remove('active');
         const statsHtml = `
             <table class="stats-battle">
                 <thead>
-                    <tr><th>Игрок</th><th>Параметр</th><th>Соперник</th><tr>
+                    <tr><th>${window.$t('common:Игрок', 'Игрок')}</th><th>${window.$t('common:Параметр', 'Параметр')}</th><th>${window.$t('common:Соперник', 'Соперник')}</th><tr>
                 </thead>
                 <tbody>
-                    <tr><td class="player-col">${playerStats.hits}</td><td>Ударов</td><td class="enemy-col">${enemyStats.hits}</td></tr>
-                    <tr><td class="player-col">${playerStats.crits}</td><td>Критов</td><td class="enemy-col">${enemyStats.crits}</td></tr>
-                    <tr><td class="player-col">${playerStats.dodges}</td><td>Уклонений</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
-                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>Урона</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
-                    <tr><td class="player-col">${playerStats.heal}</td><td>Исцелено</td><td class="enemy-col">${enemyStats.heal}</td></tr>
-                    <tr><td class="player-col">${playerStats.reflect}</td><td>Отражено</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
+                    <tr><td class="player-col">${playerStats.hits}</td><td>${window.$t('common:Ударов', 'Ударов')}</td><td class="enemy-col">${enemyStats.hits}</td></tr>
+                    <tr><td class="player-col">${playerStats.crits}</td><td>${window.$t('common:Критов', 'Критов')}</td><td class="enemy-col">${enemyStats.crits}</td></tr>
+                    <tr><td class="player-col">${playerStats.dodges}</td><td>${window.$t('common:Уклонений', 'Уклонений')}</td><td class="enemy-col">${enemyStats.dodges}</td></tr>
+                    <tr><td class="player-col">${playerStats.totalDamage}</td><td>${window.$t('common:Урона', 'Урона')}</td><td class="enemy-col">${enemyStats.totalDamage}</td></tr>
+                    <tr><td class="player-col">${playerStats.heal}</td><td>${window.$t('common:Исцелено', 'Исцелено')}</td><td class="enemy-col">${enemyStats.heal}</td></tr>
+                    <tr><td class="player-col">${playerStats.reflect}</td><td>${window.$t('common:Отражено', 'Отражено')}</td><td class="enemy-col">${enemyStats.reflect}</td></tr>
                 </tbody>
             </table>
         `;
@@ -566,6 +559,7 @@ function showTowerResultScreen(battleData) {
     content.appendChild(container);
 }
 
+// Двуязычная статистика боя (аналогично battleLog.js)
 function computeTowerStats(messages) {
     let playerStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
     let enemyStats = { hits:0, crits:0, dodges:0, totalDamage:0, heal:0, reflect:0 };
@@ -578,14 +572,15 @@ function computeTowerStats(messages) {
         const targetStats = attacker === 'player' ? playerStats : enemyStats;
         const opponentStats = attacker === 'player' ? enemyStats : playerStats;
 
-        let match = text.match(/Урон -(\d+)/);
+        // Урон (обычный и крит)
+        let match = text.match(/(?:Урон|Damage) -(\d+)/i);
         if (match) {
             const dmg = parseInt(match[1]);
             targetStats.hits++;
             targetStats.totalDamage += dmg;
         }
 
-        match = text.match(/Крит\. урон -(\d+)/);
+        match = text.match(/(?:Крит\. урон|Critical damage) -(\d+)/i);
         if (match) {
             const dmg = parseInt(match[1]);
             targetStats.hits++;
@@ -593,28 +588,34 @@ function computeTowerStats(messages) {
             targetStats.totalDamage += dmg;
         }
 
-        match = text.match(/Урон от (?:яда|огня) -(\d+)/);
+        match = text.match(/(?:Урон от яда|Poison damage) -(\d+)/i);
+        if (match) {
+            const dmg = parseInt(match[1]);
+            targetStats.totalDamage += dmg;
+        }
+        match = text.match(/(?:Урон от огня|Fire damage) -(\d+)/i);
         if (match) {
             const dmg = parseInt(match[1]);
             targetStats.totalDamage += dmg;
         }
 
-        if (text.toLowerCase().includes('уворот')) {
+        // Уворот (русские и английские слова)
+        if (/(?:уворот|dodge)/i.test(text)) {
             opponentStats.dodges++;
         }
 
-        match = text.match(/Вампиризм \+(\d+)/);
+        match = text.match(/(?:Вампиризм|Lifesteal) \+(\d+)/i);
         if (match) {
             const heal = parseInt(match[1]);
             targetStats.heal += heal;
         }
-        match = text.match(/Здоровье \+(\d+)/);
+        match = text.match(/(?:Здоровье|Health) \+(\d+)/i);
         if (match) {
             const heal = parseInt(match[1]);
             targetStats.heal += heal;
         }
 
-        match = text.match(/Отражение -(\d+)/);
+        match = text.match(/(?:Отражение|Reflect) -(\d+)/i);
         if (match) {
             const reflect = parseInt(match[1]);
             opponentStats.reflect += reflect;
@@ -636,7 +637,7 @@ function showAvatarModal(avatar) {
     modalBody.innerHTML = `
         <div style="text-align: center;">
             <img src="/assets/${avatar.filename}" style="max-width: 200px; border-radius: 10px; margin-bottom: 15px;">
-            <button class="tutorial-btn" id="closeAvatarModal" style="width: 100%;">ОКЕЙ</button>
+            <button class="tutorial-btn" id="closeAvatarModal" style="width: 100%;">${window.$t('common:ОК', 'ОКЕЙ')}</button>
         </div>
     `;
 
@@ -658,47 +659,47 @@ function showTowerHelp() {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerHTML = `<i class="fas fa-chess-rook"></i> Башня испытаний`;
+    modalTitle.innerHTML = `<i class="fas fa-chess-rook"></i> ${window.$t('tower:Башня испытаний', 'Башня испытаний')}`;
 
     const towerDescription = `
         <div class="role-card">
-            <h3><i class="fas fa-info-circle"></i> О башне</h3>
-            <div class="skill-desc">Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.</div>
-            <div class="skill-desc" style="margin-top: 5px;">Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.</div>
-            <div class="skill-desc" style="margin-top: 5px;">За победу на этаже вы получаете награду. С каждым этажом враги становятся сильнее, а награда выше.</div>
+            <h3><i class="fas fa-info-circle"></i> ${window.$t('tower:О башне', 'О башне')}</h3>
+            <div class="skill-desc">${window.$t('tower:Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.', 'Каждый сезон вы выбираете одного героя, за которого проходите башню. Менять класс героя можно только с помощью особого билета смены класса.')}</div>
+            <div class="skill-desc" style="margin-top: 5px;">${window.$t('tower:Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.', 'Каждый день даётся <strong>10 билетов</strong> для сражений. Количество билетов обновляется каждый день.')}</div>
+            <div class="skill-desc" style="margin-top: 5px;">${window.$t('tower:За победу на этаже вы получаете награду. С каждым этажом враги становятся сильнее, а награда выше.', 'За победу на этаже вы получаете награду. С каждым этажом враги становятся сильнее, а награда выше.')}</div>
         </div>
     `;
 
     const mouseDescriptions = [
         {
-            name: 'Некромант',
-            passive: 'Воскрешение – один раз за бой при смертельном уроне восстанавливает часть здоровья и снимает все негативные эффекты.',
-            active: 'Неистовство нежити – наносит три удара подряд магической атакой.'
+            name: window.$t('tower:Некромант', 'Некромант'),
+            passive: window.$t('tower:Воскрешение – один раз за бой при смертельном уроне восстанавливает часть здоровья и снимает все негативные эффекты.', 'Воскрешение – один раз за бой при смертельном уроне восстанавливает часть здоровья и снимает все негативные эффекты.'),
+            active: window.$t('tower:Неистовство нежити – наносит три удара подряд магической атакой.', 'Неистовство нежити – наносит три удара подряд магической атакой.')
         },
         {
-            name: 'Клинок',
-            passive: 'Скорость тьмы – каждый ход наносит два удара подряд. Всегда ходит первым.',
-            active: 'Уязвимость – наносит мощный удар, игнорирующий защиту. Атака восстанавливает здоровье за счёт вампиризма.'
+            name: window.$t('tower:Клинок', 'Клинок'),
+            passive: window.$t('tower:Скорость тьмы – каждый ход наносит два удара подряд. Всегда ходит первым.', 'Скорость тьмы – каждый ход наносит два удара подряд. Всегда ходит первым.'),
+            active: window.$t('tower:Уязвимость – наносит мощный удар, игнорирующий защиту. Атака восстанавливает здоровье за счёт вампиризма.', 'Уязвимость – наносит мощный удар, игнорирующий защиту. Атака восстанавливает здоровье за счёт вампиризма.')
         },
         {
-            name: 'Антимаг',
-            passive: 'Поглощение маны – каждая атака крадёт ману у цели и восстанавливает свою.',
-            active: 'Антимагический удар – наносит урон, который тем сильнее, чем меньше маны у цели.'
+            name: window.$t('tower:Антимаг', 'Антимаг'),
+            passive: window.$t('tower:Поглощение маны – каждая атака крадёт ману у цели и восстанавливает свою.', 'Поглощение маны – каждая атака крадёт ману у цели и восстанавливает свою.'),
+            active: window.$t('tower:Антимагический удар – наносит урон, который тем сильнее, чем меньше маны у цели.', 'Антимагический удар – наносит урон, который тем сильнее, чем меньше маны у цели.')
         },
         {
-            name: 'Паладин',
-            passive: 'Божественный щит – получает на 50% меньше урона.',
-            active: 'Неуязвимость – на 2 хода становится неуязвимым.'
+            name: window.$t('tower:Паладин', 'Паладин'),
+            passive: window.$t('tower:Божественный щит – получает на 50% меньше урона.', 'Божественный щит – получает на 50% меньше урона.'),
+            active: window.$t('tower:Неуязвимость – на 2 хода становится неуязвимым.', 'Неуязвимость – на 2 хода становится неуязвимым.')
         },
         {
-            name: 'Алхимик',
-            passive: 'Ядовитая атака – каждый удар накладывает отравление на 1 ход. В конце хода цели наносится дополнительный урон.',
-            active: 'Адский коктейль – наносит мощный урон и надолго отравляет цель.'
+            name: window.$t('tower:Алхимик', 'Алхимик'),
+            passive: window.$t('tower:Ядовитая атака – каждый удар накладывает отравление на 1 ход. В конце хода цели наносится дополнительный урон.', 'Ядовитая атака – каждый удар накладывает отравление на 1 ход. В конце хода цели наносится дополнительный урон.'),
+            active: window.$t('tower:Адский коктейль – наносит мощный урон и надолго отравляет цель.', 'Адский коктейль – наносит мощный урон и надолго отравляет цель.')
         },
         {
-            name: 'Тень',
-            passive: 'Призрачная тень – с высокой вероятностью уклоняется от любой атаки.',
-            active: 'Исчезновение – становится невидимой на 1 ход, полностью уклоняясь от атак. Затем наносит сокрушительный удар, игнорирующий защиту.'
+            name: window.$t('tower:Тень', 'Тень'),
+            passive: window.$t('tower:Призрачная тень – с высокой вероятностью уклоняется от любой атаки.', 'Призрачная тень – с высокой вероятностью уклоняется от любой атаки.'),
+            active: window.$t('tower:Исчезновение – становится невидимой на 1 ход, полностью уклоняясь от атак. Затем наносит сокрушительный удар, игнорирующий защиту.', 'Исчезновение – становится невидимой на 1 ход, полностью уклоняясь от атак. Затем наносит сокрушительный удар, игнорирующий защиту.')
         }
     ];
 
@@ -711,12 +712,12 @@ function showTowerHelp() {
                 <h3>${mouse.name}</h3>
                 <div class="skill">
                     <span class="skill-name passive">${passiveParts[0]}</span>
-                    <span class="skill-type">(пассивный)</span>
+                    <span class="skill-type">(${window.$t('common:пассивный', 'пассивный')})</span>
                     <div class="skill-desc">${passiveParts[1] || mouse.passive}</div>
                 </div>
                 <div class="skill">
                     <span class="skill-name active">${activeParts[0]}</span>
-                    <span class="skill-type">(активный)</span>
+                    <span class="skill-type">(${window.$t('common:активный', 'активный')})</span>
                     <div class="skill-desc">${activeParts[1] || mouse.active}</div>
                 </div>
             </div>
@@ -760,13 +761,13 @@ function showIntroStep() {
     dialog.innerHTML = `
         <div class="dialog-content">
             <div class="dialog-text">
-                <p>Мяу! Добро пожаловать в Башню Испытаний!</p>
-                <p>Здесь ты встретишь сильнейших врагов, поднимаясь этаж за этажом.</p>
-                <p>Каждый сезон ты можешь выбрать одного героя, за которого будешь проходить башню.</p>
-                <p>Выбранный класс нельзя будет поменять до конца сезона (кроме особых билетов).</p>
-                <p>Готов? Тогда выбери своего чемпиона!</p>
+                <p>${window.$t('tower:Мяу! Добро пожаловать в Башню Испытаний!', 'Мяу! Добро пожаловать в Башню Испытаний!')}</p>
+                <p>${window.$t('tower:Здесь ты встретишь сильнейших врагов, поднимаясь этаж за этажом.', 'Здесь ты встретишь сильнейших врагов, поднимаясь этаж за этажом.')}</p>
+                <p>${window.$t('tower:Каждый сезон ты можешь выбрать одного героя, за которого будешь проходить башню.', 'Каждый сезон ты можешь выбрать одного героя, за которого будешь проходить башню.')}</p>
+                <p>${window.$t('tower:Выбранный класс нельзя будет поменять до конца сезона (кроме особых билетов).', 'Выбранный класс нельзя будет поменять до конца сезона (кроме особых билетов).')}</p>
+                <p>${window.$t('tower:Готов? Тогда выбери своего чемпиона!', 'Готов? Тогда выбери своего чемпиона!')}</p>
             </div>
-            <button class="tutorial-btn next-btn" id="nextToClass">Далее</button>
+            <button class="tutorial-btn next-btn" id="nextToClass">${window.$t('tower:Далее', 'Далее')}</button>
         </div>
     `;
     document.getElementById('nextToClass').addEventListener('click', showClassSelection);
@@ -777,14 +778,14 @@ function showClassSelection() {
     dialog.innerHTML = `
         <div class="dialog-content">
             <div class="dialog-text">
-                <p>Какой класс героя ты выберешь?</p>
+                <p>${window.$t('tower:Какой класс героя ты выберешь?', 'Какой класс героя ты выберешь?')}</p>
             </div>
             <div class="class-buttons">
-                <button class="tutorial-btn class-option" data-class="warrior">Воин</button>
-                <button class="tutorial-btn class-option" data-class="assassin">Ассасин</button>
-                <button class="tutorial-btn class-option" data-class="mage">Маг</button>
+                <button class="tutorial-btn class-option" data-class="warrior">${window.$t('common:Воин', 'Воин')}</button>
+                <button class="tutorial-btn class-option" data-class="assassin">${window.$t('common:Ассасин', 'Ассасин')}</button>
+                <button class="tutorial-btn class-option" data-class="mage">${window.$t('common:Маг', 'Маг')}</button>
             </div>
-            <button class="tutorial-btn next-btn" id="nextToRole" disabled>Далее</button>
+            <button class="tutorial-btn next-btn" id="nextToRole" disabled>${window.$t('tower:Далее', 'Далее')}</button>
         </div>
     `;
     document.querySelectorAll('.class-option').forEach(btn => {
@@ -805,23 +806,18 @@ function showRoleSelection() {
         assassin: ['assassin', 'venom_blade', 'blood_hunter'],
         mage: ['pyromancer', 'cryomancer', 'illusionist']
     };
-    const roleNames = {
-        guardian: 'Страж', berserker: 'Берсерк', knight: 'Рыцарь',
-        assassin: 'Убийца', venom_blade: 'Ядовитый клинок', blood_hunter: 'Кровавый охотник',
-        pyromancer: 'Поджигатель', cryomancer: 'Ледяной маг', illusionist: 'Иллюзионист'
-    };
     const roleList = roles[selectedClass];
     dialog.innerHTML = `
         <div class="dialog-content">
             <div class="dialog-text">
-                <p>Какую роль ты выберешь?</p>
+                <p>${window.$t('tower:Какую роль ты выберешь?', 'Какую роль ты выберешь?')}</p>
             </div>
             <div class="role-buttons">
-                ${roleList.map(role => `<button class="tutorial-btn role-option" data-role="${role}">${roleNames[role]}</button>`).join('')}
+                ${roleList.map(role => `<button class="tutorial-btn role-option" data-role="${role}">${getRoleNameRu(role)}</button>`).join('')}
             </div>
             <div class="dialog-nav">
-                <button class="tutorial-btn back-btn" id="backToClass">Назад</button>
-                <button class="tutorial-btn confirm-btn" id="confirmRole" disabled>Подтвердить</button>
+                <button class="tutorial-btn back-btn" id="backToClass">${window.$t('common:Назад', 'Назад')}</button>
+                <button class="tutorial-btn confirm-btn" id="confirmRole" disabled>${window.$t('tower:Подтвердить', 'Подтвердить')}</button>
             </div>
         </div>
     `;
@@ -855,11 +851,11 @@ async function confirmSelection() {
             removeTutorialOverlay();
             renderTower();
         } else {
-            showToast('Ошибка при выборе класса: ' + data.error, 2000);
+            showToast(window.$t('tower:Ошибка при выборе класса: ', 'Ошибка при выборе класса: ') + data.error, 2000);
         }
     } catch (e) {
         console.error(e);
-        showToast('Ошибка соединения', 2000);
+        showToast(window.$t('common:Ошибка соединения', 'Ошибка соединения'), 2000);
     }
 }
 

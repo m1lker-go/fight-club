@@ -6,8 +6,8 @@ window.startBattle = function() {
     console.warn('⚠️ startBattle called from fallback – full definition will override this.');
 };
 
-// Переопределяем getRoleNameRu для использования i18n
-const getRoleNameRu = (role) => {
+// Переопределяем getRoleNameRu (без const, т.к. она уже объявлена глобально)
+getRoleNameRu = (role) => {
     const key = `subclasses:${role}.name`;
     return window.$t(key, role);
 };

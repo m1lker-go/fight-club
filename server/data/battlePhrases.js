@@ -117,8 +117,8 @@ function loadTranslations() {
     if (loaded) return;
     try {
         // Ищем файлы локализации относительно текущего файла: ../locales/ru.json и ../locales/en.json
-        const ruPath = path.join(__dirname, '../locales/ru.json');
-        const enPath = path.join(__dirname, '../locales/en.json');
+       const ruPath = path.join(__dirname, '..', '..', 'client', 'locales', 'ru.json');
+const enPath = path.join(__dirname, '..', '..', 'client', 'locales', 'en.json');
         
         if (fs.existsSync(ruPath)) {
             const ruData = JSON.parse(fs.readFileSync(ruPath, 'utf-8'));

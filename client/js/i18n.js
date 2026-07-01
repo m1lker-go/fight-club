@@ -21,7 +21,6 @@
     window.__ = function(key, fallback) {
         // Если i18next уже инициализирован, используем его
         if (window.i18next && window.i18next.isInitialized) {
-            // key вида "namespace:key"
             return window.i18next.t(key, { defaultValue: fallback || key });
         }
         // Иначе возвращаем fallback (русский текст)
@@ -31,13 +30,13 @@
     // ======== Функция обновления UI после смены языка ========
     function updateUI() {
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
+        const current = window.currentScreen || 'main';
+
         // Если есть showScreen – используем её для перерисовки текущего экрана
         if (typeof window.showScreen === 'function') {
-            const current = window.currentScreen || 'main';
             window.showScreen(current);
         } else {
             // fallback: старый способ с switch
-            const current = window.currentScreen || 'main';
             switch (current) {
                 case 'main': if (window.renderMain) window.renderMain(); break;
                 case 'equip': if (window.renderEquip) window.renderEquip(); break;
@@ -55,6 +54,15 @@
                 case 'alchemy': if (window.renderAlchemy) window.renderAlchemy(); break;
                 case 'messages': if (window.renderMessages) window.renderMessages(); break;
                 default: break;
+            }
+        }
+
+        // ДОПОЛНИТЕЛЬНО: принудительно перерисовываем кланы, если они открыты
+        // (потому что showScreen может не сработать для кланов)
+        if (current === 'clans' && typeof window.renderClans === 'function') {
+            const content = document.getElementById('content');
+            if (content && content.querySelector('.clans-container')) {
+                window.renderClans();
             }
         }
 
@@ -96,7 +104,6 @@
             // Если i18next не загружен – грузим его с CDN (но он уже должен быть в index.html)
             if (typeof i18next === 'undefined') {
                 console.error('❌ i18next library not found!');
-                // В этом случае оставляем только fallback-функцию
                 window.__ = function(key, fallback) {
                     return fallback || key;
                 };
@@ -116,8 +123,8 @@
                 lng: savedLang,
                 fallbackLng: 'ru',
                 resources: resources,
-                ns: nsList,                 // используем все namespace
-                defaultNS: 'common',        // если ключ без префикса, ищем в common
+                ns: nsList,
+                defaultNS: 'common',
                 interpolation: { escapeValue: false }
             });
 
@@ -126,7 +133,6 @@
 
             // Переопределяем __, чтобы использовать i18next
             window.__ = function(key, fallback) {
-                // ключ вида "namespace:key" – i18next сам разберёт
                 return i18next.t(key, { defaultValue: fallback || key });
             };
 
@@ -170,7 +176,6 @@
 
         } catch (e) {
             console.error('❌ i18next initialization failed:', e);
-            // Оставляем fallback-функцию
             window.__ = function(key, fallback) {
                 return fallback || key;
             };

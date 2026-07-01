@@ -13,9 +13,9 @@ if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
 }
 
 if (user) {
-    window.playerName = user.username || user.first_name || __('common:Игрок', 'Игрок');
+    window.playerName = user.username || user.first_name || window.$t('common:Игрок', 'Игрок');
 } else {
-    window.playerName = __('common:Игрок', 'Игрок');
+    window.playerName = window.$t('common:Игрок', 'Игрок');
 }
 console.log('playerName:', window.playerName);
 
@@ -528,10 +528,10 @@ function showErrorSplash() {
         splash.style.display = 'flex';
         splash.innerHTML = `
             <div class="splash-content">
-                <h1 class="splash-title">${__('common:Ошибка соединения', 'Ошибка соединения')}</h1>
-                <p class="splash-subtitle">${__('common:Не удалось подключиться к серверу.', 'Не удалось подключиться к серверу.')}</p>
-                <p style="font-size:14px; margin-bottom:20px;">${__('common:Попробуйте позже или нажмите "Повторить"', 'Попробуйте позже или нажмите "Повторить"')}</p>
-                <button class="btn" id="retryBtn" style="margin-top: 10px;">${__('common:Повторить', 'Повторить')}</button>
+                <h1 class="splash-title">${window.$t('common:Ошибка соединения', 'Ошибка соединения')}</h1>
+                <p class="splash-subtitle">${window.$t('common:Не удалось подключиться к серверу.', 'Не удалось подключиться к серверу.')}</p>
+                <p style="font-size:14px; margin-bottom:20px;">${window.$t('common:Попробуйте позже или нажмите "Повторить"', 'Попробуйте позже или нажмите "Повторить"')}</p>
+                <button class="btn" id="retryBtn" style="margin-top: 10px;">${window.$t('common:Повторить', 'Повторить')}</button>
             </div>
         `;
         const retryBtn = document.getElementById('retryBtn');
@@ -724,12 +724,12 @@ function showScreen(screen) {
                 renderTasks();
             } else {
                 console.error('renderTasks still not defined after load');
-                content.innerHTML = `<p style="color:#aaa;">${__('tasks:Ошибка загрузки заданий. Попробуйте позже.', 'Ошибка загрузки заданий. Попробуйте позже.')}</p>`;
+                content.innerHTML = `<p style="color:#aaa;">${window.$t('tasks:Ошибка загрузки заданий. Попробуйте позже.', 'Ошибка загрузки заданий. Попробуйте позже.')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load task-up.js');
-            content.innerHTML = `<p style="color:#aaa;">${__('tasks:Не удалось загрузить задания. Проверьте соединение.', 'Не удалось загрузить задания. Проверьте соединение.')}</p>`;
+            content.innerHTML = `<p style="color:#aaa;">${window.$t('tasks:Не удалось загрузить задания. Проверьте соединение.', 'Не удалось загрузить задания. Проверьте соединение.')}</p>`;
         };
         document.head.appendChild(script);
         return;
@@ -743,12 +743,12 @@ function showScreen(screen) {
                 renderTournament();
             } else {
                 console.error('renderTournament still not defined after load');
-                content.innerHTML = `<p style="color:#aaa;">${__('tournament:Ошибка загрузки турнира. Попробуйте позже.', 'Ошибка загрузки турнира. Попробуйте позже.')}</p>`;
+                content.innerHTML = `<p style="color:#aaa;">${window.$t('tournament:Ошибка загрузки турнира. Попробуйте позже.', 'Ошибка загрузки турнира. Попробуйте позже.')}</p>`;
             }
         };
         script.onerror = () => {
             console.error('Failed to load tournament.js');
-            content.innerHTML = `<p style="color:#aaa;">${__('tournament:Не удалось загрузить турнир. Проверьте соединение.', 'Не удалось загрузить турнир. Проверьте соединение.')}</p>`;
+            content.innerHTML = `<p style="color:#aaa;">${window.$t('tournament:Не удалось загрузить турнир. Проверьте соединение.', 'Не удалось загрузить турнир. Проверьте соединение.')}</p>`;
         };
         document.head.appendChild(script);
         return;
@@ -785,7 +785,7 @@ function showScreen(screen) {
             if (typeof renderSettings === 'function') {
                 renderSettings();
             } else {
-                content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('settings:Настройки временно недоступны', 'Настройки временно недоступны')}</p>`;
+                content.innerHTML = `<p style="text-align:center; color:#aaa;">${window.$t('settings:Настройки временно недоступны', 'Настройки временно недоступны')}</p>`;
             }
             break;
         case 'market': renderMarket(); break;
@@ -798,7 +798,7 @@ function showScreen(screen) {
             if (typeof renderClans === 'function') {
                 renderClans();
             } else {
-                content.innerHTML = `<p style="color:#aaa;">${__('clans:Ошибка: модуль кланов не загружен', 'Ошибка: модуль кланов не загружен')}</p>`;
+                content.innerHTML = `<p style="color:#aaa;">${window.$t('clans:Ошибка: модуль кланов не загружен', 'Ошибка: модуль кланов не загружен')}</p>`;
             }
             break;
         default: renderMain();
@@ -809,7 +809,7 @@ function showScreen(screen) {
 
 function renderForgeFallback() {
     const content = document.getElementById('content');
-    content.innerHTML = `<p style="text-align:center; color:#aaa;">${__('forge:Кузница временно недоступна', 'Кузница временно недоступна')}</p>`;
+    content.innerHTML = `<p style="text-align:center; color:#aaa;">${window.$t('forge:Кузница временно недоступна', 'Кузница временно недоступна')}</p>`;
 }
 
 async function loadAvatars() {
@@ -946,19 +946,19 @@ function handleExternalAuth() {
 
     const googleLink = urlParams.get('google_link');
     if (googleLink === 'success') {
-        if (typeof showToast === 'function') showToast(__('common:Google аккаунт привязан', 'Google аккаунт привязан'), 1500);
+        if (typeof showToast === 'function') showToast(window.$t('common:Google аккаунт привязан', 'Google аккаунт привязан'), 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
     const vkLink = urlParams.get('vk_link');
     if (vkLink === 'success') {
-        if (typeof showToast === 'function') showToast(__('common:VK аккаунт привязан', 'VK аккаунт привязан'), 1500);
+        if (typeof showToast === 'function') showToast(window.$t('common:VK аккаунт привязан', 'VK аккаунт привязан'), 1500);
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
     }
     const telegramLink = urlParams.get('telegram_link');
     if (telegramLink === 'success') {
-        if (typeof showToast === 'function') showToast(__('common:Telegram аккаунт привязан', 'Telegram аккаунт привязан'), 1500);
+        if (typeof showToast === 'function') showToast(window.$t('common:Telegram аккаунт привязан', 'Telegram аккаунт привязан'), 1500);
         if (window.telegramLinkingInProgress) window.telegramLinkingInProgress = false;
         if (currentScreen === 'settings' && typeof renderSettings === 'function') renderSettings();
         handled = true;
@@ -1061,13 +1061,13 @@ document.addEventListener('touchstart', unlockHandler);
         `;
         modal.innerHTML = `
             <div style="padding: 10px; background: #2a303c; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: white; font-weight: bold;">${__('debug:title', '📋 Логи отладки')}</span>
+                <span style="color: white; font-weight: bold;">${window.$t('debug:title', '📋 Логи отладки')}</span>
                 <button id="closeDebugBtn" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>
             </div>
             <textarea id="debugLogs" readonly style="flex: 1; background: #232833; color: #ddd; border: none; padding: 10px; font-family: monospace; font-size: 12px; resize: none;"></textarea>
             <div style="padding: 10px; display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="copyLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">${__('debug:copy', 'Копировать')}</button>
-                <button id="clearLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">${__('debug:clear', 'Очистить')}</button>
+                <button id="copyLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">${window.$t('debug:copy', 'Копировать')}</button>
+                <button id="clearLogsBtn" style="background: #2f3542; border: none; padding: 6px 12px; border-radius: 6px; color: white; cursor: pointer;">${window.$t('debug:clear', 'Очистить')}</button>
             </div>
         `;
         document.body.appendChild(btn);
@@ -1092,12 +1092,12 @@ document.addEventListener('touchstart', unlockHandler);
             const textarea = document.getElementById('debugLogs');
             textarea.select();
             document.execCommand('copy');
-            if (typeof showToast === 'function') showToast(__('debug:copied', 'Логи скопированы'), 1500);
+            if (typeof showToast === 'function') showToast(window.$t('debug:copied', 'Логи скопированы'), 1500);
         });
         document.getElementById('clearLogsBtn').addEventListener('click', () => {
             logs.length = 0;
             updateModal();
-            if (typeof showToast === 'function') showToast(__('debug:cleared', 'Логи очищены'), 1500);
+            if (typeof showToast === 'function') showToast(window.$t('debug:cleared', 'Логи очищены'), 1500);
         });
     }
 

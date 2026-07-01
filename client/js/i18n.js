@@ -94,26 +94,25 @@
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
 
+            // ====== УСТАНАВЛИВАЕМ ТЕКУЩИЙ ЯЗЫК ГЛОБАЛЬНО ======
+            window.currentLanguage = i18next.language;   // <-- добавлено
+
             // ====== КАСТОМНАЯ ФУНКЦИЯ ПЕРЕВОДА С ПАРСИНГОМ ======
             window.$t = function(key, fallback) {
-                // Если ключ содержит двоеточие, разбиваем на namespace и key
                 if (key && key.includes(':')) {
                     const parts = key.split(':');
                     const ns = parts[0];
-                    const actualKey = parts.slice(1).join(':'); // на случай, если в ключе тоже есть :
-                    // Пытаемся перевести с явным указанием ns
+                    const actualKey = parts.slice(1).join(':');
                     const result = i18next.t(actualKey, { ns: ns, defaultValue: fallback || key });
                     return result;
                 } else {
-                    // Обычный ключ без namespace
                     return i18next.t(key, { defaultValue: fallback || key });
                 }
             };
-            window.__ = window.$t; // для обратной совместимости
+            window.__ = window.$t;
 
             console.log('✅ window.$t теперь парсит namespace:key');
 
-            // Если userData уже загружена – обновляем UI
             if (typeof userData !== 'undefined' && userData && userData.id) {
                 updateUI();
             } else {
@@ -140,6 +139,7 @@
                         return;
                     }
                     localStorage.setItem('i18nextLng', lang);
+                    window.currentLanguage = lang;   // <-- добавлено
                     console.log(`🌐 Language changed to ${lang}`);
                     updateUI();
                 });
@@ -149,6 +149,7 @@
                 if (localStorage.getItem('i18nextLng') !== lng) {
                     localStorage.setItem('i18nextLng', lng);
                 }
+                window.currentLanguage = lng;   // <-- добавлено (на случай внешней смены)
                 updateUI();
             });
 

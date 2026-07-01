@@ -153,23 +153,28 @@ function renderMain() {
         });
     }
     document.getElementById('fightBtn')?.addEventListener('click', () => {
-        if (window.AudioManager) {
-            if (typeof AudioManager.startFightMusic === 'function') {
-                AudioManager.startFightMusic();
-            } else if (typeof AudioManager.onScreenChange === 'function') {
-                AudioManager.onScreenChange();
-            }
+    if (window.AudioManager) {
+        if (typeof AudioManager.startFightMusic === 'function') {
+            AudioManager.startFightMusic();
+        } else if (typeof AudioManager.onScreenChange === 'function') {
+            AudioManager.onScreenChange();
         }
-        startBattle();
+    }
+    if (typeof window.startBattle === 'function') {
+        window.startBattle();
+    } else {
+        console.error('startBattle is not defined');
+        showToast('Боевой модуль не загружен. Попробуйте перезагрузить страницу.', 2000);
+    }
+});
+document.getElementById('roleInfoBtn')?.addEventListener('click', () => showRoleInfoModal(userData.current_class));
+document.getElementById('avatarClick')?.addEventListener('click', () => showScreen('profile'));
+document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const screen = btn.dataset.screen;
+        if (screen) showScreen(screen);
     });
-    document.getElementById('roleInfoBtn')?.addEventListener('click', () => showRoleInfoModal(userData.current_class));
-    document.getElementById('avatarClick')?.addEventListener('click', () => showScreen('profile'));
-    document.querySelectorAll('.main-icon-btn[data-screen]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const screen = btn.dataset.screen;
-            if (screen) showScreen(screen);
-        });
-    });
+});
     const mailBtn = document.getElementById('mailBtn');
     if (mailBtn) mailBtn.addEventListener('click', () => showScreen('messages'));
     updateTradeBadges();

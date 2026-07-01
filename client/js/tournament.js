@@ -1,5 +1,4 @@
-// tournament.js – Турнирная система (32 участника, ежедневно в 20:00 МСК)
-// 3 стадии: регистрация (10:00–19:49), ожидание начала (19:50–19:59), активный бой (20:00–20:09), результаты (после 20:10)
+// tournament.js – Турнирная система с полной локализацией
 
 let tournamentRefreshInterval = null;
 let waitingTimerInterval = null;
@@ -41,14 +40,18 @@ function getCurrentStage(status, now) {
 
 // --- Рендер главного экрана турнира ---
 async function renderTournament() {
+    if (!userData) {
+        console.warn('renderTournament: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
 
     content.innerHTML = `
         <div class="tournament-container">
             <div class="tournament-tabs">
-                <button class="tournament-tab active" data-tab="tournament">Турнир</button>
-                <button class="tournament-tab" data-tab="leaders">Лидеры</button>
+                <button class="tournament-tab active" data-tab="tournament">${window.$t('tournament:Турнир', 'Турнир')}</button>
+                <button class="tournament-tab" data-tab="leaders">${window.$t('tournament:Лидеры', 'Лидеры')}</button>
             </div>
             <div id="tournamentContent" class="tournament-content"></div>
         </div>
@@ -101,7 +104,7 @@ async function renderTournamentTab() {
         }
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки данных турнира</p>';
+        container.innerHTML = `<p style="color:#aaa; text-align:center;">${window.$t('tournament:Ошибка загрузки данных турнира', 'Ошибка загрузки данных турнира')}</p>`;
     }
 }
 
@@ -109,11 +112,11 @@ async function renderTournamentTab() {
 function renderRegistrationScreen(container, isRegistered) {
     const classesHtml = `
         <div class="tournament-class-row">
-            <div class="tournament-class-label">Класс</div>
+            <div class="tournament-class-label">${window.$t('common:Класс', 'Класс')}</div>
             <div class="class-selector">
-                <button class="class-btn ${selectedTournamentClass === 'warrior' ? 'active' : ''}" data-class="warrior">Воин</button>
-                <button class="class-btn ${selectedTournamentClass === 'assassin' ? 'active' : ''}" data-class="assassin">Ассасин</button>
-                <button class="class-btn ${selectedTournamentClass === 'mage' ? 'active' : ''}" data-class="mage">Маг</button>
+                <button class="class-btn ${selectedTournamentClass === 'warrior' ? 'active' : ''}" data-class="warrior">${window.$t('common:Воин', 'Воин')}</button>
+                <button class="class-btn ${selectedTournamentClass === 'assassin' ? 'active' : ''}" data-class="assassin">${window.$t('common:Ассасин', 'Ассасин')}</button>
+                <button class="class-btn ${selectedTournamentClass === 'mage' ? 'active' : ''}" data-class="mage">${window.$t('common:Маг', 'Маг')}</button>
             </div>
         </div>
     `;
@@ -123,7 +126,7 @@ function renderRegistrationScreen(container, isRegistered) {
         const subclasses = getSubclassesForClass(selectedTournamentClass);
         subclassesHtml = `
             <div class="tournament-role-row">
-                <div class="tournament-role-label">Роль</div>
+                <div class="tournament-role-label">${window.$t('common:Роль', 'Роль')}</div>
                 <select id="tournamentSubclassSelect">
                     ${subclasses.map(sc => `<option value="${sc}" ${selectedTournamentSubclass === sc ? 'selected' : ''}>${getRoleNameRu(sc)}</option>`).join('')}
                 </select>
@@ -133,17 +136,17 @@ function renderRegistrationScreen(container, isRegistered) {
 
     container.innerHTML = `
         <div class="tournament-header">
-            <div class="tournament-title">ТУРНИР "ЗОЛОТОЙ КОГОТЬ"</div>
+            <div class="tournament-title">${window.$t('tournament:ТУРНИР "ЗОЛОТОЙ КОГОТЬ"', 'ТУРНИР "ЗОЛОТОЙ КОГОТЬ"')}</div>
             <i class="fas fa-question-circle tournament-help-icon" id="tournamentHelpBtn"></i>
         </div>
         <div class="tournament-registration">
             ${classesHtml}
             <div id="tournamentSubclassArea">${subclassesHtml}</div>
             <button id="tournamentRegisterBtn" class="tournament-action-btn" ${isRegistered ? 'disabled' : ''}>
-                ${isRegistered ? 'Вы уже зарегистрированы' : 'Записаться'}
+                ${isRegistered ? window.$t('tournament:Вы уже зарегистрированы', 'Вы уже зарегистрированы') : window.$t('tournament:Записаться', 'Записаться')}
             </button>
-            ${isRegistered ? `<button id="tournamentUnregisterBtn" class="tournament-action-btn secondary">Отменить запись</button>` : ''}
-            <div class="tournament-info">Регистрация с 10:00 до 19:50. Снаряжение фиксируется при регистрации.</div>
+            ${isRegistered ? `<button id="tournamentUnregisterBtn" class="tournament-action-btn secondary">${window.$t('tournament:Отменить запись', 'Отменить запись')}</button>` : ''}
+            <div class="tournament-info">${window.$t('tournament:Регистрация с 10:00 до 19:50. Снаряжение фиксируется при регистрации.', 'Регистрация с 10:00 до 19:50. Снаряжение фиксируется при регистрации.')}</div>
         </div>
     `;
 
@@ -175,16 +178,16 @@ function renderRegistrationScreen(container, isRegistered) {
     if (regBtn && !isRegistered) {
         regBtn.addEventListener('click', async () => {
             if (!selectedTournamentClass || !selectedTournamentSubclass) {
-                showToast('Сначала выберите класс и роль', 1500);
+                showToast(window.$t('tournament:Сначала выберите класс и роль', 'Сначала выберите класс и роль'), 1500);
                 return;
             }
             const res = await window.apiRequest('/tournament/register', { method: 'POST' });
             const data = await res.json();
             if (data.success) {
-                showToast('Вы записаны на турнир!', 1500);
+                showToast(window.$t('tournament:Вы записаны на турнир!', 'Вы записаны на турнир!'), 1500);
                 renderTournamentTab();
             } else {
-                showToast(data.error || 'Ошибка регистрации', 1500);
+                showToast(data.error || window.$t('tournament:Ошибка регистрации', 'Ошибка регистрации'), 1500);
             }
         });
     }
@@ -194,10 +197,10 @@ function renderRegistrationScreen(container, isRegistered) {
         unregBtn.addEventListener('click', async () => {
             const res = await window.apiRequest('/tournament/unregister', { method: 'POST' });
             if (res.ok) {
-                showToast('Вы отменили запись', 1500);
+                showToast(window.$t('tournament:Вы отменили запись', 'Вы отменили запись'), 1500);
                 renderTournamentTab();
             } else {
-                showToast('Ошибка отмены', 1500);
+                showToast(window.$t('tournament:Ошибка отмены', 'Ошибка отмены'), 1500);
             }
         });
     }
@@ -210,10 +213,10 @@ function renderWaitingStage(container, secondsToStart) {
     container.innerHTML = `
         <div class="tournament-waiting">
             <div class="tournament-waiting-icon">⚔️</div>
-            <div class="tournament-waiting-title">Турнир "Золотой Коготь"</div>
-            <div class="tournament-waiting-message">Турнир начнётся через</div>
+            <div class="tournament-waiting-title">${window.$t('tournament:Турнир "Золотой Коготь"', 'Турнир "Золотой Коготь"')}</div>
+            <div class="tournament-waiting-message">${window.$t('tournament:Турнир начнётся через', 'Турнир начнётся через')}</div>
             <div class="tournament-timer-digits" id="tournamentStartTimer"></div>
-            <div class="tournament-waiting-note">Страница обновится автоматически</div>
+            <div class="tournament-waiting-note">${window.$t('tournament:Страница обновится автоматически', 'Страница обновится автоматически')}</div>
         </div>
     `;
 
@@ -222,9 +225,9 @@ function renderWaitingStage(container, secondsToStart) {
         const secs = remaining % 60;
         const timerHtml = `
             <div class="countdown-digits">
-                <div class="digit-box"><div class="digit-value">${mins.toString().padStart(2, '0')}</div><div class="digit-unit">минут</div></div>
+                <div class="digit-box"><div class="digit-value">${mins.toString().padStart(2, '0')}</div><div class="digit-unit">${window.$t('tournament:минут', 'минут')}</div></div>
                 <div class="colon">:</div>
-                <div class="digit-box"><div class="digit-value">${secs.toString().padStart(2, '0')}</div><div class="digit-unit">секунд</div></div>
+                <div class="digit-box"><div class="digit-value">${secs.toString().padStart(2, '0')}</div><div class="digit-unit">${window.$t('tournament:секунд', 'секунд')}</div></div>
             </div>
         `;
         const timerDiv = document.getElementById('tournamentStartTimer');
@@ -251,10 +254,10 @@ function renderActiveStage(container, secondsLeft) {
     container.innerHTML = `
         <div class="tournament-waiting">
             <div class="tournament-waiting-icon">⚔️</div>
-            <div class="tournament-waiting-title">Турнир "Золотой Коготь"</div>
-            <div class="tournament-waiting-message">Выявляем сильнейшего</div>
+            <div class="tournament-waiting-title">${window.$t('tournament:Турнир "Золотой Коготь"', 'Турнир "Золотой Коготь"')}</div>
+            <div class="tournament-waiting-message">${window.$t('tournament:Выявляем сильнейшего', 'Выявляем сильнейшего')}</div>
             <div class="tournament-timer-digits" id="tournamentActiveTimer"></div>
-            <div class="tournament-waiting-note">Результаты появятся через несколько минут</div>
+            <div class="tournament-waiting-note">${window.$t('tournament:Результаты появятся через несколько минут', 'Результаты появятся через несколько минут')}</div>
         </div>
     `;
 
@@ -263,9 +266,9 @@ function renderActiveStage(container, secondsLeft) {
         const secs = remaining % 60;
         const timerHtml = `
             <div class="countdown-digits">
-                <div class="digit-box"><div class="digit-value">${mins.toString().padStart(2, '0')}</div><div class="digit-unit">минут</div></div>
+                <div class="digit-box"><div class="digit-value">${mins.toString().padStart(2, '0')}</div><div class="digit-unit">${window.$t('tournament:минут', 'минут')}</div></div>
                 <div class="colon">:</div>
-                <div class="digit-box"><div class="digit-value">${secs.toString().padStart(2, '0')}</div><div class="digit-unit">секунд</div></div>
+                <div class="digit-box"><div class="digit-value">${secs.toString().padStart(2, '0')}</div><div class="digit-unit">${window.$t('tournament:секунд', 'секунд')}</div></div>
             </div>
         `;
         const timerDiv = document.getElementById('tournamentActiveTimer');
@@ -291,7 +294,7 @@ async function renderBracket(container) {
         const bracketRes = await window.apiRequest('/tournament/bracket');
         const bracket = await bracketRes.json();
         if (!bracket.matches || bracket.matches.length === 0) {
-            container.innerHTML = `<p style="color:#aaa; text-align:center;">Матчи турнира ещё не загружены. Попробуйте позже.</p>`;
+            container.innerHTML = `<p style="color:#aaa; text-align:center;">${window.$t('tournament:Матчи турнира ещё не загружены. Попробуйте позже.', 'Матчи турнира ещё не загружены. Попробуйте позже.')}</p>`;
             return;
         }
 
@@ -315,12 +318,12 @@ async function renderBracket(container) {
         const thirdPlaceMatch = round5Matches.find(m => m.match_index === 2);
         const finalMatch = round5Matches.find(m => m.match_index === 1);
         if (thirdPlaceMatch) {
-            html += `<div class="tournament-round"><div class="tournament-round-title">Матч за 3-е место</div>${renderMatchRow(thirdPlaceMatch)}</div>`;
+            html += `<div class="tournament-round"><div class="tournament-round-title">${window.$t('tournament:Матч за 3-е место', 'Матч за 3-е место')}</div>${renderMatchRow(thirdPlaceMatch)}</div>`;
         }
         if (finalMatch) {
-            html += `<div class="tournament-round"><div class="tournament-round-title">Финал</div>${renderMatchRow(finalMatch)}</div>`;
+            html += `<div class="tournament-round"><div class="tournament-round-title">${window.$t('tournament:Финал', 'Финал')}</div>${renderMatchRow(finalMatch)}</div>`;
         }
-        html += '</div><button id="closeBracketBtn" class="tournament-close-btn">Закрыть</button>';
+        html += '</div><button id="closeBracketBtn" class="tournament-close-btn">${window.$t('common:Закрыть', 'Закрыть')}</button>';
         container.innerHTML = html;
 
         document.querySelectorAll('.tournament-replay-btn').forEach(btn => {
@@ -330,14 +333,14 @@ async function renderBracket(container) {
                 if (matchData && matchData.match_log) {
                     showSeriesReplayModal(matchData.match_log);
                 } else {
-                    showToast('Лог боя не найден', 1500);
+                    showToast(window.$t('tournament:Лог боя не найден', 'Лог боя не найден'), 1500);
                 }
             });
         });
         document.getElementById('closeBracketBtn')?.addEventListener('click', () => showScreen('main'));
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<p style="color:#aaa;">Ошибка загрузки сетки турнира</p>';
+        container.innerHTML = '<p style="color:#aaa;">${window.$t('tournament:Ошибка загрузки сетки турнира', 'Ошибка загрузки сетки турнира')}</p>';
     }
 }
 
@@ -360,7 +363,6 @@ function renderMatchRow(match) {
     `;
 }
 
-// --- Модальное окно для просмотра серии матчей (best-of-3) с корректным определением победителя ---
 function truncateName(name, maxLen = 13) {
     if (!name) return '—';
     if (name.length <= maxLen) return name;
@@ -373,12 +375,11 @@ function showSeriesReplayModal(matchLog) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Просмотр матчей серии';
+    modalTitle.innerText = window.$t('tournament:Просмотр матчей серии', 'Просмотр матчей серии');
 
     let gamesHtml = '';
     if (matchLog && matchLog.games && Array.isArray(matchLog.games)) {
         matchLog.games.forEach((game, idx) => {
-            // Определяем, является ли текущий пользователь player1 или player2 в этой игре
             const playerNameFromGame = game.playerName || '';
             const enemyNameFromGame = game.enemyName || '';
             const isUserPlayer1 = (playerNameFromGame === userData.username);
@@ -386,28 +387,25 @@ function showSeriesReplayModal(matchLog) {
             
             let isPlayerWin = false;
             if (game.winnerId !== undefined) {
-                // Новые турниры (с winnerId)
                 isPlayerWin = (Number(game.winnerId) === Number(userData.id));
             } else {
-                // Старые турниры – определяем по полю winner и имени
                 if (isUserPlayer1) {
                     isPlayerWin = (game.winner === 'player');
                 } else if (isUserPlayer2) {
                     isPlayerWin = (game.winner === 'enemy');
                 } else {
-                    // Fallback – если не удалось определить, считаем поражением
                     isPlayerWin = false;
                 }
             }
             
-            const statusText = isPlayerWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ';
+            const statusText = isPlayerWin ? window.$t('common:ПОБЕДА', 'ПОБЕДА') : window.$t('common:ПОРАЖЕНИЕ', 'ПОРАЖЕНИЕ');
             const statusColor = isPlayerWin ? '#2ecc71' : '#e74c3c';
-            const playerName = game.playerName || userData?.username || 'Игрок';
-            const enemyName = game.enemyName || 'Противник';
+            const playerName = game.playerName || userData?.username || window.$t('common:Игрок', 'Игрок');
+            const enemyName = game.enemyName || window.$t('common:Соперник', 'Противник');
             gamesHtml += `
                 <div class="series-game-item" data-game-index="${idx}" style="display: flex; align-items: center; justify-content: space-between; background-color: #2a303c; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; border: 1px solid #00aaff;">
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; margin-bottom: 4px; color: #00aaff;">Сражение №${idx+1}</div>
+                        <div style="font-weight: bold; margin-bottom: 4px; color: #00aaff;">${window.$t('tournament:Сражение №{num}', 'Сражение №{num}', { num: idx+1 })}</div>
                         <div style="font-size: 14px;">
                             ${truncateName(playerName)} : ${truncateName(enemyName)} - <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
                         </div>
@@ -419,7 +417,7 @@ function showSeriesReplayModal(matchLog) {
             `;
         });
     } else {
-        gamesHtml = '<p style="color:#aaa;">Не удалось загрузить данные матчей</p>';
+        gamesHtml = `<p style="color:#aaa;">${window.$t('tournament:Не удалось загрузить данные матчей', 'Не удалось загрузить данные матчей')}</p>`;
     }
 
     modalBody.innerHTML = `
@@ -428,7 +426,7 @@ function showSeriesReplayModal(matchLog) {
         </div>
         <div id="gameReplayContainer" style="margin-top: 20px; display: none;">
             <div id="gameReplayLog" class="battle-log" style="height: 300px; overflow-y: auto;"></div>
-            <button id="closeGameReplayBtn" class="btn" style="margin-top: 10px;">Закрыть</button>
+            <button id="closeGameReplayBtn" class="btn" style="margin-top: 10px;">${window.$t('common:Закрыть', 'Закрыть')}</button>
         </div>
     `;
     modal.style.display = 'flex';
@@ -441,7 +439,7 @@ function showSeriesReplayModal(matchLog) {
     function showGameLog(gameIndex) {
         const game = matchLog.games[gameIndex];
         if (!game || !game.messages) {
-            replayLog.innerHTML = '<p style="color:#aaa;">Лог боя не найден</p>';
+            replayLog.innerHTML = `<p style="color:#aaa;">${window.$t('tournament:Лог боя не найден', 'Лог боя не найден')}</p>`;
         } else {
             replayLog.innerHTML = '';
             game.messages.forEach(msg => {
@@ -482,7 +480,7 @@ async function renderLeadersTab() {
     if (!container) return;
 
     container.innerHTML = `
-        <div class="leaders-header">Таблица лидеров</div>
+        <div class="leaders-header">${window.$t('tournament:Таблица лидеров', 'Таблица лидеров')}</div>
         <div id="leadersTableContainer"></div>
     `;
     const tableContainer = document.getElementById('leadersTableContainer');
@@ -492,11 +490,11 @@ async function renderLeadersTab() {
         const leaders = await leadersRes.json();
 
         if (!leaders.length) {
-            tableContainer.innerHTML = `<table class="tournament-leaders-table"><thead><tr><th>Место</th><th>Игрок</th><th>Очки</th></tr></thead><tbody><tr><td colspan="3" style="text-align:center; padding:20px; color:#aaa;">Нет данных</td></tr></tbody></table>`;
+            tableContainer.innerHTML = `<table class="tournament-leaders-table"><thead><tr><th>${window.$t('rating:Место', 'Место')}</th><th>${window.$t('rating:Имя', 'Игрок')}</th><th>${window.$t('rating:Очки', 'Очки')}</th></tr></thead><tbody><tr><td colspan="3" style="text-align:center; padding:20px; color:#aaa;">${window.$t('tournament:Нет данных', 'Нет данных')}</td></tr></tbody></table>`;
             return;
         }
 
-        let html = '<table class="tournament-leaders-table"><thead><tr><th>Место</th><th>Игрок</th><th>Очки</th></tr></thead><tbody>';
+        let html = `<table class="tournament-leaders-table"><thead><tr><th>${window.$t('rating:Место', 'Место')}</th><th>${window.$t('rating:Имя', 'Игрок')}</th><th>${window.$t('rating:Очки', 'Очки')}</th></tr></thead><tbody>`;
         leaders.forEach((item, idx) => {
             html += `<tr><td style="text-align:center;">${idx+1}</td><td>${escapeHtml(item.username)}</td><td style="text-align:center;">${item.tournament_points}</td></tr>`;
         });
@@ -504,7 +502,7 @@ async function renderLeadersTab() {
         tableContainer.innerHTML = html;
     } catch (err) {
         console.error(err);
-        tableContainer.innerHTML = '<p style="color:#aaa; text-align:center;">Ошибка загрузки лидеров</p>';
+        tableContainer.innerHTML = `<p style="color:#aaa; text-align:center;">${window.$t('tournament:Ошибка загрузки лидеров', 'Ошибка загрузки лидеров')}</p>`;
     }
 }
 
@@ -519,24 +517,24 @@ function getSubclassesForClass(className) {
 }
 
 function getRoundName(roundNum) {
-    const names = { 1: '1/16 финала', 2: '1/8 финала', 3: '1/4 финала', 4: '1/2 финала' };
-    return names[roundNum] || `Раунд ${roundNum}`;
+    const names = { 1: window.$t('tournament:1/16 финала', '1/16 финала'), 2: window.$t('tournament:1/8 финала', '1/8 финала'), 3: window.$t('tournament:1/4 финала', '1/4 финала'), 4: window.$t('tournament:1/2 финала', '1/2 финала') };
+    return names[roundNum] || `${window.$t('tournament:Раунд {num}', 'Раунд {num}', { num: roundNum })}`;
 }
 
 function showTournamentRulesModal() {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
-    modalTitle.innerHTML = '<i class="fas fa-trophy" style="margin-right: 8px;"></i> Турнир "Золотой Коготь"';
+    modalTitle.innerHTML = `<i class="fas fa-trophy" style="margin-right: 8px;"></i> ${window.$t('tournament:Турнир "Золотой Коготь"', 'Турнир "Золотой Коготь"')}`;
     modalBody.innerHTML = `
         <div style="padding: 5px 10px;">
-            <p><i class="fas fa-calendar-alt" style="color:#00aaff;"></i> <strong>Ежедневный турнир</strong> – начало в 20:00 МСК. Участвуют 32 игрока.</p>
-            <p><i class="fas fa-users" style="color:#00aaff;"></i> <strong>Регистрация</strong> – с 10:00 до 19:50. Выберите класс и роль, снаряжение фиксируется.</p>
-            <p><i class="fas fa-chart-line" style="color:#00aaff;"></i> <strong>Турнирные очки (ТО)</strong> – начисляются за каждое занятое место.</p>
-            <p><i class="fas fa-gem" style="color:#00aaff;"></i> <strong>Награды за турнир</strong> – монеты, алмазы, опыт и сундуки согласно месту.</p>
-            <p><i class="fas fa-crown" style="color:#00aaff;"></i> <strong>Ежемесячный бонус</strong> – 1-3 места в сезоне получают VIP Silver подписку на 30 дней.</p>
-            <p><i class="fas fa-chart-simple" style="color:#00aaff;"></i> <strong>Лиги</strong> – по итогам сезона лучшие игроки переходят в следующую лигу.</p>
-            <p style="margin-top:16px; font-size:13px; color:#aaa;">Просматривайте свои бои, анализируйте тактику и поднимайтесь в рейтинге!</p>
+            <p><i class="fas fa-calendar-alt" style="color:#00aaff;"></i> <strong>${window.$t('tournament:Ежедневный турнир – начало в 20:00 МСК. Участвуют 32 игрока.', 'Ежедневный турнир – начало в 20:00 МСК. Участвуют 32 игрока.')}</strong></p>
+            <p><i class="fas fa-users" style="color:#00aaff;"></i> <strong>${window.$t('tournament:Регистрация – с 10:00 до 19:50. Выберите класс и роль, снаряжение фиксируется.', 'Регистрация – с 10:00 до 19:50. Выберите класс и роль, снаряжение фиксируется.')}</strong></p>
+            <p><i class="fas fa-chart-line" style="color:#00aaff;"></i> <strong>${window.$t('tournament:Турнирные очки (ТО) – начисляются за каждое занятое место.', 'Турнирные очки (ТО) – начисляются за каждое занятое место.')}</strong></p>
+            <p><i class="fas fa-gem" style="color:#00aaff;"></i> <strong>${window.$t('tournament:Награды за турнир – монеты, алмазы, опыт и сундуки согласно месту.', 'Награды за турнир – монеты, алмазы, опыт и сундуки согласно месту.')}</strong></p>
+            <p><i class="fas fa-crown" style="color:#00aaff;"></i> <strong>${window.$t('tournament:Ежемесячный бонус – 1-3 места в сезоне получают VIP Silver подписку на 30 дней.', 'Ежемесячный бонус – 1-3 места в сезоне получают VIP Silver подписку на 30 дней.')}</strong></p>
+            <p><i class="fas fa-chart-simple" style="color:#00aaff;"></i> <strong>${window.$t('tournament:Лиги – по итогам сезона лучшие игроки переходят в следующую лигу.', 'Лиги – по итогам сезона лучшие игроки переходят в следующую лигу.')}</strong></p>
+            <p style="margin-top:16px; font-size:13px; color:#aaa;">${window.$t('tournament:Просматривайте свои бои, анализируйте тактику и поднимайтесь в рейтинге!', 'Просматривайте свои бои, анализируйте тактику и поднимайтесь в рейтинге!')}</p>
         </div>
     `;
     modal.style.display = 'flex';

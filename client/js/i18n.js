@@ -88,12 +88,15 @@
             // Гарантируем, что clans есть
             if (!nsList.includes('clans')) nsList.push('clans');
 
+            // ====== ГЛАВНОЕ ИСПРАВЛЕНИЕ: добавляем nsSeparator ======
             await i18next.init({
                 lng: savedLang,
                 fallbackLng: 'ru',
                 resources: resources,
                 ns: nsList,
                 defaultNS: 'common',
+                nsSeparator: ':',   // явно указываем разделитель для namespace
+                keySeparator: '.',  // стандартный разделитель для вложенных ключей (если нужен)
                 interpolation: { escapeValue: false }
             });
 

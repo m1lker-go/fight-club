@@ -16,10 +16,13 @@
         }
     }
 
-    // Временная fallback-функция (до инициализации i18next)
-    window.__ = function(key, fallback) {
+    // Временная fallback-функция (до инициализации i18next) – используем $t
+    window.$t = function(key, fallback) {
         return fallback || key;
     };
+
+    // Оставляем старую __ для совместимости, но она будет перезаписана позже
+    window.__ = window.$t;
 
     function updateUI() {
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
@@ -77,6 +80,8 @@
 
             if (typeof i18next === 'undefined') {
                 console.error('❌ i18next library not found!');
+                window.$t = function(key, fallback) { return fallback || key; };
+                window.__ = window.$t;
                 return;
             }
 
@@ -100,12 +105,12 @@
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
 
-            // ====== ГЛАВНОЕ ИСПРАВЛЕНИЕ ======
-            // Удаляем старую window.__ и создаём новую, использующую i18next
-            delete window.__;
-            window.__ = function(key, fallback) {
+            // ====== НОВАЯ ФУНКЦИЯ $t ======
+            window.$t = function(key, fallback) {
                 return i18next.t(key, { defaultValue: fallback || key });
             };
+            // Обновляем __ для совместимости (но теперь она тоже использует i18next)
+            window.__ = window.$t;
             // =================================
 
             updateUI();
@@ -144,10 +149,8 @@
 
         } catch (e) {
             console.error('❌ i18next initialization failed:', e);
-            // Если ошибка, оставляем fallback-функцию
-            window.__ = function(key, fallback) {
-                return fallback || key;
-            };
+            window.$t = function(key, fallback) { return fallback || key; };
+            window.__ = window.$t;
         }
     }
 

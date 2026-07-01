@@ -18,12 +18,8 @@
     }
 
     // ======== Глобальная функция перевода (временная, пока i18next не инициализирован) ========
+    // Определяем её сразу, но она будет переопределена после инициализации i18next
     window.__ = function(key, fallback) {
-        // Если i18next уже инициализирован, используем его
-        if (window.i18next && window.i18next.isInitialized) {
-            return window.i18next.t(key, { defaultValue: fallback || key });
-        }
-        // Иначе возвращаем fallback (русский текст)
         return fallback || key;
     };
 
@@ -32,7 +28,6 @@
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
         const current = window.currentScreen || 'main';
 
-        // Если есть showScreen – используем её для перерисовки текущего экрана
         if (typeof window.showScreen === 'function') {
             window.showScreen(current);
         } else {
@@ -54,15 +49,6 @@
                 case 'alchemy': if (window.renderAlchemy) window.renderAlchemy(); break;
                 case 'messages': if (window.renderMessages) window.renderMessages(); break;
                 default: break;
-            }
-        }
-
-        // ДОПОЛНИТЕЛЬНО: принудительно перерисовываем кланы, если они открыты
-        // (потому что showScreen может не сработать для кланов)
-        if (current === 'clans' && typeof window.renderClans === 'function') {
-            const content = document.getElementById('content');
-            if (content && content.querySelector('.clans-container')) {
-                window.renderClans();
             }
         }
 
@@ -88,7 +74,6 @@
     // ======== Инициализация i18next ========
     async function initI18next() {
         try {
-            // Загружаем оба файла параллельно
             const [ruData, enData] = await Promise.all([
                 loadTranslation('ru'),
                 loadTranslation('en')
@@ -101,7 +86,6 @@
                 console.warn('⚠️ en.json не загружен, английский временно недоступен');
             }
 
-            // Если i18next не загружен – грузим его с CDN (но он уже должен быть в index.html)
             if (typeof i18next === 'undefined') {
                 console.error('❌ i18next library not found!');
                 window.__ = function(key, fallback) {
@@ -118,6 +102,8 @@
 
             // Получаем список всех пространств имён из ru.json (common, auth, main, ...)
             const nsList = ruData ? Object.keys(ruData) : ['common'];
+            // Гарантируем, что clans есть (на случай, если он отсутствует в ruData)
+            if (!nsList.includes('clans')) nsList.push('clans');
 
             await i18next.init({
                 lng: savedLang,
@@ -131,10 +117,16 @@
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
 
-            // Переопределяем __, чтобы использовать i18next
-            window.__ = function(key, fallback) {
-                return i18next.t(key, { defaultValue: fallback || key });
-            };
+            // ======== ОСНОВНАЯ ФУНКЦИЯ ПЕРЕВОДА ========
+            // Переопределяем window.__ с использованием i18next
+            // И ЗАЩИЩАЕМ её от перезаписи
+            Object.defineProperty(window, '__', {
+                configurable: false,
+                writable: false,
+                value: function(key, fallback) {
+                    return i18next.t(key, { defaultValue: fallback || key });
+                }
+            });
 
             // Применяем переводы к UI
             updateUI();
@@ -176,6 +168,7 @@
 
         } catch (e) {
             console.error('❌ i18next initialization failed:', e);
+            // Оставляем fallback-функцию
             window.__ = function(key, fallback) {
                 return fallback || key;
             };

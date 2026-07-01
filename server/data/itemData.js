@@ -686,20 +686,31 @@ let loaded = false;
 function loadTranslations() {
     if (loaded) return;
     try {
-       const ruPath = path.join(__dirname, '..', '..', 'client', 'locales', 'ru.json');
-const enPath = path.join(__dirname, '..', '..', 'client', 'locales', 'en.json');
+        const ruPath = path.join(__dirname, '..', '..', 'client', 'locales', 'ru.json');
+        const enPath = path.join(__dirname, '..', '..', 'client', 'locales', 'en.json');
+
+        console.log(`[itemData] Загружаю ru.json из: ${ruPath}`);
+        console.log(`[itemData] Загружаю en.json из: ${enPath}`);
+
         if (fs.existsSync(ruPath)) {
+            console.log('[itemData] ru.json найден, загружаю');
             const ruData = JSON.parse(fs.readFileSync(ruPath, 'utf-8'));
             cachedRu = ruData.item_data || {};
+        } else {
+            console.error('[itemData] ru.json НЕ НАЙДЕН!');
         }
         if (fs.existsSync(enPath)) {
+            console.log('[itemData] en.json найден, загружаю');
             const enData = JSON.parse(fs.readFileSync(enPath, 'utf-8'));
             cachedEn = enData.item_data || {};
+        } else {
+            console.error('[itemData] en.json НЕ НАЙДЕН!');
         }
+
         loaded = true;
         console.log('✅ Item translations loaded');
     } catch (e) {
-        console.error('❌ Failed to load item translations:', e);
+        console.error('❌ Ошибка загрузки item translations:', e.message);
         loaded = true;
     }
 }

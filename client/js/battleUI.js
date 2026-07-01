@@ -1,10 +1,6 @@
 // battleUI.js – экран боя с поддержкой i18n
 console.log('🔄 battleUI.js loaded');
 
-// Заранее резервируем глобальную функцию (на случай, если скрипт прервётся)
-window.startBattle = function() {
-    console.warn('⚠️ startBattle called from fallback – full definition will override this.');
-};
 
 // Переопределяем getRoleNameRu (без const, т.к. она уже объявлена глобально)
 getRoleNameRu = (role) => {
@@ -74,6 +70,7 @@ async function startBattle() {
         unlockMenu();
     }
 }
+window.startBattle = startBattle;
 
 function unlockMenu() {
     document.querySelectorAll('.menu-item').forEach(item => {

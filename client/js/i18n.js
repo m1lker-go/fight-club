@@ -1,4 +1,4 @@
-// js/i18n.js – финальная версия с защитой и гарантированным fallback
+// js/i18n.js – финальная версия с кастомным парсингом namespace
 (function() {
     console.log('🔄 i18n init started');
 
@@ -24,27 +24,22 @@
 
     function updateUI() {
         console.log('🔄 updateUI called, currentScreen:', window.currentScreen);
-        // Если есть showScreen – используем её для перерисовки
         if (typeof window.showScreen === 'function') {
             const current = window.currentScreen || 'main';
-            // Проверяем, загружены ли данные, чтобы избежать ошибок
             if (typeof userData !== 'undefined' && userData && userData.id) {
                 window.showScreen(current);
             } else {
                 console.warn('updateUI: userData not ready, skipping redraw');
             }
         } else {
-            // fallback – перезагружаем страницу
             console.warn('showScreen not defined, reloading');
             location.reload();
         }
 
-        // Обновляем бейджи и иконки
         if (window.updateTradeBadges) window.updateTradeBadges();
         if (window.updateMainMenuNewIcons) window.updateMainMenuNewIcons();
         if (window.updateMessagesBadge) window.updateMessagesBadge();
 
-        // Обновляем элементы с data-i18n (если есть)
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (window.i18next) {
@@ -85,36 +80,44 @@
             };
 
             const nsList = ruData ? Object.keys(ruData) : ['common'];
-            // Гарантируем, что clans есть
             if (!nsList.includes('clans')) nsList.push('clans');
 
-            // ====== ГЛАВНОЕ ИСПРАВЛЕНИЕ: добавляем nsSeparator ======
             await i18next.init({
                 lng: savedLang,
                 fallbackLng: 'ru',
                 resources: resources,
                 ns: nsList,
                 defaultNS: 'common',
-                nsSeparator: ':',   // явно указываем разделитель для namespace
-                keySeparator: '.',  // стандартный разделитель для вложенных ключей (если нужен)
                 interpolation: { escapeValue: false }
             });
 
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
 
-            // Основные функции перевода
+            // ====== КАСТОМНАЯ ФУНКЦИЯ ПЕРЕВОДА С ПАРСИНГОМ ======
             window.$t = function(key, fallback) {
-                return i18next.t(key, { defaultValue: fallback || key });
+                // Если ключ содержит двоеточие, разбиваем на namespace и key
+                if (key && key.includes(':')) {
+                    const parts = key.split(':');
+                    const ns = parts[0];
+                    const actualKey = parts.slice(1).join(':'); // на случай, если в ключе тоже есть :
+                    // Пытаемся перевести с явным указанием ns
+                    const result = i18next.t(actualKey, { ns: ns, defaultValue: fallback || key });
+                    return result;
+                } else {
+                    // Обычный ключ без namespace
+                    return i18next.t(key, { defaultValue: fallback || key });
+                }
             };
-            window.__ = window.$t;
+            window.__ = window.$t; // для обратной совместимости
+
+            console.log('✅ window.$t теперь парсит namespace:key');
 
             // Если userData уже загружена – обновляем UI
             if (typeof userData !== 'undefined' && userData && userData.id) {
                 updateUI();
             } else {
                 console.log('⏳ userData not loaded yet, UI will be updated after login');
-                // Подписываемся на событие загрузки userData (можно через MutationObserver, но проще через setInterval)
                 const waitForUser = setInterval(() => {
                     if (typeof userData !== 'undefined' && userData && userData.id) {
                         clearInterval(waitForUser);
@@ -142,7 +145,6 @@
                 });
             };
 
-            // Подписываемся на событие смены языка
             i18next.on('languageChanged', (lng) => {
                 if (localStorage.getItem('i18nextLng') !== lng) {
                     localStorage.setItem('i18nextLng', lng);
@@ -150,7 +152,6 @@
                 updateUI();
             });
 
-            // Привязываем переключатели языка в DOM
             document.querySelectorAll('.lang-option, .lang-option-settings').forEach(opt => {
                 opt.addEventListener('click', (e) => {
                     const lang = opt.dataset.lang;

@@ -1,4 +1,4 @@
-// messages-ui.js – UI сообщений (почта) с поддержкой нескольких наград
+// messages-ui.js – UI сообщений (почта) с полной локализацией
 
 let messagesList = [];
 let unreadMessagesCount = 0;
@@ -58,30 +58,45 @@ function hasReward(msg) {
 
 function formatRewardText(msg) {
     const parts = [];
-    if (msg.reward_coins > 0) parts.push(`${msg.reward_coins} монет`);
-    if (msg.reward_diamonds > 0) parts.push(`${msg.reward_diamonds} алмазов`);
-    if (msg.reward_exp > 0) parts.push(`${msg.reward_exp} опыта (${msg.reward_exp_class})`);
+    if (msg.reward_coins > 0) parts.push(`${msg.reward_coins} ${window.$t('common:монет', 'монет')}`);
+    if (msg.reward_diamonds > 0) parts.push(`${msg.reward_diamonds} ${window.$t('common:алмазов', 'алмазов')}`);
+    if (msg.reward_exp > 0) {
+        const className = msg.reward_exp_class ? getClassNameRu(msg.reward_exp_class) : '';
+        parts.push(`${msg.reward_exp} ${window.$t('common:опыта', 'опыта')} ${className ? `(${className})` : ''}`);
+    }
     if (msg.reward_chest) {
-        const chestName = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' }[msg.reward_chest] || msg.reward_chest;
+        const chestRarityKey = {
+            common: 'common:Обычный',
+            uncommon: 'common:Необычный',
+            rare: 'common:Редкий',
+            epic: 'common:Эпический',
+            legendary: 'common:Легендарный'
+        }[msg.reward_chest] || msg.reward_chest;
+        const chestName = window.$t(chestRarityKey, msg.reward_chest);
         const amount = msg.reward_chest_amount || 1;
-        parts.push(`${chestName} сундук${amount > 1 ? 'ы' : ''}`);
+        const suffix = amount > 1 ? window.$t('common:сундуки', 'сундуки') : window.$t('common:сундук', 'сундук');
+        parts.push(`${chestName} ${suffix}`);
     }
     return parts.join(', ');
 }
 
 async function renderMessages() {
+    if (!userData) {
+        console.warn('renderMessages: userData not ready');
+        return;
+    }
     const content = document.getElementById('content');
     if (!content) return;
     content.innerHTML = `
         <div class="messages-container">
-            <div class="messages-header"><i class="fas fa-envelope"></i> Сообщения</div>
+            <div class="messages-header"><i class="fas fa-envelope"></i> ${window.$t('common:Сообщения', 'Сообщения')}</div>
             <div class="messages-list" id="messagesList"></div>
         </div>
     `;
     const listContainer = document.getElementById('messagesList');
     const messages = await loadMessages();
     if (!messages.length) {
-        listContainer.innerHTML = '<div class="empty-messages">📭 ПУСТО</div>';
+        listContainer.innerHTML = `<div class="empty-messages">📭 ${window.$t('common:ПУСТО', 'ПУСТО')}</div>`;
         return;
     }
     listContainer.innerHTML = '';
@@ -109,7 +124,7 @@ async function renderMessages() {
         
         const readBtn = document.createElement('button');
         readBtn.className = 'message-read-btn';
-        readBtn.textContent = 'Читать';
+        readBtn.textContent = window.$t('common:Читать', 'Читать');
         readBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             renderMessageDetail(msg.id);
@@ -140,7 +155,7 @@ async function renderMessageDetail(messageId) {
     if (!msg.is_claimed && hasReward(msg)) {
         rewardDisplay = `
             <div class="message-reward-info">
-                <i class="fas fa-gift"></i> Награда: ${formatRewardText(msg)}
+                <i class="fas fa-gift"></i> ${window.$t('common:Награда: ', 'Награда: ')}${formatRewardText(msg)}
             </div>
         `;
     }
@@ -149,8 +164,8 @@ async function renderMessageDetail(messageId) {
     content.innerHTML = `
         <div class="message-detail-container">
             <div class="message-detail-header">
-                <button class="back-btn" id="backToMessagesBtn"><i class="fas fa-arrow-left"></i> Назад</button>
-                <button class="delete-btn" id="deleteMessageBtn"><i class="fas fa-trash-alt"></i> Удалить</button>
+                <button class="back-btn" id="backToMessagesBtn"><i class="fas fa-arrow-left"></i> ${window.$t('common:Назад', 'Назад')}</button>
+                <button class="delete-btn" id="deleteMessageBtn"><i class="fas fa-trash-alt"></i> ${window.$t('common:Удалить', 'Удалить')}</button>
             </div>
             <div class="message-detail-sender">
                 <div class="sender-avatar" style="background-image: url('/assets/${msg.sender_avatar || 'cat_heroweb.png'}')"></div>
@@ -161,28 +176,28 @@ async function renderMessageDetail(messageId) {
             <div class="message-detail-body">${escapeHtml(msg.body).replace(/\n/g, '<br>')}</div>
             ${rewardDisplay}
             <div class="message-detail-actions">
-                <button class="reply-btn" id="replyBtn">Ответить</button>
-                ${!msg.is_claimed && hasReward(msg) ? `<button class="claim-btn" id="claimRewardBtn">Забрать награду</button>` : ''}
+                <button class="reply-btn" id="replyBtn">${window.$t('common:Ответить', 'Ответить')}</button>
+                ${!msg.is_claimed && hasReward(msg) ? `<button class="claim-btn" id="claimRewardBtn">${window.$t('common:Забрать награду', 'Забрать награду')}</button>` : ''}
             </div>
         </div>
     `;
     
     document.getElementById('backToMessagesBtn').addEventListener('click', () => renderMessages());
     document.getElementById('deleteMessageBtn').addEventListener('click', () => {
-    showConfirmModal('Удалить сообщение?', async () => {
-        await window.apiRequest('/user/messages/delete', {
-            method: 'POST',
-            body: JSON.stringify({ message_id: messageId })
+        showConfirmModal(window.$t('common:Удалить сообщение?', 'Удалить сообщение?'), async () => {
+            await window.apiRequest('/user/messages/delete', {
+                method: 'POST',
+                body: JSON.stringify({ message_id: messageId })
+            });
+            messagesList = messagesList.filter(m => m.id != messageId);
+            recalcUnprocessedCount();
+            renderMessages();
         });
-        messagesList = messagesList.filter(m => m.id != messageId);
-        recalcUnprocessedCount();
-        renderMessages();
     });
-});
     
     if (document.getElementById('replyBtn')) {
         document.getElementById('replyBtn').addEventListener('click', () => {
-            showToast('Функция ответа в разработке', 1500);
+            showToast(window.$t('common:Функция ответа в разработке', 'Функция ответа в разработке'), 1500);
         });
     }
     
@@ -198,13 +213,13 @@ async function renderMessageDetail(messageId) {
                 if (typeof AudioManager !== 'undefined') {
                     AudioManager.playSound('reward');
                 }
-                showToast(`Вы получили: ${data.reward_text}`, 2000);
+                showToast(`${window.$t('common:Вы получили: ', 'Вы получили: ')}${data.reward_text}`, 2000);
                 msg.is_claimed = true;
                 await refreshData();
                 recalcUnprocessedCount();
                 renderMessageDetail(messageId);
             } else {
-                showToast('Ошибка: ' + data.error, 1500);
+                showToast(window.$t('common:Ошибка: ', 'Ошибка: ') + data.error, 1500);
             }
         });
     }

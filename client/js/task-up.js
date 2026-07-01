@@ -1,4 +1,4 @@
-// task-up.js – полностью исправленный (синтаксис, реферальная система, адвент в модалке)
+// task-up.js – полностью исправленный (синтаксис, реферальная система, адвент в модалке) с полной локализацией
 
 let countdownInterval = null;
 let lastTasksData = null;
@@ -33,15 +33,15 @@ function renderReferral() {
 
     referralDiv.innerHTML =
         '<div style="flex: 2; min-width: 0;">' +
-            '<div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Пригласить друга</div>' +
-            '<div style="font-size: 11px; color: #aaa; margin-top: 2px;">Пригласи друга и получи 100 монет</div>' +
+            `<div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${window.$t('daily_tasks:Referral.name', 'Пригласить друга')}</div>` +
+            `<div style="font-size: 11px; color: #aaa; margin-top: 2px;">${window.$t('daily_tasks:Referral.description', 'Пригласи друга и получи 100 монет')}</div>` +
         '</div>' +
         '<div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;">' +
             '<span style="font-weight: bold; color: white; font-size: 14px;">100 <i class="fas fa-coins" style="color:white;"></i></span>' +
         '</div>' +
         '<div style="flex: 0 0 100px; display: flex; gap: 5px; justify-content: flex-end;">' +
-            '<button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Копировать ссылку"><i class="fas fa-copy"></i></button>' +
-            '<button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="Поделиться"><i class="fas fa-share-alt"></i></button>' +
+            `<button class="claim-task-btn referral-copy-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="${window.$t('common:Копировать', 'Копировать ссылку')}"><i class="fas fa-copy"></i></button>` +
+            `<button class="claim-task-btn referral-share-btn" style="padding: 8px; width: 45px; font-size: 14px;" title="${window.$t('common:Поделиться', 'Поделиться')}"><i class="fas fa-share-alt"></i></button>` +
         '</div>';
 
     function fallbackCopy(text) {
@@ -53,25 +53,25 @@ function renderReferral() {
         textarea.select();
         try {
             document.execCommand('copy');
-            showToast('Ссылка скопирована!', 1500);
+            showToast(window.$t('common:Ссылка скопирована!', 'Ссылка скопирована!'), 1500);
         } catch (e) {
-            showToast('Не удалось скопировать. Попробуйте позже.', 1500);
+            showToast(window.$t('common:Не удалось скопировать. Попробуйте позже.', 'Не удалось скопировать. Попробуйте позже.'), 1500);
         }
         document.body.removeChild(textarea);
     }
 
     referralDiv.querySelector('.referral-copy-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(referralLink)
-            .then(() => showToast('Ссылка скопирована!', 1500))
+            .then(() => showToast(window.$t('common:Ссылка скопирована!', 'Ссылка скопирована!'), 1500))
             .catch(() => fallbackCopy(referralLink));
     });
 
     referralDiv.querySelector('.referral-share-btn').addEventListener('click', () => {
         if (isVK && typeof vkBridge !== 'undefined') {
             fallbackCopy(referralLink);
-            showToast('Ссылка скопирована! Отправь её другу в сообщении.', 3000);
+            showToast(window.$t('common:Ссылка скопирована! Отправь её другу в сообщении.', 'Ссылка скопирована! Отправь её другу в сообщении.'), 3000);
         } else if (window.Telegram?.WebApp?.shareURL) {
-            window.Telegram.WebApp.shareURL(referralLink, 'Присоединяйся к игре Cat Fighting!');
+            window.Telegram.WebApp.shareURL(referralLink, window.$t('common:Присоединяйся к игре Cat Fighting!', 'Присоединяйся к игре Cat Fighting!'));
         } else if (window.Telegram?.WebApp?.openTelegramLink) {
             window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(referralLink));
         } else {
@@ -88,7 +88,7 @@ function showAdventModal(data) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerHTML = 'Адвент-календарь';
+    modalTitle.innerHTML = window.$t('tasks:Адвент-календарь', 'Адвент-календарь');
     modalBody.innerHTML = '';
 
     const tempContainer = document.createElement('div');
@@ -173,22 +173,18 @@ function showRewardToast(title, iconClass, subtitle) {
     });
 }
 
-if (typeof dailyTaskTranslations === 'undefined') window.dailyTaskTranslations = {};
-Object.assign(dailyTaskTranslations, {
-    fortune_spin: { name: 'Покрутить рулетку', description: 'Сыграйте в Фортуну 1 раз' },
-    watch_ads_coins: { name: 'Просмотр рекламы', description: 'Посмотрите 5 рекламных роликов' },
-    watch_ads_coal: { name: 'Просмотр рекламы', description: 'Посмотрите 5 рекламных роликов' },
-    gain_coal: { name: 'Сборщик угля', description: 'Получите 15 угля за день' }
-});
-
 function renderTasks() {
+    if (!userData) {
+        console.warn('renderTasks: userData not ready, skipping');
+        return;
+    }
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="tasks-container">
             <div class="task-card" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0; padding: 12px; box-sizing: border-box; background-color: #2a303c;">
                 <div style="flex: 2; min-width: 0;">
-                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Адвент-календарь</div>
-                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Ежедневные подарки каждый день декабря</div>
+                    <div style="font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${window.$t('tasks:Адвент-календарь', 'Адвент-календарь')}</div>
+                    <div style="font-size: 11px; color: #aaa; margin-top: 2px;">${window.$t('tasks:Ежедневные подарки каждый день декабря', 'Ежедневные подарки каждый день декабря')}</div>
                 </div>
                 <div style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 10px;">
                     <i class="fas fa-coins" style="color: white; font-size: 16px;"></i>
@@ -200,7 +196,7 @@ function renderTasks() {
                 </div>
             </div>
             <div id="referralPlaceholder"></div>
-            <div class="tasks-header">Ежедневные задания</div>
+            <div class="tasks-header">${window.$t('tasks:Ежедневные задания', 'Ежедневные задания')}</div>
             <div id="tasksList"></div>
             <div id="countdownContainer" class="countdown-container" style="display: none;"></div>
         </div>
@@ -268,14 +264,14 @@ async function loadDailyTasks() {
                 rewardHtml = task.reward_amount + ' EXP';
             }
 
-            const translated = dailyTaskTranslations[task.name] || {};
-            const displayName = translated.name || task.name;
-            const displayDesc = translated.description || task.description;
+            const localized = window.$t(`daily_tasks:${task.name}`, { name: task.name, description: task.description });
+            const displayName = localized?.name || task.name;
+            const displayDesc = localized?.description || task.description;
 
             let altDesc = '';
             let altProgressHtml = '';
             if (task.id === 1 || task.id === 2 || task.id === 3) {
-                altDesc = '<div style="font-size: 10px; color: #88ff88;">ИЛИ выиграть 10 боёв подряд</div>';
+                altDesc = `<div style="font-size: 10px; color: #88ff88;">${window.$t('tasks:ИЛИ выиграть 10 боёв подряд', 'ИЛИ выиграть 10 боёв подряд')}</div>`;
                 const streakProgress = Math.min(dailyWinStreak, 10);
                 const streakPercent = (streakProgress / 10) * 100;
                 altProgressHtml = 
@@ -368,7 +364,7 @@ document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
         if ((taskId === 11 || taskId === 12) && !isReady) {
             const ready = await checkAdsReady();
             if (!ready) {
-                showToast('Реклама пока недоступна. Попробуйте позже.', 2000);
+                showToast(window.$t('tasks:Реклама пока недоступна. Попробуйте позже.', 'Реклама пока недоступна. Попробуйте позже.'), 2000);
                 btn.disabled = false;
                 return;
             }
@@ -382,21 +378,21 @@ document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
                     const updData = await updRes.json();
                     if (updData.success) {
                         if (updData.autoCompleted) {
-                            showToast('Награда за рекламу получена!', 1500);
+                            showToast(window.$t('tasks:Награда за рекламу получена!', 'Награда за рекламу получена!'), 1500);
                         } else {
-                            showToast('Прогресс рекламы обновлён!', 1500);
+                            showToast(window.$t('tasks:Прогресс рекламы обновлён!', 'Прогресс рекламы обновлён!'), 1500);
                         }
                         if (typeof loadDailyTasks === 'function') loadDailyTasks();
                         if (typeof refreshData === 'function') refreshData();
                     } else {
-                        showToast('Ошибка обновления прогресса', 1500);
+                        showToast(window.$t('common:Ошибка: ') + updData.error, 1500);
                     }
                 } catch (err) {
                     console.error('[VK-Ads] Ошибка запроса обновления рекламного задания:', err);
-                    showToast('Ошибка соединения', 1500);
+                    showToast(window.$t('common:Ошибка соединения', 'Ошибка соединения'), 1500);
                 }
             } else {
-                showToast('Вы не досмотрели рекламу до конца.', 2000);
+                showToast(window.$t('tasks:Вы не досмотрели рекламу до конца.', 'Вы не досмотрели рекламу до конца.'), 2000);
             }
             btn.disabled = false;
             return;
@@ -415,9 +411,9 @@ document.querySelectorAll('.task-card .claim-task-btn').forEach(btn => {
             } else {
                 if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
                 if (rewardType === 'coal') {
-                    showRewardToast('+' + rewardAmount + ' угля', 'fa-cube');
+                    showRewardToast('+' + rewardAmount + ' ' + window.$t('common:Уголь', 'угля'), 'fa-cube');
                 } else {
-                    showRewardToast('+' + rewardAmount + ' монет', 'fa-coins');
+                    showRewardToast('+' + rewardAmount + ' ' + window.$t('common:Монеты', 'монет'), 'fa-coins');
                 }
                 loadDailyTasks();
                 refreshData();
@@ -483,13 +479,13 @@ function updateCountdownDisplay() {
     const minutesStr = time.minutes.toString().padStart(2, '0');
     container.innerHTML = 
         '<div class="countdown-card">' +
-            '<div class="countdown-message">Вы выполнили ВСЕ задания!</div>' +
+            `<div class="countdown-message">${window.$t('tasks:Вы выполнили ВСЕ задания!', 'Вы выполнили ВСЕ задания!')}</div>` +
             '<div class="countdown-timer-wrapper">' +
-                '<div class="countdown-label">Новые задания появятся через:</div>' +
+                `<div class="countdown-label">${window.$t('tasks:Новые задания появятся через:', 'Новые задания появятся через:')}</div>` +
                 '<div class="countdown-digits">' +
-                    '<div class="digit-box"><div class="digit-value">' + hoursStr + '</div><div class="digit-unit">часов</div></div>' +
+                    `<div class="digit-box"><div class="digit-value">${hoursStr}</div><div class="digit-unit">${window.$t('common:часов', 'часов')}</div></div>` +
                     '<div class="colon">:</div>' +
-                    '<div class="digit-box"><div class="digit-value">' + minutesStr + '</div><div class="digit-unit">минут</div></div>' +
+                    `<div class="digit-box"><div class="digit-value">${minutesStr}</div><div class="digit-unit">${window.$t('common:минут', 'минут')}</div></div>` +
                 '</div>' +
             '</div>' +
         '</div>';
@@ -522,7 +518,7 @@ function showAdventCalendar() {
         })
         .catch(err => {
             console.error('Advent error:', err);
-            showToast('Ошибка загрузки календаря: ' + err.message, 2000);
+            showToast(window.$t('common:Ошибка: ') + err.message, 2000);
         });
 }
 
@@ -557,11 +553,11 @@ function claimAdventDay(day, daysInMonth) {
         } else {
             if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
             if (reward.type === 'coins') {
-                showRewardToast('+' + reward.amount + ' монет', 'fa-coins');
+                showRewardToast('+' + reward.amount + ' ' + window.$t('common:Монеты', 'монет'), 'fa-coins');
             } else if (reward.type === 'item' && data.item) {
                 showChestResult(data.item);
             } else {
-                showToast('Вы получили: ' + data.reward, 2000);
+                showToast(window.$t('common:Вы получили: ') + data.reward, 2000);
             }
             if (typeof refreshData === 'function') refreshData();
             if (typeof loadDailyTasks === 'function') loadDailyTasks();
@@ -585,7 +581,7 @@ function claimAdventDay(day, daysInMonth) {
     })
     .catch(err => {
         console.error(err);
-        showToast('Ошибка соединения', 1500);
+        showToast(window.$t('common:Ошибка соединения', 'Ошибка соединения'), 1500);
         isClaiming = false;
     });
 }
@@ -595,13 +591,13 @@ function showClassChoiceModalForAdvent(expAmount) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Выберите класс';
+    modalTitle.innerText = window.$t('common:Выберите класс', 'Выберите класс');
     modalBody.innerHTML = 
-        '<p>Вы получили ' + expAmount + ' опыта. Какому классу хотите его вручить?</p>' +
+        `<p>${window.$t('tasks:Вы получили {amount} опыта. Какому классу хотите его вручить?', 'Вы получили {amount} опыта. Какому классу хотите его вручить?', { amount: expAmount })}</p>` +
         '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">' +
-            '<button class="btn class-choice" data-class="warrior">Воин</button>' +
-            '<button class="btn class-choice" data-class="assassin">Ассасин</button>' +
-            '<button class="btn class-choice" data-class="mage">Маг</button>' +
+            `<button class="btn class-choice" data-class="warrior">${window.$t('common:Воин', 'Воин')}</button>` +
+            `<button class="btn class-choice" data-class="assassin">${window.$t('common:Ассасин', 'Ассасин')}</button>` +
+            `<button class="btn class-choice" data-class="mage">${window.$t('common:Маг', 'Маг')}</button>` +
         '</div>';
 
     modal.style.display = 'block';
@@ -622,7 +618,7 @@ function showClassChoiceModalForAdvent(expAmount) {
                 showToast(data.error, 1500);
             } else {
                 if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
-                showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
+                showRewardToast('+' + expAmount + ' ' + window.$t('common:Опыт', 'опыта'), 'fa-star', window.$t('common:для класса ') + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) showLevelUpModal(classChoice);
                 // Обновляем модальное окно календаря, если оно открыто
@@ -650,13 +646,13 @@ function claimDailyExp(taskId, expAmount) {
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = 'Выберите класс';
+    modalTitle.innerText = window.$t('common:Выберите класс', 'Выберите класс');
     modalBody.innerHTML = 
-        '<p>Вы получили ' + expAmount + ' опыта. Какому классу хотите его вручить?</p>' +
+        `<p>${window.$t('tasks:Вы получили {amount} опыта. Какому классу хотите его вручить?', 'Вы получили {amount} опыта. Какому классу хотите его вручить?', { amount: expAmount })}</p>` +
         '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">' +
-            '<button class="btn class-choice" data-class="warrior">Воин</button>' +
-            '<button class="btn class-choice" data-class="assassin">Ассасин</button>' +
-            '<button class="btn class-choice" data-class="mage">Маг</button>' +
+            `<button class="btn class-choice" data-class="warrior">${window.$t('common:Воин', 'Воин')}</button>` +
+            `<button class="btn class-choice" data-class="assassin">${window.$t('common:Ассасин', 'Ассасин')}</button>` +
+            `<button class="btn class-choice" data-class="mage">${window.$t('common:Маг', 'Маг')}</button>` +
         '</div>';
 
     modal.style.display = 'block';
@@ -679,7 +675,7 @@ function claimDailyExp(taskId, expAmount) {
                 showToast(data.error, 1500);
             } else {
                 if (typeof AudioManager !== 'undefined') AudioManager.playSound('reward');
-                showRewardToast('+' + expAmount + ' опыта', 'fa-star', 'для класса ' + getClassNameRu(classChoice));
+                showRewardToast('+' + expAmount + ' ' + window.$t('common:Опыт', 'опыта'), 'fa-star', window.$t('common:для класса ') + getClassNameRu(classChoice));
                 await refreshData();
                 if (data.leveledUp) showLevelUpModal(classChoice);
                 renderTasks();

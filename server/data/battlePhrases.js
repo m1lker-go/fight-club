@@ -116,23 +116,32 @@ let loaded = false;
 function loadTranslations() {
     if (loaded) return;
     try {
-        // Ищем файлы локализации относительно текущего файла: ../locales/ru.json и ../locales/en.json
-       const ruPath = path.join(__dirname, '..', '..', 'client', 'locales', 'ru.json');
-const enPath = path.join(__dirname, '..', '..', 'client', 'locales', 'en.json');
-        
+        const ruPath = path.join(__dirname, '..', '..', 'client', 'locales', 'ru.json');
+        const enPath = path.join(__dirname, '..', '..', 'client', 'locales', 'en.json');
+
+        console.log(`[battlePhrases] Загружаю ru.json из: ${ruPath}`);
+        console.log(`[battlePhrases] Загружаю en.json из: ${enPath}`);
+
         if (fs.existsSync(ruPath)) {
+            console.log('[battlePhrases] ru.json найден, загружаю');
             const ruData = JSON.parse(fs.readFileSync(ruPath, 'utf-8'));
             cachedRu = ruData.battle || {};
+        } else {
+            console.error('[battlePhrases] ru.json НЕ НАЙДЕН!');
         }
         if (fs.existsSync(enPath)) {
+            console.log('[battlePhrases] en.json найден, загружаю');
             const enData = JSON.parse(fs.readFileSync(enPath, 'utf-8'));
             cachedEn = enData.battle || {};
+        } else {
+            console.error('[battlePhrases] en.json НЕ НАЙДЕН!');
         }
+
         loaded = true;
         console.log('✅ Battle phrases loaded from locales');
     } catch (e) {
-        console.error('❌ Failed to load battle phrases from locales, using fallback', e);
-        loaded = true; // чтобы не пытаться снова
+        console.error('❌ Ошибка загрузки battle phrases:', e.message);
+        loaded = true;
     }
 }
 

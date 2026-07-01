@@ -3,16 +3,16 @@
 // Переопределяем getRoleNameRu для использования i18n
 const getRoleNameRu = (role) => {
     const key = `subclasses:${role}.name`;
-    return __(key, role);
+    return window.$t(key, role);
 };
 
 // Определяем getClassNameRu через i18n, если она ещё не определена
 if (typeof getClassNameRu === 'undefined') {
     window.getClassNameRu = function(classKey) {
         const map = {
-            warrior: __('common:Воин', 'Воин'),
-            assassin: __('common:Ассасин', 'Ассасин'),
-            mage: __('common:Маг', 'Маг')
+            warrior: window.$t('common:Воин', 'Воин'),
+            assassin: window.$t('common:Ассасин', 'Ассасин'),
+            mage: window.$t('common:Маг', 'Маг')
         };
         return map[classKey] || classKey;
     };
@@ -27,7 +27,7 @@ async function startBattle() {
     }
     if (!userData || !userData.id) {
         console.error('user_id не определён!');
-        showToast(__('battle:user_id_error', 'Ошибка: не удалось идентифицировать пользователя'), 2000);
+        showToast(window.$t('battle:user_id_error', 'Ошибка: не удалось идентифицировать пользователя'), 2000);
         unlockMenu();
         return;
     }
@@ -51,9 +51,9 @@ async function startBattle() {
         if (!response.ok) {
             console.error('Ошибка сервера:', data);
             if (data.error === 'Недостаточно энергии') {
-                showToast(__('battle:Недостаточно энергии!', 'Недостаточно энергии!'), 1500);
+                showToast(window.$t('battle:Недостаточно энергии!', 'Недостаточно энергии!'), 1500);
             } else {
-                showToast(__('battle:Ошибка сервера: ', 'Ошибка сервера: ') + (data.error || __('common:Неизвестная ошибка', 'Неизвестная ошибка')), 2000);
+                showToast(window.$t('battle:Ошибка сервера: ', 'Ошибка сервера: ') + (data.error || window.$t('common:Неизвестная ошибка', 'Неизвестная ошибка')), 2000);
             }
             unlockMenu();
             return;
@@ -63,7 +63,7 @@ async function startBattle() {
         showBattleScreen(data);
     } catch (error) {
         console.error('Ошибка запроса:', error);
-        showToast(__('battle:Ошибка соединения с сервером', 'Ошибка соединения с сервером'), 2000);
+        showToast(window.$t('battle:Ошибка соединения с сервером', 'Ошибка соединения с сервером'), 2000);
         unlockMenu();
     }
 }
@@ -76,6 +76,10 @@ function unlockMenu() {
 }
 
 function showBattleScreen(battleData) {
+    if (!userData) {
+        console.warn('showBattleScreen: userData not ready, skipping');
+        return;
+    }
     document.querySelectorAll('.menu-item').forEach(item => {
         item.style.pointerEvents = 'none';
         item.style.opacity = '0.5';
@@ -107,7 +111,7 @@ function showBattleScreen(battleData) {
                         <img src="/assets/${userData.avatar || 'cat_heroweb.png'}" alt="hero" class="hero-avatar-img">
                         ${userData.subscription_expiry && new Date(userData.subscription_expiry) > new Date() ? '<i class="fas fa-crown" style="position: absolute; top: 5px; left: 5px; color: #c0c0c0; font-size: 14px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; z-index: 25;"></i>' : ''}
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">${__('battle:Проиграл', 'Проиграл')}</div>
+                        <div class="defeat-overlay">${window.$t('battle:Проиграл', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="hero-floating"></div>
                     </div>
                     <div id="hero-animation" class="animation-container"></div>
@@ -132,7 +136,7 @@ function showBattleScreen(battleData) {
                 <div class="battle-center">
                     <div class="battle-timer" id="battleTimer">45</div>
                     <div class="speed-wrapper">
-                        <div class="speed-label">${__('battle:Скорость:', 'Скорость:')}</div>
+                        <div class="speed-label">${window.$t('battle:Скорость:', 'Скорость:')}</div>
                         <button id="singleSpeedBtn" class="speed-btn">x1</button>
                     </div>
                 </div>
@@ -150,7 +154,7 @@ function showBattleScreen(battleData) {
                     <div style="position: relative; margin: 0 auto;">
                         <img src="/assets/${battleData.opponent.is_cybercat ? 'cybercat-skin.png' : (battleData.opponent.avatar_id ? getAvatarFilenameById(battleData.opponent.avatar_id) : 'cat_heroweb.png')}" alt="enemy" class="enemy-avatar-img">
                         <div class="frozen-overlay"><img src="/assets/fight/frozenx.gif" alt="frozen"></div>
-                        <div class="defeat-overlay">${__('battle:Проиграл', 'Проиграл')}</div>
+                        <div class="defeat-overlay">${window.$t('battle:Проиграл', 'Проиграл')}</div>
                         <div class="floating-numbers-container" id="enemy-floating"></div>
                     </div>
                     <div id="enemy-animation" class="animation-container"></div>
@@ -166,7 +170,7 @@ function showBattleScreen(battleData) {
             </div>
 
             <div class="battle-log-container">
-                <div class="log-header">${__('battle:Лог боя', 'Лог боя')}</div>
+                <div class="log-header">${window.$t('battle:Лог боя', 'Лог боя')}</div>
                 <div id="battleLog" class="battle-log"></div>
             </div>
         </div>
@@ -211,6 +215,10 @@ function showBattleScreen(battleData) {
 
 
 async function showBattleResult(battleData, timeOut = false) {
+    if (!userData) {
+        console.warn('showBattleResult: userData not ready, skipping');
+        return;
+    }
     console.log('=== showBattleResult START ===');
     console.log('battleData:', battleData);
     console.log('userData:', userData);
@@ -227,7 +235,7 @@ async function showBattleResult(battleData, timeOut = false) {
 
     const winner = battleData.result.winner;
     const isVictory = (winner === 'player');
-    const resultText = isVictory ? __('battle:ПОБЕДА', 'ПОБЕДА') : (winner === 'draw' ? __('battle:НИЧЬЯ', 'НИЧЬЯ') : __('battle:ПОРАЖЕНИЕ', 'ПОРАЖЕНИЕ'));
+    const resultText = isVictory ? window.$t('battle:ПОБЕДА', 'ПОБЕДА') : (winner === 'draw' ? window.$t('battle:НИЧЬЯ', 'НИЧЬЯ') : window.$t('battle:ПОРАЖЕНИЕ', 'ПОРАЖЕНИЕ'));
     const resultColor = isVictory ? '#2ecc71' : (winner === 'draw' ? '#ffffff' : '#e74c3c');
 
     if (typeof AudioManager !== 'undefined' && AudioManager.playSound) {
@@ -392,20 +400,20 @@ async function showBattleResult(battleData, timeOut = false) {
     };
 
     const baseItems = [
-        addRewardItem(__('battle:Опыт', 'Опыт'), `+${expGain}`, 'fas fa-star'),
-        addRewardItem(__('battle:Монеты', 'Монеты'), `+${coinGain}`, 'fas fa-coins'),
-        addRewardItem(__('battle:Рейтинг', 'Рейтинг'), `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
-        addRewardItem(__('battle:Серия', 'Серия'), `${newStreak}`, 'fas fa-shield-alt')
+        addRewardItem(window.$t('battle:Опыт', 'Опыт'), `+${expGain}`, 'fas fa-star'),
+        addRewardItem(window.$t('battle:Монеты', 'Монеты'), `+${coinGain}`, 'fas fa-coins'),
+        addRewardItem(window.$t('battle:Рейтинг', 'Рейтинг'), `${ratingChange > 0 ? '+' : ''}${ratingChange}`, 'fas fa-chart-line'),
+        addRewardItem(window.$t('battle:Серия', 'Серия'), `${newStreak}`, 'fas fa-shield-alt')
     ];
     baseItems.forEach(item => rewardsGrid.appendChild(item));
 
     if (battleData.coalGain && battleData.coalGain > 0) {
-        const coalItem = addRewardItem(__('battle:Уголь', 'Уголь'), `+${battleData.coalGain}`, 'fas fa-cube');
+        const coalItem = addRewardItem(window.$t('battle:Уголь', 'Уголь'), `+${battleData.coalGain}`, 'fas fa-cube');
         coalItem.querySelector('i').style.color = '#00aaff';
         rewardsGrid.appendChild(coalItem);
     }
     if (battleData.scrollGain) {
-        const scrollItem = addRewardItem(__('battle:Свиток', 'Свиток'), __('common:Редкое', 'Редкое'), 'fas fa-scroll');
+        const scrollItem = addRewardItem(window.$t('battle:Свиток', 'Свиток'), window.$t('common:Редкое', 'Редкое'), 'fas fa-scroll');
         scrollItem.querySelector('i').style.color = '#00aaff';
         rewardsGrid.appendChild(scrollItem);
     }
@@ -423,14 +431,14 @@ async function showBattleResult(battleData, timeOut = false) {
         return btn;
     };
 
-    const rematchBtn = createButton(__('battle:В бой', 'В бой'), async () => {
+    const rematchBtn = createButton(window.$t('battle:В бой', 'В бой'), async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         await refreshData();
         startBattle();
     });
 
-    const backBtn = createButton(__('common:Назад', 'Назад'), async () => {
+    const backBtn = createButton(window.$t('common:Назад', 'Назад'), async () => {
         if (window.battleTimer) clearInterval(window.battleTimer);
         BattleLog.stop();
         document.querySelectorAll('.menu-item').forEach(item => {
@@ -448,13 +456,13 @@ async function showBattleResult(battleData, timeOut = false) {
 
     let tabLogBtn, tabStatsBtn;
 
-    tabLogBtn = createButton(__('battle:Лог боя', 'Лог боя'), () => {
+    tabLogBtn = createButton(window.$t('battle:Лог боя', 'Лог боя'), () => {
         tabLogBtn.classList.add('active');
         tabStatsBtn.classList.remove('active');
         resultContent.innerHTML = logArray;
     }, true);
 
-    tabStatsBtn = createButton(__('battle:Статистика', 'Статистика'), () => {
+    tabStatsBtn = createButton(window.$t('battle:Статистика', 'Статистика'), () => {
         tabStatsBtn.classList.add('active');
         tabLogBtn.classList.remove('active');
         
@@ -464,23 +472,23 @@ async function showBattleResult(battleData, timeOut = false) {
         const thead = table.createTHead();
         const headerRow = thead.insertRow();
         const th1 = document.createElement('th');
-        th1.innerText = __('battle:Игрок', 'Игрок');
+        th1.innerText = window.$t('battle:Игрок', 'Игрок');
         const th2 = document.createElement('th');
-        th2.innerText = __('battle:Параметр', 'Параметр');
+        th2.innerText = window.$t('battle:Параметр', 'Параметр');
         const th3 = document.createElement('th');
-        th3.innerText = __('battle:Соперник', 'Соперник');
+        th3.innerText = window.$t('battle:Соперник', 'Соперник');
         headerRow.appendChild(th1);
         headerRow.appendChild(th2);
         headerRow.appendChild(th3);
         
         const tbody = table.createTBody();
         const rowsData = [
-            [playerStats.hits, __('battle:Ударов', 'Ударов'), enemyStats.hits],
-            [playerStats.crits, __('battle:Критов', 'Критов'), enemyStats.crits],
-            [playerStats.dodges, __('battle:Уклонений', 'Уклонений'), enemyStats.dodges],
-            [playerStats.totalDamage, __('battle:Урона', 'Урона'), enemyStats.totalDamage],
-            [playerStats.heal, __('battle:Исцелено', 'Исцелено'), enemyStats.heal],
-            [playerStats.reflect, __('battle:Отражено', 'Отражено'), enemyStats.reflect]
+            [playerStats.hits, window.$t('battle:Ударов', 'Ударов'), enemyStats.hits],
+            [playerStats.crits, window.$t('battle:Критов', 'Критов'), enemyStats.crits],
+            [playerStats.dodges, window.$t('battle:Уклонений', 'Уклонений'), enemyStats.dodges],
+            [playerStats.totalDamage, window.$t('battle:Урона', 'Урона'), enemyStats.totalDamage],
+            [playerStats.heal, window.$t('battle:Исцелено', 'Исцелено'), enemyStats.heal],
+            [playerStats.reflect, window.$t('battle:Отражено', 'Отражено'), enemyStats.reflect]
         ];
         
         for (const [playerVal, param, enemyVal] of rowsData) {

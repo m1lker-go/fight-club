@@ -1,28 +1,12 @@
+// battle.js – серверный модуль с поддержкой локализации
 const express = require('express');
 const router = express.Router();
 const { pool, getUserByIdentifier } = require('../db');
 const { updatePlayerPower } = require('../utils/power');
 const { generateBot } = require('../utils/botGenerator');
 const dailyTasks = require('../utils/dailyTasks');
-const {
-    attackPhrases,
-    dodgePhrases,
-    critPhrases,
-    vampPhrase,
-    reflectPhrase,
-    poisonStackPhrase,
-    burnStackPhrase,
-    freezeStackPhrase,
-    poisonDamagePhrase,
-    burnDamagePhrase,
-    frozenPhrase,
-    frozenContinuePhrase,
-    frozenEndPhrase,
-    frozenAlreadyPhrase,
-    selfDamagePhrase,
-    ultPhrases
-} = require('../data/battlePhrases');
 const { rechargeEnergy } = require('../utils/energy');
+const { getPhrases } = require('../data/battlePhrases');
 
 const subclassOptions = {
     warrior: ['guardian', 'berserker', 'knight'],
@@ -149,8 +133,15 @@ function calculateStats(classData, inventory, subclass) {
     return stats;
 }
 
-function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker) {
+// Используем phrases из getPhrases(lang)
+function performAttack(attackerStats, defenderStats, attackerVamp, defenderReflect, attackerName, defenderName, attackerClass, attackerSubclass, defenderSubclass, attackerState, defenderState, isPlayerAttacker, phrases) {
     let extraLogs = [];
+    const dodgePhrases = phrases.dodgePhrases;
+    const attackPhrases = phrases.attackPhrases;
+    const critPhrases = phrases.critPhrases;
+    const vampPhrase = phrases.vampPhrase;
+    const reflectPhrase = phrases.reflectPhrase;
+    const selfDamagePhrase = phrases.selfDamagePhrase;
 
     if (defenderSubclass === 'illusionist' && rolePassives.illusionist && rolePassives.illusionist.mirageGuaranteed) {
         defenderState.mirageCounter = (defenderState.mirageCounter || 0) + 1;
@@ -189,7 +180,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
                 hit: false, 
                 damage: 0, 
                 isCrit: false, 
-                log: `<strong>${defenderName}</strong> полностью избежал урона - БЛОК`, 
+                log: phrases.block_phrase.replace('{defender}', defenderName),
                 reflectDamage: 0, 
                 vampHeal: 0, 
                 stateChanges: {}, 
@@ -268,7 +259,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         defenderState.mana = Math.max(0, currentMana - steal);
         attackerState.mana = (attackerState.mana || 0) + steal;
         extraLogs.push({
-            text: `${attackerName} крадёт ${steal} маны у ${defenderName}.`,
+            text: phrases.mana_steal_phrase.replace('{attacker}', attackerName).replace('{amount}', steal).replace('{defender}', defenderName),
             type: 'mana_steal',
             attacker: isPlayerAttacker ? 'player' : 'enemy'
         });
@@ -279,7 +270,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         defenderState.alchemistPoison = Math.floor(damage * 0.5);
         defenderState.alchemistPoisonDuration = 1;
         extraLogs.push({
-            text: `${defenderName} отравлен! Получит ${defenderState.alchemistPoison} урона в конце хода.`,
+            text: phrases.poison_stack_phrase.replace('{defender}', defenderName).replace('{stacks}', 1).replace('{damage}', defenderState.alchemistPoison),
             type: 'poison_stack',
             attacker: isPlayerAttacker ? 'player' : 'enemy'
         });
@@ -298,7 +289,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (defenderState.poisonStacks > oldStacks) {
             const poisonDmgPerStack = 2 + Math.floor(attackerStats.agi / 5);
             extraLogs.push({
-                text: `${defenderName} отравлен! Стаков: ${defenderState.poisonStacks}/5 (урон стака ${poisonDmgPerStack}).`,
+                text: phrases.poison_stack_phrase.replace('{defender}', defenderName).replace('{stacks}', defenderState.poisonStacks).replace('{damage}', poisonDmgPerStack),
                 type: 'poison_stack',
                 attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
@@ -312,7 +303,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (defenderState.burnStacks > oldStacks) {
             const burnDmgPerStack = 2 + Math.floor(attackerStats.agi / 5);
             extraLogs.push({
-                text: `${defenderName} подожжён! Стаков: ${defenderState.burnStacks}/5 (урон стака ${burnDmgPerStack}).`,
+                text: phrases.burn_stack_phrase.replace('{defender}', defenderName).replace('{stacks}', defenderState.burnStacks).replace('{damage}', burnDmgPerStack),
                 type: 'burn_stack',
                 attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
@@ -323,7 +314,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         if (!defenderState.freezeStacks) defenderState.freezeStacks = 0;
         if (defenderState.frozen > 0) {
             extraLogs.push({
-                text: '<strong>' + defenderName + '</strong> уже заморожен и пропускает ход.',
+                text: phrases.frozenAlreadyPhrase.replace('%s', '<strong>' + defenderName + '</strong>'),
                 type: 'frozen_already',
                 attacker: isPlayerAttacker ? 'player' : 'enemy'
             });
@@ -333,9 +324,9 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
             if (defenderState.freezeStacks >= 3) {
                 defenderState.frozen = 1;
                 defenderState.freezeStacks = 0;
-                stackText = 'Лед накапливается 3/3. <strong>' + defenderName + '</strong> замораживается и пропускает 1 ход.';
+                stackText = phrases.freeze_stack_full.replace('{target}', defenderName);
             } else {
-                stackText = 'Лед накапливается ' + defenderState.freezeStacks + '/3.';
+                stackText = phrases.freeze_stack_accumulate.replace('{stacks}', defenderState.freezeStacks);
             }
             extraLogs.push({
                 text: stackText,
@@ -368,7 +359,7 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
         attackerState.mana = Math.max(0, (attackerState.mana || 0) - 10);
         defenderState.mana = Math.min(100, (defenderState.mana || 0) + 5);
         extraLogs.push({
-            text: `${attackerName} промахивается и теряет 10 маны. ${defenderName} восстанавливает 5 маны.`,
+            text: phrases.miss_mana_effect.replace('{attacker}', attackerName).replace('{defender}', defenderName),
             type: 'mana_change',
             attacker: isPlayerAttacker ? 'player' : 'enemy'
         });
@@ -395,10 +386,11 @@ function performAttack(attackerStats, defenderStats, attackerVamp, defenderRefle
     };
 }
 
-function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass) {
+function performActiveSkill(attackerStats, defenderStats, attackerState, defenderState, attackerName, defenderName, attackerSubclass, defenderSubclass, phrases) {
     let damage = 0, selfDamage = 0, heal = 0, log = '', stateChanges = {};
     const intBonus = 1 + attackerStats.int / 100;
     let type = 'ult';
+    const ultPhrases = phrases.ultPhrases;
 
     switch (attackerSubclass) {
         case 'guardian':
@@ -410,7 +402,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             
         case 'berserker':
             if (attackerState.hp <= 0) {
-                return { damage:0, heal:0, log: '<strong>' + attackerName + '</strong> не может использовать умение.', selfDamage:0, stateChanges:{}, type: 'none' };
+                return { damage:0, heal:0, log: phrases.cannot_use_skill.replace('{name}', attackerName), selfDamage:0, stateChanges:{}, type: 'none' };
             }
             let baseDamageBerserker = attackerStats.atk * 2;
             let bonusCritDmg = 0.5;
@@ -442,25 +434,25 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             break;
             
        case 'venom_blade':
-    let baseDamage = attackerStats.atk;
-    const stacks = defenderState.poisonStacks || 0;
-    const poisonPerStack = 2 + Math.floor(attackerStats.agi / 5);
-    const poisonDamage = stacks * poisonPerStack;
-    let bonusDamage = 0;
-    if (stacks === 1) bonusDamage = 5;
-    else if (stacks === 2) bonusDamage = 10;
-    else if (stacks === 3) bonusDamage = 15;
-    else if (stacks === 4) bonusDamage = 20;
-    else if (stacks >= 5) bonusDamage = 30;
-    const totalDamage = baseDamage + poisonDamage + bonusDamage;
-    damage = totalDamage;
-    log = ultPhrases.venom_blade
-        .replace('%s', '<strong>' + attackerName + '</strong>')
-        .replace('%d', damage)
-        + ` (яд: ${poisonDamage}, бонус: ${bonusDamage})`;
-    defenderState.poisonStacks = 0;
-    type = 'poison_ult';
-    break;
+            let baseDamage = attackerStats.atk;
+            const stacks = defenderState.poisonStacks || 0;
+            const poisonPerStack = 2 + Math.floor(attackerStats.agi / 5);
+            const poisonDamage = stacks * poisonPerStack;
+            let bonusDamage = 0;
+            if (stacks === 1) bonusDamage = 5;
+            else if (stacks === 2) bonusDamage = 10;
+            else if (stacks === 3) bonusDamage = 15;
+            else if (stacks === 4) bonusDamage = 20;
+            else if (stacks >= 5) bonusDamage = 30;
+            const totalDamage = baseDamage + poisonDamage + bonusDamage;
+            damage = totalDamage;
+            log = ultPhrases.venom_blade
+                .replace('%s', '<strong>' + attackerName + '</strong>')
+                .replace('%d', damage)
+                + ` (яд: ${poisonDamage}, бонус: ${bonusDamage})`;
+            defenderState.poisonStacks = 0;
+            type = 'poison_ult';
+            break;
             
         case 'blood_hunter':
             damage = applyIntBonus(attackerStats.atk * 1.5, attackerStats.int);
@@ -506,7 +498,7 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             
         case 'mouse_blade':
             damage = attackerStats.atk * 2;
-            log = `<strong>${attackerName}</strong> использует Уязвимость и наносит ${damage} урона, игнорируя защиту!`;
+            log = phrases.mouse_blade_ultimate.replace('{attacker}', attackerName).replace('{damage}', damage);
             type = 'damage';
             attackerState.vampBuff = 1;
             attackerState.vampBonus = 100;
@@ -518,33 +510,33 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
             else if (mana <= 70) multiplier = 2;
             else multiplier = 1;
             damage = Math.floor(attackerStats.atk * multiplier);
-            log = `<strong>${attackerName}</strong> использует Антимагический удар и наносит ${damage} урона (зависит от маны цели).`;
+            log = phrases.mouse_antimag_ultimate.replace('{attacker}', attackerName).replace('{damage}', damage);
             type = 'damage';
             break;
         case 'mouse_paladin':
             defenderState.invincible = 2;
-            log = `<strong>${attackerName}</strong> становится неуязвимым на 2 хода!`;
+            log = phrases.mouse_paladin_ultimate.replace('{attacker}', attackerName);
             type = 'buff';
             break;
         case 'mouse_alchemist':
             damage = Math.floor(attackerStats.atk * 1.5);
             defenderState.alchemistPoison = Math.floor(attackerStats.atk * 0.8);
             defenderState.alchemistPoisonDuration = 2;
-            log = `<strong>${attackerName}</strong> использует Адский коктейль, нанося ${damage} урона и отравляя цель на 2 хода!`;
+            log = phrases.mouse_alchemist_ultimate.replace('{attacker}', attackerName).replace('{damage}', damage);
             type = 'damage';
             break;
         case 'mouse_shadow':
             defenderState.invisible = 1;
-            log = `<strong>${attackerName}</strong> исчезает в тени! В конце хода последует сокрушительный удар.`;
+            log = phrases.mouse_shadow_ultimate.replace('{attacker}', attackerName);
             type = 'buff';
             break;
         case 'mouse_necromancer':
-            log = `<strong>${attackerName}</strong> ничего не делает.`;
+            log = phrases.does_nothing.replace('{name}', attackerName);
             type = 'none';
             break;
 
         default:
-            return { damage:0, heal:0, log: 'ничего не произошло', selfDamage:0, stateChanges:{}, type: 'none' };
+            return { damage:0, heal:0, log: phrases.does_nothing.replace('{name}', attackerName), selfDamage:0, stateChanges:{}, type: 'none' };
     }
 
     attackerState.manaRegenDisabled = true;
@@ -553,14 +545,14 @@ function performActiveSkill(attackerStats, defenderStats, attackerState, defende
     return { damage, heal, log, selfDamage, stateChanges, type };
 }
 
-function applyDotDamage(state, name, attackerAgi) {
+function applyDotDamage(state, name, attackerAgi, phrases) {
     let totalDamage = 0, logs = [];
     if (state.poisonStacks > 0) {
         const dmgPerStack = 2 + Math.floor(attackerAgi / 5);
         const dmg = state.poisonStacks * dmgPerStack;
         totalDamage += dmg;
         logs.push({
-            text: poisonDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg) + ` (${dmgPerStack} за стак)`,
+            text: phrases.poisonDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg) + ` (${dmgPerStack} за стак)`,
             type: 'poison_dot'
         });
     }
@@ -569,7 +561,7 @@ function applyDotDamage(state, name, attackerAgi) {
         const dmg = state.burnStacks * dmgPerStack;
         totalDamage += dmg;
         logs.push({
-            text: burnDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg) + ` (${dmgPerStack} за стак)`,
+            text: phrases.burnDamagePhrase.replace('%s', '<strong>' + name + '</strong>').replace('%d', dmg) + ` (${dmgPerStack} за стак)`,
             type: 'burn_dot'
         });
     }
@@ -587,7 +579,8 @@ function applyDotDamage(state, name, attackerAgi) {
     return { damage: totalDamage, logs };
 }
 
-function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass) {
+function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, playerName, enemyName, playerSubclass, enemySubclass, lang = 'ru') {
+    const phrases = getPhrases(lang);
     if (!playerStats || !enemyStats) throw new Error('playerStats or enemyStats is undefined');
     let playerHp = playerStats.hp, enemyHp = enemyStats.hp;
     let playerMana = 0, enemyMana = 0;
@@ -640,8 +633,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 const frozenLeft = playerState.frozen;
                 playerState.frozen--;
                 let msg;
-                if (playerState.frozen === 0) msg = frozenEndPhrase.replace('%s', '<strong>' + playerName + '</strong>');
-                else msg = frozenContinuePhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', frozenLeft);
+                if (playerState.frozen === 0) msg = phrases.frozenEndPhrase.replace('%s', '<strong>' + playerName + '</strong>');
+                else msg = phrases.frozenContinuePhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', frozenLeft);
                 messages.push({ text: msg, type: 'frozen_end', attacker: 'enemy' });
                 pushState();
                 turn = 'enemy';
@@ -655,12 +648,12 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 regen = 0;
                 playerState.manaRegenDisabledDuration--;
                 if (playerState.manaRegenDisabledDuration === 0) playerState.manaRegenDisabled = false;
-                messages.push({ text: `${playerName} не восстанавливает ману из-за последствий ультимейта.`, type: 'mana_effect', attacker: 'player' });
+                messages.push({ text: phrases.mana_regen_disabled.replace('{name}', playerName), type: 'mana_effect', attacker: 'player' });
             } else if (playerState.manaRegenHalved && playerState.manaRegenHalvedDuration > 0) {
                 regen = Math.floor(regen / 2);
                 playerState.manaRegenHalvedDuration--;
                 if (playerState.manaRegenHalvedDuration === 0) playerState.manaRegenHalved = false;
-                messages.push({ text: `${playerName} восстанавливает только ${regen} маны из-за критического удара.`, type: 'mana_effect', attacker: 'player' });
+                messages.push({ text: phrases.mana_regen_halved.replace('{name}', playerName).replace('{amount}', regen), type: 'mana_effect', attacker: 'player' });
             }
             playerMana += regen;
             if (playerMana > 100) playerMana = 100;
@@ -669,7 +662,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             let actionLog = null;
 
             if (playerMana >= 100) {
-                const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass);
+                const skill = performActiveSkill(playerStats, enemyStats, playerState, enemyState, playerName, enemyName, playerSubclass, enemySubclass, phrases);
                 if (skill.damage) enemyHp -= skill.damage;
                 if (skill.heal) playerHp += skill.heal;
                 if (skill.selfDamage) playerHp -= skill.selfDamage;
@@ -692,7 +685,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     playerName, enemyName,
                     playerClass, playerSubclass, enemySubclass,
                     playerState, enemyState,
-                    true
+                    true,
+                    phrases
                 );
 
                 if (attackResult.hit) {
@@ -720,10 +714,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     }
 
                     if (attackResult.vampHeal > 0) {
-                        logText += ' ' + vampPhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', attackResult.vampHeal);
+                        logText += ' ' + phrases.vampPhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', attackResult.vampHeal);
                     }
                     if (attackResult.reflectDamage > 0) {
-                        logText += ' ' + reflectPhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', attackResult.reflectDamage).replace('%s', '<strong>' + playerName + '</strong>');
+                        logText += ' ' + phrases.reflectPhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', attackResult.reflectDamage).replace('%s', '<strong>' + playerName + '</strong>');
                     }
 
                     actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'player' };
@@ -740,7 +734,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     if (attackResult.isCritFlag) {
                         enemyState.manaRegenHalved = true;
                         enemyState.manaRegenHalvedDuration = 1;
-                        messages.push({ text: `${enemyName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'player' });
+                        messages.push({ text: phrases.stunned_mana_effect.replace('{name}', enemyName), type: 'mana_effect', attacker: 'player' });
                     }
 
                     if (enemyHp <= 0 || playerHp <= 0) break;
@@ -761,8 +755,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 const frozenLeft = enemyState.frozen;
                 enemyState.frozen--;
                 let msg;
-                if (enemyState.frozen === 0) msg = frozenEndPhrase.replace('%s', '<strong>' + enemyName + '</strong>');
-                else msg = frozenContinuePhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', frozenLeft);
+                if (enemyState.frozen === 0) msg = phrases.frozenEndPhrase.replace('%s', '<strong>' + enemyName + '</strong>');
+                else msg = phrases.frozenContinuePhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', frozenLeft);
                 messages.push({ text: msg, type: 'frozen_end', attacker: 'player' });
                 pushState();
                 turn = 'player';
@@ -776,12 +770,12 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 regen = 0;
                 enemyState.manaRegenDisabledDuration--;
                 if (enemyState.manaRegenDisabledDuration === 0) enemyState.manaRegenDisabled = false;
-                messages.push({ text: `${enemyName} не восстанавливает ману из-за последствий ультимейта.`, type: 'mana_effect', attacker: 'enemy' });
+                messages.push({ text: phrases.mana_regen_disabled.replace('{name}', enemyName), type: 'mana_effect', attacker: 'enemy' });
             } else if (enemyState.manaRegenHalved && enemyState.manaRegenHalvedDuration > 0) {
                 regen = Math.floor(regen / 2);
                 enemyState.manaRegenHalvedDuration--;
                 if (enemyState.manaRegenHalvedDuration === 0) enemyState.manaRegenHalved = false;
-                messages.push({ text: `${enemyName} восстанавливает только ${regen} маны из-за критического удара.`, type: 'mana_effect', attacker: 'enemy' });
+                messages.push({ text: phrases.mana_regen_halved.replace('{name}', enemyName).replace('{amount}', regen), type: 'mana_effect', attacker: 'enemy' });
             }
             enemyMana += regen;
             if (enemyMana > 100) enemyMana = 100;
@@ -790,7 +784,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             let actionLog = null;
 
             if (enemyMana >= 100) {
-                const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass);
+                const skill = performActiveSkill(enemyStats, playerStats, enemyState, playerState, enemyName, playerName, enemySubclass, playerSubclass, phrases);
                 if (skill.damage) playerHp -= skill.damage;
                 if (skill.heal) enemyHp += skill.heal;
                 if (skill.selfDamage) enemyHp -= skill.selfDamage;
@@ -813,7 +807,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     enemyName, playerName,
                     enemyClass, enemySubclass, playerSubclass,
                     enemyState, playerState,
-                    false
+                    false,
+                    phrases
                 );
 
                 if (attackResult.hit) {
@@ -840,10 +835,10 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                         logText += ' <span style="color:#f39c12;">(Ярость +' + attackResult.berserkerBonus + ')</span>';
                     }
                     if (attackResult.vampHeal > 0) {
-                        logText += ' ' + vampPhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', attackResult.vampHeal);
+                        logText += ' ' + phrases.vampPhrase.replace('%s', '<strong>' + enemyName + '</strong>').replace('%d', attackResult.vampHeal);
                     }
                     if (attackResult.reflectDamage > 0) {
-                        logText += ' ' + reflectPhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', attackResult.reflectDamage).replace('%s', '<strong>' + enemyName + '</strong>');
+                        logText += ' ' + phrases.reflectPhrase.replace('%s', '<strong>' + playerName + '</strong>').replace('%d', attackResult.reflectDamage).replace('%s', '<strong>' + enemyName + '</strong>');
                     }
 
                     actionLog = { text: logText, type: attackResult.isCrit ? 'crit' : 'attack', attacker: 'enemy' };
@@ -860,7 +855,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                     if (attackResult.isCritFlag) {
                         playerState.manaRegenHalved = true;
                         playerState.manaRegenHalvedDuration = 1;
-                        messages.push({ text: `${playerName} ошеломлён! Регенерация маны уменьшена на 50% в следующем ходу.`, type: 'mana_effect', attacker: 'enemy' });
+                        messages.push({ text: phrases.stunned_mana_effect.replace('{name}', playerName), type: 'mana_effect', attacker: 'enemy' });
                     }
 
                     if (playerHp <= 0 || enemyHp <= 0) break;
@@ -891,8 +886,8 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
         if (enemyState.invincible > 0) enemyState.invincible--;
 
         if (playerHp > 0 && enemyHp > 0 && playerActedThisRound && enemyActedThisRound) {
-            const playerDot = applyDotDamage(playerState, playerName, enemyStats.agi);
-            const enemyDot = applyDotDamage(enemyState, enemyName, playerStats.agi);
+            const playerDot = applyDotDamage(playerState, playerName, enemyStats.agi, phrases);
+            const enemyDot = applyDotDamage(enemyState, enemyName, playerStats.agi, phrases);
             if (playerDot.damage > 0) {
                 playerHp -= playerDot.damage;
                 if (playerHp < 0) playerHp = 0;
@@ -921,7 +916,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (playerHp < 0) playerHp = 0;
                 enemyState.hp = enemyHp;
                 messages.push({
-                    text: `<strong>${enemyName}</strong> выходит из тени и наносит ${dmg} урона, игнорируя защиту!`,
+                    text: phrases.shadow_attack.replace('{attacker}', enemyName).replace('{damage}', dmg),
                     type: 'damage',
                     attacker: 'enemy'
                 });
@@ -935,7 +930,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
                 if (enemyHp < 0) enemyHp = 0;
                 playerState.hp = playerHp;
                 messages.push({
-                    text: `<strong>${playerName}</strong> выходит из тени и наносит ${dmg} урона, игнорируя защиту!`,
+                    text: phrases.shadow_attack.replace('{attacker}', playerName).replace('{damage}', dmg),
                     type: 'damage',
                     attacker: 'player'
                 });
@@ -957,7 +952,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             enemyState.alchemistPoison = 0;
             enemyState.alchemistPoisonDuration = 0;
             messages.push({
-                text: `<strong>${enemyName}</strong> воскресает, восстанавливая ${enemyHp} HP!`,
+                text: phrases.mouse_necromancer_revive.replace('{name}', enemyName).replace('{hp}', enemyHp),
                 type: 'revive',
                 attacker: 'enemy'
             });
@@ -973,7 +968,7 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
             playerState.alchemistPoison = 0;
             playerState.alchemistPoisonDuration = 0;
             messages.push({
-                text: `<strong>${playerName}</strong> воскресает, восстанавливая ${playerHp} HP!`,
+                text: phrases.mouse_necromancer_revive.replace('{name}', playerName).replace('{hp}', playerHp),
                 type: 'revive',
                 attacker: 'player'
             });
@@ -984,22 +979,9 @@ function simulateBattle(playerStats, enemyStats, playerClass, enemyClass, player
     }
 
     let winner = (playerHp <= 0 && enemyHp <= 0) ? 'draw' : (playerHp <= 0) ? 'enemy' : (enemyHp <= 0) ? 'player' : null;
-    const victoryPhrases = [
-        '🎉 Это была невероятная схватка! Вы одержали <span style="color:#2ecc71;">ПОБЕДУ</span>!',
-        '⚔️ С последним ударом враг повержен. <span style="color:#2ecc71;">ПОБЕДА</span>!',
-        '🏆 Вы оказались сильнее! <span style="color:#2ecc71;">ПОБЕДА</span>!',
-        '✨ Невероятная битва! <span style="color:#2ecc71;">ПОБЕДА</span> за вами!'
-    ];
-    const defeatPhrases = [
-        '💔 В этой напряжённой схватке враг был сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
-        '😵 Ваши силы иссякли... <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
-        '😢 Увы, победа не ваша. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>',
-        '⚰️ Соперник оказался сильнее. <span style="color:#e74c3c;">ПОРАЖЕНИЕ</span>'
-    ];
-    const drawPhrases = [
-        '🤝 Оба бойца падают одновременно. Ничья!',
-        '💥 Взаимный удар – никто не выжил. Ничья.'
-    ];
+    const victoryPhrases = phrases.victory_phrases || [];
+    const defeatPhrases = phrases.defeat_phrases || [];
+    const drawPhrases = phrases.draw_phrases || [];
 
     let finalPhrase = '';
     if (winner === 'player') finalPhrase = victoryPhrases[Math.floor(Math.random() * victoryPhrases.length)];
@@ -1145,42 +1127,36 @@ router.post('/start', async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        // Получаем userId из middleware (уже должен быть в req.userId)
         const userId = req.userId;
         if (!userId) throw new Error('User not authorized');
 
-        // Получаем пользователя напрямую по id
         const userRes = await client.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userRes.rows.length === 0) throw new Error('User not found');
         const user = userRes.rows[0];
 
-        // Проверка активности подписки VIP Silver
+        // Язык из запроса
+        const lang = req.body.lang || req.query.lang || 'ru';
+
         const subscriptionActive = user.subscription_expiry && new Date(user.subscription_expiry) > new Date();
 
-        // Энергия
         await rechargeEnergy(client, user.id);
         const energyRes = await client.query('SELECT energy FROM users WHERE id = $1', [user.id]);
         if (energyRes.rows[0].energy < 1) throw new Error('Недостаточно энергии');
 
+        const today = dailyTasks.getMoscowDate();
+        let dailyStreak = user.daily_win_streak || 0;
+        if (user.last_streak_date) {
+            const lastDateMsk = new Date(user.last_streak_date).toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
+            if (lastDateMsk !== today) dailyStreak = 0;
+        } else {
+            dailyStreak = 0;
+        }
         
-      // Сброс daily_win_streak при смене дня (московское время)
-const today = dailyTasks.getMoscowDate();
-let dailyStreak = user.daily_win_streak || 0;
-if (user.last_streak_date) {
-    // Преобразуем дату из БД в московскую строку YYYY-MM-DD
-    const lastDateMsk = new Date(user.last_streak_date).toLocaleDateString('en-CA', { timeZone: 'Europe/Moscow' });
-    if (lastDateMsk !== today) dailyStreak = 0;
-} else {
-    dailyStreak = 0;
-}
-        
-        // Данные игрока
         const classData = await client.query('SELECT * FROM user_classes WHERE user_id = $1 AND class = $2', [user.id, user.current_class]);
         if (!classData.rows.length) throw new Error('Class not found');
         const inv = await client.query(`SELECT * FROM inventory WHERE user_id = $1 AND equipped = true`, [user.id]);
         const playerStats = calculateStats(classData.rows[0], inv.rows, user.subclass);
 
-        // Противник
         const rand = Math.random();
         let opponentData;
         if (rand < 0.3) opponentData = await selectPvPOpponent(client, user.id, classData.rows[0].level);
@@ -1188,34 +1164,30 @@ if (user.last_streak_date) {
         else opponentData = generateBot(Math.min(60, classData.rows[0].level + Math.floor(Math.random() * 3) + 1), true);
         if (!opponentData?.stats) opponentData = generateBot(classData.rows[0].level, false);
 
-        // Симуляция боя
         const battleResult = simulateBattle(
             playerStats, opponentData.stats,
             user.current_class, opponentData.class,
             user.username, opponentData.username,
-            user.subclass, opponentData.subclass
+            user.subclass, opponentData.subclass,
+            lang  // <-- передаём язык
         );
 
         const isVictory = battleResult.winner === 'player';
         let newStreak = user.win_streak || 0;
         let ratingChange = -15;
 
-
-        // Награды и рейтинг
         if (isVictory) {
             newStreak++;
             let coinReward = getCoinReward(newStreak);
             let ratingGain = getRatingChange(newStreak);
             ratingChange = ratingGain;
 
-            // Бонус подписки: +10% к монетам
             if (subscriptionActive) {
                 coinReward = Math.floor(coinReward * 1.1);
             }
 
             await client.query('UPDATE users SET coins = coins + $1 WHERE id = $2', [coinReward, user.id]);
 
-            // Бонусы за 100/500 побед
             if (newStreak === 100 && !user.reward_100_streak) {
                 await client.query('UPDATE users SET coins = coins + 1500, reward_100_streak = TRUE WHERE id = $1', [user.id]);
             } else if (newStreak === 500 && !user.reward_500_streak) {
@@ -1223,25 +1195,19 @@ if (user.last_streak_date) {
             }
 
             await client.query('UPDATE users SET rating = rating + $1, season_rating = season_rating + $1 WHERE id = $2', [ratingGain, user.id]);
-            // Увеличиваем общий счётчик побед
-await client.query('UPDATE users SET total_wins = total_wins + 1 WHERE id = $1', [user.id]);
-// Проверяем достижения за победы
-await checkWinAchievements(client, user.id);
+            await client.query('UPDATE users SET total_wins = total_wins + 1 WHERE id = $1', [user.id]);
+            await checkWinAchievements(client, user.id);
         } else {
             newStreak = 0;
             await client.query('UPDATE users SET rating = GREATEST(0, rating - 15), season_rating = GREATEST(0, season_rating - 15) WHERE id = $1', [user.id]);
 
-            // Бонус подписки при поражении: +5 монет и +5 опыта
             if (subscriptionActive) {
                 await client.query('UPDATE users SET coins = coins + 5 WHERE id = $1', [user.id]);
             }
         }
         await client.query('UPDATE users SET win_streak = $1 WHERE id = $2', [newStreak, user.id]);
 
-        // Опыт с левелапом и пересчётом силы
         let expGain = isVictory ? getExpReward(newStreak) : 3;
-
-        // Бонус подписки: +10% к опыту при победе, +5 опыта при поражении
         if (subscriptionActive) {
             if (isVictory) {
                 expGain = Math.floor(expGain * 1.1);
@@ -1255,7 +1221,6 @@ await checkWinAchievements(client, user.id);
             await updatePlayerPower(client, user.id, user.current_class);
         }
 
-        // Уголь (начисление внутри транзакции) – новые шансы
         const r = Math.random();
         let coalGain = 0;
         if (r >= 0.5 && r < 0.85) coalGain = 1;
@@ -1264,38 +1229,32 @@ await checkWinAchievements(client, user.id);
             await client.query('UPDATE users SET coal = coal + $1 WHERE id = $2', [coalGain, user.id]);
         }
 
-        // Списываем энергию
         await client.query('UPDATE users SET energy = energy - 1 WHERE id = $1', [user.id]);
 
-        // Завершаем транзакцию
         await client.query('COMMIT');
 
-             
-        // Автозавершение заданий при 10 победах подряд
-    if (dailyStreak >= 10) {
-    try {
-        const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
-        let progress = userTasks.rows[0].daily_tasks_progress;
-        // Если progress — строка, парсим, иначе оставляем как есть
-        if (typeof progress === 'string') {
+        if (dailyStreak >= 10) {
             try {
-                progress = JSON.parse(progress);
-            } catch(e) {
-                progress = {};
-            }
-        } else if (!progress || typeof progress !== 'object') {
-            progress = {};
+                const userTasks = await client.query('SELECT daily_tasks_mask, daily_tasks_progress FROM users WHERE id = $1', [user.id]);
+                let progress = userTasks.rows[0].daily_tasks_progress;
+                if (typeof progress === 'string') {
+                    try {
+                        progress = JSON.parse(progress);
+                    } catch(e) {
+                        progress = {};
+                    }
+                } else if (!progress || typeof progress !== 'object') {
+                    progress = {};
+                }
+                for (let taskId of [1,2,3]) {
+                    const bit = 1 << (taskId-1);
+                    if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
+                        progress[taskId] = 10;
+                    }
+                }
+                await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
+            } catch (e) { console.error('Auto-complete tasks error:', e); }
         }
-        for (let taskId of [1,2,3]) {
-            const bit = 1 << (taskId-1);
-            if (!(userTasks.rows[0].daily_tasks_mask & bit)) {
-                progress[taskId] = 10;
-            }
-        }
-        await client.query('UPDATE users SET daily_tasks_progress = $1 WHERE id = $2', [JSON.stringify(progress), user.id]);
-    } catch (e) { console.error('Auto-complete tasks error:', e); }
-}
-        // Обновление прогресса угольного задания
         if (coalGain > 0) {
             try {
                 await dailyTasks.updateCoalGainProgress(user.id, coalGain);
@@ -1304,7 +1263,6 @@ await checkWinAchievements(client, user.id);
             }
         }
 
-        // Шанс выпадения редкого свитка 5% при победе
         let scrollGain = false;
         if (isVictory && Math.random() < 0.05) {
             try {
@@ -1320,7 +1278,6 @@ await checkWinAchievements(client, user.id);
             }
         }
 
-        // Получаем актуальную энергию
         const newEnergy = (await client.query('SELECT energy FROM users WHERE id = $1', [user.id])).rows[0].energy;
 
         res.json({

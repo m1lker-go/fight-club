@@ -1,6 +1,9 @@
 // server/data/itemData.js
+const fs = require('fs');
+const path = require('path');
 
-const itemNames = {
+// Оригинальные русские названия (fallback)
+const defaultNames = {
     warrior: {
         weapon: {
             common: [
@@ -675,6 +678,66 @@ const itemNames = {
     }
 };
 
+// Загружаем локализации с сервера
+let cachedRu = null;
+let cachedEn = null;
+let loaded = false;
+
+function loadTranslations() {
+    if (loaded) return;
+    try {
+        const ruPath = path.join(__dirname, '../locales/ru.json');
+        const enPath = path.join(__dirname, '../locales/en.json');
+        if (fs.existsSync(ruPath)) {
+            const ruData = JSON.parse(fs.readFileSync(ruPath, 'utf-8'));
+            cachedRu = ruData.item_data || {};
+        }
+        if (fs.existsSync(enPath)) {
+            const enData = JSON.parse(fs.readFileSync(enPath, 'utf-8'));
+            cachedEn = enData.item_data || {};
+        }
+        loaded = true;
+        console.log('✅ Item translations loaded');
+    } catch (e) {
+        console.error('❌ Failed to load item translations:', e);
+        loaded = true;
+    }
+}
+
+/**
+ * Возвращает название предмета по индексу для указанного языка.
+ * @param {string} lang - 'ru' или 'en'
+ * @param {string} className - 'warrior', 'assassin', 'mage'
+ * @param {string} type - 'weapon', 'armor', 'helmet', 'gloves', 'boots', 'accessory'
+ * @param {string} rarity - 'common', 'uncommon', 'rare', 'epic', 'legendary'
+ * @param {number} index - индекс в массиве (0-4)
+ * @returns {string} название предмета
+ */
+function getItemName(lang, className, type, rarity, index) {
+    loadTranslations();
+    // Выбираем источник данных: если запрошен английский и есть перевод – берём его, иначе fallback на русский (defaultNames)
+    let source = null;
+    if (lang === 'en' && cachedEn && cachedEn[className] && cachedEn[className][type] && cachedEn[className][type][rarity]) {
+        source = cachedEn;
+    } else if (cachedRu && cachedRu[className] && cachedRu[className][type] && cachedRu[className][type][rarity]) {
+        source = cachedRu;
+    }
+    if (source && source[className] && source[className][type] && source[className][type][rarity]) {
+        const arr = source[className][type][rarity];
+        if (Array.isArray(arr) && index >= 0 && index < arr.length) {
+            return arr[index];
+        }
+    }
+    // fallback: defaultNames
+    const fallback = defaultNames[className]?.[type]?.[rarity];
+    if (Array.isArray(fallback) && index >= 0 && index < fallback.length) {
+        return fallback[index];
+    }
+    // экстренный fallback
+    return `Unknown item (${className}/${type}/${rarity}/${index})`;
+}
+
+// Фиксированные бонусы остаются без изменений (они не зависят от языка)
 const fixedBonuses = {
     common: {
         atk: 2,
@@ -738,9 +801,11 @@ const fixedBonuses = {
     }
 };
 
+// Экспортируем как модуль
 module.exports = {
-    itemNames,
-    fixedBonuses
+    // Старые данные для обратной совместимости (если где-то используется напрямую)
+    itemNames: defaultNames,
+    fixedBonuses,
+    // Новая функция для локализации
+    getItemName
 };
-
-module.exports = { itemNames, fixedBonuses };

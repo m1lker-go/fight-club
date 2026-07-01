@@ -1,4 +1,10 @@
 // battleUI.js – экран боя с поддержкой i18n
+console.log('🔄 battleUI.js loaded');
+
+// Заранее резервируем глобальную функцию (на случай, если скрипт прервётся)
+window.startBattle = function() {
+    console.warn('⚠️ startBattle called from fallback – full definition will override this.');
+};
 
 // Переопределяем getRoleNameRu для использования i18n
 const getRoleNameRu = (role) => {
@@ -19,6 +25,7 @@ if (typeof getClassNameRu === 'undefined') {
 }
 
 async function startBattle() {
+    console.log('⚔️ startBattle called');
     // Включаем боевую музыку
     if (window.AudioManager && typeof AudioManager.startFightMusic === 'function') {
         AudioManager.startFightMusic();
@@ -525,6 +532,8 @@ async function showBattleResult(battleData, timeOut = false) {
     content.appendChild(container);
 }
 
+// Явно экспортируем в глобальную область
 window.startBattle = startBattle;
 window.showBattleScreen = showBattleScreen;
 window.showBattleResult = showBattleResult;
+console.log('✅ battleUI.js полностью загружен, startBattle определена');

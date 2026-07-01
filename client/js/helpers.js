@@ -1,4 +1,4 @@
-// helpers.js – исправленная версия с балансными правками
+// helpers.js – исправленная версия с полной локализацией
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
@@ -146,48 +146,53 @@ function recalculatePower() {
     updateTopBar();
 }
 
+// Локализация названий классов
 function getClassNameRu(cls) {
-    if (cls === 'warrior') return 'Воин';
-    if (cls === 'assassin') return 'Ассасин';
-    if (cls === 'mage') return 'Маг';
-    if (cls === 'mouse') return 'Мышь';
+    if (cls === 'warrior') return window.$t('common:Воин', 'Воин');
+    if (cls === 'assassin') return window.$t('common:Ассасин', 'Ассасин');
+    if (cls === 'mage') return window.$t('common:Маг', 'Маг');
+    if (cls === 'mouse') return 'Мышь'; // Мышь пока без перевода, можно добавить ключ
     return cls;
 }
 
 function showRoleInfoModal(className) {
+    if (!userData) {
+        console.warn('showRoleInfoModal: userData not ready');
+        return;
+    }
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
 
-    const classNameRu = className === 'warrior' ? 'Воин' : (className === 'assassin' ? 'Ассасин' : 'Маг');
+    const classNameRu = getClassNameRu(className);
     
     let iconClass = '';
     if (className === 'warrior') iconClass = 'fas fa-shield-alt';
     else if (className === 'assassin') iconClass = 'fas fa-khanda';
     else if (className === 'mage') iconClass = 'fas fa-bomb';
 
-    modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> Класс ${classNameRu}`;
+    modalTitle.innerHTML = `<i class="${iconClass}" style="color:#00aaff;"></i> ${window.$t('helpers:Класс: {classDisplay}', 'Класс: {classDisplay}', { classDisplay: classNameRu })}`;
 
     let classFeatureHtml = '';
     if (className === 'warrior') {
         classFeatureHtml = `
             <div class="role-card">
-                <h3>Особенность класса</h3>
-                <div class="feature-desc">Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.</div>
+                <h3>${window.$t('helpers:Особенность класса', 'Особенность класса')}</h3>
+                <div class="feature-desc">${window.$t('helpers:Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.', 'Стойкость: за каждые 5 единиц защиты получает +5 к максимальному здоровью. Увеличивает максимальное здоровье на 10%.')}</div>
             </div>
         `;
     } else if (className === 'assassin') {
         classFeatureHtml = `
             <div class="role-card">
-                <h3>Особенность класса</h3>
-                <div class="feature-desc">Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.</div>
+                <h3>${window.$t('helpers:Особенность класса', 'Особенность класса')}</h3>
+                <div class="feature-desc">${window.$t('helpers:Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.', 'Стремительность: за каждые 5 единиц ловкости получает +1 к скорости.')}</div>
             </div>
         `;
     } else if (className === 'mage') {
         classFeatureHtml = `
             <div class="role-card">
-                <h3>Особенность класса</h3>
-                <div class="feature-desc">Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.</div>
+                <h3>${window.$t('helpers:Особенность класса', 'Особенность класса')}</h3>
+                <div class="feature-desc">${window.$t('helpers:Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.', 'Магическая мощь: за каждые 5 единиц интеллекта получает +1 к ловкости и +2 к регенерации маны за ход.')}</div>
             </div>
         `;
     }
@@ -200,19 +205,20 @@ function showRoleInfoModal(className) {
 
     let rolesHtml = '';
     subclasses.forEach(sc => {
-        const desc = roleDescriptions[sc];
+        const name = getRoleNameRu(sc);
+        const desc = roleDescriptions[sc]; // предполагаем, что roleDescriptions содержит русский текст, но мы можем заменить на перевод
         if (desc) {
             rolesHtml += `
                 <div class="role-card">
-                    <h3>${desc.name}</h3>
+                    <h3>${name}</h3>
                     <div class="skill">
                         <span class="skill-name passive">${desc.passive.split(' – ')[0]}</span>
-                        <span class="skill-type">(пассивный)</span>
+                        <span class="skill-type">(${window.$t('common:пассивный', 'пассивный')})</span>
                         <div class="skill-desc">${desc.passive.split(' – ')[1] || desc.passive}</div>
                     </div>
                     <div class="skill">
                         <span class="skill-name active">${desc.active.split(' – ')[0]}</span>
-                        <span class="skill-type">(активный)</span>
+                        <span class="skill-type">(${window.$t('common:активный', 'активный')})</span>
                         <div class="skill-desc">${desc.active.split(' – ')[1] || desc.active}</div>
                     </div>
                 </div>
@@ -231,20 +237,21 @@ function showRoleInfoModal(className) {
 }
 
 function showChestResult(item) {
+    if (!item) return;
     const modal = document.getElementById('chestResultModal');
     const body = document.getElementById('chestResultBody');
 
     const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+    if (item.atk_bonus) stats.push(`${window.$t('common:АТК', 'АТК')}+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`${window.$t('common:ЗАЩ', 'ЗАЩ')}+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`${window.$t('common:ЗДОР', 'ЗДОР')}+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`${window.$t('common:СКОР', 'СКОР')}+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`${window.$t('common:КРИТ', 'КРИТ')}+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`${window.$t('common:КР.УРОН', 'КР.УРОН')}+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`${window.$t('common:ЛОВ', 'ЛОВ')}+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`${window.$t('common:ИНТ', 'ИНТ')}+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`${window.$t('common:ВАМП', 'ВАМП')}+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`${window.$t('common:ОТР', 'ОТР')}+${item.reflect_bonus}%`);
 
     const classFolderMap = {
         warrior: 'tank',
@@ -284,19 +291,14 @@ function showChestResult(item) {
         </div>
     `;
 
-    let classDisplay = '';
-    if (item.owner_class) {
-        classDisplay = item.owner_class === 'warrior' ? 'Воин' : (item.owner_class === 'assassin' ? 'Ассасин' : 'Маг');
-    } else {
-        classDisplay = 'Неизвестный класс';
-    }
+    const classDisplay = item.owner_class ? getClassNameRu(item.owner_class) : window.$t('common:Неизвестный класс', 'Неизвестный класс');
 
     body.innerHTML = `
         <div style="text-align: center;">
             <div style="margin-bottom: 10px;">${iconHtml}</div>
             <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px; color: ${borderColor};">${escapeHtml(translateSkinName(item.name))}</div>
-            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${rarityTranslations[item.rarity] || item.rarity}</div>
-            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Класс: ${escapeHtml(classDisplay)}</div>
+            <div class="item-rarity rarity-${item.rarity}" style="margin-bottom: 5px;">${window.$t(`common:${item.rarity}`, rarityTranslations[item.rarity] || item.rarity)}</div>
+            <div style="color: #aaa; font-size: 14px; margin-bottom: 5px;">${window.$t('helpers:Класс: {classDisplay}', 'Класс: {classDisplay}', { classDisplay })}</div>
             <div style="color: #aaa; font-size: 14px;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
         </div>
     `;
@@ -305,10 +307,11 @@ function showChestResult(item) {
 }
 
 function showLevelUpModal(className) {
+    if (!userData) return;
     const modal = document.getElementById('levelUpModal');
     const body = document.getElementById('levelUpBody');
     const classNameRu = getClassNameRu(className);
-    body.innerHTML = `<p style="text-align:center;">Ваш ${escapeHtml(classNameRu)} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.</p>`;
+    body.innerHTML = `<p style="text-align:center;">${window.$t('helpers:Ваш {className} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.', 'Ваш {className} достиг нового уровня!<br>Вам доступны новые очки распределения характеристик.', { className: classNameRu })}</p>`;
 
     modal.style.display = 'block';
 
@@ -352,25 +355,25 @@ function renderItemColumn(item, isEquipped) {
         return `
             <div style="text-align: center;">
                 <div style="width: 80px; height: 80px; margin: 0 auto; background-color: #2f3542; border-radius: 12px;"></div>
-                <div style="margin: 10px 0;">— пусто —</div>
+                <div style="margin: 10px 0;">${window.$t('common:— пусто —', '— пусто —')}</div>
                 <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;" data-action="${isEquipped ? 'old' : 'new'}">
-                    <i class="fas fa-arrow-up"></i> Надеть
+                    <i class="fas fa-arrow-up"></i> ${window.$t('common:Надеть', 'Надеть')}
                 </button>
             </div>
         `;
     }
 
     const stats = [];
-    if (item.atk_bonus) stats.push(`АТК+${item.atk_bonus}`);
-    if (item.def_bonus) stats.push(`ЗАЩ+${item.def_bonus}`);
-    if (item.hp_bonus) stats.push(`ЗДОР+${item.hp_bonus}`);
-    if (item.spd_bonus) stats.push(`СКОР+${item.spd_bonus}`);
-    if (item.crit_bonus) stats.push(`КРИТ+${item.crit_bonus}%`);
-    if (item.crit_dmg_bonus) stats.push(`КР.УРОН+${item.crit_dmg_bonus}%`);
-    if (item.agi_bonus) stats.push(`ЛОВ+${item.agi_bonus}%`);
-    if (item.int_bonus) stats.push(`ИНТ+${item.int_bonus}%`);
-    if (item.vamp_bonus) stats.push(`ВАМП+${item.vamp_bonus}%`);
-    if (item.reflect_bonus) stats.push(`ОТР+${item.reflect_bonus}%`);
+    if (item.atk_bonus) stats.push(`${window.$t('common:АТК', 'АТК')}+${item.atk_bonus}`);
+    if (item.def_bonus) stats.push(`${window.$t('common:ЗАЩ', 'ЗАЩ')}+${item.def_bonus}`);
+    if (item.hp_bonus) stats.push(`${window.$t('common:ЗДОР', 'ЗДОР')}+${item.hp_bonus}`);
+    if (item.spd_bonus) stats.push(`${window.$t('common:СКОР', 'СКОР')}+${item.spd_bonus}`);
+    if (item.crit_bonus) stats.push(`${window.$t('common:КРИТ', 'КРИТ')}+${item.crit_bonus}%`);
+    if (item.crit_dmg_bonus) stats.push(`${window.$t('common:КР.УРОН', 'КР.УРОН')}+${item.crit_dmg_bonus}%`);
+    if (item.agi_bonus) stats.push(`${window.$t('common:ЛОВ', 'ЛОВ')}+${item.agi_bonus}%`);
+    if (item.int_bonus) stats.push(`${window.$t('common:ИНТ', 'ИНТ')}+${item.int_bonus}%`);
+    if (item.vamp_bonus) stats.push(`${window.$t('common:ВАМП', 'ВАМП')}+${item.vamp_bonus}%`);
+    if (item.reflect_bonus) stats.push(`${window.$t('common:ОТР', 'ОТР')}+${item.reflect_bonus}%`);
 
     const rarityClass = `rarity-${item.rarity}`;
     const classFolderMap = {
@@ -405,10 +408,10 @@ function renderItemColumn(item, isEquipped) {
                 <img src="${iconPath}" style="width: 70px; height: 70px; object-fit: contain;">
             </div>
             <div style="font-weight: bold; margin-top: 5px; color: ${borderColor};">${escapeHtml(translateSkinName(item.name))}</div>
-            <div class="${rarityClass}" style="margin: 5px 0;">${rarityTranslations[item.rarity] || item.rarity}</div>
+            <div class="${rarityClass}" style="margin: 5px 0;">${window.$t(`common:${item.rarity}`, rarityTranslations[item.rarity] || item.rarity)}</div>
             <div style="font-size: 12px; color: white;">${stats.map(s => escapeHtml(s)).join(' • ')}</div>
             <button class="btn equip-compare-btn" style="margin-top: 10px; background-color: #2f3542; border: 2px solid #aaa; color: #aaa; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;" data-action="${isEquipped ? 'old' : 'new'}">
-                <i class="fas fa-arrow-up"></i> Надеть
+                <i class="fas fa-arrow-up"></i> ${window.$t('common:Надеть', 'Надеть')}
             </button>
         </div>
     `;
@@ -437,7 +440,11 @@ function showEquipCompareModal(oldItem, newItem) {
 
     if (newBtn) {
         newBtn.addEventListener('click', async () => {
-            const currentClass = document.querySelector('.class-btn.active').dataset.class;
+            const currentClass = document.querySelector('.class-btn.active')?.dataset.class;
+            if (!currentClass) {
+                showToast(window.$t('equip:class_not_selected', 'Класс не выбран'), 1500);
+                return;
+            }
             const res = await window.apiRequest('/inventory/equip', {
                 method: 'POST',
                 body: JSON.stringify({ 
@@ -450,7 +457,7 @@ function showEquipCompareModal(oldItem, newItem) {
                 if (currentScreen === 'equip') renderEquip();
             } else {
                 const err = await res.json();
-                showToast('Ошибка: ' + err.error, 1500);
+                showToast(window.$t('common:Ошибка: ', 'Ошибка: ') + err.error, 1500);
             }
             modal.style.display = 'none';
         });

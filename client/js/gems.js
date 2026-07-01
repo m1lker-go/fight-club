@@ -1,4 +1,4 @@
-// gems.js – Алмазная лавка (VK Mini App: VKWebAppShowOrderBox, остальные – Robokassa)
+// gems.js – Алмазная лавка с полной локализацией
 
 let subscriptionStatus = null;
 let pendingFreeCoin = false;
@@ -12,29 +12,29 @@ async function showLegalModal() {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = 'Реквизиты и оферта';
+    modalTitle.innerText = window.$t('gems:Реквизиты и оферта', 'Реквизиты и оферта');
 
     modalBody.innerHTML = `
         <div style="max-height: 60vh; overflow-y: auto; padding: 5px;">
-            <h2 style="color: #00aaff; margin-top: 0;">Продавец</h2>
-            <p><strong>Самозанятый:</strong> Лисовский Руслан Олегович</p>
-            <p><strong>ИНН:</strong> 021904557375</p>
-            <p><strong>Почта для связи:</strong> m1lker994@gmail.com</p>
+            <h2 style="color: #00aaff; margin-top: 0;">${window.$t('gems:Продавец', 'Продавец')}</h2>
+            <p><strong>${window.$t('gems:Самозанятый: Лисовский Руслан Олегович', 'Самозанятый: Лисовский Руслан Олегович')}</strong></p>
+            <p><strong>${window.$t('gems:ИНН: 021904557375', 'ИНН: 021904557375')}</strong></p>
+            <p><strong>${window.$t('gems:Почта для связи: m1lker994@gmail.com', 'Почта для связи: m1lker994@gmail.com')}</strong></p>
 
-            <h2 style="color: #00aaff;">Договор-оферта</h2>
-            <p>Все покупки регулируются условиями публичной оферты.</p>
+            <h2 style="color: #00aaff;">${window.$t('gems:Договор-оферта', 'Договор-оферта')}</h2>
+            <p>${window.$t('gems:Все покупки регулируются условиями публичной оферты.', 'Все покупки регулируются условиями публичной оферты.')}</p>
 
             <div style="display: flex; gap: 16px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
                 <button id="legalDownloadBtn" class="legal-modal-btn" style="background-color: #2f3542; border: 2px solid #00aaff; border-radius: 40px; padding: 12px 24px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-download"></i> Скачать PDF
+                    <i class="fas fa-download"></i> ${window.$t('gems:Скачать PDF', 'Скачать PDF')}
                 </button>
                 <button id="legalShopBtn" class="legal-modal-btn" style="background-color: #2f3542; border: 2px solid #00aaff; border-radius: 40px; padding: 12px 24px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-store"></i> Магазин в игре
+                    <i class="fas fa-store"></i> ${window.$t('gems:Магазин в игре', 'Магазин в игре')}
                 </button>
             </div>
 
             <div style="margin-top: 24px; font-size: 12px; color: #aaa; text-align: center;">
-                <i class="fas fa-gavel"></i> Возврат средств возможен только в соответствии с условиями оферты.
+                <i class="fas fa-gavel"></i> ${window.$t('gems:Возврат средств возможен только в соответствии с условиями оферты.', 'Возврат средств возможен только в соответствии с условиями оферты.')}
             </div>
         </div>
     `;
@@ -143,7 +143,7 @@ async function renderGems(container) {
     ];
 
     const packs = isVK ? packsVK : packsRub;
-    const currencySymbol = isVK ? 'голосов' : '₽';
+    const currencySymbol = isVK ? 'голосов' : '₽'; // не переводим, это символ
 
     let html = `
         <div class="gems-page">
@@ -151,13 +151,13 @@ async function renderGems(container) {
                 <div class="subscription-left-new">
                     <i class="fas fa-crown" style="color: #c0c0c0; font-size: 24px;"></i>
                     <div class="subscription-text">
-                        <div class="subscription-label">Подписка</div>
-                        <div class="subscription-name">VIP Silver</div>
+                        <div class="subscription-label">${window.$t('gems:Подписка', 'Подписка')}</div>
+                        <div class="subscription-name">${window.$t('gems:VIP Silver', 'VIP Silver')}</div>
                     </div>
                 </div>
                 <button class="subscription-view-btn-new" id="viewSubscriptionBtn">
                     ${freeCoinAvailable ? '<img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">' : ''}
-                    <i class="fas fa-eye"></i> Подробнее
+                    <i class="fas fa-eye"></i> ${window.$t('gems:Подробнее', 'Подробнее')}
                 </button>
             </div>
 
@@ -168,9 +168,9 @@ async function renderGems(container) {
         const isBonusActive = pack.bonus && !bonusBought[pack.id];
         html += `
             <div class="pack-card-new" data-pack-id="${pack.id}" data-diamonds="${pack.diamonds}" data-price="${pack.price}">
-                ${isBonusActive ? '<div class="bonus-badge-new">+50% на 1ую покупку</div>' : ''}
-                <div class="pack-image-new"><img src="/assets/diamond/${pack.image}" alt="${pack.diamonds} алмазов"></div>
-                <div class="pack-diamonds-new">${pack.diamonds} алмазов</div>
+                ${isBonusActive ? `<div class="bonus-badge-new">${window.$t('gems:+50% на 1ую покупку', '+50% на 1ую покупку')}</div>` : ''}
+                <div class="pack-image-new"><img src="/assets/diamond/${pack.image}" alt="${pack.diamonds} ${window.$t('gems:алмазов', 'алмазов')}"></div>
+                <div class="pack-diamonds-new">${pack.diamonds} ${window.$t('gems:алмазов', 'алмазов')}</div>
                 <button class="pack-buy-btn">${pack.price} ${currencySymbol}</button>
             </div>
         `;
@@ -179,10 +179,10 @@ async function renderGems(container) {
     html += `
             </div>
             <div class="shop-note-new">
-                <i class="fas fa-info-circle"></i> Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.
+                <i class="fas fa-info-circle"></i> ${window.$t('gems:Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.', 'Бонус +50% алмазов начисляется только <strong>один раз за каждый пакет</strong> при первой покупке на аккаунт.')}
             </div>
             <div class="shop-note-new">
-                <i class="fas fa-file-contract"></i> <button id="showLegalBtn" class="legal-btn" style="background: none; border: none; color: #aaa; text-decoration: underline; cursor: pointer;">Реквизиты и оферта</button>
+                <i class="fas fa-file-contract"></i> <button id="showLegalBtn" class="legal-btn" style="background: none; border: none; color: #aaa; text-decoration: underline; cursor: pointer;">${window.$t('gems:Реквизиты и оферта', 'Реквизиты и оферта')}</button>
             </div>
         </div>
     `;
@@ -210,7 +210,7 @@ async function renderGems(container) {
 
             if (isVK) {
                 if (typeof vkBridge === 'undefined') {
-                    showToast('VK Bridge не инициализирован', 2000);
+                    showToast(window.$t('gems:VK Bridge не инициализирован', 'VK Bridge не инициализирован'), 2000);
                     return;
                 }
                 try {
@@ -220,7 +220,7 @@ async function renderGems(container) {
                         demo: true
                     });
                     if (result) {
-                        showToast('Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 2000);
+                        showToast(window.$t('gems:Покупка успешно завершена! Товар будет зачислен через несколько секунд.', 'Покупка успешно завершена! Товар будет зачислен через несколько секунд.'), 2000);
                         setTimeout(async () => {
                             await refreshData();
                             if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
@@ -229,11 +229,11 @@ async function renderGems(container) {
                             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                         }, 3000);
                     } else {
-                        showToast('Платеж отменён', 2000);
+                        showToast(window.$t('gems:Платеж отменён', 'Платеж отменён'), 2000);
                     }
                 } catch (err) {
                     console.error('[gems] VKWebAppShowOrderBox error:', err);
-                    showToast('Ошибка оплаты через VK Pay. Попробуйте позже.', 2000);
+                    showToast(window.$t('gems:Ошибка оплаты через VK Pay. Попробуйте позже.', 'Ошибка оплаты через VK Pay. Попробуйте позже.'), 2000);
                 }
             } else {
                 try {
@@ -255,11 +255,11 @@ async function renderGems(container) {
                     if (data.confirmationUrl) {
                         submitRobokassaForm(data.confirmationUrl);
                     } else {
-                        showToast('Ошибка создания платежа: ' + (data.error || 'неизвестная ошибка'), 2000);
+                        showToast(window.$t('gems:Ошибка создания платежа: ', 'Ошибка создания платежа: ') + (data.error || window.$t('common:неизвестная', 'неизвестная')), 2000);
                     }
                 } catch (err) {
                     console.error('[gems] Ошибка запроса к /payment/create:', err);
-                    showToast('Сетевая ошибка. Попробуйте позже.', 2000);
+                    showToast(window.$t('gems:Сетевая ошибка. Попробуйте позже.', 'Сетевая ошибка. Попробуйте позже.'), 2000);
                 }
             }
         });
@@ -276,7 +276,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> VIP Silver`;
+    modalTitle.innerHTML = `<i class="fas fa-crown" style="color: #c0c0c0;"></i> ${window.$t('gems:VIP Silver', 'VIP Silver')}`;
 
     const isVK = window.isVKMiniApp === true;
 
@@ -293,24 +293,24 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             mainButtonHtml = `
                 <button class="subscription-buy-btn-new" id="dailyRewardBtn" style="position: relative;">
                     <img src="/assets/icons/icon-new.png" style="width: 14px; height: 14px; margin-right: 4px;">
-                    Забрать ежедневную награду
+                    ${window.$t('gems:Забрать ежедневную награду', 'Забрать ежедневную награду')}
                 </button>`;
         } else {
             mainButtonHtml = `
                 <button class="subscription-buy-btn-new" id="dailyRewardBtn" disabled style="opacity: 0.6; cursor: not-allowed;">
-                    Награда уже получена
+                    ${window.$t('gems:Награда уже получена', 'Награда уже получена')}
                 </button>`;
         }
     } else {
         if (isVK) {
             mainButtonHtml = `
                 <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
-                    Оформить за 86 голосов
+                    ${window.$t('gems:Оформить за {price} {currency}', 'Оформить за {price} {currency}', { price: 86, currency: 'голосов' })}
                 </button>`;
         } else {
             mainButtonHtml = `
                 <button class="subscription-buy-btn-new" id="buySubscriptionBtnNew">
-                    Оформить за 599 ₽/мес
+                    ${window.$t('gems:Оформить за {price} {currency}', 'Оформить за {price} {currency}', { price: 599, currency: '₽/мес' })}
                 </button>`;
         }
     }
@@ -319,23 +319,23 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
         <div class="subscription-modal-new">
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-ban" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Пропуск рекламы</div>
+                <div class="sub-desc">${window.$t('gems:Пропуск рекламы', 'Пропуск рекламы')}</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-chart-line" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Дополнительные награды в бою:<br> +10% опыта, +10% монет</div>
+                <div class="sub-desc">${window.$t('gems:Дополнительные награды в бою:<br> +10% опыта, +10% монет', 'Дополнительные награды в бою:<br> +10% опыта, +10% монет')}</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-shield-alt" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Награда в случае поражения:<br> +5 опыта, +5 монет</div>
+                <div class="sub-desc">${window.$t('gems:Награда в случае поражения:<br> +5 опыта, +5 монет', 'Награда в случае поражения:<br> +5 опыта, +5 монет')}</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-gift" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Ежедневная награда:<br> 250 монет, 10 угля</div>
+                <div class="sub-desc">${window.$t('gems:Ежедневная награда:<br> 250 монет, 10 угля', 'Ежедневная награда:<br> 250 монет, 10 угля')}</div>
             </div>
             <div class="sub-feature-row">
                 <div class="sub-icon"><i class="fas fa-gem" style="color: #00aaff;"></i></div>
-                <div class="sub-desc">Награда при оформлении:<br> 1500 монет, 50 угля, 100 алмазов</div>
+                <div class="sub-desc">${window.$t('gems:Награда при оформлении:<br> 1500 монет, 50 угля, 100 алмазов', 'Награда при оформлении:<br> 1500 монет, 50 угля, 100 алмазов')}</div>
             </div>
             <div class="subscription-buttons-new">
                 ${freeCoinButton}
@@ -353,7 +353,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             if (pendingFreeCoin) return;
             pendingFreeCoin = true;
             if (!freeCoinAvailable) {
-                showToast('Бесплатная монета уже получена сегодня', 1500);
+                showToast(window.$t('gems:Бесплатная монета уже получена сегодня', 'Бесплатная монета уже получена сегодня'), 1500);
                 pendingFreeCoin = false;
                 return;
             }
@@ -364,18 +364,18 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast('+20 монет!', 1500);
+                    showToast(window.$t('gems:+20 монет!', '+20 монет!'), 1500);
                     await refreshData();
                     if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                     modal.style.display = 'none';
                     const subContent = document.getElementById('tradeSubContent');
                     if (subContent) renderGems(subContent);
                 } else {
-                    showToast(data.error || 'Ошибка', 1500);
+                    showToast(data.error || window.$t('common:Ошибка', 'Ошибка'), 1500);
                 }
             } catch (err) {
                 console.error('[gems] FREE COIN: ошибка', err);
-                showToast('Ошибка соединения', 1500);
+                showToast(window.$t('common:Ошибка соединения', 'Ошибка соединения'), 1500);
             } finally {
                 pendingFreeCoin = false;
             }
@@ -394,7 +394,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast(`+${data.coins} монет, +${data.coal} угля!`, 2000);
+                    showToast(window.$t('gems:+{coins} монет, +{coal} угля!', '+{coins} монет, +{coal} угля!', { coins: data.coins, coal: data.coal }), 2000);
                     subscriptionStatus.dailySubRewardAvailable = false;
                     await refreshData();
                     if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
@@ -402,12 +402,12 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                     const subContent = document.getElementById('tradeSubContent');
                     if (subContent) renderGems(subContent);
                 } else {
-                    showToast(data.error || 'Ошибка', 1500);
+                    showToast(data.error || window.$t('common:Ошибка', 'Ошибка'), 1500);
                     dailyBtn.disabled = false;
                 }
             } catch (err) {
                 console.error('[gems] daily reward error:', err);
-                showToast('Ошибка соединения', 1500);
+                showToast(window.$t('common:Ошибка соединения', 'Ошибка соединения'), 1500);
                 dailyBtn.disabled = false;
             }
         });
@@ -419,7 +419,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
             console.log('[gems] buy subscription clicked');
             if (isVK) {
                 if (typeof vkBridge === 'undefined') {
-                    showToast('VK Bridge не инициализирован', 2000);
+                    showToast(window.$t('gems:VK Bridge не инициализирован', 'VK Bridge не инициализирован'), 2000);
                     return;
                 }
                 try {
@@ -429,7 +429,7 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                         demo: true
                     });
                     if (result) {
-                        showToast('Подписка активирована! (зачисление через несколько секунд)', 2000);
+                        showToast(window.$t('gems:Подписка активирована! (зачисление через несколько секунд)', 'Подписка активирована! (зачисление через несколько секунд)'), 2000);
                         setTimeout(async () => {
                             await refreshData();
                             if (window.currentScreen === 'trade' && window.tradeSubtab === 'gems') {
@@ -438,11 +438,11 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                             if (typeof window.updateTradeBadges === 'function') window.updateTradeBadges();
                         }, 3000);
                     } else {
-                        showToast('Платеж отменён', 2000);
+                        showToast(window.$t('gems:Платеж отменён', 'Платеж отменён'), 2000);
                     }
                 } catch (err) {
                     console.error('[gems] VK subscription error:', err);
-                    showToast('Ошибка оплаты подписки', 2000);
+                    showToast(window.$t('gems:Ошибка оплаты подписки', 'Ошибка оплаты подписки'), 2000);
                 }
             } else {
                 try {
@@ -459,11 +459,11 @@ function showSubscriptionModalNew(hasSubscription, freeCoinAvailable) {
                     if (data.confirmationUrl) {
                         submitRobokassaForm(data.confirmationUrl);
                     } else {
-                        showToast('Ошибка создания платежа', 2000);
+                        showToast(window.$t('gems:Ошибка создания платежа', 'Ошибка создания платежа'), 2000);
                     }
                 } catch (err) {
                     console.error('[gems] subscription error:', err);
-                    showToast('Сетевая ошибка', 2000);
+                    showToast(window.$t('gems:Сетевая ошибка', 'Сетевая ошибка'), 2000);
                 }
             }
         });

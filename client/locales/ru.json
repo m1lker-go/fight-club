@@ -206,6 +206,7 @@
 
   "settings": {
     "Подтверждение": "Подтверждение",
+     "Язык": "Язык",
     "Да": "Да",
     "Отмена": "Отмена",
     "Выход из аккаунта": "Выход из аккаунта",
@@ -317,7 +318,19 @@
 "sell_error": "Ошибка продажи",
 "unsell_confirm": "Снять предмет с продажи?",
 "item_unlisted": "Предмет снят с продажи",
-"unsell_error": "Ошибка при снятии с продажи"
+"unsell_error": "Ошибка при снятии с продажи",
+    "Рюкзак": "Backpack",
+"Снять предмет?": "Unequip item?",
+"Изменить цену": "Change Price",
+"Продаётся": "On Sale",
+"Ошибка при снятии": "Error unequipping",
+"Ошибка экипировки": "Equip error",
+"Предмет не принадлежит текущему классу!": "This item does not belong to your current class!",
+"Предмет выставлен на маркет": "Item listed on market",
+"Ошибка продажи": "Sell error",
+"Снять предмет с продажи?": "Remove item from sale?",
+"Предмет снят с продажи": "Item removed from sale",
+"Ошибка при снятии с продажи": "Error removing from sale"
   },
 
   "trade": {

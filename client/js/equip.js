@@ -1,4 +1,4 @@
-// equip.js – Рюкзак и экипировка (локализация)
+// equip.js – Рюкзак и экипировка (локализация v2)
 
 // Локальная функция цвета редкости
 function getRarityColor(rarity) {
@@ -16,8 +16,9 @@ function showUnequipConfirmModal(item, onConfirm) {
     const modal = document.getElementById('roleModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalBody = document.getElementById('modalBody');
+    if (!modal || !modalTitle || !modalBody) return;
 
-    modalTitle.innerText = window.$t('equip:unequip_confirm_title', 'Снять предмет?');
+    modalTitle.innerText = window.$t('equip:Снять предмет?', 'Снять предмет?');
 
     const stats = [];
     if (item.atk_bonus) stats.push(window.$t('common:АТК', 'АТК') + `+${item.atk_bonus}`);
@@ -83,16 +84,13 @@ function renderEquip() {
         selectedClass = userData.current_class;
     }
 
-    // Карты папок и типов для иконок (нужны, если используется локальная getItemIconPath, но мы будем использовать window.getItemIconPath)
-    const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
-    const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
-
-    // Используем глобальную функцию иконок, если она есть; иначе оставляем локальную заглушку
     const getIcon = (item) => {
         if (typeof window.getItemIconPath === 'function') {
             return window.getItemIconPath(item);
         }
         // fallback
+        const classFolderMap = { warrior: 'tank', assassin: 'assassin', mage: 'mage' };
+        const typeFileMap = { armor: 'armor', boots: 'boots', helmet: 'helmet', weapon: 'weapon', accessory: 'ring', gloves: 'bracer' };
         if (!item) return '';
         const folder = classFolderMap[item.owner_class];
         const fileType = typeFileMap[item.type];
@@ -174,12 +172,12 @@ function renderEquip() {
             let actionButtonsHtml = '';
             if (isForSale) {
                 actionButtonsHtml = `
-                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">${window.$t('equip:Снять с продажи', 'Снять с продажи')}</button>
-                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">${window.$t('equip:change_price', 'Изменить цену')}</button>
+                    <button class="inv-action-btn unsell-btn" data-item-id="${item.id}" data-action="unsell">${window.$t('common:Снять с продажи', 'Снять с продажи')}</button>
+                    <button class="inv-action-btn edit-price-btn" data-item-id="${item.id}" data-action="editPrice">${window.$t('equip:Изменить цену', 'Изменить цену')}</button>
                 `;
             } else {
                 actionButtonsHtml = `
-                    <button class="inv-action-btn equip-btn" data-item-id="${item.id}" data-action="equip">${window.$t('equip:Снять', 'Снять')}</button>
+                    <button class="inv-action-btn equip-btn" data-item-id="${item.id}" data-action="equip">${window.$t('common:Надеть', 'Надеть')}</button>
                     <button class="inv-action-btn sell-btn" data-item-id="${item.id}" data-action="sell">${window.$t('common:Продать', 'Продать')}</button>
                 `;
             }

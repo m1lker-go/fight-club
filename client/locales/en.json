@@ -305,7 +305,20 @@
     "item_class_mismatch": "Class mismatch",
     "item_not_equipped": "Item not equipped",
     "item_not_on_sale": "Item not on sale",
-    "invalid_price": "Invalid price"
+    "invalid_price": "Invalid price",
+    "Рюкзак": "Backpack",
+"Снять предмет?": "Unequip item?",
+"Изменить цену": "Change Price",
+"on_sale": "On Sale",
+"unequip_error": "Error unequipping",
+"equip_error": "Equip error",
+"not_current_class": "Item does not belong to current class!",
+"item_listed": "Item listed on market",
+"sell_error": "Sell error",
+"unsell_confirm": "Remove item from sale?",
+"item_unlisted": "Item removed from sale",
+"unsell_error": "Error removing from sale"
+    
   },
 
   "trade": {

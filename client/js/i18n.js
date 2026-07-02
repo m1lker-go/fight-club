@@ -1,4 +1,4 @@
-// js/i18n.js – финальная версия с поддержкой переменных интерполяции
+// js/i18n.js – финальная версия с защитой от регистра и интерполяцией
 (function() {
     console.log('🔄 i18n init started');
 
@@ -41,8 +41,10 @@
         if (window.updateMessagesBadge) window.updateMessagesBadge();
 
         document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (window.i18next) {
+            let key = el.getAttribute('data-i18n');
+            if (window.i18next && key) {
+                // Приводим ключ из HTML к нижнему регистру для поиска
+                key = key.toLowerCase(); 
                 const translation = window.i18next.t(key);
                 if (el.tagName === 'INPUT' && el.placeholder) {
                     el.placeholder = translation;
@@ -74,12 +76,21 @@
                 return;
             }
 
+            // Функция для глубокого перевода всех КЛЮЧЕЙ в JSON в нижний регистр
+            function lowercaseKeys(obj) {
+                if (!obj || typeof obj !== 'object') return obj;
+                return Object.keys(obj).reduce((acc, key) => {
+                    acc[key.toLowerCase()] = typeof obj[key] === 'object' ? lowercaseKeys(obj[key]) : obj[key];
+                    return acc;
+                }, {});
+            }
+
             const resources = {
-                ru: ruData || {},
-                en: enData || {}
+                ru: lowercaseKeys(ruData) || {},
+                en: lowercaseKeys(enData) || {}
             };
 
-            const nsList = ruData ? Object.keys(ruData) : ['common'];
+            const nsList = ruData ? Object.keys(ruData).map(k => k.toLowerCase()) : ['common'];
             if (!nsList.includes('clans')) nsList.push('clans');
 
             await i18next.init({
@@ -93,19 +104,22 @@
 
             window.i18next = i18next;
             console.log('✅ i18next initialized, language:', i18next.language);
-
-            // ====== УСТАНАВЛИВАЕМ ТЕКУЩИЙ ЯЗЫК ГЛОБАЛЬНО ======
             window.currentLanguage = i18next.language;
 
-            // ====== КАСТОМНАЯ ФУНКЦИЯ ПЕРЕВОДА С ПОДДЕРЖКОЙ ПЕРЕМЕННЫХ ======
+            // ====== КАСТОМНАЯ ФУНКЦИЯ ПЕРЕВОДА С ЗАЩИТОЙ ОТ РЕГИСТРА ======
             window.$t = function(key, fallback, vars) {
-                if (key && key.includes(':')) {
-                    const parts = key.split(':');
+                if (!key) return fallback || '';
+                
+                // Принудительно делаем весь поисковый запрос маленькими буквами
+                const normalizedKey = key.toLowerCase();
+
+                if (normalizedKey.includes(':')) {
+                    const parts = normalizedKey.split(':');
                     const ns = parts[0];
                     const actualKey = parts.slice(1).join(':');
                     const opts = { ns: ns, defaultValue: fallback || key };
                     if (vars && typeof vars === 'object') {
-                        Object.assign(opts, vars);   // передаём все переменные для интерполяции
+                        Object.assign(opts, vars);
                     }
                     return i18next.t(actualKey, opts);
                 } else {
@@ -113,12 +127,12 @@
                     if (vars && typeof vars === 'object') {
                         Object.assign(opts, vars);
                     }
-                    return i18next.t(key, opts);
+                    return i18next.t(normalizedKey, opts);
                 }
             };
             window.__ = window.$t;
 
-            console.log('✅ window.$t теперь поддерживает переменные интерполяции');
+            console.log('✅ window.$t теперь игнорирует регистр букв в ключах');
 
             if (typeof userData !== 'undefined' && userData && userData.id) {
                 updateUI();
@@ -133,7 +147,6 @@
                 }, 100);
             }
 
-            // Функция смены языка
             window.setLanguage = function(lang) {
                 if (!window.i18next || typeof window.i18next.changeLanguage !== 'function') {
                     localStorage.setItem('i18nextLng', lang);

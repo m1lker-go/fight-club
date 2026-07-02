@@ -1,4 +1,4 @@
-// tournament.js – Турнирная система с полной локализацией
+// tournament.js – Турнирная система с полной локализацией (исправлено)
 
 let tournamentRefreshInterval = null;
 let waitingTimerInterval = null;
@@ -323,7 +323,8 @@ async function renderBracket(container) {
         if (finalMatch) {
             html += `<div class="tournament-round"><div class="tournament-round-title">${window.$t('tournament:Финал', 'Финал')}</div>${renderMatchRow(finalMatch)}</div>`;
         }
-        html += '</div><button id="closeBracketBtn" class="tournament-close-btn">${window.$t('common:Закрыть', 'Закрыть')}</button>';
+        // ВНИМАНИЕ: здесь была возможная опечатка с пропуском кавычек – исправлено
+        html += `</div><button id="closeBracketBtn" class="tournament-close-btn">${window.$t('common:Закрыть', 'Закрыть')}</button>`;
         container.innerHTML = html;
 
         document.querySelectorAll('.tournament-replay-btn').forEach(btn => {
@@ -340,7 +341,7 @@ async function renderBracket(container) {
         document.getElementById('closeBracketBtn')?.addEventListener('click', () => showScreen('main'));
     } catch (err) {
         console.error(err);
-        container.innerHTML = '<p style="color:#aaa;">${window.$t('tournament:Ошибка загрузки сетки турнира', 'Ошибка загрузки сетки турнира')}</p>';
+        container.innerHTML = `<p style="color:#aaa;">${window.$t('tournament:Ошибка загрузки сетки турнира', 'Ошибка загрузки сетки турнира')}</p>`;
     }
 }
 
@@ -517,8 +518,14 @@ function getSubclassesForClass(className) {
 }
 
 function getRoundName(roundNum) {
-    const names = { 1: window.$t('tournament:1/16 финала', '1/16 финала'), 2: window.$t('tournament:1/8 финала', '1/8 финала'), 3: window.$t('tournament:1/4 финала', '1/4 финала'), 4: window.$t('tournament:1/2 финала', '1/2 финала') };
-    return names[roundNum] || `${window.$t('tournament:Раунд {num}', 'Раунд {num}', { num: roundNum })}`;
+    // Исправлено: все ключи корректно обёрнуты в кавычки
+    const names = {
+        1: window.$t('tournament:1/16 финала', '1/16 финала'),
+        2: window.$t('tournament:1/8 финала', '1/8 финала'),
+        3: window.$t('tournament:1/4 финала', '1/4 финала'),
+        4: window.$t('tournament:1/2 финала', '1/2 финала')
+    };
+    return names[roundNum] || window.$t('tournament:Раунд {num}', 'Раунд {num}', { num: roundNum });
 }
 
 function showTournamentRulesModal() {

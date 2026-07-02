@@ -206,6 +206,7 @@
 
   "settings": {
     "Подтверждение": "Confirmation",
+    "Язык": "Language",
     "Да": "Yes",
     "Отмена": "Cancel",
     "Выход из аккаунта": "Log Out",

@@ -330,7 +330,10 @@
 "Ошибка продажи": "Sell error",
 "Снять предмет с продажи?": "Remove item from sale?",
 "Предмет снят с продажи": "Item removed from sale",
-"Ошибка при снятии с продажи": "Error removing from sale"
+"Ошибка при снятии с продажи": "Error removing from sale",
+"Класс": "Class",
+"Снять": "Unequip",
+"Отмена": "Cancel"
     
   },
 

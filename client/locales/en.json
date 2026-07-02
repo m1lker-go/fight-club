@@ -317,7 +317,19 @@
 "sell_error": "Sell error",
 "unsell_confirm": "Remove item from sale?",
 "item_unlisted": "Item removed from sale",
-"unsell_error": "Error removing from sale"
+"unsell_error": "Error removing from sale",
+    "Рюкзак": "Backpack",
+"Снять предмет?": "Unequip item?",
+"Изменить цену": "Change Price",
+"Продаётся": "On Sale",
+"Ошибка при снятии": "Error unequipping",
+"Ошибка экипировки": "Equip error",
+"Предмет не принадлежит текущему классу!": "This item does not belong to your current class!",
+"Предмет выставлен на маркет": "Item listed on market",
+"Ошибка продажи": "Sell error",
+"Снять предмет с продажи?": "Remove item from sale?",
+"Предмет снят с продажи": "Item removed from sale",
+"Ошибка при снятии с продажи": "Error removing from sale"
     
   },
 

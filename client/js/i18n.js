@@ -1,4 +1,4 @@
-// js/i18n.js – финальная версия с кастомным парсингом namespace
+// js/i18n.js – финальная версия с поддержкой переменных интерполяции
 (function() {
     console.log('🔄 i18n init started');
 
@@ -95,23 +95,30 @@
             console.log('✅ i18next initialized, language:', i18next.language);
 
             // ====== УСТАНАВЛИВАЕМ ТЕКУЩИЙ ЯЗЫК ГЛОБАЛЬНО ======
-            window.currentLanguage = i18next.language;   // <-- добавлено
+            window.currentLanguage = i18next.language;
 
-            // ====== КАСТОМНАЯ ФУНКЦИЯ ПЕРЕВОДА С ПАРСИНГОМ ======
-            window.$t = function(key, fallback) {
+            // ====== КАСТОМНАЯ ФУНКЦИЯ ПЕРЕВОДА С ПОДДЕРЖКОЙ ПЕРЕМЕННЫХ ======
+            window.$t = function(key, fallback, vars) {
                 if (key && key.includes(':')) {
                     const parts = key.split(':');
                     const ns = parts[0];
                     const actualKey = parts.slice(1).join(':');
-                    const result = i18next.t(actualKey, { ns: ns, defaultValue: fallback || key });
-                    return result;
+                    const opts = { ns: ns, defaultValue: fallback || key };
+                    if (vars && typeof vars === 'object') {
+                        Object.assign(opts, vars);   // передаём все переменные для интерполяции
+                    }
+                    return i18next.t(actualKey, opts);
                 } else {
-                    return i18next.t(key, { defaultValue: fallback || key });
+                    const opts = { defaultValue: fallback || key };
+                    if (vars && typeof vars === 'object') {
+                        Object.assign(opts, vars);
+                    }
+                    return i18next.t(key, opts);
                 }
             };
             window.__ = window.$t;
 
-            console.log('✅ window.$t теперь парсит namespace:key');
+            console.log('✅ window.$t теперь поддерживает переменные интерполяции');
 
             if (typeof userData !== 'undefined' && userData && userData.id) {
                 updateUI();
@@ -139,7 +146,7 @@
                         return;
                     }
                     localStorage.setItem('i18nextLng', lang);
-                    window.currentLanguage = lang;   // <-- добавлено
+                    window.currentLanguage = lang;
                     console.log(`🌐 Language changed to ${lang}`);
                     updateUI();
                 });
@@ -149,7 +156,7 @@
                 if (localStorage.getItem('i18nextLng') !== lng) {
                     localStorage.setItem('i18nextLng', lng);
                 }
-                window.currentLanguage = lng;   // <-- добавлено (на случай внешней смены)
+                window.currentLanguage = lng;
                 updateUI();
             });
 
